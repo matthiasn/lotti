@@ -79,8 +79,9 @@ class AiSettingsFilterService {
 
       // Provider filter - only apply if providers are selected
       if (filterState.selectedProviders.isNotEmpty) {
-        if (!filterState.selectedProviders
-            .contains(model.inferenceProviderId)) {
+        if (!filterState.selectedProviders.contains(
+          model.inferenceProviderId,
+        )) {
           return false;
         }
       }
@@ -122,8 +123,8 @@ class AiSettingsFilterService {
     List<AiConfigModel>? allModels,
   }) {
     // For efficiency, create a lookup map of modelId -> providerId
-    final modelIdToProviderIdMap = filterState.selectedProviders.isNotEmpty &&
-            allModels != null
+    final modelIdToProviderIdMap =
+        filterState.selectedProviders.isNotEmpty && allModels != null
         ? {for (final model in allModels) model.id: model.inferenceProviderId}
         : null;
 
@@ -155,8 +156,9 @@ class AiSettingsFilterService {
 
       // Response type filter - only apply if response types are selected
       if (filterState.selectedResponseTypes.isNotEmpty) {
-        if (!filterState.selectedResponseTypes
-            .contains(prompt.aiResponseType)) {
+        if (!filterState.selectedResponseTypes.contains(
+          prompt.aiResponseType,
+        )) {
           return false;
         }
       }

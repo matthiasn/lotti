@@ -33,8 +33,9 @@ void main() {
       final mockOutboxService = MockOutboxService();
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
       when(() => mockUpdateNotifications.notify(any())).thenReturn(null);
 
       getIt
@@ -44,11 +45,13 @@ void main() {
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-      when(() => mockJournalDb.upsertTagEntity(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockJournalDb.upsertTagEntity(any()),
+      ).thenAnswer((_) async => 1);
 
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
     });
     tearDown(getIt.reset);
 

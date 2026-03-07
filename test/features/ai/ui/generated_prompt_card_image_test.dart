@@ -38,8 +38,9 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       ),
     );
 
-    testWidgets('displays image prompt header with palette icon and title',
-        (tester) async {
+    testWidgets('displays image prompt header with palette icon and title', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: GeneratedPromptCard(
@@ -121,8 +122,9 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(find.byType(GptMarkdown), findsNothing);
     });
 
-    testWidgets('expands to show full prompt when chevron is tapped',
-        (tester) async {
+    testWidgets('expands to show full prompt when chevron is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: GeneratedPromptCard(
@@ -148,18 +150,19 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(find.byType(GptMarkdown), findsOneWidget);
     });
 
-    testWidgets('copy button triggers clipboard copy with image prompt',
-        (tester) async {
+    testWidgets('copy button triggers clipboard copy with image prompt', (
+      tester,
+    ) async {
       // Set up clipboard mock
       final clipboardData = <String>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        if (call.method == 'Clipboard.setData') {
-          final args = call.arguments as Map<dynamic, dynamic>;
-          clipboardData.add(args['text'] as String);
-        }
-        return null;
-      });
+            if (call.method == 'Clipboard.setData') {
+              final args = call.arguments as Map<dynamic, dynamic>;
+              clipboardData.add(args['text'] as String);
+            }
+            return null;
+          });
       addTearDown(
         () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null),
@@ -188,8 +191,8 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       // Set up clipboard mock
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        return null;
-      });
+            return null;
+          });
       addTearDown(
         () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null),
@@ -256,8 +259,9 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(find.text('Copy Prompt'), findsOneWidget);
     });
 
-    testWidgets('shows Full Image Prompt label in expanded section',
-        (tester) async {
+    testWidgets('shows Full Image Prompt label in expanded section', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: GeneratedPromptCard(
@@ -275,8 +279,9 @@ Digital illustration of a medieval fortress under construction, 60% complete wit
       expect(find.text('Full Image Prompt:'), findsOneWidget);
     });
 
-    testWidgets('coding prompt shows Full Prompt label in expanded section',
-        (tester) async {
+    testWidgets('coding prompt shows Full Prompt label in expanded section', (
+      tester,
+    ) async {
       final codingPromptEntry = testImagePromptEntry.copyWith(
         data: testImagePromptEntry.data.copyWith(
           type: AiResponseType.promptGeneration,
@@ -309,56 +314,57 @@ Implement OAuth 2.0 in Flutter.
     });
 
     testWidgets(
-        'differentiates between coding prompt and image prompt correctly',
-        (tester) async {
-      final codingPromptEntry = testImagePromptEntry.copyWith(
-        data: testImagePromptEntry.data.copyWith(
-          type: AiResponseType.promptGeneration,
-          response: '''
+      'differentiates between coding prompt and image prompt correctly',
+      (tester) async {
+        final codingPromptEntry = testImagePromptEntry.copyWith(
+          data: testImagePromptEntry.data.copyWith(
+            type: AiResponseType.promptGeneration,
+            response: '''
 ## Summary
 Help with OAuth implementation.
 
 ## Prompt
 Implement OAuth 2.0 in Flutter.
 ''',
-        ),
-      );
-
-      // First render coding prompt
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: GeneratedPromptCard(
-            codingPromptEntry,
-            linkedFromId: 'test-id',
           ),
-        ),
-      );
+        );
 
-      // Should show coding prompt title
-      expect(find.text('AI Coding Prompt'), findsOneWidget);
-      expect(find.text('AI Image Prompt'), findsNothing);
-      expect(
-        find.byIcon(AiResponseType.promptGeneration.icon),
-        findsOneWidget,
-      );
-
-      // Render image prompt
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: GeneratedPromptCard(
-            testImagePromptEntry,
-            linkedFromId: 'test-id',
+        // First render coding prompt
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              codingPromptEntry,
+              linkedFromId: 'test-id',
+            ),
           ),
-        ),
-      );
+        );
 
-      // Should show image prompt title
-      expect(find.text('AI Image Prompt'), findsOneWidget);
-      expect(find.text('AI Coding Prompt'), findsNothing);
-      expect(
-        find.byIcon(AiResponseType.imagePromptGeneration.icon),
-        findsOneWidget,
-      );
-    });
+        // Should show coding prompt title
+        expect(find.text('AI Coding Prompt'), findsOneWidget);
+        expect(find.text('AI Image Prompt'), findsNothing);
+        expect(
+          find.byIcon(AiResponseType.promptGeneration.icon),
+          findsOneWidget,
+        );
+
+        // Render image prompt
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              testImagePromptEntry,
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        // Should show image prompt title
+        expect(find.text('AI Image Prompt'), findsOneWidget);
+        expect(find.text('AI Coding Prompt'), findsNothing);
+        expect(
+          find.byIcon(AiResponseType.imagePromptGeneration.icon),
+          findsOneWidget,
+        );
+      },
+    );
   });
 }

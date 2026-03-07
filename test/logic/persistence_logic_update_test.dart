@@ -23,10 +23,13 @@ import '../mocks/mocks.dart';
 class TestPersistenceLogic extends PersistenceLogic {
   TestPersistenceLogic({this.updateDbEntityHandler});
 
-  final Future<bool?> Function(JournalEntity entity,
-      {String? linkedId,
-      bool enqueueSync,
-      bool overrideComparison})? updateDbEntityHandler;
+  final Future<bool?> Function(
+    JournalEntity entity, {
+    String? linkedId,
+    bool enqueueSync,
+    bool overrideComparison,
+  })?
+  updateDbEntityHandler;
   int updateMetadataCalls = 0;
   JournalEntity? lastUpdateDbEntity;
 
@@ -148,25 +151,32 @@ void main() {
     ).thenAnswer((_) async {});
     when(notificationService.updateBadge).thenAnswer((_) async {});
     when(() => updateNotifications.notify(any<Set<String>>())).thenReturn(null);
-    when(() => outboxService.enqueueMessage(any<SyncMessage>()))
-        .thenAnswer((_) async {});
-    when(() => vectorClockService.getNextVectorClock())
-        .thenAnswer((_) async => const VectorClock({'host': 1}));
+    when(
+      () => outboxService.enqueueMessage(any<SyncMessage>()),
+    ).thenAnswer((_) async {});
+    when(
+      () => vectorClockService.getNextVectorClock(),
+    ).thenAnswer((_) async => const VectorClock({'host': 1}));
     when(
       () => vectorClockService.getNextVectorClock(
         previous: any<VectorClock?>(named: 'previous'),
       ),
     ).thenAnswer((_) async => const VectorClock({'host': 1}));
-    when(() => vectorClockService.getHost())
-        .thenAnswer((_) async => 'test-host-id');
-    when(() => tagsService.getFilteredStoryTagIds(any<List<String>?>()))
-        .thenReturn(<String>[]);
-    when(() => journalDb.addTagged(any<JournalEntity>()))
-        .thenAnswer((_) async {});
-    when(() => journalDb.addLabeled(any<JournalEntity>()))
-        .thenAnswer((_) async {});
-    when(() => journalDb.parentLinkedEntityIds(any<String>()))
-        .thenReturn(MockSelectable<String>([]));
+    when(
+      () => vectorClockService.getHost(),
+    ).thenAnswer((_) async => 'test-host-id');
+    when(
+      () => tagsService.getFilteredStoryTagIds(any<List<String>?>()),
+    ).thenReturn(<String>[]);
+    when(
+      () => journalDb.addTagged(any<JournalEntity>()),
+    ).thenAnswer((_) async {});
+    when(
+      () => journalDb.addLabeled(any<JournalEntity>()),
+    ).thenAnswer((_) async {});
+    when(
+      () => journalDb.parentLinkedEntityIds(any<String>()),
+    ).thenReturn(MockSelectable<String>([]));
 
     getIt
       ..registerSingleton<JournalDb>(journalDb)
@@ -248,8 +258,9 @@ void main() {
         reason: JournalUpdateSkipReason.olderOrEqual,
       ),
     );
-    when(() => journalDb.addTagged(any<JournalEntity>()))
-        .thenAnswer((_) async {});
+    when(
+      () => journalDb.addTagged(any<JournalEntity>()),
+    ).thenAnswer((_) async {});
 
     final entity = buildEntry(clock: const VectorClock({'host': 5}));
     final saved = await logic.createDbEntity(
@@ -264,65 +275,80 @@ void main() {
   });
 
   group('updateJournalEntity', () {
-    test('adds tags and labels only when update applies and reuses metadata',
-        () async {
-      final taggedCaptures = <JournalEntity>[];
-      final labeledCaptures = <JournalEntity>[];
-      when(() => journalDb.addTagged(captureAny()))
-          .thenAnswer((invocation) async {
-        taggedCaptures
-            .add(invocation.positionalArguments.first as JournalEntity);
-      });
-      when(() => journalDb.addLabeled(captureAny()))
-          .thenAnswer((invocation) async {
-        labeledCaptures
-            .add(invocation.positionalArguments.first as JournalEntity);
-      });
+    test(
+      'adds tags and labels only when update applies and reuses metadata',
+      () async {
+        final taggedCaptures = <JournalEntity>[];
+        final labeledCaptures = <JournalEntity>[];
+        when(() => journalDb.addTagged(captureAny())).thenAnswer((
+          invocation,
+        ) async {
+          taggedCaptures.add(
+            invocation.positionalArguments.first as JournalEntity,
+          );
+        });
+        when(() => journalDb.addLabeled(captureAny())).thenAnswer((
+          invocation,
+        ) async {
+          labeledCaptures.add(
+            invocation.positionalArguments.first as JournalEntity,
+          );
+        });
 
-      logic = TestPersistenceLogic(
-        updateDbEntityHandler: (
-          entity, {
-          linkedId,
-          enqueueSync = true,
-          overrideComparison = false,
-        }) async =>
-            true,
-      );
+        logic = TestPersistenceLogic(
+          updateDbEntityHandler:
+              (
+                entity, {
+                linkedId,
+                enqueueSync = true,
+                overrideComparison = false,
+              }) async => true,
+        );
 
-      final baseEntry = buildEntry();
-      final result = await logic.updateJournalEntity(baseEntry, baseEntry.meta);
+        final baseEntry = buildEntry();
+        final result = await logic.updateJournalEntity(
+          baseEntry,
+          baseEntry.meta,
+        );
 
-      expect(result, isTrue);
-      expect(taggedCaptures, hasLength(1));
-      expect(labeledCaptures, hasLength(1));
-      final updatedEntity = taggedCaptures.first;
-      final labeledEntity = labeledCaptures.first;
-      expect(identical(updatedEntity.meta, logic.lastUpdateDbEntity?.meta),
-          isTrue);
-      expect(identical(labeledEntity.meta, logic.lastUpdateDbEntity?.meta),
-          isTrue);
-      expect(logic.updateMetadataCalls, 1);
+        expect(result, isTrue);
+        expect(taggedCaptures, hasLength(1));
+        expect(labeledCaptures, hasLength(1));
+        final updatedEntity = taggedCaptures.first;
+        final labeledEntity = labeledCaptures.first;
+        expect(
+          identical(updatedEntity.meta, logic.lastUpdateDbEntity?.meta),
+          isTrue,
+        );
+        expect(
+          identical(labeledEntity.meta, logic.lastUpdateDbEntity?.meta),
+          isTrue,
+        );
+        expect(logic.updateMetadataCalls, 1);
 
-      clearInteractions(journalDb);
-      taggedCaptures.clear();
-      labeledCaptures.clear();
+        clearInteractions(journalDb);
+        taggedCaptures.clear();
+        labeledCaptures.clear();
 
-      logic = TestPersistenceLogic(
-        updateDbEntityHandler: (
-          entity, {
-          linkedId,
-          enqueueSync = true,
-          overrideComparison = false,
-        }) async =>
-            false,
-      );
+        logic = TestPersistenceLogic(
+          updateDbEntityHandler:
+              (
+                entity, {
+                linkedId,
+                enqueueSync = true,
+                overrideComparison = false,
+              }) async => false,
+        );
 
-      final skipped =
-          await logic.updateJournalEntity(baseEntry, baseEntry.meta);
+        final skipped = await logic.updateJournalEntity(
+          baseEntry,
+          baseEntry.meta,
+        );
 
-      expect(skipped, isFalse);
-      verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
-      verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
-    });
+        expect(skipped, isFalse);
+        verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
+        verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
+      },
+    );
   });
 }

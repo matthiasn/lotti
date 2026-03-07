@@ -18,15 +18,15 @@ class MatrixSdkGateway implements MatrixSyncGateway {
     Stream<({String roomId, StrippedStateEvent state})>? roomStateStream,
     Stream<LoginState>? loginStateStream,
     Stream<KeyVerification>? keyVerificationRequestStream,
-  })  : _client = client,
-        _sentEventRegistry = sentEventRegistry,
-        _roomStateStream = roomStateStream,
-        _loginStateStream = loginStateStream,
-        _keyVerificationRequests = keyVerificationRequestStream {
-    _inviteSubscription =
-        (_roomStateStream ?? _client.onRoomState.stream).listen(
-      _handleRoomState,
-    );
+  }) : _client = client,
+       _sentEventRegistry = sentEventRegistry,
+       _roomStateStream = roomStateStream,
+       _loginStateStream = loginStateStream,
+       _keyVerificationRequests = keyVerificationRequestStream {
+    _inviteSubscription = (_roomStateStream ?? _client.onRoomState.stream)
+        .listen(
+          _handleRoomState,
+        );
   }
 
   static const _roomEncryptionType = 'm.room.encryption';
@@ -36,7 +36,7 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   final SentEventRegistry _sentEventRegistry;
 
   late final StreamSubscription<({String roomId, StrippedStateEvent state})>
-      _inviteSubscription;
+  _inviteSubscription;
   final StreamController<RoomInviteEvent> _inviteController =
       StreamController<RoomInviteEvent>.broadcast();
   final Stream<({String roomId, StrippedStateEvent state})>? _roomStateStream;
@@ -157,10 +157,12 @@ class MatrixSdkGateway implements MatrixSyncGateway {
   Room? getRoomById(String roomId) => _client.getRoomById(roomId);
 
   void _handleRoomState(
-      ({
-        String roomId,
-        StrippedStateEvent state,
-      }) event) {
+    ({
+      String roomId,
+      StrippedStateEvent state,
+    })
+    event,
+  ) {
     final content = event.state.content as Map<String, dynamic>?;
     final membership = content?['membership'];
     final stateKey = event.state.stateKey;

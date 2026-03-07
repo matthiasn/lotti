@@ -40,7 +40,7 @@ class CreateEventItem extends ConsumerWidget {
     // Use unwrapPrevious to keep previous value during loading/error states
     final enableEvents =
         enableEventsAsync.unwrapPrevious().whenData((value) => value).value ??
-            false;
+        false;
 
     if (!enableEvents) {
       return const SizedBox.shrink();
@@ -144,16 +144,19 @@ class CreateTimerItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linked =
-        ref.watch(entryControllerProvider(id: linkedFromId)).value?.entry;
+    final linked = ref
+        .watch(entryControllerProvider(id: linkedFromId))
+        .value
+        ?.entry;
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
     return CreateMenuListItem(
       icon: Icons.timer_outlined,
       title: context.messages.addActionAddTimer,
       onTap: () async {
-        final timerEntry =
-            await entryCreationService.createTimerEntry(linked: linked);
+        final timerEntry = await entryCreationService.createTimerEntry(
+          linked: linked,
+        );
         if (!context.mounted) return;
 
         // Capture the container before popping so we can continue to access providers
@@ -327,8 +330,9 @@ void _waitForTimerAndScroll({
     attempts++;
 
     // Check if the timer entry is in the linked entries
-    final linkedEntries =
-        container.read(linkedEntriesControllerProvider(id: parentId)).value;
+    final linkedEntries = container
+        .read(linkedEntriesControllerProvider(id: parentId))
+        .value;
 
     if (linkedEntries != null &&
         linkedEntries.any((link) => link.toId == timerEntryId)) {

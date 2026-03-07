@@ -21,10 +21,13 @@ final templateWakeRunTimeSeriesProvider = TemplateWakeRunTimeSeriesFamily._();
 /// Fetches raw [WakeRunLogData] via the [AgentRepository] and transforms
 /// them into daily and per-version buckets suitable for mini chart rendering.
 
-final class TemplateWakeRunTimeSeriesProvider extends $FunctionalProvider<
-        AsyncValue<WakeRunTimeSeries>,
-        WakeRunTimeSeries,
-        FutureOr<WakeRunTimeSeries>>
+final class TemplateWakeRunTimeSeriesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<WakeRunTimeSeries>,
+          WakeRunTimeSeries,
+          FutureOr<WakeRunTimeSeries>
+        >
     with
         $FutureModifier<WakeRunTimeSeries>,
         $FutureProvider<WakeRunTimeSeries> {
@@ -32,16 +35,16 @@ final class TemplateWakeRunTimeSeriesProvider extends $FunctionalProvider<
   ///
   /// Fetches raw [WakeRunLogData] via the [AgentRepository] and transforms
   /// them into daily and per-version buckets suitable for mini chart rendering.
-  TemplateWakeRunTimeSeriesProvider._(
-      {required TemplateWakeRunTimeSeriesFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'templateWakeRunTimeSeriesProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TemplateWakeRunTimeSeriesProvider._({
+    required TemplateWakeRunTimeSeriesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'templateWakeRunTimeSeriesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$templateWakeRunTimeSeriesHash();
@@ -56,16 +59,13 @@ final class TemplateWakeRunTimeSeriesProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<WakeRunTimeSeries> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<WakeRunTimeSeries> create(Ref ref) {
     final argument = this.argument as String;
-    return templateWakeRunTimeSeries(
-      ref,
-      argument,
-    );
+    return templateWakeRunTimeSeries(ref, argument);
   }
 
   @override
@@ -91,22 +91,20 @@ String _$templateWakeRunTimeSeriesHash() =>
 final class TemplateWakeRunTimeSeriesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<WakeRunTimeSeries>, String> {
   TemplateWakeRunTimeSeriesFamily._()
-      : super(
-          retry: null,
-          name: r'templateWakeRunTimeSeriesProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'templateWakeRunTimeSeriesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Computes time-series chart data for a template's wake runs.
   ///
   /// Fetches raw [WakeRunLogData] via the [AgentRepository] and transforms
   /// them into daily and per-version buckets suitable for mini chart rendering.
 
-  TemplateWakeRunTimeSeriesProvider call(
-    String templateId,
-  ) =>
+  TemplateWakeRunTimeSeriesProvider call(String templateId) =>
       TemplateWakeRunTimeSeriesProvider._(argument: templateId, from: this);
 
   @override
@@ -136,8 +134,12 @@ final templateTaskResolutionTimeSeriesProvider =
 /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
 
 final class TemplateTaskResolutionTimeSeriesProvider
-    extends $FunctionalProvider<AsyncValue<TaskResolutionTimeSeries>,
-        TaskResolutionTimeSeries, FutureOr<TaskResolutionTimeSeries>>
+    extends
+        $FunctionalProvider<
+          AsyncValue<TaskResolutionTimeSeries>,
+          TaskResolutionTimeSeries,
+          FutureOr<TaskResolutionTimeSeries>
+        >
     with
         $FutureModifier<TaskResolutionTimeSeries>,
         $FutureProvider<TaskResolutionTimeSeries> {
@@ -149,16 +151,16 @@ final class TemplateTaskResolutionTimeSeriesProvider
   /// 3. For each linked task, looks up the [JournalEntity] in the journal DB.
   /// 4. Extracts the first DONE/REJECTED status from the task's status history.
   /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
-  TemplateTaskResolutionTimeSeriesProvider._(
-      {required TemplateTaskResolutionTimeSeriesFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'templateTaskResolutionTimeSeriesProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TemplateTaskResolutionTimeSeriesProvider._({
+    required TemplateTaskResolutionTimeSeriesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'templateTaskResolutionTimeSeriesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$templateTaskResolutionTimeSeriesHash();
@@ -173,16 +175,13 @@ final class TemplateTaskResolutionTimeSeriesProvider
   @$internal
   @override
   $FutureProviderElement<TaskResolutionTimeSeries> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<TaskResolutionTimeSeries> create(Ref ref) {
     final argument = this.argument as String;
-    return templateTaskResolutionTimeSeries(
-      ref,
-      argument,
-    );
+    return templateTaskResolutionTimeSeries(ref, argument);
   }
 
   @override
@@ -212,13 +211,13 @@ String _$templateTaskResolutionTimeSeriesHash() =>
 final class TemplateTaskResolutionTimeSeriesFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<TaskResolutionTimeSeries>, String> {
   TemplateTaskResolutionTimeSeriesFamily._()
-      : super(
-          retry: null,
-          name: r'templateTaskResolutionTimeSeriesProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'templateTaskResolutionTimeSeriesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Computes task resolution time-series (true MTTR) for a template.
   ///
@@ -229,11 +228,11 @@ final class TemplateTaskResolutionTimeSeriesFamily extends $Family
   /// 4. Extracts the first DONE/REJECTED status from the task's status history.
   /// 5. Computes MTTR as `status.createdAt - agent.createdAt`.
 
-  TemplateTaskResolutionTimeSeriesProvider call(
-    String templateId,
-  ) =>
+  TemplateTaskResolutionTimeSeriesProvider call(String templateId) =>
       TemplateTaskResolutionTimeSeriesProvider._(
-          argument: templateId, from: this);
+        argument: templateId,
+        from: this,
+      );
 
   @override
   String toString() => r'templateTaskResolutionTimeSeriesProvider';

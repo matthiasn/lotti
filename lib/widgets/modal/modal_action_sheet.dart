@@ -50,8 +50,10 @@ Future<T?> showModalActionSheet<T>({
                   }
 
                   return Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: LottiTertiaryButton(
                       label: action.label,
                       onPressed: pop,

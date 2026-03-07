@@ -49,9 +49,9 @@ class AgentSyncService {
     required AgentRepository repository,
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
-  })  : _repository = repository,
-        _outboxService = outboxService,
-        _vectorClockService = vectorClockService;
+  }) : _repository = repository,
+       _outboxService = outboxService,
+       _vectorClockService = vectorClockService;
 
   final AgentRepository _repository;
   final OutboxService _outboxService;

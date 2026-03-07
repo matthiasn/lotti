@@ -25,154 +25,169 @@ class _MockDeviceKeys extends Mock implements DeviceKeys {}
 
 void main() {
   group('KeyVerificationRunner', () {
-    test('publishes emoji state changes and stops when verification completes',
-        () {
-      final controller =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
-      addTearDown(controller.close);
-
-      fakeAsync((async) {
-        final verification = _MockKeyVerification();
-        final steps = Queue<String?>.from([
-          null,
-          'm.key.verification.key',
-          EventTypes.KeyVerificationDone,
-        ]);
-        String? lastStep;
-        when(() => verification.lastStep).thenAnswer((_) {
-          if (steps.isNotEmpty) {
-            lastStep = steps.removeFirst();
-          }
-          return lastStep;
-        });
-        final doneStates = Queue<bool>.from([false, false, true]);
-        var lastDone = false;
-        when(() => verification.isDone).thenAnswer((_) {
-          if (doneStates.isNotEmpty) {
-            lastDone = doneStates.removeFirst();
-          }
-          return lastDone;
-        });
-        when(() => verification.sasEmojis)
-            .thenReturn([KeyVerificationEmoji(3)]);
-
-        final emitted = <KeyVerificationRunner>[];
-        controller.stream.listen(emitted.add);
-
-        final runner = KeyVerificationRunner(
-          verification,
-          controller: controller,
-          name: 'Test runner',
+    test(
+      'publishes emoji state changes and stops when verification completes',
+      () {
+        final controller = StreamController<KeyVerificationRunner>.broadcast(
+          sync: true,
         );
+        addTearDown(controller.close);
 
-        expect(runner.lastStep, '');
-        expect(emitted, isNotEmpty);
+        fakeAsync((async) {
+          final verification = _MockKeyVerification();
+          final steps = Queue<String?>.from([
+            null,
+            'm.key.verification.key',
+            EventTypes.KeyVerificationDone,
+          ]);
+          String? lastStep;
+          when(() => verification.lastStep).thenAnswer((_) {
+            if (steps.isNotEmpty) {
+              lastStep = steps.removeFirst();
+            }
+            return lastStep;
+          });
+          final doneStates = Queue<bool>.from([false, false, true]);
+          var lastDone = false;
+          when(() => verification.isDone).thenAnswer((_) {
+            if (doneStates.isNotEmpty) {
+              lastDone = doneStates.removeFirst();
+            }
+            return lastDone;
+          });
+          when(
+            () => verification.sasEmojis,
+          ).thenReturn([KeyVerificationEmoji(3)]);
 
-        async.elapse(const Duration(milliseconds: 100));
-        expect(runner.lastStep, 'm.key.verification.key');
-        expect(runner.emojis?.first.number, 3);
+          final emitted = <KeyVerificationRunner>[];
+          controller.stream.listen(emitted.add);
 
-        async.elapse(const Duration(milliseconds: 100));
-        expect(runner.lastStep, EventTypes.KeyVerificationDone);
+          final runner = KeyVerificationRunner(
+            verification,
+            controller: controller,
+            name: 'Test runner',
+          );
 
-        final emissionCount = emitted.length;
-        async.elapse(const Duration(milliseconds: 500));
-        expect(emitted.length, emissionCount);
-        runner.stopTimer();
-      });
-    });
+          expect(runner.lastStep, '');
+          expect(emitted, isNotEmpty);
 
-    test('invokes completion callback exactly once when done state changes',
-        () {
-      final controller =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
-      addTearDown(controller.close);
+          async.elapse(const Duration(milliseconds: 100));
+          expect(runner.lastStep, 'm.key.verification.key');
+          expect(runner.emojis?.first.number, 3);
 
-      fakeAsync((async) {
-        final verification = _MockKeyVerification();
-        when(() => verification.lastStep).thenReturn('m.key.verification.key');
-        final doneStates = Queue<bool>.from([false, true, true, true]);
-        var currentDone = false;
-        when(() => verification.isDone).thenAnswer((_) {
-          if (doneStates.isNotEmpty) {
-            currentDone = doneStates.removeFirst();
-          }
-          return currentDone;
+          async.elapse(const Duration(milliseconds: 100));
+          expect(runner.lastStep, EventTypes.KeyVerificationDone);
+
+          final emissionCount = emitted.length;
+          async.elapse(const Duration(milliseconds: 500));
+          expect(emitted.length, emissionCount);
+          runner.stopTimer();
         });
+      },
+    );
 
-        var callbackCount = 0;
-        final runner = KeyVerificationRunner(
-          verification,
-          controller: controller,
-          name: 'Completion runner',
-          onCompleted: (_) async {
-            callbackCount++;
-          },
+    test(
+      'invokes completion callback exactly once when done state changes',
+      () {
+        final controller = StreamController<KeyVerificationRunner>.broadcast(
+          sync: true,
         );
+        addTearDown(controller.close);
 
-        expect(callbackCount, 0);
-        async.elapse(const Duration(milliseconds: 150));
-        async.flushMicrotasks();
-        expect(callbackCount, 1);
+        fakeAsync((async) {
+          final verification = _MockKeyVerification();
+          when(
+            () => verification.lastStep,
+          ).thenReturn('m.key.verification.key');
+          final doneStates = Queue<bool>.from([false, true, true, true]);
+          var currentDone = false;
+          when(() => verification.isDone).thenAnswer((_) {
+            if (doneStates.isNotEmpty) {
+              currentDone = doneStates.removeFirst();
+            }
+            return currentDone;
+          });
 
-        async.elapse(const Duration(milliseconds: 500));
-        async.flushMicrotasks();
-        expect(callbackCount, 1);
+          var callbackCount = 0;
+          final runner = KeyVerificationRunner(
+            verification,
+            controller: controller,
+            name: 'Completion runner',
+            onCompleted: (_) async {
+              callbackCount++;
+            },
+          );
 
-        runner.stopTimer();
-      });
-    });
+          expect(callbackCount, 0);
+          async.elapse(const Duration(milliseconds: 150));
+          async.flushMicrotasks();
+          expect(callbackCount, 1);
 
-    test('delegates accept and cancel actions to the key verification object',
-        () {
-      final controller =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
-      addTearDown(controller.close);
+          async.elapse(const Duration(milliseconds: 500));
+          async.flushMicrotasks();
+          expect(callbackCount, 1);
 
-      fakeAsync((async) {
-        final verification = _MockKeyVerification();
-        when(() => verification.acceptVerification())
-            .thenAnswer((_) => Future<void>.value());
-        when(() => verification.acceptSas())
-            .thenAnswer((_) => Future<void>.value());
-        when(() => verification.cancel())
-            .thenAnswer((_) => Future<void>.value());
-        when(() => verification.isDone).thenReturn(false);
-
-        var callCount = 0;
-        final steps = ['initial', 'step-1', 'step-2'];
-        when(() => verification.lastStep).thenAnswer((_) {
-          final index = callCount;
-          callCount++;
-          if (index < steps.length) {
-            return steps[index];
-          }
-          return steps.last;
+          runner.stopTimer();
         });
+      },
+    );
 
-        final runner = KeyVerificationRunner(
-          verification,
-          controller: controller,
-          name: 'Action runner',
+    test(
+      'delegates accept and cancel actions to the key verification object',
+      () {
+        final controller = StreamController<KeyVerificationRunner>.broadcast(
+          sync: true,
         );
+        addTearDown(controller.close);
 
-        runner.acceptVerification();
-        runner.acceptEmojiVerification();
+        fakeAsync((async) {
+          final verification = _MockKeyVerification();
+          when(
+            () => verification.acceptVerification(),
+          ).thenAnswer((_) => Future<void>.value());
+          when(
+            () => verification.acceptSas(),
+          ).thenAnswer((_) => Future<void>.value());
+          when(
+            () => verification.cancel(),
+          ).thenAnswer((_) => Future<void>.value());
+          when(() => verification.isDone).thenReturn(false);
 
-        final callCountBeforeCancel = callCount;
-        runner.cancelVerification();
+          var callCount = 0;
+          final steps = ['initial', 'step-1', 'step-2'];
+          when(() => verification.lastStep).thenAnswer((_) {
+            final index = callCount;
+            callCount++;
+            if (index < steps.length) {
+              return steps[index];
+            }
+            return steps.last;
+          });
 
-        verifyInOrder([
-          () => verification.acceptVerification(),
-          () => verification.acceptSas(),
-          () => verification.cancel(),
-        ]);
+          final runner = KeyVerificationRunner(
+            verification,
+            controller: controller,
+            name: 'Action runner',
+          );
 
-        async.elapse(const Duration(milliseconds: 300));
-        expect(callCount, callCountBeforeCancel);
-        runner.stopTimer();
-      });
-    });
+          runner.acceptVerification();
+          runner.acceptEmojiVerification();
+
+          final callCountBeforeCancel = callCount;
+          runner.cancelVerification();
+
+          verifyInOrder([
+            () => verification.acceptVerification(),
+            () => verification.acceptSas(),
+            () => verification.cancel(),
+          ]);
+
+          async.elapse(const Duration(milliseconds: 300));
+          expect(callCount, callCountBeforeCancel);
+          runner.stopTimer();
+        });
+      },
+    );
   });
 
   group('listenForKeyVerificationRequests', () {
@@ -187,10 +202,12 @@ void main() {
       service = _MockMatrixService();
       loggingService = _MockLoggingService();
       client = _MockClient();
-      runnerController =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
-      requestController =
-          StreamController<KeyVerification>.broadcast(sync: true);
+      runnerController = StreamController<KeyVerificationRunner>.broadcast(
+        sync: true,
+      );
+      requestController = StreamController<KeyVerification>.broadcast(
+        sync: true,
+      );
 
       when(
         () => loggingService.captureException(
@@ -202,14 +219,18 @@ void main() {
       ).thenReturn(null);
 
       when(() => service.client).thenReturn(client);
-      requestCachedController =
-          StreamController<KeyVerification>.broadcast(sync: true);
-      when(() => client.onKeyVerificationRequest.stream)
-          .thenAnswer((_) => requestCachedController.stream);
-      when(() => service.incomingKeyVerificationRunnerController)
-          .thenReturn(runnerController);
-      when(() => service.incomingKeyVerificationController)
-          .thenReturn(requestController);
+      requestCachedController = StreamController<KeyVerification>.broadcast(
+        sync: true,
+      );
+      when(
+        () => client.onKeyVerificationRequest.stream,
+      ).thenAnswer((_) => requestCachedController.stream);
+      when(
+        () => service.incomingKeyVerificationRunnerController,
+      ).thenReturn(runnerController);
+      when(
+        () => service.incomingKeyVerificationController,
+      ).thenReturn(requestController);
     });
 
     tearDown(() async {
@@ -280,8 +301,9 @@ void main() {
 
   group('KeyVerificationRunner - SDK onUpdate forwarding', () {
     test('forwards SDK onUpdate to the previous handler', () {
-      final controller =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
+      final controller = StreamController<KeyVerificationRunner>.broadcast(
+        sync: true,
+      );
       addTearDown(controller.close);
 
       fakeAsync((async) {
@@ -320,8 +342,9 @@ void main() {
     });
 
     test('cancel step stops the timer', () {
-      final controller =
-          StreamController<KeyVerificationRunner>.broadcast(sync: true);
+      final controller = StreamController<KeyVerificationRunner>.broadcast(
+        sync: true,
+      );
       addTearDown(controller.close);
 
       fakeAsync((async) {
@@ -369,8 +392,9 @@ void main() {
       final runnerController =
           StreamController<KeyVerificationRunner>.broadcast(sync: true);
 
-      when(() => service.keyVerificationController)
-          .thenReturn(runnerController);
+      when(
+        () => service.keyVerificationController,
+      ).thenReturn(runnerController);
       KeyVerificationRunner? latestRunner;
       when(() => service.keyVerificationRunner = any()).thenAnswer(
         (invocation) {
@@ -379,8 +403,9 @@ void main() {
           return null;
         },
       );
-      when(() => deviceKeys.startVerification())
-          .thenAnswer((_) async => verification);
+      when(
+        () => deviceKeys.startVerification(),
+      ).thenAnswer((_) async => verification);
       when(() => verification.lastStep).thenReturn(null);
       when(() => verification.sasEmojis).thenReturn([]);
       when(() => verification.isDone).thenReturn(false);

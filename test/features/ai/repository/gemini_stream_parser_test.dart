@@ -20,7 +20,8 @@ void main() {
       final parser = GeminiStreamParser();
       final a = jsonEncode({'x': 'y'});
       final b = jsonEncode({'ok': true});
-      final mixed = 'data: $a\n' // inline payload
+      final mixed =
+          'data: $a\n' // inline payload
           'data: ignore-this\n' // non-JSON payload should be dropped
           'data:   $b\n';
       final out = parser.addChunk(mixed);

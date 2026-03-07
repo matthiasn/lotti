@@ -158,14 +158,14 @@ class PromptFormState with FormzMixin {
 
   @override
   List<FormzInput<dynamic, dynamic>> get inputs => [
-        name,
-        userMessage,
-        systemMessage,
-        comment,
-        description,
-        category,
-        aiResponseType,
-      ];
+    name,
+    userMessage,
+    systemMessage,
+    comment,
+    description,
+    category,
+    aiResponseType,
+  ];
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {

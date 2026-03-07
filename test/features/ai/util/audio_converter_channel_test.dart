@@ -56,12 +56,12 @@ void main() {
     test('returns true on successful conversion', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        expect(call.method, 'convertWavToM4a');
-        final args = call.arguments as Map<dynamic, dynamic>;
-        expect(args['inputPath'], '/tmp/input.wav');
-        expect(args['outputPath'], '/tmp/output.m4a');
-        return true;
-      });
+            expect(call.method, 'convertWavToM4a');
+            final args = call.arguments as Map<dynamic, dynamic>;
+            expect(args['inputPath'], '/tmp/input.wav');
+            expect(args['outputPath'], '/tmp/output.m4a');
+            return true;
+          });
 
       final result = await AudioConverterChannel.convertWavToM4a(
         inputPath: '/tmp/input.wav',
@@ -73,11 +73,11 @@ void main() {
     test('returns false on PlatformException and logs error', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        throw PlatformException(
-          code: 'CONVERSION_ERROR',
-          message: 'Failed',
-        );
-      });
+            throw PlatformException(
+              code: 'CONVERSION_ERROR',
+              message: 'Failed',
+            );
+          });
 
       final result = await AudioConverterChannel.convertWavToM4a(
         inputPath: '/tmp/input.wav',
@@ -90,8 +90,8 @@ void main() {
     test('returns false on MissingPluginException', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        throw MissingPluginException();
-      });
+            throw MissingPluginException();
+          });
 
       final result = await AudioConverterChannel.convertWavToM4a(
         inputPath: '/tmp/input.wav',
@@ -103,8 +103,8 @@ void main() {
     test('returns false when native returns null', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        return null;
-      });
+            return null;
+          });
 
       final result = await AudioConverterChannel.convertWavToM4a(
         inputPath: '/tmp/input.wav',

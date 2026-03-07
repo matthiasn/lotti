@@ -24,20 +24,20 @@ class _MockWhatsNewController extends WhatsNewController {
 class _MockWhatsNewControllerWithUnseen extends WhatsNewController {
   @override
   Future<WhatsNewState> build() async => WhatsNewState(
-        // hasUnseenRelease is computed from unseenContent.isNotEmpty
-        unseenContent: [
-          WhatsNewContent(
-            release: WhatsNewRelease(
-              version: '1.0.0',
-              date: DateTime(2024),
-              title: 'Test Release',
-              folder: 'v1.0.0',
-            ),
-            headerMarkdown: '# Test',
-            sections: ['Feature 1'],
-          ),
-        ],
-      );
+    // hasUnseenRelease is computed from unseenContent.isNotEmpty
+    unseenContent: [
+      WhatsNewContent(
+        release: WhatsNewRelease(
+          version: '1.0.0',
+          date: DateTime(2024),
+          title: 'Test Release',
+          folder: 'v1.0.0',
+        ),
+        headerMarkdown: '# Test',
+        sections: ['Feature 1'],
+      ),
+    ],
+  );
 }
 
 void main() {
@@ -78,9 +78,9 @@ void main() {
 
   group('AiSetupPromptService', () {
     test('returns true when no AI provider exists and not dismissed', () async {
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -98,9 +98,9 @@ void main() {
         inferenceProviderType: InferenceProviderType.gemini,
       );
 
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [geminiProvider]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [geminiProvider]);
 
       final container = createContainer();
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -118,9 +118,9 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [openAiProvider]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [openAiProvider]);
 
       final container = createContainer();
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -139,9 +139,9 @@ void main() {
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => [ollamaProvider]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
 
       final container = createContainer();
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -150,9 +150,9 @@ void main() {
     });
 
     test("returns false when What's New has unseen content", () async {
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer(hasUnseenWhatsNew: true);
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -163,9 +163,9 @@ void main() {
     test('returns false when prompt was previously dismissed', () async {
       await settingsDb.saveSettingsItem('ai_setup_prompt_dismissed', 'true');
 
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
       final result = await container.read(aiSetupPromptServiceProvider.future);
@@ -174,15 +174,16 @@ void main() {
     });
 
     test('dismissPrompt persists dismissal and updates state', () async {
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
 
       // Initially should show prompt
-      final initialResult =
-          await container.read(aiSetupPromptServiceProvider.future);
+      final initialResult = await container.read(
+        aiSetupPromptServiceProvider.future,
+      );
       expect(initialResult, isTrue);
 
       // Dismiss the prompt
@@ -191,13 +192,15 @@ void main() {
           .dismissPrompt();
 
       // Now state should be false
-      final afterDismiss =
-          await container.read(aiSetupPromptServiceProvider.future);
+      final afterDismiss = await container.read(
+        aiSetupPromptServiceProvider.future,
+      );
       expect(afterDismiss, isFalse);
 
       // Check that setting was persisted
-      final storedValue =
-          await settingsDb.itemByKey('ai_setup_prompt_dismissed');
+      final storedValue = await settingsDb.itemByKey(
+        'ai_setup_prompt_dismissed',
+      );
       expect(storedValue, 'true');
     });
 
@@ -205,15 +208,16 @@ void main() {
       // Start with dismissed state
       await settingsDb.saveSettingsItem('ai_setup_prompt_dismissed', 'true');
 
-      when(() =>
-              mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
 
       final container = createContainer();
 
       // Initially should not show (dismissed)
-      final initialResult =
-          await container.read(aiSetupPromptServiceProvider.future);
+      final initialResult = await container.read(
+        aiSetupPromptServiceProvider.future,
+      );
       expect(initialResult, isFalse);
 
       // Reset the dismissal
@@ -222,13 +226,15 @@ void main() {
           .resetDismissal();
 
       // After reset, should show again (need to re-read as it invalidates self)
-      final afterReset =
-          await container.read(aiSetupPromptServiceProvider.future);
+      final afterReset = await container.read(
+        aiSetupPromptServiceProvider.future,
+      );
       expect(afterReset, isTrue);
 
       // Check that setting was removed
-      final storedValue =
-          await settingsDb.itemByKey('ai_setup_prompt_dismissed');
+      final storedValue = await settingsDb.itemByKey(
+        'ai_setup_prompt_dismissed',
+      );
       expect(storedValue, isNull);
     });
   });

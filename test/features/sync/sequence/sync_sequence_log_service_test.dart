@@ -54,15 +54,18 @@ void main() {
     ).thenReturn(null);
 
     // Stub updateHostActivity for all tests
-    when(() => mockDb.updateHostActivity(any(), any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => mockDb.updateHostActivity(any(), any()),
+    ).thenAnswer((_) async => 1);
 
     // Stub getHostLastSeen for all tests - by default alice and bob are "online"
     // (have been seen before). Tests for offline hosts will override this.
-    when(() => mockDb.getHostLastSeen(aliceHostId))
-        .thenAnswer((_) async => DateTime(2025, 1, 1));
-    when(() => mockDb.getHostLastSeen(bobHostId))
-        .thenAnswer((_) async => DateTime(2025, 1, 1));
+    when(
+      () => mockDb.getHostLastSeen(aliceHostId),
+    ).thenAnswer((_) async => DateTime(2025, 1, 1));
+    when(
+      () => mockDb.getHostLastSeen(bobHostId),
+    ).thenAnswer((_) async => DateTime(2025, 1, 1));
 
     // Stub getPendingEntriesByPayloadId for resolvePendingHints (default: no pending)
     when(
@@ -85,10 +88,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 1});
       const entryId = 'entry-1';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -106,14 +111,18 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'entry-5';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 4))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -135,10 +144,12 @@ void main() {
       const vectorClock = VectorClock({myHostId: 10, aliceHostId: 5});
       const entryId = 'entry-x';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -158,16 +169,21 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 8});
       const entryId = 'entry-alice';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 7))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 8))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 7),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 8),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -194,14 +210,18 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
       const entryId = 'entry-alice';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 3),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -217,12 +237,18 @@ void main() {
       // Should have 2 records: both alice and bob with entryId
       expect(captured.length, 2);
 
-      final aliceRecord = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).hostId.value == aliceHostId,
-      ) as SyncSequenceLogCompanion;
-      final bobRecord = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
-      ) as SyncSequenceLogCompanion;
+      final aliceRecord =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == aliceHostId,
+              )
+              as SyncSequenceLogCompanion;
+      final bobRecord =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+              )
+              as SyncSequenceLogCompanion;
 
       // Both hosts should have the entryId set
       expect(aliceRecord.entryId.value, entryId);
@@ -234,17 +260,21 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'entry-5';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
       // Counter 3 already exists as missing
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => _createLogItem(aliceHostId, 3));
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => _createLogItem(aliceHostId, 3));
       // Counter 4 doesn't exist
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 4))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+      ).thenAnswer((_) async => null);
       // Counter 5 doesn't exist
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -265,11 +295,13 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 3});
       const entryId = 'entry-3';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
       // Entry 3 exists and is missing
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => _createLogItem(aliceHostId, 3));
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => _createLogItem(aliceHostId, 3));
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -296,8 +328,9 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 3});
       const entryId = 'entry-3';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
       // Entry 3 exists and is requested
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
         (_) async => _createLogItem(
@@ -339,8 +372,9 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 3});
       const entryId = 'entry-3';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
       // Entry 3 exists and is already backfilled
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
         (_) async => _createLogItem(
@@ -371,10 +405,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 1});
       const entryId = 'entry-1';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -394,12 +430,15 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
       const entryId = 'entry-modified';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       // Bob:3 was previously marked as missing
       when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
         (_) async => _createLogItem(
@@ -421,9 +460,12 @@ void main() {
       ).captured;
 
       // Find bob's record
-      final bobRecord = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
-      ) as SyncSequenceLogCompanion;
+      final bobRecord =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+              )
+              as SyncSequenceLogCompanion;
 
       // Bob's missing entry should now be received with the entryId
       expect(bobRecord.status.value, SyncSequenceStatus.received.index);
@@ -437,12 +479,15 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
       const entryId = 'entry-modified';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       // Bob:3 was previously marked as requested
       when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
         (_) async => _createLogItem(
@@ -464,9 +509,12 @@ void main() {
       ).captured;
 
       // Find bob's record
-      final bobRecord = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
-      ) as SyncSequenceLogCompanion;
+      final bobRecord =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+              )
+              as SyncSequenceLogCompanion;
 
       // Bob's requested entry should now be backfilled with the entryId
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
@@ -488,12 +536,15 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
       const entryId = 'entry-modified';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       // Bob:3 was already backfilled
       when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3)).thenAnswer(
         (_) async => _createLogItem(
@@ -515,9 +566,12 @@ void main() {
       ).captured;
 
       // Find bob's record
-      final bobRecord = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
-      ) as SyncSequenceLogCompanion;
+      final bobRecord =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId,
+              )
+              as SyncSequenceLogCompanion;
 
       // Bob's entry should stay backfilled (not downgraded to received)
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
@@ -529,11 +583,13 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 500});
       const entryId = 'entry-500';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 10);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 10);
       // Stub all potential getEntryByHostAndCounter calls to return null
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -563,10 +619,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'entry-5';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -596,20 +654,26 @@ void main() {
       const entryId = 'entry-alice';
 
       // Alice is online (has been seen before)
-      when(() => mockDb.getHostLastSeen(aliceHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(
+        () => mockDb.getHostLastSeen(aliceHostId),
+      ).thenAnswer((_) async => DateTime(2025, 1, 1));
       // Charlie has NEVER been online (never sent us a message)
-      when(() => mockDb.getHostLastSeen(charlieHostId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getHostLastSeen(charlieHostId),
+      ).thenAnswer((_) async => null);
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4); // No gap for alice
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 4); // No gap for alice
       when(() => mockDb.getLastCounterForHost(charlieHostId)).thenAnswer(
-          (_) async => 5); // Would be a gap (5 -> 10) if we detected it
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(charlieHostId, 10))
-          .thenAnswer((_) async => null);
+        (_) async => 5,
+      ); // Would be a gap (5 -> 10) if we detected it
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(charlieHostId, 10),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -637,39 +701,46 @@ void main() {
       verifyNever(() => mockDb.getEntryByHostAndCounter(charlieHostId, 9));
     });
 
-    test('detects gaps for originating host even if not previously online',
-        () async {
-      // Edge case: The originating host might not have been in our hostActivity
-      // table yet (first message from them). But since they just sent us a
-      // message, we update their activity BEFORE gap detection, so they're
-      // "online" now.
-      const newHostId = 'new-host-uuid';
-      const vectorClock = VectorClock({newHostId: 10});
-      const entryId = 'entry-new';
+    test(
+      'detects gaps for originating host even if not previously online',
+      () async {
+        // Edge case: The originating host might not have been in our hostActivity
+        // table yet (first message from them). But since they just sent us a
+        // message, we update their activity BEFORE gap detection, so they're
+        // "online" now.
+        const newHostId = 'new-host-uuid';
+        const vectorClock = VectorClock({newHostId: 10});
+        const entryId = 'entry-new';
 
-      // New host - first time we've seen them, but they ARE the originator
-      // The implementation updates host activity BEFORE gap detection
-      when(() => mockDb.getHostLastSeen(newHostId))
-          .thenAnswer((_) async => null);
+        // New host - first time we've seen them, but they ARE the originator
+        // The implementation updates host activity BEFORE gap detection
+        when(
+          () => mockDb.getHostLastSeen(newHostId),
+        ).thenAnswer((_) async => null);
 
-      when(() => mockDb.getLastCounterForHost(newHostId))
-          .thenAnswer((_) async => 5); // Gap: 6, 7, 8, 9
-      when(() => mockDb.getEntryByHostAndCounter(newHostId, any()))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(newHostId),
+        ).thenAnswer((_) async => 5); // Gap: 6, 7, 8, 9
+        when(
+          () => mockDb.getEntryByHostAndCounter(newHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      final gaps = await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: newHostId,
-      );
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: newHostId,
+        );
 
-      // SHOULD detect gaps for the originating host even though they weren't
-      // previously in our hostActivity (they're online NOW - they just sent us
-      // a message)
-      expect(gaps.length, 4);
-      expect(gaps.map((g) => g.counter).toList(), [6, 7, 8, 9]);
-    });
+        // SHOULD detect gaps for the originating host even though they weren't
+        // previously in our hostActivity (they're online NOW - they just sent us
+        // a message)
+        expect(gaps.length, 4);
+        expect(gaps.map((g) => g.counter).toList(), [6, 7, 8, 9]);
+      },
+    );
 
     test('detects gaps for known online hosts in multi-host VC', () async {
       // Scenario: Both alice and bob are known online hosts. We should detect
@@ -678,17 +749,22 @@ void main() {
       const entryId = 'entry-alice';
 
       // Both hosts are online
-      when(() => mockDb.getHostLastSeen(aliceHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
-      when(() => mockDb.getHostLastSeen(bobHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(
+        () => mockDb.getHostLastSeen(aliceHostId),
+      ).thenAnswer((_) async => DateTime(2025, 1, 1));
+      when(
+        () => mockDb.getHostLastSeen(bobHostId),
+      ).thenAnswer((_) async => DateTime(2025, 1, 1));
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 7); // Gap: 8, 9
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 5); // Gap: 6, 7
-      when(() => mockDb.getEntryByHostAndCounter(any(), any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 7); // Gap: 8, 9
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 5); // Gap: 6, 7
+      when(
+        () => mockDb.getEntryByHostAndCounter(any(), any()),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntry(
@@ -705,98 +781,122 @@ void main() {
       expect(bobGaps.length, 2);
     });
 
-    test('mixed online/offline hosts in VC - only detect gaps for online',
-        () async {
-      // Scenario: VC contains alice (online), bob (online), and charlie
-      // (offline). Should only detect gaps for alice and bob.
-      const charlieHostId = 'charlie-host-uuid';
-      const vectorClock =
-          VectorClock({aliceHostId: 10, bobHostId: 8, charlieHostId: 15});
-      const entryId = 'entry-alice';
+    test(
+      'mixed online/offline hosts in VC - only detect gaps for online',
+      () async {
+        // Scenario: VC contains alice (online), bob (online), and charlie
+        // (offline). Should only detect gaps for alice and bob.
+        const charlieHostId = 'charlie-host-uuid';
+        const vectorClock = VectorClock({
+          aliceHostId: 10,
+          bobHostId: 8,
+          charlieHostId: 15,
+        });
+        const entryId = 'entry-alice';
 
-      // Alice and bob are online, charlie is not
-      when(() => mockDb.getHostLastSeen(aliceHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
-      when(() => mockDb.getHostLastSeen(bobHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
-      when(() => mockDb.getHostLastSeen(charlieHostId))
-          .thenAnswer((_) async => null);
+        // Alice and bob are online, charlie is not
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getHostLastSeen(bobHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getHostLastSeen(charlieHostId),
+        ).thenAnswer((_) async => null);
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 8); // Gap: 9
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 6); // Gap: 7
-      when(() => mockDb.getLastCounterForHost(charlieHostId))
-          .thenAnswer((_) async => 10); // Would be gap: 11-14 if online
-      when(() => mockDb.getEntryByHostAndCounter(any(), any()))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 8); // Gap: 9
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6); // Gap: 7
+        when(
+          () => mockDb.getLastCounterForHost(charlieHostId),
+        ).thenAnswer((_) async => 10); // Would be gap: 11-14 if online
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      final gaps = await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-      );
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
 
-      // Should only detect gaps for alice and bob, NOT charlie
-      expect(gaps.length, 2);
-      final hostIds = gaps.map((g) => g.hostId).toSet();
-      expect(hostIds, containsAll([aliceHostId, bobHostId]));
-      expect(hostIds, isNot(contains(charlieHostId)));
+        // Should only detect gaps for alice and bob, NOT charlie
+        expect(gaps.length, 2);
+        final hostIds = gaps.map((g) => g.hostId).toSet();
+        expect(hostIds, containsAll([aliceHostId, bobHostId]));
+        expect(hostIds, isNot(contains(charlieHostId)));
 
-      // Should log skipGapDetection for charlie
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('skipGapDetection')),
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'skipGap',
-        ),
-      ).called(1);
-    });
+        // Should log skipGapDetection for charlie
+        verify(
+          () => mockLogging.captureEvent(
+            any<String>(that: contains('skipGapDetection')),
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'skipGap',
+          ),
+        ).called(1);
+      },
+    );
 
-    test('still records sequence entries for offline hosts (no gap detection)',
-        () async {
-      // Even though we skip gap detection for offline hosts, we should still
-      // record the sequence entry for their counter (to enable backfill
-      // responses later).
-      const charlieHostId = 'charlie-host-uuid';
-      const vectorClock = VectorClock({aliceHostId: 5, charlieHostId: 10});
-      const entryId = 'entry-alice';
+    test(
+      'still records sequence entries for offline hosts (no gap detection)',
+      () async {
+        // Even though we skip gap detection for offline hosts, we should still
+        // record the sequence entry for their counter (to enable backfill
+        // responses later).
+        const charlieHostId = 'charlie-host-uuid';
+        const vectorClock = VectorClock({aliceHostId: 5, charlieHostId: 10});
+        const entryId = 'entry-alice';
 
-      when(() => mockDb.getHostLastSeen(aliceHostId))
-          .thenAnswer((_) async => DateTime(2025, 1, 1));
-      when(() => mockDb.getHostLastSeen(charlieHostId))
-          .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getHostLastSeen(aliceHostId),
+        ).thenAnswer((_) async => DateTime(2025, 1, 1));
+        when(
+          () => mockDb.getHostLastSeen(charlieHostId),
+        ).thenAnswer((_) async => null);
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(charlieHostId))
-          .thenAnswer((_) async => 5); // Would be gap if online
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(charlieHostId, 10))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 4);
+        when(
+          () => mockDb.getLastCounterForHost(charlieHostId),
+        ).thenAnswer((_) async => 5); // Would be gap if online
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(charlieHostId, 10),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-      );
+        await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
 
-      final captured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured;
+        final captured = verify(
+          () => mockDb.recordSequenceEntry(captureAny()),
+        ).captured;
 
-      // Should have 2 records: alice:5 and charlie:10 (but no missing entries
-      // for charlie:6-9)
-      expect(captured.length, 2);
+        // Should have 2 records: alice:5 and charlie:10 (but no missing entries
+        // for charlie:6-9)
+        expect(captured.length, 2);
 
-      final hostIds = captured
-          .map((c) => (c as SyncSequenceLogCompanion).hostId.value)
-          .toSet();
-      expect(hostIds, containsAll([aliceHostId, charlieHostId]));
-    });
+        final hostIds = captured
+            .map((c) => (c as SyncSequenceLogCompanion).hostId.value)
+            .toSet();
+        expect(hostIds, containsAll([aliceHostId, charlieHostId]));
+      },
+    );
   });
 
   group('recordSentEntry', () {
@@ -881,45 +981,50 @@ void main() {
       ).called(1);
     });
 
-    test('stores entryId hint on missing entry but does not change status',
-        () async {
-      // Non-deleted responses now just store the hint (entryId) without
-      // changing status. The actual backfill confirmation happens in
-      // verifyAndMarkBackfilled after the entry is verified to exist locally.
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          3,
-          status: SyncSequenceStatus.missing,
-        ),
-      );
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+    test(
+      'stores entryId hint on missing entry but does not change status',
+      () async {
+        // Non-deleted responses now just store the hint (entryId) without
+        // changing status. The actual backfill confirmation happens in
+        // verifyAndMarkBackfilled after the entry is verified to exist locally.
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.missing,
+          ),
+        );
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      await service.handleBackfillResponse(
-        hostId: aliceHostId,
-        counter: 3,
-        deleted: false,
-        entryId: 'backfilled-entry',
-      );
+        await service.handleBackfillResponse(
+          hostId: aliceHostId,
+          counter: 3,
+          deleted: false,
+          entryId: 'backfilled-entry',
+        );
 
-      // Should store the entryId hint but keep status as missing
-      final captured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured;
-      expect(captured.length, 1);
-      final companion = captured[0] as SyncSequenceLogCompanion;
-      expect(companion.hostId.value, aliceHostId);
-      expect(companion.counter.value, 3);
-      expect(companion.entryId.value, 'backfilled-entry');
-      // Status stays as missing - will be updated when entry is verified
-      expect(companion.status.value, SyncSequenceStatus.missing.index);
-    });
+        // Should store the entryId hint but keep status as missing
+        final captured = verify(
+          () => mockDb.recordSequenceEntry(captureAny()),
+        ).captured;
+        expect(captured.length, 1);
+        final companion = captured[0] as SyncSequenceLogCompanion;
+        expect(companion.hostId.value, aliceHostId);
+        expect(companion.counter.value, 3);
+        expect(companion.entryId.value, 'backfilled-entry');
+        // Status stays as missing - will be updated when entry is verified
+        expect(companion.status.value, SyncSequenceStatus.missing.index);
+      },
+    );
 
     test('inserts new entry with hint as requested when not found', () async {
       // If the entry doesn't exist in our log, insert it with the hint
       // but as "requested" status until we verify we have the entry locally
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.handleBackfillResponse(
@@ -1007,8 +1112,9 @@ void main() {
         (hostId: aliceHostId, counter: 2),
         (hostId: bobHostId, counter: 1),
       ];
-      when(() => mockDb.batchIncrementRequestCounts(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.batchIncrementRequestCounts(any()),
+      ).thenAnswer((_) async {});
 
       await service.markAsRequested(entries);
 
@@ -1016,8 +1122,9 @@ void main() {
     });
 
     test('handles empty list', () async {
-      when(() => mockDb.batchIncrementRequestCounts(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.batchIncrementRequestCounts(any()),
+      ).thenAnswer((_) async {});
 
       await service.markAsRequested([]);
 
@@ -1066,8 +1173,9 @@ void main() {
   group('getEntryByHostAndCounter', () {
     test('delegates to database and returns result', () async {
       final item = _createLogItem(aliceHostId, 5);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => item);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => item);
 
       final result = await service.getEntryByHostAndCounter(aliceHostId, 5);
 
@@ -1076,8 +1184,9 @@ void main() {
     });
 
     test('returns null when entry does not exist', () async {
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 99))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 99),
+      ).thenAnswer((_) async => null);
 
       final result = await service.getEntryByHostAndCounter(aliceHostId, 99);
 
@@ -1087,10 +1196,12 @@ void main() {
 
   group('populateFromJournal', () {
     test('populates sequence log for ALL hosts in vector clock', () async {
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final entries = [
         // Entry with 2 hosts in VC = 2 sequence log entries
@@ -1110,12 +1221,15 @@ void main() {
     });
 
     test('skips entries that already exist in log', () async {
-      when(() => mockDb.getCountersForHost(myHostId))
-          .thenAnswer((_) async => {10}); // Counter 10 already exists
-      when(() => mockDb.getCountersForHost(aliceHostId))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(myHostId),
+      ).thenAnswer((_) async => {10}); // Counter 10 already exists
+      when(
+        () => mockDb.getCountersForHost(aliceHostId),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final entries = [
         (id: 'entry-1', vectorClock: {myHostId: 10, aliceHostId: 5}),
@@ -1132,8 +1246,9 @@ void main() {
     });
 
     test('skips entries with null or empty vectorClock', () async {
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
 
       final entries = [
         (id: 'entry-1', vectorClock: <String, int>{}), // Empty
@@ -1151,10 +1266,12 @@ void main() {
 
     test('works even when host is not set', () async {
       // populateFromJournal no longer requires myHost
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final entries = [
         (id: 'entry-1', vectorClock: {aliceHostId: 5}),
@@ -1169,10 +1286,12 @@ void main() {
     });
 
     test('reports progress after each batch', () async {
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final batch1 = [
         (id: 'entry-1', vectorClock: {myHostId: 10}),
@@ -1369,8 +1488,9 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'entry-to-verify';
 
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
 
       final result = await service.verifyAndMarkBackfilled(
         hostId: aliceHostId,
@@ -1640,10 +1760,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 1});
       const linkId = 'link-1';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntryLink(
@@ -1672,14 +1794,18 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 5});
       const linkId = 'link-5';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 4))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       final gaps = await service.recordReceivedEntryLink(
@@ -1698,106 +1824,117 @@ void main() {
   });
 
   group('EntryLink resolves ghost missing rows', () {
-    test('receiving entry link resolves previously missing journal counter',
-        () async {
-      // Scenario: A journal entry created a gap at counter 3, but counter 3
-      // was actually an entry link operation. When the link arrives, it should
-      // resolve the "ghost missing" row.
+    test(
+      'receiving entry link resolves previously missing journal counter',
+      () async {
+        // Scenario: A journal entry created a gap at counter 3, but counter 3
+        // was actually an entry link operation. When the link arrives, it should
+        // resolve the "ghost missing" row.
 
-      const vectorClock = VectorClock({aliceHostId: 3});
-      const linkId = 'link-3';
+        const vectorClock = VectorClock({aliceHostId: 3});
+        const linkId = 'link-3';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 2);
-      // Counter 3 already exists as missing (created by journal gap detection)
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          3,
-          status: SyncSequenceStatus.missing,
-        ),
-      );
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 2);
+        // Counter 3 already exists as missing (created by journal gap detection)
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            3,
+            status: SyncSequenceStatus.missing,
+          ),
+        );
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      final gaps = await service.recordReceivedEntryLink(
-        linkId: linkId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-      );
+        final gaps = await service.recordReceivedEntryLink(
+          linkId: linkId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
 
-      expect(gaps, isEmpty);
+        expect(gaps, isEmpty);
 
-      // The missing row should be updated to received with the link ID
-      final captured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured;
+        // The missing row should be updated to received with the link ID
+        final captured = verify(
+          () => mockDb.recordSequenceEntry(captureAny()),
+        ).captured;
 
-      expect(captured.length, 1);
-      final record = captured[0] as SyncSequenceLogCompanion;
-      expect(record.entryId.value, linkId);
-      expect(record.status.value, SyncSequenceStatus.received.index);
-      expect(
-        record.payloadType.value,
-        SyncSequencePayloadType.entryLink.index,
-      );
-    });
+        expect(captured.length, 1);
+        final record = captured[0] as SyncSequenceLogCompanion;
+        expect(record.entryId.value, linkId);
+        expect(record.status.value, SyncSequenceStatus.received.index);
+        expect(
+          record.payloadType.value,
+          SyncSequencePayloadType.entryLink.index,
+        );
+      },
+    );
 
-    test('receiving journal entry resolves missing row created by link gap',
-        () async {
-      // Scenario: An entry link operation created a gap at counter 5, but
-      // counter 5 was actually a journal entry. When the journal entry arrives,
-      // it should resolve the "ghost missing" row.
+    test(
+      'receiving journal entry resolves missing row created by link gap',
+      () async {
+        // Scenario: An entry link operation created a gap at counter 5, but
+        // counter 5 was actually a journal entry. When the journal entry arrives,
+        // it should resolve the "ghost missing" row.
 
-      const vectorClock = VectorClock({aliceHostId: 5});
-      const entryId = 'entry-5';
+        const vectorClock = VectorClock({aliceHostId: 5});
+        const entryId = 'entry-5';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      // Counter 5 already exists as missing (created by link gap detection)
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
-        (_) async => _createLogItem(
-          aliceHostId,
-          5,
-          status: SyncSequenceStatus.missing,
-        ),
-      );
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 4);
+        // Counter 5 already exists as missing (created by link gap detection)
+        when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            5,
+            status: SyncSequenceStatus.missing,
+          ),
+        );
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      final gaps = await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-      );
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
 
-      expect(gaps, isEmpty);
+        expect(gaps, isEmpty);
 
-      // The missing row should be updated to received with journal entry ID
-      final captured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured;
+        // The missing row should be updated to received with journal entry ID
+        final captured = verify(
+          () => mockDb.recordSequenceEntry(captureAny()),
+        ).captured;
 
-      expect(captured.length, 1);
-      final record = captured[0] as SyncSequenceLogCompanion;
-      expect(record.entryId.value, entryId);
-      expect(record.status.value, SyncSequenceStatus.received.index);
-      expect(
-        record.payloadType.value,
-        SyncSequencePayloadType.journalEntity.index,
-      );
-    });
+        expect(captured.length, 1);
+        final record = captured[0] as SyncSequenceLogCompanion;
+        expect(record.entryId.value, entryId);
+        expect(record.status.value, SyncSequenceStatus.received.index);
+        expect(
+          record.payloadType.value,
+          SyncSequencePayloadType.journalEntity.index,
+        );
+      },
+    );
   });
 
   group('Interleaved link/journal operations', () {
-    test('interleaved operations do not create permanent missing gaps',
-        () async {
+    test('interleaved operations do not create permanent missing gaps', () async {
       // Scenario: Operations happen in order journal:1, link:2, journal:3
       // We receive them in order 1, 3, then 2 - no permanent gaps should remain
 
       // Step 1: Receive journal entry at counter 1
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 1))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       var gaps = await service.recordReceivedEntry(
@@ -1808,12 +1945,15 @@ void main() {
       expect(gaps, isEmpty);
 
       // Step 2: Receive journal entry at counter 3 (creates gap at 2)
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 1);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 2))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 2),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer((_) async => null);
 
       gaps = await service.recordReceivedEntry(
         entryId: 'journal-3',
@@ -1824,8 +1964,9 @@ void main() {
       expect(gaps[0], (hostId: aliceHostId, counter: 2));
 
       // Step 3: Receive entry link at counter 2 (resolves the gap)
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 3);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 3);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 2)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -1842,9 +1983,11 @@ void main() {
       expect(gaps, isEmpty);
 
       // Verify the link was recorded with correct type
-      final lastCaptured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured.last as SyncSequenceLogCompanion;
+      final lastCaptured =
+          verify(
+                () => mockDb.recordSequenceEntry(captureAny()),
+              ).captured.last
+              as SyncSequenceLogCompanion;
       expect(lastCaptured.entryId.value, 'link-2');
       expect(
         lastCaptured.payloadType.value,
@@ -1853,46 +1996,54 @@ void main() {
       expect(lastCaptured.status.value, SyncSequenceStatus.received.index);
     });
 
-    test('multi-host VC with mixed payload types tracks all counters',
-        () async {
-      // Scenario: Entry with VC {alice:5, bob:3} where alice's counter was
-      // from a journal edit and bob's was from a link creation
-      const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
-      const entryId = 'journal-entry';
+    test(
+      'multi-host VC with mixed payload types tracks all counters',
+      () async {
+        // Scenario: Entry with VC {alice:5, bob:3} where alice's counter was
+        // from a journal edit and bob's was from a link creation
+        const vectorClock = VectorClock({aliceHostId: 5, bobHostId: 3});
+        const entryId = 'journal-entry';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 4);
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 2);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 3))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 4);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 2);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(bobHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
 
-      final gaps = await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-      );
-
-      expect(gaps, isEmpty);
-
-      // Both hosts should be recorded with the same entryId
-      final captured = verify(
-        () => mockDb.recordSequenceEntry(captureAny()),
-      ).captured;
-      expect(captured.length, 2);
-
-      for (final record in captured.cast<SyncSequenceLogCompanion>()) {
-        expect(record.entryId.value, entryId);
-        // Default payload type for recordReceivedEntry is journalEntity
-        expect(
-          record.payloadType.value,
-          SyncSequencePayloadType.journalEntity.index,
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
         );
-      }
-    });
+
+        expect(gaps, isEmpty);
+
+        // Both hosts should be recorded with the same entryId
+        final captured = verify(
+          () => mockDb.recordSequenceEntry(captureAny()),
+        ).captured;
+        expect(captured.length, 2);
+
+        for (final record in captured.cast<SyncSequenceLogCompanion>()) {
+          expect(record.entryId.value, entryId);
+          // Default payload type for recordReceivedEntry is journalEntity
+          expect(
+            record.payloadType.value,
+            SyncSequencePayloadType.journalEntity.index,
+          );
+        }
+      },
+    );
   });
 
   group('populateFromEntryLinks', () {
@@ -1904,10 +2055,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       var progressCalled = false;
       final populated = await service.populateFromEntryLinks(
@@ -1947,10 +2100,12 @@ void main() {
       ]);
 
       // Counter 1 already exists
-      when(() => mockDb.getCountersForHost(aliceHostId))
-          .thenAnswer((_) async => {1});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(aliceHostId),
+      ).thenAnswer((_) async => {1});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromEntryLinks(
         linkStream: linkStream,
@@ -1974,15 +2129,17 @@ void main() {
         [
           (
             id: 'link-1',
-            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3}
+            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3},
           ),
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromEntryLinks(
         linkStream: linkStream,
@@ -2033,10 +2190,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromEntryLinks(
         linkStream: linkStream,
@@ -2057,10 +2216,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       var progressCalled = false;
       final populated = await service.populateFromAgentEntities(
@@ -2099,10 +2260,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(aliceHostId))
-          .thenAnswer((_) async => {1});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(aliceHostId),
+      ).thenAnswer((_) async => {1});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromAgentEntities(
         entityStream: entityStream,
@@ -2141,10 +2304,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromAgentEntities(
         entityStream: entityStream,
@@ -2164,10 +2329,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       var progressCalled = false;
       final populated = await service.populateFromAgentLinks(
@@ -2203,15 +2370,17 @@ void main() {
         [
           (
             id: 'alink-1',
-            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3}
+            vectorClock: <String, int>{aliceHostId: 5, bobHostId: 3},
           ),
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromAgentLinks(
         linkStream: linkStream,
@@ -2261,10 +2430,12 @@ void main() {
         ],
       ]);
 
-      when(() => mockDb.getCountersForHost(any()))
-          .thenAnswer((_) async => <int>{});
-      when(() => mockDb.batchInsertSequenceEntries(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockDb.getCountersForHost(any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
 
       final populated = await service.populateFromAgentLinks(
         linkStream: linkStream,
@@ -2287,10 +2458,12 @@ void main() {
       ];
 
       // Setup: entry 5 and 6 are missing
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       final missing5 = _createLogItem(
         aliceHostId,
         5,
@@ -2301,10 +2474,12 @@ void main() {
         6,
         status: SyncSequenceStatus.missing,
       );
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => missing5);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 6))
-          .thenAnswer((_) async => missing6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => missing5);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 6),
+      ).thenAnswer((_) async => missing6);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -2322,12 +2497,16 @@ void main() {
       // Should have 3 records: entry 7, and covered counters 5, 6
       expect(captured.length, 3);
 
-      final counter5Record = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
-      ) as SyncSequenceLogCompanion;
-      final counter6Record = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).counter.value == 6,
-      ) as SyncSequenceLogCompanion;
+      final counter5Record =
+          captured.firstWhere(
+                (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+              )
+              as SyncSequenceLogCompanion;
+      final counter6Record =
+          captured.firstWhere(
+                (c) => (c as SyncSequenceLogCompanion).counter.value == 6,
+              )
+              as SyncSequenceLogCompanion;
 
       expect(counter5Record.status.value, SyncSequenceStatus.received.index);
       expect(counter6Record.status.value, SyncSequenceStatus.received.index);
@@ -2346,8 +2525,9 @@ void main() {
 
       final insertedRecords = <SyncSequenceLogCompanion>[];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async {
+      when(() => mockDb.getLastCounterForHost(aliceHostId)).thenAnswer((
+        _,
+      ) async {
         var maxCounter = 2;
         for (final record in insertedRecords) {
           if (record.counter.value > maxCounter) {
@@ -2356,8 +2536,9 @@ void main() {
         }
         return maxCounter;
       });
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
-          .thenAnswer((invocation) async {
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((invocation) async {
         final counter = invocation.positionalArguments[1] as int;
         for (final record in insertedRecords) {
           if (record.counter.value == counter) {
@@ -2370,10 +2551,12 @@ void main() {
         }
         return null;
       });
-      when(() => mockDb.recordSequenceEntry(any()))
-          .thenAnswer((invocation) async {
-        insertedRecords
-            .add(invocation.positionalArguments[0] as SyncSequenceLogCompanion);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((
+        invocation,
+      ) async {
+        insertedRecords.add(
+          invocation.positionalArguments[0] as SyncSequenceLogCompanion,
+        );
         return 1;
       });
 
@@ -2392,8 +2575,9 @@ void main() {
           .toSet();
       expect(missingCounters, containsAll([3, 4]));
 
-      final counter5Records =
-          insertedRecords.where((record) => record.counter.value == 5);
+      final counter5Records = insertedRecords.where(
+        (record) => record.counter.value == 5,
+      );
       expect(counter5Records, hasLength(1));
     });
 
@@ -2406,17 +2590,20 @@ void main() {
         const VectorClock({aliceHostId: 5}),
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       final requested5 = _createLogItem(
         aliceHostId,
         5,
         status: SyncSequenceStatus.requested,
       );
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5))
-          .thenAnswer((_) async => requested5);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+      ).thenAnswer((_) async => requested5);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       await service.recordReceivedEntry(
@@ -2430,9 +2617,11 @@ void main() {
         () => mockDb.recordSequenceEntry(captureAny()),
       ).captured;
 
-      final counter5Record = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
-      ) as SyncSequenceLogCompanion;
+      final counter5Record =
+          captured.firstWhere(
+                (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+              )
+              as SyncSequenceLogCompanion;
 
       expect(counter5Record.status.value, SyncSequenceStatus.received.index);
       expect(counter5Record.createdAt.present, isTrue);
@@ -2448,10 +2637,12 @@ void main() {
         const VectorClock({aliceHostId: 5}),
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -2487,10 +2678,12 @@ void main() {
         const VectorClock({aliceHostId: 5}),
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -2517,8 +2710,7 @@ void main() {
       expect(record.counter.value, 7);
     });
 
-    test('inserts covered counters that do not exist in sequence log',
-        () async {
+    test('inserts covered counters that do not exist in sequence log', () async {
       // Scenario: Entry arrives with coveredVectorClocks containing counters
       // from a DIFFERENT host (bob) that don't exist in our sequence log yet.
       // This tests the case where an entry was created and updated rapidly on
@@ -2538,24 +2730,30 @@ void main() {
       ];
 
       // Setup for alice (the originator)
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6); // No gap for alice
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6); // No gap for alice
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
 
       // Setup for bob (another host in the VC)
       // Set lastSeen to 9 so there's no gap detection when we receive bob:10
       // This ensures bob:8 and bob:9 truly don't exist when covered VCs are processed
-      when(() => mockDb.getLastCounterForHost(bobHostId))
-          .thenAnswer((_) async => 9); // No gap (10-9=1)
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 10))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(bobHostId),
+      ).thenAnswer((_) async => 9); // No gap (10-9=1)
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 10),
+      ).thenAnswer((_) async => null);
       // Bob's counters 8 and 9 do NOT exist yet - this is what we're testing
       // (they were superseded on bob before being sent, so we never saw them)
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 8))
-          .thenAnswer((_) async => null);
-      when(() => mockDb.getEntryByHostAndCounter(bobHostId, 9))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 8),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getEntryByHostAndCounter(bobHostId, 9),
+      ).thenAnswer((_) async => null);
 
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
@@ -2577,23 +2775,29 @@ void main() {
       // - INSERTED covered counter bob:9
       expect(captured.length, 4);
 
-      final bobCounter8Record = captured.firstWhere(
-        (c) =>
-            (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
-            c.counter.value == 8,
-      ) as SyncSequenceLogCompanion;
-      final bobCounter9Record = captured.firstWhere(
-        (c) =>
-            (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
-            c.counter.value == 9,
-      ) as SyncSequenceLogCompanion;
+      final bobCounter8Record =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
+                    c.counter.value == 8,
+              )
+              as SyncSequenceLogCompanion;
+      final bobCounter9Record =
+          captured.firstWhere(
+                (c) =>
+                    (c as SyncSequenceLogCompanion).hostId.value == bobHostId &&
+                    c.counter.value == 9,
+              )
+              as SyncSequenceLogCompanion;
 
       // Covered counters should be INSERTED as received (not updated)
       expect(bobCounter8Record.status.value, SyncSequenceStatus.received.index);
       expect(bobCounter8Record.hostId.value, bobHostId);
       expect(bobCounter8Record.entryId.value, entryId);
-      expect(bobCounter8Record.createdAt.value,
-          isNotNull); // New record has createdAt
+      expect(
+        bobCounter8Record.createdAt.value,
+        isNotNull,
+      ); // New record has createdAt
 
       expect(bobCounter9Record.status.value, SyncSequenceStatus.received.index);
       expect(bobCounter9Record.hostId.value, bobHostId);
@@ -2609,10 +2813,12 @@ void main() {
         const VectorClock({aliceHostId: 5, myHostId: 10}), // Includes our host
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -2637,10 +2843,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 7});
       const entryId = 'entry-7';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       // Should not throw when coveredVectorClocks is null
@@ -2659,10 +2867,12 @@ void main() {
       const vectorClock = VectorClock({aliceHostId: 7});
       const entryId = 'entry-7';
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
       // Should not throw when coveredVectorClocks is empty
@@ -2684,10 +2894,12 @@ void main() {
         const VectorClock({aliceHostId: 5}),
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -2720,10 +2932,12 @@ void main() {
         const VectorClock({aliceHostId: 5}),
       ];
 
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 6);
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 7))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 6);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 7),
+      ).thenAnswer((_) async => null);
       when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 5)).thenAnswer(
         (_) async => _createLogItem(
           aliceHostId,
@@ -2747,9 +2961,11 @@ void main() {
       // Should have 2 records: link 7, and covered counter 5
       expect(captured.length, 2);
 
-      final counter5Record = captured.firstWhere(
-        (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
-      ) as SyncSequenceLogCompanion;
+      final counter5Record =
+          captured.firstWhere(
+                (c) => (c as SyncSequenceLogCompanion).counter.value == 5,
+              )
+              as SyncSequenceLogCompanion;
 
       expect(counter5Record.status.value, SyncSequenceStatus.received.index);
       expect(
@@ -2759,99 +2975,125 @@ void main() {
     });
 
     test(
-        'covered clocks processed BEFORE gap detection prevents false positives',
-        () async {
-      // This test verifies the fix for the race condition where gap detection
-      // would mark covered counters as missing before they were processed.
-      //
-      // Scenario: Entry rapidly updated on sender (counters 10→12→15→20)
-      // Only ONE message sent with counter 20 and coveredVectorClocks=[10, 12, 15]
-      // Without the fix: gap detection sees lastSeen=5, marks 6-19 as missing
-      // With the fix: covered clocks (10, 12, 15) are inserted first,
-      //              then gap detection skips them (existing != null)
-      const vectorClock = VectorClock({aliceHostId: 20});
-      const entryId = 'rapidly-updated-entry';
-      final coveredClocks = [
-        const VectorClock({aliceHostId: 10}),
-        const VectorClock({aliceHostId: 12}),
-        const VectorClock({aliceHostId: 15}),
-      ];
+      'covered clocks processed BEFORE gap detection prevents false positives',
+      () async {
+        // This test verifies the fix for the race condition where gap detection
+        // would mark covered counters as missing before they were processed.
+        //
+        // Scenario: Entry rapidly updated on sender (counters 10→12→15→20)
+        // Only ONE message sent with counter 20 and coveredVectorClocks=[10, 12, 15]
+        // Without the fix: gap detection sees lastSeen=5, marks 6-19 as missing
+        // With the fix: covered clocks (10, 12, 15) are inserted first,
+        //              then gap detection skips them (existing != null)
+        const vectorClock = VectorClock({aliceHostId: 20});
+        const entryId = 'rapidly-updated-entry';
+        final coveredClocks = [
+          const VectorClock({aliceHostId: 10}),
+          const VectorClock({aliceHostId: 12}),
+          const VectorClock({aliceHostId: 15}),
+        ];
 
-      // Setup: lastSeen is 5, so gap detection would normally mark 6-19 as missing
-      when(() => mockDb.getLastCounterForHost(aliceHostId))
-          .thenAnswer((_) async => 5);
+        // Setup: lastSeen is 5, so gap detection would normally mark 6-19 as missing
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 5);
 
-      // Track all recordSequenceEntry calls in order
-      final insertedRecords = <SyncSequenceLogCompanion>[];
+        // Track all recordSequenceEntry calls in order
+        final insertedRecords = <SyncSequenceLogCompanion>[];
 
-      // Mock getEntryByHostAndCounter to check if the counter was already inserted
-      // in THIS test run (simulating the database state)
-      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, any()))
-          .thenAnswer((invocation) async {
-        final counter = invocation.positionalArguments[1] as int;
-        // Check if this counter was already inserted
-        final existingRecord = insertedRecords.where(
-          (r) => r.counter.value == counter,
+        // Mock getEntryByHostAndCounter to check if the counter was already inserted
+        // in THIS test run (simulating the database state)
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((invocation) async {
+          final counter = invocation.positionalArguments[1] as int;
+          // Check if this counter was already inserted
+          final existingRecord = insertedRecords.where(
+            (r) => r.counter.value == counter,
+          );
+          if (existingRecord.isNotEmpty) {
+            return _createLogItem(
+              aliceHostId,
+              counter,
+              status: SyncSequenceStatus.received,
+            );
+          }
+          return null;
+        });
+
+        // When recordSequenceEntry is called, track the record
+        when(() => mockDb.recordSequenceEntry(any())).thenAnswer((
+          invocation,
+        ) async {
+          final companion =
+              invocation.positionalArguments[0] as SyncSequenceLogCompanion;
+          insertedRecords.add(companion);
+          return 1;
+        });
+
+        await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+          coveredVectorClocks: coveredClocks,
         );
-        if (existingRecord.isNotEmpty) {
-          return _createLogItem(aliceHostId, counter,
-              status: SyncSequenceStatus.received);
+
+        // Analyze the insertion order and statuses
+        final missingCounters = <int>[];
+        final receivedCounters = <int>[];
+
+        for (final record in insertedRecords) {
+          if (record.status.value == SyncSequenceStatus.missing.index) {
+            missingCounters.add(record.counter.value);
+          } else if (record.status.value == SyncSequenceStatus.received.index) {
+            receivedCounters.add(record.counter.value);
+          }
         }
-        return null;
-      });
 
-      // When recordSequenceEntry is called, track the record
-      when(() => mockDb.recordSequenceEntry(any()))
-          .thenAnswer((invocation) async {
-        final companion =
-            invocation.positionalArguments[0] as SyncSequenceLogCompanion;
-        insertedRecords.add(companion);
-        return 1;
-      });
-
-      await service.recordReceivedEntry(
-        entryId: entryId,
-        vectorClock: vectorClock,
-        originatingHostId: aliceHostId,
-        coveredVectorClocks: coveredClocks,
-      );
-
-      // Analyze the insertion order and statuses
-      final missingCounters = <int>[];
-      final receivedCounters = <int>[];
-
-      for (final record in insertedRecords) {
-        if (record.status.value == SyncSequenceStatus.missing.index) {
-          missingCounters.add(record.counter.value);
-        } else if (record.status.value == SyncSequenceStatus.received.index) {
-          receivedCounters.add(record.counter.value);
-        }
-      }
-
-      // KEY ASSERTION: The FIRST 3 records should be the covered counters (10, 12, 15)
-      // because covered clocks are processed BEFORE gap detection
-      expect(insertedRecords.length, greaterThanOrEqualTo(3));
-      final firstThreeCounters =
-          insertedRecords.take(3).map((r) => r.counter.value).toSet();
-      expect(firstThreeCounters, containsAll([10, 12, 15]),
+        // KEY ASSERTION: The FIRST 3 records should be the covered counters (10, 12, 15)
+        // because covered clocks are processed BEFORE gap detection
+        expect(insertedRecords.length, greaterThanOrEqualTo(3));
+        final firstThreeCounters = insertedRecords
+            .take(3)
+            .map((r) => r.counter.value)
+            .toSet();
+        expect(
+          firstThreeCounters,
+          containsAll([10, 12, 15]),
           reason:
-              'Covered counters should be inserted FIRST before gap detection');
+              'Covered counters should be inserted FIRST before gap detection',
+        );
 
-      // Covered counters should be marked as received, not missing
-      expect(receivedCounters, containsAll([10, 12, 15]),
-          reason: 'Covered counters should be marked as received');
-      expect(missingCounters, isNot(contains(10)),
-          reason: 'Counter 10 is covered, should not be marked as missing');
-      expect(missingCounters, isNot(contains(12)),
-          reason: 'Counter 12 is covered, should not be marked as missing');
-      expect(missingCounters, isNot(contains(15)),
-          reason: 'Counter 15 is covered, should not be marked as missing');
+        // Covered counters should be marked as received, not missing
+        expect(
+          receivedCounters,
+          containsAll([10, 12, 15]),
+          reason: 'Covered counters should be marked as received',
+        );
+        expect(
+          missingCounters,
+          isNot(contains(10)),
+          reason: 'Counter 10 is covered, should not be marked as missing',
+        );
+        expect(
+          missingCounters,
+          isNot(contains(12)),
+          reason: 'Counter 12 is covered, should not be marked as missing',
+        );
+        expect(
+          missingCounters,
+          isNot(contains(15)),
+          reason: 'Counter 15 is covered, should not be marked as missing',
+        );
 
-      // Non-covered gaps should be marked as missing
-      expect(missingCounters,
+        // Non-covered gaps should be marked as missing
+        expect(
+          missingCounters,
           containsAll([6, 7, 8, 9, 11, 13, 14, 16, 17, 18, 19]),
-          reason: 'Non-covered gaps should be marked as missing');
-    });
+          reason: 'Non-covered gaps should be marked as missing',
+        );
+      },
+    );
   });
 }
 

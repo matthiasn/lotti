@@ -15,8 +15,10 @@ void main() {
 
   testWidgets('triggers forceRescan on app resume', (tester) async {
     final mockService = MockMatrixService();
-    when(() => mockService.forceRescan(
-        includeCatchUp: any(named: 'includeCatchUp'))).thenAnswer((_) async {});
+    when(
+      () =>
+          mockService.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
+    ).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       ProviderScope(
@@ -41,20 +43,25 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('logs if forceRescan future completes with error',
-      (tester) async {
+  testWidgets('logs if forceRescan future completes with error', (
+    tester,
+  ) async {
     final mockService = MockMatrixService();
     final mockLogging = MockLoggingService();
-    when(() => mockService.forceRescan(
-            includeCatchUp: any(named: 'includeCatchUp')))
-        .thenAnswer(
-            (_) => Future<void>.error(Exception('boom'), StackTrace.current));
-    when(() => mockLogging.captureException(
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenAnswer((_) async {});
+    when(
+      () =>
+          mockService.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
+    ).thenAnswer(
+      (_) => Future<void>.error(Exception('boom'), StackTrace.current),
+    );
+    when(
+      () => mockLogging.captureException(
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async {});
 
     await tester.pumpWidget(
       ProviderScope(
@@ -73,11 +80,13 @@ void main() {
         .handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
 
-    verify(() => mockLogging.captureException(
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          domain: 'AppLifecycleRescanObserver',
-          subDomain: 'didChangeAppLifecycleState',
-        )).called(1);
+    verify(
+      () => mockLogging.captureException(
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        domain: 'AppLifecycleRescanObserver',
+        subDomain: 'didChangeAppLifecycleState',
+      ),
+    ).called(1);
   });
 }

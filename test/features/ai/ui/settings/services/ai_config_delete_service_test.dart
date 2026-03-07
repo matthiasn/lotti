@@ -69,70 +69,87 @@ void main() {
     }
 
     group('deleteConfig() - Provider Deletion', () {
-      testWidgets('should successfully delete provider with associated models',
-          (WidgetTester tester) async {
-        // Arrange
-        final cascadeResult = CascadeDeletionResult(
-          deletedModels: associatedModels,
-          providerName: testProvider.name,
+      testWidgets(
+        'should successfully delete provider with associated models',
+        (WidgetTester tester) async {
+          // Arrange
+          final cascadeResult = CascadeDeletionResult(
+            deletedModels: associatedModels,
+            providerName: testProvider.name,
+          );
+
+          when(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).thenAnswer((_) async => cascadeResult);
+
+          bool? result;
+
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                result = await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
+
+          // Act - Tap to trigger delete
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
+
+          // Verify confirmation dialog appears
+          expect(
+            find.text('Delete Provider'),
+            findsNWidgets(2),
+          ); // Button + dialog title
+          expect(find.text('This action cannot be undone'), findsOneWidget);
+          expect(
+            find.text('Associated models will also be deleted'),
+            findsOneWidget,
+          );
+
+          // Confirm deletion
+          await tester.tap(find.text('Delete'));
+          await tester.pumpAndSettle();
+
+          // Assert
+          expect(result, isTrue);
+          verify(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).called(1);
+
+          // Check snackbar appears
+          expect(find.text('Provider deleted successfully'), findsOneWidget);
+          expect(find.text('2 associated models deleted'), findsOneWidget);
+          expect(find.text('Undo'), findsOneWidget);
+        },
+      );
+
+      testWidgets('should cancel provider deletion when user cancels', (
+        WidgetTester tester,
+      ) async {
+        bool? result;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Provider'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testProvider,
+              );
+            },
+          ),
         );
-
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenAnswer((_) async => cascadeResult);
-
-        bool? result;
-
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
-
-        // Act - Tap to trigger delete
-        await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
-
-        // Verify confirmation dialog appears
-        expect(find.text('Delete Provider'),
-            findsNWidgets(2)); // Button + dialog title
-        expect(find.text('This action cannot be undone'), findsOneWidget);
-        expect(find.text('Associated models will also be deleted'),
-            findsOneWidget);
-
-        // Confirm deletion
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
-
-        // Assert
-        expect(result, isTrue);
-        verify(() => mockRepository
-            .deleteInferenceProviderWithModels(testProvider.id)).called(1);
-
-        // Check snackbar appears
-        expect(find.text('Provider deleted successfully'), findsOneWidget);
-        expect(find.text('2 associated models deleted'), findsOneWidget);
-        expect(find.text('Undo'), findsOneWidget);
-      });
-
-      testWidgets('should cancel provider deletion when user cancels',
-          (WidgetTester tester) async {
-        bool? result;
-
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
 
         // Act - Tap to trigger delete
         await tester.tap(find.text('Delete Provider'));
@@ -145,30 +162,35 @@ void main() {
         // Assert
         expect(result, isFalse);
         verifyNever(
-            () => mockRepository.deleteInferenceProviderWithModels(any()));
+          () => mockRepository.deleteInferenceProviderWithModels(any()),
+        );
         expect(find.text('Provider deleted successfully'), findsNothing);
       });
     });
 
     group('deleteConfig() - Model Deletion', () {
-      testWidgets('should successfully delete model',
-          (WidgetTester tester) async {
+      testWidgets('should successfully delete model', (
+        WidgetTester tester,
+      ) async {
         // Arrange
-        when(() => mockRepository.deleteConfig(testModel.id))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.deleteConfig(testModel.id),
+        ).thenAnswer((_) async {});
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testModel,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Model'));
@@ -187,24 +209,28 @@ void main() {
     });
 
     group('deleteConfig() - Prompt Deletion', () {
-      testWidgets('should successfully delete prompt',
-          (WidgetTester tester) async {
+      testWidgets('should successfully delete prompt', (
+        WidgetTester tester,
+      ) async {
         // Arrange
-        when(() => mockRepository.deleteConfig(testPrompt.id))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.deleteConfig(testPrompt.id),
+        ).thenAnswer((_) async {});
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Prompt'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testPrompt,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Prompt'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testPrompt,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Prompt'));
@@ -223,29 +249,33 @@ void main() {
     });
 
     group('deleteConfig() - Profile Deletion', () {
-      testWidgets('should successfully delete profile',
-          (WidgetTester tester) async {
+      testWidgets('should successfully delete profile', (
+        WidgetTester tester,
+      ) async {
         // Arrange
         final testProfile = AiTestDataFactory.createTestProfile(
           id: 'test-profile-id',
           description: 'A test profile for deletion',
         );
 
-        when(() => mockRepository.deleteConfig(testProfile.id))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.deleteConfig(testProfile.id),
+        ).thenAnswer((_) async {});
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Profile'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProfile,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Profile'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testProfile,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Profile'));
@@ -263,60 +293,67 @@ void main() {
       });
 
       testWidgets(
-          'should display profile confirmation dialog with correct elements',
-          (WidgetTester tester) async {
-        final testProfile = AiTestDataFactory.createTestProfile(
-          id: 'test-profile-id',
-          description: 'A test profile for deletion',
-        );
+        'should display profile confirmation dialog with correct elements',
+        (WidgetTester tester) async {
+          final testProfile = AiTestDataFactory.createTestProfile(
+            id: 'test-profile-id',
+            description: 'A test profile for deletion',
+          );
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Profile'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProfile,
-            );
-          },
-        ));
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Profile'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProfile,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Delete Profile'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete Profile'));
+          await tester.pumpAndSettle();
 
-        // Check dialog structure
-        expect(find.text('Delete Profile'), findsNWidgets(2));
-        expect(find.text(testProfile.name), findsOneWidget);
-        expect(find.byIcon(Icons.tune), findsOneWidget); // Profile icon
-        expect(
-          find.text(
-            'This will permanently delete the inference profile.',
-          ),
-          findsOneWidget,
-        );
-      });
+          // Check dialog structure
+          expect(find.text('Delete Profile'), findsNWidgets(2));
+          expect(find.text(testProfile.name), findsOneWidget);
+          expect(find.byIcon(Icons.tune), findsOneWidget); // Profile icon
+          expect(
+            find.text(
+              'This will permanently delete the inference profile.',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('Error Handling', () {
-      testWidgets('should handle repository errors gracefully',
-          (WidgetTester tester) async {
+      testWidgets('should handle repository errors gracefully', (
+        WidgetTester tester,
+      ) async {
         // Arrange
         const errorMessage = 'Database connection failed';
-        when(() => mockRepository.deleteConfig(testModel.id))
-            .thenThrow(Exception(errorMessage));
+        when(
+          () => mockRepository.deleteConfig(testModel.id),
+        ).thenThrow(Exception(errorMessage));
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testModel,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Model'));
@@ -332,25 +369,30 @@ void main() {
         expect(find.text('Exception: $errorMessage'), findsOneWidget);
       });
 
-      testWidgets('should handle provider cascade deletion errors',
-          (WidgetTester tester) async {
+      testWidgets('should handle provider cascade deletion errors', (
+        WidgetTester tester,
+      ) async {
         // Arrange
         const errorMessage = 'Cascade deletion failed';
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenThrow(Exception(errorMessage));
+        when(
+          () =>
+              mockRepository.deleteInferenceProviderWithModels(testProvider.id),
+        ).thenThrow(Exception(errorMessage));
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            result = await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Provider'),
+            onPressed: (context, ref) async {
+              result = await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testProvider,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Provider'));
@@ -363,29 +405,36 @@ void main() {
         // Assert
         expect(result, isFalse);
         expect(
-            find.text('Failed to delete ${testProvider.name}'), findsOneWidget);
+          find.text('Failed to delete ${testProvider.name}'),
+          findsOneWidget,
+        );
       });
     });
 
     group('Undo Functionality', () {
-      testWidgets('should undo model deletion successfully',
-          (WidgetTester tester) async {
+      testWidgets('should undo model deletion successfully', (
+        WidgetTester tester,
+      ) async {
         // Arrange
-        when(() => mockRepository.deleteConfig(testModel.id))
-            .thenAnswer((_) async {});
-        when(() => mockRepository.saveConfig(testModel))
-            .thenAnswer((_) async {});
+        when(
+          () => mockRepository.deleteConfig(testModel.id),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.saveConfig(testModel),
+        ).thenAnswer((_) async {});
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testModel,
+              );
+            },
+          ),
+        );
 
         // Act - Delete the model
         await tester.tap(find.text('Delete Model'));
@@ -402,30 +451,36 @@ void main() {
         verify(() => mockRepository.saveConfig(testModel)).called(1);
       });
 
-      testWidgets('should undo provider deletion with associated models',
-          (WidgetTester tester) async {
+      testWidgets('should undo provider deletion with associated models', (
+        WidgetTester tester,
+      ) async {
         // Arrange
         final cascadeResult = CascadeDeletionResult(
           deletedModels: associatedModels,
           providerName: testProvider.name,
         );
 
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenAnswer((_) async => cascadeResult);
-        when(() => mockRepository.saveConfig(testProvider))
-            .thenAnswer((_) async {});
+        when(
+          () =>
+              mockRepository.deleteInferenceProviderWithModels(testProvider.id),
+        ).thenAnswer((_) async => cascadeResult);
+        when(
+          () => mockRepository.saveConfig(testProvider),
+        ).thenAnswer((_) async {});
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Provider'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testProvider,
+              );
+            },
+          ),
+        );
 
         // Act - Delete the provider
         await tester.tap(find.text('Delete Provider'));
@@ -438,8 +493,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Assert
-        verify(() => mockRepository
-            .deleteInferenceProviderWithModels(testProvider.id)).called(1);
+        verify(
+          () =>
+              mockRepository.deleteInferenceProviderWithModels(testProvider.id),
+        ).called(1);
         verify(() => mockRepository.saveConfig(testProvider)).called(1);
         // Verify all associated models are restored
         for (final model in associatedModels) {
@@ -447,24 +504,29 @@ void main() {
         }
       });
 
-      testWidgets('should handle undo errors gracefully',
-          (WidgetTester tester) async {
+      testWidgets('should handle undo errors gracefully', (
+        WidgetTester tester,
+      ) async {
         // Arrange
-        when(() => mockRepository.deleteConfig(testModel.id))
-            .thenAnswer((_) async {});
-        when(() => mockRepository.saveConfig(testModel))
-            .thenThrow(Exception('Undo failed'));
+        when(
+          () => mockRepository.deleteConfig(testModel.id),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.saveConfig(testModel),
+        ).thenThrow(Exception('Undo failed'));
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testModel,
+              );
+            },
+          ),
+        );
 
         // Act - Delete and then try to undo
         await tester.tap(find.text('Delete Model'));
@@ -481,132 +543,160 @@ void main() {
 
     group('Confirmation Dialog UI', () {
       testWidgets(
-          'should display provider confirmation dialog with correct elements',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+        'should display provider confirmation dialog with correct elements',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
 
-        // Check dialog structure
-        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-        expect(
-            find.text('Delete Provider'), findsNWidgets(2)); // Button + title
-        expect(find.text('This action cannot be undone'), findsOneWidget);
-        expect(find.text(testProvider.name), findsOneWidget);
-        expect(find.text(testProvider.description!), findsOneWidget);
-        expect(find.text('Associated models will also be deleted'),
-            findsOneWidget);
-        expect(find.byIcon(Icons.hub), findsOneWidget); // Provider icon
-        expect(find.text('Cancel'), findsOneWidget);
-        expect(find.text('Delete'),
-            findsAtLeastNWidgets(1)); // At least one Delete button
-      });
+          // Check dialog structure
+          expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+          expect(
+            find.text('Delete Provider'),
+            findsNWidgets(2),
+          ); // Button + title
+          expect(find.text('This action cannot be undone'), findsOneWidget);
+          expect(find.text(testProvider.name), findsOneWidget);
+          expect(find.text(testProvider.description!), findsOneWidget);
+          expect(
+            find.text('Associated models will also be deleted'),
+            findsOneWidget,
+          );
+          expect(find.byIcon(Icons.hub), findsOneWidget); // Provider icon
+          expect(find.text('Cancel'), findsOneWidget);
+          expect(
+            find.text('Delete'),
+            findsAtLeastNWidgets(1),
+          ); // At least one Delete button
+        },
+      );
 
       testWidgets(
-          'should display model confirmation dialog with correct elements',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        'should display model confirmation dialog with correct elements',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Model'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testModel,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete Model'));
+          await tester.pumpAndSettle();
 
-        // Check dialog structure
-        expect(find.text('Delete Model'), findsNWidgets(2));
-        expect(find.text(testModel.name), findsOneWidget);
-        expect(find.byIcon(Icons.smart_toy), findsOneWidget); // Model icon
-        expect(
+          // Check dialog structure
+          expect(find.text('Delete Model'), findsNWidgets(2));
+          expect(find.text(testModel.name), findsOneWidget);
+          expect(find.byIcon(Icons.smart_toy), findsOneWidget); // Model icon
+          expect(
             find.text('This will permanently delete the model configuration.'),
-            findsOneWidget);
-        // Should NOT show cascade warning for models
-        expect(
-            find.text('Associated models will also be deleted'), findsNothing);
-      });
+            findsOneWidget,
+          );
+          // Should NOT show cascade warning for models
+          expect(
+            find.text('Associated models will also be deleted'),
+            findsNothing,
+          );
+        },
+      );
 
       testWidgets(
-          'should display prompt confirmation dialog with correct elements',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Prompt'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testPrompt,
-            );
-          },
-        ));
+        'should display prompt confirmation dialog with correct elements',
+        (WidgetTester tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Prompt'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testPrompt,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Delete Prompt'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete Prompt'));
+          await tester.pumpAndSettle();
 
-        // Check dialog structure
-        expect(find.text('Delete Prompt'), findsNWidgets(2));
-        expect(find.text(testPrompt.name), findsOneWidget);
-        expect(find.byIcon(Icons.psychology), findsOneWidget); // Prompt icon
-        expect(find.text('This will permanently delete the prompt template.'),
-            findsOneWidget);
-      });
+          // Check dialog structure
+          expect(find.text('Delete Prompt'), findsNWidgets(2));
+          expect(find.text(testPrompt.name), findsOneWidget);
+          expect(find.byIcon(Icons.psychology), findsOneWidget); // Prompt icon
+          expect(
+            find.text('This will permanently delete the prompt template.'),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('Snackbar UI and Behavior', () {
-      testWidgets('should display provider deletion snackbar with cascade info',
-          (WidgetTester tester) async {
-        // Arrange
-        final cascadeResult = CascadeDeletionResult(
-          deletedModels: associatedModels,
-          providerName: testProvider.name,
-        );
+      testWidgets(
+        'should display provider deletion snackbar with cascade info',
+        (WidgetTester tester) async {
+          // Arrange
+          final cascadeResult = CascadeDeletionResult(
+            deletedModels: associatedModels,
+            providerName: testProvider.name,
+          );
 
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenAnswer((_) async => cascadeResult);
+          when(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).thenAnswer((_) async => cascadeResult);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
 
-        // Act
-        await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+          // Act
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete'));
+          await tester.pumpAndSettle();
 
-        // Assert snackbar content
-        expect(find.byIcon(Icons.delete_forever_outlined), findsOneWidget);
-        expect(find.text('Provider deleted successfully'), findsOneWidget);
-        expect(find.text('2 associated models deleted'), findsOneWidget);
-        expect(find.text('Model 1'), findsOneWidget);
-        expect(find.text('Model 2'), findsOneWidget);
-        expect(find.text('Undo'), findsOneWidget);
-      });
+          // Assert snackbar content
+          expect(find.byIcon(Icons.delete_forever_outlined), findsOneWidget);
+          expect(find.text('Provider deleted successfully'), findsOneWidget);
+          expect(find.text('2 associated models deleted'), findsOneWidget);
+          expect(find.text('Model 1'), findsOneWidget);
+          expect(find.text('Model 2'), findsOneWidget);
+          expect(find.text('Undo'), findsOneWidget);
+        },
+      );
 
-      testWidgets('should handle many associated models in snackbar',
-          (WidgetTester tester) async {
+      testWidgets('should handle many associated models in snackbar', (
+        WidgetTester tester,
+      ) async {
         // Arrange - Create many associated models
         final manyModels = List.generate(
           6,
@@ -622,19 +712,23 @@ void main() {
           providerName: testProvider.name,
         );
 
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenAnswer((_) async => cascadeResult);
+        when(
+          () =>
+              mockRepository.deleteInferenceProviderWithModels(testProvider.id),
+        ).thenAnswer((_) async => cascadeResult);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Provider'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testProvider,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Provider'));
@@ -647,23 +741,27 @@ void main() {
         expect(find.text('Model 0, Model 1 and 4 more'), findsOneWidget);
       });
 
-      testWidgets('should display error snackbar with correct styling',
-          (WidgetTester tester) async {
+      testWidgets('should display error snackbar with correct styling', (
+        WidgetTester tester,
+      ) async {
         // Arrange
         const errorMessage = 'Network error occurred';
-        when(() => mockRepository.deleteConfig(testModel.id))
-            .thenThrow(Exception(errorMessage));
+        when(
+          () => mockRepository.deleteConfig(testModel.id),
+        ).thenThrow(Exception(errorMessage));
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testModel,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: testModel,
+              );
+            },
+          ),
+        );
 
         // Act
         await tester.tap(find.text('Delete Model'));
@@ -679,22 +777,25 @@ void main() {
     });
 
     group('Edge Cases and Context Safety', () {
-      testWidgets('should handle config without description',
-          (WidgetTester tester) async {
+      testWidgets('should handle config without description', (
+        WidgetTester tester,
+      ) async {
         final configWithoutDescription = AiTestDataFactory.createTestModel(
           description: null,
         );
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Model'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: configWithoutDescription,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Delete Model'),
+            onPressed: (context, ref) async {
+              await deleteService.deleteConfig(
+                context: context,
+                ref: ref,
+                config: configWithoutDescription,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Delete Model'));
         await tester.pumpAndSettle();
@@ -704,38 +805,45 @@ void main() {
         expect(find.text(configWithoutDescription.name), findsOneWidget);
       });
 
-      testWidgets('should handle empty associated models for provider deletion',
-          (WidgetTester tester) async {
-        // Arrange
-        final cascadeResult = CascadeDeletionResult(
-          deletedModels: [], // No associated models
-          providerName: testProvider.name,
-        );
+      testWidgets(
+        'should handle empty associated models for provider deletion',
+        (WidgetTester tester) async {
+          // Arrange
+          final cascadeResult = CascadeDeletionResult(
+            deletedModels: [], // No associated models
+            providerName: testProvider.name,
+          );
 
-        when(() => mockRepository.deleteInferenceProviderWithModels(
-            testProvider.id)).thenAnswer((_) async => cascadeResult);
+          when(
+            () => mockRepository.deleteInferenceProviderWithModels(
+              testProvider.id,
+            ),
+          ).thenAnswer((_) async => cascadeResult);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Delete Provider'),
-          onPressed: (context, ref) async {
-            await deleteService.deleteConfig(
-              context: context,
-              ref: ref,
-              config: testProvider,
-            );
-          },
-        ));
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Delete Provider'),
+              onPressed: (context, ref) async {
+                await deleteService.deleteConfig(
+                  context: context,
+                  ref: ref,
+                  config: testProvider,
+                );
+              },
+            ),
+          );
 
-        // Act
-        await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+          // Act
+          await tester.tap(find.text('Delete Provider'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Delete'));
+          await tester.pumpAndSettle();
 
-        // Assert - Should not show cascade information
-        expect(find.text('Provider deleted successfully'), findsOneWidget);
-        expect(find.text('associated models deleted'), findsNothing);
-      });
+          // Assert - Should not show cascade information
+          expect(find.text('Provider deleted successfully'), findsOneWidget);
+          expect(find.text('associated models deleted'), findsNothing);
+        },
+      );
     });
 
     group('Service Construction and Identity', () {

@@ -49,13 +49,15 @@ void main() {
 
       // Register a mock LoggingService that TagsRepository needs
       final mockLoggingService = MockLoggingService();
-      when(() => mockLoggingService.captureEvent(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            level: any(named: 'level'),
-            type: any(named: 'type'),
-          )).thenAnswer((_) {});
+      when(
+        () => mockLoggingService.captureEvent(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          level: any(named: 'level'),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) {});
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -74,8 +76,9 @@ void main() {
         messenger.setMockMethodCallHandler(SystemChannels.platform, null);
       });
 
-      messenger.setMockMethodCallHandler(SystemChannels.platform,
-          (methodCall) async {
+      messenger.setMockMethodCallHandler(SystemChannels.platform, (
+        methodCall,
+      ) async {
         if (methodCall.method == 'HapticFeedback.vibrate') {
           return null;
         }
@@ -121,11 +124,13 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.journalEntityById('from-id'))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById('from-id'),
+        ).thenAnswer((_) async => testTextEntry);
 
-        when(() => mockTagsService.getFilteredStoryTagIds(any()))
-            .thenReturn([testStoryTag1.id]);
+        when(
+          () => mockTagsService.getFilteredStoryTagIds(any()),
+        ).thenReturn([testStoryTag1.id]);
 
         // Set linkFromId first
         linkService.linkFrom('from-id');
@@ -157,11 +162,13 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.journalEntityById('from-id'))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById('from-id'),
+        ).thenAnswer((_) async => testTextEntry);
 
-        when(() => mockTagsService.getFilteredStoryTagIds(any()))
-            .thenReturn([testStoryTag1.id]);
+        when(
+          () => mockTagsService.getFilteredStoryTagIds(any()),
+        ).thenReturn([testStoryTag1.id]);
 
         // Set linkToId first
         linkService.linkTo('to-id');
@@ -193,8 +200,9 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.journalEntityById('from-id'))
-            .thenAnswer((_) async => entryWithoutTags);
+        when(
+          () => mockJournalDb.journalEntityById('from-id'),
+        ).thenAnswer((_) async => entryWithoutTags);
 
         when(() => mockTagsService.getFilteredStoryTagIds(null)).thenReturn([]);
 
@@ -217,11 +225,13 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.journalEntityById('from-id'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById('from-id'),
+        ).thenAnswer((_) async => null);
 
-        when(() => mockTagsService.getFilteredStoryTagIds(any()))
-            .thenReturn([]);
+        when(
+          () => mockTagsService.getFilteredStoryTagIds(any()),
+        ).thenReturn([]);
 
         linkService.linkFrom('from-id');
         async.flushMicrotasks();

@@ -64,7 +64,8 @@ void main() {
       status: status,
       contributingEntries: const [],
       taskProgressItems: taskProgressItems ?? const [],
-      blocks: blocks ??
+      blocks:
+          blocks ??
           [
             PlannedBlock(
               id: 'block-1',
@@ -289,8 +290,9 @@ void main() {
       expect(find.text('Uncategorized'), findsOneWidget);
     });
 
-    testWidgets('displays hours and minutes for planned duration',
-        (tester) async {
+    testWidgets('displays hours and minutes for planned duration', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgress(
@@ -305,8 +307,9 @@ void main() {
       expect(find.text('1h 15m / 2h 30m'), findsOneWidget);
     });
 
-    testWidgets('displays minutes only for short planned duration',
-        (tester) async {
+    testWidgets('displays minutes only for short planned duration', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgress(
@@ -321,8 +324,9 @@ void main() {
       expect(find.text('20m / 45m'), findsOneWidget);
     });
 
-    testWidgets('shows highlighted border when category is highlighted',
-        (tester) async {
+    testWidgets('shows highlighted border when category is highlighted', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
@@ -365,8 +369,9 @@ void main() {
       expect(longPressed, isTrue);
     });
 
-    testWidgets('displays remaining time with hours and minutes',
-        (tester) async {
+    testWidgets('displays remaining time with hours and minutes', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgress(
@@ -395,8 +400,9 @@ void main() {
       expect(find.text('+1h 15m over'), findsOneWidget);
     });
 
-    testWidgets('shows progress bar with correct visual states',
-        (tester) async {
+    testWidgets('shows progress bar with correct visual states', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgress(
@@ -485,8 +491,9 @@ void main() {
       expect(find.byType(TimeBudgetCard), findsOneWidget);
     });
 
-    testWidgets('shows pinned tasks section with divider when populated',
-        (tester) async {
+    testWidgets('shows pinned tasks section with divider when populated', (
+      tester,
+    ) async {
       final task = createTask(
         id: 'task-1',
         title: 'My Pinned Task',
@@ -555,8 +562,9 @@ void main() {
       expect(find.text('Task With Status'), findsOneWidget);
     });
 
-    testWidgets('shows check_circle icon for completed tasks (TaskDone)',
-        (tester) async {
+    testWidgets('shows check_circle icon for completed tasks (TaskDone)', (
+      tester,
+    ) async {
       final task = createTask(
         id: 'task-1',
         title: 'Completed Task',
@@ -578,8 +586,9 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
-    testWidgets('shows check_circle icon for rejected tasks (TaskRejected)',
-        (tester) async {
+    testWidgets('shows check_circle icon for rejected tasks (TaskRejected)', (
+      tester,
+    ) async {
       final task = createTask(
         id: 'task-1',
         title: 'Rejected Task',
@@ -602,47 +611,49 @@ void main() {
     });
 
     testWidgets(
-        'shows faded check_circle for tasks completed on a different day',
-        (tester) async {
-      // Task is done but wasCompletedOnDay is false (completed elsewhere)
-      final task = createTask(
-        id: 'task-1',
-        title: 'Completed Elsewhere Task',
-        status: TaskStatus.done(
-          id: 'status-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      final progress = TimeBudgetProgress(
-        categoryId: testCategory.id,
-        category: testCategory,
-        plannedDuration: const Duration(hours: 2),
-        recordedDuration: const Duration(hours: 1),
-        status: BudgetProgressStatus.underBudget,
-        contributingEntries: const [],
-        taskProgressItems: [
-          TaskDayProgress(
-            task: task,
-            timeSpentOnDay: const Duration(hours: 1),
-            wasCompletedOnDay: false, // Completed on a different day
+      'shows faded check_circle for tasks completed on a different day',
+      (tester) async {
+        // Task is done but wasCompletedOnDay is false (completed elsewhere)
+        final task = createTask(
+          id: 'task-1',
+          title: 'Completed Elsewhere Task',
+          status: TaskStatus.done(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
           ),
-        ],
-        blocks: const [],
-      );
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(progress: progress, isFocusActive: true),
-      );
-      await tester.pump();
+        final progress = TimeBudgetProgress(
+          categoryId: testCategory.id,
+          category: testCategory,
+          plannedDuration: const Duration(hours: 2),
+          recordedDuration: const Duration(hours: 1),
+          status: BudgetProgressStatus.underBudget,
+          contributingEntries: const [],
+          taskProgressItems: [
+            TaskDayProgress(
+              task: task,
+              timeSpentOnDay: const Duration(hours: 1),
+              wasCompletedOnDay: false, // Completed on a different day
+            ),
+          ],
+          blocks: const [],
+        );
 
-      // Should still show check_circle icon (faded)
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    });
+        await tester.pumpWidget(
+          createTestWidget(progress: progress, isFocusActive: true),
+        );
+        await tester.pump();
 
-    testWidgets('does not show check icon for in-progress tasks',
-        (tester) async {
+        // Should still show check_circle icon (faded)
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      },
+    );
+
+    testWidgets('does not show check icon for in-progress tasks', (
+      tester,
+    ) async {
       final task = createTask(
         id: 'task-1',
         title: 'In Progress Task',
@@ -889,8 +900,9 @@ void main() {
       );
     }
 
-    testWidgets('hides contributing tasks section when no tasks in entries',
-        (tester) async {
+    testWidgets('hides contributing tasks section when no tasks in entries', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithContributing(
@@ -910,33 +922,34 @@ void main() {
     });
 
     testWidgets(
-        'does not display tasks from contributingEntries in task section',
-        (tester) async {
-      // Tasks in contributingEntries are NOT displayed in the task section
-      // Only taskProgressItems are shown
-      final task = createTask(
-        id: 'task-1',
-        title: 'Contributing Task In Entries',
-        status: TaskStatus.inProgress(
-          id: 'status-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithContributing(
-            contributingEntries: [task],
+      'does not display tasks from contributingEntries in task section',
+      (tester) async {
+        // Tasks in contributingEntries are NOT displayed in the task section
+        // Only taskProgressItems are shown
+        final task = createTask(
+          id: 'task-1',
+          title: 'Contributing Task In Entries',
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: testDate,
+            utcOffset: 0,
           ),
-        ),
-      );
-      await tester.pump();
+        );
 
-      // Task title should NOT appear because it's only in contributingEntries
-      expect(find.text('Contributing Task In Entries'), findsNothing);
-      expect(find.byType(Divider), findsNothing);
-    });
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: createProgressWithContributing(
+              contributingEntries: [task],
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Task title should NOT appear because it's only in contributingEntries
+        expect(find.text('Contributing Task In Entries'), findsNothing);
+        expect(find.byType(Divider), findsNothing);
+      },
+    );
   });
 
   group('TimeBudgetCard - Priority Badges', () {
@@ -1000,8 +1013,9 @@ void main() {
       );
     }
 
-    testWidgets('shows P0 (Urgent) priority badge in list view',
-        (tester) async {
+    testWidgets('shows P0 (Urgent) priority badge in list view', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p0Urgent),
@@ -1026,8 +1040,9 @@ void main() {
       expect(find.text('P1'), findsOneWidget);
     });
 
-    testWidgets('shows P2 (Medium) priority badge in list view',
-        (tester) async {
+    testWidgets('shows P2 (Medium) priority badge in list view', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgressWithPriorityTask(TaskPriority.p2Medium),
@@ -1051,8 +1066,9 @@ void main() {
       expect(find.text('P3'), findsOneWidget);
     });
 
-    testWidgets('priority badge text color uses urgency palette',
-        (tester) async {
+    testWidgets('priority badge text color uses urgency palette', (
+      tester,
+    ) async {
       // P0 Urgent should use red
       await tester.pumpWidget(
         createTestWidget(
@@ -1094,8 +1110,9 @@ void main() {
   });
 
   group('TimeBudgetCard - Running Timer Indicator', () {
-    testWidgets('shows timer icon when timer is running for category',
-        (tester) async {
+    testWidgets('shows timer icon when timer is running for category', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
@@ -1115,8 +1132,9 @@ void main() {
       expect(find.byIcon(Icons.timer), findsOneWidget);
     });
 
-    testWidgets('does not show timer icon when no timer is running',
-        (tester) async {
+    testWidgets('does not show timer icon when no timer is running', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
@@ -1126,31 +1144,36 @@ void main() {
       expect(find.byIcon(Icons.timer), findsNothing);
     });
 
-    testWidgets('does not show timer icon when timer is for different category',
-        (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            highlightedCategoryIdProvider.overrideWith((ref) => null),
-            // Timer is running for a different category
-            runningTimerCategoryIdProvider.overrideWithValue('other-category'),
-          ],
-          child: TimeBudgetCard(
-            progress: createProgress(),
-            selectedDate: testDate,
+    testWidgets(
+      'does not show timer icon when timer is for different category',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              // Timer is running for a different category
+              runningTimerCategoryIdProvider.overrideWithValue(
+                'other-category',
+              ),
+            ],
+            child: TimeBudgetCard(
+              progress: createProgress(),
+              selectedDate: testDate,
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // Should not show timer icon for this category
-      expect(find.byIcon(Icons.timer), findsNothing);
-    });
+        // Should not show timer icon for this category
+        expect(find.byIcon(Icons.timer), findsNothing);
+      },
+    );
   });
 
   group('TimeBudgetCard - Focus State and User Toggle', () {
-    testWidgets('respects isFocusActive for initial expansion state',
-        (tester) async {
+    testWidgets('respects isFocusActive for initial expansion state', (
+      tester,
+    ) async {
       // When isFocusActive is true, card should be expanded
       await tester.pumpWidget(
         createTestWidget(
@@ -1318,7 +1341,8 @@ void main() {
         recordedDuration: const Duration(hours: 1),
         status: BudgetProgressStatus.underBudget,
         contributingEntries: const [],
-        taskProgressItems: taskItems ??
+        taskProgressItems:
+            taskItems ??
             [
               TaskDayProgress(
                 task: createTaskWithCoverArt(
@@ -1348,16 +1372,18 @@ void main() {
       );
     }
 
-    testWidgets('displays tasks in grid view when view mode is grid',
-        (tester) async {
+    testWidgets('displays tasks in grid view when view mode is grid', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
             // Override view preference to grid mode
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
@@ -1381,8 +1407,9 @@ void main() {
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createProgressWithTasksForGrid(),
@@ -1613,48 +1640,51 @@ void main() {
     }
 
     testWidgets(
-        'Scenario A: no budget, no time - shows inline indicator instead of time info',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressNoBudgetNoTime()),
-      );
-      await tester.pump();
+      'Scenario A: no budget, no time - shows inline indicator instead of time info',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(progress: createProgressNoBudgetNoTime()),
+        );
+        await tester.pump();
 
-      // Should show inline warning indicator
-      final context = tester.element(find.byType(TimeBudgetCard));
-      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-      expect(find.text(noBudgetText), findsOneWidget);
+        // Should show inline warning indicator
+        final context = tester.element(find.byType(TimeBudgetCard));
+        final noBudgetText = context.messages.dailyOsNoBudgetWarning;
+        expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+        expect(find.text(noBudgetText), findsOneWidget);
 
-      // Should NOT show "0m / 0m" time text
-      expect(find.text('0m / 0m'), findsNothing);
+        // Should NOT show "0m / 0m" time text
+        expect(find.text('0m / 0m'), findsNothing);
 
-      // Should NOT show "0m left" badge
-      expect(find.text('0m left'), findsNothing);
-    });
+        // Should NOT show "0m left" badge
+        expect(find.text('0m left'), findsNothing);
+      },
+    );
 
     testWidgets(
-        'Scenario B: no budget, has time - shows Xm / 0m with No time budgeted badge',
-        (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(progress: createProgressNoBudgetWithTime()),
-      );
-      await tester.pump();
+      'Scenario B: no budget, has time - shows Xm / 0m with No time budgeted badge',
+      (tester) async {
+        await tester.pumpWidget(
+          createTestWidget(progress: createProgressNoBudgetWithTime()),
+        );
+        await tester.pump();
 
-      // Should show time comparison (recorded / planned)
-      expect(find.text('45m / 0m'), findsOneWidget);
+        // Should show time comparison (recorded / planned)
+        expect(find.text('45m / 0m'), findsOneWidget);
 
-      // Should show "No time budgeted" badge instead of confusing "-45m left" or "+45m over"
-      final context = tester.element(find.byType(TimeBudgetCard));
-      final noBudgetText = context.messages.dailyOsNoBudgetWarning;
-      expect(find.text(noBudgetText), findsOneWidget);
+        // Should show "No time budgeted" badge instead of confusing "-45m left" or "+45m over"
+        final context = tester.element(find.byType(TimeBudgetCard));
+        final noBudgetText = context.messages.dailyOsNoBudgetWarning;
+        expect(find.text(noBudgetText), findsOneWidget);
 
-      // Should NOT show misleading status like "+45m over" when there's no budget
-      expect(find.text('+45m over'), findsNothing);
-    });
+        // Should NOT show misleading status like "+45m over" when there's no budget
+        expect(find.text('+45m over'), findsNothing);
+      },
+    );
 
-    testWidgets('does not show warning when hasNoBudgetWarning is false',
-        (tester) async {
+    testWidgets('does not show warning when hasNoBudgetWarning is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
@@ -1735,15 +1765,17 @@ void main() {
       );
     }
 
-    testWidgets('shows priority badge in grid view for P0 tasks',
-        (tester) async {
+    testWidgets('shows priority badge in grid view for P0 tasks', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createGridProgress([
@@ -1770,8 +1802,9 @@ void main() {
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createGridProgress([
@@ -1798,8 +1831,9 @@ void main() {
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createGridProgress([
@@ -1820,15 +1854,17 @@ void main() {
       expect(find.text('Late'), findsOneWidget);
     });
 
-    testWidgets('shows all badges stacked for completed overdue P1 task',
-        (tester) async {
+    testWidgets('shows all badges stacked for completed overdue P1 task', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             highlightedCategoryIdProvider.overrideWith((ref) => null),
             runningTimerCategoryIdProvider.overrideWithValue(null),
-            taskViewPreferenceProvider(categoryId: testCategory.id)
-                .overrideWith(_TestTaskViewPreferenceController.new),
+            taskViewPreferenceProvider(
+              categoryId: testCategory.id,
+            ).overrideWith(_TestTaskViewPreferenceController.new),
           ],
           child: TimeBudgetCard(
             progress: createGridProgress([
@@ -1858,17 +1894,19 @@ void main() {
     late MockPersistenceLogic mockPersistenceLogic;
 
     setUpAll(() {
-      registerFallbackValue(TaskData(
-        title: '',
-        status: TaskStatus.open(
-          id: 'test-id',
-          createdAt: DateTime(2026),
-          utcOffset: 0,
+      registerFallbackValue(
+        TaskData(
+          title: '',
+          status: TaskStatus.open(
+            id: 'test-id',
+            createdAt: DateTime(2026),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2026),
+          dateTo: DateTime(2026),
+          statusHistory: [],
         ),
-        dateFrom: DateTime(2026),
-        dateTo: DateTime(2026),
-        statusHistory: [],
-      ));
+      );
       registerFallbackValue(const EntryText(plainText: ''));
     });
 
@@ -1901,67 +1939,77 @@ void main() {
       expect(find.byTooltip(tooltipText), findsOneWidget);
     });
 
-    testWidgets('tapping quick create button creates task with correct params',
-        (tester) async {
-      const testTaskId = 'test-task-id';
-      final testTask = Task(
-        meta: Metadata(
-          id: testTaskId,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: TaskData(
-          title: '',
-          status: TaskStatus.open(
-            id: 'status-id',
+    testWidgets(
+      'tapping quick create button creates task with correct params',
+      (tester) async {
+        const testTaskId = 'test-task-id';
+        final testTask = Task(
+          meta: Metadata(
+            id: testTaskId,
             createdAt: testDate,
-            utcOffset: 0,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
           ),
-          dateFrom: testDate,
-          dateTo: testDate,
-          statusHistory: [],
-        ),
-      );
+          data: TaskData(
+            title: '',
+            status: TaskStatus.open(
+              id: 'status-id',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
+            dateFrom: testDate,
+            dateTo: testDate,
+            statusHistory: [],
+          ),
+        );
 
-      // Mock the persistence logic to return our test task
-      when(() => mockPersistenceLogic.createTaskEntry(
+        // Mock the persistence logic to return our test task
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             linkedId: any(named: 'linkedId'),
             categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => testTask);
+          ),
+        ).thenAnswer((_) async => testTask);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgress(),
-          selectedDate: testDate,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: createProgress(),
+            selectedDate: testDate,
+          ),
+        );
+        await tester.pump();
 
-      // Get localized string from context
-      final context = tester.element(find.byType(TimeBudgetCard));
-      final tooltipText = context.messages.dailyOsQuickCreateTask;
+        // Get localized string from context
+        final context = tester.element(find.byType(TimeBudgetCard));
+        final tooltipText = context.messages.dailyOsQuickCreateTask;
 
-      // Tap the quick create button
-      await tester.tap(find.byTooltip(tooltipText));
-      await tester.pump();
+        // Tap the quick create button
+        await tester.tap(find.byTooltip(tooltipText));
+        await tester.pump();
 
-      // Verify task creation was called with correct category
-      verify(() => mockPersistenceLogic.createTaskEntry(
+        // Verify task creation was called with correct category
+        verify(
+          () => mockPersistenceLogic.createTaskEntry(
             data: any(named: 'data'),
             entryText: any(named: 'entryText'),
             categoryId: 'cat-1', // testCategory.id
-          )).called(1);
+          ),
+        ).called(1);
 
-      // Verify navigation was called with the correct path
-      expect(mockNavService.navigationHistory, contains('/tasks/$testTaskId'));
-    });
+        // Verify navigation was called with the correct path
+        expect(
+          mockNavService.navigationHistory,
+          contains('/tasks/$testTaskId'),
+        );
+      },
+    );
 
-    testWidgets('quick create button passes due date from selectedDate',
-        (tester) async {
+    testWidgets('quick create button passes due date from selectedDate', (
+      tester,
+    ) async {
       const testTaskId = 'test-task-id';
       final selectedDate = DateTime(2026, 2, 15);
       TaskData? capturedData;
@@ -1988,12 +2036,14 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((invocation) async {
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((invocation) async {
         capturedData = invocation.namedArguments[#data] as TaskData;
         return testTask;
       });
@@ -2021,12 +2071,14 @@ void main() {
 
     testWidgets('does not navigate when task creation fails', (tester) async {
       // Mock the persistence logic to return null (failure)
-      when(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
@@ -2068,12 +2120,14 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => testTask);
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => testTask);
 
       // Create progress without a category
       final progressWithoutCategory = TimeBudgetProgress(
@@ -2109,11 +2163,13 @@ void main() {
 
       // Verify task creation was called with null category
       // Note: Using captureAny to verify categoryId was explicitly passed as null
-      final captured = verify(() => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: captureAny(named: 'categoryId'),
-          )).captured;
+      final captured = verify(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          categoryId: captureAny(named: 'categoryId'),
+        ),
+      ).captured;
       expect(captured.first, isNull);
 
       // Verify navigation still occurred

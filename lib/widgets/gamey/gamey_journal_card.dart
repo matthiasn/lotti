@@ -89,7 +89,8 @@ class GameyJournalCard extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context) {
-    final showLabels = item is! Task &&
+    final showLabels =
+        item is! Task &&
         item.meta.labelIds != null &&
         item.meta.labelIds!.isNotEmpty;
 
@@ -285,8 +286,9 @@ class GameyJournalCard extends StatelessWidget {
       );
     }
 
-    final textColor =
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+    final textColor = context.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.7,
+    );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -328,8 +330,9 @@ class GameyJournalCard extends StatelessWidget {
             return Text(
               ci.data.title,
               style: context.textTheme.bodyMedium?.copyWith(
-                decoration:
-                    ci.data.isChecked ? TextDecoration.lineThrough : null,
+                decoration: ci.data.isChecked
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             );
           case final DayPlanEntry entry:
@@ -473,12 +476,15 @@ class _GameyJournalCardLabelsRow extends ConsumerWidget {
     final cache = getIt<EntitiesCacheService>();
     final showPrivate = cache.showPrivateEntries;
 
-    final labels = labelIds
-        .map(cache.getLabelById)
-        .whereType<LabelDefinition>()
-        .where((label) => showPrivate || !(label.private ?? false))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final labels =
+        labelIds
+            .map(cache.getLabelById)
+            .whereType<LabelDefinition>()
+            .where((label) => showPrivate || !(label.private ?? false))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     if (labels.isEmpty) {
       return const SizedBox.shrink();

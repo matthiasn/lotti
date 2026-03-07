@@ -27,8 +27,9 @@ class EvolutionReviewPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final templateAsync = ref.watch(agentTemplateProvider(templateId));
     final templateEntity = templateAsync.value;
-    final templateName =
-        templateEntity is AgentTemplateEntity ? templateEntity.displayName : '';
+    final templateName = templateEntity is AgentTemplateEntity
+        ? templateEntity.displayName
+        : '';
 
     final feedbackAsync = ref.watch(ritualFeedbackProvider(templateId));
     final pendingAsync = ref.watch(pendingRitualReviewProvider(templateId));
@@ -79,8 +80,9 @@ class EvolutionReviewPage extends ConsumerWidget {
             // Proposal summary card (if pending session has feedback summary)
             pendingAsync.whenOrNull(
                   data: (entity) {
-                    final session =
-                        entity is EvolutionSessionEntity ? entity : null;
+                    final session = entity is EvolutionSessionEntity
+                        ? entity
+                        : null;
                     final summary = session?.feedbackSummary?.trim();
                     if (summary == null || summary.isEmpty) return null;
                     return Padding(
@@ -92,8 +94,9 @@ class EvolutionReviewPage extends ConsumerWidget {
                           color: Colors.white.withValues(alpha: 0.05),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: GameyColors.primaryPurple
-                                .withValues(alpha: 0.3),
+                            color: GameyColors.primaryPurple.withValues(
+                              alpha: 0.3,
+                            ),
                           ),
                         ),
                         child: Column(
@@ -108,11 +111,13 @@ class EvolutionReviewPage extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  context.messages
+                                  context
+                                      .messages
                                       .agentRitualReviewProposalSection,
                                   style: TextStyle(
-                                    color: GameyColors.primaryPurple
-                                        .withValues(alpha: 0.8),
+                                    color: GameyColors.primaryPurple.withValues(
+                                      alpha: 0.8,
+                                    ),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -157,7 +162,7 @@ class EvolutionReviewPage extends ConsumerWidget {
                 loading: () => const Center(
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
-                error: (_, __) => _EmptyState(
+                error: (_, _) => _EmptyState(
                   text: context.messages.commonError,
                 ),
               ),

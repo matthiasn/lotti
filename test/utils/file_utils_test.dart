@@ -189,27 +189,30 @@ void main() {
       }
     });
 
-    test('findDocumentsDirectory returns correct directory based on platform',
-        () async {
-      // This can't be fully tested without having a way to mock the platform
-      // Just testing that it returns a Directory
-      expect(await findDocumentsDirectory(), isA<Directory>());
-    });
+    test(
+      'findDocumentsDirectory returns correct directory based on platform',
+      () async {
+        // This can't be fully tested without having a way to mock the platform
+        // Just testing that it returns a Directory
+        expect(await findDocumentsDirectory(), isA<Directory>());
+      },
+    );
 
     test(
-        'resolveJsonCandidateFile resolves inside docs dir and strips leading /',
-        () {
-      final file = resolveJsonCandidateFile(
-        '/text_entries/2021-11-30/test-id.text.json',
-      );
-      final file2 = resolveJsonCandidateFile(
-        'text_entries/2021-11-30/test-id.text.json',
-      );
-      final expected =
-          '${docDir.path}/text_entries/2021-11-30/test-id.text.json';
-      expect(file.path, expected);
-      expect(file2.path, expected);
-    });
+      'resolveJsonCandidateFile resolves inside docs dir and strips leading /',
+      () {
+        final file = resolveJsonCandidateFile(
+          '/text_entries/2021-11-30/test-id.text.json',
+        );
+        final file2 = resolveJsonCandidateFile(
+          'text_entries/2021-11-30/test-id.text.json',
+        );
+        final expected =
+            '${docDir.path}/text_entries/2021-11-30/test-id.text.json';
+        expect(file.path, expected);
+        expect(file2.path, expected);
+      },
+    );
 
     test('resolveJsonCandidateFile rejects path traversal outside docs', () {
       final escape = Platform.isWindows
@@ -224,18 +227,24 @@ void main() {
 
   group('normalizeAttachmentIndexKey', () {
     test('adds leading slash to bare path', () {
-      expect(normalizeAttachmentIndexKey('agent_entities/a.json'),
-          '/agent_entities/a.json');
+      expect(
+        normalizeAttachmentIndexKey('agent_entities/a.json'),
+        '/agent_entities/a.json',
+      );
     });
 
     test('preserves single leading slash', () {
-      expect(normalizeAttachmentIndexKey('/agent_entities/a.json'),
-          '/agent_entities/a.json');
+      expect(
+        normalizeAttachmentIndexKey('/agent_entities/a.json'),
+        '/agent_entities/a.json',
+      );
     });
 
     test('collapses multiple leading slashes', () {
-      expect(normalizeAttachmentIndexKey('///agent_entities/a.json'),
-          '/agent_entities/a.json');
+      expect(
+        normalizeAttachmentIndexKey('///agent_entities/a.json'),
+        '/agent_entities/a.json',
+      );
     });
 
     test('converts backslashes to forward slashes', () {

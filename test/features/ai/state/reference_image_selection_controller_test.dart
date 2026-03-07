@@ -133,8 +133,9 @@ void main() {
       getIt.allowReassignment = true;
 
       // Create a temp directory to simulate the documents directory
-      mockDocumentsDirectory =
-          Directory.systemTemp.createTempSync('ref_image_selection_ctrl_test_');
+      mockDocumentsDirectory = Directory.systemTemp.createTempSync(
+        'ref_image_selection_ctrl_test_',
+      );
       getIt.registerSingleton<Directory>(mockDocumentsDirectory);
 
       mockJournalRepo = MockJournalRepository();
@@ -158,8 +159,9 @@ void main() {
     test('build starts with loading state', () async {
       const taskId = 'test-task';
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => []);
 
       final state = container.read(
         referenceImageSelectionControllerProvider(taskId: taskId),
@@ -175,8 +177,9 @@ void main() {
         buildTestImage('img-2'),
       ];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => images);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
 
       final state = await waitForLoaded(taskId);
 
@@ -187,8 +190,9 @@ void main() {
     test('handles error when loading images fails', () async {
       const taskId = 'test-task';
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => throw Exception('Database error'));
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => throw Exception('Database error'));
 
       final state = await waitForLoaded(taskId);
 
@@ -201,8 +205,9 @@ void main() {
       const taskId = 'test-task';
       final images = [buildTestImage('img-1')];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => images);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
 
       // Wait for loading to complete
       await waitForLoaded(taskId);
@@ -225,15 +230,16 @@ void main() {
       const taskId = 'test-task';
       final images = [buildTestImage('img-1')];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => images);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
 
       // Wait for loading to complete
       await waitForLoaded(taskId);
 
       container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-      )
+          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+        )
         // Add the image first
         ..toggleImageSelection('img-1')
         // Then toggle again to remove it
@@ -255,16 +261,17 @@ void main() {
         buildTestImage('img-4'),
       ];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => images);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
 
       // Wait for loading to complete
       await waitForLoaded(taskId);
 
       // Try to select all 4 images (should only allow 3)
       container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-      )
+          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+        )
         ..toggleImageSelection('img-1')
         ..toggleImageSelection('img-2')
         ..toggleImageSelection('img-3')
@@ -282,16 +289,17 @@ void main() {
       const taskId = 'test-task';
       final images = [buildTestImage('img-1'), buildTestImage('img-2')];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-          .thenAnswer((_) async => images);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
 
       // Wait for loading to complete
       await waitForLoaded(taskId);
 
       // Add some selections first, then clear them
       container.read(
-        referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-      )
+          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
+        )
         ..toggleImageSelection('img-1')
         ..toggleImageSelection('img-2')
         ..clearSelection();
@@ -309,10 +317,12 @@ void main() {
       final images1 = [buildTestImage('img-1')];
       final images2 = [buildTestImage('img-2'), buildTestImage('img-3')];
 
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId1))
-          .thenAnswer((_) async => images1);
-      when(() => mockJournalRepo.getLinkedImagesForTask(taskId2))
-          .thenAnswer((_) async => images2);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId1),
+      ).thenAnswer((_) async => images1);
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId2),
+      ).thenAnswer((_) async => images2);
 
       // Wait for both to load
       final results = await Future.wait([
@@ -329,8 +339,9 @@ void main() {
         const taskId = 'test-task';
         final images = [buildTestImage('img-1'), buildTestImage('img-2')];
 
-        when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-            .thenAnswer((_) async => images);
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => images);
 
         // Wait for loading to complete
         await waitForLoaded(taskId);
@@ -348,18 +359,21 @@ void main() {
         const taskId = 'test-task';
         final images = [buildTestImage('img-1')];
 
-        when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-            .thenAnswer((_) async => images);
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => images);
 
         // Wait for loading to complete
         await waitForLoaded(taskId);
 
-        final controller = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        )
-
-          // Select an image
-          ..toggleImageSelection('img-1');
+        final controller =
+            container.read(
+                referenceImageSelectionControllerProvider(
+                  taskId: taskId,
+                ).notifier,
+              )
+              // Select an image
+              ..toggleImageSelection('img-1');
 
         // Start processing (don't await)
         final future = controller.processSelectedImages();
@@ -378,18 +392,21 @@ void main() {
         const taskId = 'test-task';
         final images = [buildTestImage('img-1')];
 
-        when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-            .thenAnswer((_) async => images);
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => images);
 
         // Wait for loading to complete
         await waitForLoaded(taskId);
 
-        final controller = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        )
-
-          // Select an image
-          ..toggleImageSelection('img-1');
+        final controller =
+            container.read(
+                referenceImageSelectionControllerProvider(
+                  taskId: taskId,
+                ).notifier,
+              )
+              // Select an image
+              ..toggleImageSelection('img-1');
 
         // Process and wait
         await controller.processSelectedImages();
@@ -405,18 +422,21 @@ void main() {
         const taskId = 'test-task';
         final images = [buildTestImage('img-1')];
 
-        when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-            .thenAnswer((_) async => images);
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => images);
 
         // Wait for loading to complete
         await waitForLoaded(taskId);
 
-        final controller = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        )
-
-          // Select an image that exists
-          ..toggleImageSelection('img-1');
+        final controller =
+            container.read(
+                referenceImageSelectionControllerProvider(
+                  taskId: taskId,
+                ).notifier,
+              )
+              // Select an image that exists
+              ..toggleImageSelection('img-1');
 
         // Manually modify selection to include a non-existent image
         // This simulates a race condition where an image was deleted
@@ -439,20 +459,23 @@ void main() {
           buildTestImage('img-5'),
         ];
 
-        when(() => mockJournalRepo.getLinkedImagesForTask(taskId))
-            .thenAnswer((_) async => images);
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => images);
 
         // Wait for loading to complete
         await waitForLoaded(taskId);
 
-        final controller = container.read(
-          referenceImageSelectionControllerProvider(taskId: taskId).notifier,
-        )
-
-          // Select max images
-          ..toggleImageSelection('img-1')
-          ..toggleImageSelection('img-3')
-          ..toggleImageSelection('img-5');
+        final controller =
+            container.read(
+                referenceImageSelectionControllerProvider(
+                  taskId: taskId,
+                ).notifier,
+              )
+              // Select max images
+              ..toggleImageSelection('img-1')
+              ..toggleImageSelection('img-3')
+              ..toggleImageSelection('img-5');
 
         // Process - this verifies the map lookup works
         final results = await controller.processSelectedImages();

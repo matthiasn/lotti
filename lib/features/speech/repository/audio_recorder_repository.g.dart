@@ -17,22 +17,26 @@ final audioRecorderRepositoryProvider = AudioRecorderRepositoryProvider._();
 /// Provider for the audio recorder repository.
 /// Kept alive to maintain recording state across navigation.
 
-final class AudioRecorderRepositoryProvider extends $FunctionalProvider<
-    AudioRecorderRepository,
-    AudioRecorderRepository,
-    AudioRecorderRepository> with $Provider<AudioRecorderRepository> {
+final class AudioRecorderRepositoryProvider
+    extends
+        $FunctionalProvider<
+          AudioRecorderRepository,
+          AudioRecorderRepository,
+          AudioRecorderRepository
+        >
+    with $Provider<AudioRecorderRepository> {
   /// Provider for the audio recorder repository.
   /// Kept alive to maintain recording state across navigation.
   AudioRecorderRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'audioRecorderRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioRecorderRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$audioRecorderRepositoryHash();
@@ -40,8 +44,8 @@ final class AudioRecorderRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<AudioRecorderRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   AudioRecorderRepository create(Ref ref) {

@@ -375,8 +375,9 @@ class _ManualBackfillSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      context.messages
-                          .backfillManualSuccess(lastProcessedCount!),
+                      context.messages.backfillManualSuccess(
+                        lastProcessedCount!,
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.green,
                       ),
@@ -485,8 +486,9 @@ class _ReRequestSection extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      context.messages
-                          .backfillReRequestSuccess(lastReRequestedCount!),
+                      context.messages.backfillReRequestSuccess(
+                        lastReRequestedCount!,
+                      ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.green,
                       ),
@@ -497,8 +499,9 @@ class _ReRequestSection extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed:
-                    isProcessing || requestedCount == 0 ? null : onTrigger,
+                onPressed: isProcessing || requestedCount == 0
+                    ? null
+                    : onTrigger,
                 icon: isProcessing
                     ? const SizedBox(
                         width: 20,

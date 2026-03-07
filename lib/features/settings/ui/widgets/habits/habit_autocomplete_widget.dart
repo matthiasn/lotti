@@ -132,7 +132,7 @@ class HabitAutocompleteWidget extends ConsumerWidget {
                   :final title,
                   :final dataType,
                   :final minimum,
-                  :final maximum
+                  :final maximum,
                 ) =>
                   Container(
                     color: Colors.blue.withAlpha(127),
@@ -165,7 +165,7 @@ class HabitAutocompleteWidget extends ConsumerWidget {
                   :final title,
                   :final dataType,
                   :final minimum,
-                  :final maximum
+                  :final maximum,
                 ) =>
                   Container(
                     color: Colors.blue.withAlpha(127),
@@ -186,7 +186,7 @@ class HabitAutocompleteWidget extends ConsumerWidget {
                   :final title,
                   :final dataTypeId,
                   :final minimum,
-                  :final maximum
+                  :final maximum,
                 ) =>
                   Container(
                     color: Colors.green.withAlpha(127),
@@ -204,67 +204,67 @@ class HabitAutocompleteWidget extends ConsumerWidget {
                     ),
                   ),
                 AutoCompleteRuleAnd(:final title, :final rules) => Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RuleTitleWidget(title),
-                        Row(
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: RuleListInfoWidget('AND'),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RuleTitleWidget(title),
+                      Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: RuleListInfoWidget('AND'),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              spacer,
+                              ...intersperse(
                                 spacer,
-                                ...intersperse(
-                                  spacer,
-                                  rules.mapIndexed(indexedChild),
-                                ),
-                                spacer,
-                              ],
-                            ),
-                            spacer,
-                          ],
-                        ),
-                      ],
-                    ),
+                                rules.mapIndexed(indexedChild),
+                              ),
+                              spacer,
+                            ],
+                          ),
+                          spacer,
+                        ],
+                      ),
+                    ],
                   ),
+                ),
                 AutoCompleteRuleOr(:final title, :final rules) => Padding(
-                    padding: const EdgeInsets.all(8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        RuleTitleWidget(title),
-                        Row(
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.all(8),
-                              child: RuleListInfoWidget('OR'),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                  padding: const EdgeInsets.all(8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RuleTitleWidget(title),
+                      Row(
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: RuleListInfoWidget('OR'),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              spacer,
+                              ...intersperse(
                                 spacer,
-                                ...intersperse(
-                                  spacer,
-                                  rules.mapIndexed(indexedChild),
-                                ),
-                                spacer,
-                              ],
-                            ),
-                            spacer,
-                          ],
-                        ),
-                      ],
-                    ),
+                                rules.mapIndexed(indexedChild),
+                              ),
+                              spacer,
+                            ],
+                          ),
+                          spacer,
+                        ],
+                      ),
+                    ],
                   ),
+                ),
                 AutoCompleteRuleMultiple(
                   :final rules,
                   :final successes,
-                  :final title
+                  :final title,
                 ) =>
                   () {
                     final n = rules.length;
@@ -300,7 +300,7 @@ class HabitAutocompleteWidget extends ConsumerWidget {
                       ),
                     );
                   }(),
-              }
+              },
           ],
         ),
       ),

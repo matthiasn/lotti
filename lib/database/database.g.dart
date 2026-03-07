@@ -10,201 +10,290 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
   Journal(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _dateFromMeta =
-      const VerificationMeta('dateFrom');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _dateFromMeta = const VerificationMeta(
+    'dateFrom',
+  );
   late final GeneratedColumn<DateTime> dateFrom = GeneratedColumn<DateTime>(
-      'date_from', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'date_from',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _dateToMeta = const VerificationMeta('dateTo');
   late final GeneratedColumn<DateTime> dateTo = GeneratedColumn<DateTime>(
-      'date_to', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'date_to',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _starredMeta =
-      const VerificationMeta('starred');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _starredMeta = const VerificationMeta(
+    'starred',
+  );
   late final GeneratedColumn<bool> starred = GeneratedColumn<bool>(
-      'starred', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'starred',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
   static const VerificationMeta _taskMeta = const VerificationMeta('task');
   late final GeneratedColumn<bool> task = GeneratedColumn<bool>(
-      'task', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _taskStatusMeta =
-      const VerificationMeta('taskStatus');
+    'task',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _taskStatusMeta = const VerificationMeta(
+    'taskStatus',
+  );
   late final GeneratedColumn<String> taskStatus = GeneratedColumn<String>(
-      'task_status', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _taskPriorityMeta =
-      const VerificationMeta('taskPriority');
+    'task_status',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _taskPriorityMeta = const VerificationMeta(
+    'taskPriority',
+  );
   late final GeneratedColumn<String> taskPriority = GeneratedColumn<String>(
-      'task_priority', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _taskPriorityRankMeta =
-      const VerificationMeta('taskPriorityRank');
+    'task_priority',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _taskPriorityRankMeta = const VerificationMeta(
+    'taskPriorityRank',
+  );
   late final GeneratedColumn<int> taskPriorityRank = GeneratedColumn<int>(
-      'task_priority_rank', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: '');
+    'task_priority_rank',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   static const VerificationMeta _flagMeta = const VerificationMeta('flag');
   late final GeneratedColumn<int> flag = GeneratedColumn<int>(
-      'flag', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0',
-      defaultValue: const CustomExpression('0'));
+    'flag',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
+    defaultValue: const CustomExpression('0'),
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _subtypeMeta =
-      const VerificationMeta('subtype');
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _subtypeMeta = const VerificationMeta(
+    'subtype',
+  );
   late final GeneratedColumn<String> subtype = GeneratedColumn<String>(
-      'subtype', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'subtype',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _schemaVersionMeta =
-      const VerificationMeta('schemaVersion');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
   late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
-      'schema_version', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0',
-      defaultValue: const CustomExpression('0'));
-  static const VerificationMeta _plainTextMeta =
-      const VerificationMeta('plainText');
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
+    defaultValue: const CustomExpression('0'),
+  );
+  static const VerificationMeta _plainTextMeta = const VerificationMeta(
+    'plainText',
+  );
   late final GeneratedColumn<String> plainText = GeneratedColumn<String>(
-      'plain_text', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _latitudeMeta =
-      const VerificationMeta('latitude');
+    'plain_text',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _latitudeMeta = const VerificationMeta(
+    'latitude',
+  );
   late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
-      'latitude', aliasedName, true,
-      type: DriftSqlType.double,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _longitudeMeta =
-      const VerificationMeta('longitude');
+    'latitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _longitudeMeta = const VerificationMeta(
+    'longitude',
+  );
   late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
-      'longitude', aliasedName, true,
-      type: DriftSqlType.double,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _geohashStringMeta =
-      const VerificationMeta('geohashString');
+    'longitude',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _geohashStringMeta = const VerificationMeta(
+    'geohashString',
+  );
   late final GeneratedColumn<String> geohashString = GeneratedColumn<String>(
-      'geohash_string', aliasedName, true,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _geohashIntMeta =
-      const VerificationMeta('geohashInt');
+    'geohash_string',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _geohashIntMeta = const VerificationMeta(
+    'geohashInt',
+  );
   late final GeneratedColumn<int> geohashInt = GeneratedColumn<int>(
-      'geohash_int', aliasedName, true,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _categoryMeta =
-      const VerificationMeta('category');
+    'geohash_int',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
   late final GeneratedColumn<String> category = GeneratedColumn<String>(
-      'category', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT \'\'',
-      defaultValue: const CustomExpression('\'\''));
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT \'\'',
+    defaultValue: const CustomExpression('\'\''),
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        createdAt,
-        updatedAt,
-        dateFrom,
-        dateTo,
-        deleted,
-        starred,
-        private,
-        task,
-        taskStatus,
-        taskPriority,
-        taskPriorityRank,
-        flag,
-        type,
-        subtype,
-        serialized,
-        schemaVersion,
-        plainText,
-        latitude,
-        longitude,
-        geohashString,
-        geohashInt,
-        category
-      ];
+    id,
+    createdAt,
+    updatedAt,
+    dateFrom,
+    dateTo,
+    deleted,
+    starred,
+    private,
+    task,
+    taskStatus,
+    taskPriority,
+    taskPriorityRank,
+    flag,
+    type,
+    subtype,
+    serialized,
+    schemaVersion,
+    plainText,
+    latitude,
+    longitude,
+    geohashString,
+    geohashInt,
+    category,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'journal';
   @override
-  VerificationContext validateIntegrity(Insertable<JournalDbEntity> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<JournalDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -213,118 +302,160 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
       context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('date_from')) {
-      context.handle(_dateFromMeta,
-          dateFrom.isAcceptableOrUnknown(data['date_from']!, _dateFromMeta));
+      context.handle(
+        _dateFromMeta,
+        dateFrom.isAcceptableOrUnknown(data['date_from']!, _dateFromMeta),
+      );
     } else if (isInserting) {
       context.missing(_dateFromMeta);
     }
     if (data.containsKey('date_to')) {
-      context.handle(_dateToMeta,
-          dateTo.isAcceptableOrUnknown(data['date_to']!, _dateToMeta));
+      context.handle(
+        _dateToMeta,
+        dateTo.isAcceptableOrUnknown(data['date_to']!, _dateToMeta),
+      );
     } else if (isInserting) {
       context.missing(_dateToMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('starred')) {
-      context.handle(_starredMeta,
-          starred.isAcceptableOrUnknown(data['starred']!, _starredMeta));
+      context.handle(
+        _starredMeta,
+        starred.isAcceptableOrUnknown(data['starred']!, _starredMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('task')) {
       context.handle(
-          _taskMeta, task.isAcceptableOrUnknown(data['task']!, _taskMeta));
+        _taskMeta,
+        task.isAcceptableOrUnknown(data['task']!, _taskMeta),
+      );
     }
     if (data.containsKey('task_status')) {
       context.handle(
-          _taskStatusMeta,
-          taskStatus.isAcceptableOrUnknown(
-              data['task_status']!, _taskStatusMeta));
+        _taskStatusMeta,
+        taskStatus.isAcceptableOrUnknown(data['task_status']!, _taskStatusMeta),
+      );
     }
     if (data.containsKey('task_priority')) {
       context.handle(
+        _taskPriorityMeta,
+        taskPriority.isAcceptableOrUnknown(
+          data['task_priority']!,
           _taskPriorityMeta,
-          taskPriority.isAcceptableOrUnknown(
-              data['task_priority']!, _taskPriorityMeta));
+        ),
+      );
     }
     if (data.containsKey('task_priority_rank')) {
       context.handle(
+        _taskPriorityRankMeta,
+        taskPriorityRank.isAcceptableOrUnknown(
+          data['task_priority_rank']!,
           _taskPriorityRankMeta,
-          taskPriorityRank.isAcceptableOrUnknown(
-              data['task_priority_rank']!, _taskPriorityRankMeta));
+        ),
+      );
     }
     if (data.containsKey('flag')) {
       context.handle(
-          _flagMeta, flag.isAcceptableOrUnknown(data['flag']!, _flagMeta));
+        _flagMeta,
+        flag.isAcceptableOrUnknown(data['flag']!, _flagMeta),
+      );
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
     if (data.containsKey('subtype')) {
-      context.handle(_subtypeMeta,
-          subtype.isAcceptableOrUnknown(data['subtype']!, _subtypeMeta));
+      context.handle(
+        _subtypeMeta,
+        subtype.isAcceptableOrUnknown(data['subtype']!, _subtypeMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('schema_version')) {
       context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
           _schemaVersionMeta,
-          schemaVersion.isAcceptableOrUnknown(
-              data['schema_version']!, _schemaVersionMeta));
+        ),
+      );
     }
     if (data.containsKey('plain_text')) {
-      context.handle(_plainTextMeta,
-          plainText.isAcceptableOrUnknown(data['plain_text']!, _plainTextMeta));
+      context.handle(
+        _plainTextMeta,
+        plainText.isAcceptableOrUnknown(data['plain_text']!, _plainTextMeta),
+      );
     }
     if (data.containsKey('latitude')) {
-      context.handle(_latitudeMeta,
-          latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta));
+      context.handle(
+        _latitudeMeta,
+        latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta),
+      );
     }
     if (data.containsKey('longitude')) {
-      context.handle(_longitudeMeta,
-          longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
+      context.handle(
+        _longitudeMeta,
+        longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta),
+      );
     }
     if (data.containsKey('geohash_string')) {
       context.handle(
+        _geohashStringMeta,
+        geohashString.isAcceptableOrUnknown(
+          data['geohash_string']!,
           _geohashStringMeta,
-          geohashString.isAcceptableOrUnknown(
-              data['geohash_string']!, _geohashStringMeta));
+        ),
+      );
     }
     if (data.containsKey('geohash_int')) {
       context.handle(
-          _geohashIntMeta,
-          geohashInt.isAcceptableOrUnknown(
-              data['geohash_int']!, _geohashIntMeta));
+        _geohashIntMeta,
+        geohashInt.isAcceptableOrUnknown(data['geohash_int']!, _geohashIntMeta),
+      );
     }
     if (data.containsKey('category')) {
-      context.handle(_categoryMeta,
-          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
     }
     return context;
   }
@@ -335,52 +466,98 @@ class Journal extends Table with TableInfo<Journal, JournalDbEntity> {
   JournalDbEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return JournalDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      dateFrom: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}date_from'])!,
-      dateTo: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}date_to'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      starred: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}starred'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      task: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}task'])!,
-      taskStatus: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}task_status']),
-      taskPriority: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}task_priority']),
-      taskPriorityRank: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}task_priority_rank']),
-      flag: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}flag'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      subtype: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}subtype']),
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      schemaVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}schema_version'])!,
-      plainText: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}plain_text']),
-      latitude: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}latitude']),
-      longitude: attachedDatabase.typeMapping
-          .read(DriftSqlType.double, data['${effectivePrefix}longitude']),
-      geohashString: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}geohash_string']),
-      geohashInt: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}geohash_int']),
-      category: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      dateFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date_from'],
+      )!,
+      dateTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date_to'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      starred: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}starred'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      task: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}task'],
+      )!,
+      taskStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_status'],
+      ),
+      taskPriority: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}task_priority'],
+      ),
+      taskPriorityRank: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_priority_rank'],
+      ),
+      flag: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}flag'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      subtype: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}subtype'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
+      plainText: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}plain_text'],
+      ),
+      latitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}latitude'],
+      ),
+      longitude: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}longitude'],
+      ),
+      geohashString: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}geohash_string'],
+      ),
+      geohashInt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}geohash_int'],
+      ),
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
     );
   }
 
@@ -419,30 +596,31 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
   final String? geohashString;
   final int? geohashInt;
   final String category;
-  const JournalDbEntity(
-      {required this.id,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.dateFrom,
-      required this.dateTo,
-      required this.deleted,
-      required this.starred,
-      required this.private,
-      required this.task,
-      this.taskStatus,
-      this.taskPriority,
-      this.taskPriorityRank,
-      required this.flag,
-      required this.type,
-      this.subtype,
-      required this.serialized,
-      required this.schemaVersion,
-      this.plainText,
-      this.latitude,
-      this.longitude,
-      this.geohashString,
-      this.geohashInt,
-      required this.category});
+  const JournalDbEntity({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.dateFrom,
+    required this.dateTo,
+    required this.deleted,
+    required this.starred,
+    required this.private,
+    required this.task,
+    this.taskStatus,
+    this.taskPriority,
+    this.taskPriorityRank,
+    required this.flag,
+    required this.type,
+    this.subtype,
+    required this.serialized,
+    required this.schemaVersion,
+    this.plainText,
+    this.latitude,
+    this.longitude,
+    this.geohashString,
+    this.geohashInt,
+    required this.category,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -536,8 +714,10 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     );
   }
 
-  factory JournalDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory JournalDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return JournalDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -595,59 +775,59 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
     };
   }
 
-  JournalDbEntity copyWith(
-          {String? id,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          DateTime? dateFrom,
-          DateTime? dateTo,
-          bool? deleted,
-          bool? starred,
-          bool? private,
-          bool? task,
-          Value<String?> taskStatus = const Value.absent(),
-          Value<String?> taskPriority = const Value.absent(),
-          Value<int?> taskPriorityRank = const Value.absent(),
-          int? flag,
-          String? type,
-          Value<String?> subtype = const Value.absent(),
-          String? serialized,
-          int? schemaVersion,
-          Value<String?> plainText = const Value.absent(),
-          Value<double?> latitude = const Value.absent(),
-          Value<double?> longitude = const Value.absent(),
-          Value<String?> geohashString = const Value.absent(),
-          Value<int?> geohashInt = const Value.absent(),
-          String? category}) =>
-      JournalDbEntity(
-        id: id ?? this.id,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        dateFrom: dateFrom ?? this.dateFrom,
-        dateTo: dateTo ?? this.dateTo,
-        deleted: deleted ?? this.deleted,
-        starred: starred ?? this.starred,
-        private: private ?? this.private,
-        task: task ?? this.task,
-        taskStatus: taskStatus.present ? taskStatus.value : this.taskStatus,
-        taskPriority:
-            taskPriority.present ? taskPriority.value : this.taskPriority,
-        taskPriorityRank: taskPriorityRank.present
-            ? taskPriorityRank.value
-            : this.taskPriorityRank,
-        flag: flag ?? this.flag,
-        type: type ?? this.type,
-        subtype: subtype.present ? subtype.value : this.subtype,
-        serialized: serialized ?? this.serialized,
-        schemaVersion: schemaVersion ?? this.schemaVersion,
-        plainText: plainText.present ? plainText.value : this.plainText,
-        latitude: latitude.present ? latitude.value : this.latitude,
-        longitude: longitude.present ? longitude.value : this.longitude,
-        geohashString:
-            geohashString.present ? geohashString.value : this.geohashString,
-        geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
-        category: category ?? this.category,
-      );
+  JournalDbEntity copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    bool? deleted,
+    bool? starred,
+    bool? private,
+    bool? task,
+    Value<String?> taskStatus = const Value.absent(),
+    Value<String?> taskPriority = const Value.absent(),
+    Value<int?> taskPriorityRank = const Value.absent(),
+    int? flag,
+    String? type,
+    Value<String?> subtype = const Value.absent(),
+    String? serialized,
+    int? schemaVersion,
+    Value<String?> plainText = const Value.absent(),
+    Value<double?> latitude = const Value.absent(),
+    Value<double?> longitude = const Value.absent(),
+    Value<String?> geohashString = const Value.absent(),
+    Value<int?> geohashInt = const Value.absent(),
+    String? category,
+  }) => JournalDbEntity(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    dateFrom: dateFrom ?? this.dateFrom,
+    dateTo: dateTo ?? this.dateTo,
+    deleted: deleted ?? this.deleted,
+    starred: starred ?? this.starred,
+    private: private ?? this.private,
+    task: task ?? this.task,
+    taskStatus: taskStatus.present ? taskStatus.value : this.taskStatus,
+    taskPriority: taskPriority.present ? taskPriority.value : this.taskPriority,
+    taskPriorityRank: taskPriorityRank.present
+        ? taskPriorityRank.value
+        : this.taskPriorityRank,
+    flag: flag ?? this.flag,
+    type: type ?? this.type,
+    subtype: subtype.present ? subtype.value : this.subtype,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+    plainText: plainText.present ? plainText.value : this.plainText,
+    latitude: latitude.present ? latitude.value : this.latitude,
+    longitude: longitude.present ? longitude.value : this.longitude,
+    geohashString: geohashString.present
+        ? geohashString.value
+        : this.geohashString,
+    geohashInt: geohashInt.present ? geohashInt.value : this.geohashInt,
+    category: category ?? this.category,
+  );
   JournalDbEntity copyWithCompanion(JournalCompanion data) {
     return JournalDbEntity(
       id: data.id.present ? data.id.value : this.id,
@@ -659,8 +839,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       starred: data.starred.present ? data.starred.value : this.starred,
       private: data.private.present ? data.private.value : this.private,
       task: data.task.present ? data.task.value : this.task,
-      taskStatus:
-          data.taskStatus.present ? data.taskStatus.value : this.taskStatus,
+      taskStatus: data.taskStatus.present
+          ? data.taskStatus.value
+          : this.taskStatus,
       taskPriority: data.taskPriority.present
           ? data.taskPriority.value
           : this.taskPriority,
@@ -670,8 +851,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       flag: data.flag.present ? data.flag.value : this.flag,
       type: data.type.present ? data.type.value : this.type,
       subtype: data.subtype.present ? data.subtype.value : this.subtype,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       schemaVersion: data.schemaVersion.present
           ? data.schemaVersion.value
           : this.schemaVersion,
@@ -681,8 +863,9 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
       geohashString: data.geohashString.present
           ? data.geohashString.value
           : this.geohashString,
-      geohashInt:
-          data.geohashInt.present ? data.geohashInt.value : this.geohashInt,
+      geohashInt: data.geohashInt.present
+          ? data.geohashInt.value
+          : this.geohashInt,
       category: data.category.present ? data.category.value : this.category,
     );
   }
@@ -719,30 +902,30 @@ class JournalDbEntity extends DataClass implements Insertable<JournalDbEntity> {
 
   @override
   int get hashCode => Object.hashAll([
-        id,
-        createdAt,
-        updatedAt,
-        dateFrom,
-        dateTo,
-        deleted,
-        starred,
-        private,
-        task,
-        taskStatus,
-        taskPriority,
-        taskPriorityRank,
-        flag,
-        type,
-        subtype,
-        serialized,
-        schemaVersion,
-        plainText,
-        latitude,
-        longitude,
-        geohashString,
-        geohashInt,
-        category
-      ]);
+    id,
+    createdAt,
+    updatedAt,
+    dateFrom,
+    dateTo,
+    deleted,
+    starred,
+    private,
+    task,
+    taskStatus,
+    taskPriority,
+    taskPriorityRank,
+    flag,
+    type,
+    subtype,
+    serialized,
+    schemaVersion,
+    plainText,
+    latitude,
+    longitude,
+    geohashString,
+    geohashInt,
+    category,
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -848,13 +1031,13 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     this.geohashInt = const Value.absent(),
     this.category = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        dateFrom = Value(dateFrom),
-        dateTo = Value(dateTo),
-        type = Value(type),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       dateFrom = Value(dateFrom),
+       dateTo = Value(dateTo),
+       type = Value(type),
+       serialized = Value(serialized);
   static Insertable<JournalDbEntity> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -909,31 +1092,32 @@ class JournalCompanion extends UpdateCompanion<JournalDbEntity> {
     });
   }
 
-  JournalCompanion copyWith(
-      {Value<String>? id,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<DateTime>? dateFrom,
-      Value<DateTime>? dateTo,
-      Value<bool>? deleted,
-      Value<bool>? starred,
-      Value<bool>? private,
-      Value<bool>? task,
-      Value<String?>? taskStatus,
-      Value<String?>? taskPriority,
-      Value<int?>? taskPriorityRank,
-      Value<int>? flag,
-      Value<String>? type,
-      Value<String?>? subtype,
-      Value<String>? serialized,
-      Value<int>? schemaVersion,
-      Value<String?>? plainText,
-      Value<double?>? latitude,
-      Value<double?>? longitude,
-      Value<String?>? geohashString,
-      Value<int?>? geohashInt,
-      Value<String>? category,
-      Value<int>? rowid}) {
+  JournalCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime>? dateFrom,
+    Value<DateTime>? dateTo,
+    Value<bool>? deleted,
+    Value<bool>? starred,
+    Value<bool>? private,
+    Value<bool>? task,
+    Value<String?>? taskStatus,
+    Value<String?>? taskPriority,
+    Value<int?>? taskPriorityRank,
+    Value<int>? flag,
+    Value<String>? type,
+    Value<String?>? subtype,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<String?>? plainText,
+    Value<double?>? latitude,
+    Value<double?>? longitude,
+    Value<String?>? geohashString,
+    Value<int?>? geohashInt,
+    Value<String>? category,
+    Value<int>? rowid,
+  }) {
     return JournalCompanion(
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
@@ -1079,56 +1263,86 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   Conflicts(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _schemaVersionMeta =
-      const VerificationMeta('schemaVersion');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _schemaVersionMeta = const VerificationMeta(
+    'schemaVersion',
+  );
   late final GeneratedColumn<int> schemaVersion = GeneratedColumn<int>(
-      'schema_version', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0',
-      defaultValue: const CustomExpression('0'));
+    'schema_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
+    defaultValue: const CustomExpression('0'),
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<int> status = GeneratedColumn<int>(
-      'status', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, createdAt, updatedAt, serialized, schemaVersion, status];
+  List<GeneratedColumn> get $columns => [
+    id,
+    createdAt,
+    updatedAt,
+    serialized,
+    schemaVersion,
+    status,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'conflicts';
   @override
-  VerificationContext validateIntegrity(Insertable<Conflict> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<Conflict> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -1137,34 +1351,43 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
       context.missing(_idMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('schema_version')) {
       context.handle(
+        _schemaVersionMeta,
+        schemaVersion.isAcceptableOrUnknown(
+          data['schema_version']!,
           _schemaVersionMeta,
-          schemaVersion.isAcceptableOrUnknown(
-              data['schema_version']!, _schemaVersionMeta));
+        ),
+      );
     }
     if (data.containsKey('status')) {
-      context.handle(_statusMeta,
-          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
@@ -1177,18 +1400,30 @@ class Conflicts extends Table with TableInfo<Conflicts, Conflict> {
   Conflict map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return Conflict(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      schemaVersion: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}schema_version'])!,
-      status: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}status'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      schemaVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}schema_version'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
     );
   }
 
@@ -1210,13 +1445,14 @@ class Conflict extends DataClass implements Insertable<Conflict> {
   final String serialized;
   final int schemaVersion;
   final int status;
-  const Conflict(
-      {required this.id,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.serialized,
-      required this.schemaVersion,
-      required this.status});
+  const Conflict({
+    required this.id,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.serialized,
+    required this.schemaVersion,
+    required this.status,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1240,8 +1476,10 @@ class Conflict extends DataClass implements Insertable<Conflict> {
     );
   }
 
-  factory Conflict.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory Conflict.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Conflict(
       id: serializer.fromJson<String>(json['id']),
@@ -1265,28 +1503,29 @@ class Conflict extends DataClass implements Insertable<Conflict> {
     };
   }
 
-  Conflict copyWith(
-          {String? id,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          String? serialized,
-          int? schemaVersion,
-          int? status}) =>
-      Conflict(
-        id: id ?? this.id,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        serialized: serialized ?? this.serialized,
-        schemaVersion: schemaVersion ?? this.schemaVersion,
-        status: status ?? this.status,
-      );
+  Conflict copyWith({
+    String? id,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? serialized,
+    int? schemaVersion,
+    int? status,
+  }) => Conflict(
+    id: id ?? this.id,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    serialized: serialized ?? this.serialized,
+    schemaVersion: schemaVersion ?? this.schemaVersion,
+    status: status ?? this.status,
+  );
   Conflict copyWithCompanion(ConflictsCompanion data) {
     return Conflict(
       id: data.id.present ? data.id.value : this.id,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       schemaVersion: data.schemaVersion.present
           ? data.schemaVersion.value
           : this.schemaVersion,
@@ -1347,11 +1586,11 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
     this.schemaVersion = const Value.absent(),
     required int status,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized),
-        status = Value(status);
+  }) : id = Value(id),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized),
+       status = Value(status);
   static Insertable<Conflict> custom({
     Expression<String>? id,
     Expression<DateTime>? createdAt,
@@ -1372,14 +1611,15 @@ class ConflictsCompanion extends UpdateCompanion<Conflict> {
     });
   }
 
-  ConflictsCompanion copyWith(
-      {Value<String>? id,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<String>? serialized,
-      Value<int>? schemaVersion,
-      Value<int>? status,
-      Value<int>? rowid}) {
+  ConflictsCompanion copyWith({
+    Value<String>? id,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<String>? serialized,
+    Value<int>? schemaVersion,
+    Value<int>? status,
+    Value<int>? rowid,
+  }) {
     return ConflictsCompanion(
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
@@ -1441,88 +1681,124 @@ class MeasurableTypes extends Table
   MeasurableTypes(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _uniqueNameMeta =
-      const VerificationMeta('uniqueName');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _uniqueNameMeta = const VerificationMeta(
+    'uniqueName',
+  );
   late final GeneratedColumn<String> uniqueName = GeneratedColumn<String>(
-      'unique_name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'unique_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _versionMeta =
-      const VerificationMeta('version');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
   late final GeneratedColumn<int> version = GeneratedColumn<int>(
-      'version', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT 0',
-      defaultValue: const CustomExpression('0'));
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT 0',
+    defaultValue: const CustomExpression('0'),
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<int> status = GeneratedColumn<int>(
-      'status', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        uniqueName,
-        createdAt,
-        updatedAt,
-        deleted,
-        private,
-        serialized,
-        version,
-        status
-      ];
+    id,
+    uniqueName,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    version,
+    status,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'measurable_types';
   @override
-  VerificationContext validateIntegrity(Insertable<MeasurableDbEntity> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<MeasurableDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -1532,47 +1808,59 @@ class MeasurableTypes extends Table
     }
     if (data.containsKey('unique_name')) {
       context.handle(
-          _uniqueNameMeta,
-          uniqueName.isAcceptableOrUnknown(
-              data['unique_name']!, _uniqueNameMeta));
+        _uniqueNameMeta,
+        uniqueName.isAcceptableOrUnknown(data['unique_name']!, _uniqueNameMeta),
+      );
     } else if (isInserting) {
       context.missing(_uniqueNameMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('version')) {
-      context.handle(_versionMeta,
-          version.isAcceptableOrUnknown(data['version']!, _versionMeta));
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
     }
     if (data.containsKey('status')) {
-      context.handle(_statusMeta,
-          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
@@ -1585,24 +1873,42 @@ class MeasurableTypes extends Table
   MeasurableDbEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return MeasurableDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      uniqueName: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}unique_name'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      version: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}version'])!,
-      status: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}status'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      uniqueName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unique_name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}status'],
+      )!,
     );
   }
 
@@ -1628,16 +1934,17 @@ class MeasurableDbEntity extends DataClass
   final String serialized;
   final int version;
   final int status;
-  const MeasurableDbEntity(
-      {required this.id,
-      required this.uniqueName,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.deleted,
-      required this.private,
-      required this.serialized,
-      required this.version,
-      required this.status});
+  const MeasurableDbEntity({
+    required this.id,
+    required this.uniqueName,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deleted,
+    required this.private,
+    required this.serialized,
+    required this.version,
+    required this.status,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1667,8 +1974,10 @@ class MeasurableDbEntity extends DataClass
     );
   }
 
-  factory MeasurableDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory MeasurableDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return MeasurableDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -1698,38 +2007,40 @@ class MeasurableDbEntity extends DataClass
     };
   }
 
-  MeasurableDbEntity copyWith(
-          {String? id,
-          String? uniqueName,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          bool? deleted,
-          bool? private,
-          String? serialized,
-          int? version,
-          int? status}) =>
-      MeasurableDbEntity(
-        id: id ?? this.id,
-        uniqueName: uniqueName ?? this.uniqueName,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deleted: deleted ?? this.deleted,
-        private: private ?? this.private,
-        serialized: serialized ?? this.serialized,
-        version: version ?? this.version,
-        status: status ?? this.status,
-      );
+  MeasurableDbEntity copyWith({
+    String? id,
+    String? uniqueName,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    bool? private,
+    String? serialized,
+    int? version,
+    int? status,
+  }) => MeasurableDbEntity(
+    id: id ?? this.id,
+    uniqueName: uniqueName ?? this.uniqueName,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted ?? this.deleted,
+    private: private ?? this.private,
+    serialized: serialized ?? this.serialized,
+    version: version ?? this.version,
+    status: status ?? this.status,
+  );
   MeasurableDbEntity copyWithCompanion(MeasurableTypesCompanion data) {
     return MeasurableDbEntity(
       id: data.id.present ? data.id.value : this.id,
-      uniqueName:
-          data.uniqueName.present ? data.uniqueName.value : this.uniqueName,
+      uniqueName: data.uniqueName.present
+          ? data.uniqueName.value
+          : this.uniqueName,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       private: data.private.present ? data.private.value : this.private,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       version: data.version.present ? data.version.value : this.version,
       status: data.status.present ? data.status.value : this.status,
     );
@@ -1752,8 +2063,17 @@ class MeasurableDbEntity extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, uniqueName, createdAt, updatedAt, deleted,
-      private, serialized, version, status);
+  int get hashCode => Object.hash(
+    id,
+    uniqueName,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    version,
+    status,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1803,12 +2123,12 @@ class MeasurableTypesCompanion extends UpdateCompanion<MeasurableDbEntity> {
     this.version = const Value.absent(),
     required int status,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        uniqueName = Value(uniqueName),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized),
-        status = Value(status);
+  }) : id = Value(id),
+       uniqueName = Value(uniqueName),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized),
+       status = Value(status);
   static Insertable<MeasurableDbEntity> custom({
     Expression<String>? id,
     Expression<String>? uniqueName,
@@ -1835,17 +2155,18 @@ class MeasurableTypesCompanion extends UpdateCompanion<MeasurableDbEntity> {
     });
   }
 
-  MeasurableTypesCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? uniqueName,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<bool>? deleted,
-      Value<bool>? private,
-      Value<String>? serialized,
-      Value<int>? version,
-      Value<int>? status,
-      Value<int>? rowid}) {
+  MeasurableTypesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? uniqueName,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? deleted,
+    Value<bool>? private,
+    Value<String>? serialized,
+    Value<int>? version,
+    Value<int>? status,
+    Value<int>? rowid,
+  }) {
     return MeasurableTypesCompanion(
       id: id ?? this.id,
       uniqueName: uniqueName ?? this.uniqueName,
@@ -1922,62 +2243,99 @@ class HabitDefinitions extends Table
   HabitDefinitions(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
-      'active', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, createdAt, updatedAt, deleted, private, serialized, active];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    active,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1985,8 +2343,9 @@ class HabitDefinitions extends Table
   static const String $name = 'habit_definitions';
   @override
   VerificationContext validateIntegrity(
-      Insertable<HabitDefinitionDbEntity> instance,
-      {bool isInserting = false}) {
+    Insertable<HabitDefinitionDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -1996,41 +2355,53 @@ class HabitDefinitions extends Table
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('active')) {
-      context.handle(_activeMeta,
-          active.isAcceptableOrUnknown(data['active']!, _activeMeta));
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
     } else if (isInserting) {
       context.missing(_activeMeta);
     }
@@ -2040,26 +2411,44 @@ class HabitDefinitions extends Table
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  HabitDefinitionDbEntity map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  HabitDefinitionDbEntity map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return HabitDefinitionDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      active: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}active'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
     );
   }
 
@@ -2084,15 +2473,16 @@ class HabitDefinitionDbEntity extends DataClass
   final bool private;
   final String serialized;
   final bool active;
-  const HabitDefinitionDbEntity(
-      {required this.id,
-      required this.name,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.deleted,
-      required this.private,
-      required this.serialized,
-      required this.active});
+  const HabitDefinitionDbEntity({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deleted,
+    required this.private,
+    required this.serialized,
+    required this.active,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2120,8 +2510,10 @@ class HabitDefinitionDbEntity extends DataClass
     );
   }
 
-  factory HabitDefinitionDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory HabitDefinitionDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HabitDefinitionDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -2149,25 +2541,25 @@ class HabitDefinitionDbEntity extends DataClass
     };
   }
 
-  HabitDefinitionDbEntity copyWith(
-          {String? id,
-          String? name,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          bool? deleted,
-          bool? private,
-          String? serialized,
-          bool? active}) =>
-      HabitDefinitionDbEntity(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deleted: deleted ?? this.deleted,
-        private: private ?? this.private,
-        serialized: serialized ?? this.serialized,
-        active: active ?? this.active,
-      );
+  HabitDefinitionDbEntity copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    bool? private,
+    String? serialized,
+    bool? active,
+  }) => HabitDefinitionDbEntity(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted ?? this.deleted,
+    private: private ?? this.private,
+    serialized: serialized ?? this.serialized,
+    active: active ?? this.active,
+  );
   HabitDefinitionDbEntity copyWithCompanion(HabitDefinitionsCompanion data) {
     return HabitDefinitionDbEntity(
       id: data.id.present ? data.id.value : this.id,
@@ -2176,8 +2568,9 @@ class HabitDefinitionDbEntity extends DataClass
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       private: data.private.present ? data.private.value : this.private,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       active: data.active.present ? data.active.value : this.active,
     );
   }
@@ -2199,7 +2592,15 @@ class HabitDefinitionDbEntity extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id, name, createdAt, updatedAt, deleted, private, serialized, active);
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    active,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2246,12 +2647,12 @@ class HabitDefinitionsCompanion
     required String serialized,
     required bool active,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        name = Value(name),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized),
-        active = Value(active);
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized),
+       active = Value(active);
   static Insertable<HabitDefinitionDbEntity> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -2276,16 +2677,17 @@ class HabitDefinitionsCompanion
     });
   }
 
-  HabitDefinitionsCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? name,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<bool>? deleted,
-      Value<bool>? private,
-      Value<String>? serialized,
-      Value<bool>? active,
-      Value<int>? rowid}) {
+  HabitDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? deleted,
+    Value<bool>? private,
+    Value<String>? serialized,
+    Value<bool>? active,
+    Value<int>? rowid,
+  }) {
     return HabitDefinitionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2357,62 +2759,99 @@ class CategoryDefinitions extends Table
   CategoryDefinitions(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
-      'active', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, createdAt, updatedAt, deleted, private, serialized, active];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    active,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2420,8 +2859,9 @@ class CategoryDefinitions extends Table
   static const String $name = 'category_definitions';
   @override
   VerificationContext validateIntegrity(
-      Insertable<CategoryDefinitionDbEntity> instance,
-      {bool isInserting = false}) {
+    Insertable<CategoryDefinitionDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -2431,41 +2871,53 @@ class CategoryDefinitions extends Table
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('active')) {
-      context.handle(_activeMeta,
-          active.isAcceptableOrUnknown(data['active']!, _activeMeta));
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
     } else if (isInserting) {
       context.missing(_activeMeta);
     }
@@ -2475,26 +2927,44 @@ class CategoryDefinitions extends Table
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  CategoryDefinitionDbEntity map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  CategoryDefinitionDbEntity map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return CategoryDefinitionDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      active: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}active'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
     );
   }
 
@@ -2519,15 +2989,16 @@ class CategoryDefinitionDbEntity extends DataClass
   final bool private;
   final String serialized;
   final bool active;
-  const CategoryDefinitionDbEntity(
-      {required this.id,
-      required this.name,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.deleted,
-      required this.private,
-      required this.serialized,
-      required this.active});
+  const CategoryDefinitionDbEntity({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deleted,
+    required this.private,
+    required this.serialized,
+    required this.active,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2555,8 +3026,10 @@ class CategoryDefinitionDbEntity extends DataClass
     );
   }
 
-  factory CategoryDefinitionDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory CategoryDefinitionDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return CategoryDefinitionDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -2584,27 +3057,28 @@ class CategoryDefinitionDbEntity extends DataClass
     };
   }
 
-  CategoryDefinitionDbEntity copyWith(
-          {String? id,
-          String? name,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          bool? deleted,
-          bool? private,
-          String? serialized,
-          bool? active}) =>
-      CategoryDefinitionDbEntity(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deleted: deleted ?? this.deleted,
-        private: private ?? this.private,
-        serialized: serialized ?? this.serialized,
-        active: active ?? this.active,
-      );
+  CategoryDefinitionDbEntity copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    bool? private,
+    String? serialized,
+    bool? active,
+  }) => CategoryDefinitionDbEntity(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted ?? this.deleted,
+    private: private ?? this.private,
+    serialized: serialized ?? this.serialized,
+    active: active ?? this.active,
+  );
   CategoryDefinitionDbEntity copyWithCompanion(
-      CategoryDefinitionsCompanion data) {
+    CategoryDefinitionsCompanion data,
+  ) {
     return CategoryDefinitionDbEntity(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
@@ -2612,8 +3086,9 @@ class CategoryDefinitionDbEntity extends DataClass
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       private: data.private.present ? data.private.value : this.private,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       active: data.active.present ? data.active.value : this.active,
     );
   }
@@ -2635,7 +3110,15 @@ class CategoryDefinitionDbEntity extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id, name, createdAt, updatedAt, deleted, private, serialized, active);
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+    active,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2682,12 +3165,12 @@ class CategoryDefinitionsCompanion
     required String serialized,
     required bool active,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        name = Value(name),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized),
-        active = Value(active);
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized),
+       active = Value(active);
   static Insertable<CategoryDefinitionDbEntity> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -2712,16 +3195,17 @@ class CategoryDefinitionsCompanion
     });
   }
 
-  CategoryDefinitionsCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? name,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<bool>? deleted,
-      Value<bool>? private,
-      Value<String>? serialized,
-      Value<bool>? active,
-      Value<int>? rowid}) {
+  CategoryDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? deleted,
+    Value<bool>? private,
+    Value<String>? serialized,
+    Value<bool>? active,
+    Value<int>? rowid,
+  }) {
     return CategoryDefinitionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -2793,62 +3277,99 @@ class LabelDefinitions extends Table
   LabelDefinitions(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
   static const VerificationMeta _colorMeta = const VerificationMeta('color');
   late final GeneratedColumn<String> color = GeneratedColumn<String>(
-      'color', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'color',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, color, createdAt, updatedAt, deleted, private, serialized];
+  List<GeneratedColumn> get $columns => [
+    id,
+    name,
+    color,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2856,8 +3377,9 @@ class LabelDefinitions extends Table
   static const String $name = 'label_definitions';
   @override
   VerificationContext validateIntegrity(
-      Insertable<LabelDefinitionDbEntity> instance,
-      {bool isInserting = false}) {
+    Insertable<LabelDefinitionDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -2867,41 +3389,53 @@ class LabelDefinitions extends Table
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('color')) {
       context.handle(
-          _colorMeta, color.isAcceptableOrUnknown(data['color']!, _colorMeta));
+        _colorMeta,
+        color.isAcceptableOrUnknown(data['color']!, _colorMeta),
+      );
     } else if (isInserting) {
       context.missing(_colorMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
@@ -2911,26 +3445,44 @@ class LabelDefinitions extends Table
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  LabelDefinitionDbEntity map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  LabelDefinitionDbEntity map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LabelDefinitionDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      color: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}color'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      color: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}color'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
     );
   }
 
@@ -2955,15 +3507,16 @@ class LabelDefinitionDbEntity extends DataClass
   final bool deleted;
   final bool private;
   final String serialized;
-  const LabelDefinitionDbEntity(
-      {required this.id,
-      required this.name,
-      required this.color,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.deleted,
-      required this.private,
-      required this.serialized});
+  const LabelDefinitionDbEntity({
+    required this.id,
+    required this.name,
+    required this.color,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.deleted,
+    required this.private,
+    required this.serialized,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -2991,8 +3544,10 @@ class LabelDefinitionDbEntity extends DataClass
     );
   }
 
-  factory LabelDefinitionDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory LabelDefinitionDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LabelDefinitionDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -3020,25 +3575,25 @@ class LabelDefinitionDbEntity extends DataClass
     };
   }
 
-  LabelDefinitionDbEntity copyWith(
-          {String? id,
-          String? name,
-          String? color,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          bool? deleted,
-          bool? private,
-          String? serialized}) =>
-      LabelDefinitionDbEntity(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        color: color ?? this.color,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deleted: deleted ?? this.deleted,
-        private: private ?? this.private,
-        serialized: serialized ?? this.serialized,
-      );
+  LabelDefinitionDbEntity copyWith({
+    String? id,
+    String? name,
+    String? color,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    bool? deleted,
+    bool? private,
+    String? serialized,
+  }) => LabelDefinitionDbEntity(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    color: color ?? this.color,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted ?? this.deleted,
+    private: private ?? this.private,
+    serialized: serialized ?? this.serialized,
+  );
   LabelDefinitionDbEntity copyWithCompanion(LabelDefinitionsCompanion data) {
     return LabelDefinitionDbEntity(
       id: data.id.present ? data.id.value : this.id,
@@ -3048,8 +3603,9 @@ class LabelDefinitionDbEntity extends DataClass
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       private: data.private.present ? data.private.value : this.private,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
     );
   }
 
@@ -3070,7 +3626,15 @@ class LabelDefinitionDbEntity extends DataClass
 
   @override
   int get hashCode => Object.hash(
-      id, name, color, createdAt, updatedAt, deleted, private, serialized);
+    id,
+    name,
+    color,
+    createdAt,
+    updatedAt,
+    deleted,
+    private,
+    serialized,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3117,12 +3681,12 @@ class LabelDefinitionsCompanion
     this.private = const Value.absent(),
     required String serialized,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        name = Value(name),
-        color = Value(color),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       name = Value(name),
+       color = Value(color),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized);
   static Insertable<LabelDefinitionDbEntity> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -3147,16 +3711,17 @@ class LabelDefinitionsCompanion
     });
   }
 
-  LabelDefinitionsCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? name,
-      Value<String>? color,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<bool>? deleted,
-      Value<bool>? private,
-      Value<String>? serialized,
-      Value<int>? rowid}) {
+  LabelDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<String>? color,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool>? deleted,
+    Value<bool>? private,
+    Value<String>? serialized,
+    Value<int>? rowid,
+  }) {
     return LabelDefinitionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -3228,78 +3793,111 @@ class DashboardDefinitions extends Table
   DashboardDefinitions(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _lastReviewedMeta =
-      const VerificationMeta('lastReviewed');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _lastReviewedMeta = const VerificationMeta(
+    'lastReviewed',
+  );
   late final GeneratedColumn<DateTime> lastReviewed = GeneratedColumn<DateTime>(
-      'last_reviewed', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'last_reviewed',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _activeMeta = const VerificationMeta('active');
   late final GeneratedColumn<bool> active = GeneratedColumn<bool>(
-      'active', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        name,
-        createdAt,
-        updatedAt,
-        lastReviewed,
-        deleted,
-        private,
-        serialized,
-        active
-      ];
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    lastReviewed,
+    deleted,
+    private,
+    serialized,
+    active,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3307,8 +3905,9 @@ class DashboardDefinitions extends Table
   static const String $name = 'dashboard_definitions';
   @override
   VerificationContext validateIntegrity(
-      Insertable<DashboardDefinitionDbEntity> instance,
-      {bool isInserting = false}) {
+    Insertable<DashboardDefinitionDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -3318,49 +3917,64 @@ class DashboardDefinitions extends Table
     }
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('last_reviewed')) {
       context.handle(
+        _lastReviewedMeta,
+        lastReviewed.isAcceptableOrUnknown(
+          data['last_reviewed']!,
           _lastReviewedMeta,
-          lastReviewed.isAcceptableOrUnknown(
-              data['last_reviewed']!, _lastReviewedMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_lastReviewedMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('active')) {
-      context.handle(_activeMeta,
-          active.isAcceptableOrUnknown(data['active']!, _activeMeta));
+      context.handle(
+        _activeMeta,
+        active.isAcceptableOrUnknown(data['active']!, _activeMeta),
+      );
     } else if (isInserting) {
       context.missing(_activeMeta);
     }
@@ -3370,28 +3984,48 @@ class DashboardDefinitions extends Table
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  DashboardDefinitionDbEntity map(Map<String, dynamic> data,
-      {String? tablePrefix}) {
+  DashboardDefinitionDbEntity map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DashboardDefinitionDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
       lastReviewed: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}last_reviewed'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted'])!,
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      active: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}active'])!,
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_reviewed'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      active: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}active'],
+      )!,
     );
   }
 
@@ -3417,16 +4051,17 @@ class DashboardDefinitionDbEntity extends DataClass
   final bool private;
   final String serialized;
   final bool active;
-  const DashboardDefinitionDbEntity(
-      {required this.id,
-      required this.name,
-      required this.createdAt,
-      required this.updatedAt,
-      required this.lastReviewed,
-      required this.deleted,
-      required this.private,
-      required this.serialized,
-      required this.active});
+  const DashboardDefinitionDbEntity({
+    required this.id,
+    required this.name,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.lastReviewed,
+    required this.deleted,
+    required this.private,
+    required this.serialized,
+    required this.active,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3456,8 +4091,10 @@ class DashboardDefinitionDbEntity extends DataClass
     );
   }
 
-  factory DashboardDefinitionDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory DashboardDefinitionDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DashboardDefinitionDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -3487,29 +4124,30 @@ class DashboardDefinitionDbEntity extends DataClass
     };
   }
 
-  DashboardDefinitionDbEntity copyWith(
-          {String? id,
-          String? name,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          DateTime? lastReviewed,
-          bool? deleted,
-          bool? private,
-          String? serialized,
-          bool? active}) =>
-      DashboardDefinitionDbEntity(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        lastReviewed: lastReviewed ?? this.lastReviewed,
-        deleted: deleted ?? this.deleted,
-        private: private ?? this.private,
-        serialized: serialized ?? this.serialized,
-        active: active ?? this.active,
-      );
+  DashboardDefinitionDbEntity copyWith({
+    String? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    DateTime? lastReviewed,
+    bool? deleted,
+    bool? private,
+    String? serialized,
+    bool? active,
+  }) => DashboardDefinitionDbEntity(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    lastReviewed: lastReviewed ?? this.lastReviewed,
+    deleted: deleted ?? this.deleted,
+    private: private ?? this.private,
+    serialized: serialized ?? this.serialized,
+    active: active ?? this.active,
+  );
   DashboardDefinitionDbEntity copyWithCompanion(
-      DashboardDefinitionsCompanion data) {
+    DashboardDefinitionsCompanion data,
+  ) {
     return DashboardDefinitionDbEntity(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
@@ -3520,8 +4158,9 @@ class DashboardDefinitionDbEntity extends DataClass
           : this.lastReviewed,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
       private: data.private.present ? data.private.value : this.private,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       active: data.active.present ? data.active.value : this.active,
     );
   }
@@ -3543,8 +4182,17 @@ class DashboardDefinitionDbEntity extends DataClass
   }
 
   @override
-  int get hashCode => Object.hash(id, name, createdAt, updatedAt, lastReviewed,
-      deleted, private, serialized, active);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    createdAt,
+    updatedAt,
+    lastReviewed,
+    deleted,
+    private,
+    serialized,
+    active,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3595,13 +4243,13 @@ class DashboardDefinitionsCompanion
     required String serialized,
     required bool active,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        name = Value(name),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        lastReviewed = Value(lastReviewed),
-        serialized = Value(serialized),
-        active = Value(active);
+  }) : id = Value(id),
+       name = Value(name),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       lastReviewed = Value(lastReviewed),
+       serialized = Value(serialized),
+       active = Value(active);
   static Insertable<DashboardDefinitionDbEntity> custom({
     Expression<String>? id,
     Expression<String>? name,
@@ -3628,17 +4276,18 @@ class DashboardDefinitionsCompanion
     });
   }
 
-  DashboardDefinitionsCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? name,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<DateTime>? lastReviewed,
-      Value<bool>? deleted,
-      Value<bool>? private,
-      Value<String>? serialized,
-      Value<bool>? active,
-      Value<int>? rowid}) {
+  DashboardDefinitionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? name,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<DateTime>? lastReviewed,
+    Value<bool>? deleted,
+    Value<bool>? private,
+    Value<String>? serialized,
+    Value<bool>? active,
+    Value<int>? rowid,
+  }) {
     return DashboardDefinitionsCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -3714,24 +4363,34 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
   ConfigFlags(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
-      'name', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _descriptionMeta =
-      const VerificationMeta('description');
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
-      'description', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
+    'description',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
   static const VerificationMeta _statusMeta = const VerificationMeta('status');
   late final GeneratedColumn<bool> status = GeneratedColumn<bool>(
-      'status', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
   @override
   List<GeneratedColumn> get $columns => [name, description, status];
   @override
@@ -3740,27 +4399,36 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
   String get actualTableName => $name;
   static const String $name = 'config_flags';
   @override
-  VerificationContext validateIntegrity(Insertable<ConfigFlag> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<ConfigFlag> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('name')) {
       context.handle(
-          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
     if (data.containsKey('description')) {
       context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
           _descriptionMeta,
-          description.isAcceptableOrUnknown(
-              data['description']!, _descriptionMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_descriptionMeta);
     }
     if (data.containsKey('status')) {
-      context.handle(_statusMeta,
-          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
     }
     return context;
   }
@@ -3771,12 +4439,18 @@ class ConfigFlags extends Table with TableInfo<ConfigFlags, ConfigFlag> {
   ConfigFlag map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ConfigFlag(
-      name: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
-      description: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}description'])!,
-      status: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}status'])!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}status'],
+      )!,
     );
   }
 
@@ -3795,8 +4469,11 @@ class ConfigFlag extends DataClass implements Insertable<ConfigFlag> {
   final String name;
   final String description;
   final bool status;
-  const ConfigFlag(
-      {required this.name, required this.description, required this.status});
+  const ConfigFlag({
+    required this.name,
+    required this.description,
+    required this.status,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3814,8 +4491,10 @@ class ConfigFlag extends DataClass implements Insertable<ConfigFlag> {
     );
   }
 
-  factory ConfigFlag.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory ConfigFlag.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ConfigFlag(
       name: serializer.fromJson<String>(json['name']),
@@ -3842,8 +4521,9 @@ class ConfigFlag extends DataClass implements Insertable<ConfigFlag> {
   ConfigFlag copyWithCompanion(ConfigFlagsCompanion data) {
     return ConfigFlag(
       name: data.name.present ? data.name.value : this.name,
-      description:
-          data.description.present ? data.description.value : this.description,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       status: data.status.present ? data.status.value : this.status,
     );
   }
@@ -3885,8 +4565,8 @@ class ConfigFlagsCompanion extends UpdateCompanion<ConfigFlag> {
     required String description,
     this.status = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : name = Value(name),
-        description = Value(description);
+  }) : name = Value(name),
+       description = Value(description);
   static Insertable<ConfigFlag> custom({
     Expression<String>? name,
     Expression<String>? description,
@@ -3901,11 +4581,12 @@ class ConfigFlagsCompanion extends UpdateCompanion<ConfigFlag> {
     });
   }
 
-  ConfigFlagsCompanion copyWith(
-      {Value<String>? name,
-      Value<String>? description,
-      Value<bool>? status,
-      Value<int>? rowid}) {
+  ConfigFlagsCompanion copyWith({
+    Value<String>? name,
+    Value<String>? description,
+    Value<bool>? status,
+    Value<int>? rowid,
+  }) {
     return ConfigFlagsCompanion(
       name: name ?? this.name,
       description: description ?? this.description,
@@ -3951,87 +4632,122 @@ class TagEntities extends Table with TableInfo<TagEntities, TagDbEntity> {
   TagEntities(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
   static const VerificationMeta _tagMeta = const VerificationMeta('tag');
   late final GeneratedColumn<String> tag = GeneratedColumn<String>(
-      'tag', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'tag',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _inactiveMeta =
-      const VerificationMeta('inactive');
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _inactiveMeta = const VerificationMeta(
+    'inactive',
+  );
   late final GeneratedColumn<bool> inactive = GeneratedColumn<bool>(
-      'inactive', aliasedName, true,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _privateMeta =
-      const VerificationMeta('private');
+    'inactive',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _privateMeta = const VerificationMeta(
+    'private',
+  );
   late final GeneratedColumn<bool> private = GeneratedColumn<bool>(
-      'private', aliasedName, false,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'NOT NULL DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'private',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'NOT NULL DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, false,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _deletedMeta =
-      const VerificationMeta('deleted');
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
   late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
-      'deleted', aliasedName, true,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'deleted',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [
-        id,
-        tag,
-        type,
-        inactive,
-        private,
-        createdAt,
-        updatedAt,
-        deleted,
-        serialized
-      ];
+    id,
+    tag,
+    type,
+    inactive,
+    private,
+    createdAt,
+    updatedAt,
+    deleted,
+    serialized,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'tag_entities';
   @override
-  VerificationContext validateIntegrity(Insertable<TagDbEntity> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<TagDbEntity> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -4041,45 +4757,59 @@ class TagEntities extends Table with TableInfo<TagEntities, TagDbEntity> {
     }
     if (data.containsKey('tag')) {
       context.handle(
-          _tagMeta, tag.isAcceptableOrUnknown(data['tag']!, _tagMeta));
+        _tagMeta,
+        tag.isAcceptableOrUnknown(data['tag']!, _tagMeta),
+      );
     } else if (isInserting) {
       context.missing(_tagMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
     if (data.containsKey('inactive')) {
-      context.handle(_inactiveMeta,
-          inactive.isAcceptableOrUnknown(data['inactive']!, _inactiveMeta));
+      context.handle(
+        _inactiveMeta,
+        inactive.isAcceptableOrUnknown(data['inactive']!, _inactiveMeta),
+      );
     }
     if (data.containsKey('private')) {
-      context.handle(_privateMeta,
-          private.isAcceptableOrUnknown(data['private']!, _privateMeta));
+      context.handle(
+        _privateMeta,
+        private.isAcceptableOrUnknown(data['private']!, _privateMeta),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_createdAtMeta);
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
     if (data.containsKey('deleted')) {
-      context.handle(_deletedMeta,
-          deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta));
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
@@ -4090,30 +4820,48 @@ class TagEntities extends Table with TableInfo<TagEntities, TagDbEntity> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {tag, type},
-      ];
+    {tag, type},
+  ];
   @override
   TagDbEntity map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TagDbEntity(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      tag: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}tag'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      inactive: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}inactive']),
-      private: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}private'])!,
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
-      deleted: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}deleted']),
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      tag: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      inactive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}inactive'],
+      ),
+      private: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}private'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      ),
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
     );
   }
 
@@ -4123,8 +4871,10 @@ class TagEntities extends Table with TableInfo<TagEntities, TagDbEntity> {
   }
 
   @override
-  List<String> get customConstraints =>
-      const ['PRIMARY KEY(id)', 'UNIQUE(tag, type)'];
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(id)',
+    'UNIQUE(tag, type)',
+  ];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -4139,16 +4889,17 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
   final DateTime updatedAt;
   final bool? deleted;
   final String serialized;
-  const TagDbEntity(
-      {required this.id,
-      required this.tag,
-      required this.type,
-      this.inactive,
-      required this.private,
-      required this.createdAt,
-      required this.updatedAt,
-      this.deleted,
-      required this.serialized});
+  const TagDbEntity({
+    required this.id,
+    required this.tag,
+    required this.type,
+    this.inactive,
+    required this.private,
+    required this.createdAt,
+    required this.updatedAt,
+    this.deleted,
+    required this.serialized,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4186,8 +4937,10 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
     );
   }
 
-  factory TagDbEntity.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory TagDbEntity.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TagDbEntity(
       id: serializer.fromJson<String>(json['id']),
@@ -4217,27 +4970,27 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
     };
   }
 
-  TagDbEntity copyWith(
-          {String? id,
-          String? tag,
-          String? type,
-          Value<bool?> inactive = const Value.absent(),
-          bool? private,
-          DateTime? createdAt,
-          DateTime? updatedAt,
-          Value<bool?> deleted = const Value.absent(),
-          String? serialized}) =>
-      TagDbEntity(
-        id: id ?? this.id,
-        tag: tag ?? this.tag,
-        type: type ?? this.type,
-        inactive: inactive.present ? inactive.value : this.inactive,
-        private: private ?? this.private,
-        createdAt: createdAt ?? this.createdAt,
-        updatedAt: updatedAt ?? this.updatedAt,
-        deleted: deleted.present ? deleted.value : this.deleted,
-        serialized: serialized ?? this.serialized,
-      );
+  TagDbEntity copyWith({
+    String? id,
+    String? tag,
+    String? type,
+    Value<bool?> inactive = const Value.absent(),
+    bool? private,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    Value<bool?> deleted = const Value.absent(),
+    String? serialized,
+  }) => TagDbEntity(
+    id: id ?? this.id,
+    tag: tag ?? this.tag,
+    type: type ?? this.type,
+    inactive: inactive.present ? inactive.value : this.inactive,
+    private: private ?? this.private,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    deleted: deleted.present ? deleted.value : this.deleted,
+    serialized: serialized ?? this.serialized,
+  );
   TagDbEntity copyWithCompanion(TagEntitiesCompanion data) {
     return TagDbEntity(
       id: data.id.present ? data.id.value : this.id,
@@ -4248,8 +5001,9 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       deleted: data.deleted.present ? data.deleted.value : this.deleted,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
     );
   }
 
@@ -4270,8 +5024,17 @@ class TagDbEntity extends DataClass implements Insertable<TagDbEntity> {
   }
 
   @override
-  int get hashCode => Object.hash(id, tag, type, inactive, private, createdAt,
-      updatedAt, deleted, serialized);
+  int get hashCode => Object.hash(
+    id,
+    tag,
+    type,
+    inactive,
+    private,
+    createdAt,
+    updatedAt,
+    deleted,
+    serialized,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4321,12 +5084,12 @@ class TagEntitiesCompanion extends UpdateCompanion<TagDbEntity> {
     this.deleted = const Value.absent(),
     required String serialized,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        tag = Value(tag),
-        type = Value(type),
-        createdAt = Value(createdAt),
-        updatedAt = Value(updatedAt),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       tag = Value(tag),
+       type = Value(type),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       serialized = Value(serialized);
   static Insertable<TagDbEntity> custom({
     Expression<String>? id,
     Expression<String>? tag,
@@ -4353,17 +5116,18 @@ class TagEntitiesCompanion extends UpdateCompanion<TagDbEntity> {
     });
   }
 
-  TagEntitiesCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? tag,
-      Value<String>? type,
-      Value<bool?>? inactive,
-      Value<bool>? private,
-      Value<DateTime>? createdAt,
-      Value<DateTime>? updatedAt,
-      Value<bool?>? deleted,
-      Value<String>? serialized,
-      Value<int>? rowid}) {
+  TagEntitiesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? tag,
+    Value<String>? type,
+    Value<bool?>? inactive,
+    Value<bool>? private,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<bool?>? deleted,
+    Value<String>? serialized,
+    Value<int>? rowid,
+  }) {
     return TagEntitiesCompanion(
       id: id ?? this.id,
       tag: tag ?? this.tag,
@@ -4439,24 +5203,35 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
   Tagged(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _journalIdMeta =
-      const VerificationMeta('journalId');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _journalIdMeta = const VerificationMeta(
+    'journalId',
+  );
   late final GeneratedColumn<String> journalId = GeneratedColumn<String>(
-      'journal_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _tagEntityIdMeta =
-      const VerificationMeta('tagEntityId');
+    'journal_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _tagEntityIdMeta = const VerificationMeta(
+    'tagEntityId',
+  );
   late final GeneratedColumn<String> tagEntityId = GeneratedColumn<String>(
-      'tag_entity_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'tag_entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [id, journalId, tagEntityId];
   @override
@@ -4465,8 +5240,10 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
   String get actualTableName => $name;
   static const String $name = 'tagged';
   @override
-  VerificationContext validateIntegrity(Insertable<TaggedWith> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<TaggedWith> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -4475,16 +5252,21 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
       context.missing(_idMeta);
     }
     if (data.containsKey('journal_id')) {
-      context.handle(_journalIdMeta,
-          journalId.isAcceptableOrUnknown(data['journal_id']!, _journalIdMeta));
+      context.handle(
+        _journalIdMeta,
+        journalId.isAcceptableOrUnknown(data['journal_id']!, _journalIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_journalIdMeta);
     }
     if (data.containsKey('tag_entity_id')) {
       context.handle(
+        _tagEntityIdMeta,
+        tagEntityId.isAcceptableOrUnknown(
+          data['tag_entity_id']!,
           _tagEntityIdMeta,
-          tagEntityId.isAcceptableOrUnknown(
-              data['tag_entity_id']!, _tagEntityIdMeta));
+        ),
+      );
     } else if (isInserting) {
       context.missing(_tagEntityIdMeta);
     }
@@ -4495,18 +5277,24 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {journalId, tagEntityId},
-      ];
+    {journalId, tagEntityId},
+  ];
   @override
   TaggedWith map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return TaggedWith(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      journalId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}journal_id'])!,
-      tagEntityId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}tag_entity_id'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      journalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journal_id'],
+      )!,
+      tagEntityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tag_entity_id'],
+      )!,
     );
   }
 
@@ -4517,11 +5305,11 @@ class Tagged extends Table with TableInfo<Tagged, TaggedWith> {
 
   @override
   List<String> get customConstraints => const [
-        'PRIMARY KEY(id)',
-        'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
-        'FOREIGN KEY(tag_entity_id)REFERENCES tag_entities(id)ON DELETE CASCADE',
-        'UNIQUE(journal_id, tag_entity_id)'
-      ];
+    'PRIMARY KEY(id)',
+    'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
+    'FOREIGN KEY(tag_entity_id)REFERENCES tag_entities(id)ON DELETE CASCADE',
+    'UNIQUE(journal_id, tag_entity_id)',
+  ];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -4530,8 +5318,11 @@ class TaggedWith extends DataClass implements Insertable<TaggedWith> {
   final String id;
   final String journalId;
   final String tagEntityId;
-  const TaggedWith(
-      {required this.id, required this.journalId, required this.tagEntityId});
+  const TaggedWith({
+    required this.id,
+    required this.journalId,
+    required this.tagEntityId,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4549,8 +5340,10 @@ class TaggedWith extends DataClass implements Insertable<TaggedWith> {
     );
   }
 
-  factory TaggedWith.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory TaggedWith.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TaggedWith(
       id: serializer.fromJson<String>(json['id']),
@@ -4578,8 +5371,9 @@ class TaggedWith extends DataClass implements Insertable<TaggedWith> {
     return TaggedWith(
       id: data.id.present ? data.id.value : this.id,
       journalId: data.journalId.present ? data.journalId.value : this.journalId,
-      tagEntityId:
-          data.tagEntityId.present ? data.tagEntityId.value : this.tagEntityId,
+      tagEntityId: data.tagEntityId.present
+          ? data.tagEntityId.value
+          : this.tagEntityId,
     );
   }
 
@@ -4620,9 +5414,9 @@ class TaggedCompanion extends UpdateCompanion<TaggedWith> {
     required String journalId,
     required String tagEntityId,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        journalId = Value(journalId),
-        tagEntityId = Value(tagEntityId);
+  }) : id = Value(id),
+       journalId = Value(journalId),
+       tagEntityId = Value(tagEntityId);
   static Insertable<TaggedWith> custom({
     Expression<String>? id,
     Expression<String>? journalId,
@@ -4637,11 +5431,12 @@ class TaggedCompanion extends UpdateCompanion<TaggedWith> {
     });
   }
 
-  TaggedCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? journalId,
-      Value<String>? tagEntityId,
-      Value<int>? rowid}) {
+  TaggedCompanion copyWith({
+    Value<String>? id,
+    Value<String>? journalId,
+    Value<String>? tagEntityId,
+    Value<int>? rowid,
+  }) {
     return TaggedCompanion(
       id: id ?? this.id,
       journalId: journalId ?? this.journalId,
@@ -4687,24 +5482,35 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
   Labeled(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
-  static const VerificationMeta _journalIdMeta =
-      const VerificationMeta('journalId');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
+  static const VerificationMeta _journalIdMeta = const VerificationMeta(
+    'journalId',
+  );
   late final GeneratedColumn<String> journalId = GeneratedColumn<String>(
-      'journal_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _labelIdMeta =
-      const VerificationMeta('labelId');
+    'journal_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _labelIdMeta = const VerificationMeta(
+    'labelId',
+  );
   late final GeneratedColumn<String> labelId = GeneratedColumn<String>(
-      'label_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'label_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   @override
   List<GeneratedColumn> get $columns => [id, journalId, labelId];
   @override
@@ -4713,8 +5519,10 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
   String get actualTableName => $name;
   static const String $name = 'labeled';
   @override
-  VerificationContext validateIntegrity(Insertable<LabeledWith> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<LabeledWith> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -4723,14 +5531,18 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
       context.missing(_idMeta);
     }
     if (data.containsKey('journal_id')) {
-      context.handle(_journalIdMeta,
-          journalId.isAcceptableOrUnknown(data['journal_id']!, _journalIdMeta));
+      context.handle(
+        _journalIdMeta,
+        journalId.isAcceptableOrUnknown(data['journal_id']!, _journalIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_journalIdMeta);
     }
     if (data.containsKey('label_id')) {
-      context.handle(_labelIdMeta,
-          labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta));
+      context.handle(
+        _labelIdMeta,
+        labelId.isAcceptableOrUnknown(data['label_id']!, _labelIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_labelIdMeta);
     }
@@ -4741,18 +5553,24 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {journalId, labelId},
-      ];
+    {journalId, labelId},
+  ];
   @override
   LabeledWith map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LabeledWith(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      journalId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}journal_id'])!,
-      labelId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}label_id'])!,
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      journalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journal_id'],
+      )!,
+      labelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}label_id'],
+      )!,
     );
   }
 
@@ -4763,11 +5581,11 @@ class Labeled extends Table with TableInfo<Labeled, LabeledWith> {
 
   @override
   List<String> get customConstraints => const [
-        'PRIMARY KEY(id)',
-        'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
-        'FOREIGN KEY(label_id)REFERENCES label_definitions(id)ON DELETE CASCADE',
-        'UNIQUE(journal_id, label_id)'
-      ];
+    'PRIMARY KEY(id)',
+    'FOREIGN KEY(journal_id)REFERENCES journal(id)ON DELETE CASCADE',
+    'FOREIGN KEY(label_id)REFERENCES label_definitions(id)ON DELETE CASCADE',
+    'UNIQUE(journal_id, label_id)',
+  ];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -4776,8 +5594,11 @@ class LabeledWith extends DataClass implements Insertable<LabeledWith> {
   final String id;
   final String journalId;
   final String labelId;
-  const LabeledWith(
-      {required this.id, required this.journalId, required this.labelId});
+  const LabeledWith({
+    required this.id,
+    required this.journalId,
+    required this.labelId,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -4795,8 +5616,10 @@ class LabeledWith extends DataClass implements Insertable<LabeledWith> {
     );
   }
 
-  factory LabeledWith.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory LabeledWith.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LabeledWith(
       id: serializer.fromJson<String>(json['id']),
@@ -4865,9 +5688,9 @@ class LabeledCompanion extends UpdateCompanion<LabeledWith> {
     required String journalId,
     required String labelId,
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        journalId = Value(journalId),
-        labelId = Value(labelId);
+  }) : id = Value(id),
+       journalId = Value(journalId),
+       labelId = Value(labelId);
   static Insertable<LabeledWith> custom({
     Expression<String>? id,
     Expression<String>? journalId,
@@ -4882,11 +5705,12 @@ class LabeledCompanion extends UpdateCompanion<LabeledWith> {
     });
   }
 
-  LabeledCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? journalId,
-      Value<String>? labelId,
-      Value<int>? rowid}) {
+  LabeledCompanion copyWith({
+    Value<String>? id,
+    Value<String>? journalId,
+    Value<String>? labelId,
+    Value<int>? rowid,
+  }) {
     return LabeledCompanion(
       id: id ?? this.id,
       journalId: journalId ?? this.journalId,
@@ -4932,67 +5756,104 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
   LinkedEntries(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
-      'id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL UNIQUE');
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE',
+  );
   static const VerificationMeta _fromIdMeta = const VerificationMeta('fromId');
   late final GeneratedColumn<String> fromId = GeneratedColumn<String>(
-      'from_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'from_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _toIdMeta = const VerificationMeta('toId');
   late final GeneratedColumn<String> toId = GeneratedColumn<String>(
-      'to_id', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'to_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _typeMeta = const VerificationMeta('type');
   late final GeneratedColumn<String> type = GeneratedColumn<String>(
-      'type', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
-  static const VerificationMeta _serializedMeta =
-      const VerificationMeta('serialized');
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  static const VerificationMeta _serializedMeta = const VerificationMeta(
+    'serialized',
+  );
   late final GeneratedColumn<String> serialized = GeneratedColumn<String>(
-      'serialized', aliasedName, false,
-      type: DriftSqlType.string,
-      requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL');
+    'serialized',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
   static const VerificationMeta _hiddenMeta = const VerificationMeta('hidden');
   late final GeneratedColumn<bool> hidden = GeneratedColumn<bool>(
-      'hidden', aliasedName, true,
-      type: DriftSqlType.bool,
-      requiredDuringInsert: false,
-      $customConstraints: 'DEFAULT FALSE',
-      defaultValue: const CustomExpression('FALSE'));
-  static const VerificationMeta _createdAtMeta =
-      const VerificationMeta('createdAt');
+    'hidden',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    $customConstraints: 'DEFAULT FALSE',
+    defaultValue: const CustomExpression('FALSE'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
   late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-      'created_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
-  static const VerificationMeta _updatedAtMeta =
-      const VerificationMeta('updatedAt');
+    'created_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
   late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
-      'updated_at', aliasedName, true,
-      type: DriftSqlType.dateTime,
-      requiredDuringInsert: false,
-      $customConstraints: '');
+    'updated_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, fromId, toId, type, serialized, hidden, createdAt, updatedAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    fromId,
+    toId,
+    type,
+    serialized,
+    hidden,
+    createdAt,
+    updatedAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
   static const String $name = 'linked_entries';
   @override
-  VerificationContext validateIntegrity(Insertable<LinkedDbEntry> instance,
-      {bool isInserting = false}) {
+  VerificationContext validateIntegrity(
+    Insertable<LinkedDbEntry> instance, {
+    bool isInserting = false,
+  }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
@@ -5001,42 +5862,54 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
       context.missing(_idMeta);
     }
     if (data.containsKey('from_id')) {
-      context.handle(_fromIdMeta,
-          fromId.isAcceptableOrUnknown(data['from_id']!, _fromIdMeta));
+      context.handle(
+        _fromIdMeta,
+        fromId.isAcceptableOrUnknown(data['from_id']!, _fromIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_fromIdMeta);
     }
     if (data.containsKey('to_id')) {
       context.handle(
-          _toIdMeta, toId.isAcceptableOrUnknown(data['to_id']!, _toIdMeta));
+        _toIdMeta,
+        toId.isAcceptableOrUnknown(data['to_id']!, _toIdMeta),
+      );
     } else if (isInserting) {
       context.missing(_toIdMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
-          _typeMeta, type.isAcceptableOrUnknown(data['type']!, _typeMeta));
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
     } else if (isInserting) {
       context.missing(_typeMeta);
     }
     if (data.containsKey('serialized')) {
       context.handle(
-          _serializedMeta,
-          serialized.isAcceptableOrUnknown(
-              data['serialized']!, _serializedMeta));
+        _serializedMeta,
+        serialized.isAcceptableOrUnknown(data['serialized']!, _serializedMeta),
+      );
     } else if (isInserting) {
       context.missing(_serializedMeta);
     }
     if (data.containsKey('hidden')) {
-      context.handle(_hiddenMeta,
-          hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta));
+      context.handle(
+        _hiddenMeta,
+        hidden.isAcceptableOrUnknown(data['hidden']!, _hiddenMeta),
+      );
     }
     if (data.containsKey('created_at')) {
-      context.handle(_createdAtMeta,
-          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
     }
     if (data.containsKey('updated_at')) {
-      context.handle(_updatedAtMeta,
-          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
     }
     return context;
   }
@@ -5045,28 +5918,44 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
   List<Set<GeneratedColumn>> get uniqueKeys => [
-        {fromId, toId, type},
-      ];
+    {fromId, toId, type},
+  ];
   @override
   LinkedDbEntry map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return LinkedDbEntry(
-      id: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}id'])!,
-      fromId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}from_id'])!,
-      toId: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}to_id'])!,
-      type: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}type'])!,
-      serialized: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}serialized'])!,
-      hidden: attachedDatabase.typeMapping
-          .read(DriftSqlType.bool, data['${effectivePrefix}hidden']),
-      createdAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at']),
-      updatedAt: attachedDatabase.typeMapping
-          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at']),
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      fromId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}from_id'],
+      )!,
+      toId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}to_id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      serialized: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}serialized'],
+      )!,
+      hidden: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}hidden'],
+      ),
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      ),
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      ),
     );
   }
 
@@ -5076,8 +5965,10 @@ class LinkedEntries extends Table with TableInfo<LinkedEntries, LinkedDbEntry> {
   }
 
   @override
-  List<String> get customConstraints =>
-      const ['PRIMARY KEY(id)', 'UNIQUE(from_id, to_id, type)'];
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(id)',
+    'UNIQUE(from_id, to_id, type)',
+  ];
   @override
   bool get dontWriteConstraints => true;
 }
@@ -5091,15 +5982,16 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
   final bool? hidden;
   final DateTime? createdAt;
   final DateTime? updatedAt;
-  const LinkedDbEntry(
-      {required this.id,
-      required this.fromId,
-      required this.toId,
-      required this.type,
-      required this.serialized,
-      this.hidden,
-      this.createdAt,
-      this.updatedAt});
+  const LinkedDbEntry({
+    required this.id,
+    required this.fromId,
+    required this.toId,
+    required this.type,
+    required this.serialized,
+    this.hidden,
+    this.createdAt,
+    this.updatedAt,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -5127,8 +6019,9 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
       toId: Value(toId),
       type: Value(type),
       serialized: Value(serialized),
-      hidden:
-          hidden == null && nullToAbsent ? const Value.absent() : Value(hidden),
+      hidden: hidden == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hidden),
       createdAt: createdAt == null && nullToAbsent
           ? const Value.absent()
           : Value(createdAt),
@@ -5138,8 +6031,10 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
     );
   }
 
-  factory LinkedDbEntry.fromJson(Map<String, dynamic> json,
-      {ValueSerializer? serializer}) {
+  factory LinkedDbEntry.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LinkedDbEntry(
       id: serializer.fromJson<String>(json['id']),
@@ -5167,33 +6062,34 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
     };
   }
 
-  LinkedDbEntry copyWith(
-          {String? id,
-          String? fromId,
-          String? toId,
-          String? type,
-          String? serialized,
-          Value<bool?> hidden = const Value.absent(),
-          Value<DateTime?> createdAt = const Value.absent(),
-          Value<DateTime?> updatedAt = const Value.absent()}) =>
-      LinkedDbEntry(
-        id: id ?? this.id,
-        fromId: fromId ?? this.fromId,
-        toId: toId ?? this.toId,
-        type: type ?? this.type,
-        serialized: serialized ?? this.serialized,
-        hidden: hidden.present ? hidden.value : this.hidden,
-        createdAt: createdAt.present ? createdAt.value : this.createdAt,
-        updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
-      );
+  LinkedDbEntry copyWith({
+    String? id,
+    String? fromId,
+    String? toId,
+    String? type,
+    String? serialized,
+    Value<bool?> hidden = const Value.absent(),
+    Value<DateTime?> createdAt = const Value.absent(),
+    Value<DateTime?> updatedAt = const Value.absent(),
+  }) => LinkedDbEntry(
+    id: id ?? this.id,
+    fromId: fromId ?? this.fromId,
+    toId: toId ?? this.toId,
+    type: type ?? this.type,
+    serialized: serialized ?? this.serialized,
+    hidden: hidden.present ? hidden.value : this.hidden,
+    createdAt: createdAt.present ? createdAt.value : this.createdAt,
+    updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
+  );
   LinkedDbEntry copyWithCompanion(LinkedEntriesCompanion data) {
     return LinkedDbEntry(
       id: data.id.present ? data.id.value : this.id,
       fromId: data.fromId.present ? data.fromId.value : this.fromId,
       toId: data.toId.present ? data.toId.value : this.toId,
       type: data.type.present ? data.type.value : this.type,
-      serialized:
-          data.serialized.present ? data.serialized.value : this.serialized,
+      serialized: data.serialized.present
+          ? data.serialized.value
+          : this.serialized,
       hidden: data.hidden.present ? data.hidden.value : this.hidden,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
@@ -5217,7 +6113,15 @@ class LinkedDbEntry extends DataClass implements Insertable<LinkedDbEntry> {
 
   @override
   int get hashCode => Object.hash(
-      id, fromId, toId, type, serialized, hidden, createdAt, updatedAt);
+    id,
+    fromId,
+    toId,
+    type,
+    serialized,
+    hidden,
+    createdAt,
+    updatedAt,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -5263,11 +6167,11 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
-  })  : id = Value(id),
-        fromId = Value(fromId),
-        toId = Value(toId),
-        type = Value(type),
-        serialized = Value(serialized);
+  }) : id = Value(id),
+       fromId = Value(fromId),
+       toId = Value(toId),
+       type = Value(type),
+       serialized = Value(serialized);
   static Insertable<LinkedDbEntry> custom({
     Expression<String>? id,
     Expression<String>? fromId,
@@ -5292,16 +6196,17 @@ class LinkedEntriesCompanion extends UpdateCompanion<LinkedDbEntry> {
     });
   }
 
-  LinkedEntriesCompanion copyWith(
-      {Value<String>? id,
-      Value<String>? fromId,
-      Value<String>? toId,
-      Value<String>? type,
-      Value<String>? serialized,
-      Value<bool?>? hidden,
-      Value<DateTime?>? createdAt,
-      Value<DateTime?>? updatedAt,
-      Value<int>? rowid}) {
+  LinkedEntriesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? fromId,
+    Value<String>? toId,
+    Value<String>? type,
+    Value<String>? serialized,
+    Value<bool?>? hidden,
+    Value<DateTime?>? createdAt,
+    Value<DateTime?>? updatedAt,
+    Value<int>? rowid,
+  }) {
     return LinkedEntriesCompanion(
       id: id ?? this.id,
       fromId: fromId ?? this.fromId,
@@ -5370,391 +6275,478 @@ abstract class _$JournalDb extends GeneratedDatabase {
   _$JournalDb.connect(DatabaseConnection c) : super.connect(c);
   $JournalDbManager get managers => $JournalDbManager(this);
   late final Journal journal = Journal(this);
-  late final Index idxJournalDateFromAsc = Index('idx_journal_date_from_asc',
-      'CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC)');
-  late final Index idxJournalDateFromDesc = Index('idx_journal_date_from_desc',
-      'CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC)');
-  late final Index idxJournalDateToAsc = Index('idx_journal_date_to_asc',
-      'CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC)');
-  late final Index idxJournalDateToDesc = Index('idx_journal_date_to_desc',
-      'CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC)');
-  late final Index idxJournalTab = Index('idx_journal_tab',
-      'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
-  late final Index idxJournalTasks = Index('idx_journal_tasks',
-      'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
-  late final Index idxJournalTypeSubtype = Index('idx_journal_type_subtype',
-      'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)');
+  late final Index idxJournalDateFromAsc = Index(
+    'idx_journal_date_from_asc',
+    'CREATE INDEX idx_journal_date_from_asc ON journal (date_from ASC)',
+  );
+  late final Index idxJournalDateFromDesc = Index(
+    'idx_journal_date_from_desc',
+    'CREATE INDEX idx_journal_date_from_desc ON journal (date_from DESC)',
+  );
+  late final Index idxJournalDateToAsc = Index(
+    'idx_journal_date_to_asc',
+    'CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC)',
+  );
+  late final Index idxJournalDateToDesc = Index(
+    'idx_journal_date_to_desc',
+    'CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC)',
+  );
+  late final Index idxJournalTab = Index(
+    'idx_journal_tab',
+    'CREATE INDEX idx_journal_tab ON journal (type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
+  );
+  late final Index idxJournalTasks = Index(
+    'idx_journal_tasks',
+    'CREATE INDEX idx_journal_tasks ON journal (type COLLATE BINARY ASC, task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
+  );
+  late final Index idxJournalTypeSubtype = Index(
+    'idx_journal_type_subtype',
+    'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
+  );
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
-  late final Index idxHabitDefinitionsId = Index('idx_habit_definitions_id',
-      'CREATE INDEX idx_habit_definitions_id ON habit_definitions (id)');
-  late final Index idxHabitDefinitionsName = Index('idx_habit_definitions_name',
-      'CREATE INDEX idx_habit_definitions_name ON habit_definitions (name)');
+  late final Index idxHabitDefinitionsId = Index(
+    'idx_habit_definitions_id',
+    'CREATE INDEX idx_habit_definitions_id ON habit_definitions (id)',
+  );
+  late final Index idxHabitDefinitionsName = Index(
+    'idx_habit_definitions_name',
+    'CREATE INDEX idx_habit_definitions_name ON habit_definitions (name)',
+  );
   late final Index idxHabitDefinitionsPrivate = Index(
-      'idx_habit_definitions_private',
-      'CREATE INDEX idx_habit_definitions_private ON habit_definitions (private)');
-  late final CategoryDefinitions categoryDefinitions =
-      CategoryDefinitions(this);
+    'idx_habit_definitions_private',
+    'CREATE INDEX idx_habit_definitions_private ON habit_definitions (private)',
+  );
+  late final CategoryDefinitions categoryDefinitions = CategoryDefinitions(
+    this,
+  );
   late final Index idxCategoryDefinitionsId = Index(
-      'idx_category_definitions_id',
-      'CREATE INDEX idx_category_definitions_id ON category_definitions (id)');
+    'idx_category_definitions_id',
+    'CREATE INDEX idx_category_definitions_id ON category_definitions (id)',
+  );
   late final Index idxCategoryDefinitionsName = Index(
-      'idx_category_definitions_name',
-      'CREATE INDEX idx_category_definitions_name ON category_definitions (name)');
+    'idx_category_definitions_name',
+    'CREATE INDEX idx_category_definitions_name ON category_definitions (name)',
+  );
   late final Index idxCategoryDefinitionsPrivate = Index(
-      'idx_category_definitions_private',
-      'CREATE INDEX idx_category_definitions_private ON category_definitions (private)');
+    'idx_category_definitions_private',
+    'CREATE INDEX idx_category_definitions_private ON category_definitions (private)',
+  );
   late final LabelDefinitions labelDefinitions = LabelDefinitions(this);
-  late final Index idxLabelDefinitionsId = Index('idx_label_definitions_id',
-      'CREATE INDEX idx_label_definitions_id ON label_definitions (id)');
-  late final Index idxLabelDefinitionsName = Index('idx_label_definitions_name',
-      'CREATE INDEX idx_label_definitions_name ON label_definitions (name)');
+  late final Index idxLabelDefinitionsId = Index(
+    'idx_label_definitions_id',
+    'CREATE INDEX idx_label_definitions_id ON label_definitions (id)',
+  );
+  late final Index idxLabelDefinitionsName = Index(
+    'idx_label_definitions_name',
+    'CREATE INDEX idx_label_definitions_name ON label_definitions (name)',
+  );
   late final Index idxLabelDefinitionsPrivate = Index(
-      'idx_label_definitions_private',
-      'CREATE INDEX idx_label_definitions_private ON label_definitions (private)');
-  late final DashboardDefinitions dashboardDefinitions =
-      DashboardDefinitions(this);
+    'idx_label_definitions_private',
+    'CREATE INDEX idx_label_definitions_private ON label_definitions (private)',
+  );
+  late final DashboardDefinitions dashboardDefinitions = DashboardDefinitions(
+    this,
+  );
   late final Index idxDashboardDefinitionsId = Index(
-      'idx_dashboard_definitions_id',
-      'CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id)');
+    'idx_dashboard_definitions_id',
+    'CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id)',
+  );
   late final Index idxDashboardDefinitionsName = Index(
-      'idx_dashboard_definitions_name',
-      'CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name)');
+    'idx_dashboard_definitions_name',
+    'CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name)',
+  );
   late final Index idxDashboardDefinitionsPrivate = Index(
-      'idx_dashboard_definitions_private',
-      'CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private)');
+    'idx_dashboard_definitions_private',
+    'CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private)',
+  );
   late final ConfigFlags configFlags = ConfigFlags(this);
   late final TagEntities tagEntities = TagEntities(this);
-  late final Index idxTagEntitiesId = Index('idx_tag_entities_id',
-      'CREATE INDEX idx_tag_entities_id ON tag_entities (id)');
-  late final Index idxTagEntitiesTag = Index('idx_tag_entities_tag',
-      'CREATE INDEX idx_tag_entities_tag ON tag_entities (tag)');
-  late final Index idxTagEntitiesType = Index('idx_tag_entities_type',
-      'CREATE INDEX idx_tag_entities_type ON tag_entities (type)');
-  late final Index idxTagEntitiesPrivate = Index('idx_tag_entities_private',
-      'CREATE INDEX idx_tag_entities_private ON tag_entities (private)');
-  late final Index idxTagEntitiesInactive = Index('idx_tag_entities_inactive',
-      'CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive)');
+  late final Index idxTagEntitiesId = Index(
+    'idx_tag_entities_id',
+    'CREATE INDEX idx_tag_entities_id ON tag_entities (id)',
+  );
+  late final Index idxTagEntitiesTag = Index(
+    'idx_tag_entities_tag',
+    'CREATE INDEX idx_tag_entities_tag ON tag_entities (tag)',
+  );
+  late final Index idxTagEntitiesType = Index(
+    'idx_tag_entities_type',
+    'CREATE INDEX idx_tag_entities_type ON tag_entities (type)',
+  );
+  late final Index idxTagEntitiesPrivate = Index(
+    'idx_tag_entities_private',
+    'CREATE INDEX idx_tag_entities_private ON tag_entities (private)',
+  );
+  late final Index idxTagEntitiesInactive = Index(
+    'idx_tag_entities_inactive',
+    'CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive)',
+  );
   late final Tagged tagged = Tagged(this);
-  late final Index idxTaggedJournalId = Index('idx_tagged_journal_id',
-      'CREATE INDEX idx_tagged_journal_id ON tagged (journal_id)');
-  late final Index idxTaggedTagEntityId = Index('idx_tagged_tag_entity_id',
-      'CREATE INDEX idx_tagged_tag_entity_id ON tagged (tag_entity_id)');
+  late final Index idxTaggedJournalId = Index(
+    'idx_tagged_journal_id',
+    'CREATE INDEX idx_tagged_journal_id ON tagged (journal_id)',
+  );
+  late final Index idxTaggedTagEntityId = Index(
+    'idx_tagged_tag_entity_id',
+    'CREATE INDEX idx_tagged_tag_entity_id ON tagged (tag_entity_id)',
+  );
   late final Labeled labeled = Labeled(this);
-  late final Index idxLabeledJournalId = Index('idx_labeled_journal_id',
-      'CREATE INDEX idx_labeled_journal_id ON labeled (journal_id)');
-  late final Index idxLabeledLabelId = Index('idx_labeled_label_id',
-      'CREATE INDEX idx_labeled_label_id ON labeled (label_id)');
+  late final Index idxLabeledJournalId = Index(
+    'idx_labeled_journal_id',
+    'CREATE INDEX idx_labeled_journal_id ON labeled (journal_id)',
+  );
+  late final Index idxLabeledLabelId = Index(
+    'idx_labeled_label_id',
+    'CREATE INDEX idx_labeled_label_id ON labeled (label_id)',
+  );
   late final LinkedEntries linkedEntries = LinkedEntries(this);
-  late final Index idxLinkedEntriesFromId = Index('idx_linked_entries_from_id',
-      'CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id)');
-  late final Index idxLinkedEntriesToId = Index('idx_linked_entries_to_id',
-      'CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id)');
-  late final Index idxLinkedEntriesType = Index('idx_linked_entries_type',
-      'CREATE INDEX idx_linked_entries_type ON linked_entries (type)');
-  late final Index idxLinkedEntriesHidden = Index('idx_linked_entries_hidden',
-      'CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden)');
+  late final Index idxLinkedEntriesFromId = Index(
+    'idx_linked_entries_from_id',
+    'CREATE INDEX idx_linked_entries_from_id ON linked_entries (from_id)',
+  );
+  late final Index idxLinkedEntriesToId = Index(
+    'idx_linked_entries_to_id',
+    'CREATE INDEX idx_linked_entries_to_id ON linked_entries (to_id)',
+  );
+  late final Index idxLinkedEntriesType = Index(
+    'idx_linked_entries_type',
+    'CREATE INDEX idx_linked_entries_type ON linked_entries (type)',
+  );
+  late final Index idxLinkedEntriesHidden = Index(
+    'idx_linked_entries_hidden',
+    'CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden)',
+  );
   late final Index idxLinkedEntriesFromIdHidden = Index(
-      'idx_linked_entries_from_id_hidden',
-      'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
+    'idx_linked_entries_from_id_hidden',
+    'CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)',
+  );
   late final Index idxLinkedEntriesToIdHidden = Index(
-      'idx_linked_entries_to_id_hidden',
-      'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)');
+    'idx_linked_entries_to_id_hidden',
+    'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)',
+  );
   Selectable<ConfigFlag> listConfigFlags() {
-    return customSelect('SELECT * FROM config_flags',
-        variables: [],
-        readsFrom: {
-          configFlags,
-        }).asyncMap(configFlags.mapFromRow);
+    return customSelect(
+      'SELECT * FROM config_flags',
+      variables: [],
+      readsFrom: {configFlags},
+    ).asyncMap(configFlags.mapFromRow);
   }
 
   Selectable<ConfigFlag> configFlagByName(String name) {
-    return customSelect('SELECT * FROM config_flags WHERE name = ?1',
-        variables: [
-          Variable<String>(name)
-        ],
-        readsFrom: {
-          configFlags,
-        }).asyncMap(configFlags.mapFromRow);
+    return customSelect(
+      'SELECT * FROM config_flags WHERE name = ?1',
+      variables: [Variable<String>(name)],
+      readsFrom: {configFlags},
+    ).asyncMap(configFlags.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredJournal(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<bool> privateStatuses,
-      List<int> flaggedStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<bool> privateStatuses,
+    List<int> flaggedStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses =
-        $expandVar($arrayStartIndex, privateStatuses.length);
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
     $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses =
-        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    final expandedflaggedStatuses = $expandVar(
+      $arrayStartIndex,
+      flaggedStatuses.length,
+    );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in privateStatuses) Variable<bool>($),
-          for (var $ in flaggedStatuses) Variable<int>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in flaggedStatuses) Variable<int>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredJournalByCategories(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<bool> privateStatuses,
-      List<int> flaggedStatuses,
-      List<String> categories,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<bool> privateStatuses,
+    List<int> flaggedStatuses,
+    List<String> categories,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses =
-        $expandVar($arrayStartIndex, privateStatuses.length);
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
     $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses =
-        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    final expandedflaggedStatuses = $expandVar(
+      $arrayStartIndex,
+      flaggedStatuses.length,
+    );
     $arrayStartIndex += flaggedStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in privateStatuses) Variable<bool>($),
-          for (var $ in flaggedStatuses) Variable<int>($),
-          for (var $ in categories) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) AND category IN ($expandedcategories) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in flaggedStatuses) Variable<int>($),
+        for (var $ in categories) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<String> filteredJournalIds(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<bool> privateStatuses,
-      List<int> flaggedStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<bool> privateStatuses,
+    List<int> flaggedStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses =
-        $expandVar($arrayStartIndex, privateStatuses.length);
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
     $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses =
-        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    final expandedflaggedStatuses = $expandVar(
+      $arrayStartIndex,
+      flaggedStatuses.length,
+    );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in privateStatuses) Variable<bool>($),
-          for (var $ in flaggedStatuses) Variable<int>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in flaggedStatuses) Variable<int>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<String> filteredJournalIds2(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<bool> privateStatuses,
-      List<int> flaggedStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<String> ids,
+    List<bool> starredStatuses,
+    List<bool> privateStatuses,
+    List<int> flaggedStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses =
-        $expandVar($arrayStartIndex, privateStatuses.length);
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
     $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses =
-        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    final expandedflaggedStatuses = $expandVar(
+      $arrayStartIndex,
+      flaggedStatuses.length,
+    );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in privateStatuses) Variable<bool>($),
-          for (var $ in flaggedStatuses) Variable<int>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in ids) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in flaggedStatuses) Variable<int>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<JournalDbEntity> filteredByTagJournal(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<bool> privateStatuses,
-      List<int> flaggedStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<String> ids,
+    List<bool> starredStatuses,
+    List<bool> privateStatuses,
+    List<int> flaggedStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedprivateStatuses =
-        $expandVar($arrayStartIndex, privateStatuses.length);
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
     $arrayStartIndex += privateStatuses.length;
-    final expandedflaggedStatuses =
-        $expandVar($arrayStartIndex, flaggedStatuses.length);
+    final expandedflaggedStatuses = $expandVar(
+      $arrayStartIndex,
+      flaggedStatuses.length,
+    );
     $arrayStartIndex += flaggedStatuses.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in privateStatuses) Variable<bool>($),
-          for (var $ in flaggedStatuses) Variable<int>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND private IN ($expandedprivateStatuses) AND flag IN ($expandedflaggedStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in ids) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+        for (var $ in flaggedStatuses) Variable<int>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredByTaggedWithId(
-      String tagId, DateTime rangeStart, DateTime rangeEnd, int limit) {
+    String tagId,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?2 AND date_to <= ?3 ORDER BY date_from DESC LIMIT ?4',
-        variables: [
-          Variable<String>(tagId),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          journal,
-          tagged,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?2 AND date_to <= ?3 ORDER BY date_from DESC LIMIT ?4',
+      variables: [
+        Variable<String>(tagId),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+        Variable<int>(limit),
+      ],
+      readsFrom: {journal, tagged, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredByTaggedWithIds(
-      List<String> tagIds, DateTime rangeStart, DateTime rangeEnd, int limit) {
+    List<String> tagIds,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+    int limit,
+  ) {
     var $arrayStartIndex = 4;
     final expandedtagIds = $expandVar($arrayStartIndex, tagIds.length);
     $arrayStartIndex += tagIds.length;
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id IN ($expandedtagIds)) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC LIMIT ?3',
-        variables: [
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd),
-          Variable<int>(limit),
-          for (var $ in tagIds) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          tagged,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id IN ($expandedtagIds)) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC LIMIT ?3',
+      variables: [
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+        Variable<int>(limit),
+        for (var $ in tagIds) Variable<String>($),
+      ],
+      readsFrom: {journal, tagged, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> sortedCalenderEntriesInRange(
-      DateTime rangeStart, DateTime rangeEnd) {
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\') AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
-        variables: [
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN (\'JournalEntry\', \'WorkoutEntry\') AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 ORDER BY date_from DESC',
+      variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredByTagMatch(
-      String match, DateTime rangeStart, DateTime rangeEnd) {
+    String match,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id IN (SELECT id FROM tag_entities WHERE tag LIKE ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE)) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?2 AND date_to <= ?3 ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(match),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-          tagged,
-          tagEntities,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT journal_id FROM tagged WHERE tag_entity_id IN (SELECT id FROM tag_entities WHERE tag LIKE ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE)) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?2 AND date_to <= ?3 ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(match),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal, tagged, tagEntities, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredTasks(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String> categories,
-      bool filterByLabels,
-      int labelFilterCount,
-      List<String> labelIds,
-      bool includeUnlabeled,
-      bool filterByPriorities,
-      int priorityFilterCount,
-      List<String?> priorities,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 8;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
@@ -5763,54 +6755,56 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?6 OFFSET ?7',
-        variables: [
-          Variable<bool>(filterByLabels),
-          Variable<int>(labelFilterCount),
-          Variable<bool>(includeUnlabeled),
-          Variable<bool>(filterByPriorities),
-          Variable<int>(priorityFilterCount),
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($),
-          for (var $ in priorities) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-          labeled,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?6 OFFSET ?7',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags, labeled},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredTasks2(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String> categories,
-      bool filterByLabels,
-      int labelFilterCount,
-      List<String> labelIds,
-      bool includeUnlabeled,
-      bool filterByPriorities,
-      int priorityFilterCount,
-      List<String?> priorities,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<String> ids,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 8;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
@@ -5819,52 +6813,54 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?6 OFFSET ?7',
-        variables: [
-          Variable<bool>(filterByLabels),
-          Variable<int>(labelFilterCount),
-          Variable<bool>(includeUnlabeled),
-          Variable<bool>(filterByPriorities),
-          Variable<int>(priorityFilterCount),
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($),
-          for (var $ in priorities) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-          labeled,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC LIMIT ?6 OFFSET ?7',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in ids) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags, labeled},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredTasksByDate(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String> categories,
-      bool filterByLabels,
-      int labelFilterCount,
-      List<String> labelIds,
-      bool includeUnlabeled,
-      bool filterByPriorities,
-      int priorityFilterCount,
-      List<String?> priorities,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 8;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
@@ -5873,54 +6869,56 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
-        variables: [
-          Variable<bool>(filterByLabels),
-          Variable<int>(labelFilterCount),
-          Variable<bool>(includeUnlabeled),
-          Variable<bool>(filterByPriorities),
-          Variable<int>(priorityFilterCount),
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($),
-          for (var $ in priorities) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-          labeled,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags, labeled},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> filteredTasksByDate2(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      List<String> categories,
-      bool filterByLabels,
-      int labelFilterCount,
-      List<String> labelIds,
-      bool includeUnlabeled,
-      bool filterByPriorities,
-      int priorityFilterCount,
-      List<String?> priorities,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<String> ids,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    List<String> categories,
+    bool filterByLabels,
+    int labelFilterCount,
+    List<String> labelIds,
+    bool includeUnlabeled,
+    bool filterByPriorities,
+    int priorityFilterCount,
+    List<String?> priorities,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 8;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     final expandedcategories = $expandVar($arrayStartIndex, categories.length);
     $arrayStartIndex += categories.length;
@@ -5929,434 +6927,383 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedpriorities = $expandVar($arrayStartIndex, priorities.length);
     $arrayStartIndex += priorities.length;
     return customSelect(
-        'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
-        variables: [
-          Variable<bool>(filterByLabels),
-          Variable<int>(labelFilterCount),
-          Variable<bool>(includeUnlabeled),
-          Variable<bool>(filterByPriorities),
-          Variable<int>(priorityFilterCount),
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($),
-          for (var $ in categories) Variable<String>($),
-          for (var $ in labelIds) Variable<String>($),
-          for (var $ in priorities) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-          labeled,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) AND category IN ($expandedcategories) AND(CASE WHEN ?1 THEN CASE WHEN ?2 > 0 AND id IN (SELECT journal_id FROM labeled WHERE label_id IN ($expandedlabelIds)) THEN 1 WHEN ?3 AND id NOT IN (SELECT journal_id FROM labeled) THEN 1 ELSE 0 END ELSE 1 END)= 1 AND(CASE WHEN ?4 THEN CASE WHEN ?5 = 0 THEN 1 WHEN task_priority IN ($expandedpriorities) THEN 1 ELSE 0 END ELSE 1 END)= 1 ORDER BY date_from DESC, id ASC LIMIT ?6 OFFSET ?7',
+      variables: [
+        Variable<bool>(filterByLabels),
+        Variable<int>(labelFilterCount),
+        Variable<bool>(includeUnlabeled),
+        Variable<bool>(filterByPriorities),
+        Variable<int>(priorityFilterCount),
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in ids) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+        for (var $ in categories) Variable<String>($),
+        for (var $ in labelIds) Variable<String>($),
+        for (var $ in priorities) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags, labeled},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<String> filteredTaskIds(
-      List<String> types,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     return customSelect(
-        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<String> filteredTaskIds2(
-      List<String> types,
-      List<String> ids,
-      List<bool> starredStatuses,
-      List<String?> taskStatuses,
-      int limit,
-      int offset) {
+    List<String> types,
+    List<String> ids,
+    List<bool> starredStatuses,
+    List<String?> taskStatuses,
+    int limit,
+    int offset,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    final expandedstarredStatuses =
-        $expandVar($arrayStartIndex, starredStatuses.length);
+    final expandedstarredStatuses = $expandVar(
+      $arrayStartIndex,
+      starredStatuses.length,
+    );
     $arrayStartIndex += starredStatuses.length;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     return customSelect(
-        'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset),
-          for (var $ in types) Variable<String>($),
-          for (var $ in ids) Variable<String>($),
-          for (var $ in starredStatuses) Variable<bool>($),
-          for (var $ in taskStatuses) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE type IN ($expandedtypes) AND deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND starred IN ($expandedstarredStatuses) AND task = 1 AND task_status IN ($expandedtaskStatuses) ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [
+        Variable<int>(limit),
+        Variable<int>(offset),
+        for (var $ in types) Variable<String>($),
+        for (var $ in ids) Variable<String>($),
+        for (var $ in starredStatuses) Variable<bool>($),
+        for (var $ in taskStatuses) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<JournalDbEntity> orderedJournal(int limit, int offset) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [Variable<int>(limit), Variable<int>(offset)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> orderedJournalInterval(
-      DateTime start, DateTime end, int limit, int offset) {
+    DateTime start,
+    DateTime end,
+    int limit,
+    int offset,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
-        variables: [
-          Variable<DateTime>(start),
-          Variable<DateTime>(end),
-          Variable<int>(limit),
-          Variable<int>(offset)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND updated_at >= ?1 AND updated_at < ?2 ORDER BY updated_at ASC, id ASC LIMIT ?3 OFFSET ?4',
+      variables: [
+        Variable<DateTime>(start),
+        Variable<DateTime>(end),
+        Variable<int>(limit),
+        Variable<int>(offset),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> orderedAudioEntries(int limit, int offset) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'JournalAudio\' AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
-        variables: [
-          Variable<int>(limit),
-          Variable<int>(offset)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'JournalAudio\' AND deleted = FALSE ORDER BY date_from DESC LIMIT ?1 OFFSET ?2',
+      variables: [Variable<int>(limit), Variable<int>(offset)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> entriesFlaggedImport(int limit) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND flag = 1 ORDER BY date_from DESC LIMIT ?1',
-        variables: [
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND flag = 1 ORDER BY date_from DESC LIMIT ?1',
+      variables: [Variable<int>(limit)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<Conflict> conflictsByStatus(int status, int limit) {
     return customSelect(
-        'SELECT * FROM conflicts WHERE status = ?1 ORDER BY created_at DESC LIMIT ?2',
-        variables: [
-          Variable<int>(status),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          conflicts,
-        }).asyncMap(conflicts.mapFromRow);
+      'SELECT * FROM conflicts WHERE status = ?1 ORDER BY created_at DESC LIMIT ?2',
+      variables: [Variable<int>(status), Variable<int>(limit)],
+      readsFrom: {conflicts},
+    ).asyncMap(conflicts.mapFromRow);
   }
 
   Selectable<Conflict> conflictsById(String id) {
     return customSelect(
-        'SELECT * FROM conflicts WHERE id = ?1 ORDER BY created_at DESC',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          conflicts,
-        }).asyncMap(conflicts.mapFromRow);
+      'SELECT * FROM conflicts WHERE id = ?1 ORDER BY created_at DESC',
+      variables: [Variable<String>(id)],
+      readsFrom: {conflicts},
+    ).asyncMap(conflicts.mapFromRow);
   }
 
   Selectable<MeasurableDbEntity> activeMeasurableTypes() {
     return customSelect(
-        'SELECT * FROM measurable_types WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [],
-        readsFrom: {
-          measurableTypes,
-          configFlags,
-        }).asyncMap(measurableTypes.mapFromRow);
+      'SELECT * FROM measurable_types WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [],
+      readsFrom: {measurableTypes, configFlags},
+    ).asyncMap(measurableTypes.mapFromRow);
   }
 
   Selectable<MeasurableDbEntity> measurableTypeById(String id) {
     return customSelect(
-        'SELECT * FROM measurable_types WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          measurableTypes,
-          configFlags,
-        }).asyncMap(measurableTypes.mapFromRow);
+      'SELECT * FROM measurable_types WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(id)],
+      readsFrom: {measurableTypes, configFlags},
+    ).asyncMap(measurableTypes.mapFromRow);
   }
 
   Selectable<JournalDbEntity> measurementsByType(
-      String? subtype, DateTime rangeStart, DateTime rangeEnd) {
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'MeasurementEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(subtype),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'MeasurementEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> habitCompletionsByHabitId(
-      String? habitId, DateTime rangeStart, DateTime rangeEnd) {
+    String? habitId,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(habitId),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(habitId),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> habitCompletionsInRange(DateTime rangeStart) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY date_from ASC',
-        variables: [
-          Variable<DateTime>(rangeStart)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'HabitCompletionEntry\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND date_from >= ?1 AND deleted = FALSE ORDER BY date_from ASC',
+      variables: [Variable<DateTime>(rangeStart)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> quantitativeByType(
-      String? subtype, DateTime rangeStart, DateTime rangeEnd) {
+    String? subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(subtype),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> latestQuantByType(String? subtype) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND deleted = FALSE ORDER BY date_from DESC LIMIT 1',
-        variables: [
-          Variable<String>(subtype)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'QuantitativeEntry\' AND subtype = ?1 AND deleted = FALSE ORDER BY date_from DESC LIMIT 1',
+      variables: [Variable<String>(subtype)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> workouts(DateTime rangeStart, DateTime rangeEnd) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND date_from >= ?1 AND date_to <= ?2 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> findLatestWorkout() {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND deleted = FALSE ORDER BY date_to DESC LIMIT 1',
-        variables: [],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'WorkoutEntry\' AND deleted = FALSE ORDER BY date_to DESC LIMIT 1',
+      variables: [],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> surveysByType(
-      String subtype, DateTime rangeStart, DateTime rangeEnd) {
+    String subtype,
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'SurveyEntry\' AND subtype LIKE ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(subtype),
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'SurveyEntry\' AND subtype LIKE ?1 AND date_from >= ?2 AND date_to <= ?3 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(subtype),
+        Variable<DateTime>(rangeStart),
+        Variable<DateTime>(rangeEnd),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<int> countJournalEntries() {
     return customSelect(
-        'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE',
-        variables: [],
-        readsFrom: {
-          journal,
-        }).map((QueryRow row) => row.read<int>('_c0'));
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE',
+      variables: [],
+      readsFrom: {journal},
+    ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
   Selectable<int> countImportFlagEntries() {
     return customSelect(
-        'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND flag = 1',
-        variables: [],
-        readsFrom: {
-          journal,
-        }).map((QueryRow row) => row.read<int>('_c0'));
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND flag = 1',
+      variables: [],
+      readsFrom: {journal},
+    ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
   Selectable<int> countInProgressTasks(List<String?> taskStatuses) {
     var $arrayStartIndex = 1;
-    final expandedtaskStatuses =
-        $expandVar($arrayStartIndex, taskStatuses.length);
+    final expandedtaskStatuses = $expandVar(
+      $arrayStartIndex,
+      taskStatuses.length,
+    );
     $arrayStartIndex += taskStatuses.length;
     return customSelect(
-        'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND task = 1 AND task_status IN ($expandedtaskStatuses)',
-        variables: [
-          for (var $ in taskStatuses) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<int>('_c0'));
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND task = 1 AND task_status IN ($expandedtaskStatuses)',
+      variables: [for (var $ in taskStatuses) Variable<String>($)],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
   Selectable<TagDbEntity> allTagEntities() {
     return customSelect(
-        'SELECT * FROM tag_entities WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY tag COLLATE NOCASE',
-        variables: [],
-        readsFrom: {
-          tagEntities,
-          configFlags,
-        }).asyncMap(tagEntities.mapFromRow);
+      'SELECT * FROM tag_entities WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY tag COLLATE NOCASE',
+      variables: [],
+      readsFrom: {tagEntities, configFlags},
+    ).asyncMap(tagEntities.mapFromRow);
   }
 
   Selectable<DashboardDefinitionDbEntity> allDashboards() {
     return customSelect(
-        'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
-        variables: [],
-        readsFrom: {
-          dashboardDefinitions,
-          configFlags,
-        }).asyncMap(dashboardDefinitions.mapFromRow);
+      'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
+      variables: [],
+      readsFrom: {dashboardDefinitions, configFlags},
+    ).asyncMap(dashboardDefinitions.mapFromRow);
   }
 
   Selectable<DashboardDefinitionDbEntity> dashboardById(String id) {
     return customSelect(
-        'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND id = ?1 AND deleted = FALSE',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          dashboardDefinitions,
-          configFlags,
-        }).asyncMap(dashboardDefinitions.mapFromRow);
+      'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND id = ?1 AND deleted = FALSE',
+      variables: [Variable<String>(id)],
+      readsFrom: {dashboardDefinitions, configFlags},
+    ).asyncMap(dashboardDefinitions.mapFromRow);
   }
 
   Selectable<HabitDefinitionDbEntity> allHabitDefinitions() {
     return customSelect(
-        'SELECT * FROM habit_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE',
-        variables: [],
-        readsFrom: {
-          habitDefinitions,
-          configFlags,
-        }).asyncMap(habitDefinitions.mapFromRow);
+      'SELECT * FROM habit_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE',
+      variables: [],
+      readsFrom: {habitDefinitions, configFlags},
+    ).asyncMap(habitDefinitions.mapFromRow);
   }
 
   Selectable<HabitDefinitionDbEntity> habitById(String id) {
     return customSelect(
-        'SELECT * FROM habit_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          habitDefinitions,
-          configFlags,
-        }).asyncMap(habitDefinitions.mapFromRow);
+      'SELECT * FROM habit_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(id)],
+      readsFrom: {habitDefinitions, configFlags},
+    ).asyncMap(habitDefinitions.mapFromRow);
   }
 
   Selectable<CategoryDefinitionDbEntity> allCategoryDefinitions() {
     return customSelect(
-        'SELECT * FROM category_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
-        variables: [],
-        readsFrom: {
-          categoryDefinitions,
-          configFlags,
-        }).asyncMap(categoryDefinitions.mapFromRow);
+      'SELECT * FROM category_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
+      variables: [],
+      readsFrom: {categoryDefinitions, configFlags},
+    ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
   Selectable<CategoryDefinitionDbEntity> categoryById(String id) {
     return customSelect(
-        'SELECT * FROM category_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          categoryDefinitions,
-          configFlags,
-        }).asyncMap(categoryDefinitions.mapFromRow);
+      'SELECT * FROM category_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(id)],
+      readsFrom: {categoryDefinitions, configFlags},
+    ).asyncMap(categoryDefinitions.mapFromRow);
   }
 
   Selectable<LabelDefinitionDbEntity> allLabelDefinitions() {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY name COLLATE NOCASE',
-        variables: [],
-        readsFrom: {
-          labelDefinitions,
-          configFlags,
-        }).asyncMap(labelDefinitions.mapFromRow);
+      'SELECT * FROM label_definitions WHERE deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY name COLLATE NOCASE',
+      variables: [],
+      readsFrom: {labelDefinitions, configFlags},
+    ).asyncMap(labelDefinitions.mapFromRow);
   }
 
   Selectable<LabelDefinitionDbEntity> labelDefinitionById(String id) {
     return customSelect(
-        'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          labelDefinitions,
-          configFlags,
-        }).asyncMap(labelDefinitions.mapFromRow);
+      'SELECT * FROM label_definitions WHERE deleted = FALSE AND id = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(id)],
+      readsFrom: {labelDefinitions, configFlags},
+    ).asyncMap(labelDefinitions.mapFromRow);
   }
 
   Selectable<TagDbEntity> matchingTagEntities(
-      String match, bool? inactive, int limit) {
+    String match,
+    bool? inactive,
+    int limit,
+  ) {
     return customSelect(
-        'SELECT * FROM tag_entities WHERE tag LIKE ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND inactive IN (0, ?2) AND deleted = FALSE LIMIT ?3',
-        variables: [
-          Variable<String>(match),
-          Variable<bool>(inactive),
-          Variable<int>(limit)
-        ],
-        readsFrom: {
-          tagEntities,
-          configFlags,
-        }).asyncMap(tagEntities.mapFromRow);
+      'SELECT * FROM tag_entities WHERE tag LIKE ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND inactive IN (0, ?2) AND deleted = FALSE LIMIT ?3',
+      variables: [
+        Variable<String>(match),
+        Variable<bool>(inactive),
+        Variable<int>(limit),
+      ],
+      readsFrom: {tagEntities, configFlags},
+    ).asyncMap(tagEntities.mapFromRow);
   }
 
   Future<int> deleteTaggedForId(String id) {
@@ -6369,13 +7316,11 @@ abstract class _$JournalDb extends GeneratedDatabase {
   }
 
   Selectable<String> labeledForJournal(String journalId) {
-    return customSelect('SELECT label_id FROM labeled WHERE journal_id = ?1',
-        variables: [
-          Variable<String>(journalId)
-        ],
-        readsFrom: {
-          labeled,
-        }).map((QueryRow row) => row.read<String>('label_id'));
+    return customSelect(
+      'SELECT label_id FROM labeled WHERE journal_id = ?1',
+      variables: [Variable<String>(journalId)],
+      readsFrom: {labeled},
+    ).map((QueryRow row) => row.read<String>('label_id'));
   }
 
   Future<int> deleteLabeledRow(String journalId, String labelId) {
@@ -6452,42 +7397,34 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<String> entryIdsForTagId(String tagId) {
     return customSelect(
-        'SELECT journal_id FROM tagged WHERE tag_entity_id = ?1',
-        variables: [
-          Variable<String>(tagId)
-        ],
-        readsFrom: {
-          tagged,
-        }).map((QueryRow row) => row.read<String>('journal_id'));
+      'SELECT journal_id FROM tagged WHERE tag_entity_id = ?1',
+      variables: [Variable<String>(tagId)],
+      readsFrom: {tagged},
+    ).map((QueryRow row) => row.read<String>('journal_id'));
   }
 
   Selectable<int> countTagged() {
-    return customSelect('SELECT COUNT(*) AS _c0 FROM tagged',
-        variables: [],
-        readsFrom: {
-          tagged,
-        }).map((QueryRow row) => row.read<int>('_c0'));
+    return customSelect(
+      'SELECT COUNT(*) AS _c0 FROM tagged',
+      variables: [],
+      readsFrom: {tagged},
+    ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
   Selectable<int> countLabeled() {
-    return customSelect('SELECT COUNT(*) AS _c0 FROM labeled',
-        variables: [],
-        readsFrom: {
-          labeled,
-        }).map((QueryRow row) => row.read<int>('_c0'));
+    return customSelect(
+      'SELECT COUNT(*) AS _c0 FROM labeled',
+      variables: [],
+      readsFrom: {labeled},
+    ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
   Selectable<JournalDbEntity> linkedJournalEntities(String fromId) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden = FALSE) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(fromId)
-        ],
-        readsFrom: {
-          journal,
-          linkedEntries,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden = FALSE) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [Variable<String>(fromId)],
+      readsFrom: {journal, linkedEntries, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<String> journalEntityIdsByDateFromDesc(List<String> ids) {
@@ -6495,26 +7432,18 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
     return customSelect(
-        'SELECT id FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          for (var $ in ids) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<String> journalEntityIdsByCategory(String categoryId) {
     return customSelect(
-        'SELECT id FROM journal WHERE deleted = FALSE AND category = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(categoryId)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).map((QueryRow row) => row.read<String>('id'));
+      'SELECT id FROM journal WHERE deleted = FALSE AND category = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [Variable<String>(categoryId)],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<String>('id'));
   }
 
   Selectable<LinkedDbEntry> linksForIds(List<String> toIds) {
@@ -6522,13 +7451,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedtoIds = $expandVar($arrayStartIndex, toIds.length);
     $arrayStartIndex += toIds.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
-        variables: [
-          for (var $ in toIds) Variable<String>($)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).asyncMap(linkedEntries.mapFromRow);
+      'SELECT * FROM linked_entries WHERE to_id IN ($expandedtoIds)',
+      variables: [for (var $ in toIds) Variable<String>($)],
+      readsFrom: {linkedEntries},
+    ).asyncMap(linkedEntries.mapFromRow);
   }
 
   Selectable<LinkedDbEntry> linksFromIds(List<String> fromIds) {
@@ -6536,26 +7462,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedfromIds = $expandVar($arrayStartIndex, fromIds.length);
     $arrayStartIndex += fromIds.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds) AND hidden = FALSE',
-        variables: [
-          for (var $ in fromIds) Variable<String>($)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).asyncMap(linkedEntries.mapFromRow);
+      'SELECT * FROM linked_entries WHERE from_id IN ($expandedfromIds) AND hidden = FALSE',
+      variables: [for (var $ in fromIds) Variable<String>($)],
+      readsFrom: {linkedEntries},
+    ).asyncMap(linkedEntries.mapFromRow);
   }
 
   Selectable<JournalDbEntity> entriesForIds(List<String> ids) {
     var $arrayStartIndex = 1;
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
-    return customSelect('SELECT * FROM journal WHERE id IN ($expandedids)',
-        variables: [
-          for (var $ in ids) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-        }).asyncMap(journal.mapFromRow);
+    return customSelect(
+      'SELECT * FROM journal WHERE id IN ($expandedids)',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> journalEntitiesByIds(List<String> ids) {
@@ -6563,14 +7484,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedids = $expandVar($arrayStartIndex, ids.length);
     $arrayStartIndex += ids.length;
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          for (var $ in ids) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
@@ -6578,24 +7495,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
     $arrayStartIndex += hidden.length;
     return customSelect(
-        'SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
-        variables: [
-          Variable<String>(fromId),
-          for (var $ in hidden) Variable<bool>($)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).map((QueryRow row) => row.read<String>('to_id'));
+      'SELECT to_id FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden)',
+      variables: [
+        Variable<String>(fromId),
+        for (var $ in hidden) Variable<bool>($),
+      ],
+      readsFrom: {linkedEntries},
+    ).map((QueryRow row) => row.read<String>('to_id'));
   }
 
   Selectable<String> parentLinkedEntityIds(String toId) {
-    return customSelect('SELECT from_id FROM linked_entries WHERE to_id = ?1',
-        variables: [
-          Variable<String>(toId)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).map((QueryRow row) => row.read<String>('from_id'));
+    return customSelect(
+      'SELECT from_id FROM linked_entries WHERE to_id = ?1',
+      variables: [Variable<String>(toId)],
+      readsFrom: {linkedEntries},
+    ).map((QueryRow row) => row.read<String>('from_id'));
   }
 
   Selectable<LinkedDbEntry> linksFromId(String fromId, List<bool?> hidden) {
@@ -6603,27 +7517,21 @@ abstract class _$JournalDb extends GeneratedDatabase {
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);
     $arrayStartIndex += hidden.length;
     return customSelect(
-        'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden) ORDER BY created_at DESC',
-        variables: [
-          Variable<String>(fromId),
-          for (var $ in hidden) Variable<bool>($)
-        ],
-        readsFrom: {
-          linkedEntries,
-        }).asyncMap(linkedEntries.mapFromRow);
+      'SELECT * FROM linked_entries WHERE from_id = ?1 AND hidden IN ($expandedhidden) ORDER BY created_at DESC',
+      variables: [
+        Variable<String>(fromId),
+        for (var $ in hidden) Variable<bool>($),
+      ],
+      readsFrom: {linkedEntries},
+    ).asyncMap(linkedEntries.mapFromRow);
   }
 
   Selectable<JournalDbEntity> linkedToJournalEntities(String toId) {
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT from_id FROM linked_entries WHERE to_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          Variable<String>(toId)
-        ],
-        readsFrom: {
-          journal,
-          linkedEntries,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN (SELECT from_id FROM linked_entries WHERE to_id = ?1) AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [Variable<String>(toId)],
+      readsFrom: {journal, linkedEntries, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Future<int> deleteLink(String fromId, String toId) {
@@ -6635,123 +7543,105 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
-  Selectable<JournalDbEntity> workEntriesInDateRange(List<String> types,
-      List<String> categoryIds, DateTime startDate, DateTime endDate) {
+  Selectable<JournalDbEntity> workEntriesInDateRange(
+    List<String> types,
+    List<String> categoryIds,
+    DateTime startDate,
+    DateTime endDate,
+  ) {
     var $arrayStartIndex = 3;
     final expandedtypes = $expandVar($arrayStartIndex, types.length);
     $arrayStartIndex += types.length;
-    final expandedcategoryIds =
-        $expandVar($arrayStartIndex, categoryIds.length);
+    final expandedcategoryIds = $expandVar(
+      $arrayStartIndex,
+      categoryIds.length,
+    );
     $arrayStartIndex += categoryIds.length;
     return customSelect(
-        'SELECT * FROM journal WHERE deleted = FALSE AND type IN ($expandedtypes) AND category IN ($expandedcategoryIds) AND date_from >= ?1 AND date_from <= ?2 AND(type = \'JournalAudio\' OR(type = \'JournalEntry\' AND(julianday(date_to) - julianday(date_from))* 24 * 3600 >= 15))AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          Variable<DateTime>(startDate),
-          Variable<DateTime>(endDate),
-          for (var $ in types) Variable<String>($),
-          for (var $ in categoryIds) Variable<String>($)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE deleted = FALSE AND type IN ($expandedtypes) AND category IN ($expandedcategoryIds) AND date_from >= ?1 AND date_from <= ?2 AND(type = \'JournalAudio\' OR(type = \'JournalEntry\' AND(julianday(date_to) - julianday(date_from))* 24 * 3600 >= 15))AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [
+        Variable<DateTime>(startDate),
+        Variable<DateTime>(endDate),
+        for (var $ in types) Variable<String>($),
+        for (var $ in categoryIds) Variable<String>($),
+      ],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> dayPlanById(String id) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
-        variables: [
-          Variable<String>(id)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND id = ?1 AND deleted = FALSE AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(id)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> dayPlansInRange(
-      DateTime rangeStart, DateTime rangeEnd) {
+    DateTime rangeStart,
+    DateTime rangeEnd,
+  ) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
-        variables: [
-          Variable<DateTime>(rangeStart),
-          Variable<DateTime>(rangeEnd)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'DayPlanEntry\' AND deleted = FALSE AND date_from >= ?1 AND date_to <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
+      variables: [Variable<DateTime>(rangeStart), Variable<DateTime>(rangeEnd)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> tasksDueOnOrBefore(String endDate) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') <= ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
-        variables: [
-          Variable<String>(endDate)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') <= ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
+      variables: [Variable<String>(endDate)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> tasksDueOn(String startDate, String endDate) {
     return customSelect(
-        'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') >= ?1 AND json_extract(serialized, \'\$.data.due\') <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
-        variables: [
-          Variable<String>(startDate),
-          Variable<String>(endDate)
-        ],
-        readsFrom: {
-          journal,
-          configFlags,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') >= ?1 AND json_extract(serialized, \'\$.data.due\') <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
+      variables: [Variable<String>(startDate), Variable<String>(endDate)],
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<RatingsForTimeEntriesResult> ratingsForTimeEntries(
-      List<String> timeEntryIds) {
+    List<String> timeEntryIds,
+  ) {
     var $arrayStartIndex = 1;
-    final expandedtimeEntryIds =
-        $expandVar($arrayStartIndex, timeEntryIds.length);
+    final expandedtimeEntryIds = $expandVar(
+      $arrayStartIndex,
+      timeEntryIds.length,
+    );
     $arrayStartIndex += timeEntryIds.length;
     return customSelect(
-        'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
-        variables: [
-          for (var $ in timeEntryIds) Variable<String>($)
-        ],
-        readsFrom: {
-          linkedEntries,
-          journal,
-        }).map((QueryRow row) => RatingsForTimeEntriesResult(
-          ratingId: row.read<String>('rating_id'),
-          timeEntryId: row.read<String>('time_entry_id'),
-        ));
+      'SELECT le.from_id AS rating_id, le.to_id AS time_entry_id FROM linked_entries AS le INNER JOIN journal AS j ON j.id = le.from_id WHERE le.to_id IN ($expandedtimeEntryIds) AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at ASC',
+      variables: [for (var $ in timeEntryIds) Variable<String>($)],
+      readsFrom: {linkedEntries, journal},
+    ).map(
+      (QueryRow row) => RatingsForTimeEntriesResult(
+        ratingId: row.read<String>('rating_id'),
+        timeEntryId: row.read<String>('time_entry_id'),
+      ),
+    );
   }
 
   Selectable<JournalDbEntity> ratingForTimeEntry(
-      String targetId, String catalogId) {
+    String targetId,
+    String catalogId,
+  ) {
     return customSelect(
-        'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(NULLIF(j.subtype, \'\'), \'session\') = ?2 AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
-        variables: [
-          Variable<String>(targetId),
-          Variable<String>(catalogId)
-        ],
-        readsFrom: {
-          journal,
-          linkedEntries,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(NULLIF(j.subtype, \'\'), \'session\') = ?2 AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY j.updated_at DESC LIMIT 1',
+      variables: [Variable<String>(targetId), Variable<String>(catalogId)],
+      readsFrom: {journal, linkedEntries},
+    ).asyncMap(journal.mapFromRow);
   }
 
   Selectable<JournalDbEntity> allRatingsForTarget(String targetId) {
     return customSelect(
-        'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY COALESCE(NULLIF(j.subtype, \'\'), \'session\') ASC, j.updated_at DESC',
-        variables: [
-          Variable<String>(targetId)
-        ],
-        readsFrom: {
-          journal,
-          linkedEntries,
-        }).asyncMap(journal.mapFromRow);
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON j.id = le.from_id WHERE le.to_id = ?1 AND le.type = \'RatingLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY COALESCE(NULLIF(j.subtype, \'\'), \'session\') ASC, j.updated_at DESC',
+      variables: [Variable<String>(targetId)],
+      readsFrom: {journal, linkedEntries},
+    ).asyncMap(journal.mapFromRow);
   }
 
   @override
@@ -6759,140 +7649,140 @@ abstract class _$JournalDb extends GeneratedDatabase {
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
-        journal,
-        idxJournalDateFromAsc,
-        idxJournalDateFromDesc,
-        idxJournalDateToAsc,
-        idxJournalDateToDesc,
-        idxJournalTab,
-        idxJournalTasks,
-        idxJournalTypeSubtype,
-        conflicts,
-        measurableTypes,
-        habitDefinitions,
-        idxHabitDefinitionsId,
-        idxHabitDefinitionsName,
-        idxHabitDefinitionsPrivate,
-        categoryDefinitions,
-        idxCategoryDefinitionsId,
-        idxCategoryDefinitionsName,
-        idxCategoryDefinitionsPrivate,
-        labelDefinitions,
-        idxLabelDefinitionsId,
-        idxLabelDefinitionsName,
-        idxLabelDefinitionsPrivate,
-        dashboardDefinitions,
-        idxDashboardDefinitionsId,
-        idxDashboardDefinitionsName,
-        idxDashboardDefinitionsPrivate,
-        configFlags,
-        tagEntities,
-        idxTagEntitiesId,
-        idxTagEntitiesTag,
-        idxTagEntitiesType,
-        idxTagEntitiesPrivate,
-        idxTagEntitiesInactive,
-        tagged,
-        idxTaggedJournalId,
-        idxTaggedTagEntityId,
-        labeled,
-        idxLabeledJournalId,
-        idxLabeledLabelId,
-        linkedEntries,
-        idxLinkedEntriesFromId,
-        idxLinkedEntriesToId,
-        idxLinkedEntriesType,
-        idxLinkedEntriesHidden,
-        idxLinkedEntriesFromIdHidden,
-        idxLinkedEntriesToIdHidden
-      ];
+    journal,
+    idxJournalDateFromAsc,
+    idxJournalDateFromDesc,
+    idxJournalDateToAsc,
+    idxJournalDateToDesc,
+    idxJournalTab,
+    idxJournalTasks,
+    idxJournalTypeSubtype,
+    conflicts,
+    measurableTypes,
+    habitDefinitions,
+    idxHabitDefinitionsId,
+    idxHabitDefinitionsName,
+    idxHabitDefinitionsPrivate,
+    categoryDefinitions,
+    idxCategoryDefinitionsId,
+    idxCategoryDefinitionsName,
+    idxCategoryDefinitionsPrivate,
+    labelDefinitions,
+    idxLabelDefinitionsId,
+    idxLabelDefinitionsName,
+    idxLabelDefinitionsPrivate,
+    dashboardDefinitions,
+    idxDashboardDefinitionsId,
+    idxDashboardDefinitionsName,
+    idxDashboardDefinitionsPrivate,
+    configFlags,
+    tagEntities,
+    idxTagEntitiesId,
+    idxTagEntitiesTag,
+    idxTagEntitiesType,
+    idxTagEntitiesPrivate,
+    idxTagEntitiesInactive,
+    tagged,
+    idxTaggedJournalId,
+    idxTaggedTagEntityId,
+    labeled,
+    idxLabeledJournalId,
+    idxLabeledLabelId,
+    linkedEntries,
+    idxLinkedEntriesFromId,
+    idxLinkedEntriesToId,
+    idxLinkedEntriesType,
+    idxLinkedEntriesHidden,
+    idxLinkedEntriesFromIdHidden,
+    idxLinkedEntriesToIdHidden,
+  ];
   @override
-  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules(
-        [
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('journal',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('tagged', kind: UpdateKind.delete),
-            ],
-          ),
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('tag_entities',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('tagged', kind: UpdateKind.delete),
-            ],
-          ),
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('journal',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('labeled', kind: UpdateKind.delete),
-            ],
-          ),
-          WritePropagation(
-            on: TableUpdateQuery.onTableName('label_definitions',
-                limitUpdateKind: UpdateKind.delete),
-            result: [
-              TableUpdate('labeled', kind: UpdateKind.delete),
-            ],
-          ),
-        ],
-      );
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'journal',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tagged', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tag_entities',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('tagged', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'journal',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('labeled', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'label_definitions',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('labeled', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
-typedef $JournalCreateCompanionBuilder = JournalCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required DateTime dateFrom,
-  required DateTime dateTo,
-  Value<bool> deleted,
-  Value<bool> starred,
-  Value<bool> private,
-  Value<bool> task,
-  Value<String?> taskStatus,
-  Value<String?> taskPriority,
-  Value<int?> taskPriorityRank,
-  Value<int> flag,
-  required String type,
-  Value<String?> subtype,
-  required String serialized,
-  Value<int> schemaVersion,
-  Value<String?> plainText,
-  Value<double?> latitude,
-  Value<double?> longitude,
-  Value<String?> geohashString,
-  Value<int?> geohashInt,
-  Value<String> category,
-  Value<int> rowid,
-});
-typedef $JournalUpdateCompanionBuilder = JournalCompanion Function({
-  Value<String> id,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<DateTime> dateFrom,
-  Value<DateTime> dateTo,
-  Value<bool> deleted,
-  Value<bool> starred,
-  Value<bool> private,
-  Value<bool> task,
-  Value<String?> taskStatus,
-  Value<String?> taskPriority,
-  Value<int?> taskPriorityRank,
-  Value<int> flag,
-  Value<String> type,
-  Value<String?> subtype,
-  Value<String> serialized,
-  Value<int> schemaVersion,
-  Value<String?> plainText,
-  Value<double?> latitude,
-  Value<double?> longitude,
-  Value<String?> geohashString,
-  Value<int?> geohashInt,
-  Value<String> category,
-  Value<int> rowid,
-});
+typedef $JournalCreateCompanionBuilder =
+    JournalCompanion Function({
+      required String id,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      required DateTime dateFrom,
+      required DateTime dateTo,
+      Value<bool> deleted,
+      Value<bool> starred,
+      Value<bool> private,
+      Value<bool> task,
+      Value<String?> taskStatus,
+      Value<String?> taskPriority,
+      Value<int?> taskPriorityRank,
+      Value<int> flag,
+      required String type,
+      Value<String?> subtype,
+      required String serialized,
+      Value<int> schemaVersion,
+      Value<String?> plainText,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      Value<String?> geohashString,
+      Value<int?> geohashInt,
+      Value<String> category,
+      Value<int> rowid,
+    });
+typedef $JournalUpdateCompanionBuilder =
+    JournalCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime> dateFrom,
+      Value<DateTime> dateTo,
+      Value<bool> deleted,
+      Value<bool> starred,
+      Value<bool> private,
+      Value<bool> task,
+      Value<String?> taskStatus,
+      Value<String?> taskPriority,
+      Value<int?> taskPriorityRank,
+      Value<int> flag,
+      Value<String> type,
+      Value<String?> subtype,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<String?> plainText,
+      Value<double?> latitude,
+      Value<double?> longitude,
+      Value<String?> geohashString,
+      Value<int?> geohashInt,
+      Value<String> category,
+      Value<int> rowid,
+    });
 
 class $JournalFilterComposer extends Composer<_$JournalDb, Journal> {
   $JournalFilterComposer({
@@ -6903,74 +7793,119 @@ class $JournalFilterComposer extends Composer<_$JournalDb, Journal> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get dateFrom => $composableBuilder(
-      column: $table.dateFrom, builder: (column) => ColumnFilters(column));
+    column: $table.dateFrom,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get dateTo => $composableBuilder(
-      column: $table.dateTo, builder: (column) => ColumnFilters(column));
+    column: $table.dateTo,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get starred => $composableBuilder(
-      column: $table.starred, builder: (column) => ColumnFilters(column));
+    column: $table.starred,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get task => $composableBuilder(
-      column: $table.task, builder: (column) => ColumnFilters(column));
+    column: $table.task,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get taskStatus => $composableBuilder(
-      column: $table.taskStatus, builder: (column) => ColumnFilters(column));
+    column: $table.taskStatus,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get taskPriority => $composableBuilder(
-      column: $table.taskPriority, builder: (column) => ColumnFilters(column));
+    column: $table.taskPriority,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get taskPriorityRank => $composableBuilder(
-      column: $table.taskPriorityRank,
-      builder: (column) => ColumnFilters(column));
+    column: $table.taskPriorityRank,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get flag => $composableBuilder(
-      column: $table.flag, builder: (column) => ColumnFilters(column));
+    column: $table.flag,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get subtype => $composableBuilder(
-      column: $table.subtype, builder: (column) => ColumnFilters(column));
+    column: $table.subtype,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get plainText => $composableBuilder(
-      column: $table.plainText, builder: (column) => ColumnFilters(column));
+    column: $table.plainText,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<double> get latitude => $composableBuilder(
-      column: $table.latitude, builder: (column) => ColumnFilters(column));
+    column: $table.latitude,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<double> get longitude => $composableBuilder(
-      column: $table.longitude, builder: (column) => ColumnFilters(column));
+    column: $table.longitude,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get geohashString => $composableBuilder(
-      column: $table.geohashString, builder: (column) => ColumnFilters(column));
+    column: $table.geohashString,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get geohashInt => $composableBuilder(
-      column: $table.geohashInt, builder: (column) => ColumnFilters(column));
+    column: $table.geohashInt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnFilters(column));
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $JournalOrderingComposer extends Composer<_$JournalDb, Journal> {
@@ -6982,77 +7917,119 @@ class $JournalOrderingComposer extends Composer<_$JournalDb, Journal> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get dateFrom => $composableBuilder(
-      column: $table.dateFrom, builder: (column) => ColumnOrderings(column));
+    column: $table.dateFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get dateTo => $composableBuilder(
-      column: $table.dateTo, builder: (column) => ColumnOrderings(column));
+    column: $table.dateTo,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get starred => $composableBuilder(
-      column: $table.starred, builder: (column) => ColumnOrderings(column));
+    column: $table.starred,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get task => $composableBuilder(
-      column: $table.task, builder: (column) => ColumnOrderings(column));
+    column: $table.task,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get taskStatus => $composableBuilder(
-      column: $table.taskStatus, builder: (column) => ColumnOrderings(column));
+    column: $table.taskStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get taskPriority => $composableBuilder(
-      column: $table.taskPriority,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.taskPriority,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get taskPriorityRank => $composableBuilder(
-      column: $table.taskPriorityRank,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.taskPriorityRank,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get flag => $composableBuilder(
-      column: $table.flag, builder: (column) => ColumnOrderings(column));
+    column: $table.flag,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get subtype => $composableBuilder(
-      column: $table.subtype, builder: (column) => ColumnOrderings(column));
+    column: $table.subtype,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get plainText => $composableBuilder(
-      column: $table.plainText, builder: (column) => ColumnOrderings(column));
+    column: $table.plainText,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<double> get latitude => $composableBuilder(
-      column: $table.latitude, builder: (column) => ColumnOrderings(column));
+    column: $table.latitude,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<double> get longitude => $composableBuilder(
-      column: $table.longitude, builder: (column) => ColumnOrderings(column));
+    column: $table.longitude,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get geohashString => $composableBuilder(
-      column: $table.geohashString,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.geohashString,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get geohashInt => $composableBuilder(
-      column: $table.geohashInt, builder: (column) => ColumnOrderings(column));
+    column: $table.geohashInt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get category => $composableBuilder(
-      column: $table.category, builder: (column) => ColumnOrderings(column));
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
@@ -7091,13 +8068,19 @@ class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
       $composableBuilder(column: $table.task, builder: (column) => column);
 
   GeneratedColumn<String> get taskStatus => $composableBuilder(
-      column: $table.taskStatus, builder: (column) => column);
+    column: $table.taskStatus,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get taskPriority => $composableBuilder(
-      column: $table.taskPriority, builder: (column) => column);
+    column: $table.taskPriority,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get taskPriorityRank => $composableBuilder(
-      column: $table.taskPriorityRank, builder: (column) => column);
+    column: $table.taskPriorityRank,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get flag =>
       $composableBuilder(column: $table.flag, builder: (column) => column);
@@ -7109,10 +8092,14 @@ class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
       $composableBuilder(column: $table.subtype, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => column);
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get plainText =>
       $composableBuilder(column: $table.plainText, builder: (column) => column);
@@ -7124,29 +8111,40 @@ class $JournalAnnotationComposer extends Composer<_$JournalDb, Journal> {
       $composableBuilder(column: $table.longitude, builder: (column) => column);
 
   GeneratedColumn<String> get geohashString => $composableBuilder(
-      column: $table.geohashString, builder: (column) => column);
+    column: $table.geohashString,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get geohashInt => $composableBuilder(
-      column: $table.geohashInt, builder: (column) => column);
+    column: $table.geohashInt,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get category =>
       $composableBuilder(column: $table.category, builder: (column) => column);
 }
 
-class $JournalTableManager extends RootTableManager<
-    _$JournalDb,
-    Journal,
-    JournalDbEntity,
-    $JournalFilterComposer,
-    $JournalOrderingComposer,
-    $JournalAnnotationComposer,
-    $JournalCreateCompanionBuilder,
-    $JournalUpdateCompanionBuilder,
-    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
-    JournalDbEntity,
-    PrefetchHooks Function()> {
+class $JournalTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          Journal,
+          JournalDbEntity,
+          $JournalFilterComposer,
+          $JournalOrderingComposer,
+          $JournalAnnotationComposer,
+          $JournalCreateCompanionBuilder,
+          $JournalUpdateCompanionBuilder,
+          (
+            JournalDbEntity,
+            BaseReferences<_$JournalDb, Journal, JournalDbEntity>,
+          ),
+          JournalDbEntity,
+          PrefetchHooks Function()
+        > {
   $JournalTableManager(_$JournalDb db, Journal table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7155,147 +8153,152 @@ class $JournalTableManager extends RootTableManager<
               $JournalOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $JournalAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime> dateFrom = const Value.absent(),
-            Value<DateTime> dateTo = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> starred = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<bool> task = const Value.absent(),
-            Value<String?> taskStatus = const Value.absent(),
-            Value<String?> taskPriority = const Value.absent(),
-            Value<int?> taskPriorityRank = const Value.absent(),
-            Value<int> flag = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String?> subtype = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<String?> plainText = const Value.absent(),
-            Value<double?> latitude = const Value.absent(),
-            Value<double?> longitude = const Value.absent(),
-            Value<String?> geohashString = const Value.absent(),
-            Value<int?> geohashInt = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalCompanion(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            deleted: deleted,
-            starred: starred,
-            private: private,
-            task: task,
-            taskStatus: taskStatus,
-            taskPriority: taskPriority,
-            taskPriorityRank: taskPriorityRank,
-            flag: flag,
-            type: type,
-            subtype: subtype,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            plainText: plainText,
-            latitude: latitude,
-            longitude: longitude,
-            geohashString: geohashString,
-            geohashInt: geohashInt,
-            category: category,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required DateTime dateFrom,
-            required DateTime dateTo,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> starred = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<bool> task = const Value.absent(),
-            Value<String?> taskStatus = const Value.absent(),
-            Value<String?> taskPriority = const Value.absent(),
-            Value<int?> taskPriorityRank = const Value.absent(),
-            Value<int> flag = const Value.absent(),
-            required String type,
-            Value<String?> subtype = const Value.absent(),
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            Value<String?> plainText = const Value.absent(),
-            Value<double?> latitude = const Value.absent(),
-            Value<double?> longitude = const Value.absent(),
-            Value<String?> geohashString = const Value.absent(),
-            Value<int?> geohashInt = const Value.absent(),
-            Value<String> category = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              JournalCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            dateFrom: dateFrom,
-            dateTo: dateTo,
-            deleted: deleted,
-            starred: starred,
-            private: private,
-            task: task,
-            taskStatus: taskStatus,
-            taskPriority: taskPriority,
-            taskPriorityRank: taskPriorityRank,
-            flag: flag,
-            type: type,
-            subtype: subtype,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            plainText: plainText,
-            latitude: latitude,
-            longitude: longitude,
-            geohashString: geohashString,
-            geohashInt: geohashInt,
-            category: category,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime> dateFrom = const Value.absent(),
+                Value<DateTime> dateTo = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> starred = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<bool> task = const Value.absent(),
+                Value<String?> taskStatus = const Value.absent(),
+                Value<String?> taskPriority = const Value.absent(),
+                Value<int?> taskPriorityRank = const Value.absent(),
+                Value<int> flag = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String?> subtype = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<String?> plainText = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                Value<String?> geohashString = const Value.absent(),
+                Value<int?> geohashInt = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                deleted: deleted,
+                starred: starred,
+                private: private,
+                task: task,
+                taskStatus: taskStatus,
+                taskPriority: taskPriority,
+                taskPriorityRank: taskPriorityRank,
+                flag: flag,
+                type: type,
+                subtype: subtype,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                plainText: plainText,
+                latitude: latitude,
+                longitude: longitude,
+                geohashString: geohashString,
+                geohashInt: geohashInt,
+                category: category,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                required DateTime dateFrom,
+                required DateTime dateTo,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> starred = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<bool> task = const Value.absent(),
+                Value<String?> taskStatus = const Value.absent(),
+                Value<String?> taskPriority = const Value.absent(),
+                Value<int?> taskPriorityRank = const Value.absent(),
+                Value<int> flag = const Value.absent(),
+                required String type,
+                Value<String?> subtype = const Value.absent(),
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                Value<String?> plainText = const Value.absent(),
+                Value<double?> latitude = const Value.absent(),
+                Value<double?> longitude = const Value.absent(),
+                Value<String?> geohashString = const Value.absent(),
+                Value<int?> geohashInt = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JournalCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                dateFrom: dateFrom,
+                dateTo: dateTo,
+                deleted: deleted,
+                starred: starred,
+                private: private,
+                task: task,
+                taskStatus: taskStatus,
+                taskPriority: taskPriority,
+                taskPriorityRank: taskPriorityRank,
+                flag: flag,
+                type: type,
+                subtype: subtype,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                plainText: plainText,
+                latitude: latitude,
+                longitude: longitude,
+                geohashString: geohashString,
+                geohashInt: geohashInt,
+                category: category,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $JournalProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Journal,
-    JournalDbEntity,
-    $JournalFilterComposer,
-    $JournalOrderingComposer,
-    $JournalAnnotationComposer,
-    $JournalCreateCompanionBuilder,
-    $JournalUpdateCompanionBuilder,
-    (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
-    JournalDbEntity,
-    PrefetchHooks Function()>;
-typedef $ConflictsCreateCompanionBuilder = ConflictsCompanion Function({
-  required String id,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required String serialized,
-  Value<int> schemaVersion,
-  required int status,
-  Value<int> rowid,
-});
-typedef $ConflictsUpdateCompanionBuilder = ConflictsCompanion Function({
-  Value<String> id,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<String> serialized,
-  Value<int> schemaVersion,
-  Value<int> status,
-  Value<int> rowid,
-});
+typedef $JournalProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      Journal,
+      JournalDbEntity,
+      $JournalFilterComposer,
+      $JournalOrderingComposer,
+      $JournalAnnotationComposer,
+      $JournalCreateCompanionBuilder,
+      $JournalUpdateCompanionBuilder,
+      (JournalDbEntity, BaseReferences<_$JournalDb, Journal, JournalDbEntity>),
+      JournalDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $ConflictsCreateCompanionBuilder =
+    ConflictsCompanion Function({
+      required String id,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      required String serialized,
+      Value<int> schemaVersion,
+      required int status,
+      Value<int> rowid,
+    });
+typedef $ConflictsUpdateCompanionBuilder =
+    ConflictsCompanion Function({
+      Value<String> id,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<String> serialized,
+      Value<int> schemaVersion,
+      Value<int> status,
+      Value<int> rowid,
+    });
 
 class $ConflictsFilterComposer extends Composer<_$JournalDb, Conflicts> {
   $ConflictsFilterComposer({
@@ -7306,22 +8309,34 @@ class $ConflictsFilterComposer extends Composer<_$JournalDb, Conflicts> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => ColumnFilters(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnFilters(column));
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $ConflictsOrderingComposer extends Composer<_$JournalDb, Conflicts> {
@@ -7333,23 +8348,34 @@ class $ConflictsOrderingComposer extends Composer<_$JournalDb, Conflicts> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.schemaVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnOrderings(column));
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $ConflictsAnnotationComposer extends Composer<_$JournalDb, Conflicts> {
@@ -7370,29 +8396,37 @@ class $ConflictsAnnotationComposer extends Composer<_$JournalDb, Conflicts> {
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get schemaVersion => $composableBuilder(
-      column: $table.schemaVersion, builder: (column) => column);
+    column: $table.schemaVersion,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 }
 
-class $ConflictsTableManager extends RootTableManager<
-    _$JournalDb,
-    Conflicts,
-    Conflict,
-    $ConflictsFilterComposer,
-    $ConflictsOrderingComposer,
-    $ConflictsAnnotationComposer,
-    $ConflictsCreateCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder,
-    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
-    Conflict,
-    PrefetchHooks Function()> {
+class $ConflictsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          Conflicts,
+          Conflict,
+          $ConflictsFilterComposer,
+          $ConflictsOrderingComposer,
+          $ConflictsAnnotationComposer,
+          $ConflictsCreateCompanionBuilder,
+          $ConflictsUpdateCompanionBuilder,
+          (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
+          Conflict,
+          PrefetchHooks Function()
+        > {
   $ConflictsTableManager(_$JournalDb db, Conflicts table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7401,87 +8435,90 @@ class $ConflictsTableManager extends RootTableManager<
               $ConflictsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $ConflictsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> schemaVersion = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConflictsCompanion(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required String serialized,
-            Value<int> schemaVersion = const Value.absent(),
-            required int status,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConflictsCompanion.insert(
-            id: id,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            serialized: serialized,
-            schemaVersion: schemaVersion,
-            status: status,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> schemaVersion = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConflictsCompanion(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                required String serialized,
+                Value<int> schemaVersion = const Value.absent(),
+                required int status,
+                Value<int> rowid = const Value.absent(),
+              }) => ConflictsCompanion.insert(
+                id: id,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                serialized: serialized,
+                schemaVersion: schemaVersion,
+                status: status,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $ConflictsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Conflicts,
-    Conflict,
-    $ConflictsFilterComposer,
-    $ConflictsOrderingComposer,
-    $ConflictsAnnotationComposer,
-    $ConflictsCreateCompanionBuilder,
-    $ConflictsUpdateCompanionBuilder,
-    (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
-    Conflict,
-    PrefetchHooks Function()>;
-typedef $MeasurableTypesCreateCompanionBuilder = MeasurableTypesCompanion
-    Function({
-  required String id,
-  required String uniqueName,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  required String serialized,
-  Value<int> version,
-  required int status,
-  Value<int> rowid,
-});
-typedef $MeasurableTypesUpdateCompanionBuilder = MeasurableTypesCompanion
-    Function({
-  Value<String> id,
-  Value<String> uniqueName,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  Value<String> serialized,
-  Value<int> version,
-  Value<int> status,
-  Value<int> rowid,
-});
+typedef $ConflictsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      Conflicts,
+      Conflict,
+      $ConflictsFilterComposer,
+      $ConflictsOrderingComposer,
+      $ConflictsAnnotationComposer,
+      $ConflictsCreateCompanionBuilder,
+      $ConflictsUpdateCompanionBuilder,
+      (Conflict, BaseReferences<_$JournalDb, Conflicts, Conflict>),
+      Conflict,
+      PrefetchHooks Function()
+    >;
+typedef $MeasurableTypesCreateCompanionBuilder =
+    MeasurableTypesCompanion Function({
+      required String id,
+      required String uniqueName,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      required String serialized,
+      Value<int> version,
+      required int status,
+      Value<int> rowid,
+    });
+typedef $MeasurableTypesUpdateCompanionBuilder =
+    MeasurableTypesCompanion Function({
+      Value<String> id,
+      Value<String> uniqueName,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      Value<String> serialized,
+      Value<int> version,
+      Value<int> status,
+      Value<int> rowid,
+    });
 
 class $MeasurableTypesFilterComposer
     extends Composer<_$JournalDb, MeasurableTypes> {
@@ -7493,31 +8530,49 @@ class $MeasurableTypesFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get uniqueName => $composableBuilder(
-      column: $table.uniqueName, builder: (column) => ColumnFilters(column));
+    column: $table.uniqueName,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get version => $composableBuilder(
-      column: $table.version, builder: (column) => ColumnFilters(column));
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<int> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnFilters(column));
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $MeasurableTypesOrderingComposer
@@ -7530,31 +8585,49 @@ class $MeasurableTypesOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get uniqueName => $composableBuilder(
-      column: $table.uniqueName, builder: (column) => ColumnOrderings(column));
+    column: $table.uniqueName,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get version => $composableBuilder(
-      column: $table.version, builder: (column) => ColumnOrderings(column));
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<int> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnOrderings(column));
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $MeasurableTypesAnnotationComposer
@@ -7570,7 +8643,9 @@ class $MeasurableTypesAnnotationComposer
       $composableBuilder(column: $table.id, builder: (column) => column);
 
   GeneratedColumn<String> get uniqueName => $composableBuilder(
-      column: $table.uniqueName, builder: (column) => column);
+    column: $table.uniqueName,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -7585,7 +8660,9 @@ class $MeasurableTypesAnnotationComposer
       $composableBuilder(column: $table.private, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<int> get version =>
       $composableBuilder(column: $table.version, builder: (column) => column);
@@ -7594,23 +8671,27 @@ class $MeasurableTypesAnnotationComposer
       $composableBuilder(column: $table.status, builder: (column) => column);
 }
 
-class $MeasurableTypesTableManager extends RootTableManager<
-    _$JournalDb,
-    MeasurableTypes,
-    MeasurableDbEntity,
-    $MeasurableTypesFilterComposer,
-    $MeasurableTypesOrderingComposer,
-    $MeasurableTypesAnnotationComposer,
-    $MeasurableTypesCreateCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder,
-    (
-      MeasurableDbEntity,
-      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
-    ),
-    MeasurableDbEntity,
-    PrefetchHooks Function()> {
+class $MeasurableTypesTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          MeasurableTypes,
+          MeasurableDbEntity,
+          $MeasurableTypesFilterComposer,
+          $MeasurableTypesOrderingComposer,
+          $MeasurableTypesAnnotationComposer,
+          $MeasurableTypesCreateCompanionBuilder,
+          $MeasurableTypesUpdateCompanionBuilder,
+          (
+            MeasurableDbEntity,
+            BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>,
+          ),
+          MeasurableDbEntity,
+          PrefetchHooks Function()
+        > {
   $MeasurableTypesTableManager(_$JournalDb db, MeasurableTypes table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7619,100 +8700,103 @@ class $MeasurableTypesTableManager extends RootTableManager<
               $MeasurableTypesOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $MeasurableTypesAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> uniqueName = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> version = const Value.absent(),
-            Value<int> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MeasurableTypesCompanion(
-            id: id,
-            uniqueName: uniqueName,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            version: version,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String uniqueName,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            Value<int> version = const Value.absent(),
-            required int status,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              MeasurableTypesCompanion.insert(
-            id: id,
-            uniqueName: uniqueName,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            version: version,
-            status: status,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> uniqueName = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<int> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => MeasurableTypesCompanion(
+                id: id,
+                uniqueName: uniqueName,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                version: version,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String uniqueName,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required String serialized,
+                Value<int> version = const Value.absent(),
+                required int status,
+                Value<int> rowid = const Value.absent(),
+              }) => MeasurableTypesCompanion.insert(
+                id: id,
+                uniqueName: uniqueName,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                version: version,
+                status: status,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $MeasurableTypesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    MeasurableTypes,
-    MeasurableDbEntity,
-    $MeasurableTypesFilterComposer,
-    $MeasurableTypesOrderingComposer,
-    $MeasurableTypesAnnotationComposer,
-    $MeasurableTypesCreateCompanionBuilder,
-    $MeasurableTypesUpdateCompanionBuilder,
-    (
+typedef $MeasurableTypesProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      MeasurableTypes,
       MeasurableDbEntity,
-      BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>
-    ),
-    MeasurableDbEntity,
-    PrefetchHooks Function()>;
-typedef $HabitDefinitionsCreateCompanionBuilder = HabitDefinitionsCompanion
-    Function({
-  required String id,
-  required String name,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  required String serialized,
-  required bool active,
-  Value<int> rowid,
-});
-typedef $HabitDefinitionsUpdateCompanionBuilder = HabitDefinitionsCompanion
-    Function({
-  Value<String> id,
-  Value<String> name,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  Value<String> serialized,
-  Value<bool> active,
-  Value<int> rowid,
-});
+      $MeasurableTypesFilterComposer,
+      $MeasurableTypesOrderingComposer,
+      $MeasurableTypesAnnotationComposer,
+      $MeasurableTypesCreateCompanionBuilder,
+      $MeasurableTypesUpdateCompanionBuilder,
+      (
+        MeasurableDbEntity,
+        BaseReferences<_$JournalDb, MeasurableTypes, MeasurableDbEntity>,
+      ),
+      MeasurableDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $HabitDefinitionsCreateCompanionBuilder =
+    HabitDefinitionsCompanion Function({
+      required String id,
+      required String name,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      required String serialized,
+      required bool active,
+      Value<int> rowid,
+    });
+typedef $HabitDefinitionsUpdateCompanionBuilder =
+    HabitDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      Value<String> serialized,
+      Value<bool> active,
+      Value<int> rowid,
+    });
 
 class $HabitDefinitionsFilterComposer
     extends Composer<_$JournalDb, HabitDefinitions> {
@@ -7724,28 +8808,44 @@ class $HabitDefinitionsFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnFilters(column));
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $HabitDefinitionsOrderingComposer
@@ -7758,28 +8858,44 @@ class $HabitDefinitionsOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnOrderings(column));
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $HabitDefinitionsAnnotationComposer
@@ -7810,29 +8926,39 @@ class $HabitDefinitionsAnnotationComposer
       $composableBuilder(column: $table.private, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
 }
 
-class $HabitDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    HabitDefinitions,
-    HabitDefinitionDbEntity,
-    $HabitDefinitionsFilterComposer,
-    $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsAnnotationComposer,
-    $HabitDefinitionsCreateCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder,
-    (
-      HabitDefinitionDbEntity,
-      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
-    ),
-    HabitDefinitionDbEntity,
-    PrefetchHooks Function()> {
+class $HabitDefinitionsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          HabitDefinitions,
+          HabitDefinitionDbEntity,
+          $HabitDefinitionsFilterComposer,
+          $HabitDefinitionsOrderingComposer,
+          $HabitDefinitionsAnnotationComposer,
+          $HabitDefinitionsCreateCompanionBuilder,
+          $HabitDefinitionsUpdateCompanionBuilder,
+          (
+            HabitDefinitionDbEntity,
+            BaseReferences<
+              _$JournalDb,
+              HabitDefinitions,
+              HabitDefinitionDbEntity
+            >,
+          ),
+          HabitDefinitionDbEntity,
+          PrefetchHooks Function()
+        > {
   $HabitDefinitionsTableManager(_$JournalDb db, HabitDefinitions table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -7841,96 +8967,99 @@ class $HabitDefinitionsTableManager extends RootTableManager<
               $HabitDefinitionsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $HabitDefinitionsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              HabitDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              HabitDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => HabitDefinitionsCompanion(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required String serialized,
+                required bool active,
+                Value<int> rowid = const Value.absent(),
+              }) => HabitDefinitionsCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $HabitDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    HabitDefinitions,
-    HabitDefinitionDbEntity,
-    $HabitDefinitionsFilterComposer,
-    $HabitDefinitionsOrderingComposer,
-    $HabitDefinitionsAnnotationComposer,
-    $HabitDefinitionsCreateCompanionBuilder,
-    $HabitDefinitionsUpdateCompanionBuilder,
-    (
+typedef $HabitDefinitionsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      HabitDefinitions,
       HabitDefinitionDbEntity,
-      BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>
-    ),
-    HabitDefinitionDbEntity,
-    PrefetchHooks Function()>;
-typedef $CategoryDefinitionsCreateCompanionBuilder
-    = CategoryDefinitionsCompanion Function({
-  required String id,
-  required String name,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  required String serialized,
-  required bool active,
-  Value<int> rowid,
-});
-typedef $CategoryDefinitionsUpdateCompanionBuilder
-    = CategoryDefinitionsCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  Value<String> serialized,
-  Value<bool> active,
-  Value<int> rowid,
-});
+      $HabitDefinitionsFilterComposer,
+      $HabitDefinitionsOrderingComposer,
+      $HabitDefinitionsAnnotationComposer,
+      $HabitDefinitionsCreateCompanionBuilder,
+      $HabitDefinitionsUpdateCompanionBuilder,
+      (
+        HabitDefinitionDbEntity,
+        BaseReferences<_$JournalDb, HabitDefinitions, HabitDefinitionDbEntity>,
+      ),
+      HabitDefinitionDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $CategoryDefinitionsCreateCompanionBuilder =
+    CategoryDefinitionsCompanion Function({
+      required String id,
+      required String name,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      required String serialized,
+      required bool active,
+      Value<int> rowid,
+    });
+typedef $CategoryDefinitionsUpdateCompanionBuilder =
+    CategoryDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      Value<String> serialized,
+      Value<bool> active,
+      Value<int> rowid,
+    });
 
 class $CategoryDefinitionsFilterComposer
     extends Composer<_$JournalDb, CategoryDefinitions> {
@@ -7942,28 +9071,44 @@ class $CategoryDefinitionsFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnFilters(column));
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $CategoryDefinitionsOrderingComposer
@@ -7976,28 +9121,44 @@ class $CategoryDefinitionsOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnOrderings(column));
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $CategoryDefinitionsAnnotationComposer
@@ -8028,30 +9189,39 @@ class $CategoryDefinitionsAnnotationComposer
       $composableBuilder(column: $table.private, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
 }
 
-class $CategoryDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    CategoryDefinitions,
-    CategoryDefinitionDbEntity,
-    $CategoryDefinitionsFilterComposer,
-    $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsAnnotationComposer,
-    $CategoryDefinitionsCreateCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder,
-    (
-      CategoryDefinitionDbEntity,
-      BaseReferences<_$JournalDb, CategoryDefinitions,
-          CategoryDefinitionDbEntity>
-    ),
-    CategoryDefinitionDbEntity,
-    PrefetchHooks Function()> {
+class $CategoryDefinitionsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          CategoryDefinitions,
+          CategoryDefinitionDbEntity,
+          $CategoryDefinitionsFilterComposer,
+          $CategoryDefinitionsOrderingComposer,
+          $CategoryDefinitionsAnnotationComposer,
+          $CategoryDefinitionsCreateCompanionBuilder,
+          $CategoryDefinitionsUpdateCompanionBuilder,
+          (
+            CategoryDefinitionDbEntity,
+            BaseReferences<
+              _$JournalDb,
+              CategoryDefinitions,
+              CategoryDefinitionDbEntity
+            >,
+          ),
+          CategoryDefinitionDbEntity,
+          PrefetchHooks Function()
+        > {
   $CategoryDefinitionsTableManager(_$JournalDb db, CategoryDefinitions table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8060,97 +9230,103 @@ class $CategoryDefinitionsTableManager extends RootTableManager<
               $CategoryDefinitionsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $CategoryDefinitionsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              CategoryDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              CategoryDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => CategoryDefinitionsCompanion(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required String serialized,
+                required bool active,
+                Value<int> rowid = const Value.absent(),
+              }) => CategoryDefinitionsCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $CategoryDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    CategoryDefinitions,
-    CategoryDefinitionDbEntity,
-    $CategoryDefinitionsFilterComposer,
-    $CategoryDefinitionsOrderingComposer,
-    $CategoryDefinitionsAnnotationComposer,
-    $CategoryDefinitionsCreateCompanionBuilder,
-    $CategoryDefinitionsUpdateCompanionBuilder,
-    (
+typedef $CategoryDefinitionsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      CategoryDefinitions,
       CategoryDefinitionDbEntity,
-      BaseReferences<_$JournalDb, CategoryDefinitions,
-          CategoryDefinitionDbEntity>
-    ),
-    CategoryDefinitionDbEntity,
-    PrefetchHooks Function()>;
-typedef $LabelDefinitionsCreateCompanionBuilder = LabelDefinitionsCompanion
-    Function({
-  required String id,
-  required String name,
-  required String color,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  required String serialized,
-  Value<int> rowid,
-});
-typedef $LabelDefinitionsUpdateCompanionBuilder = LabelDefinitionsCompanion
-    Function({
-  Value<String> id,
-  Value<String> name,
-  Value<String> color,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<bool> deleted,
-  Value<bool> private,
-  Value<String> serialized,
-  Value<int> rowid,
-});
+      $CategoryDefinitionsFilterComposer,
+      $CategoryDefinitionsOrderingComposer,
+      $CategoryDefinitionsAnnotationComposer,
+      $CategoryDefinitionsCreateCompanionBuilder,
+      $CategoryDefinitionsUpdateCompanionBuilder,
+      (
+        CategoryDefinitionDbEntity,
+        BaseReferences<
+          _$JournalDb,
+          CategoryDefinitions,
+          CategoryDefinitionDbEntity
+        >,
+      ),
+      CategoryDefinitionDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $LabelDefinitionsCreateCompanionBuilder =
+    LabelDefinitionsCompanion Function({
+      required String id,
+      required String name,
+      required String color,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      required String serialized,
+      Value<int> rowid,
+    });
+typedef $LabelDefinitionsUpdateCompanionBuilder =
+    LabelDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<String> color,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool> deleted,
+      Value<bool> private,
+      Value<String> serialized,
+      Value<int> rowid,
+    });
 
 class $LabelDefinitionsFilterComposer
     extends Composer<_$JournalDb, LabelDefinitions> {
@@ -8162,28 +9338,44 @@ class $LabelDefinitionsFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get color => $composableBuilder(
-      column: $table.color, builder: (column) => ColumnFilters(column));
+    column: $table.color,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $LabelDefinitionsOrderingComposer
@@ -8196,28 +9388,44 @@ class $LabelDefinitionsOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get color => $composableBuilder(
-      column: $table.color, builder: (column) => ColumnOrderings(column));
+    column: $table.color,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $LabelDefinitionsAnnotationComposer
@@ -8251,26 +9459,36 @@ class $LabelDefinitionsAnnotationComposer
       $composableBuilder(column: $table.private, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 }
 
-class $LabelDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    LabelDefinitions,
-    LabelDefinitionDbEntity,
-    $LabelDefinitionsFilterComposer,
-    $LabelDefinitionsOrderingComposer,
-    $LabelDefinitionsAnnotationComposer,
-    $LabelDefinitionsCreateCompanionBuilder,
-    $LabelDefinitionsUpdateCompanionBuilder,
-    (
-      LabelDefinitionDbEntity,
-      BaseReferences<_$JournalDb, LabelDefinitions, LabelDefinitionDbEntity>
-    ),
-    LabelDefinitionDbEntity,
-    PrefetchHooks Function()> {
+class $LabelDefinitionsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          LabelDefinitions,
+          LabelDefinitionDbEntity,
+          $LabelDefinitionsFilterComposer,
+          $LabelDefinitionsOrderingComposer,
+          $LabelDefinitionsAnnotationComposer,
+          $LabelDefinitionsCreateCompanionBuilder,
+          $LabelDefinitionsUpdateCompanionBuilder,
+          (
+            LabelDefinitionDbEntity,
+            BaseReferences<
+              _$JournalDb,
+              LabelDefinitions,
+              LabelDefinitionDbEntity
+            >,
+          ),
+          LabelDefinitionDbEntity,
+          PrefetchHooks Function()
+        > {
   $LabelDefinitionsTableManager(_$JournalDb db, LabelDefinitions table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8279,98 +9497,101 @@ class $LabelDefinitionsTableManager extends RootTableManager<
               $LabelDefinitionsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $LabelDefinitionsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<String> color = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LabelDefinitionsCompanion(
-            id: id,
-            name: name,
-            color: color,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required String color,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LabelDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            color: color,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> color = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabelDefinitionsCompanion(
+                id: id,
+                name: name,
+                color: color,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required String color,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required String serialized,
+                Value<int> rowid = const Value.absent(),
+              }) => LabelDefinitionsCompanion.insert(
+                id: id,
+                name: name,
+                color: color,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $LabelDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    LabelDefinitions,
-    LabelDefinitionDbEntity,
-    $LabelDefinitionsFilterComposer,
-    $LabelDefinitionsOrderingComposer,
-    $LabelDefinitionsAnnotationComposer,
-    $LabelDefinitionsCreateCompanionBuilder,
-    $LabelDefinitionsUpdateCompanionBuilder,
-    (
+typedef $LabelDefinitionsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      LabelDefinitions,
       LabelDefinitionDbEntity,
-      BaseReferences<_$JournalDb, LabelDefinitions, LabelDefinitionDbEntity>
-    ),
-    LabelDefinitionDbEntity,
-    PrefetchHooks Function()>;
-typedef $DashboardDefinitionsCreateCompanionBuilder
-    = DashboardDefinitionsCompanion Function({
-  required String id,
-  required String name,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  required DateTime lastReviewed,
-  Value<bool> deleted,
-  Value<bool> private,
-  required String serialized,
-  required bool active,
-  Value<int> rowid,
-});
-typedef $DashboardDefinitionsUpdateCompanionBuilder
-    = DashboardDefinitionsCompanion Function({
-  Value<String> id,
-  Value<String> name,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<DateTime> lastReviewed,
-  Value<bool> deleted,
-  Value<bool> private,
-  Value<String> serialized,
-  Value<bool> active,
-  Value<int> rowid,
-});
+      $LabelDefinitionsFilterComposer,
+      $LabelDefinitionsOrderingComposer,
+      $LabelDefinitionsAnnotationComposer,
+      $LabelDefinitionsCreateCompanionBuilder,
+      $LabelDefinitionsUpdateCompanionBuilder,
+      (
+        LabelDefinitionDbEntity,
+        BaseReferences<_$JournalDb, LabelDefinitions, LabelDefinitionDbEntity>,
+      ),
+      LabelDefinitionDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $DashboardDefinitionsCreateCompanionBuilder =
+    DashboardDefinitionsCompanion Function({
+      required String id,
+      required String name,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      required DateTime lastReviewed,
+      Value<bool> deleted,
+      Value<bool> private,
+      required String serialized,
+      required bool active,
+      Value<int> rowid,
+    });
+typedef $DashboardDefinitionsUpdateCompanionBuilder =
+    DashboardDefinitionsCompanion Function({
+      Value<String> id,
+      Value<String> name,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<DateTime> lastReviewed,
+      Value<bool> deleted,
+      Value<bool> private,
+      Value<String> serialized,
+      Value<bool> active,
+      Value<int> rowid,
+    });
 
 class $DashboardDefinitionsFilterComposer
     extends Composer<_$JournalDb, DashboardDefinitions> {
@@ -8382,31 +9603,49 @@ class $DashboardDefinitionsFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get lastReviewed => $composableBuilder(
-      column: $table.lastReviewed, builder: (column) => ColumnFilters(column));
+    column: $table.lastReviewed,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnFilters(column));
+    column: $table.active,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $DashboardDefinitionsOrderingComposer
@@ -8419,32 +9658,49 @@ class $DashboardDefinitionsOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get lastReviewed => $composableBuilder(
-      column: $table.lastReviewed,
-      builder: (column) => ColumnOrderings(column));
+    column: $table.lastReviewed,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get active => $composableBuilder(
-      column: $table.active, builder: (column) => ColumnOrderings(column));
+    column: $table.active,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $DashboardDefinitionsAnnotationComposer
@@ -8469,7 +9725,9 @@ class $DashboardDefinitionsAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
   GeneratedColumn<DateTime> get lastReviewed => $composableBuilder(
-      column: $table.lastReviewed, builder: (column) => column);
+    column: $table.lastReviewed,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get deleted =>
       $composableBuilder(column: $table.deleted, builder: (column) => column);
@@ -8478,30 +9736,39 @@ class $DashboardDefinitionsAnnotationComposer
       $composableBuilder(column: $table.private, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get active =>
       $composableBuilder(column: $table.active, builder: (column) => column);
 }
 
-class $DashboardDefinitionsTableManager extends RootTableManager<
-    _$JournalDb,
-    DashboardDefinitions,
-    DashboardDefinitionDbEntity,
-    $DashboardDefinitionsFilterComposer,
-    $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsAnnotationComposer,
-    $DashboardDefinitionsCreateCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder,
-    (
-      DashboardDefinitionDbEntity,
-      BaseReferences<_$JournalDb, DashboardDefinitions,
-          DashboardDefinitionDbEntity>
-    ),
-    DashboardDefinitionDbEntity,
-    PrefetchHooks Function()> {
+class $DashboardDefinitionsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          DashboardDefinitions,
+          DashboardDefinitionDbEntity,
+          $DashboardDefinitionsFilterComposer,
+          $DashboardDefinitionsOrderingComposer,
+          $DashboardDefinitionsAnnotationComposer,
+          $DashboardDefinitionsCreateCompanionBuilder,
+          $DashboardDefinitionsUpdateCompanionBuilder,
+          (
+            DashboardDefinitionDbEntity,
+            BaseReferences<
+              _$JournalDb,
+              DashboardDefinitions,
+              DashboardDefinitionDbEntity
+            >,
+          ),
+          DashboardDefinitionDbEntity,
+          PrefetchHooks Function()
+        > {
   $DashboardDefinitionsTableManager(_$JournalDb db, DashboardDefinitions table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8510,89 +9777,97 @@ class $DashboardDefinitionsTableManager extends RootTableManager<
               $DashboardDefinitionsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $DashboardDefinitionsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> name = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<DateTime> lastReviewed = const Value.absent(),
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool> active = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              DashboardDefinitionsCompanion(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            lastReviewed: lastReviewed,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String name,
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            required DateTime lastReviewed,
-            Value<bool> deleted = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required String serialized,
-            required bool active,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              DashboardDefinitionsCompanion.insert(
-            id: id,
-            name: name,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            lastReviewed: lastReviewed,
-            deleted: deleted,
-            private: private,
-            serialized: serialized,
-            active: active,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<DateTime> lastReviewed = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<bool> active = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardDefinitionsCompanion(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                lastReviewed: lastReviewed,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String name,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                required DateTime lastReviewed,
+                Value<bool> deleted = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required String serialized,
+                required bool active,
+                Value<int> rowid = const Value.absent(),
+              }) => DashboardDefinitionsCompanion.insert(
+                id: id,
+                name: name,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                lastReviewed: lastReviewed,
+                deleted: deleted,
+                private: private,
+                serialized: serialized,
+                active: active,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $DashboardDefinitionsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    DashboardDefinitions,
-    DashboardDefinitionDbEntity,
-    $DashboardDefinitionsFilterComposer,
-    $DashboardDefinitionsOrderingComposer,
-    $DashboardDefinitionsAnnotationComposer,
-    $DashboardDefinitionsCreateCompanionBuilder,
-    $DashboardDefinitionsUpdateCompanionBuilder,
-    (
+typedef $DashboardDefinitionsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      DashboardDefinitions,
       DashboardDefinitionDbEntity,
-      BaseReferences<_$JournalDb, DashboardDefinitions,
-          DashboardDefinitionDbEntity>
-    ),
-    DashboardDefinitionDbEntity,
-    PrefetchHooks Function()>;
-typedef $ConfigFlagsCreateCompanionBuilder = ConfigFlagsCompanion Function({
-  required String name,
-  required String description,
-  Value<bool> status,
-  Value<int> rowid,
-});
-typedef $ConfigFlagsUpdateCompanionBuilder = ConfigFlagsCompanion Function({
-  Value<String> name,
-  Value<String> description,
-  Value<bool> status,
-  Value<int> rowid,
-});
+      $DashboardDefinitionsFilterComposer,
+      $DashboardDefinitionsOrderingComposer,
+      $DashboardDefinitionsAnnotationComposer,
+      $DashboardDefinitionsCreateCompanionBuilder,
+      $DashboardDefinitionsUpdateCompanionBuilder,
+      (
+        DashboardDefinitionDbEntity,
+        BaseReferences<
+          _$JournalDb,
+          DashboardDefinitions,
+          DashboardDefinitionDbEntity
+        >,
+      ),
+      DashboardDefinitionDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $ConfigFlagsCreateCompanionBuilder =
+    ConfigFlagsCompanion Function({
+      required String name,
+      required String description,
+      Value<bool> status,
+      Value<int> rowid,
+    });
+typedef $ConfigFlagsUpdateCompanionBuilder =
+    ConfigFlagsCompanion Function({
+      Value<String> name,
+      Value<String> description,
+      Value<bool> status,
+      Value<int> rowid,
+    });
 
 class $ConfigFlagsFilterComposer extends Composer<_$JournalDb, ConfigFlags> {
   $ConfigFlagsFilterComposer({
@@ -8603,13 +9878,19 @@ class $ConfigFlagsFilterComposer extends Composer<_$JournalDb, ConfigFlags> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnFilters(column));
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => ColumnFilters(column));
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnFilters(column));
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $ConfigFlagsOrderingComposer extends Composer<_$JournalDb, ConfigFlags> {
@@ -8621,13 +9902,19 @@ class $ConfigFlagsOrderingComposer extends Composer<_$JournalDb, ConfigFlags> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get name => $composableBuilder(
-      column: $table.name, builder: (column) => ColumnOrderings(column));
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => ColumnOrderings(column));
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get status => $composableBuilder(
-      column: $table.status, builder: (column) => ColumnOrderings(column));
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $ConfigFlagsAnnotationComposer
@@ -8643,26 +9930,32 @@ class $ConfigFlagsAnnotationComposer
       $composableBuilder(column: $table.name, builder: (column) => column);
 
   GeneratedColumn<String> get description => $composableBuilder(
-      column: $table.description, builder: (column) => column);
+    column: $table.description,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 }
 
-class $ConfigFlagsTableManager extends RootTableManager<
-    _$JournalDb,
-    ConfigFlags,
-    ConfigFlag,
-    $ConfigFlagsFilterComposer,
-    $ConfigFlagsOrderingComposer,
-    $ConfigFlagsAnnotationComposer,
-    $ConfigFlagsCreateCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder,
-    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
-    ConfigFlag,
-    PrefetchHooks Function()> {
+class $ConfigFlagsTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          ConfigFlags,
+          ConfigFlag,
+          $ConfigFlagsFilterComposer,
+          $ConfigFlagsOrderingComposer,
+          $ConfigFlagsAnnotationComposer,
+          $ConfigFlagsCreateCompanionBuilder,
+          $ConfigFlagsUpdateCompanionBuilder,
+          (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
+          ConfigFlag,
+          PrefetchHooks Function()
+        > {
   $ConfigFlagsTableManager(_$JournalDb db, ConfigFlags table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8671,73 +9964,78 @@ class $ConfigFlagsTableManager extends RootTableManager<
               $ConfigFlagsOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $ConfigFlagsAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> name = const Value.absent(),
-            Value<String> description = const Value.absent(),
-            Value<bool> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConfigFlagsCompanion(
-            name: name,
-            description: description,
-            status: status,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String name,
-            required String description,
-            Value<bool> status = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              ConfigFlagsCompanion.insert(
-            name: name,
-            description: description,
-            status: status,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> name = const Value.absent(),
+                Value<String> description = const Value.absent(),
+                Value<bool> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigFlagsCompanion(
+                name: name,
+                description: description,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String name,
+                required String description,
+                Value<bool> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ConfigFlagsCompanion.insert(
+                name: name,
+                description: description,
+                status: status,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $ConfigFlagsProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    ConfigFlags,
-    ConfigFlag,
-    $ConfigFlagsFilterComposer,
-    $ConfigFlagsOrderingComposer,
-    $ConfigFlagsAnnotationComposer,
-    $ConfigFlagsCreateCompanionBuilder,
-    $ConfigFlagsUpdateCompanionBuilder,
-    (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
-    ConfigFlag,
-    PrefetchHooks Function()>;
-typedef $TagEntitiesCreateCompanionBuilder = TagEntitiesCompanion Function({
-  required String id,
-  required String tag,
-  required String type,
-  Value<bool?> inactive,
-  Value<bool> private,
-  required DateTime createdAt,
-  required DateTime updatedAt,
-  Value<bool?> deleted,
-  required String serialized,
-  Value<int> rowid,
-});
-typedef $TagEntitiesUpdateCompanionBuilder = TagEntitiesCompanion Function({
-  Value<String> id,
-  Value<String> tag,
-  Value<String> type,
-  Value<bool?> inactive,
-  Value<bool> private,
-  Value<DateTime> createdAt,
-  Value<DateTime> updatedAt,
-  Value<bool?> deleted,
-  Value<String> serialized,
-  Value<int> rowid,
-});
+typedef $ConfigFlagsProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      ConfigFlags,
+      ConfigFlag,
+      $ConfigFlagsFilterComposer,
+      $ConfigFlagsOrderingComposer,
+      $ConfigFlagsAnnotationComposer,
+      $ConfigFlagsCreateCompanionBuilder,
+      $ConfigFlagsUpdateCompanionBuilder,
+      (ConfigFlag, BaseReferences<_$JournalDb, ConfigFlags, ConfigFlag>),
+      ConfigFlag,
+      PrefetchHooks Function()
+    >;
+typedef $TagEntitiesCreateCompanionBuilder =
+    TagEntitiesCompanion Function({
+      required String id,
+      required String tag,
+      required String type,
+      Value<bool?> inactive,
+      Value<bool> private,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<bool?> deleted,
+      required String serialized,
+      Value<int> rowid,
+    });
+typedef $TagEntitiesUpdateCompanionBuilder =
+    TagEntitiesCompanion Function({
+      Value<String> id,
+      Value<String> tag,
+      Value<String> type,
+      Value<bool?> inactive,
+      Value<bool> private,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<bool?> deleted,
+      Value<String> serialized,
+      Value<int> rowid,
+    });
 
 class $TagEntitiesFilterComposer extends Composer<_$JournalDb, TagEntities> {
   $TagEntitiesFilterComposer({
@@ -8748,31 +10046,49 @@ class $TagEntitiesFilterComposer extends Composer<_$JournalDb, TagEntities> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get tag => $composableBuilder(
-      column: $table.tag, builder: (column) => ColumnFilters(column));
+    column: $table.tag,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get inactive => $composableBuilder(
-      column: $table.inactive, builder: (column) => ColumnFilters(column));
+    column: $table.inactive,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnFilters(column));
+    column: $table.private,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnFilters(column));
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $TagEntitiesOrderingComposer extends Composer<_$JournalDb, TagEntities> {
@@ -8784,31 +10100,49 @@ class $TagEntitiesOrderingComposer extends Composer<_$JournalDb, TagEntities> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get tag => $composableBuilder(
-      column: $table.tag, builder: (column) => ColumnOrderings(column));
+    column: $table.tag,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get inactive => $composableBuilder(
-      column: $table.inactive, builder: (column) => ColumnOrderings(column));
+    column: $table.inactive,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get private => $composableBuilder(
-      column: $table.private, builder: (column) => ColumnOrderings(column));
+    column: $table.private,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get deleted => $composableBuilder(
-      column: $table.deleted, builder: (column) => ColumnOrderings(column));
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $TagEntitiesAnnotationComposer
@@ -8845,23 +10179,29 @@ class $TagEntitiesAnnotationComposer
       $composableBuilder(column: $table.deleted, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 }
 
-class $TagEntitiesTableManager extends RootTableManager<
-    _$JournalDb,
-    TagEntities,
-    TagDbEntity,
-    $TagEntitiesFilterComposer,
-    $TagEntitiesOrderingComposer,
-    $TagEntitiesAnnotationComposer,
-    $TagEntitiesCreateCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder,
-    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
-    TagDbEntity,
-    PrefetchHooks Function()> {
+class $TagEntitiesTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          TagEntities,
+          TagDbEntity,
+          $TagEntitiesFilterComposer,
+          $TagEntitiesOrderingComposer,
+          $TagEntitiesAnnotationComposer,
+          $TagEntitiesCreateCompanionBuilder,
+          $TagEntitiesUpdateCompanionBuilder,
+          (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
+          TagDbEntity,
+          PrefetchHooks Function()
+        > {
   $TagEntitiesTableManager(_$JournalDb db, TagEntities table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -8870,85 +10210,90 @@ class $TagEntitiesTableManager extends RootTableManager<
               $TagEntitiesOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $TagEntitiesAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> tag = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<bool?> inactive = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            Value<DateTime> createdAt = const Value.absent(),
-            Value<DateTime> updatedAt = const Value.absent(),
-            Value<bool?> deleted = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TagEntitiesCompanion(
-            id: id,
-            tag: tag,
-            type: type,
-            inactive: inactive,
-            private: private,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            serialized: serialized,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String tag,
-            required String type,
-            Value<bool?> inactive = const Value.absent(),
-            Value<bool> private = const Value.absent(),
-            required DateTime createdAt,
-            required DateTime updatedAt,
-            Value<bool?> deleted = const Value.absent(),
-            required String serialized,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TagEntitiesCompanion.insert(
-            id: id,
-            tag: tag,
-            type: type,
-            inactive: inactive,
-            private: private,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            deleted: deleted,
-            serialized: serialized,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> tag = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<bool?> inactive = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<bool?> deleted = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TagEntitiesCompanion(
+                id: id,
+                tag: tag,
+                type: type,
+                inactive: inactive,
+                private: private,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                serialized: serialized,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String tag,
+                required String type,
+                Value<bool?> inactive = const Value.absent(),
+                Value<bool> private = const Value.absent(),
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<bool?> deleted = const Value.absent(),
+                required String serialized,
+                Value<int> rowid = const Value.absent(),
+              }) => TagEntitiesCompanion.insert(
+                id: id,
+                tag: tag,
+                type: type,
+                inactive: inactive,
+                private: private,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                deleted: deleted,
+                serialized: serialized,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $TagEntitiesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    TagEntities,
-    TagDbEntity,
-    $TagEntitiesFilterComposer,
-    $TagEntitiesOrderingComposer,
-    $TagEntitiesAnnotationComposer,
-    $TagEntitiesCreateCompanionBuilder,
-    $TagEntitiesUpdateCompanionBuilder,
-    (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
-    TagDbEntity,
-    PrefetchHooks Function()>;
-typedef $TaggedCreateCompanionBuilder = TaggedCompanion Function({
-  required String id,
-  required String journalId,
-  required String tagEntityId,
-  Value<int> rowid,
-});
-typedef $TaggedUpdateCompanionBuilder = TaggedCompanion Function({
-  Value<String> id,
-  Value<String> journalId,
-  Value<String> tagEntityId,
-  Value<int> rowid,
-});
+typedef $TagEntitiesProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      TagEntities,
+      TagDbEntity,
+      $TagEntitiesFilterComposer,
+      $TagEntitiesOrderingComposer,
+      $TagEntitiesAnnotationComposer,
+      $TagEntitiesCreateCompanionBuilder,
+      $TagEntitiesUpdateCompanionBuilder,
+      (TagDbEntity, BaseReferences<_$JournalDb, TagEntities, TagDbEntity>),
+      TagDbEntity,
+      PrefetchHooks Function()
+    >;
+typedef $TaggedCreateCompanionBuilder =
+    TaggedCompanion Function({
+      required String id,
+      required String journalId,
+      required String tagEntityId,
+      Value<int> rowid,
+    });
+typedef $TaggedUpdateCompanionBuilder =
+    TaggedCompanion Function({
+      Value<String> id,
+      Value<String> journalId,
+      Value<String> tagEntityId,
+      Value<int> rowid,
+    });
 
 class $TaggedFilterComposer extends Composer<_$JournalDb, Tagged> {
   $TaggedFilterComposer({
@@ -8959,13 +10304,19 @@ class $TaggedFilterComposer extends Composer<_$JournalDb, Tagged> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get journalId => $composableBuilder(
-      column: $table.journalId, builder: (column) => ColumnFilters(column));
+    column: $table.journalId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get tagEntityId => $composableBuilder(
-      column: $table.tagEntityId, builder: (column) => ColumnFilters(column));
+    column: $table.tagEntityId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $TaggedOrderingComposer extends Composer<_$JournalDb, Tagged> {
@@ -8977,13 +10328,19 @@ class $TaggedOrderingComposer extends Composer<_$JournalDb, Tagged> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get journalId => $composableBuilder(
-      column: $table.journalId, builder: (column) => ColumnOrderings(column));
+    column: $table.journalId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get tagEntityId => $composableBuilder(
-      column: $table.tagEntityId, builder: (column) => ColumnOrderings(column));
+    column: $table.tagEntityId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $TaggedAnnotationComposer extends Composer<_$JournalDb, Tagged> {
@@ -9001,23 +10358,29 @@ class $TaggedAnnotationComposer extends Composer<_$JournalDb, Tagged> {
       $composableBuilder(column: $table.journalId, builder: (column) => column);
 
   GeneratedColumn<String> get tagEntityId => $composableBuilder(
-      column: $table.tagEntityId, builder: (column) => column);
+    column: $table.tagEntityId,
+    builder: (column) => column,
+  );
 }
 
-class $TaggedTableManager extends RootTableManager<
-    _$JournalDb,
-    Tagged,
-    TaggedWith,
-    $TaggedFilterComposer,
-    $TaggedOrderingComposer,
-    $TaggedAnnotationComposer,
-    $TaggedCreateCompanionBuilder,
-    $TaggedUpdateCompanionBuilder,
-    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
-    TaggedWith,
-    PrefetchHooks Function()> {
+class $TaggedTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          Tagged,
+          TaggedWith,
+          $TaggedFilterComposer,
+          $TaggedOrderingComposer,
+          $TaggedAnnotationComposer,
+          $TaggedCreateCompanionBuilder,
+          $TaggedUpdateCompanionBuilder,
+          (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
+          TaggedWith,
+          PrefetchHooks Function()
+        > {
   $TaggedTableManager(_$JournalDb db, Tagged table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9026,61 +10389,66 @@ class $TaggedTableManager extends RootTableManager<
               $TaggedOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $TaggedAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> journalId = const Value.absent(),
-            Value<String> tagEntityId = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TaggedCompanion(
-            id: id,
-            journalId: journalId,
-            tagEntityId: tagEntityId,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String journalId,
-            required String tagEntityId,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              TaggedCompanion.insert(
-            id: id,
-            journalId: journalId,
-            tagEntityId: tagEntityId,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> journalId = const Value.absent(),
+                Value<String> tagEntityId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TaggedCompanion(
+                id: id,
+                journalId: journalId,
+                tagEntityId: tagEntityId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String journalId,
+                required String tagEntityId,
+                Value<int> rowid = const Value.absent(),
+              }) => TaggedCompanion.insert(
+                id: id,
+                journalId: journalId,
+                tagEntityId: tagEntityId,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $TaggedProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Tagged,
-    TaggedWith,
-    $TaggedFilterComposer,
-    $TaggedOrderingComposer,
-    $TaggedAnnotationComposer,
-    $TaggedCreateCompanionBuilder,
-    $TaggedUpdateCompanionBuilder,
-    (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
-    TaggedWith,
-    PrefetchHooks Function()>;
-typedef $LabeledCreateCompanionBuilder = LabeledCompanion Function({
-  required String id,
-  required String journalId,
-  required String labelId,
-  Value<int> rowid,
-});
-typedef $LabeledUpdateCompanionBuilder = LabeledCompanion Function({
-  Value<String> id,
-  Value<String> journalId,
-  Value<String> labelId,
-  Value<int> rowid,
-});
+typedef $TaggedProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      Tagged,
+      TaggedWith,
+      $TaggedFilterComposer,
+      $TaggedOrderingComposer,
+      $TaggedAnnotationComposer,
+      $TaggedCreateCompanionBuilder,
+      $TaggedUpdateCompanionBuilder,
+      (TaggedWith, BaseReferences<_$JournalDb, Tagged, TaggedWith>),
+      TaggedWith,
+      PrefetchHooks Function()
+    >;
+typedef $LabeledCreateCompanionBuilder =
+    LabeledCompanion Function({
+      required String id,
+      required String journalId,
+      required String labelId,
+      Value<int> rowid,
+    });
+typedef $LabeledUpdateCompanionBuilder =
+    LabeledCompanion Function({
+      Value<String> id,
+      Value<String> journalId,
+      Value<String> labelId,
+      Value<int> rowid,
+    });
 
 class $LabeledFilterComposer extends Composer<_$JournalDb, Labeled> {
   $LabeledFilterComposer({
@@ -9091,13 +10459,19 @@ class $LabeledFilterComposer extends Composer<_$JournalDb, Labeled> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get journalId => $composableBuilder(
-      column: $table.journalId, builder: (column) => ColumnFilters(column));
+    column: $table.journalId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get labelId => $composableBuilder(
-      column: $table.labelId, builder: (column) => ColumnFilters(column));
+    column: $table.labelId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $LabeledOrderingComposer extends Composer<_$JournalDb, Labeled> {
@@ -9109,13 +10483,19 @@ class $LabeledOrderingComposer extends Composer<_$JournalDb, Labeled> {
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get journalId => $composableBuilder(
-      column: $table.journalId, builder: (column) => ColumnOrderings(column));
+    column: $table.journalId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get labelId => $composableBuilder(
-      column: $table.labelId, builder: (column) => ColumnOrderings(column));
+    column: $table.labelId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $LabeledAnnotationComposer extends Composer<_$JournalDb, Labeled> {
@@ -9136,20 +10516,24 @@ class $LabeledAnnotationComposer extends Composer<_$JournalDb, Labeled> {
       $composableBuilder(column: $table.labelId, builder: (column) => column);
 }
 
-class $LabeledTableManager extends RootTableManager<
-    _$JournalDb,
-    Labeled,
-    LabeledWith,
-    $LabeledFilterComposer,
-    $LabeledOrderingComposer,
-    $LabeledAnnotationComposer,
-    $LabeledCreateCompanionBuilder,
-    $LabeledUpdateCompanionBuilder,
-    (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
-    LabeledWith,
-    PrefetchHooks Function()> {
+class $LabeledTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          Labeled,
+          LabeledWith,
+          $LabeledFilterComposer,
+          $LabeledOrderingComposer,
+          $LabeledAnnotationComposer,
+          $LabeledCreateCompanionBuilder,
+          $LabeledUpdateCompanionBuilder,
+          (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
+          LabeledWith,
+          PrefetchHooks Function()
+        > {
   $LabeledTableManager(_$JournalDb db, Labeled table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9158,71 +10542,76 @@ class $LabeledTableManager extends RootTableManager<
               $LabeledOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $LabeledAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> journalId = const Value.absent(),
-            Value<String> labelId = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LabeledCompanion(
-            id: id,
-            journalId: journalId,
-            labelId: labelId,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String journalId,
-            required String labelId,
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LabeledCompanion.insert(
-            id: id,
-            journalId: journalId,
-            labelId: labelId,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> journalId = const Value.absent(),
+                Value<String> labelId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LabeledCompanion(
+                id: id,
+                journalId: journalId,
+                labelId: labelId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String journalId,
+                required String labelId,
+                Value<int> rowid = const Value.absent(),
+              }) => LabeledCompanion.insert(
+                id: id,
+                journalId: journalId,
+                labelId: labelId,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $LabeledProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    Labeled,
-    LabeledWith,
-    $LabeledFilterComposer,
-    $LabeledOrderingComposer,
-    $LabeledAnnotationComposer,
-    $LabeledCreateCompanionBuilder,
-    $LabeledUpdateCompanionBuilder,
-    (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
-    LabeledWith,
-    PrefetchHooks Function()>;
-typedef $LinkedEntriesCreateCompanionBuilder = LinkedEntriesCompanion Function({
-  required String id,
-  required String fromId,
-  required String toId,
-  required String type,
-  required String serialized,
-  Value<bool?> hidden,
-  Value<DateTime?> createdAt,
-  Value<DateTime?> updatedAt,
-  Value<int> rowid,
-});
-typedef $LinkedEntriesUpdateCompanionBuilder = LinkedEntriesCompanion Function({
-  Value<String> id,
-  Value<String> fromId,
-  Value<String> toId,
-  Value<String> type,
-  Value<String> serialized,
-  Value<bool?> hidden,
-  Value<DateTime?> createdAt,
-  Value<DateTime?> updatedAt,
-  Value<int> rowid,
-});
+typedef $LabeledProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      Labeled,
+      LabeledWith,
+      $LabeledFilterComposer,
+      $LabeledOrderingComposer,
+      $LabeledAnnotationComposer,
+      $LabeledCreateCompanionBuilder,
+      $LabeledUpdateCompanionBuilder,
+      (LabeledWith, BaseReferences<_$JournalDb, Labeled, LabeledWith>),
+      LabeledWith,
+      PrefetchHooks Function()
+    >;
+typedef $LinkedEntriesCreateCompanionBuilder =
+    LinkedEntriesCompanion Function({
+      required String id,
+      required String fromId,
+      required String toId,
+      required String type,
+      required String serialized,
+      Value<bool?> hidden,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<int> rowid,
+    });
+typedef $LinkedEntriesUpdateCompanionBuilder =
+    LinkedEntriesCompanion Function({
+      Value<String> id,
+      Value<String> fromId,
+      Value<String> toId,
+      Value<String> type,
+      Value<String> serialized,
+      Value<bool?> hidden,
+      Value<DateTime?> createdAt,
+      Value<DateTime?> updatedAt,
+      Value<int> rowid,
+    });
 
 class $LinkedEntriesFilterComposer
     extends Composer<_$JournalDb, LinkedEntries> {
@@ -9234,28 +10623,44 @@ class $LinkedEntriesFilterComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnFilters<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnFilters(column));
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get fromId => $composableBuilder(
-      column: $table.fromId, builder: (column) => ColumnFilters(column));
+    column: $table.fromId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get toId => $composableBuilder(
-      column: $table.toId, builder: (column) => ColumnFilters(column));
+    column: $table.toId,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnFilters(column));
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnFilters(column));
+    column: $table.serialized,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<bool> get hidden => $composableBuilder(
-      column: $table.hidden, builder: (column) => ColumnFilters(column));
+    column: $table.hidden,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
 
   ColumnFilters<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $LinkedEntriesOrderingComposer
@@ -9268,28 +10673,44 @@ class $LinkedEntriesOrderingComposer
     super.$removeJoinBuilderFromRootComposer,
   });
   ColumnOrderings<String> get id => $composableBuilder(
-      column: $table.id, builder: (column) => ColumnOrderings(column));
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get fromId => $composableBuilder(
-      column: $table.fromId, builder: (column) => ColumnOrderings(column));
+    column: $table.fromId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get toId => $composableBuilder(
-      column: $table.toId, builder: (column) => ColumnOrderings(column));
+    column: $table.toId,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get type => $composableBuilder(
-      column: $table.type, builder: (column) => ColumnOrderings(column));
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => ColumnOrderings(column));
+    column: $table.serialized,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<bool> get hidden => $composableBuilder(
-      column: $table.hidden, builder: (column) => ColumnOrderings(column));
+    column: $table.hidden,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 
   ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
-      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $LinkedEntriesAnnotationComposer
@@ -9314,7 +10735,9 @@ class $LinkedEntriesAnnotationComposer
       $composableBuilder(column: $table.type, builder: (column) => column);
 
   GeneratedColumn<String> get serialized => $composableBuilder(
-      column: $table.serialized, builder: (column) => column);
+    column: $table.serialized,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get hidden =>
       $composableBuilder(column: $table.hidden, builder: (column) => column);
@@ -9326,20 +10749,27 @@ class $LinkedEntriesAnnotationComposer
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
-class $LinkedEntriesTableManager extends RootTableManager<
-    _$JournalDb,
-    LinkedEntries,
-    LinkedDbEntry,
-    $LinkedEntriesFilterComposer,
-    $LinkedEntriesOrderingComposer,
-    $LinkedEntriesAnnotationComposer,
-    $LinkedEntriesCreateCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder,
-    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
-    LinkedDbEntry,
-    PrefetchHooks Function()> {
+class $LinkedEntriesTableManager
+    extends
+        RootTableManager<
+          _$JournalDb,
+          LinkedEntries,
+          LinkedDbEntry,
+          $LinkedEntriesFilterComposer,
+          $LinkedEntriesOrderingComposer,
+          $LinkedEntriesAnnotationComposer,
+          $LinkedEntriesCreateCompanionBuilder,
+          $LinkedEntriesUpdateCompanionBuilder,
+          (
+            LinkedDbEntry,
+            BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>,
+          ),
+          LinkedDbEntry,
+          PrefetchHooks Function()
+        > {
   $LinkedEntriesTableManager(_$JournalDb db, LinkedEntries table)
-      : super(TableManagerState(
+    : super(
+        TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
@@ -9348,69 +10778,75 @@ class $LinkedEntriesTableManager extends RootTableManager<
               $LinkedEntriesOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
               $LinkedEntriesAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback: ({
-            Value<String> id = const Value.absent(),
-            Value<String> fromId = const Value.absent(),
-            Value<String> toId = const Value.absent(),
-            Value<String> type = const Value.absent(),
-            Value<String> serialized = const Value.absent(),
-            Value<bool?> hidden = const Value.absent(),
-            Value<DateTime?> createdAt = const Value.absent(),
-            Value<DateTime?> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LinkedEntriesCompanion(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            serialized: serialized,
-            hidden: hidden,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
-          createCompanionCallback: ({
-            required String id,
-            required String fromId,
-            required String toId,
-            required String type,
-            required String serialized,
-            Value<bool?> hidden = const Value.absent(),
-            Value<DateTime?> createdAt = const Value.absent(),
-            Value<DateTime?> updatedAt = const Value.absent(),
-            Value<int> rowid = const Value.absent(),
-          }) =>
-              LinkedEntriesCompanion.insert(
-            id: id,
-            fromId: fromId,
-            toId: toId,
-            type: type,
-            serialized: serialized,
-            hidden: hidden,
-            createdAt: createdAt,
-            updatedAt: updatedAt,
-            rowid: rowid,
-          ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> fromId = const Value.absent(),
+                Value<String> toId = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> serialized = const Value.absent(),
+                Value<bool?> hidden = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LinkedEntriesCompanion(
+                id: id,
+                fromId: fromId,
+                toId: toId,
+                type: type,
+                serialized: serialized,
+                hidden: hidden,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String fromId,
+                required String toId,
+                required String type,
+                required String serialized,
+                Value<bool?> hidden = const Value.absent(),
+                Value<DateTime?> createdAt = const Value.absent(),
+                Value<DateTime?> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LinkedEntriesCompanion.insert(
+                id: id,
+                fromId: fromId,
+                toId: toId,
+                type: type,
+                serialized: serialized,
+                hidden: hidden,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
               .toList(),
           prefetchHooksCallback: null,
-        ));
+        ),
+      );
 }
 
-typedef $LinkedEntriesProcessedTableManager = ProcessedTableManager<
-    _$JournalDb,
-    LinkedEntries,
-    LinkedDbEntry,
-    $LinkedEntriesFilterComposer,
-    $LinkedEntriesOrderingComposer,
-    $LinkedEntriesAnnotationComposer,
-    $LinkedEntriesCreateCompanionBuilder,
-    $LinkedEntriesUpdateCompanionBuilder,
-    (LinkedDbEntry, BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>),
-    LinkedDbEntry,
-    PrefetchHooks Function()>;
+typedef $LinkedEntriesProcessedTableManager =
+    ProcessedTableManager<
+      _$JournalDb,
+      LinkedEntries,
+      LinkedDbEntry,
+      $LinkedEntriesFilterComposer,
+      $LinkedEntriesOrderingComposer,
+      $LinkedEntriesAnnotationComposer,
+      $LinkedEntriesCreateCompanionBuilder,
+      $LinkedEntriesUpdateCompanionBuilder,
+      (
+        LinkedDbEntry,
+        BaseReferences<_$JournalDb, LinkedEntries, LinkedDbEntry>,
+      ),
+      LinkedDbEntry,
+      PrefetchHooks Function()
+    >;
 
 class $JournalDbManager {
   final _$JournalDb _db;

@@ -69,8 +69,9 @@ void main() {
       ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(false),
-          journalPageControllerProvider(false)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            false,
+          ).overrideWith(() => fakeController),
         ],
         child: const MaterialApp(
           localizationsDelegates: [
@@ -102,8 +103,9 @@ void main() {
     );
   });
 
-  testWidgets('renders paged list branch when pagingController is present',
-      (tester) async {
+  testWidgets('renders paged list branch when pagingController is present', (
+    tester,
+  ) async {
     // Set up a minimal PagingController that never fetches additional pages.
     final controller = PagingController<int, JournalEntity>(
       getNextPageKey: (PagingState<int, JournalEntity> state) => null,
@@ -132,8 +134,9 @@ void main() {
       ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(false),
-          journalPageControllerProvider(false)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            false,
+          ).overrideWith(() => fakeController),
         ],
         child: const MaterialApp(
           localizationsDelegates: [

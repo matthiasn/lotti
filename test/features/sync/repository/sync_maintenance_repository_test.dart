@@ -135,13 +135,15 @@ void main() {
         inactive: false,
       );
       when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => [testTag]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncTags();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -176,15 +178,18 @@ void main() {
         vectorClock: null,
         inactive: true,
       );
-      when(() => mockJournalDb.getAllTags())
-          .thenAnswer((_) async => [deletedTag, inactiveTag]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllTags(),
+      ).thenAnswer((_) async => [deletedTag, inactiveTag]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncTags();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
 
       // Should only capture the inactive tag
       expect(captured.length, 1);
@@ -203,23 +208,27 @@ void main() {
       // Verify that the deleted tag was never enqueued by checking all captured messages.
       // This is a more robust way than verifyNever if other messages could have been sent.
       for (final msg in captured) {
-        final id = (msg as SyncMessage)
-            .mapOrNull(tagEntity: (syncTag) => syncTag.tagEntity.id);
+        final id = (msg as SyncMessage).mapOrNull(
+          tagEntity: (syncTag) => syncTag.tagEntity.id,
+        );
         expect(id, isNot(deletedTag.id));
       }
     });
 
     test('syncMeasurables enqueues measurables for sync', () async {
       final testMeasurable = FakeMeasurableDataType(id: '1');
-      when(() => mockJournalDb.getAllMeasurableDataTypes())
-          .thenAnswer((_) async => [testMeasurable]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => [testMeasurable]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncMeasurables();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -236,19 +245,24 @@ void main() {
     });
 
     test('syncMeasurables skips deleted measurables', () async {
-      final deletedMeasurable =
-          FakeMeasurableDataType(id: '2', deletedAt: DateTime.now());
+      final deletedMeasurable = FakeMeasurableDataType(
+        id: '2',
+        deletedAt: DateTime.now(),
+      );
       final activeMeasurable = FakeMeasurableDataType(id: '3');
 
-      when(() => mockJournalDb.getAllMeasurableDataTypes())
-          .thenAnswer((_) async => [deletedMeasurable, activeMeasurable]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => [deletedMeasurable, activeMeasurable]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncMeasurables();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -274,15 +288,18 @@ void main() {
 
     test('syncCategories enqueues categories for sync', () async {
       final testCategory = FakeCategoryDefinition(id: '1');
-      when(() => mockJournalDb.getAllCategories())
-          .thenAnswer((_) async => [testCategory]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllCategories(),
+      ).thenAnswer((_) async => [testCategory]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncCategories();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -299,19 +316,24 @@ void main() {
     });
 
     test('syncCategories skips deleted categories', () async {
-      final deletedCategory =
-          FakeCategoryDefinition(id: '2', deletedAt: DateTime.now());
+      final deletedCategory = FakeCategoryDefinition(
+        id: '2',
+        deletedAt: DateTime.now(),
+      );
       final activeCategory = FakeCategoryDefinition(id: '3');
 
-      when(() => mockJournalDb.getAllCategories())
-          .thenAnswer((_) async => [deletedCategory, activeCategory]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllCategories(),
+      ).thenAnswer((_) async => [deletedCategory, activeCategory]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncCategories();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -337,15 +359,18 @@ void main() {
 
     test('syncDashboards enqueues dashboards for sync', () async {
       final testDashboard = FakeDashboardDefinition(id: '1');
-      when(() => mockJournalDb.getAllDashboards())
-          .thenAnswer((_) async => [testDashboard]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllDashboards(),
+      ).thenAnswer((_) async => [testDashboard]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncDashboards();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -362,19 +387,24 @@ void main() {
     });
 
     test('syncDashboards skips deleted dashboards', () async {
-      final deletedDashboard =
-          FakeDashboardDefinition(id: '2', deletedAt: DateTime.now());
+      final deletedDashboard = FakeDashboardDefinition(
+        id: '2',
+        deletedAt: DateTime.now(),
+      );
       final activeDashboard = FakeDashboardDefinition(id: '3');
 
-      when(() => mockJournalDb.getAllDashboards())
-          .thenAnswer((_) async => [deletedDashboard, activeDashboard]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllDashboards(),
+      ).thenAnswer((_) async => [deletedDashboard, activeDashboard]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncDashboards();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -400,15 +430,18 @@ void main() {
 
     test('syncHabits enqueues habits for sync', () async {
       final testHabit = FakeHabitDefinition(id: '1');
-      when(() => mockJournalDb.getAllHabitDefinitions())
-          .thenAnswer((_) async => [testHabit]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => [testHabit]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncHabits();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -424,19 +457,24 @@ void main() {
     });
 
     test('syncHabits skips deleted habits', () async {
-      final deletedHabit =
-          FakeHabitDefinition(id: '2', deletedAt: DateTime.now());
+      final deletedHabit = FakeHabitDefinition(
+        id: '2',
+        deletedAt: DateTime.now(),
+      );
       final activeHabit = FakeHabitDefinition(id: '3');
 
-      when(() => mockJournalDb.getAllHabitDefinitions())
-          .thenAnswer((_) async => [deletedHabit, activeHabit]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => [deletedHabit, activeHabit]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncHabits();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -491,19 +529,26 @@ void main() {
         aiResponseType: AiResponseType.taskSummary,
       );
 
-      when(() => mockAiConfigRepository.getConfigsByType(
-          AiConfigType.inferenceProvider)).thenAnswer((_) async => [provider]);
-      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [model]);
-      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => [prompt]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenAnswer((_) async => [provider]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model]);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => [prompt]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncAiSettings();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 3);
 
       expect(
@@ -547,12 +592,17 @@ void main() {
     test('syncAiSettings logs and skips when fetching configs fails', () async {
       final exception = Exception('db failure');
 
-      when(() => mockAiConfigRepository.getConfigsByType(
-          AiConfigType.inferenceProvider)).thenThrow(exception);
-      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => const []);
-      when(() => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => const []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      ).thenThrow(exception);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => const []);
+      when(
+        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => const []);
 
       await expectLater(
         syncMaintenanceRepository.syncAiSettings(),
@@ -582,15 +632,18 @@ void main() {
         vectorClock: null,
         private: false,
       );
-      when(() => mockJournalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => [label]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => [label]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncLabels();
 
-      final captured =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final capturedMessage = captured.first as SyncMessage;
       expect(
@@ -626,15 +679,18 @@ void main() {
         private: false,
       );
 
-      when(() => mockJournalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => [deleted, active]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => [deleted, active]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncLabels();
 
-      final messages =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final messages = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(messages.length, 1);
       final first = messages.first as SyncMessage;
       final id = first.mapOrNull(
@@ -669,8 +725,9 @@ void main() {
 
     group('syncMeasurables', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.getAllMeasurableDataTypes())
-            .thenThrow(testException);
+        when(
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncMeasurables(),
@@ -730,8 +787,9 @@ void main() {
 
     group('syncHabits', () {
       test('should log and rethrow exception when db fails', () async {
-        when(() => mockJournalDb.getAllHabitDefinitions())
-            .thenThrow(testException);
+        when(
+          () => mockJournalDb.getAllHabitDefinitions(),
+        ).thenThrow(testException);
 
         await expectLater(
           () => syncMaintenanceRepository.syncHabits(),
@@ -778,14 +836,18 @@ void main() {
         vectorClock: null,
         inactive: false,
       );
-      when(() => mockJournalDb.getAllTags())
-          .thenAnswer((_) async => [tagOne, tagTwo]);
-      when(() => mockJournalDb.getAllMeasurableDataTypes())
-          .thenAnswer((_) async => [FakeMeasurableDataType(id: 'm-1')]);
-      when(() => mockJournalDb.getAllCategories())
-          .thenAnswer((_) async => [FakeCategoryDefinition(id: 'c-1')]);
-      when(() => mockJournalDb.getAllDashboards())
-          .thenAnswer((_) async => [FakeDashboardDefinition(id: 'd-1')]);
+      when(
+        () => mockJournalDb.getAllTags(),
+      ).thenAnswer((_) async => [tagOne, tagTwo]);
+      when(
+        () => mockJournalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => [FakeMeasurableDataType(id: 'm-1')]);
+      when(
+        () => mockJournalDb.getAllCategories(),
+      ).thenAnswer((_) async => [FakeCategoryDefinition(id: 'c-1')]);
+      when(
+        () => mockJournalDb.getAllDashboards(),
+      ).thenAnswer((_) async => [FakeDashboardDefinition(id: 'd-1')]);
       when(() => mockJournalDb.getAllHabitDefinitions()).thenAnswer(
         (_) async => [
           FakeHabitDefinition(id: 'h-1'),
@@ -825,8 +887,9 @@ void main() {
       );
 
       when(
-        () => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
       ).thenAnswer((_) async => [providerConfig]);
       when(
         () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
@@ -859,8 +922,9 @@ void main() {
       verify(() => mockJournalDb.getAllDashboards()).called(1);
       verify(() => mockJournalDb.getAllHabitDefinitions()).called(1);
       verify(
-        () => mockAiConfigRepository
-            .getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockAiConfigRepository.getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
       ).called(1);
       verify(
         () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
@@ -946,8 +1010,9 @@ void main() {
 
       // Mock the fetch function
       when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       // Test the sync
       await syncMaintenanceRepository.syncTags(
@@ -964,76 +1029,80 @@ void main() {
     });
 
     test(
-        'handles deleted entities correctly (progress for all, sync only non-deleted)',
-        () async {
-      // Create test entities with some deleted ones
-      final testTags = [
-        TagEntity.genericTag(
-          id: '1',
-          tag: 'Tag 1',
-          private: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          inactive: false,
-        ),
-        TagEntity.genericTag(
-          id: '2',
-          tag: 'Tag 2',
-          private: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          deletedAt: DateTime.now(),
-          inactive: false,
-        ),
-        TagEntity.genericTag(
-          id: '3',
-          tag: 'Tag 3',
-          private: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          inactive: false,
-        ),
-      ];
+      'handles deleted entities correctly (progress for all, sync only non-deleted)',
+      () async {
+        // Create test entities with some deleted ones
+        final testTags = [
+          TagEntity.genericTag(
+            id: '1',
+            tag: 'Tag 1',
+            private: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            inactive: false,
+          ),
+          TagEntity.genericTag(
+            id: '2',
+            tag: 'Tag 2',
+            private: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            deletedAt: DateTime.now(),
+            inactive: false,
+          ),
+          TagEntity.genericTag(
+            id: '3',
+            tag: 'Tag 3',
+            private: false,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            inactive: false,
+          ),
+        ];
 
-      // Track progress updates
-      final progressUpdates = <double>[];
-      final detailedProgress = <List<int>>[];
+        // Track progress updates
+        final progressUpdates = <double>[];
+        final detailedProgress = <List<int>>[];
 
-      // Mock the fetch function
-      when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+        // Mock the fetch function
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => testTags);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
 
-      // Test the sync
-      await syncMaintenanceRepository.syncTags(
-        onProgress: progressUpdates.add,
-        onDetailedProgress: (processed, total) {
-          detailedProgress.add([processed, total]);
-        },
-      );
+        // Test the sync
+        await syncMaintenanceRepository.syncTags(
+          onProgress: progressUpdates.add,
+          onDetailedProgress: (processed, total) {
+            detailedProgress.add([processed, total]);
+          },
+        );
 
-      // Progress should be reported for all entities
-      expect(progressUpdates.length, 3); // 3 entities, including deleted
-      expect(progressUpdates[0], closeTo(1 / 3, 0.001));
-      expect(progressUpdates[1], closeTo(2 / 3, 0.001));
-      expect(progressUpdates[2], closeTo(1.0, 0.001));
+        // Progress should be reported for all entities
+        expect(progressUpdates.length, 3); // 3 entities, including deleted
+        expect(progressUpdates[0], closeTo(1 / 3, 0.001));
+        expect(progressUpdates[1], closeTo(2 / 3, 0.001));
+        expect(progressUpdates[2], closeTo(1.0, 0.001));
 
-      expect(
-        detailedProgress,
-        [
-          [0, 3],
-          [1, 3],
-          [2, 3],
-          [3, 3],
-        ],
-      );
+        expect(
+          detailedProgress,
+          [
+            [0, 3],
+            [1, 3],
+            [2, 3],
+            [3, 3],
+          ],
+        );
 
-      // Only non-deleted entities should be synced
-      verify(() => mockOutboxService.enqueueMessage(any())).called(2);
-    });
+        // Only non-deleted entities should be synced
+        verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+      },
+    );
 
     test('skips syncing deleted entities', () async {
       final deletedTag = TagEntity.genericTag(
@@ -1055,10 +1124,12 @@ void main() {
         vectorClock: null,
         inactive: false,
       );
-      when(() => mockJournalDb.getAllTags())
-          .thenAnswer((_) async => [deletedTag, activeTag]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.getAllTags(),
+      ).thenAnswer((_) async => [deletedTag, activeTag]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncTags();
       // Only the active tag should be synced
@@ -1074,8 +1145,9 @@ void main() {
 
       // Mock the fetch function
       when(() => mockJournalDb.getAllTags()).thenAnswer((_) async => testTags);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       // Test the sync
       await syncMaintenanceRepository.syncTags(
@@ -1126,10 +1198,12 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockAgentRepository.getAllEntities())
-          .thenAnswer((_) async => [entity]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getAllEntities(),
+      ).thenAnswer((_) async => [entity]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncAgentEntities();
 
@@ -1145,10 +1219,12 @@ void main() {
     });
 
     test('enqueues nothing when no agent entities exist', () async {
-      when(() => mockAgentRepository.getAllEntities())
-          .thenAnswer((_) async => []);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getAllEntities(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncAgentEntities();
 
@@ -1167,10 +1243,12 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockAgentRepository.getAllLinks())
-          .thenAnswer((_) async => [link]);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getAllLinks(),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncAgentLinks();
 
@@ -1187,8 +1265,9 @@ void main() {
 
     test('enqueues nothing when no agent links exist', () async {
       when(() => mockAgentRepository.getAllLinks()).thenAnswer((_) async => []);
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       await syncMaintenanceRepository.syncAgentLinks();
 
@@ -1248,12 +1327,15 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
-          .thenAnswer((_) async => [entity]);
-      when(() => mockAgentRepository.upsertEntity(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getEntitiesWithNullVectorClock(),
+      ).thenAnswer((_) async => [entity]);
+      when(
+        () => mockAgentRepository.upsertEntity(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
       stubVectorClock(0);
 
       final progressUpdates = <double>[];
@@ -1265,16 +1347,18 @@ void main() {
       );
 
       // Verify entity was stamped with vector clock and persisted
-      final captured =
-          verify(() => mockAgentRepository.upsertEntity(captureAny())).captured;
+      final captured = verify(
+        () => mockAgentRepository.upsertEntity(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final stamped = captured.first as AgentDomainEntity;
       expect(stamped.vectorClock, isNotNull);
       expect(stamped.vectorClock!.vclock, {'host-1': 0});
 
       // Verify entity was enqueued for sync
-      final messages =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final messages = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(messages.length, 1);
       final msg = messages.first as SyncMessage;
       expect(
@@ -1290,26 +1374,29 @@ void main() {
       ]);
     });
 
-    test('reports completion immediately when no entities need backfill',
-        () async {
-      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
-          .thenAnswer((_) async => []);
+    test(
+      'reports completion immediately when no entities need backfill',
+      () async {
+        when(
+          () => mockAgentRepository.getEntitiesWithNullVectorClock(),
+        ).thenAnswer((_) async => []);
 
-      final progressUpdates = <double>[];
-      final detailedProgress = <List<int>>[];
+        final progressUpdates = <double>[];
+        final detailedProgress = <List<int>>[];
 
-      await syncMaintenanceRepository.backfillAgentEntityClocks(
-        onProgress: progressUpdates.add,
-        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
-      );
+        await syncMaintenanceRepository.backfillAgentEntityClocks(
+          onProgress: progressUpdates.add,
+          onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+        );
 
-      expect(progressUpdates, [1.0]);
-      expect(detailedProgress, [
-        [0, 0],
-      ]);
-      verifyNever(() => mockAgentRepository.upsertEntity(any()));
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-    });
+        expect(progressUpdates, [1.0]);
+        expect(detailedProgress, [
+          [0, 0],
+        ]);
+        verifyNever(() => mockAgentRepository.upsertEntity(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
 
     test('stamps multiple entities with incrementing clocks', () async {
       final entities = List.generate(
@@ -1336,12 +1423,15 @@ void main() {
           previous: any(named: 'previous'),
         ),
       ).thenAnswer((_) async => VectorClock({'host-1': counter++}));
-      when(() => mockAgentRepository.getEntitiesWithNullVectorClock())
-          .thenAnswer((_) async => entities);
-      when(() => mockAgentRepository.upsertEntity(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getEntitiesWithNullVectorClock(),
+      ).thenAnswer((_) async => entities);
+      when(
+        () => mockAgentRepository.upsertEntity(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       final progressUpdates = <double>[];
 
@@ -1377,12 +1467,15 @@ void main() {
         vectorClock: null,
       );
 
-      when(() => mockAgentRepository.getLinksWithNullVectorClock())
-          .thenAnswer((_) async => [link]);
-      when(() => mockAgentRepository.upsertLink(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAgentRepository.getLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => [link]);
+      when(
+        () => mockAgentRepository.upsertLink(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
       stubVectorClock(0);
 
       final progressUpdates = <double>[];
@@ -1394,16 +1487,18 @@ void main() {
       );
 
       // Verify link was stamped with vector clock and persisted
-      final captured =
-          verify(() => mockAgentRepository.upsertLink(captureAny())).captured;
+      final captured = verify(
+        () => mockAgentRepository.upsertLink(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final stamped = captured.first as AgentLink;
       expect(stamped.vectorClock, isNotNull);
       expect(stamped.vectorClock!.vclock, {'host-1': 0});
 
       // Verify link was enqueued for sync
-      final messages =
-          verify(() => mockOutboxService.enqueueMessage(captureAny())).captured;
+      final messages = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
       expect(messages.length, 1);
       final msg = messages.first as SyncMessage;
       expect(
@@ -1419,54 +1514,63 @@ void main() {
       ]);
     });
 
-    test('reports completion immediately when no links need backfill',
-        () async {
-      when(() => mockAgentRepository.getLinksWithNullVectorClock())
-          .thenAnswer((_) async => []);
+    test(
+      'reports completion immediately when no links need backfill',
+      () async {
+        when(
+          () => mockAgentRepository.getLinksWithNullVectorClock(),
+        ).thenAnswer((_) async => []);
 
-      final progressUpdates = <double>[];
-      final detailedProgress = <List<int>>[];
+        final progressUpdates = <double>[];
+        final detailedProgress = <List<int>>[];
 
-      await syncMaintenanceRepository.backfillAgentLinkClocks(
-        onProgress: progressUpdates.add,
-        onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
-      );
+        await syncMaintenanceRepository.backfillAgentLinkClocks(
+          onProgress: progressUpdates.add,
+          onDetailedProgress: (p, t) => detailedProgress.add([p, t]),
+        );
 
-      expect(progressUpdates, [1.0]);
-      expect(detailedProgress, [
-        [0, 0],
-      ]);
-      verifyNever(() => mockAgentRepository.upsertLink(any()));
-      verifyNever(() => mockOutboxService.enqueueMessage(any()));
-    });
+        expect(progressUpdates, [1.0]);
+        expect(detailedProgress, [
+          [0, 0],
+        ]);
+        verifyNever(() => mockAgentRepository.upsertLink(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
   });
 
   group('fetchTotalsForSteps - backfill steps', () {
-    test('returns count from dedicated query for backfill entity step',
-        () async {
-      when(() => mockAgentRepository.countEntitiesWithNullVectorClock())
-          .thenAnswer((_) async => 42);
+    test(
+      'returns count from dedicated query for backfill entity step',
+      () async {
+        when(
+          () => mockAgentRepository.countEntitiesWithNullVectorClock(),
+        ).thenAnswer((_) async => 42);
 
-      final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
-        {SyncStep.backfillAgentEntityClocks},
-      );
+        final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+          {SyncStep.backfillAgentEntityClocks},
+        );
 
-      expect(totals[SyncStep.backfillAgentEntityClocks], 42);
-      verify(() => mockAgentRepository.countEntitiesWithNullVectorClock())
-          .called(1);
-    });
+        expect(totals[SyncStep.backfillAgentEntityClocks], 42);
+        verify(
+          () => mockAgentRepository.countEntitiesWithNullVectorClock(),
+        ).called(1);
+      },
+    );
 
     test('returns count from dedicated query for backfill link step', () async {
-      when(() => mockAgentRepository.countLinksWithNullVectorClock())
-          .thenAnswer((_) async => 7);
+      when(
+        () => mockAgentRepository.countLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => 7);
 
       final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
         {SyncStep.backfillAgentLinkClocks},
       );
 
       expect(totals[SyncStep.backfillAgentLinkClocks], 7);
-      verify(() => mockAgentRepository.countLinksWithNullVectorClock())
-          .called(1);
+      verify(
+        () => mockAgentRepository.countLinksWithNullVectorClock(),
+      ).called(1);
     });
   });
 }

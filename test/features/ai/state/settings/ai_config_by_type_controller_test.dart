@@ -141,8 +141,9 @@ void main() {
       );
 
       // Act
-      final result =
-          await container.read(aiConfigByIdProvider('test-id').future);
+      final result = await container.read(
+        aiConfigByIdProvider('test-id').future,
+      );
 
       // Assert
       expect(result, equals(testApiConfig));
@@ -162,8 +163,9 @@ void main() {
       );
 
       // Act
-      final result =
-          await container.read(aiConfigByIdProvider('non-existent').future);
+      final result = await container.read(
+        aiConfigByIdProvider('non-existent').future,
+      );
 
       // Assert
       expect(result, isNull);

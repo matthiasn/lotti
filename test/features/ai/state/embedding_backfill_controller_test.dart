@@ -34,24 +34,24 @@ import '../../../mocks/mocks.dart';
 final _fixedDate = DateTime(2024, 3, 15);
 
 Metadata _meta({required String id}) => Metadata(
-      id: id,
-      createdAt: _fixedDate,
-      updatedAt: _fixedDate,
-      dateFrom: _fixedDate,
-      dateTo: _fixedDate,
-    );
+  id: id,
+  createdAt: _fixedDate,
+  updatedAt: _fixedDate,
+  dateFrom: _fixedDate,
+  dateTo: _fixedDate,
+);
 
 TaskData _taskData(String title) => TaskData(
-      status: TaskStatus.open(
-        id: 'status-id',
-        createdAt: _fixedDate,
-        utcOffset: 0,
-      ),
-      title: title,
-      statusHistory: [],
-      dateFrom: _fixedDate,
-      dateTo: _fixedDate,
-    );
+  status: TaskStatus.open(
+    id: 'status-id',
+    createdAt: _fixedDate,
+    utcOffset: 0,
+  ),
+  title: title,
+  statusHistory: [],
+  dateFrom: _fixedDate,
+  dateTo: _fixedDate,
+);
 
 const _longText = 'This is a sufficiently long text for embedding generation.';
 
@@ -69,8 +69,9 @@ String _hashOf(String text) => sha256.convert(utf8.encode(text)).toString();
 // ---------------------------------------------------------------------------
 
 void _stubOllamaProvider(MockAiConfigRepository repo) {
-  when(() => repo.resolveOllamaBaseUrl())
-      .thenAnswer((_) async => _ollamaBaseUrl);
+  when(
+    () => repo.resolveOllamaBaseUrl(),
+  ).thenAnswer((_) async => _ollamaBaseUrl);
 }
 
 void _stubNoExistingHash(MockEmbeddingsDb db) {
@@ -103,8 +104,9 @@ void _stubEmbed(MockOllamaEmbeddingRepository repo) {
 }
 
 void _stubEntityIds(MockJournalDb db, List<String> ids) {
-  when(() => db.journalEntityIdsByCategory(_testCategoryId))
-      .thenReturn(MockSelectable<String>(ids));
+  when(
+    () => db.journalEntityIdsByCategory(_testCategoryId),
+  ).thenReturn(MockSelectable<String>(ids));
 }
 
 void _stubEntity(MockJournalDb db, JournalEntity entity) {
@@ -146,12 +148,14 @@ void main() {
     _stubEmbed(mockEmbeddingRepo);
 
     // Default: embeddings flag enabled
-    when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-        .thenAnswer((_) async => true);
+    when(
+      () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+    ).thenAnswer((_) async => true);
 
     // Default: no labels (needed for label resolver)
-    when(() => mockJournalDb.getAllLabelDefinitions())
-        .thenAnswer((_) async => []);
+    when(
+      () => mockJournalDb.getAllLabelDefinitions(),
+    ).thenAnswer((_) async => []);
 
     container = ProviderContainer();
   });
@@ -297,10 +301,12 @@ void main() {
         entryText: const EntryText(plainText: _longText),
       );
 
-      when(() => mockJournalDb.journalEntityIdsByCategory(catA))
-          .thenReturn(MockSelectable<String>(['entry-a']));
-      when(() => mockJournalDb.journalEntityIdsByCategory(catB))
-          .thenReturn(MockSelectable<String>(['entry-b1', 'entry-b2']));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory(catA),
+      ).thenReturn(MockSelectable<String>(['entry-a']));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory(catB),
+      ).thenReturn(MockSelectable<String>(['entry-b1', 'entry-b2']));
 
       _stubEntity(mockJournalDb, entryA);
       _stubEntity(mockJournalDb, entryB1);
@@ -325,10 +331,12 @@ void main() {
         entryText: const EntryText(plainText: _longText),
       );
 
-      when(() => mockJournalDb.journalEntityIdsByCategory(catEmpty))
-          .thenReturn(MockSelectable<String>([]));
-      when(() => mockJournalDb.journalEntityIdsByCategory(catFull))
-          .thenReturn(MockSelectable<String>(['entry-1']));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory(catEmpty),
+      ).thenReturn(MockSelectable<String>([]));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory(catFull),
+      ).thenReturn(MockSelectable<String>(['entry-1']));
 
       _stubEntity(mockJournalDb, entry);
 
@@ -342,10 +350,12 @@ void main() {
     });
 
     test('completes with progress 1.0 when all categories are empty', () async {
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-x'))
-          .thenReturn(MockSelectable<String>([]));
-      when(() => mockJournalDb.journalEntityIdsByCategory('cat-y'))
-          .thenReturn(MockSelectable<String>([]));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory('cat-x'),
+      ).thenReturn(MockSelectable<String>([]));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory('cat-y'),
+      ).thenReturn(MockSelectable<String>([]));
 
       await controller().backfillCategories({'cat-x', 'cat-y'});
 
@@ -359,8 +369,9 @@ void main() {
   group('EmbeddingBackfillController skips entries', () {
     test('skips entities not found in database', () async {
       _stubEntityIds(mockJournalDb, ['missing-1']);
-      when(() => mockJournalDb.journalEntityById('missing-1'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById('missing-1'),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -419,8 +430,9 @@ void main() {
       _stubEntityIds(mockJournalDb, ['cached-1']);
       _stubEntity(mockJournalDb, entry);
 
-      when(() => mockEmbeddingsDb.getContentHash('cached-1'))
-          .thenReturn(_hashOf(_longText));
+      when(
+        () => mockEmbeddingsDb.getContentHash('cached-1'),
+      ).thenReturn(_hashOf(_longText));
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -462,8 +474,9 @@ void main() {
       _stubEntity(mockJournalDb, task);
       _stubEntity(mockJournalDb, image);
       _stubEntity(mockJournalDb, cached);
-      when(() => mockEmbeddingsDb.getContentHash('cached-1'))
-          .thenReturn(_hashOf(_longText));
+      when(
+        () => mockEmbeddingsDb.getContentHash('cached-1'),
+      ).thenReturn(_hashOf(_longText));
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -538,8 +551,9 @@ void main() {
     });
 
     test('sets error when no Ollama provider configured', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -548,8 +562,9 @@ void main() {
     });
 
     test('sets error on unexpected exception during ID fetch', () async {
-      when(() => mockJournalDb.journalEntityIdsByCategory(_testCategoryId))
-          .thenThrow(Exception('Database connection lost'));
+      when(
+        () => mockJournalDb.journalEntityIdsByCategory(_testCategoryId),
+      ).thenThrow(Exception('Database connection lost'));
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -561,8 +576,9 @@ void main() {
   group('EmbeddingBackfillController state transitions', () {
     test('clears previous error when starting new backfill', () async {
       // First: trigger error
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillCategories({_testCategoryId});
       expect(state().error, isNotNull);
@@ -602,8 +618,9 @@ void main() {
     });
 
     test('isRunning is false after error', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillCategories({_testCategoryId});
       expect(state().isRunning, isFalse);
@@ -692,8 +709,9 @@ void main() {
     });
 
     test('sets error when embeddings are disabled', () async {
-      when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) async => false);
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -764,20 +782,22 @@ void main() {
     late MockAgentRepository mockAgentRepo;
 
     /// Creates a test agent identity.
-    AgentIdentityEntity makeAgent(String id) => AgentDomainEntity.agent(
-          id: id,
-          agentId: id,
-          kind: 'task_agent',
-          displayName: 'Test Agent $id',
-          lifecycle: AgentLifecycle.active,
-          mode: AgentInteractionMode.autonomous,
-          allowedCategoryIds: const {},
-          currentStateId: 'state-$id',
-          config: const AgentConfig(),
-          createdAt: _fixedDate,
-          updatedAt: _fixedDate,
-          vectorClock: null,
-        ) as AgentIdentityEntity;
+    AgentIdentityEntity makeAgent(String id) =>
+        AgentDomainEntity.agent(
+              id: id,
+              agentId: id,
+              kind: 'task_agent',
+              displayName: 'Test Agent $id',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-$id',
+              config: const AgentConfig(),
+              createdAt: _fixedDate,
+              updatedAt: _fixedDate,
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
 
     /// Creates a test agent report.
     AgentReportEntity makeReport({
@@ -786,27 +806,27 @@ void main() {
       String content = 'A long enough agent report content for embedding.',
     }) =>
         AgentDomainEntity.agentReport(
-          id: id,
-          agentId: agentId,
-          scope: AgentReportScopes.current,
-          createdAt: _fixedDate,
-          vectorClock: null,
-          content: content,
-        ) as AgentReportEntity;
+              id: id,
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              createdAt: _fixedDate,
+              vectorClock: null,
+              content: content,
+            )
+            as AgentReportEntity;
 
     /// Creates a test agent link.
     AgentLink makeTaskLink({
       required String fromId,
       required String toId,
-    }) =>
-        AgentLink.basic(
-          id: 'link-$fromId-$toId',
-          fromId: fromId,
-          toId: toId,
-          createdAt: _fixedDate,
-          updatedAt: _fixedDate,
-          vectorClock: null,
-        );
+    }) => AgentLink.basic(
+      id: 'link-$fromId-$toId',
+      fromId: fromId,
+      toId: toId,
+      createdAt: _fixedDate,
+      updatedAt: _fixedDate,
+      vectorClock: null,
+    );
 
     setUp(() async {
       mockAgentRepo = MockAgentRepository();
@@ -820,8 +840,9 @@ void main() {
       final agent = makeAgent('agent-1');
       final report = makeReport(id: 'report-1', agentId: 'agent-1');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -870,8 +891,9 @@ void main() {
     test('skips agents with no task links', () async {
       final agent = makeAgent('agent-1');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -889,8 +911,9 @@ void main() {
     test('skips agents with no report', () async {
       final agent = makeAgent('agent-1');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -914,11 +937,15 @@ void main() {
 
     test('skips agents with empty report content', () async {
       final agent = makeAgent('agent-1');
-      final emptyReport =
-          makeReport(id: 'report-1', agentId: 'agent-1', content: '');
+      final emptyReport = makeReport(
+        id: 'report-1',
+        agentId: 'agent-1',
+        content: '',
+      );
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -941,8 +968,9 @@ void main() {
     });
 
     test('handles empty agent list gracefully', () async {
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => []);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => []);
 
       await controller().backfillAgentReports();
 
@@ -962,8 +990,9 @@ void main() {
     });
 
     test('sets error when embeddings are disabled', () async {
-      when(() => mockJournalDb.getConfigFlag(enableEmbeddingsFlag))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.getConfigFlag(enableEmbeddingsFlag),
+      ).thenAnswer((_) async => false);
 
       await controller().backfillAgentReports();
 
@@ -972,8 +1001,9 @@ void main() {
     });
 
     test('sets error when no Ollama provider configured', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillAgentReports();
 
@@ -986,8 +1016,9 @@ void main() {
       final agent2 = makeAgent('agent-2');
       final report2 = makeReport(id: 'report-2', agentId: 'agent-2');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent1, agent2]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent1, agent2]);
 
       // Agent 1: getLinksFrom throws
       when(
@@ -1031,8 +1062,9 @@ void main() {
       final agent = makeAgent('agent-1');
       final report = makeReport(id: 'report-1', agentId: 'agent-1');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -1082,8 +1114,9 @@ void main() {
       final agent = makeAgent('agent-1');
       final report = makeReport(id: 'report-1', agentId: 'agent-1');
 
-      when(() => mockAgentRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockAgentRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
       when(
         () => mockAgentRepo.getLinksFrom(
           'agent-1',
@@ -1100,8 +1133,9 @@ void main() {
       ).thenAnswer((_) async => report);
 
       // Task not found in journal DB
-      when(() => mockJournalDb.journalEntityById('task-1'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById('task-1'),
+      ).thenAnswer((_) async => null);
 
       await controller().backfillAgentReports();
 
@@ -1142,25 +1176,26 @@ void main() {
       _stubEntity(mockJournalDb, task);
 
       // Stub label definitions
-      when(() => mockJournalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => [
-                LabelDefinition(
-                  id: 'label-1',
-                  name: 'security',
-                  color: '#FF0000',
-                  createdAt: _fixedDate,
-                  updatedAt: _fixedDate,
-                  vectorClock: null,
-                ),
-                LabelDefinition(
-                  id: 'label-2',
-                  name: 'backend',
-                  color: '#00FF00',
-                  createdAt: _fixedDate,
-                  updatedAt: _fixedDate,
-                  vectorClock: null,
-                ),
-              ]);
+      when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+        (_) async => [
+          LabelDefinition(
+            id: 'label-1',
+            name: 'security',
+            color: '#FF0000',
+            createdAt: _fixedDate,
+            updatedAt: _fixedDate,
+            vectorClock: null,
+          ),
+          LabelDefinition(
+            id: 'label-2',
+            name: 'backend',
+            color: '#00FF00',
+            createdAt: _fixedDate,
+            updatedAt: _fixedDate,
+            vectorClock: null,
+          ),
+        ],
+      );
 
       await controller().backfillCategories({_testCategoryId});
 
@@ -1191,26 +1226,27 @@ void main() {
       _stubEntityIds(mockJournalDb, ['task-1']);
       _stubEntity(mockJournalDb, task);
 
-      when(() => mockJournalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => [
-                LabelDefinition(
-                  id: 'label-1',
-                  name: 'active',
-                  color: '#FF0000',
-                  createdAt: _fixedDate,
-                  updatedAt: _fixedDate,
-                  vectorClock: null,
-                ),
-                LabelDefinition(
-                  id: 'label-deleted',
-                  name: 'deleted',
-                  color: '#999999',
-                  createdAt: _fixedDate,
-                  updatedAt: _fixedDate,
-                  vectorClock: null,
-                  deletedAt: _fixedDate,
-                ),
-              ]);
+      when(() => mockJournalDb.getAllLabelDefinitions()).thenAnswer(
+        (_) async => [
+          LabelDefinition(
+            id: 'label-1',
+            name: 'active',
+            color: '#FF0000',
+            createdAt: _fixedDate,
+            updatedAt: _fixedDate,
+            vectorClock: null,
+          ),
+          LabelDefinition(
+            id: 'label-deleted',
+            name: 'deleted',
+            color: '#999999',
+            createdAt: _fixedDate,
+            updatedAt: _fixedDate,
+            vectorClock: null,
+            deletedAt: _fixedDate,
+          ),
+        ],
+      );
 
       await controller().backfillCategories({_testCategoryId});
 

@@ -33,8 +33,9 @@ void main() {
     updateStreamController = StreamController<Set<String>>.broadcast();
 
     // Setup the mock update notifications
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     // Register mocks in GetIt
     getIt.allowReassignment = true;
@@ -71,8 +72,9 @@ void main() {
 
     test('loads linked entities on initialization', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => testEntities);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => testEntities);
 
       // Act
       final container = ProviderContainer(
@@ -82,10 +84,12 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller = container
-          .read(linkedFromEntriesControllerProvider(id: testId).notifier);
-      final result = await container
-          .read(linkedFromEntriesControllerProvider(id: testId).future);
+      final controller = container.read(
+        linkedFromEntriesControllerProvider(id: testId).notifier,
+      );
+      final result = await container.read(
+        linkedFromEntriesControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(result, equals(testEntities));
@@ -94,14 +98,16 @@ void main() {
       expect(controller.watchedIds, contains('linked-from-id-2'));
 
       // Verify the repository was called with the correct parameters
-      verify(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .called(1);
+      verify(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).called(1);
     });
 
     test('updates state when affected IDs are notified', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => testEntities);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => testEntities);
 
       final updatedEntities = [
         JournalEntity.journalEntry(
@@ -125,10 +131,12 @@ void main() {
       ];
 
       // Setup the second call to return updated entities
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => testEntities);
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => updatedEntities);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => testEntities);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => updatedEntities);
 
       // Act
       final container = ProviderContainer(
@@ -138,10 +146,12 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller = container
-          .read(linkedFromEntriesControllerProvider(id: testId).notifier);
-      await container
-          .read(linkedFromEntriesControllerProvider(id: testId).future);
+      final controller = container.read(
+        linkedFromEntriesControllerProvider(id: testId).notifier,
+      );
+      await container.read(
+        linkedFromEntriesControllerProvider(id: testId).future,
+      );
 
       // Simulate an update notification for one of the watched IDs
       updateStreamController.add({'linked-from-id-1'});
@@ -150,8 +160,9 @@ void main() {
       await pumpEventQueue();
 
       // Get the updated state
-      final updatedState =
-          container.read(linkedFromEntriesControllerProvider(id: testId));
+      final updatedState = container.read(
+        linkedFromEntriesControllerProvider(id: testId),
+      );
 
       // Assert
       expect(updatedState.value, equals(updatedEntities));
@@ -161,14 +172,16 @@ void main() {
       ); // Should have the new ID
 
       // Verify the repository was called twice
-      verify(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .called(2);
+      verify(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).called(2);
     });
 
     test('disposes subscription when disposed', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => testEntities);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => testEntities);
 
       // Act
       final container = ProviderContainer(
@@ -178,10 +191,12 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final controller = container
-          .read(linkedFromEntriesControllerProvider(id: testId).notifier);
-      await container
-          .read(linkedFromEntriesControllerProvider(id: testId).future);
+      final controller = container.read(
+        linkedFromEntriesControllerProvider(id: testId).notifier,
+      );
+      await container.read(
+        linkedFromEntriesControllerProvider(id: testId).future,
+      );
 
       // We can't directly access the private _updateSubscription field
       // but we can verify the controller was created successfully
@@ -196,8 +211,9 @@ void main() {
 
     test('handles empty results', () async {
       // Arrange
-      when(() => mockJournalRepository.getLinkedToEntities(linkedTo: testId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(linkedTo: testId),
+      ).thenAnswer((_) async => []);
 
       // Act
       final container = ProviderContainer(
@@ -207,8 +223,9 @@ void main() {
       );
 
       // Get the controller and wait for it to load
-      final result = await container
-          .read(linkedFromEntriesControllerProvider(id: testId).future);
+      final result = await container.read(
+        linkedFromEntriesControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(result, isEmpty);
@@ -247,8 +264,9 @@ void main() {
       );
 
       // Get the result from the controller
-      final result = await container
-          .read(linkedFromEntriesControllerProvider(id: testId).future);
+      final result = await container.read(
+        linkedFromEntriesControllerProvider(id: testId).future,
+      );
 
       // Assert
       expect(result, equals(mockEntities));

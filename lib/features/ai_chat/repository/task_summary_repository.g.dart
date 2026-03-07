@@ -12,20 +12,24 @@ part of 'task_summary_repository.dart';
 @ProviderFor(taskSummaryRepository)
 final taskSummaryRepositoryProvider = TaskSummaryRepositoryProvider._();
 
-final class TaskSummaryRepositoryProvider extends $FunctionalProvider<
-    TaskSummaryRepository,
-    TaskSummaryRepository,
-    TaskSummaryRepository> with $Provider<TaskSummaryRepository> {
+final class TaskSummaryRepositoryProvider
+    extends
+        $FunctionalProvider<
+          TaskSummaryRepository,
+          TaskSummaryRepository,
+          TaskSummaryRepository
+        >
+    with $Provider<TaskSummaryRepository> {
   TaskSummaryRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'taskSummaryRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'taskSummaryRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$taskSummaryRepositoryHash();
@@ -33,8 +37,8 @@ final class TaskSummaryRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<TaskSummaryRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   TaskSummaryRepository create(Ref ref) {

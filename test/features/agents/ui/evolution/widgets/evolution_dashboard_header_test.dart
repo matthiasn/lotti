@@ -33,9 +33,9 @@ void main() {
         templateWakeRunTimeSeriesProvider.overrideWith(
           timeSeriesOverride ??
               (ref, id) async => WakeRunTimeSeries(
-                    dailyBuckets: _makeDaily(5),
-                    versionBuckets: _makeVersions(3),
-                  ),
+                dailyBuckets: _makeDaily(5),
+                versionBuckets: _makeVersions(3),
+              ),
         ),
       ],
     );
@@ -77,8 +77,9 @@ void main() {
       );
     });
 
-    testWidgets('shows no metrics message when totalWakes is 0',
-        (tester) async {
+    testWidgets('shows no metrics message when totalWakes is 0', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           metricsOverride: (ref, id) async => makeTestMetrics(
@@ -149,8 +150,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows N/A for MTTR when averageDuration is null',
-        (tester) async {
+    testWidgets('shows N/A for MTTR when averageDuration is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           metricsOverride: (ref, id) async => makeTestMetrics(

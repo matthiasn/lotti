@@ -171,8 +171,9 @@ void main() {
         );
 
         // Mock the journalEntityById call to return our test entity
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -183,8 +184,9 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Act
         final result = await repository.updateCategoryId(
@@ -194,8 +196,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -211,8 +214,9 @@ void main() {
         const categoryId = 'category-id';
 
         // Mock the journalEntityById call to return null
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.updateCategoryId(
@@ -222,8 +226,9 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verifyNever(
           () => mockPersistenceLogic.updateMetadata(
             any(),
@@ -262,8 +267,9 @@ void main() {
         );
 
         // Mock the journalEntityById call to return our test entity
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call with clearCategoryId: true
         when(
@@ -274,8 +280,9 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Act
         final result = await repository.updateCategoryId(
@@ -285,8 +292,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -302,8 +310,9 @@ void main() {
         const categoryId = 'category-id';
 
         // Mock the journalEntityById call to throw an exception
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenThrow(Exception('Test exception'));
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenThrow(Exception('Test exception'));
 
         // Act
         final result = await repository.updateCategoryId(
@@ -355,8 +364,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -367,20 +377,23 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.deleteJournalEntity(journalEntityId);
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -396,16 +409,18 @@ void main() {
         const journalEntityId = 'non-existent-id';
 
         // Mock the journalEntityById call to return null
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.deleteJournalEntity(journalEntityId);
 
         // Assert
         expect(result, isFalse);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verifyNever(
           () => mockPersistenceLogic.updateMetadata(
             any(),
@@ -443,8 +458,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -455,12 +471,14 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
 
         // Mock TimeService.getCurrent to return the current timer entry
         when(() => mockTimeService.getCurrent()).thenReturn(testEntity);
@@ -473,8 +491,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -534,8 +553,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -546,12 +566,14 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
 
         // Mock TimeService.getCurrent to return a DIFFERENT active timer
         when(() => mockTimeService.getCurrent()).thenReturn(activeTimer);
@@ -564,8 +586,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -607,8 +630,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -619,12 +643,14 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
 
         // Mock TimeService.getCurrent to return null (no active timer)
         when(() => mockTimeService.getCurrent()).thenReturn(null);
@@ -637,8 +663,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -685,8 +712,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Mock the updateMetadata call
         when(
@@ -698,8 +726,9 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the TimeService updateCurrent call
         when(() => mockTimeService.updateCurrent(any())).thenReturn(null);
@@ -713,8 +742,9 @@ void main() {
 
         // Assert
         expect(result, isTrue);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
@@ -733,8 +763,9 @@ void main() {
         final dateTo = DateTime(2023, 1, 2);
 
         // Mock the journalEntityById call to return null
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.updateJournalEntityDate(
@@ -745,8 +776,9 @@ void main() {
 
         // Assert
         expect(result, isFalse);
-        verify(() => mockJournalDb.journalEntityById(journalEntityId))
-            .called(1);
+        verify(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).called(1);
         verifyNever(
           () => mockPersistenceLogic.updateMetadata(
             any(),
@@ -764,8 +796,9 @@ void main() {
         final dateTo = DateTime(2023, 1, 2);
 
         // Mock the journalEntityById call to throw an exception
-        when(() => mockJournalDb.journalEntityById(journalEntityId))
-            .thenThrow(Exception('Test exception'));
+        when(
+          () => mockJournalDb.journalEntityById(journalEntityId),
+        ).thenThrow(Exception('Test exception'));
 
         // Act
         final result = await repository.updateJournalEntityDate(
@@ -885,24 +918,29 @@ void main() {
         );
         final updatedLink = testLink.copyWith(hidden: true);
 
-        when(() => mockJournalDb.entryLinkById(updatedLink.id))
-            .thenAnswer((_) async => testLink);
+        when(
+          () => mockJournalDb.entryLinkById(updatedLink.id),
+        ).thenAnswer((_) async => testLink);
 
         // Mock VectorClockService
-        when(() => mockVectorClockService.getNextVectorClock())
-            .thenAnswer((_) async => const VectorClock({'node1': 1}));
+        when(
+          () => mockVectorClockService.getNextVectorClock(),
+        ).thenAnswer((_) async => const VectorClock({'node1': 1}));
 
         // Mock JournalDb
-        when(() => mockJournalDb.upsertEntryLink(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockJournalDb.upsertEntryLink(any()),
+        ).thenAnswer((_) async => 1);
 
         // Mock UpdateNotifications
-        when(() => mockUpdateNotifications.notify(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockUpdateNotifications.notify(any()),
+        ).thenAnswer((_) async {});
 
         // Mock OutboxService
-        when(() => mockOutboxService.enqueueMessage(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.updateLink(updatedLink);
@@ -931,8 +969,9 @@ void main() {
         );
         final existingLink = testLink.copyWith(hidden: false);
 
-        when(() => mockJournalDb.entryLinkById(testLink.id))
-            .thenAnswer((_) async => existingLink);
+        when(
+          () => mockJournalDb.entryLinkById(testLink.id),
+        ).thenAnswer((_) async => existingLink);
 
         // Act
         final result = await repository.updateLink(testLink);
@@ -954,12 +993,14 @@ void main() {
         const toId = 'to-id';
 
         // Mock JournalDb
-        when(() => mockJournalDb.deleteLink(fromId, toId))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockJournalDb.deleteLink(fromId, toId),
+        ).thenAnswer((_) async => 1);
 
         // Mock UpdateNotifications
-        when(() => mockUpdateNotifications.notify(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockUpdateNotifications.notify(any()),
+        ).thenAnswer((_) async {});
 
         // Act
         final result = await repository.removeLink(
@@ -1016,12 +1057,14 @@ void main() {
         ];
 
         // Mock JournalDb
-        when(() => mockJournalDb.linkedToJournalEntities(linkedTo))
-            .thenReturn(mockSelectableJournalDbEntities);
+        when(
+          () => mockJournalDb.linkedToJournalEntities(linkedTo),
+        ).thenReturn(mockSelectableJournalDbEntities);
 
         // Skip the actual Future conversion and just mock getLinkedEntities directly
-        when(() => mockJournalDb.getLinkedEntities(linkedTo))
-            .thenAnswer((_) async => testEntities);
+        when(
+          () => mockJournalDb.getLinkedEntities(linkedTo),
+        ).thenAnswer((_) async => testEntities);
 
         // Act
         final result = await repository.getLinkedEntities(linkedTo: linkedTo);
@@ -1067,8 +1110,9 @@ void main() {
         ];
 
         // Mock JournalDb
-        when(() => mockJournalDb.getLinkedEntities(linkedTo))
-            .thenAnswer((_) async => testEntities);
+        when(
+          () => mockJournalDb.getLinkedEntities(linkedTo),
+        ).thenAnswer((_) async => testEntities);
 
         // Act
         final result = await repository.getLinkedEntities(linkedTo: linkedTo);
@@ -1101,8 +1145,9 @@ void main() {
         );
 
         // Mock the journalEntityById call
-        when(() => mockJournalDb.journalEntityById(entityId))
-            .thenAnswer((_) async => testEntity);
+        when(
+          () => mockJournalDb.journalEntityById(entityId),
+        ).thenAnswer((_) async => testEntity);
 
         // Act
         final result = await repository.getJournalEntityById(entityId);
@@ -1117,8 +1162,9 @@ void main() {
         const entityId = 'non-existent-id';
 
         // Mock the journalEntityById call to return null
-        when(() => mockJournalDb.journalEntityById(entityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(entityId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await repository.getJournalEntityById(entityId);
@@ -1181,14 +1227,17 @@ void main() {
         final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
-        when(() => mockJournalDb.linksFromId(fromId, [false]))
-            .thenReturn(mockLinksQuery);
+        when(
+          () => mockJournalDb.linksFromId(fromId, [false]),
+        ).thenReturn(mockLinksQuery);
         when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
-          () => mockJournalDb
-              .journalEntityIdsByDateFromDesc(['to-id-1', 'to-id-2']),
+          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+            'to-id-1',
+            'to-id-2',
+          ]),
         ).thenReturn(mockIdsQuery);
         when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-2', 'to-id-1']);
 
@@ -1202,8 +1251,10 @@ void main() {
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb
-              .journalEntityIdsByDateFromDesc(['to-id-1', 'to-id-2']),
+          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+            'to-id-1',
+            'to-id-2',
+          ]),
         ).called(1);
       });
 
@@ -1239,25 +1290,30 @@ void main() {
         final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
-        when(() => mockJournalDb.linksFromId(fromId, [false, true]))
-            .thenReturn(mockLinksQuery);
+        when(
+          () => mockJournalDb.linksFromId(fromId, [false, true]),
+        ).thenReturn(mockLinksQuery);
         when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query
-        when(() => mockJournalDb.journalEntityIdsByDateFromDesc(['to-id-1']))
-            .thenReturn(mockIdsQuery);
+        when(
+          () => mockJournalDb.journalEntityIdsByDateFromDesc(['to-id-1']),
+        ).thenReturn(mockIdsQuery);
         when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-1']);
 
         // Act
-        final result =
-            await repository.getLinksFromId(fromId, includeHidden: true);
+        final result = await repository.getLinksFromId(
+          fromId,
+          includeHidden: true,
+        );
 
         // Assert
         expect(result, hasLength(1));
         expect(result[0].toId, equals('to-id-1'));
         expect(result[0].hidden, isTrue);
-        verify(() => mockJournalDb.linksFromId(fromId, [false, true]))
-            .called(1);
+        verify(
+          () => mockJournalDb.linksFromId(fromId, [false, true]),
+        ).called(1);
       });
 
       test('filters out null links when some IDs do not have links', () async {
@@ -1311,33 +1367,39 @@ void main() {
         final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
-        when(() => mockJournalDb.linksFromId(fromId, [false]))
-            .thenReturn(mockLinksQuery);
+        when(
+          () => mockJournalDb.linksFromId(fromId, [false]),
+        ).thenReturn(mockLinksQuery);
         when(mockLinksQuery.get).thenAnswer((_) async => mockEntries);
 
         // Mock the journalEntityIdsByDateFromDesc query to return an ID that doesn't exist
         // in our links map to test the nonNulls filtering
         when(
-          () => mockJournalDb
-              .journalEntityIdsByDateFromDesc(['to-id-1', 'to-id-2']),
+          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+            'to-id-1',
+            'to-id-2',
+          ]),
         ).thenReturn(mockIdsQuery);
-        when(mockIdsQuery.get)
-            .thenAnswer((_) async => ['to-id-3', 'to-id-2', 'to-id-1']);
+        when(
+          mockIdsQuery.get,
+        ).thenAnswer((_) async => ['to-id-3', 'to-id-2', 'to-id-1']);
 
         // Act
         final result = await repository.getLinksFromId(fromId);
 
         // Assert
         expect(
-            result,
-            hasLength(
-                2)); // Only 2 links exist, even though 3 IDs were returned
+          result,
+          hasLength(2),
+        ); // Only 2 links exist, even though 3 IDs were returned
         expect(result[0].toId, equals('to-id-2'));
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb
-              .journalEntityIdsByDateFromDesc(['to-id-1', 'to-id-2']),
+          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+            'to-id-1',
+            'to-id-2',
+          ]),
         ).called(1);
       });
     });
@@ -1652,10 +1714,12 @@ void main() {
         final mockDbEntities = [dbEntity1, dbEntity2];
 
         // Mock JournalDb
-        when(() => mockJournalDb.linkedToJournalEntities(linkedTo))
-            .thenReturn(mockSelectableJournalDbEntities);
-        when(mockSelectableJournalDbEntities.get)
-            .thenAnswer((_) async => mockDbEntities);
+        when(
+          () => mockJournalDb.linkedToJournalEntities(linkedTo),
+        ).thenReturn(mockSelectableJournalDbEntities);
+        when(
+          mockSelectableJournalDbEntities.get,
+        ).thenAnswer((_) async => mockDbEntities);
 
         // Act
         final result = await repository.getLinkedToEntities(linkedTo: linkedTo);
@@ -1728,8 +1792,9 @@ void main() {
         final linkedEntities = [journalEntry, journalImage1, journalImage2];
 
         // Mock JournalDb
-        when(() => mockJournalDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => linkedEntities);
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => linkedEntities);
 
         // Act
         final result = await repository.getLinkedImagesForTask(taskId);
@@ -1784,8 +1849,9 @@ void main() {
         final linkedEntities = [journalEntry, audioEntry];
 
         // Mock JournalDb
-        when(() => mockJournalDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => linkedEntities);
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => linkedEntities);
 
         // Act
         final result = await repository.getLinkedImagesForTask(taskId);
@@ -1801,8 +1867,9 @@ void main() {
         const taskId = 'task-id';
 
         // Mock JournalDb to return empty list
-        when(() => mockJournalDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
 
         // Act
         final result = await repository.getLinkedImagesForTask(taskId);
@@ -1815,8 +1882,7 @@ void main() {
     });
 
     group('deleteJournalEntity with JournalImage cover art', () {
-      test('clears coverArtId from tasks that reference deleted image',
-          () async {
+      test('clears coverArtId from tasks that reference deleted image', () async {
         // Arrange
         const imageId = 'image-to-delete';
         final dateTime2023 = DateTime(2023);
@@ -1931,14 +1997,17 @@ void main() {
         );
 
         // Mock the journalEntityById call for the image
-        when(() => mockJournalDb.journalEntityById(imageId))
-            .thenAnswer((_) async => imageEntity);
+        when(
+          () => mockJournalDb.journalEntityById(imageId),
+        ).thenAnswer((_) async => imageEntity);
 
         // Mock linkedToJournalEntities to return tasks that link to this image
-        when(() => mockJournalDb.linkedToJournalEntities(imageId))
-            .thenReturn(mockSelectableJournalDbEntities);
-        when(mockSelectableJournalDbEntities.get)
-            .thenAnswer((_) async => [taskDbEntity1, taskDbEntity2]);
+        when(
+          () => mockJournalDb.linkedToJournalEntities(imageId),
+        ).thenReturn(mockSelectableJournalDbEntities);
+        when(
+          mockSelectableJournalDbEntities.get,
+        ).thenAnswer((_) async => [taskDbEntity1, taskDbEntity2]);
 
         // Mock updateTask for clearing coverArtId
         when(
@@ -1957,12 +2026,14 @@ void main() {
         ).thenAnswer((_) async => updatedMeta);
 
         // Mock the updateDbEntity call for the image
-        when(() => mockPersistenceLogic.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock the updateBadge call
-        when(() => mockNotificationService.updateBadge())
-            .thenAnswer((_) async {});
+        when(
+          () => mockNotificationService.updateBadge(),
+        ).thenAnswer((_) async {});
 
         // Mock TimeService.getCurrent to return null
         when(() => mockTimeService.getCurrent()).thenReturn(null);

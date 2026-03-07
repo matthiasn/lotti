@@ -53,40 +53,44 @@ void main() {
     );
 
     test('build loads existing config when configId is provided', () async {
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
 
       // Mock model configs for validation
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
+      when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model1',
+          name: 'Model 1',
+          providerModelId: 'provider-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      when(() => mockAiConfigRepository.getConfigById('model2')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model2',
+          name: 'Model 2',
+          providerModelId: 'provider-model-2',
+          inferenceProviderId: 'provider-2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
 
       final controller = container.read(
         promptFormControllerProvider(configId: testConfigId).notifier,
       );
 
       // Allow the future in the build method to complete
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
 
       expect(controller.nameController.text, testConfig.name);
       expect(controller.systemMessageController.text, testConfig.systemMessage);
@@ -111,124 +115,142 @@ void main() {
       expect(state.defaultVariables, testConfig.defaultVariables);
     });
 
-    test('build initializes with default state when configId is null',
-        () async {
-      final controller = container.read(
-        promptFormControllerProvider(configId: null).notifier,
-      );
-      // Allow the future in the build method to complete
-      await container.read(promptFormControllerProvider(configId: null).future);
+    test(
+      'build initializes with default state when configId is null',
+      () async {
+        final controller = container.read(
+          promptFormControllerProvider(configId: null).notifier,
+        );
+        // Allow the future in the build method to complete
+        await container.read(
+          promptFormControllerProvider(configId: null).future,
+        );
 
-      expect(controller.nameController.text, '');
-      expect(controller.systemMessageController.text, '');
-      expect(controller.userMessageController.text, '');
-      expect(controller.descriptionController.text, '');
+        expect(controller.nameController.text, '');
+        expect(controller.systemMessageController.text, '');
+        expect(controller.userMessageController.text, '');
+        expect(controller.descriptionController.text, '');
 
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
-      expect(state, isNotNull);
-      expect(state!.id, isNull);
-      expect(state.name.value, '');
-      expect(state.systemMessage.value, '');
-      expect(state.userMessage.value, '');
-      expect(state.description.value, '');
-    });
+        final state = container
+            .read(promptFormControllerProvider(configId: null))
+            .value;
+        expect(state, isNotNull);
+        expect(state!.id, isNull);
+        expect(state.name.value, '');
+        expect(state.systemMessage.value, '');
+        expect(state.userMessage.value, '');
+        expect(state.description.value, '');
+      },
+    );
 
     test('nameChanged updates state and controller', () async {
       // Initialize with null configId to ensure clean state for this test
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
 
       const newName = 'New Name';
       controller.nameChanged(newName);
 
       expect(controller.nameController.text, newName);
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.name.value, newName);
     });
 
     test('systemMessageChanged updates state and controller', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       const newMessage = 'New System Message';
       controller.systemMessageChanged(newMessage);
 
       expect(controller.systemMessageController.text, newMessage);
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.systemMessage.value, newMessage);
     });
 
     test('userMessageChanged updates state and controller', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       const newMessage = 'New User Message';
       controller.userMessageChanged(newMessage);
 
       expect(controller.userMessageController.text, newMessage);
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.userMessage.value, newMessage);
     });
 
     test('descriptionChanged updates state and controller', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       const newDescription = 'New Description';
       controller.descriptionChanged(newDescription);
 
       expect(controller.descriptionController.text, newDescription);
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.description.value, newDescription);
     });
 
     test('defaultModelIdChanged updates state', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       const newModelId = 'gpt-4';
       controller.defaultModelIdChanged(newModelId);
 
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.defaultModelId, newModelId);
     });
 
     test('useReasoningChanged updates state', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller = container
-          .read(promptFormControllerProvider(configId: null).notifier)
-        ..useReasoningChanged(true);
-      var state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      )..useReasoningChanged(true);
+      var state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.useReasoning, true);
 
       controller.useReasoningChanged(false);
-      state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.useReasoning, false);
     });
 
     test('requiredInputDataChanged updates state', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       final newInputData = [InputDataType.images, InputDataType.task];
       controller.requiredInputDataChanged(newInputData);
 
-      final state =
-          container.read(promptFormControllerProvider(configId: null)).value;
+      final state = container
+          .read(promptFormControllerProvider(configId: null))
+          .value;
       expect(state!.requiredInputData, newInputData);
     });
 
-    test('modelIdsChanged updates state and defaultModelId correctly',
-        () async {
+    test('modelIdsChanged updates state and defaultModelId correctly', () async {
       // Initial state with a default model
       when(
         () => mockAiConfigRepository.getConfigById(testConfigId),
@@ -237,30 +259,33 @@ void main() {
       ); // testConfig has defaultModelId: 'model1', modelIds: ['model1', 'model2']
 
       // Mock model configs for validation
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model1',
+          name: 'Model 1',
+          providerModelId: 'provider-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      when(() => mockAiConfigRepository.getConfigById('model2')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model2',
+          name: 'Model 2',
+          providerModelId: 'provider-model-2',
+          inferenceProviderId: 'provider-2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
       container
           .read(promptFormControllerProvider(configId: testConfigId).notifier)
           // Case 1: New list is empty
@@ -278,32 +303,36 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         ],
       );
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model1',
+          name: 'Model 1',
+          providerModelId: 'provider-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      when(() => mockAiConfigRepository.getConfigById('model2')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model2',
+          name: 'Model 2',
+          providerModelId: 'provider-model-2',
+          inferenceProviderId: 'provider-2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
       container
           .read(promptFormControllerProvider(configId: testConfigId).notifier)
           // Case 2: Current default model ID is not in the new list
@@ -324,32 +353,36 @@ void main() {
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         ],
       );
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
+      when(
+        () => mockAiConfigRepository.getConfigById(testConfigId),
+      ).thenAnswer((_) async => testConfig);
+      when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model1',
+          name: 'Model 1',
+          providerModelId: 'provider-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      when(() => mockAiConfigRepository.getConfigById('model2')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model2',
+          name: 'Model 2',
+          providerModelId: 'provider-model-2',
+          inferenceProviderId: 'provider-2',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
+      await container.read(
+        promptFormControllerProvider(configId: testConfigId).future,
+      );
       container
           .read(promptFormControllerProvider(configId: testConfigId).notifier)
           // Case 3: Default model ID is still valid
@@ -363,12 +396,14 @@ void main() {
 
     test('addConfig calls repository saveConfig', () async {
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
       final newConfig =
           MockAiConfigPrompt(); // Use a mock or a simple AiConfig instance
-      when(() => mockAiConfigRepository.saveConfig(newConfig))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAiConfigRepository.saveConfig(newConfig),
+      ).thenAnswer((_) async {});
 
       await controller.addConfig(newConfig);
 
@@ -376,77 +411,89 @@ void main() {
     });
 
     test(
-        'updateConfig calls repository saveConfig with updated timestamps and id',
-        () async {
-      // Initialize with an existing config
-      when(() => mockAiConfigRepository.getConfigById(testConfigId))
-          .thenAnswer((_) async => testConfig);
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      when(() => mockAiConfigRepository.getConfigById('model2'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model2',
-                name: 'Model 2',
-                providerModelId: 'provider-model-2',
-                inferenceProviderId: 'provider-2',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
-      await container
-          .read(promptFormControllerProvider(configId: testConfigId).future);
-      final controller = container
-          .read(promptFormControllerProvider(configId: testConfigId).notifier);
+      'updateConfig calls repository saveConfig with updated timestamps and id',
+      () async {
+        // Initialize with an existing config
+        when(
+          () => mockAiConfigRepository.getConfigById(testConfigId),
+        ).thenAnswer((_) async => testConfig);
+        when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+          (_) async => AiConfig.model(
+            id: 'model1',
+            name: 'Model 1',
+            providerModelId: 'provider-model-1',
+            inferenceProviderId: 'provider-1',
+            createdAt: DateTime.now(),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+          ),
+        );
+        when(() => mockAiConfigRepository.getConfigById('model2')).thenAnswer(
+          (_) async => AiConfig.model(
+            id: 'model2',
+            name: 'Model 2',
+            providerModelId: 'provider-model-2',
+            inferenceProviderId: 'provider-2',
+            createdAt: DateTime.now(),
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+          ),
+        );
+        await container.read(
+          promptFormControllerProvider(configId: testConfigId).future,
+        );
+        final controller = container.read(
+          promptFormControllerProvider(configId: testConfigId).notifier,
+        );
 
-      final updatedConfigData = testConfig.copyWith(name: 'Updated Name');
-      when(() => mockAiConfigRepository.saveConfig(any()))
-          .thenAnswer((_) async {});
+        final updatedConfigData = testConfig.copyWith(name: 'Updated Name');
+        when(
+          () => mockAiConfigRepository.saveConfig(any()),
+        ).thenAnswer((_) async {});
 
-      await controller.updateConfig(updatedConfigData);
+        await controller.updateConfig(updatedConfigData);
 
-      final captured =
-          verify(() => mockAiConfigRepository.saveConfig(captureAny()))
-              .captured;
-      expect(captured.length, 1);
-      final savedConfig = captured.first as AiConfigPrompt;
-      expect(savedConfig.id, testConfigId); // Ensure original ID is used
-      expect(savedConfig.name, 'Updated Name');
-      expect(savedConfig.createdAt, testConfig.createdAt); // Original createdAt
-      expect(savedConfig.updatedAt, isNotNull);
-      expect(testConfig.updatedAt, isNotNull);
-      expect(
-        savedConfig.updatedAt!.isAfter(testConfig.updatedAt!),
-        isTrue,
-      ); // Updated 'updatedAt'
-    });
+        final captured = verify(
+          () => mockAiConfigRepository.saveConfig(captureAny()),
+        ).captured;
+        expect(captured.length, 1);
+        final savedConfig = captured.first as AiConfigPrompt;
+        expect(savedConfig.id, testConfigId); // Ensure original ID is used
+        expect(savedConfig.name, 'Updated Name');
+        expect(
+          savedConfig.createdAt,
+          testConfig.createdAt,
+        ); // Original createdAt
+        expect(savedConfig.updatedAt, isNotNull);
+        expect(testConfig.updatedAt, isNotNull);
+        expect(
+          savedConfig.updatedAt!.isAfter(testConfig.updatedAt!),
+          isTrue,
+        ); // Updated 'updatedAt'
+      },
+    );
 
     test('updateConfig uses new id if original config id is null', () async {
       // Initialize with no configId
       // Keep provider alive with a listener (required in Riverpod 3 for auto-dispose)
       final subscription = container.listen(
         promptFormControllerProvider(configId: null),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(subscription.close);
 
       // Ensure build is complete before interacting with controller
       await container.read(promptFormControllerProvider(configId: null).future);
-      final controller =
-          container.read(promptFormControllerProvider(configId: null).notifier);
+      final controller = container.read(
+        promptFormControllerProvider(configId: null).notifier,
+      );
 
       // Use a concrete instance of AiConfigPrompt for newConfig
-      final fixedCreatedAt =
-          DateTime.now().subtract(const Duration(seconds: 5));
+      final fixedCreatedAt = DateTime.now().subtract(
+        const Duration(seconds: 5),
+      );
       final newConfig = AiConfigPrompt(
         id: 'new-id-on-update',
         name: 'New Name',
@@ -462,21 +509,23 @@ void main() {
       );
 
       // Mock model config for validation in updateConfig
-      when(() => mockAiConfigRepository.getConfigById('model1'))
-          .thenAnswer((_) async => AiConfig.model(
-                id: 'model1',
-                name: 'Model 1',
-                providerModelId: 'provider-model-1',
-                inferenceProviderId: 'provider-1',
-                createdAt: DateTime.now(),
-                inputModalities: [Modality.text],
-                outputModalities: [Modality.text],
-                isReasoningModel: false,
-              ));
+      when(() => mockAiConfigRepository.getConfigById('model1')).thenAnswer(
+        (_) async => AiConfig.model(
+          id: 'model1',
+          name: 'Model 1',
+          providerModelId: 'provider-model-1',
+          inferenceProviderId: 'provider-1',
+          createdAt: DateTime.now(),
+          inputModalities: [Modality.text],
+          outputModalities: [Modality.text],
+          isReasoningModel: false,
+        ),
+      );
 
       // Stub the saveConfig method
-      when(() => mockAiConfigRepository.saveConfig(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockAiConfigRepository.saveConfig(any()),
+      ).thenAnswer((_) async {});
 
       // Allow a small delay to ensure DateTime.now() in controller is after fixedCreatedAt
       // This is a bit of a test smell, but DateTime.now() precision can be an issue.
@@ -485,9 +534,9 @@ void main() {
 
       await controller.updateConfig(newConfig);
 
-      final captured =
-          verify(() => mockAiConfigRepository.saveConfig(captureAny()))
-              .captured;
+      final captured = verify(
+        () => mockAiConfigRepository.saveConfig(captureAny()),
+      ).captured;
       expect(captured.length, 1);
       final savedConfig = captured.first as AiConfigPrompt;
       expect(savedConfig.id, 'new-id-on-update');

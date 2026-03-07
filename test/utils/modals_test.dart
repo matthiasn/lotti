@@ -5,8 +5,9 @@ import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 void main() {
   group('ModalUtils', () {
-    testWidgets('modalTypeBuilder returns bottomSheet for small screens',
-        (tester) async {
+    testWidgets('modalTypeBuilder returns bottomSheet for small screens', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(300, 600));
 
       await tester.pumpWidget(
@@ -26,8 +27,9 @@ void main() {
       );
     });
 
-    testWidgets('modalTypeBuilder returns dialog for large screens',
-        (tester) async {
+    testWidgets('modalTypeBuilder returns dialog for large screens', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 800));
 
       await tester.pumpWidget(

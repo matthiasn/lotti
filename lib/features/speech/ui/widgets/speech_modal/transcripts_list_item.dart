@@ -66,8 +66,10 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
                 opacity: show ? 1 : 0,
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 40, minHeight: 40),
+                  constraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
+                  ),
                   onPressed: () {
                     SpeechRepository.removeAudioTranscript(
                       journalEntityId: widget.entryId,

@@ -91,8 +91,8 @@ class ConversationRepository extends _$ConversationRepository {
     // Other providers support custom temperature values.
     final effectiveTemperature =
         provider.inferenceProviderType == InferenceProviderType.openAi
-            ? 1.0
-            : temperature;
+        ? 1.0
+        : temperature;
 
     // Start conversation loop
     var shouldContinue = true;
@@ -161,12 +161,15 @@ class ConversationRepository extends _$ConversationRepository {
             if (delta?.toolCalls != null) {
               // Special handling for Gemini which sends multiple complete tool calls in one chunk
               // with empty IDs and null indices
-              final isGeminiStyle = delta!.toolCalls!.length > 1 &&
-                  delta.toolCalls!.every((tc) =>
-                      (tc.id == null || tc.id!.isEmpty) &&
-                      tc.index == null &&
-                      tc.function?.arguments != null &&
-                      tc.function!.arguments!.isNotEmpty);
+              final isGeminiStyle =
+                  delta!.toolCalls!.length > 1 &&
+                  delta.toolCalls!.every(
+                    (tc) =>
+                        (tc.id == null || tc.id!.isEmpty) &&
+                        tc.index == null &&
+                        tc.function?.arguments != null &&
+                        tc.function!.arguments!.isNotEmpty,
+                  );
 
               if (isGeminiStyle) {
                 // Handle Gemini's multiple complete tool calls in one chunk
@@ -176,14 +179,16 @@ class ConversationRepository extends _$ConversationRepository {
                   final toolCallChunk = delta.toolCalls![i];
                   if (toolCallChunk.function != null) {
                     final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
-                    toolCalls.add(ChatCompletionMessageToolCall(
-                      id: toolCallId,
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolCallChunk.function!.name ?? '',
-                        arguments: toolCallChunk.function!.arguments ?? '',
+                    toolCalls.add(
+                      ChatCompletionMessageToolCall(
+                        id: toolCallId,
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: toolCallChunk.function!.name ?? '',
+                          arguments: toolCallChunk.function!.arguments ?? '',
+                        ),
                       ),
-                    ));
+                    );
                   }
                 }
               } else {
@@ -195,8 +200,9 @@ class ConversationRepository extends _$ConversationRepository {
                   // First try to find by ID if available
                   if (toolCallChunk.id != null &&
                       toolCallChunk.id!.isNotEmpty) {
-                    existingIndex =
-                        toolCalls.indexWhere((tc) => tc.id == toolCallChunk.id);
+                    existingIndex = toolCalls.indexWhere(
+                      (tc) => tc.id == toolCallChunk.id,
+                    );
                   }
 
                   // If not found by ID and we have an index, use the index
@@ -213,7 +219,8 @@ class ConversationRepository extends _$ConversationRepository {
                     final toolCallKey = existing.id;
 
                     // Get or create buffer for this tool call
-                    final buffer = toolCallArgumentBuffers[toolCallKey] ??
+                    final buffer =
+                        toolCallArgumentBuffers[toolCallKey] ??
                         StringBuffer(existing.function.arguments);
                     toolCallArgumentBuffers[toolCallKey] = buffer;
 
@@ -231,22 +238,26 @@ class ConversationRepository extends _$ConversationRepository {
                     );
                   } else if (toolCallChunk.function != null) {
                     // Add new tool call
-                    final toolCallId = toolCallChunk.id ??
+                    final toolCallId =
+                        toolCallChunk.id ??
                         'tool_${toolCallChunk.index ?? toolCalls.length}';
 
                     // Initialize buffer for new tool call
                     final initialArgs = toolCallChunk.function!.arguments ?? '';
-                    toolCallArgumentBuffers[toolCallId] =
-                        StringBuffer(initialArgs);
+                    toolCallArgumentBuffers[toolCallId] = StringBuffer(
+                      initialArgs,
+                    );
 
-                    toolCalls.add(ChatCompletionMessageToolCall(
-                      id: toolCallId,
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolCallChunk.function!.name ?? '',
-                        arguments: initialArgs,
+                    toolCalls.add(
+                      ChatCompletionMessageToolCall(
+                        id: toolCallId,
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: toolCallChunk.function!.name ?? '',
+                          arguments: initialArgs,
+                        ),
                       ),
-                    ));
+                    );
                   }
                 }
               }
@@ -292,8 +303,9 @@ class ConversationRepository extends _$ConversationRepository {
           switch (action) {
             case ConversationAction.continueConversation:
               // Get continuation prompt
-              final continuationPrompt =
-                  strategy.getContinuationPrompt(manager);
+              final continuationPrompt = strategy.getContinuationPrompt(
+                manager,
+              );
               if (continuationPrompt != null) {
                 manager.addUserMessage(continuationPrompt);
                 // Continue loop

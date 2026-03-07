@@ -250,8 +250,10 @@ void main() {
   });
 
   test('toDbEntity sets subtype for AiResponseEntry', () {
-    final entry =
-        _aiResponseEntry('ai-subtype', type: AiResponseType.imageAnalysis);
+    final entry = _aiResponseEntry(
+      'ai-subtype',
+      type: AiResponseType.imageAnalysis,
+    );
     final dbEntity = toDbEntity(entry);
     expect(dbEntity.subtype, AiResponseType.imageAnalysis.name);
   });
@@ -370,24 +372,26 @@ void main() {
     expect(dbEntity.deleted, isFalse);
   });
 
-  test('measurableDataTypeStreamMapper sorts by displayName (case-insensitive)',
-      () {
-    final typeB = measurableWater.copyWith(
-      id: 'water-b',
-      displayName: 'Beta',
-    );
-    final typeA = measurableWater.copyWith(
-      id: 'water-a',
-      displayName: 'alpha',
-    );
+  test(
+    'measurableDataTypeStreamMapper sorts by displayName (case-insensitive)',
+    () {
+      final typeB = measurableWater.copyWith(
+        id: 'water-b',
+        displayName: 'Beta',
+      );
+      final typeA = measurableWater.copyWith(
+        id: 'water-a',
+        displayName: 'alpha',
+      );
 
-    final mapped = measurableDataTypeStreamMapper([
-      measurableDbEntity(typeB),
-      measurableDbEntity(typeA),
-    ]);
+      final mapped = measurableDataTypeStreamMapper([
+        measurableDbEntity(typeB),
+        measurableDbEntity(typeA),
+      ]);
 
-    expect(mapped.map((e) => e.displayName).toList(), ['alpha', 'Beta']);
-  });
+      expect(mapped.map((e) => e.displayName).toList(), ['alpha', 'Beta']);
+    },
+  );
 
   test('tagDbEntity encodes tag type correctly', () {
     final generic = tagDbEntity(testTag1);

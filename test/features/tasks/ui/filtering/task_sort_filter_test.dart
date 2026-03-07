@@ -44,10 +44,11 @@ void main() {
 
     // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
   });
@@ -79,8 +80,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const TaskSortFilter(),
       ),
@@ -104,8 +106,9 @@ void main() {
       expect(find.text('Priority'), findsOneWidget);
     });
 
-    testWidgets('shows Priority selected when sortOption is byPriority',
-        (tester) async {
+    testWidgets('shows Priority selected when sortOption is byPriority', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -116,10 +119,12 @@ void main() {
       expect(segmentedButton.selected, {TaskSortOption.byPriority});
     });
 
-    testWidgets('shows Date selected when sortOption is byDate',
-        (tester) async {
+    testWidgets('shows Date selected when sortOption is byDate', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-          buildSubject(createState(sortOption: TaskSortOption.byDate)));
+        buildSubject(createState(sortOption: TaskSortOption.byDate)),
+      );
       await tester.pumpAndSettle();
 
       final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(
@@ -129,10 +134,12 @@ void main() {
       expect(segmentedButton.selected, {TaskSortOption.byDate});
     });
 
-    testWidgets('calls setSortOption when Priority segment is tapped',
-        (tester) async {
+    testWidgets('calls setSortOption when Priority segment is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-          buildSubject(createState(sortOption: TaskSortOption.byDate)));
+        buildSubject(createState(sortOption: TaskSortOption.byDate)),
+      );
       await tester.pumpAndSettle();
 
       // Tap on Priority segment
@@ -145,8 +152,9 @@ void main() {
       );
     });
 
-    testWidgets('calls setSortOption when Created segment is tapped',
-        (tester) async {
+    testWidgets('calls setSortOption when Created segment is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -157,8 +165,9 @@ void main() {
       expect(fakeController.sortOptionCalls, contains(TaskSortOption.byDate));
     });
 
-    testWidgets('calls setSortOption when Due Date segment is tapped',
-        (tester) async {
+    testWidgets('calls setSortOption when Due Date segment is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -195,10 +204,12 @@ void main() {
       expect(segmentedButton.segments[2].value, TaskSortOption.byPriority);
     });
 
-    testWidgets('shows Due Date selected when sortOption is byDueDate',
-        (tester) async {
+    testWidgets('shows Due Date selected when sortOption is byDueDate', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-          buildSubject(createState(sortOption: TaskSortOption.byDueDate)));
+        buildSubject(createState(sortOption: TaskSortOption.byDueDate)),
+      );
       await tester.pumpAndSettle();
 
       final segmentedButton = tester.widget<SegmentedButton<TaskSortOption>>(

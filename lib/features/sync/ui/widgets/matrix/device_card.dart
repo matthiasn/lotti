@@ -48,7 +48,8 @@ class DeviceCard extends ConsumerWidget {
                     await matrixService.deleteDevice(deviceKeys);
                     refreshListCallback();
                     if (context.mounted) {
-                      final deviceName = deviceKeys.deviceDisplayName ??
+                      final deviceName =
+                          deviceKeys.deviceDisplayName ??
                           deviceKeys.deviceId ??
                           'unknown';
                       ScaffoldMessenger.of(context).showSnackBar(

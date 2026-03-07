@@ -33,7 +33,10 @@ Future<String?> findAvailableScreenshotTool() async {
 
 /// Takes a screenshot using the specified Linux tool
 Future<void> takeLinuxScreenshot(
-    String tool, String filename, String directory) async {
+  String tool,
+  String filename,
+  String directory,
+) async {
   final config = screenshotToolConfigs[tool];
   if (config == null) {
     throw Exception('$unsupportedToolMessage$tool');
@@ -55,13 +58,15 @@ Future<void> takeLinuxScreenshot(
     onTimeout: () {
       process.kill();
       throw Exception(
-          '$toolFailedMessage$tool timed out after ${screenshotProcessTimeoutSeconds}s');
+        '$toolFailedMessage$tool timed out after ${screenshotProcessTimeoutSeconds}s',
+      );
     },
   );
 
   if (exitCode != successExitCode) {
     throw Exception(
-        '$toolFailedMessage$tool$failedWithExitCodeMessage$exitCode');
+      '$toolFailedMessage$tool$failedWithExitCodeMessage$exitCode',
+    );
   }
 }
 
@@ -100,7 +105,8 @@ Future<ImageData> takeScreenshot() async {
       // If portal fails, fall through to traditional methods
       getIt<LoggingService>().captureException(
         Exception(
-            'Screenshot portal failed, falling back to traditional methods'),
+          'Screenshot portal failed, falling back to traditional methods',
+        ),
         domain: screenshotDomain,
         subDomain: 'portal_fallback',
       );
@@ -124,7 +130,8 @@ Future<ImageData> takeScreenshot() async {
         onTimeout: () {
           process.kill();
           throw Exception(
-              'macOS screencapture timed out after ${screenshotProcessTimeoutSeconds}s');
+            'macOS screencapture timed out after ${screenshotProcessTimeoutSeconds}s',
+          );
         },
       );
 
@@ -136,14 +143,17 @@ Future<ImageData> takeScreenshot() async {
 
       if (availableTool == null) {
         final availableTools = linuxScreenshotTools.join(', ');
-        throw Exception('$noScreenshotToolAvailableMessage$availableTools\n'
-            '$installInstructionsMessage');
+        throw Exception(
+          '$noScreenshotToolAvailableMessage$availableTools\n'
+          '$installInstructionsMessage',
+        );
       }
 
       await takeLinuxScreenshot(availableTool, filename, directory);
     } else {
       throw UnsupportedError(
-          '$unsupportedPlatformMessage${Platform.operatingSystem}');
+        '$unsupportedPlatformMessage${Platform.operatingSystem}',
+      );
     }
 
     final imageData = ImageData(

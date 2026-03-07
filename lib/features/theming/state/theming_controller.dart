@@ -138,24 +138,25 @@ class ThemingController extends _$ThemingController {
   }
 
   void _watchThemePrefsUpdates() {
-    _settingsNotificationSub =
-        getIt<UpdateNotifications>().updateStream.listen((ids) async {
-      if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
-        _isApplyingSyncedChanges = true;
-        try {
-          await _loadSelectedSchemes();
-        } catch (e, st) {
-          getIt<LoggingService>().captureException(
-            e,
-            domain: 'THEMING_CONTROLLER',
-            subDomain: 'theme_prefs_reload',
-            stackTrace: st,
-          );
-          // Keep current theme if reload fails
+    _settingsNotificationSub = getIt<UpdateNotifications>().updateStream.listen(
+      (ids) async {
+        if (ids.contains(settingsNotification) && !_isApplyingSyncedChanges) {
+          _isApplyingSyncedChanges = true;
+          try {
+            await _loadSelectedSchemes();
+          } catch (e, st) {
+            getIt<LoggingService>().captureException(
+              e,
+              domain: 'THEMING_CONTROLLER',
+              subDomain: 'theme_prefs_reload',
+              stackTrace: st,
+            );
+            // Keep current theme if reload fails
+          }
+          _isApplyingSyncedChanges = false;
         }
-        _isApplyingSyncedChanges = false;
-      }
-    });
+      },
+    );
   }
 
   Future<void> _loadSelectedSchemes() async {
@@ -167,7 +168,7 @@ class ThemingController extends _$ThemingController {
 
     final themeMode = themeModeStr != null
         ? EnumToString.fromString(ThemeMode.values, themeModeStr) ??
-            ThemeMode.system
+              ThemeMode.system
         : ThemeMode.system;
 
     final effectiveDarkThemeName = darkThemeName ?? defaultThemeName;
@@ -187,8 +188,9 @@ class ThemingController extends _$ThemingController {
     final isGamey = isGameyTheme(themeName);
 
     // For gamey theme, use the designated base scheme; otherwise use selected scheme
-    final scheme =
-        isGamey ? gameyBaseScheme : (themes[themeName] ?? FlexScheme.greyLaw);
+    final scheme = isGamey
+        ? gameyBaseScheme
+        : (themes[themeName] ?? FlexScheme.greyLaw);
 
     var themeData = isDark
         ? FlexThemeData.dark(

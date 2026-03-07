@@ -19,8 +19,7 @@ class RatingPromptController extends _$RatingPromptController {
   void requestRating({
     required String targetId,
     String catalogId = 'session',
-  }) =>
-      state = (targetId: targetId, catalogId: catalogId);
+  }) => state = (targetId: targetId, catalogId: catalogId);
 
   void dismiss() => state = null;
 }

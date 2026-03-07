@@ -18,13 +18,18 @@ class ChatModalPage extends ConsumerWidget {
 
     // Get the selected category ID if only one is selected
     final selectedCategoryIds = state.selectedCategoryIds;
-    final categoryId =
-        selectedCategoryIds.length == 1 ? selectedCategoryIds.first : null;
+    final categoryId = selectedCategoryIds.length == 1
+        ? selectedCategoryIds.first
+        : null;
 
     // Read streaming status for ambient glow (only when a category is set)
-    final isStreaming = categoryId != null &&
-        ref.watch(chatSessionControllerProvider(categoryId)
-            .select((s) => s.isStreaming));
+    final isStreaming =
+        categoryId != null &&
+        ref.watch(
+          chatSessionControllerProvider(
+            categoryId,
+          ).select((s) => s.isStreaming),
+        );
 
     Widget innerContent;
     if (categoryId == null) {
@@ -47,8 +52,8 @@ class ChatModalPage extends ConsumerWidget {
             Text(
               'The AI assistant needs a specific category context to help you with tasks',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).disabledColor,
-                  ),
+                color: Theme.of(context).disabledColor,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -152,19 +157,24 @@ class _AmbientPulseBorderState extends State<_AmbientPulseBorder>
         final sine = 0.5 - 0.5 * math.cos(2 * math.pi * t);
         // Subtle but visible overlay stroke alpha (~0.12–0.20 while active).
         final overlayAlpha = widget.isActive ? (0.12 + 0.08 * sine) : 0.0;
-        final overlayColor =
-            theme.colorScheme.primary.withValues(alpha: overlayAlpha);
+        final overlayColor = theme.colorScheme.primary.withValues(
+          alpha: overlayAlpha,
+        );
         // Reduced halo size and intensity
         final glow1Blur = widget.isActive ? (6.0 + 8.0 * sine) : 0.0; // 6–16
-        final glow1Spread =
-            widget.isActive ? (0.5 + 1.3 * sine) : 0.0; // 0.5–2.0
-        final glow1Alpha =
-            widget.isActive ? (0.07 + 0.1 * sine) : 0.0; // 0.18–0.28
+        final glow1Spread = widget.isActive
+            ? (0.5 + 1.3 * sine)
+            : 0.0; // 0.5–2.0
+        final glow1Alpha = widget.isActive
+            ? (0.07 + 0.1 * sine)
+            : 0.0; // 0.18–0.28
         final glow2Blur = widget.isActive ? (3.0 + 6.0 * sine) : 0.0; // 3–10
-        final glow2Spread =
-            widget.isActive ? (0.25 + 0.75 * sine) : 0.0; // 0.25–1.0
-        final glow2Alpha =
-            widget.isActive ? (0.10 + 0.06 * sine) : 0.0; // 0.10–0.16
+        final glow2Spread = widget.isActive
+            ? (0.25 + 0.75 * sine)
+            : 0.0; // 0.25–1.0
+        final glow2Alpha = widget.isActive
+            ? (0.10 + 0.06 * sine)
+            : 0.0; // 0.10–0.16
 
         return Container(
           decoration: BoxDecoration(
@@ -176,14 +186,16 @@ class _AmbientPulseBorderState extends State<_AmbientPulseBorder>
             boxShadow: widget.isActive
                 ? [
                     BoxShadow(
-                      color: theme.colorScheme.primary
-                          .withValues(alpha: glow1Alpha),
+                      color: theme.colorScheme.primary.withValues(
+                        alpha: glow1Alpha,
+                      ),
                       blurRadius: glow1Blur,
                       spreadRadius: glow1Spread,
                     ),
                     BoxShadow(
-                      color: theme.colorScheme.primary
-                          .withValues(alpha: glow2Alpha),
+                      color: theme.colorScheme.primary.withValues(
+                        alpha: glow2Alpha,
+                      ),
                       blurRadius: glow2Blur,
                       spreadRadius: glow2Spread,
                     ),

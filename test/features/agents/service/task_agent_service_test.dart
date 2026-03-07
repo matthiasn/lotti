@@ -64,8 +64,9 @@ void main() {
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
 
     // Stub template existence for all tests that provide kTestTemplateId.
-    when(() => mockRepository.getEntity(kTestTemplateId))
-        .thenAnswer((_) async => makeTestTemplate());
+    when(
+      () => mockRepository.getEntity(kTestTemplateId),
+    ).thenAnswer((_) async => makeTestTemplate());
 
     service = TaskAgentService(
       agentService: mockAgentService,
@@ -79,14 +80,14 @@ void main() {
 
   group('TaskAgentService', () {
     group('createTaskAgent', () {
-      test(
-          'creates agent via service, updates state, creates link, '
+      test('creates agent via service, updates state, creates link, '
           'and registers subscription', () async {
         final identity = makeIdentity();
 
         // No existing agent for this task
-        when(() => mockRepository.getLinksTo('task-1', type: 'agent_task'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinksTo('task-1', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
 
         // Agent creation
         when(
@@ -100,8 +101,9 @@ void main() {
 
         // State fetch
         final state = makeState();
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => state);
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => state);
 
         // syncService stubs set up in setUp
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
@@ -138,8 +140,9 @@ void main() {
         final taskLink = linkCalls.whereType<AgentTaskLink>().single;
         expect(taskLink.fromId, 'agent-1');
         expect(taskLink.toId, 'task-1');
-        final templateLink =
-            linkCalls.whereType<TemplateAssignmentLink>().single;
+        final templateLink = linkCalls
+            .whereType<TemplateAssignmentLink>()
+            .single;
         expect(templateLink.fromId, kTestTemplateId);
         expect(templateLink.toId, 'agent-1');
 
@@ -165,8 +168,9 @@ void main() {
       test('uses default display name when none provided', () async {
         final identity = makeIdentity();
 
-        when(() => mockRepository.getLinksTo('task-2', type: 'agent_task'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinksTo('task-2', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
         when(
           () => mockAgentService.createAgent(
             kind: any(named: 'kind'),
@@ -175,8 +179,9 @@ void main() {
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => makeState());
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => makeState());
         // syncService stubs set up in setUp
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
@@ -214,8 +219,9 @@ void main() {
         );
 
         // The in-transaction duplicate check finds an existing link.
-        when(() => mockRepository.getLinksTo('task-1', type: 'agent_task'))
-            .thenAnswer((_) async => [existingLink]);
+        when(
+          () => mockRepository.getLinksTo('task-1', type: 'agent_task'),
+        ).thenAnswer((_) async => [existingLink]);
 
         expect(
           () => service.createTaskAgent(
@@ -233,42 +239,46 @@ void main() {
         );
       });
 
-      test('throws StateError from in-transaction check when duplicate exists',
-          () async {
-        final concurrentLink = AgentLink.agentTask(
-          id: 'link-race',
-          fromId: 'racing-agent',
-          toId: 'task-race',
-          createdAt: kAgentTestDate,
-          updatedAt: kAgentTestDate,
-          vectorClock: null,
-        );
+      test(
+        'throws StateError from in-transaction check when duplicate exists',
+        () async {
+          final concurrentLink = AgentLink.agentTask(
+            id: 'link-race',
+            fromId: 'racing-agent',
+            toId: 'task-race',
+            createdAt: kAgentTestDate,
+            updatedAt: kAgentTestDate,
+            vectorClock: null,
+          );
 
-        // The in-transaction check finds a duplicate link.
-        when(() => mockRepository.getLinksTo('task-race', type: 'agent_task'))
-            .thenAnswer((_) async => [concurrentLink]);
+          // The in-transaction check finds a duplicate link.
+          when(
+            () => mockRepository.getLinksTo('task-race', type: 'agent_task'),
+          ).thenAnswer((_) async => [concurrentLink]);
 
-        expect(
-          () => service.createTaskAgent(
-            taskId: 'task-race',
-            templateId: kTestTemplateId,
-            allowedCategoryIds: const {},
-          ),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              allOf(contains('task-race'), contains('racing-agent')),
+          expect(
+            () => service.createTaskAgent(
+              taskId: 'task-race',
+              templateId: kTestTemplateId,
+              allowedCategoryIds: const {},
             ),
-          ),
-        );
-      });
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                allOf(contains('task-race'), contains('racing-agent')),
+              ),
+            ),
+          );
+        },
+      );
 
       test('throws StateError when agent state is null', () async {
         final identity = makeIdentity();
 
-        when(() => mockRepository.getLinksTo('task-3', type: 'agent_task'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinksTo('task-3', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
         when(
           () => mockAgentService.createAgent(
             kind: any(named: 'kind'),
@@ -277,8 +287,9 @@ void main() {
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => null);
 
         expect(
           () => service.createTaskAgent(
@@ -303,23 +314,27 @@ void main() {
         );
         final identity = makeIdentity();
 
-        when(() => mockRepository.getLinksTo('task-1', type: 'agent_task'))
-            .thenAnswer((_) async => [link]);
-        when(() => mockAgentService.getAgent('agent-1'))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockRepository.getLinksTo('task-1', type: 'agent_task'),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
 
         final result = await service.getTaskAgentForTask('task-1');
 
         expect(result, isNotNull);
         expect(result!.agentId, 'agent-1');
-        verify(() => mockRepository.getLinksTo('task-1', type: 'agent_task'))
-            .called(1);
+        verify(
+          () => mockRepository.getLinksTo('task-1', type: 'agent_task'),
+        ).called(1);
         verify(() => mockAgentService.getAgent('agent-1')).called(1);
       });
 
       test('returns null when no link exists', () async {
-        when(() => mockRepository.getLinksTo('task-99', type: 'agent_task'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinksTo('task-99', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
 
         final result = await service.getTaskAgentForTask('task-99');
 
@@ -337,10 +352,12 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockRepository.getLinksTo('task-1', type: 'agent_task'))
-            .thenAnswer((_) async => [link]);
-        when(() => mockAgentService.getAgent('ghost-agent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getLinksTo('task-1', type: 'agent_task'),
+        ).thenAnswer((_) async => [link]);
+        when(
+          () => mockAgentService.getAgent('ghost-agent'),
+        ).thenAnswer((_) async => null);
 
         final result = await service.getTaskAgentForTask('task-1');
 
@@ -405,8 +422,9 @@ void main() {
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => [link1, link2]);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => null);
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
@@ -424,8 +442,9 @@ void main() {
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => []);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => null);
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
@@ -434,15 +453,17 @@ void main() {
 
       test('hydrates throttle deadline from persisted state', () async {
         final futureDeadline = DateTime(2026, 3, 15, 12, 5);
-        final stateWithDeadline =
-            makeState().copyWith(nextWakeAt: futureDeadline);
+        final stateWithDeadline = makeState().copyWith(
+          nextWakeAt: futureDeadline,
+        );
 
         when(
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => []);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => stateWithDeadline);
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => stateWithDeadline);
         when(
           () => mockOrchestrator.setThrottleDeadline(any(), any()),
         ).thenReturn(null);
@@ -462,8 +483,9 @@ void main() {
           () => mockRepository.getLinksFrom('agent-1', type: 'agent_task'),
         ).thenAnswer((_) async => []);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => makeState());
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => makeState());
 
         await service.restoreSubscriptionsForAgent('agent-1');
 
@@ -504,10 +526,12 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockRepository.getLinksFrom('ta-1', type: 'agent_task'))
-            .thenAnswer((_) async => [link1, link2]);
-        when(() => mockRepository.getAgentState('ta-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getLinksFrom('ta-1', type: 'agent_task'),
+        ).thenAnswer((_) async => [link1, link2]);
+        when(
+          () => mockRepository.getAgentState('ta-1'),
+        ).thenAnswer((_) async => null);
 
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
 
@@ -556,7 +580,8 @@ void main() {
 
         // No links should be fetched for non-task agents
         verifyNever(
-            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
+          () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
+        );
         // No subscriptions should be registered
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
@@ -572,8 +597,9 @@ void main() {
         ).thenAnswer((_) async => [failingAgent, okAgent]);
 
         // First agent's link lookup throws.
-        when(() => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
+        ).thenThrow(Exception('DB error'));
 
         // Second agent's link lookup succeeds.
         final link = AgentLink.agentTask(
@@ -584,11 +610,13 @@ void main() {
           updatedAt: kAgentTestDate,
           vectorClock: null,
         );
-        when(() => mockRepository.getLinksFrom('ta-ok', type: 'agent_task'))
-            .thenAnswer((_) async => [link]);
+        when(
+          () => mockRepository.getLinksFrom('ta-ok', type: 'agent_task'),
+        ).thenAnswer((_) async => [link]);
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(() => mockRepository.getAgentState('ta-ok'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getAgentState('ta-ok'),
+        ).thenAnswer((_) async => null);
 
         // Should not throw — error is caught internally.
         await service.restoreSubscriptions();
@@ -613,47 +641,50 @@ void main() {
         await service.restoreSubscriptions();
 
         verifyNever(
-            () => mockRepository.getLinksFrom(any(), type: any(named: 'type')));
+          () => mockRepository.getLinksFrom(any(), type: any(named: 'type')),
+        );
         verifyNever(() => mockOrchestrator.addSubscription(any()));
       });
     });
 
     group('null domainLogger fallback', () {
       test(
-          'restoreSubscriptions logs to developer.log when domainLogger is null',
-          () async {
-        // Create a service without domainLogger to exercise the else branch.
-        final nullLoggerService = TaskAgentService(
-          agentService: mockAgentService,
-          repository: mockRepository,
-          orchestrator: mockOrchestrator,
-          syncService: mockSyncService,
-        );
+        'restoreSubscriptions logs to developer.log when domainLogger is null',
+        () async {
+          // Create a service without domainLogger to exercise the else branch.
+          final nullLoggerService = TaskAgentService(
+            agentService: mockAgentService,
+            repository: mockRepository,
+            orchestrator: mockOrchestrator,
+            syncService: mockSyncService,
+          );
 
-        final failingAgent = makeIdentity(agentId: 'ta-fail');
-        when(
-          () => mockAgentService.listAgents(
-            lifecycle: AgentLifecycle.active,
-          ),
-        ).thenAnswer((_) async => [failingAgent]);
-        when(
-          () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
-        ).thenThrow(Exception('DB error'));
+          final failingAgent = makeIdentity(agentId: 'ta-fail');
+          when(
+            () => mockAgentService.listAgents(
+              lifecycle: AgentLifecycle.active,
+            ),
+          ).thenAnswer((_) async => [failingAgent]);
+          when(
+            () => mockRepository.getLinksFrom('ta-fail', type: 'agent_task'),
+          ).thenThrow(Exception('DB error'));
 
-        // Should not throw — error is caught and logged via developer.log.
-        await nullLoggerService.restoreSubscriptions();
+          // Should not throw — error is caught and logged via developer.log.
+          await nullLoggerService.restoreSubscriptions();
 
-        // Verify no subscription was registered (agent errored out).
-        verifyNever(() => mockOrchestrator.addSubscription(any()));
-      });
+          // Verify no subscription was registered (agent errored out).
+          verifyNever(() => mockOrchestrator.addSubscription(any()));
+        },
+      );
     });
 
     group('syncService routing', () {
       test('routes entity and link writes through syncService', () async {
         final identity = makeIdentity();
 
-        when(() => mockRepository.getLinksTo('task-sync', type: 'agent_task'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getLinksTo('task-sync', type: 'agent_task'),
+        ).thenAnswer((_) async => []);
         when(
           () => mockAgentService.createAgent(
             kind: any(named: 'kind'),
@@ -662,8 +693,9 @@ void main() {
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
         ).thenAnswer((_) async => identity);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => makeState());
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => makeState());
         when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
         when(
           () => mockOrchestrator.enqueueManualWake(
@@ -689,181 +721,205 @@ void main() {
     });
 
     group('default template resolution', () {
-      test('resolves first available template when templateId is null',
-          () async {
-        final identity = makeIdentity();
-        final template = makeTestTemplate();
+      test(
+        'resolves first available template when templateId is null',
+        () async {
+          final identity = makeIdentity();
+          final template = makeTestTemplate();
 
-        when(() => mockRepository.getLinksTo('task-dt', type: 'agent_task'))
-            .thenAnswer((_) async => []);
-        when(() => mockRepository.getAllTemplates())
-            .thenAnswer((_) async => [template]);
-        when(
-          () => mockAgentService.createAgent(
-            kind: any(named: 'kind'),
-            displayName: any(named: 'displayName'),
-            config: any(named: 'config'),
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-          ),
-        ).thenAnswer((_) async => identity);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => makeState());
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(
-          () => mockOrchestrator.enqueueManualWake(
-            agentId: any(named: 'agentId'),
-            reason: any(named: 'reason'),
-            triggerTokens: any(named: 'triggerTokens'),
-          ),
-        ).thenReturn(null);
+          when(
+            () => mockRepository.getLinksTo('task-dt', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getAllTemplates(),
+          ).thenAnswer((_) async => [template]);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            ),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
+            ),
+          ).thenReturn(null);
 
-        final result = await service.createTaskAgent(
-          taskId: 'task-dt',
-          allowedCategoryIds: const {},
-        );
+          final result = await service.createTaskAgent(
+            taskId: 'task-dt',
+            allowedCategoryIds: const {},
+          );
 
-        expect(result, isA<AgentIdentityEntity>());
+          expect(result, isA<AgentIdentityEntity>());
 
-        // Verify the template_assignment link uses the resolved template ID.
-        final linkCalls = verify(
-          () => mockSyncService.upsertLink(captureAny()),
-        ).captured;
-        final templateLink =
-            linkCalls.whereType<TemplateAssignmentLink>().single;
-        expect(templateLink.fromId, kTestTemplateId);
-      });
+          // Verify the template_assignment link uses the resolved template ID.
+          final linkCalls = verify(
+            () => mockSyncService.upsertLink(captureAny()),
+          ).captured;
+          final templateLink = linkCalls
+              .whereType<TemplateAssignmentLink>()
+              .single;
+          expect(templateLink.fromId, kTestTemplateId);
+        },
+      );
 
       test(
-          'prefers Laura template over other templates when templateId is null',
-          () async {
-        final identity = makeIdentity();
-        final otherTemplate = makeTestTemplate(
-          id: 'other-template',
-          agentId: 'other-template',
-          displayName: 'Other',
-        );
-        final lauraTemplate = makeTestTemplate(
-          id: lauraTemplateId,
-          agentId: lauraTemplateId,
-          displayName: 'Laura',
-        );
+        'prefers Laura template over other templates when templateId is null',
+        () async {
+          final identity = makeIdentity();
+          final otherTemplate = makeTestTemplate(
+            id: 'other-template',
+            agentId: 'other-template',
+            displayName: 'Other',
+          );
+          final lauraTemplate = makeTestTemplate(
+            id: lauraTemplateId,
+            agentId: lauraTemplateId,
+            displayName: 'Laura',
+          );
 
-        // Return other template first — Laura should still be preferred.
-        when(() => mockRepository.getLinksTo('task-laura', type: 'agent_task'))
-            .thenAnswer((_) async => []);
-        when(() => mockRepository.getAllTemplates())
-            .thenAnswer((_) async => [otherTemplate, lauraTemplate]);
-        // Stub getEntity for Laura template (used in transaction validation).
-        when(() => mockRepository.getEntity(lauraTemplateId))
-            .thenAnswer((_) async => lauraTemplate);
-        when(
-          () => mockAgentService.createAgent(
-            kind: any(named: 'kind'),
-            displayName: any(named: 'displayName'),
-            config: any(named: 'config'),
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-          ),
-        ).thenAnswer((_) async => identity);
-        when(() => mockRepository.getAgentState('agent-1'))
-            .thenAnswer((_) async => makeState());
-        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-        when(
-          () => mockOrchestrator.enqueueManualWake(
-            agentId: any(named: 'agentId'),
-            reason: any(named: 'reason'),
-            triggerTokens: any(named: 'triggerTokens'),
-          ),
-        ).thenReturn(null);
-
-        final result = await service.createTaskAgent(
-          taskId: 'task-laura',
-          allowedCategoryIds: const {},
-        );
-
-        expect(result, isA<AgentIdentityEntity>());
-
-        // Verify the template_assignment link uses the Laura template ID.
-        final linkCalls = verify(
-          () => mockSyncService.upsertLink(captureAny()),
-        ).captured;
-        final templateLink =
-            linkCalls.whereType<TemplateAssignmentLink>().single;
-        expect(templateLink.fromId, lauraTemplateId);
-      });
-
-      test('throws StateError when provided templateId does not exist',
-          () async {
-        when(() => mockRepository.getEntity('nonexistent-template'))
-            .thenAnswer((_) async => null);
-
-        expect(
-          () => service.createTaskAgent(
-            taskId: 'task-bad-tpl',
-            templateId: 'nonexistent-template',
-            allowedCategoryIds: const {},
-          ),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('nonexistent-template'),
+          // Return other template first — Laura should still be preferred.
+          when(
+            () => mockRepository.getLinksTo('task-laura', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getAllTemplates(),
+          ).thenAnswer((_) async => [otherTemplate, lauraTemplate]);
+          // Stub getEntity for Laura template (used in transaction validation).
+          when(
+            () => mockRepository.getEntity(lauraTemplateId),
+          ).thenAnswer((_) async => lauraTemplate);
+          when(
+            () => mockAgentService.createAgent(
+              kind: any(named: 'kind'),
+              displayName: any(named: 'displayName'),
+              config: any(named: 'config'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
             ),
-          ),
-        );
-      });
-
-      test('throws StateError when templateId points to non-template entity',
-          () async {
-        // Return a version entity instead of a template entity.
-        when(() => mockRepository.getEntity('version-entity')).thenAnswer(
-            (_) async => makeTestTemplateVersion(id: 'version-entity'));
-
-        expect(
-          () => service.createTaskAgent(
-            taskId: 'task-wrong-type',
-            templateId: 'version-entity',
-            allowedCategoryIds: const {},
-          ),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('version-entity'),
+          ).thenAnswer((_) async => identity);
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => makeState());
+          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+          when(
+            () => mockOrchestrator.enqueueManualWake(
+              agentId: any(named: 'agentId'),
+              reason: any(named: 'reason'),
+              triggerTokens: any(named: 'triggerTokens'),
             ),
-          ),
-        );
-      });
+          ).thenReturn(null);
 
-      test('throws StateError when no templates available and none provided',
-          () async {
-        when(() => mockRepository.getLinksTo('task-nt', type: 'agent_task'))
-            .thenAnswer((_) async => []);
-        when(() => mockAgentService.getAgent(any()))
-            .thenAnswer((_) async => null);
-        when(() => mockRepository.getAllTemplates())
-            .thenAnswer((_) async => []);
-
-        expect(
-          () => service.createTaskAgent(
-            taskId: 'task-nt',
+          final result = await service.createTaskAgent(
+            taskId: 'task-laura',
             allowedCategoryIds: const {},
-          ),
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('No template available'),
+          );
+
+          expect(result, isA<AgentIdentityEntity>());
+
+          // Verify the template_assignment link uses the Laura template ID.
+          final linkCalls = verify(
+            () => mockSyncService.upsertLink(captureAny()),
+          ).captured;
+          final templateLink = linkCalls
+              .whereType<TemplateAssignmentLink>()
+              .single;
+          expect(templateLink.fromId, lauraTemplateId);
+        },
+      );
+
+      test(
+        'throws StateError when provided templateId does not exist',
+        () async {
+          when(
+            () => mockRepository.getEntity('nonexistent-template'),
+          ).thenAnswer((_) async => null);
+
+          expect(
+            () => service.createTaskAgent(
+              taskId: 'task-bad-tpl',
+              templateId: 'nonexistent-template',
+              allowedCategoryIds: const {},
             ),
-          ),
-        );
-      });
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('nonexistent-template'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws StateError when templateId points to non-template entity',
+        () async {
+          // Return a version entity instead of a template entity.
+          when(() => mockRepository.getEntity('version-entity')).thenAnswer(
+            (_) async => makeTestTemplateVersion(id: 'version-entity'),
+          );
+
+          expect(
+            () => service.createTaskAgent(
+              taskId: 'task-wrong-type',
+              templateId: 'version-entity',
+              allowedCategoryIds: const {},
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('version-entity'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws StateError when no templates available and none provided',
+        () async {
+          when(
+            () => mockRepository.getLinksTo('task-nt', type: 'agent_task'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAgentService.getAgent(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockRepository.getAllTemplates(),
+          ).thenAnswer((_) async => []);
+
+          expect(
+            () => service.createTaskAgent(
+              taskId: 'task-nt',
+              allowedCategoryIds: const {},
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('No template available'),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('updateAgentProfile', () {
       test('updates agent config with new profileId', () async {
         final identity = makeIdentity();
-        when(() => mockAgentService.getAgent('agent-1'))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
 
         await service.updateAgentProfile(
           agentId: 'agent-1',
@@ -881,8 +937,9 @@ void main() {
         final identity = makeIdentity().copyWith(
           config: const AgentConfig(profileId: 'old-profile'),
         );
-        when(() => mockAgentService.getAgent('agent-1'))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockAgentService.getAgent('agent-1'),
+        ).thenAnswer((_) async => identity);
 
         await service.updateAgentProfile(
           agentId: 'agent-1',
@@ -897,8 +954,9 @@ void main() {
       });
 
       test('throws StateError when agent not found', () async {
-        when(() => mockAgentService.getAgent('ghost'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentService.getAgent('ghost'),
+        ).thenAnswer((_) async => null);
 
         expect(
           () => service.updateAgentProfile(

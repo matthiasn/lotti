@@ -15,21 +15,25 @@ final dayPlanRepositoryProvider = DayPlanRepositoryProvider._();
 
 /// Provides the [DayPlanRepository] instance.
 
-final class DayPlanRepositoryProvider extends $FunctionalProvider<
-    DayPlanRepository,
-    DayPlanRepository,
-    DayPlanRepository> with $Provider<DayPlanRepository> {
+final class DayPlanRepositoryProvider
+    extends
+        $FunctionalProvider<
+          DayPlanRepository,
+          DayPlanRepository,
+          DayPlanRepository
+        >
+    with $Provider<DayPlanRepository> {
   /// Provides the [DayPlanRepository] instance.
   DayPlanRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'dayPlanRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dayPlanRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$dayPlanRepositoryHash();
@@ -37,8 +41,8 @@ final class DayPlanRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<DayPlanRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   DayPlanRepository create(Ref ref) {

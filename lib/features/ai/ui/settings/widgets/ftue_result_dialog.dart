@@ -31,27 +31,27 @@ class FtueResultData {
 
   /// Creates from a GeminiFtueResult
   factory FtueResultData.fromGemini(GeminiFtueResult result) => FtueResultData(
-        modelsCreated: result.modelsCreated,
-        modelsVerified: result.modelsVerified,
-        promptsCreated: result.promptsCreated,
-        promptsSkipped: result.promptsSkipped,
-        categoryCreated: result.categoryCreated,
-        categoryUpdated: result.categoryUpdated,
-        categoryName: result.categoryName,
-        errors: result.errors,
-      );
+    modelsCreated: result.modelsCreated,
+    modelsVerified: result.modelsVerified,
+    promptsCreated: result.promptsCreated,
+    promptsSkipped: result.promptsSkipped,
+    categoryCreated: result.categoryCreated,
+    categoryUpdated: result.categoryUpdated,
+    categoryName: result.categoryName,
+    errors: result.errors,
+  );
 
   /// Creates from an OpenAiFtueResult
   factory FtueResultData.fromOpenAi(OpenAiFtueResult result) => FtueResultData(
-        modelsCreated: result.modelsCreated,
-        modelsVerified: result.modelsVerified,
-        promptsCreated: result.promptsCreated,
-        promptsSkipped: result.promptsSkipped,
-        categoryCreated: result.categoryCreated,
-        categoryUpdated: result.categoryUpdated,
-        categoryName: result.categoryName,
-        errors: result.errors,
-      );
+    modelsCreated: result.modelsCreated,
+    modelsVerified: result.modelsVerified,
+    promptsCreated: result.promptsCreated,
+    promptsSkipped: result.promptsSkipped,
+    categoryCreated: result.categoryCreated,
+    categoryUpdated: result.categoryUpdated,
+    categoryName: result.categoryName,
+    errors: result.errors,
+  );
 
   /// Creates from a MistralFtueResult
   factory FtueResultData.fromMistral(MistralFtueResult result) =>

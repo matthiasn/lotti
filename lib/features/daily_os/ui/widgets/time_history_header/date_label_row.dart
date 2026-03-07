@@ -24,10 +24,12 @@ class DateLabelRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final unifiedDataAsync =
-        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
-    final budgetStatsAsync =
-        ref.watch(dayBudgetStatsProvider(date: selectedDate));
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    );
+    final budgetStatsAsync = ref.watch(
+      dayBudgetStatsProvider(date: selectedDate),
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(
@@ -65,7 +67,7 @@ class DateLabelRow extends ConsumerWidget {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
 
           // Status indicator
@@ -78,7 +80,7 @@ class DateLabelRow extends ConsumerWidget {
               );
             },
             loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
 
           // Today button (if not viewing today)

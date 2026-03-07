@@ -50,18 +50,17 @@ class PersistenceLogic {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
-  }) =>
-      _metadataService.createMetadata(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        uuidV5Input: uuidV5Input,
-        private: private,
-        tagIds: tagIds,
-        labelIds: labelIds,
-        categoryId: categoryId,
-        starred: starred,
-        flag: flag,
-      );
+  }) => _metadataService.createMetadata(
+    dateFrom: dateFrom,
+    dateTo: dateTo,
+    uuidV5Input: uuidV5Input,
+    private: private,
+    tagIds: tagIds,
+    labelIds: labelIds,
+    categoryId: categoryId,
+    starred: starred,
+    flag: flag,
+  );
 
   /// Updates existing [Metadata] with a new vector clock and optional field changes.
   ///
@@ -75,17 +74,16 @@ class PersistenceLogic {
     DateTime? deletedAt,
     List<String>? labelIds,
     bool clearLabelIds = false,
-  }) =>
-      _metadataService.updateMetadata(
-        metadata,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-        categoryId: categoryId,
-        clearCategoryId: clearCategoryId,
-        deletedAt: deletedAt,
-        labelIds: labelIds,
-        clearLabelIds: clearLabelIds,
-      );
+  }) => _metadataService.updateMetadata(
+    metadata,
+    dateFrom: dateFrom,
+    dateTo: dateTo,
+    categoryId: categoryId,
+    clearCategoryId: clearCategoryId,
+    deletedAt: deletedAt,
+    labelIds: labelIds,
+    clearLabelIds: clearLabelIds,
+  );
 
   Future<QuantitativeEntry?> createQuantitativeEntry(
     QuantitativeData data,
@@ -194,7 +192,7 @@ class PersistenceLogic {
 
       final shouldAddGeolocation =
           data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
 
       await createDbEntity(
         measurementEntry,
@@ -241,7 +239,7 @@ class PersistenceLogic {
 
       final shouldAddGeolocation =
           data.dateFrom.difference(DateTime.now()).inMinutes.abs() < 1 &&
-              data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
+          data.dateTo.difference(DateTime.now()).inMinutes.abs() < 1;
 
       await createDbEntity(
         habitCompletionEntry,
@@ -720,12 +718,13 @@ class PersistenceLogic {
 
       // Include parent linked entry IDs so that agents subscribed to a
       // parent (e.g. a task) are notified when a child entry is edited.
-      final parentIds =
-          await _journalDb.parentLinkedEntityIds(journalEntity.id).get();
+      final parentIds = await _journalDb
+          .parentLinkedEntityIds(journalEntity.id)
+          .get();
 
       _updateNotifications.notify({
         ...journalEntity.affectedIds,
-        if (linkedId != null) linkedId,
+        ?linkedId,
         ...parentIds,
         labelUsageNotification,
       });
@@ -766,8 +765,9 @@ class PersistenceLogic {
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
-    final linesAffected =
-        await _journalDb.upsertEntityDefinition(entityDefinition);
+    final linesAffected = await _journalDb.upsertEntityDefinition(
+      entityDefinition,
+    );
     final typeNotification = switch (entityDefinition) {
       CategoryDefinition() => categoriesNotification,
       HabitDefinition() => habitsNotification,
@@ -818,8 +818,9 @@ class PersistenceLogic {
       ),
     );
 
-    await getIt<NotificationService>()
-        .cancelNotification(dashboard.id.hashCode);
+    await getIt<NotificationService>().cancelNotification(
+      dashboard.id.hashCode,
+    );
 
     return linesAffected;
   }

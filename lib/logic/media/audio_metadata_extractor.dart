@@ -72,9 +72,9 @@ class AudioMetadataExtractor {
       final nameWithoutExtension = filename.split('.').first;
 
       // Try to parse using Lotti's audio filename format
-      return DateFormat(AudioRecorderConstants.fileNameDateFormat)
-          .parse(nameWithoutExtension, true)
-          .toLocal();
+      return DateFormat(
+        AudioRecorderConstants.fileNameDateFormat,
+      ).parse(nameWithoutExtension, true).toLocal();
     } on FormatException {
       // Return null if parsing fails (expected for non-Lotti filenames)
       return null;
@@ -85,8 +85,9 @@ class AudioMetadataExtractor {
   ///
   /// Returns a path like `/audio/2024-01-15/` based on the timestamp.
   static String computeRelativePath(DateTime timestamp) {
-    final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-        .format(timestamp);
+    final day = DateFormat(
+      AudioRecorderConstants.directoryDateFormat,
+    ).format(timestamp);
     return '${AudioRecorderConstants.audioDirectoryPrefix}$day/';
   }
 
@@ -95,8 +96,9 @@ class AudioMetadataExtractor {
   /// Returns a filename like `2024-01-15_10-30-45-123.m4a` based on the
   /// timestamp and extension.
   static String computeTargetFileName(DateTime timestamp, String extension) {
-    final base =
-        DateFormat(AudioRecorderConstants.fileNameDateFormat).format(timestamp);
+    final base = DateFormat(
+      AudioRecorderConstants.fileNameDateFormat,
+    ).format(timestamp);
     return '$base.$extension';
   }
 

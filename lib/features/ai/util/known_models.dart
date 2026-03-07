@@ -110,7 +110,8 @@ const List<KnownModel> alibabaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Top vision-language model with image understanding. Supports '
+    description:
+        'Top vision-language model with image understanding. Supports '
         'multiple images per request via standard OpenAI vision format.',
   ),
   KnownModel(
@@ -120,7 +121,8 @@ const List<KnownModel> alibabaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Fast vision-language model for efficient image analysis and '
+    description:
+        'Fast vision-language model for efficient image analysis and '
         'visual question answering.',
   ),
   KnownModel(
@@ -130,7 +132,8 @@ const List<KnownModel> alibabaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Multimodal model with audio understanding. Supports up to '
+    description:
+        'Multimodal model with audio understanding. Supports up to '
         '20 minutes of audio for transcription and analysis. '
         'Accepts AMR, WAV, AAC, and MP3 formats.',
   ),
@@ -140,7 +143,8 @@ const List<KnownModel> alibabaModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text, Modality.image],
     isReasoningModel: false,
-    description: 'Image generation model from the Wan family. Generates '
+    description:
+        'Image generation model from the Wan family. Generates '
         'high-quality images from text prompts via DashScope native API. '
         'Supports sizes up to 1920x1080 with 16:9 aspect ratio.',
   ),
@@ -294,7 +298,8 @@ const List<KnownModel> ollamaModels = [
     inputModalities: [Modality.text, Modality.image],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Larger local text & image model with improved capabilities. '
+    description:
+        'Larger local text & image model with improved capabilities. '
         'Requires approximately 12GB RAM for optimal performance.',
   ),
   KnownModel(
@@ -314,7 +319,8 @@ const List<KnownModel> ollamaModels = [
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
-    description: 'Local reasoning model for complex analysis tasks. '
+    description:
+        'Local reasoning model for complex analysis tasks. '
         'Provides advanced reasoning capabilities.',
   ),
   KnownModel(
@@ -570,7 +576,8 @@ const List<KnownModel> voxtralModels = [
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'High-accuracy transcription model for production use. '
+    description:
+        'High-accuracy transcription model for production use. '
         'Supports up to 30 minutes of audio with 9 languages (auto-detected). '
         'Requires approximately 55GB VRAM (multi-GPU recommended).',
   ),
@@ -590,7 +597,8 @@ const List<KnownModel> mistralModels = [
     outputModalities: [Modality.text],
     isReasoningModel: false,
     supportsFunctionCalling: true,
-    description: 'Fast and efficient model with vision capabilities. '
+    description:
+        'Fast and efficient model with vision capabilities. '
         'Great for summaries, image analysis, and quick tasks.',
   ),
   // Reasoning model - for complex tasks
@@ -601,7 +609,8 @@ const List<KnownModel> mistralModels = [
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
-    description: 'Frontier-class multimodal reasoning model with 128k context. '
+    description:
+        'Frontier-class multimodal reasoning model with 128k context. '
         'Supports function calling, vision, and document AI.',
   ),
   // Audio transcription model — uses /v1/audio/transcriptions endpoint
@@ -611,7 +620,8 @@ const List<KnownModel> mistralModels = [
     inputModalities: [Modality.text, Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'High-accuracy cloud transcription model. '
+    description:
+        'High-accuracy cloud transcription model. '
         'Supports M4A, MP3, WAV, FLAC, and OGG up to 1 GB. '
         'Up to 3 hours of audio with 13 languages (auto-detected).',
   ),
@@ -622,7 +632,8 @@ const List<KnownModel> mistralModels = [
     inputModalities: [Modality.audio],
     outputModalities: [Modality.text],
     isReasoningModel: false,
-    description: 'Real-time streaming transcription via WebSocket. '
+    description:
+        'Real-time streaming transcription via WebSocket. '
         'Low-latency live subtitles (~2s delay). No diarization.',
   ),
 ];
@@ -702,7 +713,8 @@ KnownModel? findOpenAiKnownModel(String providerModelId) {
   KnownModel reasoning,
   KnownModel audio,
   KnownModel image,
-})? getOpenAiFtueKnownModels() {
+})?
+getOpenAiFtueKnownModels() {
   final flash = findOpenAiKnownModel(ftueOpenAiFlashModelId);
   final reasoning = findOpenAiKnownModel(ftueOpenAiReasoningModelId);
   final audio = findOpenAiKnownModel(ftueOpenAiAudioModelId);
@@ -751,8 +763,9 @@ const ftueAlibabaImageModelId = 'wan2.6-image';
 /// Finds a KnownModel by its provider model ID from the alibabaModels list.
 /// Returns null if not found.
 KnownModel? findAlibabaKnownModel(String providerModelId) {
-  return alibabaModels
-      .firstWhereOrNull((model) => model.providerModelId == providerModelId);
+  return alibabaModels.firstWhereOrNull(
+    (model) => model.providerModelId == providerModelId,
+  );
 }
 
 /// Returns the five KnownModel configurations needed for Alibaba FTUE.
@@ -767,7 +780,8 @@ KnownModel? findAlibabaKnownModel(String providerModelId) {
   KnownModel audio,
   KnownModel vision,
   KnownModel image,
-})? getAlibabaFtueKnownModels() {
+})?
+getAlibabaFtueKnownModels() {
   final flash = findAlibabaKnownModel(ftueAlibabaFlashModelId);
   final reasoning = findAlibabaKnownModel(ftueAlibabaReasoningModelId);
   final audio = findAlibabaKnownModel(ftueAlibabaAudioModelId);
@@ -803,8 +817,9 @@ const ftueMistralAudioModelId = 'voxtral-mini-latest';
 /// Finds a KnownModel by its provider model ID from the mistralModels list.
 /// Returns null if not found.
 KnownModel? findMistralKnownModel(String providerModelId) {
-  return mistralModels
-      .firstWhereOrNull((model) => model.providerModelId == providerModelId);
+  return mistralModels.firstWhereOrNull(
+    (model) => model.providerModelId == providerModelId,
+  );
 }
 
 /// Returns the three KnownModel configurations needed for Mistral FTUE.
@@ -816,7 +831,8 @@ KnownModel? findMistralKnownModel(String providerModelId) {
   KnownModel flash,
   KnownModel reasoning,
   KnownModel audio,
-})? getMistralFtueKnownModels() {
+})?
+getMistralFtueKnownModels() {
   final flash = findMistralKnownModel(ftueMistralFlashModelId);
   final reasoning = findMistralKnownModel(ftueMistralReasoningModelId);
   final audio = findMistralKnownModel(ftueMistralAudioModelId);

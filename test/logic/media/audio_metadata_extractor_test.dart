@@ -112,22 +112,28 @@ void main() {
     group('computeTargetFileName', () {
       test('formats filename with full timestamp', () {
         final timestamp = DateTime(2024, 1, 15, 10, 30, 45, 123);
-        final filename =
-            AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+        final filename = AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          'm4a',
+        );
         expect(filename, equals('2024-01-15_10-30-45-123.m4a'));
       });
 
       test('handles zero milliseconds', () {
         final timestamp = DateTime(2024, 1, 15, 10, 30, 45);
-        final filename =
-            AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+        final filename = AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          'm4a',
+        );
         expect(filename, equals('2024-01-15_10-30-45-000.m4a'));
       });
 
       test('handles maximum milliseconds', () {
         final timestamp = DateTime(2024, 1, 15, 10, 30, 45, 999);
-        final filename =
-            AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+        final filename = AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          'm4a',
+        );
         expect(filename, equals('2024-01-15_10-30-45-999.m4a'));
       });
 
@@ -150,15 +156,19 @@ void main() {
 
       test('handles midnight timestamp', () {
         final timestamp = DateTime(2024, 1, 15);
-        final filename =
-            AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+        final filename = AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          'm4a',
+        );
         expect(filename, equals('2024-01-15_00-00-00-000.m4a'));
       });
 
       test('handles end of day timestamp', () {
         final timestamp = DateTime(2024, 1, 15, 23, 59, 59, 999);
-        final filename =
-            AudioMetadataExtractor.computeTargetFileName(timestamp, 'm4a');
+        final filename = AudioMetadataExtractor.computeTargetFileName(
+          timestamp,
+          'm4a',
+        );
         expect(filename, equals('2024-01-15_23-59-59-999.m4a'));
       });
     });
@@ -194,8 +204,9 @@ void main() {
       test('returns zero duration when bypass flag is set', () async {
         AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-        final duration =
-            await AudioMetadataExtractor.extractDuration('/fake/path.m4a');
+        final duration = await AudioMetadataExtractor.extractDuration(
+          '/fake/path.m4a',
+        );
         expect(duration, Duration.zero);
 
         AudioMetadataExtractor.bypassMediaKitInTests = false;
@@ -204,8 +215,9 @@ void main() {
       test('handles non-existent file path', () async {
         AudioMetadataExtractor.bypassMediaKitInTests = true;
 
-        final duration =
-            await AudioMetadataExtractor.extractDuration('/does/not/exist.m4a');
+        final duration = await AudioMetadataExtractor.extractDuration(
+          '/does/not/exist.m4a',
+        );
         expect(duration, Duration.zero);
 
         AudioMetadataExtractor.bypassMediaKitInTests = false;
@@ -240,8 +252,9 @@ void main() {
           return const Duration(seconds: 42);
         }
 
-        final reader =
-            AudioMetadataExtractor.selectReader(registeredReader: customReader);
+        final reader = AudioMetadataExtractor.selectReader(
+          registeredReader: customReader,
+        );
         final duration = await reader('/test/path.m4a');
 
         expect(duration, const Duration(seconds: 42));
@@ -270,8 +283,9 @@ void main() {
           return const Duration(minutes: 5);
         }
 
-        final reader =
-            AudioMetadataExtractor.selectReader(registeredReader: customReader);
+        final reader = AudioMetadataExtractor.selectReader(
+          registeredReader: customReader,
+        );
         final duration = await reader('/any/path.m4a');
 
         // Custom reader should be used, not the bypass no-op
@@ -303,7 +317,8 @@ void main() {
         }
 
         final reader = AudioMetadataExtractor.selectReader(
-            registeredReader: variableReader);
+          registeredReader: variableReader,
+        );
 
         expect(await reader('/short.m4a'), const Duration(seconds: 10));
         expect(await reader('/long.m4a'), const Duration(hours: 2));

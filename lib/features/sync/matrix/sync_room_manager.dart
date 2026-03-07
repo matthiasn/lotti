@@ -36,10 +36,10 @@ class SyncRoomManager {
     required SettingsDb settingsDb,
     required LoggingService loggingService,
     SyncRoomDiscoveryService? discoveryService,
-  })  : _gateway = gateway,
-        _settingsDb = settingsDb,
-        _loggingService = loggingService,
-        _discoveryService = discoveryService {
+  }) : _gateway = gateway,
+       _settingsDb = settingsDb,
+       _loggingService = loggingService,
+       _discoveryService = discoveryService {
     _inviteSubscription = _gateway.invites.listen(_handleInvite);
   }
 
@@ -74,7 +74,7 @@ class SyncRoomManager {
     if (_discoveryService == null) {
       return const [];
     }
-    return _discoveryService!.discoverSyncRooms(_gateway.client);
+    return _discoveryService.discoverSyncRooms(_gateway.client);
   }
 
   /// Loads any persisted room identifier and resolves the current room snapshot
@@ -104,7 +104,7 @@ class SyncRoomManager {
 
     // Mark the room for future discovery by other devices
     if (room != null && _discoveryService != null) {
-      await _discoveryService!.markRoomAsLottiSync(room);
+      await _discoveryService.markRoomAsLottiSync(room);
     }
 
     _loggingService.captureEvent(
@@ -276,8 +276,9 @@ class SyncRoomManager {
       }
 
       if (attempt < kSyncRoomLoadMaxAttempts - 1) {
-        final delay =
-            Duration(milliseconds: kSyncRoomLoadBaseDelayMs * (1 << attempt));
+        final delay = Duration(
+          milliseconds: kSyncRoomLoadBaseDelayMs * (1 << attempt),
+        );
         _loggingService.captureEvent(
           'Room $savedRoomId not yet available, retrying in '
           '${delay.inMilliseconds}ms (attempt ${attempt + 1}/'

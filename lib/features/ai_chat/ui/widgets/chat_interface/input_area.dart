@@ -120,79 +120,79 @@ class InputAreaState extends ConsumerState<InputArea> {
                     .stopAndTranscribe(),
               )
             : (recState.status == ChatRecorderStatus.realtimeRecording)
-                ? _RealtimeRecordingView(
-                    partialTranscript: recState.partialTranscript,
-                    onCancel: () => ref
-                        .read(chatRecorderControllerProvider.notifier)
-                        .cancel(),
-                    onStop: () => ref
-                        .read(chatRecorderControllerProvider.notifier)
-                        .stopRealtime(),
-                  )
-                : (recState.status == ChatRecorderStatus.processing &&
-                        recState.partialTranscript != null)
-                    ? _TranscriptionProgress(
-                        partialTranscript: recState.partialTranscript!,
-                      )
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 200),
-                              child: TextField(
-                                key: const ValueKey('chat_text_field'),
-                                controller: widget.controller,
-                                decoration: InputDecoration(
-                                  hintText: widget.requiresModelSelection
-                                      ? context
-                                          .messages.chatInputHintSelectModel
-                                      : context.messages.chatInputHintDefault,
-                                  filled: true,
-                                  fillColor: theme
-                                      .colorScheme.surfaceContainerHigh
-                                      .withValues(alpha: 0.85),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                    borderSide: BorderSide(
-                                        color: theme.colorScheme.outline
-                                            .withValues(alpha: 0.10)),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                    borderSide: BorderSide(
-                                        color: theme.colorScheme.outline
-                                            .withValues(alpha: 0.10)),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                    borderSide: BorderSide(
-                                      color: theme.colorScheme.primary,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 12,
-                                  ),
-                                ),
-                                maxLines: null,
-                                textInputAction: TextInputAction.send,
-                                onSubmitted:
-                                    widget.canSend ? _sendMessage : null,
-                                enabled: recState.status !=
-                                        ChatRecorderStatus.processing &&
-                                    widget.canSend,
+            ? _RealtimeRecordingView(
+                partialTranscript: recState.partialTranscript,
+                onCancel: () =>
+                    ref.read(chatRecorderControllerProvider.notifier).cancel(),
+                onStop: () => ref
+                    .read(chatRecorderControllerProvider.notifier)
+                    .stopRealtime(),
+              )
+            : (recState.status == ChatRecorderStatus.processing &&
+                  recState.partialTranscript != null)
+            ? _TranscriptionProgress(
+                partialTranscript: recState.partialTranscript!,
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: TextField(
+                        key: const ValueKey('chat_text_field'),
+                        controller: widget.controller,
+                        decoration: InputDecoration(
+                          hintText: widget.requiresModelSelection
+                              ? context.messages.chatInputHintSelectModel
+                              : context.messages.chatInputHintDefault,
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHigh
+                              .withValues(alpha: 0.85),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.10,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          if (recState.status != ChatRecorderStatus.recording)
-                            _buildTrailingButtons(
-                              recState: recState,
-                              theme: theme,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.outline.withValues(
+                                alpha: 0.10,
+                              ),
                             ),
-                        ],
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(
+                              color: theme.colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.send,
+                        onSubmitted: widget.canSend ? _sendMessage : null,
+                        enabled:
+                            recState.status != ChatRecorderStatus.processing &&
+                            widget.canSend,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (recState.status != ChatRecorderStatus.recording)
+                    _buildTrailingButtons(
+                      recState: recState,
+                      theme: theme,
+                    ),
+                ],
+              ),
       ),
     );
   }
@@ -382,11 +382,14 @@ class _RealtimeRecordingView extends StatelessWidget {
             Expanded(
               child: Container(
                 constraints: const BoxConstraints(maxHeight: 120),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.85),
+                  color: theme.colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.85,
+                  ),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
                     color: theme.colorScheme.primary.withValues(alpha: 0.3),
@@ -461,8 +464,9 @@ class _TranscriptionProgress extends StatelessWidget {
             constraints: const BoxConstraints(maxHeight: 120),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh
-                  .withValues(alpha: 0.85),
+              color: theme.colorScheme.surfaceContainerHigh.withValues(
+                alpha: 0.85,
+              ),
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
                 color: theme.colorScheme.primary.withValues(alpha: 0.3),

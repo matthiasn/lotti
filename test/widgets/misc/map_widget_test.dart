@@ -24,8 +24,9 @@ void main() {
       );
     }
 
-    testWidgets('renders empty Center when geolocation is null',
-        (tester) async {
+    testWidgets('renders empty Center when geolocation is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(),
       );
@@ -52,8 +53,9 @@ void main() {
       expect(find.byType(FlutterMap), findsNothing);
     });
 
-    testWidgets('renders FlutterMap when valid geolocation provided',
-        (tester) async {
+    testWidgets('renders FlutterMap when valid geolocation provided', (
+      tester,
+    ) async {
       final geolocation = Geolocation(
         createdAt: DateTime.now(),
         latitude: 37.7749,

@@ -85,15 +85,20 @@ void main() {
       test('should not attempt portal when not in Flatpak', () async {
         // When not in Flatpak, takeScreenshot should not use portal
         // This test verifies the non-Flatpak path
-        expect(PortalService.shouldUsePortal, isFalse,
-            reason: 'This test verifies non-Flatpak behavior');
+        expect(
+          PortalService.shouldUsePortal,
+          isFalse,
+          reason: 'This test verifies non-Flatpak behavior',
+        );
 
         // Mock logging to ensure no portal fallback is logged
-        when(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              subDomain: 'portal_fallback',
-            )).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            subDomain: 'portal_fallback',
+          ),
+        ).thenReturn(null);
 
         // The screenshot will fail because we don't have the actual tools
         // but it should NOT log portal_fallback
@@ -116,8 +121,11 @@ void main() {
       test('portal service should throw when used outside Flatpak', () async {
         // This test verifies that ScreenshotPortalService properly guards against
         // being used outside of Flatpak
-        expect(PortalService.shouldUsePortal, isFalse,
-            reason: 'This test requires non-Flatpak environment');
+        expect(
+          PortalService.shouldUsePortal,
+          isFalse,
+          reason: 'This test requires non-Flatpak environment',
+        );
 
         final portalService = ScreenshotPortalService();
 
@@ -135,15 +143,20 @@ void main() {
     group('Portal Integration Tests', () {
       test('should use traditional flow when not in Flatpak', () async {
         // Verify we're not in Flatpak
-        expect(PortalService.shouldUsePortal, isFalse,
-            reason: 'This test verifies non-Flatpak behavior');
+        expect(
+          PortalService.shouldUsePortal,
+          isFalse,
+          reason: 'This test verifies non-Flatpak behavior',
+        );
 
         // Mock logging to capture any exceptions
-        when(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            )).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenReturn(null);
 
         // The screenshot will fail because we don't have the actual screenshot tools
         await expectLater(
@@ -152,11 +165,13 @@ void main() {
         );
 
         // Verify that the exception was logged (but NOT as portal_fallback)
-        verify(() => mockLoggingService.captureException(
-              any<dynamic>(),
-              domain: screenshotDomain,
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: screenshotDomain,
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
       test('portal service lifecycle in non-Flatpak environment', () async {
@@ -184,26 +199,34 @@ void main() {
         // Accessing client without initialization should throw
         expect(
           () => portalService.client,
-          throwsA(isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            contains('not initialized'),
-          )),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('not initialized'),
+            ),
+          ),
         );
       });
     });
 
     group('Portal Constants Integration', () {
       test('should use correct portal constants', () {
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
         expect(
-            ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
+        expect(
+          ScreenshotPortalConstants.screenshotMethod,
+          equals('Screenshot'),
+        );
       });
 
       test('should use correct portal timeout', () {
-        expect(PortalConstants.responseTimeout,
-            equals(const Duration(seconds: 30)));
+        expect(
+          PortalConstants.responseTimeout,
+          equals(const Duration(seconds: 30)),
+        );
       });
     });
 

@@ -24,8 +24,12 @@ class AnimatedModalItemWithIcon extends StatefulWidget {
 
   final Widget child;
   final VoidCallback? onTap;
-  final Widget Function(BuildContext context, Animation<double> iconAnimation,
-      {required bool isPressed}) iconBuilder;
+  final Widget Function(
+    BuildContext context,
+    Animation<double> iconAnimation, {
+    required bool isPressed,
+  })
+  iconBuilder;
   final bool isDisabled;
   final double hoverScale;
   final double tapScale;
@@ -74,13 +78,16 @@ class _AnimatedModalItemWithIconState extends State<AnimatedModalItemWithIcon>
   }
 
   void _initializeAnimations() {
-    _iconScaleAnimation = Tween<double>(
-      begin: 1,
-      end: widget.iconScaleOnTap,
-    ).animate(CurvedAnimation(
-      parent: _controller.tapAnimationController,
-      curve: Curves.easeOutBack,
-    ));
+    _iconScaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: widget.iconScaleOnTap,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller.tapAnimationController,
+            curve: Curves.easeOutBack,
+          ),
+        );
   }
 
   @override

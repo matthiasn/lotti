@@ -58,8 +58,9 @@ void main() {
       expect(find.text('Child Widget'), findsOneWidget);
     });
 
-    testWidgets('shows modal when rating prompt becomes non-null',
-        (tester) async {
+    testWidgets('shows modal when rating prompt becomes non-null', (
+      tester,
+    ) async {
       late ProviderContainer container;
 
       await tester.pumpWidget(
@@ -80,8 +81,9 @@ void main() {
       expect(find.text('Rate this session'), findsOneWidget);
     });
 
-    testWidgets('does not show modal when state goes from non-null to null',
-        (tester) async {
+    testWidgets('does not show modal when state goes from non-null to null', (
+      tester,
+    ) async {
       late ProviderContainer container;
 
       await tester.pumpWidget(
@@ -103,8 +105,9 @@ void main() {
       expect(find.text('Rate this session'), findsNothing);
     });
 
-    testWidgets('clears prompt state when modal is dismissed via swipe',
-        (tester) async {
+    testWidgets('clears prompt state when modal is dismissed via swipe', (
+      tester,
+    ) async {
       late ProviderContainer container;
 
       await tester.pumpWidget(

@@ -58,9 +58,11 @@ class AudioRecordingIndicator extends ConsumerWidget {
           child: ClipRRect(
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(
-                  AudioRecordingIndicatorConstants.borderRadius),
+                AudioRecordingIndicatorConstants.borderRadius,
+              ),
               topRight: Radius.circular(
-                  AudioRecordingIndicatorConstants.borderRadius),
+                AudioRecordingIndicatorConstants.borderRadius,
+              ),
             ),
             child: Container(
               height: AudioRecordingIndicatorConstants.indicatorHeight,
@@ -69,9 +71,11 @@ class AudioRecordingIndicator extends ConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   const SizedBox(width: 5),
-                  Icon(Icons.mic_outlined,
-                      size: AudioRecordingIndicatorConstants.iconSize,
-                      color: context.colorScheme.onError),
+                  Icon(
+                    Icons.mic_outlined,
+                    size: AudioRecordingIndicatorConstants.iconSize,
+                    color: context.colorScheme.onError,
+                  ),
                   Padding(
                     padding: AudioRecordingIndicatorConstants.textPadding,
                     child: Text(

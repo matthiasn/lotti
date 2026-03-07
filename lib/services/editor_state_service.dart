@@ -43,9 +43,9 @@ class EditorStateService {
 
       unsavedStreamById[id] = unsavedStreamController;
 
-      _editorDb
-          .getLatestDraft(id, lastSaved: lastSaved)
-          .then((EditorDraftState? value) {
+      _editorDb.getLatestDraft(id, lastSaved: lastSaved).then((
+        EditorDraftState? value,
+      ) {
         if (value != null) {
           editorStateById[id] = value.delta;
           unsavedStreamController.add(editorStateById[id] != null);

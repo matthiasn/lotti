@@ -95,11 +95,13 @@ void main() {
 
       // Verify the paginated search methods were called
       verify(() => mockLoggingDb.getSearchLogEntriesCount(any())).called(1);
-      verify(() => mockLoggingDb.watchSearchLogEntriesPaginated(
-            any(),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          )).called(1);
+      verify(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated(
+          any(),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).called(1);
     });
 
     testWidgets('pagination loads different pages correctly', (tester) async {
@@ -108,8 +110,9 @@ void main() {
         100,
         (index) => LogEntry(
           id: 'test_$index',
-          createdAt:
-              DateTime.now().add(Duration(seconds: index)).toIso8601String(),
+          createdAt: DateTime.now()
+              .add(Duration(seconds: index))
+              .toIso8601String(),
           domain: 'domain$index',
           type: 'type',
           level: 'INFO',
@@ -174,23 +177,27 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify first page is loaded
-      verify(() => mockLoggingDb.watchSearchLogEntriesPaginated(
-            any(),
-          )).called(1);
+      verify(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated(
+          any(),
+        ),
+      ).called(1);
 
       // Verify total count is correct
       verify(() => mockLoggingDb.getSearchLogEntriesCount(any())).called(1);
     });
 
-    testWidgets('pagination controls memory usage by limiting results',
-        (tester) async {
+    testWidgets('pagination controls memory usage by limiting results', (
+      tester,
+    ) async {
       // Create large dataset to test memory control
       final testLogEntries = List.generate(
         1000,
         (index) => LogEntry(
           id: 'large_test_$index',
-          createdAt:
-              DateTime.now().add(Duration(seconds: index)).toIso8601String(),
+          createdAt: DateTime.now()
+              .add(Duration(seconds: index))
+              .toIso8601String(),
           domain: 'domain$index',
           type: 'type',
           level: 'INFO',
@@ -254,9 +261,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify pagination is used (not loading all 1000 items at once)
-      verify(() => mockLoggingDb.watchSearchLogEntriesPaginated(
-            any(),
-          )).called(1);
+      verify(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated(
+          any(),
+        ),
+      ).called(1);
 
       // Verify total count is retrieved separately (for pagination info)
       verify(() => mockLoggingDb.getSearchLogEntriesCount(any())).called(1);
@@ -289,8 +298,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify error message is shown
-        expect(find.text('Failed to load logs. Please try again.'),
-            findsOneWidget);
+        expect(
+          find.text('Failed to load logs. Please try again.'),
+          findsOneWidget,
+        );
 
         // Verify DevLogger.warning was called for load failure
         expect(
@@ -373,8 +384,9 @@ void main() {
           60,
           (index) => LogEntry(
             id: 'loadmore_$index',
-            createdAt:
-                DateTime.now().add(Duration(seconds: index)).toIso8601String(),
+            createdAt: DateTime.now()
+                .add(Duration(seconds: index))
+                .toIso8601String(),
             domain: 'domain$index',
             type: 'type',
             level: 'INFO',
@@ -454,8 +466,9 @@ void main() {
     });
 
     group('SettingsPageHeader Integration', () {
-      testWidgets('displays SettingsPageHeader with correct title',
-          (tester) async {
+      testWidgets('displays SettingsPageHeader with correct title', (
+        tester,
+      ) async {
         // Mock initial logs
         when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
           (_) => Stream<List<LogEntry>>.fromIterable([[]]),

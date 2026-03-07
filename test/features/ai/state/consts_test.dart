@@ -12,11 +12,15 @@ void main() {
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
       expect(
-          AiResponseType.values, contains(AiResponseType.audioTranscription));
+        AiResponseType.values,
+        contains(AiResponseType.audioTranscription),
+      );
       expect(AiResponseType.values, contains(AiResponseType.checklistUpdates));
       expect(AiResponseType.values, contains(AiResponseType.promptGeneration));
-      expect(AiResponseType.values,
-          contains(AiResponseType.imagePromptGeneration));
+      expect(
+        AiResponseType.values,
+        contains(AiResponseType.imagePromptGeneration),
+      );
       expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
     });
 
@@ -58,15 +62,25 @@ void main() {
       expect(AiResponseType.taskSummary.icon, equals(Icons.summarize_outlined));
       expect(AiResponseType.imageAnalysis.icon, equals(Icons.image_outlined));
       expect(
-          AiResponseType.audioTranscription.icon, equals(Icons.mic_outlined));
-      expect(AiResponseType.checklistUpdates.icon,
-          equals(Icons.checklist_rtl_outlined));
-      expect(AiResponseType.promptGeneration.icon,
-          equals(Icons.auto_fix_high_outlined));
-      expect(AiResponseType.imagePromptGeneration.icon,
-          equals(Icons.palette_outlined));
-      expect(AiResponseType.imageGeneration.icon,
-          equals(Icons.auto_awesome_outlined));
+        AiResponseType.audioTranscription.icon,
+        equals(Icons.mic_outlined),
+      );
+      expect(
+        AiResponseType.checklistUpdates.icon,
+        equals(Icons.checklist_rtl_outlined),
+      );
+      expect(
+        AiResponseType.promptGeneration.icon,
+        equals(Icons.auto_fix_high_outlined),
+      );
+      expect(
+        AiResponseType.imagePromptGeneration.icon,
+        equals(Icons.palette_outlined),
+      );
+      expect(
+        AiResponseType.imageGeneration.icon,
+        equals(Icons.auto_awesome_outlined),
+      );
     });
 
     test('const values are correctly defined', () {
@@ -79,8 +93,9 @@ void main() {
       expect(imageGenerationConst, equals('ImageGeneration'));
     });
 
-    testWidgets('localizedName returns correct strings with BuildContext',
-        (tester) async {
+    testWidgets('localizedName returns correct strings with BuildContext', (
+      tester,
+    ) async {
       late BuildContext capturedContext;
 
       await tester.pumpWidget(

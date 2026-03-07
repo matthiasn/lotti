@@ -318,8 +318,7 @@ void main() {
   });
 
   group('EXIF Timestamp Extraction', () {
-    test('extracts DateTimeOriginal from real EXIF data successfully',
-        () async {
+    test('extracts DateTimeOriginal from real EXIF data successfully', () async {
       // Use real valid EXIF data to trigger success path
       final jpegWithExif = _createJpegWithValidExif();
 
@@ -452,22 +451,24 @@ void main() {
       );
     });
 
-    test('handles PNG images (which may have different metadata format)',
-        () async {
-      // PNG signature
-      final pngData = Uint8List.fromList([
-        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
-        ...List.filled(50, 0x00), // Dummy data
-      ]);
+    test(
+      'handles PNG images (which may have different metadata format)',
+      () async {
+        // PNG signature
+        final pngData = Uint8List.fromList([
+          0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+          ...List.filled(50, 0x00), // Dummy data
+        ]);
 
-      expect(
-        importPastedImages(
-          data: pngData,
-          fileExtension: 'png',
-        ),
-        completes,
-      );
-    });
+        expect(
+          importPastedImages(
+            data: pngData,
+            fileExtension: 'png',
+          ),
+          completes,
+        );
+      },
+    );
   });
 
   group('EXIF DateTime Parsing', () {

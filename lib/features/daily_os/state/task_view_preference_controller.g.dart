@@ -17,16 +17,16 @@ final taskViewPreferenceProvider = TaskViewPreferenceFamily._();
 final class TaskViewPreferenceProvider
     extends $AsyncNotifierProvider<TaskViewPreference, TaskViewMode> {
   /// Controller for persisting task view mode preferences per category.
-  TaskViewPreferenceProvider._(
-      {required TaskViewPreferenceFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'taskViewPreferenceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TaskViewPreferenceProvider._({
+    required TaskViewPreferenceFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'taskViewPreferenceProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$taskViewPreferenceHash();
@@ -60,22 +60,25 @@ String _$taskViewPreferenceHash() =>
 
 final class TaskViewPreferenceFamily extends $Family
     with
-        $ClassFamilyOverride<TaskViewPreference, AsyncValue<TaskViewMode>,
-            TaskViewMode, FutureOr<TaskViewMode>, String> {
+        $ClassFamilyOverride<
+          TaskViewPreference,
+          AsyncValue<TaskViewMode>,
+          TaskViewMode,
+          FutureOr<TaskViewMode>,
+          String
+        > {
   TaskViewPreferenceFamily._()
-      : super(
-          retry: null,
-          name: r'taskViewPreferenceProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'taskViewPreferenceProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Controller for persisting task view mode preferences per category.
 
-  TaskViewPreferenceProvider call({
-    required String categoryId,
-  }) =>
+  TaskViewPreferenceProvider call({required String categoryId}) =>
       TaskViewPreferenceProvider._(argument: categoryId, from: this);
 
   @override
@@ -88,22 +91,19 @@ abstract class _$TaskViewPreference extends $AsyncNotifier<TaskViewMode> {
   late final _$args = ref.$arg as String;
   String get categoryId => _$args;
 
-  FutureOr<TaskViewMode> build({
-    required String categoryId,
-  });
+  FutureOr<TaskViewMode> build({required String categoryId});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<TaskViewMode>, TaskViewMode>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<TaskViewMode>, TaskViewMode>,
-        AsyncValue<TaskViewMode>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              categoryId: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<TaskViewMode>, TaskViewMode>,
+              AsyncValue<TaskViewMode>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(categoryId: _$args));
   }
 }

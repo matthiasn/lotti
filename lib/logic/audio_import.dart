@@ -42,8 +42,9 @@ Future<void> importDroppedAudio({
       final lastModified = await file.lastModified();
 
       // Try to parse timestamp from filename, fall back to lastModified
-      final parsedTimestamp =
-          AudioMetadataExtractor.parseFilenameTimestamp(file.name);
+      final parsedTimestamp = AudioMetadataExtractor.parseFilenameTimestamp(
+        file.name,
+      );
       final timestamp = parsedTimestamp ?? lastModified;
 
       final srcPath = file.path;
@@ -77,11 +78,14 @@ Future<void> importDroppedAudio({
         continue;
       }
 
-      final relativePath =
-          AudioMetadataExtractor.computeRelativePath(timestamp);
+      final relativePath = AudioMetadataExtractor.computeRelativePath(
+        timestamp,
+      );
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = AudioMetadataExtractor.computeTargetFileName(
-          timestamp, fileExtension);
+        timestamp,
+        fileExtension,
+      );
       final targetFilePath = path.join(directory, targetFileName);
 
       // Copy file first

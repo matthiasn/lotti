@@ -41,7 +41,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// framing cleanup.
 class GeminiInferenceRepository {
   GeminiInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -197,8 +197,9 @@ class GeminiInferenceRepository {
             ? chunk.substring(0, kPreviewLength)
             : chunk;
         developer.log(
-            'raw chunk (${chunk.length} chars): ${preview.replaceAll('\n', r'\n')}',
-            name: 'GeminiInferenceRepository');
+          'raw chunk (${chunk.length} chars): ${preview.replaceAll('\n', r'\n')}',
+          name: 'GeminiInferenceRepository',
+        );
         rawChunkLogs++;
       }
       final sw = Stopwatch()..start();
@@ -222,26 +223,33 @@ class GeminiInferenceRepository {
           if (candidates is! List || candidates.isEmpty) {
             if (kVerboseStreamLogging) {
               final keys = obj.keys.join(',');
-              developer.log('no candidates; obj keys=[$keys]',
-                  name: 'GeminiInferenceRepository');
+              developer.log(
+                'no candidates; obj keys=[$keys]',
+                name: 'GeminiInferenceRepository',
+              );
             }
             continue;
           }
           final first = candidates.first;
-          final content =
-              first is Map<String, dynamic> ? first['content'] : null;
+          final content = first is Map<String, dynamic>
+              ? first['content']
+              : null;
           if (content is! Map<String, dynamic>) {
             if (kVerboseStreamLogging) {
-              developer.log('candidate.content missing or not a map',
-                  name: 'GeminiInferenceRepository');
+              developer.log(
+                'candidate.content missing or not a map',
+                name: 'GeminiInferenceRepository',
+              );
             }
             continue;
           }
           final parts = content['parts'];
           if (parts is! List) {
             if (kVerboseStreamLogging) {
-              developer.log('content.parts missing or not a list',
-                  name: 'GeminiInferenceRepository');
+              developer.log(
+                'content.parts missing or not a list',
+                name: 'GeminiInferenceRepository',
+              );
             }
             continue;
           }
@@ -261,7 +269,8 @@ class GeminiInferenceRepository {
                 if (t is String && t.isNotEmpty) {
                   inThinking = true;
                   // Enforce cap during accumulation
-                  final remaining = kMaxStreamingChars -
+                  final remaining =
+                      kMaxStreamingChars -
                       (thinkingBuffer.length + visibleChars);
                   if (remaining > 0) {
                     final toAdd = t.length > remaining ? remaining : t.length;
@@ -503,8 +512,9 @@ class GeminiInferenceRepository {
       attempt++;
       try {
         final req = buildRequest();
-        final resp =
-            await _httpClient.send(req).timeout(kInitialRequestTimeout);
+        final resp = await _httpClient
+            .send(req)
+            .timeout(kInitialRequestTimeout);
         if (resp.statusCode == 429 || resp.statusCode == 503) {
           if (attempt > maxRetries) return resp; // let caller inspect body
           // Honor Retry-After header if present (seconds)
@@ -860,7 +870,8 @@ class GeminiInferenceRepository {
 
       final inlineData = part['inlineData'] ?? part['inline_data'];
       if (inlineData is Map<String, dynamic>) {
-        final mimeType = inlineData['mimeType'] as String? ??
+        final mimeType =
+            inlineData['mimeType'] as String? ??
             inlineData['mime_type'] as String? ??
             'image/png';
         final data = inlineData['data'] as String?;

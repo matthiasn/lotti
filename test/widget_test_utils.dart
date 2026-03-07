@@ -60,15 +60,19 @@ Future<TestGetItMocks> setUpTestGetIt({
   final mockLoggingDb = MockLoggingDb();
   final loggingService = LoggingService();
 
-  when(() => mockUpdateNotifications.updateStream)
-      .thenAnswer((_) => const Stream.empty());
-  when(() => mockUpdateNotifications.localUpdateStream)
-      .thenAnswer((_) => const Stream.empty());
-  when(() => mockJournalDb.journalEntityById(any()))
-      .thenAnswer((_) async => null);
+  when(
+    () => mockUpdateNotifications.updateStream,
+  ).thenAnswer((_) => const Stream.empty());
+  when(
+    () => mockUpdateNotifications.localUpdateStream,
+  ).thenAnswer((_) => const Stream.empty());
+  when(
+    () => mockJournalDb.journalEntityById(any()),
+  ).thenAnswer((_) async => null);
   when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
-  when(() => mockSettingsDb.saveSettingsItem(any(), any()))
-      .thenAnswer((_) async => 1);
+  when(
+    () => mockSettingsDb.saveSettingsItem(any(), any()),
+  ).thenAnswer((_) async => 1);
 
   getIt
     ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -104,18 +108,21 @@ Future<void> tearDownTestGetIt() async {
 void ensureThemingServicesRegistered() {
   if (!getIt.isRegistered<UpdateNotifications>()) {
     final mockUpdateNotifications = MockUpdateNotifications();
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockUpdateNotifications.localUpdateStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockUpdateNotifications.localUpdateStream,
+    ).thenAnswer((_) => const Stream.empty());
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
   }
 
   if (!getIt.isRegistered<SettingsDb>()) {
     final mockSettingsDb = MockSettingsDb();
     when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(() => mockSettingsDb.saveSettingsItem(any(), any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => mockSettingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt.registerSingleton<SettingsDb>(mockSettingsDb);
   }
 

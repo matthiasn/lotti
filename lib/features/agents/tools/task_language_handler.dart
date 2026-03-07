@@ -60,7 +60,8 @@ class TaskLanguageHandler {
     // Validate against supported languages.
     final supported = SupportedLanguage.fromCode(trimmed);
     if (supported == null) {
-      final message = 'Unsupported language code: "$trimmed". '
+      final message =
+          'Unsupported language code: "$trimmed". '
           'Must be one of: ${SupportedLanguage.values.map((l) => l.code).join(", ")}';
       developer.log(message, name: 'TaskLanguageHandler');
       return TaskLanguageResult(

@@ -52,8 +52,8 @@ void main() {
         daysUntilDue: urgency == DueDateUrgency.overdue
             ? -1
             : urgency == DueDateUrgency.dueToday
-                ? 0
-                : 5,
+            ? 0
+            : 5,
       ),
     );
   }
@@ -62,18 +62,29 @@ void main() {
     group('priority ordering', () {
       test('P0 comes before P1', () {
         final p0 = createProgress(
-            id: '1', title: 'A', priority: TaskPriority.p0Urgent);
-        final p1 =
-            createProgress(id: '2', title: 'A', priority: TaskPriority.p1High);
+          id: '1',
+          title: 'A',
+          priority: TaskPriority.p0Urgent,
+        );
+        final p1 = createProgress(
+          id: '2',
+          title: 'A',
+          priority: TaskPriority.p1High,
+        );
 
         expect(TaskSortComparators.byPriorityUrgencyTitle(p0, p1), lessThan(0));
         expect(
-            TaskSortComparators.byPriorityUrgencyTitle(p1, p0), greaterThan(0));
+          TaskSortComparators.byPriorityUrgencyTitle(p1, p0),
+          greaterThan(0),
+        );
       });
 
       test('P1 comes before P2', () {
-        final p1 =
-            createProgress(id: '1', title: 'A', priority: TaskPriority.p1High);
+        final p1 = createProgress(
+          id: '1',
+          title: 'A',
+          priority: TaskPriority.p1High,
+        );
         final p2 = createProgress(id: '2', title: 'A');
 
         expect(TaskSortComparators.byPriorityUrgencyTitle(p1, p2), lessThan(0));
@@ -81,8 +92,11 @@ void main() {
 
       test('P2 comes before P3', () {
         final p2 = createProgress(id: '1', title: 'A');
-        final p3 =
-            createProgress(id: '2', title: 'A', priority: TaskPriority.p3Low);
+        final p3 = createProgress(
+          id: '2',
+          title: 'A',
+          priority: TaskPriority.p3Low,
+        );
 
         expect(TaskSortComparators.byPriorityUrgencyTitle(p2, p3), lessThan(0));
       });
@@ -91,7 +105,10 @@ void main() {
         final items = [
           createProgress(id: '1', title: 'Low', priority: TaskPriority.p3Low),
           createProgress(
-              id: '2', title: 'Urgent', priority: TaskPriority.p0Urgent),
+            id: '2',
+            title: 'Urgent',
+            priority: TaskPriority.p0Urgent,
+          ),
           createProgress(id: '3', title: 'Medium'),
           createProgress(id: '4', title: 'High', priority: TaskPriority.p1High),
         ];
@@ -145,9 +162,15 @@ void main() {
         final items = [
           createProgress(id: '1', title: 'None'),
           createProgress(
-              id: '2', title: 'Overdue', urgency: DueDateUrgency.overdue),
+            id: '2',
+            title: 'Overdue',
+            urgency: DueDateUrgency.overdue,
+          ),
           createProgress(
-              id: '3', title: 'DueToday', urgency: DueDateUrgency.dueToday),
+            id: '3',
+            title: 'DueToday',
+            urgency: DueDateUrgency.dueToday,
+          ),
         ];
 
         expect(
@@ -166,7 +189,9 @@ void main() {
 
         expect(TaskSortComparators.byPriorityUrgencyTitle(a, b), lessThan(0));
         expect(
-            TaskSortComparators.byPriorityUrgencyTitle(b, a), greaterThan(0));
+          TaskSortComparators.byPriorityUrgencyTitle(b, a),
+          greaterThan(0),
+        );
       });
 
       test('equal titles return 0', () {

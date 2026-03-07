@@ -14,8 +14,9 @@ final httpClientProvider = Provider<http.Client>((ref) {
 });
 
 /// Provider for OllamaInferenceRepository
-final ollamaInferenceRepositoryProvider =
-    Provider<OllamaInferenceRepository>((ref) {
+final ollamaInferenceRepositoryProvider = Provider<OllamaInferenceRepository>((
+  ref,
+) {
   // Use the shared http client
   final httpClient = ref.watch(httpClientProvider);
 

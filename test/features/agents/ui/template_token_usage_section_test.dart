@@ -15,9 +15,9 @@ const _testTemplateId = 'test-template-id';
 
 Widget _buildSubject({
   FutureOr<List<AgentTokenUsageSummary>> Function(Ref, String)?
-      summariesOverride,
+  summariesOverride,
   FutureOr<List<InstanceTokenBreakdown>> Function(Ref, String)?
-      breakdownOverride,
+  breakdownOverride,
 }) {
   return makeTestableWidgetWithScaffold(
     const TemplateTokenUsageSection(templateId: _testTemplateId),
@@ -75,8 +75,9 @@ void main() {
         makeTestableWidgetWithScaffold(
           const TemplateTokenUsageSection(templateId: _testTemplateId),
           overrides: [
-            templateTokenUsageSummariesProvider(_testTemplateId)
-                .overrideWithValue(
+            templateTokenUsageSummariesProvider(
+              _testTemplateId,
+            ).overrideWithValue(
               AsyncValue<List<AgentTokenUsageSummary>>.error(
                 Exception('aggregate fetch failed'),
                 StackTrace.current,
@@ -96,8 +97,9 @@ void main() {
       );
     });
 
-    testWidgets('renders token table with formatted counts for single model',
-        (tester) async {
+    testWidgets('renders token table with formatted counts for single model', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           summariesOverride: (ref, id) async => [
@@ -320,8 +322,9 @@ void main() {
       expect(find.text('4'), findsOneWidget);
     });
 
-    testWidgets('shows empty message inside expanded tile with no summaries',
-        (tester) async {
+    testWidgets('shows empty message inside expanded tile with no summaries', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           // Provide a non-empty aggregate summary so only the expanded
@@ -365,8 +368,9 @@ void main() {
             templateTokenUsageSummariesProvider.overrideWith(
               (ref, id) async => <AgentTokenUsageSummary>[],
             ),
-            templateInstanceTokenBreakdownProvider(_testTemplateId)
-                .overrideWithValue(
+            templateInstanceTokenBreakdownProvider(
+              _testTemplateId,
+            ).overrideWithValue(
               AsyncValue<List<InstanceTokenBreakdown>>.error(
                 Exception('breakdown fetch failed'),
                 StackTrace.current,

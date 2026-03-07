@@ -15,19 +15,19 @@ import '../test_utils.dart';
 
 // Re-usable observation messages for AgentObservationLog tests.
 List<AgentDomainEntity> _makeObservationMessages() => [
-      makeTestMessage(
-        id: 'obs-1',
-        kind: AgentMessageKind.observation,
-        createdAt: DateTime(2024, 3, 15, 10),
-        contentEntryId: 'payload-obs-1',
-      ),
-      makeTestMessage(
-        id: 'obs-2',
-        kind: AgentMessageKind.observation,
-        createdAt: DateTime(2024, 3, 15, 11),
-        contentEntryId: 'payload-obs-2',
-      ),
-    ];
+  makeTestMessage(
+    id: 'obs-1',
+    kind: AgentMessageKind.observation,
+    createdAt: DateTime(2024, 3, 15, 10),
+    contentEntryId: 'payload-obs-1',
+  ),
+  makeTestMessage(
+    id: 'obs-2',
+    kind: AgentMessageKind.observation,
+    createdAt: DateTime(2024, 3, 15, 11),
+    contentEntryId: 'payload-obs-2',
+  ),
+];
 
 void main() {
   const testAgentId = kTestAgentId;
@@ -116,8 +116,9 @@ void main() {
       expect(find.text('Action'), findsOneWidget);
     });
 
-    testWidgets('shows correct kind badge labels for all kinds',
-        (tester) async {
+    testWidgets('shows correct kind badge labels for all kinds', (
+      tester,
+    ) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
@@ -169,8 +170,9 @@ void main() {
       expect(find.text('System'), findsOneWidget);
     });
 
-    testWidgets('shows tool name as text (not Chip) for action messages',
-        (tester) async {
+    testWidgets('shows tool name as text (not Chip) for action messages', (
+      tester,
+    ) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
@@ -220,8 +222,9 @@ void main() {
       expect(find.text('action payload text'), findsOneWidget);
     });
 
-    testWidgets('observation messages are expandable with payload text',
-        (tester) async {
+    testWidgets('observation messages are expandable with payload text', (
+      tester,
+    ) async {
       final messages = <AgentDomainEntity>[
         makeTestMessage(
           id: 'msg-1',
@@ -592,8 +595,9 @@ void main() {
       );
     }
 
-    testWidgets('shows loading indicator while observations load',
-        (tester) async {
+    testWidgets('shows loading indicator while observations load', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildObservationSubject(
           observationsValue:
@@ -655,8 +659,9 @@ void main() {
       expect(find.byIcon(Icons.expand_less), findsNWidgets(2));
     });
 
-    testWidgets('can collapse an initially expanded observation',
-        (tester) async {
+    testWidgets('can collapse an initially expanded observation', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildObservationSubject(
           observationsValue: AsyncValue.data([
@@ -744,8 +749,9 @@ void main() {
       expect(find.text('{"title": "New Title"}'), findsNothing);
     });
 
-    testWidgets('action messages start expanded when expandToolCalls is true',
-        (tester) async {
+    testWidgets('action messages start expanded when expandToolCalls is true', (
+      tester,
+    ) async {
       final messages = [
         makeTestMessage(
           id: 'msg-1',
@@ -772,33 +778,35 @@ void main() {
     });
 
     testWidgets(
-        'toolResult messages start expanded when expandToolCalls is true',
-        (tester) async {
-      final messages = [
-        makeTestMessage(
-          id: 'msg-1',
-          kind: AgentMessageKind.toolResult,
-          createdAt: DateTime(2024, 3, 15, 10),
-          contentEntryId: 'payload-1',
-        ),
-      ];
+      'toolResult messages start expanded when expandToolCalls is true',
+      (tester) async {
+        final messages = [
+          makeTestMessage(
+            id: 'msg-1',
+            kind: AgentMessageKind.toolResult,
+            createdAt: DateTime(2024, 3, 15, 10),
+            contentEntryId: 'payload-1',
+          ),
+        ];
 
-      await tester.pumpWidget(
-        buildFromMessages(
-          messages: messages,
-          expandToolCalls: true,
-          payloadOverride: (ref, id) async => 'Success: title updated',
-        ),
-      );
-      await tester.pump();
-      await tester.pump();
+        await tester.pumpWidget(
+          buildFromMessages(
+            messages: messages,
+            expandToolCalls: true,
+            payloadOverride: (ref, id) async => 'Success: title updated',
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
 
-      expect(find.byIcon(Icons.expand_less), findsOneWidget);
-      expect(find.text('Success: title updated'), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.expand_less), findsOneWidget);
+        expect(find.text('Success: title updated'), findsOneWidget);
+      },
+    );
 
-    testWidgets('non-tool messages remain collapsed with expandToolCalls',
-        (tester) async {
+    testWidgets('non-tool messages remain collapsed with expandToolCalls', (
+      tester,
+    ) async {
       final messages = [
         makeTestMessage(
           id: 'msg-1',
@@ -965,7 +973,8 @@ void main() {
         makeTestReport(
           id: 'report-first',
           createdAt: DateTime(2024, 3, 15, 10),
-          content: '## 📋 TLDR\n'
+          content:
+              '## 📋 TLDR\n'
               'Summary of the work.\n\n'
               '## ✅ Achieved\n'
               '- Built a spaceship\n',
@@ -973,7 +982,8 @@ void main() {
         makeTestReport(
           id: 'report-second',
           createdAt: DateTime(2024, 3, 15, 9),
-          content: '## 📋 TLDR\n'
+          content:
+              '## 📋 TLDR\n'
               'Earlier summary.\n\n'
               '## ✅ Achieved\n'
               '- Prepared launch pad\n',
@@ -987,8 +997,9 @@ void main() {
 
       // Second report is collapsed — its GptMarkdown should render
       // only the TLDR section, not the Achieved section.
-      final markdowns =
-          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      final markdowns = tester
+          .widgetList<GptMarkdown>(find.byType(GptMarkdown))
+          .toList();
       // First report expanded (full content), second collapsed (TLDR only)
       expect(markdowns.length, 2);
       // The collapsed one should NOT contain "Achieved" content
@@ -996,13 +1007,15 @@ void main() {
       expect(markdowns.last.data, isNot(contains('Achieved')));
     });
 
-    testWidgets('collapsed report uses first paragraph as TLDR fallback',
-        (tester) async {
+    testWidgets('collapsed report uses first paragraph as TLDR fallback', (
+      tester,
+    ) async {
       final reports = <AgentDomainEntity>[
         makeTestReport(
           id: 'report-fallback',
           createdAt: DateTime(2024, 3, 15, 10),
-          content: 'This has no TLDR heading.\n\n'
+          content:
+              'This has no TLDR heading.\n\n'
               'Second paragraph with details.',
         ),
       ];
@@ -1017,40 +1030,44 @@ void main() {
       await tester.pump();
 
       // The collapsed content should be just the first paragraph
-      final markdowns =
-          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      final markdowns = tester
+          .widgetList<GptMarkdown>(find.byType(GptMarkdown))
+          .toList();
       expect(markdowns.length, 1);
       expect(markdowns.first.data, contains('no TLDR heading'));
       expect(markdowns.first.data, isNot(contains('Second paragraph')));
     });
 
     testWidgets(
-        'collapsed report shows TLDR-only section when it is the last section',
-        (tester) async {
-      final reports = <AgentDomainEntity>[
-        makeTestReport(
-          id: 'report-tldr-only',
-          createdAt: DateTime(2024, 3, 15, 10),
-          content: '## 📋 TLDR\n'
-              'This is the entire report.',
-        ),
-      ];
+      'collapsed report shows TLDR-only section when it is the last section',
+      (tester) async {
+        final reports = <AgentDomainEntity>[
+          makeTestReport(
+            id: 'report-tldr-only',
+            createdAt: DateTime(2024, 3, 15, 10),
+            content:
+                '## 📋 TLDR\n'
+                'This is the entire report.',
+          ),
+        ];
 
-      await tester.pumpWidget(
-        buildReportHistory(reportsValue: AsyncValue.data(reports)),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildReportHistory(reportsValue: AsyncValue.data(reports)),
+        );
+        await tester.pumpAndSettle();
 
-      // Collapse the report
-      await tester.tap(find.byType(InkWell));
-      await tester.pump();
+        // Collapse the report
+        await tester.tap(find.byType(InkWell));
+        await tester.pump();
 
-      final markdowns =
-          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
-      expect(markdowns.length, 1);
-      expect(markdowns.first.data, contains('TLDR'));
-      expect(markdowns.first.data, contains('entire report'));
-    });
+        final markdowns = tester
+            .widgetList<GptMarkdown>(find.byType(GptMarkdown))
+            .toList();
+        expect(markdowns.length, 1);
+        expect(markdowns.first.data, contains('TLDR'));
+        expect(markdowns.first.data, contains('entire report'));
+      },
+    );
 
     testWidgets('ignores non-report entities in the list', (tester) async {
       final mixed = <AgentDomainEntity>[

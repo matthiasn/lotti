@@ -105,8 +105,9 @@ void main() {
   }
 
   group('TimeRecordingIndicator Navigation Tests - ', () {
-    testWidgets('task-linked timer publishes focus intent and navigates',
-        (tester) async {
+    testWidgets('task-linked timer publishes focus intent and navigates', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       const taskId = 'task-123';
       const entryId = 'entry-456';
@@ -147,8 +148,9 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('journal-linked timer navigates without focus intent',
-        (tester) async {
+    testWidgets('journal-linked timer navigates without focus intent', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       const journalEntryId = 'journal-entry-123';
       const timerEntryId = 'timer-entry-456';
@@ -181,13 +183,16 @@ void main() {
 
       // Verify navigation occurred to journal entry
       expect(
-          mockNavService.lastNavigatedPath, equals('/journal/$journalEntryId'));
+        mockNavService.lastNavigatedPath,
+        equals('/journal/$journalEntryId'),
+      );
 
       container.dispose();
     });
 
-    testWidgets('non-linked timer navigates to timer journal entry',
-        (tester) async {
+    testWidgets('non-linked timer navigates to timer journal entry', (
+      tester,
+    ) async {
       final container = ProviderContainer();
       const timerEntryId = 'timer-entry-789';
       final timerEntry = makeEntry(timerEntryId);
@@ -215,7 +220,9 @@ void main() {
 
       // Verify navigation occurred to timer entry
       expect(
-          mockNavService.lastNavigatedPath, equals('/journal/$timerEntryId'));
+        mockNavService.lastNavigatedPath,
+        equals('/journal/$timerEntryId'),
+      );
 
       container.dispose();
     });

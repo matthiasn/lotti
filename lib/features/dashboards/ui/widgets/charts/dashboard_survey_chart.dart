@@ -66,10 +66,12 @@ class DashboardSurveyChart extends ConsumerWidget {
         .expand((spots) => spots)
         .toList();
 
-    final minVal =
-        allSpots.isEmpty ? 0 : allSpots.map((spot) => spot.y).reduce(min);
-    final maxVal =
-        allSpots.isEmpty ? 0 : allSpots.map((spot) => spot.y).reduce(max);
+    final minVal = allSpots.isEmpty
+        ? 0
+        : allSpots.map((spot) => spot.y).reduce(min);
+    final maxVal = allSpots.isEmpty
+        ? 0
+        : allSpots.map((spot) => spot.y).reduce(max);
 
     return DashboardChart(
       topMargin: 10,

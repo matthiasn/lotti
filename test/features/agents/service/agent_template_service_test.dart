@@ -35,8 +35,9 @@ void main() {
   /// [kTestTemplateId]. Call this in tests that need the template to exist.
   void stubTemplateExists() {
     final template = makeTestTemplate();
-    when(() => mockRepo.getEntity(kTestTemplateId))
-        .thenAnswer((_) async => template);
+    when(
+      () => mockRepo.getEntity(kTestTemplateId),
+    ).thenAnswer((_) async => template);
   }
 
   /// Stub the full version-creation chain so that [updateTemplate] with a
@@ -44,14 +45,18 @@ void main() {
   void stubVersionCreationChain() {
     final activeVersion = makeTestTemplateVersion();
     final head = makeTestTemplateHead();
-    when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
-        .thenAnswer((_) async => activeVersion);
-    when(() => mockRepo.getTemplateHead(kTestTemplateId))
-        .thenAnswer((_) async => head);
-    when(() => mockRepo.getEntity(head.versionId))
-        .thenAnswer((_) async => activeVersion);
-    when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-        .thenAnswer((_) async => 2);
+    when(
+      () => mockRepo.getActiveTemplateVersion(kTestTemplateId),
+    ).thenAnswer((_) async => activeVersion);
+    when(
+      () => mockRepo.getTemplateHead(kTestTemplateId),
+    ).thenAnswer((_) async => head);
+    when(
+      () => mockRepo.getEntity(head.versionId),
+    ).thenAnswer((_) async => activeVersion);
+    when(
+      () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+    ).thenAnswer((_) async => 2);
     when(
       () => mockRepo.getEntitiesByAgentId(
         kTestTemplateId,
@@ -132,9 +137,9 @@ void main() {
         templateId: 'tpl-ver-check',
       );
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
 
       // Second entity should be the version.
       final version = captured[1] as AgentTemplateVersionEntity;
@@ -191,8 +196,9 @@ void main() {
     });
 
     test('throws when template does not exist', () async {
-      when(() => mockRepo.getEntity('nonexistent'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity('nonexistent'),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         service.updateTemplate(
@@ -221,9 +227,9 @@ void main() {
         modelId: 'models/new-model',
       );
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
       // First upsert is the template itself.
       final persisted = captured.first as AgentTemplateEntity;
       expect(persisted.displayName, 'Updated');
@@ -240,14 +246,18 @@ void main() {
         reportDirective: 'Use bullet points.',
       );
       final head = makeTestTemplateHead();
-      when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
-          .thenAnswer((_) async => activeVersion);
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
-      when(() => mockRepo.getEntity(head.versionId))
-          .thenAnswer((_) async => activeVersion);
-      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getActiveTemplateVersion(kTestTemplateId),
+      ).thenAnswer((_) async => activeVersion);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity(head.versionId),
+      ).thenAnswer((_) async => activeVersion);
+      when(
+        () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+      ).thenAnswer((_) async => 2);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -261,9 +271,9 @@ void main() {
         modelId: 'models/new-model',
       );
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
       // Find the newly created version (not the archived one).
       final newVersion = captured
           .whereType<AgentTemplateVersionEntity>()
@@ -284,12 +294,15 @@ void main() {
       );
       final currentHead = makeTestTemplateHead(versionId: 'ver-old');
 
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => currentHead);
-      when(() => mockRepo.getEntity('ver-old'))
-          .thenAnswer((_) async => currentVersion);
-      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => currentHead);
+      when(
+        () => mockRepo.getEntity('ver-old'),
+      ).thenAnswer((_) async => currentVersion);
+      when(
+        () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+      ).thenAnswer((_) async => 2);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -338,10 +351,12 @@ void main() {
         status: AgentTemplateVersionStatus.active,
       );
 
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => currentHead);
-      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-          .thenAnswer((_) async => 4);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => currentHead);
+      when(
+        () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+      ).thenAnswer((_) async => 4);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -356,9 +371,9 @@ void main() {
         authoredBy: 'admin',
       );
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
 
       // 5 upserts: 3 archived versions + new version + updated head.
       expect(captured, hasLength(5));
@@ -379,10 +394,12 @@ void main() {
 
     test('creates first version when no head exists', () async {
       stubTemplateExists();
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+      ).thenAnswer((_) async => 1);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -407,11 +424,13 @@ void main() {
       stubTemplateExists();
       final currentHead = makeTestTemplateHead(versionId: 'ver-gone');
 
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => currentHead);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => currentHead);
       when(() => mockRepo.getEntity('ver-gone')).thenAnswer((_) async => null);
-      when(() => mockRepo.getNextTemplateVersionNumber(kTestTemplateId))
-          .thenAnswer((_) async => 2);
+      when(
+        () => mockRepo.getNextTemplateVersionNumber(kTestTemplateId),
+      ).thenAnswer((_) async => 2);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -433,8 +452,9 @@ void main() {
     });
 
     test('throws when template does not exist', () async {
-      when(() => mockRepo.getEntity('nonexistent'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity('nonexistent'),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         service.createVersion(
@@ -466,8 +486,9 @@ void main() {
     });
 
     test('returns null when not found', () async {
-      when(() => mockRepo.getEntity('nonexistent'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity('nonexistent'),
+      ).thenAnswer((_) async => null);
 
       final result = await service.getTemplate('nonexistent');
       expect(result, isNull);
@@ -475,8 +496,9 @@ void main() {
 
     test('returns null when entity is not a template type', () async {
       final version = makeTestTemplateVersion(id: 'ver-001');
-      when(() => mockRepo.getEntity('ver-001'))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepo.getEntity('ver-001'),
+      ).thenAnswer((_) async => version);
 
       final result = await service.getTemplate('ver-001');
       expect(result, isNull);
@@ -501,8 +523,9 @@ void main() {
   group('getActiveVersion', () {
     test('delegates to repository', () async {
       final version = makeTestTemplateVersion();
-      when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepo.getActiveTemplateVersion(kTestTemplateId),
+      ).thenAnswer((_) async => version);
 
       final result = await service.getActiveVersion(kTestTemplateId);
 
@@ -511,8 +534,9 @@ void main() {
     });
 
     test('returns null when no active version exists', () async {
-      when(() => mockRepo.getActiveTemplateVersion(kTestTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getActiveTemplateVersion(kTestTemplateId),
+      ).thenAnswer((_) async => null);
 
       final result = await service.getActiveVersion(kTestTemplateId);
 
@@ -525,8 +549,9 @@ void main() {
       stubTemplateExists();
       final link = makeTestTemplateAssignmentLink();
 
-      when(() => mockRepo.getLinksTo(kTestAgentId, type: 'template_assignment'))
-          .thenAnswer((_) async => [link]);
+      when(
+        () => mockRepo.getLinksTo(kTestAgentId, type: 'template_assignment'),
+      ).thenAnswer((_) async => [link]);
 
       final result = await service.getTemplateForAgent(kTestAgentId);
 
@@ -535,8 +560,9 @@ void main() {
     });
 
     test('returns null when no link exists', () async {
-      when(() => mockRepo.getLinksTo(kTestAgentId, type: 'template_assignment'))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getLinksTo(kTestAgentId, type: 'template_assignment'),
+      ).thenAnswer((_) async => []);
 
       final result = await service.getTemplateForAgent(kTestAgentId);
       expect(result, isNull);
@@ -590,8 +616,9 @@ void main() {
         ),
       ).thenAnswer((_) async => links);
       // Return a template entity instead of an agent.
-      when(() => mockRepo.getEntity('not-an-agent'))
-          .thenAnswer((_) async => makeTestTemplate(id: 'not-an-agent'));
+      when(
+        () => mockRepo.getEntity('not-an-agent'),
+      ).thenAnswer((_) async => makeTestTemplate(id: 'not-an-agent'));
 
       final result = await service.getAgentsForTemplate(kTestTemplateId);
 
@@ -666,8 +693,9 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(() => mockRepo.getEntity('agent-a'))
-          .thenAnswer((_) async => activeAgent);
+      when(
+        () => mockRepo.getEntity('agent-a'),
+      ).thenAnswer((_) async => activeAgent);
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
@@ -691,10 +719,12 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(() => mockRepo.getEntity('agent-a'))
-          .thenAnswer((_) async => destroyedAgent);
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity('agent-a'),
+      ).thenAnswer((_) async => destroyedAgent);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => null);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -704,9 +734,9 @@ void main() {
 
       await service.deleteTemplate(kTestTemplateId);
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
       final deleted = captured.first as AgentTemplateEntity;
       expect(deleted.deletedAt, isNotNull);
     });
@@ -721,8 +751,9 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => []);
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -732,9 +763,9 @@ void main() {
 
       await service.deleteTemplate(kTestTemplateId);
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
 
       // 3 upserts: template, head, version — all soft-deleted.
       expect(captured.length, 3);
@@ -780,10 +811,12 @@ void main() {
           type: 'template_assignment',
         ),
       ).thenAnswer((_) async => links);
-      when(() => mockRepo.getEntity('agent-a'))
-          .thenAnswer((_) async => activeAgent);
-      when(() => mockRepo.getEntity('agent-b'))
-          .thenAnswer((_) async => destroyedAgent);
+      when(
+        () => mockRepo.getEntity('agent-a'),
+      ).thenAnswer((_) async => activeAgent);
+      when(
+        () => mockRepo.getEntity('agent-b'),
+      ).thenAnswer((_) async => destroyedAgent);
 
       await expectLater(
         service.deleteTemplate(kTestTemplateId),
@@ -812,12 +845,15 @@ void main() {
         agentId: kTestTemplateId,
         status: AgentTemplateVersionStatus.archived,
       );
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
-      when(() => mockRepo.getEntity('ver-new'))
-          .thenAnswer((_) async => targetVersion);
-      when(() => mockRepo.getEntity('ver-old'))
-          .thenAnswer((_) async => currentVersion);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity('ver-new'),
+      ).thenAnswer((_) async => targetVersion);
+      when(
+        () => mockRepo.getEntity('ver-old'),
+      ).thenAnswer((_) async => currentVersion);
       when(
         () => mockRepo.getEntitiesByAgentId(
           kTestTemplateId,
@@ -833,9 +869,9 @@ void main() {
         versionId: 'ver-new',
       );
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
 
       // 3 upserts: archive current (only non-archived), reactivate target,
       // update head.
@@ -854,8 +890,9 @@ void main() {
     });
 
     test('throws when no head exists', () async {
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         service.rollbackToVersion(
@@ -868,10 +905,12 @@ void main() {
 
     test('throws when version does not exist', () async {
       final head = makeTestTemplateHead(versionId: 'ver-old');
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
-      when(() => mockRepo.getEntity('nonexistent'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity('nonexistent'),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         service.rollbackToVersion(
@@ -894,10 +933,12 @@ void main() {
         id: 'ver-other',
         agentId: 'other-template-id',
       );
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
-      when(() => mockRepo.getEntity('ver-other'))
-          .thenAnswer((_) async => wrongTemplateVersion);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity('ver-other'),
+      ).thenAnswer((_) async => wrongTemplateVersion);
 
       await expectLater(
         service.rollbackToVersion(
@@ -917,10 +958,12 @@ void main() {
     test('throws when entity is not a version type', () async {
       final head = makeTestTemplateHead(versionId: 'ver-old');
       final nonVersion = makeTestTemplate(id: 'not-a-version');
-      when(() => mockRepo.getTemplateHead(kTestTemplateId))
-          .thenAnswer((_) async => head);
-      when(() => mockRepo.getEntity('not-a-version'))
-          .thenAnswer((_) async => nonVersion);
+      when(
+        () => mockRepo.getTemplateHead(kTestTemplateId),
+      ).thenAnswer((_) async => head);
+      when(
+        () => mockRepo.getEntity('not-a-version'),
+      ).thenAnswer((_) async => nonVersion);
 
       await expectLater(
         service.rollbackToVersion(
@@ -934,14 +977,18 @@ void main() {
 
   group('seedDefaults', () {
     test('creates all default templates when none are seeded', () async {
-      when(() => mockRepo.getEntity(lauraTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(tomTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(improverTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(metaImproverTemplateId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(lauraTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(tomTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(improverTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(metaImproverTemplateId),
+      ).thenAnswer((_) async => null);
       // seedDirectiveFields calls listTemplates after creating defaults.
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
@@ -968,14 +1015,18 @@ void main() {
         id: metaImproverTemplateId,
         agentId: metaImproverTemplateId,
       );
-      when(() => mockRepo.getEntity(lauraTemplateId))
-          .thenAnswer((_) async => laura);
-      when(() => mockRepo.getEntity(tomTemplateId))
-          .thenAnswer((_) async => tom);
-      when(() => mockRepo.getEntity(improverTemplateId))
-          .thenAnswer((_) async => improver);
-      when(() => mockRepo.getEntity(metaImproverTemplateId))
-          .thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(lauraTemplateId),
+      ).thenAnswer((_) async => laura);
+      when(
+        () => mockRepo.getEntity(tomTemplateId),
+      ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(improverTemplateId),
+      ).thenAnswer((_) async => improver);
+      when(
+        () => mockRepo.getEntity(metaImproverTemplateId),
+      ).thenAnswer((_) async => metaImprover);
 
       await service.seedDefaults();
 
@@ -995,14 +1046,18 @@ void main() {
         id: metaImproverTemplateId,
         agentId: metaImproverTemplateId,
       );
-      when(() => mockRepo.getEntity(lauraTemplateId))
-          .thenAnswer((_) async => laura);
-      when(() => mockRepo.getEntity(tomTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(improverTemplateId))
-          .thenAnswer((_) async => improver);
-      when(() => mockRepo.getEntity(metaImproverTemplateId))
-          .thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(lauraTemplateId),
+      ).thenAnswer((_) async => laura);
+      when(
+        () => mockRepo.getEntity(tomTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(improverTemplateId),
+      ).thenAnswer((_) async => improver);
+      when(
+        () => mockRepo.getEntity(metaImproverTemplateId),
+      ).thenAnswer((_) async => metaImprover);
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
@@ -1020,14 +1075,18 @@ void main() {
         id: metaImproverTemplateId,
         agentId: metaImproverTemplateId,
       );
-      when(() => mockRepo.getEntity(lauraTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(tomTemplateId))
-          .thenAnswer((_) async => tom);
-      when(() => mockRepo.getEntity(improverTemplateId))
-          .thenAnswer((_) async => null);
-      when(() => mockRepo.getEntity(metaImproverTemplateId))
-          .thenAnswer((_) async => metaImprover);
+      when(
+        () => mockRepo.getEntity(lauraTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(tomTemplateId),
+      ).thenAnswer((_) async => tom);
+      when(
+        () => mockRepo.getEntity(improverTemplateId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getEntity(metaImproverTemplateId),
+      ).thenAnswer((_) async => metaImprover);
       when(() => mockRepo.getAllTemplates()).thenAnswer((_) async => []);
 
       await service.seedDefaults();
@@ -1049,16 +1108,18 @@ void main() {
         directives: 'Legacy directives',
       );
 
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-task'),
+      ).thenAnswer((_) async => version);
 
       await service.seedDirectiveFields();
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
       expect(captured, hasLength(1));
       final seeded = captured.first as AgentTemplateVersionEntity;
       expect(seeded.generalDirective, isNotEmpty);
@@ -1079,16 +1140,18 @@ void main() {
         directives: 'Old improver directives',
       );
 
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
-          .thenAnswer((_) async => version);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-imp'),
+      ).thenAnswer((_) async => version);
 
       await service.seedDirectiveFields();
 
-      final captured = verify(() => mockSync.upsertEntity(captureAny()))
-          .captured
-          .cast<AgentDomainEntity>();
+      final captured = verify(
+        () => mockSync.upsertEntity(captureAny()),
+      ).captured.cast<AgentDomainEntity>();
       expect(captured, hasLength(1));
       final seeded = captured.first as AgentTemplateVersionEntity;
       expect(seeded.generalDirective, isNotEmpty);
@@ -1096,28 +1159,32 @@ void main() {
       expect(seeded.reportDirective, isEmpty);
     });
 
-    test('skips versions that already have directive fields populated',
-        () async {
-      final template = makeTestTemplate(
-        id: 'tpl-seeded',
-        agentId: 'tpl-seeded',
-      );
-      final version = makeTestTemplateVersion(
-        id: 'v1',
-        agentId: 'tpl-seeded',
-        generalDirective: 'Already set',
-        reportDirective: 'Already set',
-      );
+    test(
+      'skips versions that already have directive fields populated',
+      () async {
+        final template = makeTestTemplate(
+          id: 'tpl-seeded',
+          agentId: 'tpl-seeded',
+        );
+        final version = makeTestTemplateVersion(
+          id: 'v1',
+          agentId: 'tpl-seeded',
+          generalDirective: 'Already set',
+          reportDirective: 'Already set',
+        );
 
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-seeded'))
-          .thenAnswer((_) async => version);
+        when(
+          () => mockRepo.getAllTemplates(),
+        ).thenAnswer((_) async => [template]);
+        when(
+          () => mockRepo.getActiveTemplateVersion('tpl-seeded'),
+        ).thenAnswer((_) async => version);
 
-      await service.seedDirectiveFields();
+        await service.seedDirectiveFields();
 
-      verifyNever(() => mockSync.upsertEntity(any()));
-    });
+        verifyNever(() => mockSync.upsertEntity(any()));
+      },
+    );
 
     test('skips templates without active version', () async {
       final template = makeTestTemplate(
@@ -1125,10 +1192,12 @@ void main() {
         agentId: 'tpl-no-ver',
       );
 
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-no-ver'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [template]);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-no-ver'),
+      ).thenAnswer((_) async => null);
 
       await service.seedDirectiveFields();
 
@@ -1154,12 +1223,15 @@ void main() {
         agentId: 'tpl-imp',
       );
 
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [taskTemplate, improverTemplate]);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-task'))
-          .thenAnswer((_) async => taskVersion);
-      when(() => mockRepo.getActiveTemplateVersion('tpl-imp'))
-          .thenAnswer((_) async => improverVersion);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [taskTemplate, improverTemplate]);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-task'),
+      ).thenAnswer((_) async => taskVersion);
+      when(
+        () => mockRepo.getActiveTemplateVersion('tpl-imp'),
+      ).thenAnswer((_) async => improverVersion);
 
       await service.seedDirectiveFields();
 
@@ -1244,8 +1316,9 @@ void main() {
     }
 
     test('returns zeroed metrics when no runs exist', () async {
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1283,8 +1356,9 @@ void main() {
           createdAt: DateTime(2024, 3, 15, 9),
         ),
       ];
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => runs);
+      when(
+        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => runs);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1296,39 +1370,42 @@ void main() {
       expect(metrics.successRate, closeTo(2 / 3, 0.001));
     });
 
-    test('computes average duration from completed runs with timestamps',
-        () async {
-      final runs = [
-        makeTestWakeRun(
-          runKey: 'r1',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 15, 12),
-          startedAt: DateTime(2024, 3, 15, 12),
-          completedAt: DateTime(2024, 3, 15, 12, 0, 10), // 10s
-        ),
-        makeTestWakeRun(
-          runKey: 'r2',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 15, 11),
-          startedAt: DateTime(2024, 3, 15, 11),
-          completedAt: DateTime(2024, 3, 15, 11, 0, 20), // 20s
-        ),
-        // This run has no timestamps — should be skipped for avg.
-        makeTestWakeRun(
-          runKey: 'r3',
-          status: 'completed',
-          createdAt: DateTime(2024, 3, 15, 10),
-        ),
-      ];
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => runs);
-      stubAgentsForTemplate([]);
+    test(
+      'computes average duration from completed runs with timestamps',
+      () async {
+        final runs = [
+          makeTestWakeRun(
+            runKey: 'r1',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 15, 12),
+            startedAt: DateTime(2024, 3, 15, 12),
+            completedAt: DateTime(2024, 3, 15, 12, 0, 10), // 10s
+          ),
+          makeTestWakeRun(
+            runKey: 'r2',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 15, 11),
+            startedAt: DateTime(2024, 3, 15, 11),
+            completedAt: DateTime(2024, 3, 15, 11, 0, 20), // 20s
+          ),
+          // This run has no timestamps — should be skipped for avg.
+          makeTestWakeRun(
+            runKey: 'r3',
+            status: 'completed',
+            createdAt: DateTime(2024, 3, 15, 10),
+          ),
+        ];
+        when(
+          () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+        ).thenAnswer((_) async => runs);
+        stubAgentsForTemplate([]);
 
-      final metrics = await service.computeMetrics(kTestTemplateId);
+        final metrics = await service.computeMetrics(kTestTemplateId);
 
-      // Average of 10s and 20s = 15s.
-      expect(metrics.averageDuration, const Duration(seconds: 15));
-    });
+        // Average of 10s and 20s = 15s.
+        expect(metrics.averageDuration, const Duration(seconds: 15));
+      },
+    );
 
     test('firstWakeAt is oldest, lastWakeAt is newest (DESC order)', () async {
       final runs = [
@@ -1343,8 +1420,9 @@ void main() {
           createdAt: DateTime(2024, 3, 10),
         ),
       ];
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => runs);
+      when(
+        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => runs);
       stubAgentsForTemplate([]);
 
       final metrics = await service.computeMetrics(kTestTemplateId);
@@ -1356,8 +1434,9 @@ void main() {
     });
 
     test('activeInstanceCount counts only active agents', () async {
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
       stubAgentsForTemplate([
         makeTestIdentity(id: 'a1', agentId: 'a1'),
         makeTestIdentity(
@@ -1421,8 +1500,9 @@ void main() {
         ),
       ).thenAnswer((_) async => obs);
 
-      final result =
-          await service.getRecentInstanceObservations(kTestTemplateId);
+      final result = await service.getRecentInstanceObservations(
+        kTestTemplateId,
+      );
 
       expect(result, hasLength(1));
     });
@@ -1497,8 +1577,9 @@ void main() {
       final defaultObs = observations ?? <AgentMessageEntity>[];
       final defaultSessions = sessions ?? <EvolutionSessionEntity>[];
 
-      when(() => mockRepo.getWakeRunsForTemplate(kTestTemplateId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepo.getWakeRunsForTemplate(kTestTemplateId),
+      ).thenAnswer((_) async => []);
       when(
         () => mockRepo.getLinksFrom(
           kTestTemplateId,
@@ -1591,24 +1672,27 @@ void main() {
       ).called(1);
     });
 
-    test('resolves observation payloads for observations with contentEntryId',
-        () async {
-      final obs = makeTestMessage(
-        id: 'obs-1',
-        kind: AgentMessageKind.observation,
-        contentEntryId: 'payload-abc',
-      );
-      final payload = makeTestMessagePayload(id: 'payload-abc');
+    test(
+      'resolves observation payloads for observations with contentEntryId',
+      () async {
+        final obs = makeTestMessage(
+          id: 'obs-1',
+          kind: AgentMessageKind.observation,
+          contentEntryId: 'payload-abc',
+        );
+        final payload = makeTestMessagePayload(id: 'payload-abc');
 
-      stubGatherDependencies(observations: [obs]);
-      when(() => mockRepo.getEntity('payload-abc'))
-          .thenAnswer((_) async => payload);
+        stubGatherDependencies(observations: [obs]);
+        when(
+          () => mockRepo.getEntity('payload-abc'),
+        ).thenAnswer((_) async => payload);
 
-      final bundle = await service.gatherEvolutionData(kTestTemplateId);
+        final bundle = await service.gatherEvolutionData(kTestTemplateId);
 
-      expect(bundle.observationPayloads, hasLength(1));
-      expect(bundle.observationPayloads['payload-abc'], isNotNull);
-    });
+        expect(bundle.observationPayloads, hasLength(1));
+        expect(bundle.observationPayloads['payload-abc'], isNotNull);
+      },
+    );
 
     test('skips observations without contentEntryId', () async {
       final obs = makeTestMessage(
@@ -1657,10 +1741,12 @@ void main() {
     const profileId = 'profile-abc';
 
     void stubNoTemplates() {
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => <AgentTemplateEntity>[]);
-      when(() => mockRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => <AgentIdentityEntity>[]);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => <AgentTemplateEntity>[]);
+      when(
+        () => mockRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => <AgentIdentityEntity>[]);
     }
 
     test('returns true when a template references the profile', () async {
@@ -1673,38 +1759,44 @@ void main() {
       expect(result, isTrue);
     });
 
-    test('returns true when a template version references the profile',
-        () async {
-      final template = makeTestTemplate();
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => <AgentIdentityEntity>[]);
+    test(
+      'returns true when a template version references the profile',
+      () async {
+        final template = makeTestTemplate();
+        when(
+          () => mockRepo.getAllTemplates(),
+        ).thenAnswer((_) async => [template]);
+        when(
+          () => mockRepo.getAllAgentIdentities(),
+        ).thenAnswer((_) async => <AgentIdentityEntity>[]);
 
-      // Template itself doesn't reference the profile, but a version does.
-      final version = makeTestTemplateVersion(profileId: profileId);
-      when(
-        () => mockRepo.getEntitiesByAgentId(
-          template.id,
-          type: AgentEntityTypes.agentTemplateVersion,
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => [version]);
+        // Template itself doesn't reference the profile, but a version does.
+        final version = makeTestTemplateVersion(profileId: profileId);
+        when(
+          () => mockRepo.getEntitiesByAgentId(
+            template.id,
+            type: AgentEntityTypes.agentTemplateVersion,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [version]);
 
-      final result = await service.profileInUse(profileId);
+        final result = await service.profileInUse(profileId);
 
-      expect(result, isTrue);
-    });
+        expect(result, isTrue);
+      },
+    );
 
     test('returns true when an agent config references the profile', () async {
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => <AgentTemplateEntity>[]);
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => <AgentTemplateEntity>[]);
 
       final agent = makeTestIdentity(
         config: const AgentConfig(profileId: profileId),
       );
-      when(() => mockRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => [agent]);
+      when(
+        () => mockRepo.getAllAgentIdentities(),
+      ).thenAnswer((_) async => [agent]);
 
       final result = await service.profileInUse(profileId);
 
@@ -1719,25 +1811,29 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('returns false when templates and agents use a different profile',
-        () async {
-      final template = makeTestTemplate(profileId: 'other-profile');
-      when(() => mockRepo.getAllTemplates())
-          .thenAnswer((_) async => [template]);
-      when(() => mockRepo.getAllAgentIdentities())
-          .thenAnswer((_) async => <AgentIdentityEntity>[]);
-      // Stub version history lookup for the template.
-      when(
-        () => mockRepo.getEntitiesByAgentId(
-          template.id,
-          type: AgentEntityTypes.agentTemplateVersion,
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => <AgentDomainEntity>[]);
+    test(
+      'returns false when templates and agents use a different profile',
+      () async {
+        final template = makeTestTemplate(profileId: 'other-profile');
+        when(
+          () => mockRepo.getAllTemplates(),
+        ).thenAnswer((_) async => [template]);
+        when(
+          () => mockRepo.getAllAgentIdentities(),
+        ).thenAnswer((_) async => <AgentIdentityEntity>[]);
+        // Stub version history lookup for the template.
+        when(
+          () => mockRepo.getEntitiesByAgentId(
+            template.id,
+            type: AgentEntityTypes.agentTemplateVersion,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => <AgentDomainEntity>[]);
 
-      final result = await service.profileInUse(profileId);
+        final result = await service.profileInUse(profileId);
 
-      expect(result, isFalse);
-    });
+        expect(result, isFalse);
+      },
+    );
   });
 }

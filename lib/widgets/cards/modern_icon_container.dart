@@ -15,9 +15,9 @@ class ModernIconContainer extends StatelessWidget {
     this.borderColor,
     super.key,
   }) : assert(
-          icon != null || child != null,
-          'Either icon or child must be provided',
-        );
+         icon != null || child != null,
+         'Either icon or child must be provided',
+       );
 
   final IconData? icon;
   final Widget? child;
@@ -36,7 +36,8 @@ class ModernIconContainer extends StatelessWidget {
     final iconSize = isCompact ? AppTheme.iconSizeCompact : AppTheme.iconSize;
 
     // Use a clean, subtle background - primary container tint
-    final effectiveGradient = gradient ??
+    final effectiveGradient =
+        gradient ??
         LinearGradient(
           colors: [
             context.colorScheme.primaryContainer.withValues(
@@ -55,7 +56,8 @@ class ModernIconContainer extends StatelessWidget {
         );
 
     // Very subtle border - almost invisible in light mode
-    final effectiveBorderColor = borderColor ??
+    final effectiveBorderColor =
+        borderColor ??
         context.colorScheme.primary.withValues(
           alpha: isDark
               ? AppTheme.alphaIconContainerBorderDark

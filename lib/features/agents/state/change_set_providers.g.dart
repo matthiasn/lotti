@@ -23,10 +23,13 @@ final pendingChangeSetsProvider = PendingChangeSetsFamily._();
 /// [agentUpdateStreamProvider] for reactive invalidation, and finally
 /// queries the repository.
 
-final class PendingChangeSetsProvider extends $FunctionalProvider<
-        AsyncValue<List<AgentDomainEntity>>,
-        List<AgentDomainEntity>,
-        FutureOr<List<AgentDomainEntity>>>
+final class PendingChangeSetsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<AgentDomainEntity>>,
+          List<AgentDomainEntity>,
+          FutureOr<List<AgentDomainEntity>>
+        >
     with
         $FutureModifier<List<AgentDomainEntity>>,
         $FutureProvider<List<AgentDomainEntity>> {
@@ -35,16 +38,16 @@ final class PendingChangeSetsProvider extends $FunctionalProvider<
   /// Resolves the task's agent via [taskAgentProvider], then watches the
   /// [agentUpdateStreamProvider] for reactive invalidation, and finally
   /// queries the repository.
-  PendingChangeSetsProvider._(
-      {required PendingChangeSetsFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'pendingChangeSetsProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  PendingChangeSetsProvider._({
+    required PendingChangeSetsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'pendingChangeSetsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$pendingChangeSetsHash();
@@ -59,16 +62,13 @@ final class PendingChangeSetsProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<List<AgentDomainEntity>> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<List<AgentDomainEntity>> create(Ref ref) {
     final argument = this.argument as String;
-    return pendingChangeSets(
-      ref,
-      argument,
-    );
+    return pendingChangeSets(ref, argument);
   }
 
   @override
@@ -93,13 +93,13 @@ String _$pendingChangeSetsHash() => r'd6d7b1b642fb76948e8529af64e0c57c6728e034';
 final class PendingChangeSetsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<List<AgentDomainEntity>>, String> {
   PendingChangeSetsFamily._()
-      : super(
-          retry: null,
-          name: r'pendingChangeSetsProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'pendingChangeSetsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Fetches pending (and partially resolved) change sets for a given task.
   ///
@@ -107,9 +107,7 @@ final class PendingChangeSetsFamily extends $Family
   /// [agentUpdateStreamProvider] for reactive invalidation, and finally
   /// queries the repository.
 
-  PendingChangeSetsProvider call(
-    String taskId,
-  ) =>
+  PendingChangeSetsProvider call(String taskId) =>
       PendingChangeSetsProvider._(argument: taskId, from: this);
 
   @override
@@ -124,21 +122,25 @@ final changeSetConfirmationServiceProvider =
 
 /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
 
-final class ChangeSetConfirmationServiceProvider extends $FunctionalProvider<
-    ChangeSetConfirmationService,
-    ChangeSetConfirmationService,
-    ChangeSetConfirmationService> with $Provider<ChangeSetConfirmationService> {
+final class ChangeSetConfirmationServiceProvider
+    extends
+        $FunctionalProvider<
+          ChangeSetConfirmationService,
+          ChangeSetConfirmationService,
+          ChangeSetConfirmationService
+        >
+    with $Provider<ChangeSetConfirmationService> {
   /// Provides a [ChangeSetConfirmationService] with all dependencies resolved.
   ChangeSetConfirmationServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'changeSetConfirmationServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'changeSetConfirmationServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$changeSetConfirmationServiceHash();
@@ -146,8 +148,8 @@ final class ChangeSetConfirmationServiceProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<ChangeSetConfirmationService> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   ChangeSetConfirmationService create(Ref ref) {

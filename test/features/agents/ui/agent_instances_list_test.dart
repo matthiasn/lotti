@@ -249,8 +249,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('hides lifecycle filter in evolution-only mode',
-        (tester) async {
+    testWidgets('hides lifecycle filter in evolution-only mode', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           evolutions: [makeTestEvolutionSession()],
@@ -274,49 +275,52 @@ void main() {
       );
     });
 
-    testWidgets('task agent filter renders when evolution provider is loading',
-        (tester) async {
-      final agent = makeTestIdentity(
-        id: 'agent-1',
-        agentId: 'agent-1',
-        displayName: 'Ready Agent',
-      );
+    testWidgets(
+      'task agent filter renders when evolution provider is loading',
+      (tester) async {
+        final agent = makeTestIdentity(
+          id: 'agent-1',
+          agentId: 'agent-1',
+          displayName: 'Ready Agent',
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const Scaffold(body: AgentInstancesList()),
-          overrides: [
-            allAgentInstancesProvider.overrideWith(
-              (ref) async => [agent],
-            ),
-            // Evolution provider never completes — simulates slow fetch.
-            allEvolutionSessionsProvider.overrideWith(
-              (ref) => Completer<List<AgentDomainEntity>>().future,
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const Scaffold(body: AgentInstancesList()),
+            overrides: [
+              allAgentInstancesProvider.overrideWith(
+                (ref) async => [agent],
+              ),
+              // Evolution provider never completes — simulates slow fetch.
+              allEvolutionSessionsProvider.overrideWith(
+                (ref) => Completer<List<AgentDomainEntity>>().future,
+              ),
+              agentIsRunningProvider.overrideWith(
+                (ref, agentId) => Stream.value(false),
+              ),
+              templateForAgentProvider.overrideWith(
+                (ref, agentId) async => null,
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      final context = tester.element(find.byType(AgentInstancesList));
+        final context = tester.element(find.byType(AgentInstancesList));
 
-      // Select "Task Agent" filter so evolution loading doesn't block us
-      await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
+        // Select "Task Agent" filter so evolution loading doesn't block us
+        await tapSegment(tester, context.messages.agentInstancesKindTaskAgent);
 
-      // Task agent should be visible despite evolution still loading
-      expect(find.text('Ready Agent'), findsOneWidget);
-      expect(find.byType(CircularProgressIndicator), findsNothing);
-    });
+        // Task agent should be visible despite evolution still loading
+        expect(find.text('Ready Agent'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      },
+    );
 
-    testWidgets('evolution filter renders when agent provider errors',
-        (tester) async {
+    testWidgets('evolution filter renders when agent provider errors', (
+      tester,
+    ) async {
       final session = makeTestEvolutionSession(
         id: 'evo-1',
         sessionNumber: 7,
@@ -357,8 +361,9 @@ void main() {
       );
     });
 
-    testWidgets('tapping task agent card navigates to agent detail',
-        (tester) async {
+    testWidgets('tapping task agent card navigates to agent detail', (
+      tester,
+    ) async {
       String? navigatedPath;
       beamToNamedOverride = (path) => navigatedPath = path;
 
@@ -375,8 +380,9 @@ void main() {
       expect(navigatedPath, '/settings/agents/instances/agent-nav');
     });
 
-    testWidgets('tapping evolution card navigates to template detail',
-        (tester) async {
+    testWidgets('tapping evolution card navigates to template detail', (
+      tester,
+    ) async {
       String? navigatedPath;
       beamToNamedOverride = (path) => navigatedPath = path;
 
@@ -455,8 +461,9 @@ void main() {
       );
     });
 
-    testWidgets('shows destroyed lifecycle badge on agent card',
-        (tester) async {
+    testWidgets('shows destroyed lifecycle badge on agent card', (
+      tester,
+    ) async {
       final agent = makeTestIdentity(
         id: 'agent-destroyed',
         agentId: 'agent-destroyed',
@@ -474,8 +481,9 @@ void main() {
       );
     });
 
-    testWidgets('shows template name on task agent card when available',
-        (tester) async {
+    testWidgets('shows template name on task agent card when available', (
+      tester,
+    ) async {
       final agent = makeTestIdentity(
         id: 'agent-with-tpl',
         agentId: 'agent-with-tpl',

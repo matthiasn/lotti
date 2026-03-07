@@ -63,8 +63,9 @@ void main() {
       );
 
       // Setup default mocks
-      when(() => mockConversationManager.conversationId)
-          .thenReturn('test-conv');
+      when(
+        () => mockConversationManager.conversationId,
+      ).thenReturn('test-conv');
       when(() => mockConversationManager.messages).thenReturn([]);
     });
 
@@ -103,22 +104,31 @@ void main() {
       );
 
       // Test 1: No items in either handler (before first round, _rounds = 0)
-      expect(strategy.shouldContinue(mockConversationManager), false,
-          reason: 'Should not continue before first round with no items');
+      expect(
+        strategy.shouldContinue(mockConversationManager),
+        false,
+        reason: 'Should not continue before first round with no items',
+      );
 
       // Simulate processing a round (increment _rounds internally)
       // We can't directly access _rounds, so we'll test behavior
 
       // Test 2: Items only in single handler
       checklistHandler.addSuccessfulItems(['Item 1', 'Item 2']);
-      expect(strategy.shouldContinue(mockConversationManager), true,
-          reason: 'Should continue when single handler has items');
+      expect(
+        strategy.shouldContinue(mockConversationManager),
+        true,
+        reason: 'Should continue when single handler has items',
+      );
 
       // Test 3: Items in both handlers (simulating batch creation)
       // In real usage, batch handler copies its items to single handler
       checklistHandler.addSuccessfulItems(['Batch Item 1', 'Batch Item 2']);
-      expect(strategy.shouldContinue(mockConversationManager), true,
-          reason: 'Should continue when both handlers have items');
+      expect(
+        strategy.shouldContinue(mockConversationManager),
+        true,
+        reason: 'Should continue when both handlers have items',
+      );
     });
 
     test('getContinuationPrompt combines items from all sources', () {
@@ -169,24 +179,25 @@ void main() {
 
     test('logs should report combined totals', () {
       // This test verifies that the logging correctly reports items from both handlers
-      final checklistHandler = LottiChecklistItemHandler(
-        task: testTask,
-        autoChecklistService: mockAutoChecklistService,
-        checklistRepository: mockChecklistRepository,
-      )
-
-        // Add items to both handlers
-        ..addSuccessfulItems(['Item 1', 'Item 2'])
-        // In real execution, batch handler would have its own items
-        // but they get copied to single handler, so we simulate that
-        ..addSuccessfulItems(['Batch 1', 'Batch 2', 'Batch 3']);
+      final checklistHandler =
+          LottiChecklistItemHandler(
+              task: testTask,
+              autoChecklistService: mockAutoChecklistService,
+              checklistRepository: mockChecklistRepository,
+            )
+            // Add items to both handlers
+            ..addSuccessfulItems(['Item 1', 'Item 2'])
+            // In real execution, batch handler would have its own items
+            // but they get copied to single handler, so we simulate that
+            ..addSuccessfulItems(['Batch 1', 'Batch 2', 'Batch 3']);
 
       // The total should be 5 items
       final totalItems = checklistHandler.successfulItems.length;
       expect(totalItems, 5);
 
       // This simulates what the logging would report
-      final logMessage = 'Conversation completed: $totalItems items created '
+      final logMessage =
+          'Conversation completed: $totalItems items created '
           '(checklist: 5, batch: 0), errors: false';
       expect(logMessage, contains('5 items created'));
     });
@@ -222,9 +233,11 @@ void main() {
 
         // Cloud provider with success but no errors should NOT continue
         // This prevents unnecessary multi-turn API calls for Gemini
-        expect(strategy.shouldContinue(mockConversationManager), false,
-            reason:
-                'Gemini should not continue when successful with no errors');
+        expect(
+          strategy.shouldContinue(mockConversationManager),
+          false,
+          reason: 'Gemini should not continue when successful with no errors',
+        );
       });
 
       test('Ollama should continue on first round with items', () {
@@ -256,8 +269,11 @@ void main() {
         );
 
         // Ollama should continue for multi-round assistance
-        expect(strategy.shouldContinue(mockConversationManager), true,
-            reason: 'Ollama should continue when items created');
+        expect(
+          strategy.shouldContinue(mockConversationManager),
+          true,
+          reason: 'Ollama should continue when items created',
+        );
       });
 
       test('OpenAI provider should NOT continue when successful', () {
@@ -289,8 +305,11 @@ void main() {
         );
 
         // Cloud provider with success should NOT continue
-        expect(strategy.shouldContinue(mockConversationManager), false,
-            reason: 'OpenAI should not continue when successful');
+        expect(
+          strategy.shouldContinue(mockConversationManager),
+          false,
+          reason: 'OpenAI should not continue when successful',
+        );
       });
 
       test('Anthropic provider should NOT continue when successful', () {
@@ -322,8 +341,11 @@ void main() {
         );
 
         // Cloud provider with success should NOT continue
-        expect(strategy.shouldContinue(mockConversationManager), false,
-            reason: 'Anthropic should not continue when successful');
+        expect(
+          strategy.shouldContinue(mockConversationManager),
+          false,
+          reason: 'Anthropic should not continue when successful',
+        );
       });
     });
 
@@ -455,8 +477,11 @@ void main() {
       // Before any rounds processed, shouldContinue returns false
       // so getContinuationPrompt returns null
       final prompt = strategy.getContinuationPrompt(mockConversationManager);
-      expect(prompt, isNull,
-          reason: 'Should not provide continuation prompt before first round');
+      expect(
+        prompt,
+        isNull,
+        reason: 'Should not provide continuation prompt before first round',
+      );
     });
   });
 }

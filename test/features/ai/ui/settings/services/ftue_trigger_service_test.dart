@@ -31,13 +31,14 @@ void main() {
     String name = 'Test Provider',
   }) {
     return AiConfig.inferenceProvider(
-      id: id,
-      name: name,
-      baseUrl: 'https://api.test.com',
-      apiKey: 'test-key',
-      createdAt: DateTime(2024),
-      inferenceProviderType: type,
-    ) as AiConfigInferenceProvider;
+          id: id,
+          name: name,
+          baseUrl: 'https://api.test.com',
+          apiKey: 'test-key',
+          createdAt: DateTime(2024),
+          inferenceProviderType: type,
+        )
+        as AiConfigInferenceProvider;
   }
 
   group('FtueTriggerService', () {
@@ -82,15 +83,19 @@ void main() {
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
         expect(
-            service.isFtueSupported(InferenceProviderType.anthropic), isFalse);
+          service.isFtueSupported(InferenceProviderType.anthropic),
+          isFalse,
+        );
       });
 
       test('returns false for genericOpenAi provider type', () {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        expect(service.isFtueSupported(InferenceProviderType.genericOpenAi),
-            isFalse);
+        expect(
+          service.isFtueSupported(InferenceProviderType.genericOpenAi),
+          isFalse,
+        );
       });
 
       test('returns false for Whisper provider type', () {
@@ -111,8 +116,10 @@ void main() {
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        expect(service.isFtueSupported(InferenceProviderType.nebiusAiStudio),
-            isFalse);
+        expect(
+          service.isFtueSupported(InferenceProviderType.nebiusAiStudio),
+          isFalse,
+        );
       });
 
       test('returns false for OpenRouter provider type', () {
@@ -120,193 +127,211 @@ void main() {
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
         expect(
-            service.isFtueSupported(InferenceProviderType.openRouter), isFalse);
+          service.isFtueSupported(InferenceProviderType.openRouter),
+          isFalse,
+        );
       });
     });
 
     group('shouldTriggerFtue', () {
       test(
-          'returns shouldShowFtue when Gemini provider is first of its type (count == 1)',
-          () async {
-        final provider = createProvider(
-          id: 'gemini-1',
-          type: InferenceProviderType.gemini,
-        );
+        'returns shouldShowFtue when Gemini provider is first of its type (count == 1)',
+        () async {
+          final provider = createProvider(
+            id: 'gemini-1',
+            type: InferenceProviderType.gemini,
+          );
 
-        // After saving, there's exactly 1 Gemini provider
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+          // After saving, there's exactly 1 Gemini provider
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.shouldShowFtue));
-      });
-
-      test(
-          'returns shouldShowFtue when OpenAI provider is first of its type (count == 1)',
-          () async {
-        final provider = createProvider(
-          id: 'openai-1',
-          type: InferenceProviderType.openAi,
-        );
-
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
-
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        final result = await service.shouldTriggerFtue(provider);
-
-        expect(result, equals(FtueTriggerResult.shouldShowFtue));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
       test(
-          'returns shouldShowFtue when Mistral provider is first of its type (count == 1)',
-          () async {
-        final provider = createProvider(
-          id: 'mistral-1',
-          type: InferenceProviderType.mistral,
-        );
+        'returns shouldShowFtue when OpenAI provider is first of its type (count == 1)',
+        () async {
+          final provider = createProvider(
+            id: 'openai-1',
+            type: InferenceProviderType.openAi,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.shouldShowFtue));
-      });
-
-      test(
-          'returns shouldShowFtue when Alibaba provider is first of its type (count == 1)',
-          () async {
-        final provider = createProvider(
-          id: 'alibaba-1',
-          type: InferenceProviderType.alibaba,
-        );
-
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
-
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
-
-        final result = await service.shouldTriggerFtue(provider);
-
-        expect(result, equals(FtueTriggerResult.shouldShowFtue));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
       test(
-          'returns skipNotFirstProvider when Alibaba provider is second of its type',
-          () async {
-        final alibaba1 = createProvider(
-          id: 'alibaba-1',
-          type: InferenceProviderType.alibaba,
-        );
-        final alibaba2 = createProvider(
-          id: 'alibaba-2',
-          type: InferenceProviderType.alibaba,
-        );
+        'returns shouldShowFtue when Mistral provider is first of its type (count == 1)',
+        () async {
+          final provider = createProvider(
+            id: 'mistral-1',
+            type: InferenceProviderType.mistral,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [alibaba1, alibaba2]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(alibaba2);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
       test(
-          'returns shouldShowFtue when adding first Mistral provider but Gemini already exists',
-          () async {
-        final existingGemini = createProvider(
-          id: 'gemini-1',
-          type: InferenceProviderType.gemini,
-        );
-        final newMistral = createProvider(
-          id: 'mistral-1',
-          type: InferenceProviderType.mistral,
-        );
+        'returns shouldShowFtue when Alibaba provider is first of its type (count == 1)',
+        () async {
+          final provider = createProvider(
+            id: 'alibaba-1',
+            type: InferenceProviderType.alibaba,
+          );
 
-        // Both providers exist, but only 1 Mistral
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [existingGemini, newMistral]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(newMistral);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.shouldShowFtue));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
 
       test(
-          'returns skipNotFirstProvider when Gemini provider is second of its type (count == 2)',
-          () async {
-        final existingGemini = createProvider(
-          id: 'gemini-1',
-          type: InferenceProviderType.gemini,
-        );
-        final newGemini = createProvider(
-          id: 'gemini-2',
-          type: InferenceProviderType.gemini,
-        );
+        'returns skipNotFirstProvider when Alibaba provider is second of its type',
+        () async {
+          final alibaba1 = createProvider(
+            id: 'alibaba-1',
+            type: InferenceProviderType.alibaba,
+          );
+          final alibaba2 = createProvider(
+            id: 'alibaba-2',
+            type: InferenceProviderType.alibaba,
+          );
 
-        // Both Gemini providers exist
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [existingGemini, newGemini]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [alibaba1, alibaba2]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(newGemini);
+          final result = await service.shouldTriggerFtue(alibaba2);
 
-        expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
-      });
+          expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
+        },
+      );
 
       test(
-          'returns skipNotFirstProvider when OpenAI provider is third of its type (count == 3)',
-          () async {
-        final openai1 = createProvider(
-          id: 'openai-1',
-          type: InferenceProviderType.openAi,
-        );
-        final openai2 = createProvider(
-          id: 'openai-2',
-          type: InferenceProviderType.openAi,
-        );
-        final openai3 = createProvider(
-          id: 'openai-3',
-          type: InferenceProviderType.openAi,
-        );
+        'returns shouldShowFtue when adding first Mistral provider but Gemini already exists',
+        () async {
+          final existingGemini = createProvider(
+            id: 'gemini-1',
+            type: InferenceProviderType.gemini,
+          );
+          final newMistral = createProvider(
+            id: 'mistral-1',
+            type: InferenceProviderType.mistral,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [openai1, openai2, openai3]);
+          // Both providers exist, but only 1 Mistral
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [existingGemini, newMistral]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(openai3);
+          final result = await service.shouldTriggerFtue(newMistral);
 
-        expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
-      });
+          expect(result, equals(FtueTriggerResult.shouldShowFtue));
+        },
+      );
+
+      test(
+        'returns skipNotFirstProvider when Gemini provider is second of its type (count == 2)',
+        () async {
+          final existingGemini = createProvider(
+            id: 'gemini-1',
+            type: InferenceProviderType.gemini,
+          );
+          final newGemini = createProvider(
+            id: 'gemini-2',
+            type: InferenceProviderType.gemini,
+          );
+
+          // Both Gemini providers exist
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [existingGemini, newGemini]);
+
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
+
+          final result = await service.shouldTriggerFtue(newGemini);
+
+          expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
+        },
+      );
+
+      test(
+        'returns skipNotFirstProvider when OpenAI provider is third of its type (count == 3)',
+        () async {
+          final openai1 = createProvider(
+            id: 'openai-1',
+            type: InferenceProviderType.openAi,
+          );
+          final openai2 = createProvider(
+            id: 'openai-2',
+            type: InferenceProviderType.openAi,
+          );
+          final openai3 = createProvider(
+            id: 'openai-3',
+            type: InferenceProviderType.openAi,
+          );
+
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [openai1, openai2, openai3]);
+
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
+
+          final result = await service.shouldTriggerFtue(openai3);
+
+          expect(result, equals(FtueTriggerResult.skipNotFirstProvider));
+        },
+      );
 
       test('returns skipUnsupportedProvider for Ollama provider', () async {
         final provider = createProvider(
@@ -315,9 +340,9 @@ void main() {
         );
 
         // Even if it's the only one, unsupported provider types skip FTUE
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -333,9 +358,9 @@ void main() {
           type: InferenceProviderType.anthropic,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -345,24 +370,27 @@ void main() {
         expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
       });
 
-      test('returns skipUnsupportedProvider for genericOpenAi provider',
-          () async {
-        final provider = createProvider(
-          id: 'generic-1',
-          type: InferenceProviderType.genericOpenAi,
-        );
+      test(
+        'returns skipUnsupportedProvider for genericOpenAi provider',
+        () async {
+          final provider = createProvider(
+            id: 'generic-1',
+            type: InferenceProviderType.genericOpenAi,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
-      });
+          expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
+        },
+      );
 
       test('returns skipUnsupportedProvider for Whisper provider', () async {
         final provider = createProvider(
@@ -370,9 +398,9 @@ void main() {
           type: InferenceProviderType.whisper,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -388,9 +416,9 @@ void main() {
           type: InferenceProviderType.voxtral,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -400,24 +428,27 @@ void main() {
         expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
       });
 
-      test('returns skipUnsupportedProvider for NebiusAiStudio provider',
-          () async {
-        final provider = createProvider(
-          id: 'nebius-1',
-          type: InferenceProviderType.nebiusAiStudio,
-        );
+      test(
+        'returns skipUnsupportedProvider for NebiusAiStudio provider',
+        () async {
+          final provider = createProvider(
+            id: 'nebius-1',
+            type: InferenceProviderType.nebiusAiStudio,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [provider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final result = await service.shouldTriggerFtue(provider);
+          final result = await service.shouldTriggerFtue(provider);
 
-        expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
-      });
+          expect(result, equals(FtueTriggerResult.skipUnsupportedProvider));
+        },
+      );
 
       test('returns skipUnsupportedProvider for OpenRouter provider', () async {
         final provider = createProvider(
@@ -425,9 +456,9 @@ void main() {
           type: InferenceProviderType.openRouter,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -440,15 +471,16 @@ void main() {
 
     group('getProviderCountByType', () {
       test('returns 0 when no providers exist', () async {
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => []);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final count =
-            await service.getProviderCountByType(InferenceProviderType.gemini);
+        final count = await service.getProviderCountByType(
+          InferenceProviderType.gemini,
+        );
 
         expect(count, equals(0));
       });
@@ -459,15 +491,16 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [openAiProvider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [openAiProvider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final count =
-            await service.getProviderCountByType(InferenceProviderType.gemini);
+        final count = await service.getProviderCountByType(
+          InferenceProviderType.gemini,
+        );
 
         expect(count, equals(0));
       });
@@ -478,15 +511,16 @@ void main() {
           type: InferenceProviderType.gemini,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [geminiProvider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [geminiProvider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final count =
-            await service.getProviderCountByType(InferenceProviderType.gemini);
+        final count = await service.getProviderCountByType(
+          InferenceProviderType.gemini,
+        );
 
         expect(count, equals(1));
       });
@@ -509,9 +543,9 @@ void main() {
           type: InferenceProviderType.mistral,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [gemini1, gemini2, openAi, mistral]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [gemini1, gemini2, openAi, mistral]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
@@ -537,15 +571,16 @@ void main() {
 
     group('isFirstProviderOfType', () {
       test('returns true when no providers of the type exist', () async {
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => []);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final isFirst =
-            await service.isFirstProviderOfType(InferenceProviderType.gemini);
+        final isFirst = await service.isFirstProviderOfType(
+          InferenceProviderType.gemini,
+        );
 
         expect(isFirst, isTrue);
       });
@@ -556,38 +591,43 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [openAiProvider]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [openAiProvider]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final isFirst =
-            await service.isFirstProviderOfType(InferenceProviderType.gemini);
+        final isFirst = await service.isFirstProviderOfType(
+          InferenceProviderType.gemini,
+        );
 
         expect(isFirst, isTrue);
       });
 
-      test('returns false when a provider of the type already exists',
-          () async {
-        final geminiProvider = createProvider(
-          id: 'gemini-1',
-          type: InferenceProviderType.gemini,
-        );
+      test(
+        'returns false when a provider of the type already exists',
+        () async {
+          final geminiProvider = createProvider(
+            id: 'gemini-1',
+            type: InferenceProviderType.gemini,
+          );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [geminiProvider]);
+          when(
+            () =>
+                mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+          ).thenAnswer((_) async => [geminiProvider]);
 
-        final container = createContainer();
-        final service = container.read(ftueTriggerServiceProvider.notifier);
+          final container = createContainer();
+          final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final isFirst =
-            await service.isFirstProviderOfType(InferenceProviderType.gemini);
+          final isFirst = await service.isFirstProviderOfType(
+            InferenceProviderType.gemini,
+          );
 
-        expect(isFirst, isFalse);
-      });
+          expect(isFirst, isFalse);
+        },
+      );
 
       test('returns false when multiple providers of the type exist', () async {
         final gemini1 = createProvider(
@@ -599,15 +639,16 @@ void main() {
           type: InferenceProviderType.gemini,
         );
 
-        when(() =>
-                mockRepository.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [gemini1, gemini2]);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [gemini1, gemini2]);
 
         final container = createContainer();
         final service = container.read(ftueTriggerServiceProvider.notifier);
 
-        final isFirst =
-            await service.isFirstProviderOfType(InferenceProviderType.gemini);
+        final isFirst = await service.isFirstProviderOfType(
+          InferenceProviderType.gemini,
+        );
 
         expect(isFirst, isFalse);
       });
@@ -619,31 +660,53 @@ void main() {
       });
 
       test('contains Alibaba, Gemini, OpenAI, and Mistral', () {
-        expect(ftueSupportedProviderTypes,
-            contains(InferenceProviderType.alibaba));
         expect(
-            ftueSupportedProviderTypes, contains(InferenceProviderType.gemini));
+          ftueSupportedProviderTypes,
+          contains(InferenceProviderType.alibaba),
+        );
         expect(
-            ftueSupportedProviderTypes, contains(InferenceProviderType.openAi));
-        expect(ftueSupportedProviderTypes,
-            contains(InferenceProviderType.mistral));
+          ftueSupportedProviderTypes,
+          contains(InferenceProviderType.gemini),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          contains(InferenceProviderType.openAi),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          contains(InferenceProviderType.mistral),
+        );
       });
 
       test('does not contain unsupported types', () {
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.ollama)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.anthropic)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.genericOpenAi)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.whisper)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.voxtral)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.nebiusAiStudio)));
-        expect(ftueSupportedProviderTypes,
-            isNot(contains(InferenceProviderType.openRouter)));
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.ollama)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.anthropic)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.genericOpenAi)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.whisper)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.voxtral)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.nebiusAiStudio)),
+        );
+        expect(
+          ftueSupportedProviderTypes,
+          isNot(contains(InferenceProviderType.openRouter)),
+        );
       });
     });
 
@@ -658,12 +721,16 @@ void main() {
 
       test('returns Mistral for mistral provider type', () {
         expect(
-            InferenceProviderType.mistral.ftueDisplayName, equals('Mistral'));
+          InferenceProviderType.mistral.ftueDisplayName,
+          equals('Mistral'),
+        );
       });
 
       test('returns Alibaba Cloud (Qwen) for alibaba provider type', () {
-        expect(InferenceProviderType.alibaba.ftueDisplayName,
-            equals('Alibaba Cloud (Qwen)'));
+        expect(
+          InferenceProviderType.alibaba.ftueDisplayName,
+          equals('Alibaba Cloud (Qwen)'),
+        );
       });
 
       test('returns null for ollama provider type', () {

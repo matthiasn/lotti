@@ -64,8 +64,9 @@ void main() {
       const taskId = 'task-123';
       final identity = makeTestIdentity(id: 'agent-for-task');
 
-      when(() => mockService.getTaskAgentForTask(taskId))
-          .thenAnswer((_) async => identity);
+      when(
+        () => mockService.getTaskAgentForTask(taskId),
+      ).thenAnswer((_) async => identity);
 
       final container = ProviderContainer(
         overrides: [
@@ -84,8 +85,9 @@ void main() {
       final mockService = MockTaskAgentService();
       const taskId = 'task-no-agent';
 
-      when(() => mockService.getTaskAgentForTask(taskId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockService.getTaskAgentForTask(taskId),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
         overrides: [
@@ -104,8 +106,9 @@ void main() {
       final mockService = MockTaskAgentService();
       const taskId = 'task-error';
 
-      when(() => mockService.getTaskAgentForTask(taskId))
-          .thenAnswer((_) async => throw Exception('DB error'));
+      when(
+        () => mockService.getTaskAgentForTask(taskId),
+      ).thenAnswer((_) async => throw Exception('DB error'));
 
       final container = ProviderContainer(
         overrides: [
@@ -142,8 +145,9 @@ void main() {
         // First call returns null (no agent yet).
         // Second call returns an identity (agent synced in).
         var callCount = 0;
-        when(() => mockService.getTaskAgentForTask(taskId))
-            .thenAnswer((_) async {
+        when(() => mockService.getTaskAgentForTask(taskId)).thenAnswer((
+          _,
+        ) async {
           callCount++;
           return callCount > 1 ? identity : null;
         });
@@ -158,7 +162,7 @@ void main() {
         // Keep the provider alive so notification-driven rebuild fires.
         final sub = container.listen(
           taskAgentProvider(taskId),
-          (_, __) {},
+          (_, _) {},
           fireImmediately: true,
         );
 
@@ -177,8 +181,9 @@ void main() {
         async.elapse(const Duration(milliseconds: 150));
 
         // The service was called at least twice (initial + after notification).
-        verify(() => mockService.getTaskAgentForTask(taskId))
-            .called(greaterThanOrEqualTo(2));
+        verify(
+          () => mockService.getTaskAgentForTask(taskId),
+        ).called(greaterThanOrEqualTo(2));
 
         sub.close();
         container.dispose();
@@ -193,10 +198,12 @@ void main() {
       final identityA = makeTestIdentity(id: 'agent-a', agentId: 'agent-a');
       final identityB = makeTestIdentity(id: 'agent-b', agentId: 'agent-b');
 
-      when(() => mockService.getTaskAgentForTask(taskIdA))
-          .thenAnswer((_) async => identityA);
-      when(() => mockService.getTaskAgentForTask(taskIdB))
-          .thenAnswer((_) async => identityB);
+      when(
+        () => mockService.getTaskAgentForTask(taskIdA),
+      ).thenAnswer((_) async => identityA);
+      when(
+        () => mockService.getTaskAgentForTask(taskIdB),
+      ).thenAnswer((_) async => identityB);
 
       final container = ProviderContainer(
         overrides: [

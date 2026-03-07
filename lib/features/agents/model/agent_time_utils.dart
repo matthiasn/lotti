@@ -13,11 +13,12 @@ DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
   int failureCount,
   double successRate,
   Duration averageDuration,
-}) computeRunStats<T>(
+})
+computeRunStats<T>(
   List<T> runs, {
   required String Function(T run) statusAccessor,
   required ({DateTime? startedAt, DateTime? completedAt}) Function(T run)
-      timingAccessor,
+  timingAccessor,
 }) {
   var successCount = 0;
   var failureCount = 0;
@@ -34,8 +35,9 @@ DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
     final timing = timingAccessor(run);
     if (timing.startedAt != null && timing.completedAt != null) {
-      final durationMs =
-          timing.completedAt!.difference(timing.startedAt!).inMilliseconds;
+      final durationMs = timing.completedAt!
+          .difference(timing.startedAt!)
+          .inMilliseconds;
       // Skip malformed entries where completedAt precedes startedAt.
       if (durationMs >= 0) {
         totalDurationMs += durationMs;

@@ -114,8 +114,8 @@ class SettingsHeaderDimensions {
     String? summaryText,
   }) {
     final textStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
-          fontSize: filterChipFontSize,
-        );
+      fontSize: filterChipFontSize,
+    );
 
     // Measure each chip's width
     final chipWidths = <double>[];
@@ -150,7 +150,8 @@ class SettingsHeaderDimensions {
           maxLines: 1,
           textDirection: TextDirection.ltr,
         )..layout();
-        chipWidth += filterChipIconSpacing +
+        chipWidth +=
+            filterChipIconSpacing +
             filterChipCountPadding * 2 +
             countPainter.width;
       }
@@ -165,8 +166,9 @@ class SettingsHeaderDimensions {
     var rowCount = 1;
 
     for (final chipWidth in chipWidths) {
-      final widthWithSpacing =
-          currentRowWidth > 0 ? chipWidth + filterChipSpacing : chipWidth;
+      final widthWithSpacing = currentRowWidth > 0
+          ? chipWidth + filterChipSpacing
+          : chipWidth;
 
       if (currentRowWidth + widthWithSpacing > contentWidth &&
           currentRowWidth > 0) {
@@ -182,9 +184,9 @@ class SettingsHeaderDimensions {
     var summaryLineCount = 0;
     if (summaryText != null && summaryText.isNotEmpty) {
       final summaryStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
-            fontSize: filterSummaryFontSize,
-            height: filterSummaryLineHeight,
-          );
+        fontSize: filterSummaryFontSize,
+        height: filterSummaryLineHeight,
+      );
       final summaryPainter = TextPainter(
         text: TextSpan(text: summaryText, style: summaryStyle),
         maxLines: 3,
@@ -198,10 +200,12 @@ class SettingsHeaderDimensions {
     final chipRowsHeight =
         rowCount * filterChipRowHeight + (rowCount - 1) * filterChipSpacing;
     final summaryHeight = filterSummaryHeight * summaryLineCount;
-    final cardHeight = filterCardVerticalPadding * 2 + // card vertical padding
+    final cardHeight =
+        filterCardVerticalPadding * 2 + // card vertical padding
         filterCardBorderWidth * 2 + // card border (top + bottom)
         chipRowsHeight;
-    final totalHeight = cardHeight +
+    final totalHeight =
+        cardHeight +
         (summaryLineCount > 0 ? filterSummaryGap : 0) +
         summaryHeight +
         filterHeaderBottomBuffer;

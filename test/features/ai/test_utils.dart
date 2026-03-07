@@ -64,14 +64,15 @@ class AiTestDataFactory {
     String baseUrl = 'https://api.test.com',
   }) {
     return AiConfig.inferenceProvider(
-      id: id,
-      name: name,
-      description: description,
-      inferenceProviderType: type,
-      apiKey: apiKey,
-      baseUrl: baseUrl,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-    ) as AiConfigInferenceProvider;
+          id: id,
+          name: name,
+          description: description,
+          inferenceProviderType: type,
+          apiKey: apiKey,
+          baseUrl: baseUrl,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+        )
+        as AiConfigInferenceProvider;
   }
 
   static AiConfigModel createTestModel({
@@ -86,17 +87,18 @@ class AiTestDataFactory {
     bool supportsFunctionCalling = false,
   }) {
     return AiConfig.model(
-      id: id,
-      name: name,
-      description: description,
-      providerModelId: providerModelId,
-      inferenceProviderId: inferenceProviderId,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      inputModalities: inputModalities,
-      outputModalities: outputModalities,
-      isReasoningModel: isReasoningModel,
-      supportsFunctionCalling: supportsFunctionCalling,
-    ) as AiConfigModel;
+          id: id,
+          name: name,
+          description: description,
+          providerModelId: providerModelId,
+          inferenceProviderId: inferenceProviderId,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          inputModalities: inputModalities,
+          outputModalities: outputModalities,
+          isReasoningModel: isReasoningModel,
+          supportsFunctionCalling: supportsFunctionCalling,
+        )
+        as AiConfigModel;
   }
 
   static AiConfigPrompt createTestPrompt({
@@ -112,18 +114,19 @@ class AiTestDataFactory {
     AiResponseType aiResponseType = AiResponseType.taskSummary,
   }) {
     return AiConfig.prompt(
-      id: id,
-      name: name,
-      description: description,
-      systemMessage: systemMessage,
-      userMessage: userMessage,
-      defaultModelId: defaultModelId,
-      modelIds: modelIds,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-      useReasoning: useReasoning,
-      requiredInputData: requiredInputData,
-      aiResponseType: aiResponseType,
-    ) as AiConfigPrompt;
+          id: id,
+          name: name,
+          description: description,
+          systemMessage: systemMessage,
+          userMessage: userMessage,
+          defaultModelId: defaultModelId,
+          modelIds: modelIds,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          useReasoning: useReasoning,
+          requiredInputData: requiredInputData,
+          aiResponseType: aiResponseType,
+        )
+        as AiConfigPrompt;
   }
 
   static AiConfigInferenceProfile createTestProfile({

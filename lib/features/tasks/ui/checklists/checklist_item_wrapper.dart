@@ -57,10 +57,12 @@ class ChecklistItemWrapper extends ConsumerWidget {
 
         // Capture notifiers and messenger before widget disposal
         final itemNotifier = ref.read(provider.notifier);
-        final checklistNotifier = ref.read(checklistControllerProvider((
-          id: checklistId,
-          taskId: taskId,
-        )).notifier);
+        final checklistNotifier = ref.read(
+          checklistControllerProvider((
+            id: checklistId,
+            taskId: taskId,
+          )).notifier,
+        );
         final messenger = ScaffoldMessenger.of(context);
 
         // Wrap in DropRegion to handle drops on this specific item
@@ -122,8 +124,9 @@ class ChecklistItemWrapper extends ConsumerWidget {
                   child: Align(
                     alignment: Alignment.centerLeft,
                     child: Padding(
-                      padding:
-                          const EdgeInsets.only(left: AppTheme.cardPadding),
+                      padding: const EdgeInsets.only(
+                        left: AppTheme.cardPadding,
+                      ),
                       child: Icon(
                         item.data.isArchived ? Icons.unarchive : Icons.archive,
                         color: Colors.white,

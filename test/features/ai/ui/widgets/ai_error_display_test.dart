@@ -62,16 +62,18 @@ void main() {
         expect(texts.length, greaterThanOrEqualTo(2));
       });
 
-      testWidgets('displays appropriate icon for error type',
-          (WidgetTester tester) async {
+      testWidgets('displays appropriate icon for error type', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
       });
 
-      testWidgets('shows container with error styling',
-          (WidgetTester tester) async {
+      testWidgets('shows container with error styling', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
 
@@ -96,8 +98,9 @@ void main() {
       };
 
       for (final entry in iconTests.entries) {
-        testWidgets('shows correct icon for ${entry.key}',
-            (WidgetTester tester) async {
+        testWidgets('shows correct icon for ${entry.key}', (
+          WidgetTester tester,
+        ) async {
           final error = InferenceError(
             message: 'Test message',
             type: entry.key,
@@ -112,8 +115,9 @@ void main() {
     });
 
     group('suggestions', () {
-      testWidgets('shows suggestions for network errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for network errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Network error',
           type: InferenceErrorType.networkConnection,
@@ -133,8 +137,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows suggestions for timeout errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for timeout errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Timeout error',
           type: InferenceErrorType.timeout,
@@ -151,8 +156,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows suggestions for authentication errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for authentication errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Auth error',
           type: InferenceErrorType.authentication,
@@ -169,8 +175,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows suggestions for rate limit errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for rate limit errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Rate limit error',
           type: InferenceErrorType.rateLimit,
@@ -182,14 +189,17 @@ void main() {
         await tester.pumpWidget(createTestWidget(error: error));
         await tester.pumpAndSettle();
 
-        expect(find.text('Wait a few minutes before trying again'),
-            findsOneWidget);
+        expect(
+          find.text('Wait a few minutes before trying again'),
+          findsOneWidget,
+        );
 
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows Ollama-specific suggestions for model not found',
-          (WidgetTester tester) async {
+      testWidgets('shows Ollama-specific suggestions for model not found', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'model "llama2" not found, try pulling it first',
           type: InferenceErrorType.invalidRequest,
@@ -207,8 +217,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows generic invalid request suggestions',
-          (WidgetTester tester) async {
+      testWidgets('shows generic invalid request suggestions', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Invalid request',
           type: InferenceErrorType.invalidRequest,
@@ -225,8 +236,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows suggestions for server errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for server errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Server error',
           type: InferenceErrorType.serverError,
@@ -243,8 +255,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('shows suggestions for unknown errors',
-          (WidgetTester tester) async {
+      testWidgets('shows suggestions for unknown errors', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'Unknown error',
           type: InferenceErrorType.unknown,
@@ -276,43 +289,52 @@ void main() {
     });
 
     group('retry button', () {
-      testWidgets('hides retry button for authentication errors',
-          (WidgetTester tester) async {
+      testWidgets('hides retry button for authentication errors', (
+        WidgetTester tester,
+      ) async {
         final authError = InferenceError(
           message: 'Auth error',
           type: InferenceErrorType.authentication,
         );
 
-        await tester.pumpWidget(createTestWidget(
-          error: authError,
-          onRetry: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            error: authError,
+            onRetry: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(FilledButton), findsNothing);
       });
 
-      testWidgets('hides retry button for invalid request errors',
-          (WidgetTester tester) async {
+      testWidgets('hides retry button for invalid request errors', (
+        WidgetTester tester,
+      ) async {
         final invalidError = InferenceError(
           message: 'Invalid request',
           type: InferenceErrorType.invalidRequest,
         );
 
-        await tester.pumpWidget(createTestWidget(
-          error: invalidError,
-          onRetry: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            error: invalidError,
+            onRetry: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(FilledButton), findsNothing);
       });
 
-      testWidgets('hides retry button when onRetry is null',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          error: testError,
-        ));
+      testWidgets('hides retry button when onRetry is null', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            error: testError,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(FilledButton), findsNothing);
@@ -345,24 +367,30 @@ void main() {
     });
 
     group('theme variations', () {
-      testWidgets('renders correctly in light theme',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          error: testError,
-          theme: ThemeData.light(),
-        ));
+      testWidgets('renders correctly in light theme', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            error: testError,
+            theme: ThemeData.light(),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(AiErrorDisplay), findsOneWidget);
         expect(find.text('Test error message'), findsOneWidget);
       });
 
-      testWidgets('renders correctly in dark theme',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createTestWidget(
-          error: testError,
-          theme: ThemeData.dark(),
-        ));
+      testWidgets('renders correctly in dark theme', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            error: testError,
+            theme: ThemeData.dark(),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -371,8 +399,9 @@ void main() {
     });
 
     group('layout', () {
-      testWidgets('uses correct spacing between elements',
-          (WidgetTester tester) async {
+      testWidgets('uses correct spacing between elements', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
 
@@ -393,8 +422,9 @@ void main() {
 
         // Find the SelectableText widget containing the error message
         final selectableTextFinder = find.byType(SelectableText).first;
-        final selectableText =
-            tester.widget<SelectableText>(selectableTextFinder);
+        final selectableText = tester.widget<SelectableText>(
+          selectableTextFinder,
+        );
 
         // Verify it contains the expected text and is centered
         expect(selectableText.data, contains('Test error message'));
@@ -416,8 +446,9 @@ void main() {
     });
 
     group('edge cases', () {
-      testWidgets('handles very long error messages',
-          (WidgetTester tester) async {
+      testWidgets('handles very long error messages', (
+        WidgetTester tester,
+      ) async {
         final longError = InferenceError(
           message: 'This is a very long error message. ' * 5,
           type: InferenceErrorType.unknown,
@@ -436,8 +467,9 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       });
 
-      testWidgets('handles empty suggestions list',
-          (WidgetTester tester) async {
+      testWidgets('handles empty suggestions list', (
+        WidgetTester tester,
+      ) async {
         // All error types should have suggestions, but test the UI behavior
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
@@ -446,8 +478,9 @@ void main() {
         expect(find.textContaining('•'), findsWidgets);
       });
 
-      testWidgets('handles model name extraction edge cases',
-          (WidgetTester tester) async {
+      testWidgets('handles model name extraction edge cases', (
+        WidgetTester tester,
+      ) async {
         final edgeCaseError = InferenceError(
           message: 'model not found without quotes',
           type: InferenceErrorType.invalidRequest,
@@ -475,8 +508,9 @@ void main() {
     });
 
     group('custom error modal behaviors', () {
-      testWidgets('displays specific error message (e.g., missing API key)',
-          (WidgetTester tester) async {
+      testWidgets('displays specific error message (e.g., missing API key)', (
+        WidgetTester tester,
+      ) async {
         final error = InferenceError(
           message: 'API key missing',
           type: InferenceErrorType.authentication,
@@ -486,8 +520,9 @@ void main() {
         expect(find.text('API key missing'), findsOneWidget);
       });
 
-      testWidgets('retry button calls onRetry and dismisses modal',
-          (WidgetTester tester) async {
+      testWidgets('retry button calls onRetry and dismisses modal', (
+        WidgetTester tester,
+      ) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -496,24 +531,28 @@ void main() {
           message: 'Temporary error',
           type: InferenceErrorType.serverError, // Use a type that shows retry
         );
-        await tester.pumpWidget(createTestWidget(
-          error: error,
-          onRetry: () {
-            retried = true;
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            error: error,
+            onRetry: () {
+              retried = true;
+            },
+          ),
+        );
         await tester.pumpAndSettle();
         final retryText = find.text('Try Again');
         expect(retryText, findsOneWidget);
-        final materialButton =
-            find.ancestor(of: retryText, matching: find.byType(Material)).first;
+        final materialButton = find
+            .ancestor(of: retryText, matching: find.byType(Material))
+            .first;
         await tester.tap(materialButton);
         await tester.pump();
         expect(retried, isTrue);
       });
 
-      testWidgets('View Log button navigates to logs page',
-          (WidgetTester tester) async {
+      testWidgets('View Log button navigates to logs page', (
+        WidgetTester tester,
+      ) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
@@ -535,23 +574,25 @@ void main() {
               .serverError, // Use a type that shows log button
         );
         final navKey = GlobalKey<NavigatorState>();
-        await tester.pumpWidget(MaterialApp(
-          navigatorKey: navKey,
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          routes: {
-            '/settings/advanced/logging': (context) =>
-                const Scaffold(body: Text('Logs Page')),
-          },
-          home: Scaffold(
-            body: AiErrorDisplay(error: error, onRetry: () {}),
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorKey: navKey,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            routes: {
+              '/settings/advanced/logging': (context) =>
+                  const Scaffold(body: Text('Logs Page')),
+            },
+            home: Scaffold(
+              body: AiErrorDisplay(error: error, onRetry: () {}),
+            ),
           ),
-        ));
+        );
         await tester.pumpAndSettle();
         final viewLogText = find.text('View Log');
         expect(viewLogText, findsOneWidget);
@@ -561,8 +602,9 @@ void main() {
         await tester.tap(materialButton);
         await tester.pump();
         // Verify that beamToNamed was called with the correct route
-        verify(() => mockNavService.beamToNamed('/settings/advanced/logging'))
-            .called(1);
+        verify(
+          () => mockNavService.beamToNamed('/settings/advanced/logging'),
+        ).called(1);
         expect(viewLogText, findsOneWidget);
       });
     });

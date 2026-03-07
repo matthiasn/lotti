@@ -12,13 +12,15 @@ void main() {
       expect(loadingState.lightTheme, isNull);
     });
 
-    testWidgets('loading message is shown in EmptyScaffoldWithTitle',
-        (tester) async {
+    testWidgets('loading message is shown in EmptyScaffoldWithTitle', (
+      tester,
+    ) async {
       // The loading screen renders "Loading..." text
       await tester.pumpWidget(
         MaterialApp(
-          theme: ThemeData.dark()
-              .copyWith(scaffoldBackgroundColor: Colors.black87),
+          theme: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: Colors.black87,
+          ),
           home: const Scaffold(
             body: Center(child: Text('Loading...')),
           ),

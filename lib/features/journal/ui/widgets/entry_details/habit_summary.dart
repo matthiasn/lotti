@@ -37,52 +37,53 @@ class HabitSummary extends StatelessWidget {
         notificationKeys: {habitsNotification, privateToggleNotification},
         fetcher: () => _db.getHabitById(data.habitId),
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<HabitDefinition?> typeSnapshot,
-      ) {
-        final habitDefinition = typeSnapshot.data;
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<HabitDefinition?> typeSnapshot,
+          ) {
+            final habitDefinition = typeSnapshot.data;
 
-        if (habitDefinition == null) {
-          return const SizedBox.shrink();
-        }
+            if (habitDefinition == null) {
+              return const SizedBox.shrink();
+            }
 
-        return Padding(
-          padding: EdgeInsets.only(
-            top: 5,
-            left: paddingLeft,
-            bottom: paddingBottom,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 5,
+                left: paddingLeft,
+                bottom: paddingBottom,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (showIcon)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 5),
-                      child: CategoryIconCompact(
-                        habitDefinition.categoryId,
-                        size: CategoryIconConstants.iconSizeLarge,
+                  Row(
+                    children: [
+                      if (showIcon)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 5),
+                          child: CategoryIconCompact(
+                            habitDefinition.categoryId,
+                            size: CategoryIconConstants.iconSizeLarge,
+                          ),
+                        ),
+                      Flexible(
+                        child: EntryTextWidget(
+                          'Habit completed: ${habitDefinition.name}',
+                          padding: EdgeInsets.zero,
+                        ),
                       ),
-                    ),
-                  Flexible(
-                    child: EntryTextWidget(
-                      'Habit completed: ${habitDefinition.name}',
-                      padding: EdgeInsets.zero,
-                    ),
+                    ],
                   ),
+                  if (habitCompletion.entryText?.plainText != null && showText)
+                    TextViewerWidget(
+                      entryText: habitCompletion.entryText,
+                      maxHeight: 120,
+                    ),
                 ],
               ),
-              if (habitCompletion.entryText?.plainText != null && showText)
-                TextViewerWidget(
-                  entryText: habitCompletion.entryText,
-                  maxHeight: 120,
-                ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }

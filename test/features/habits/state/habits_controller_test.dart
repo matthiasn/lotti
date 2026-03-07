@@ -100,8 +100,9 @@ void main() {
     definitionsController = StreamController.broadcast();
     updateController = StreamController.broadcast();
 
-    when(mockRepository.watchHabitDefinitions)
-        .thenAnswer((_) => definitionsController.stream);
+    when(
+      mockRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => definitionsController.stream);
 
     when(
       () => mockRepository.getHabitCompletionsInRange(
@@ -109,8 +110,9 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
 
-    when(() => mockRepository.updateStream)
-        .thenAnswer((_) => updateController.stream);
+    when(
+      () => mockRepository.updateStream,
+    ).thenAnswer((_) => updateController.stream);
 
     container = ProviderContainer(
       overrides: [
@@ -498,7 +500,8 @@ void main() {
 
       final state = container.read(habitsControllerProvider);
       // Total should not exceed 100
-      final total = state.successPercentage +
+      final total =
+          state.successPercentage +
           state.skippedPercentage +
           state.failedPercentage;
       expect(total, lessThanOrEqualTo(100));

@@ -48,7 +48,8 @@ class MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature,
     ConversationStrategy? strategy,
-  })? sendMessageDelegate;
+  })?
+  sendMessageDelegate;
 
   @override
   void build() {
@@ -126,7 +127,7 @@ class _CapturingConversationRepository extends MockConversationRepository {
 class _NullManagerConversationRepository extends MockConversationRepository {
   // ignore: use_super_parameters
   _NullManagerConversationRepository(MockConversationManager mockManager)
-      : super(mockManager);
+    : super(mockManager);
 
   @override
   ConversationManager? getConversation(String conversationId) => null;
@@ -158,58 +159,67 @@ void main() {
     directives: 'You are a diligent task agent named Laura.',
   );
 
-  final testAgentIdentity = AgentDomainEntity.agent(
-    id: agentId,
-    agentId: agentId,
-    kind: 'task_agent',
-    displayName: 'Test Agent',
-    lifecycle: AgentLifecycle.active,
-    mode: AgentInteractionMode.autonomous,
-    allowedCategoryIds: {'cat-001'},
-    currentStateId: 'state-001',
-    config: const AgentConfig(),
-    createdAt: DateTime(2024),
-    updatedAt: DateTime(2024, 6),
-    vectorClock: null,
-  ) as AgentIdentityEntity;
+  final testAgentIdentity =
+      AgentDomainEntity.agent(
+            id: agentId,
+            agentId: agentId,
+            kind: 'task_agent',
+            displayName: 'Test Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: {'cat-001'},
+            currentStateId: 'state-001',
+            config: const AgentConfig(),
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 6),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
 
-  final testAgentState = AgentDomainEntity.agentState(
-    id: 'state-001',
-    agentId: agentId,
-    revision: 3,
-    slots: const AgentSlots(activeTaskId: taskId),
-    updatedAt: testDate,
-    vectorClock: null,
-  ) as AgentStateEntity;
+  final testAgentState =
+      AgentDomainEntity.agentState(
+            id: 'state-001',
+            agentId: agentId,
+            revision: 3,
+            slots: const AgentSlots(activeTaskId: taskId),
+            updatedAt: testDate,
+            vectorClock: null,
+          )
+          as AgentStateEntity;
 
-  final geminiProvider = AiConfig.inferenceProvider(
-    id: 'gemini-provider-001',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    apiKey: 'test-api-key',
-    name: 'Gemini',
-    createdAt: DateTime(2024),
-    inferenceProviderType: InferenceProviderType.gemini,
-  ) as AiConfigInferenceProvider;
+  final geminiProvider =
+      AiConfig.inferenceProvider(
+            id: 'gemini-provider-001',
+            baseUrl: 'https://generativelanguage.googleapis.com',
+            apiKey: 'test-api-key',
+            name: 'Gemini',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.gemini,
+          )
+          as AiConfigInferenceProvider;
 
-  final geminiModel = AiConfig.model(
-    id: 'model-gemini-3-1-pro',
-    name: 'Gemini 3.1 Pro Preview',
-    providerModelId: 'models/gemini-3-flash-preview',
-    inferenceProviderId: 'gemini-provider-001',
-    createdAt: DateTime(2024),
-    inputModalities: const [Modality.text],
-    outputModalities: const [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Test model',
-  ) as AiConfigModel;
+  final geminiModel =
+      AiConfig.model(
+            id: 'model-gemini-3-1-pro',
+            name: 'Gemini 3.1 Pro Preview',
+            providerModelId: 'models/gemini-3-flash-preview',
+            inferenceProviderId: 'gemini-provider-001',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'Test model',
+          )
+          as AiConfigModel;
 
   setUp(() {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
-    mockConversationRepository =
-        MockConversationRepository(mockConversationManager);
+    mockConversationRepository = MockConversationRepository(
+      mockConversationManager,
+    );
     mockAiInputRepository = MockAiInputRepository();
     mockAiConfigRepository = MockAiConfigRepository();
     mockJournalDb = MockJournalDb();
@@ -242,16 +252,20 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => <ChangeSetEntity>[]);
-    when(() => mockAiInputRepository.buildLinkedFromContext(any()))
-        .thenAnswer((_) async => <AiLinkedTaskContext>[]);
-    when(() => mockAiInputRepository.buildLinkedToContext(any()))
-        .thenAnswer((_) async => <AiLinkedTaskContext>[]);
+    when(
+      () => mockAiInputRepository.buildLinkedFromContext(any()),
+    ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
+    when(
+      () => mockAiInputRepository.buildLinkedToContext(any()),
+    ).thenAnswer((_) async => <AiLinkedTaskContext>[]);
 
     // Default template stubs — tests that need different behavior override.
-    when(() => mockTemplateService.getTemplateForAgent(agentId))
-        .thenAnswer((_) async => testTemplate);
-    when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-        .thenAnswer((_) async => testTemplateVersion);
+    when(
+      () => mockTemplateService.getTemplateForAgent(agentId),
+    ).thenAnswer((_) async => testTemplate);
+    when(
+      () => mockTemplateService.getActiveVersion(testTemplate.id),
+    ).thenAnswer((_) async => testTemplateVersion);
 
     workflow = TaskAgentWorkflow(
       agentRepository: mockAgentRepository,
@@ -273,24 +287,29 @@ void main() {
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {
       test('when no template assigned', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
 
         // Override default template stub to return null.
-        when(() => mockTemplateService.getTemplateForAgent(agentId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -304,8 +323,9 @@ void main() {
       });
 
       test('when no agent state found', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -319,17 +339,20 @@ void main() {
       });
 
       test('when no active task ID', () async {
-        final stateNoTask = AgentDomainEntity.agentState(
-          id: 'state-001',
-          agentId: agentId,
-          revision: 1,
-          slots: const AgentSlots(),
-          updatedAt: testDate,
-          vectorClock: null,
-        ) as AgentStateEntity;
+        final stateNoTask =
+            AgentDomainEntity.agentState(
+                  id: 'state-001',
+                  agentId: agentId,
+                  revision: 1,
+                  slots: const AgentSlots(),
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentStateEntity;
 
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => stateNoTask);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => stateNoTask);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -343,20 +366,24 @@ void main() {
       });
 
       test('when task not found in journal', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => null);
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -370,20 +397,24 @@ void main() {
       });
 
       test('when no Gemini provider configured', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => []);
@@ -400,24 +431,29 @@ void main() {
       });
 
       test('when template exists but no active version', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
 
         // Template exists but active version is null.
-        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockTemplateService.getActiveVersion(testTemplate.id),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -434,28 +470,33 @@ void main() {
     group('successful execute', () {
       setUp(() {
         // Common stubs for a successful execute path.
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
 
         // Mock manager messages (empty list for final content extraction).
         when(() => mockConversationManager.messages).thenReturn([]);
@@ -484,23 +525,25 @@ void main() {
       test('queries pending change sets for deduplication', () async {
         // Override with non-empty pending change sets to exercise the
         // expand/where lambda in the dedup path.
-        final pendingChangeSet = AgentDomainEntity.changeSet(
-          id: 'cs-existing',
-          agentId: agentId,
-          taskId: taskId,
-          threadId: 'old-thread',
-          runKey: 'old-run',
-          status: ChangeSetStatus.pending,
-          items: const [
-            ChangeItem(
-              toolName: 'set_task_title',
-              args: {'title': 'Existing proposal'},
-              humanSummary: 'Set title',
-            ),
-          ],
-          createdAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-        ) as ChangeSetEntity;
+        final pendingChangeSet =
+            AgentDomainEntity.changeSet(
+                  id: 'cs-existing',
+                  agentId: agentId,
+                  taskId: taskId,
+                  threadId: 'old-thread',
+                  runKey: 'old-run',
+                  status: ChangeSetStatus.pending,
+                  items: const [
+                    ChangeItem(
+                      toolName: 'set_task_title',
+                      args: {'title': 'Existing proposal'},
+                      humanSummary: 'Set title',
+                    ),
+                  ],
+                  createdAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                )
+                as ChangeSetEntity;
 
         when(
           () => mockAgentRepository.getPendingChangeSets(
@@ -562,115 +605,122 @@ void main() {
         expect(capturedSystemMessage, contains('update_report'));
         // Template directives appended.
         expect(
-            capturedSystemMessage, contains('Your Personality & Directives'));
+          capturedSystemMessage,
+          contains('Your Personality & Directives'),
+        );
         expect(
           capturedSystemMessage,
           contains('You are a diligent task agent named Laura.'),
         );
       });
 
-      test('system prompt uses split directives when generalDirective is set',
-          () async {
-        final splitVersion = makeTestTemplateVersion(
-          generalDirective: 'Be thorough and precise.',
-        );
-        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-            .thenAnswer((_) async => splitVersion);
+      test(
+        'system prompt uses split directives when generalDirective is set',
+        () async {
+          final splitVersion = makeTestTemplateVersion(
+            generalDirective: 'Be thorough and precise.',
+          );
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer((_) async => splitVersion);
 
-        String? capturedSystemMessage;
-        final capturingRepo = _CapturingConversationRepository(
-          mockConversationManager,
-          onSystemMessage: (msg) => capturedSystemMessage = msg,
-        );
-        final capturingWorkflow = TaskAgentWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: capturingRepo,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-        );
+          String? capturedSystemMessage;
+          final capturingRepo = _CapturingConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final capturingWorkflow = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
 
-        await capturingWorkflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+          await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
 
-        expect(capturedSystemMessage, isNotNull);
-        // Core scaffold present.
-        expect(capturedSystemMessage, contains('You are a Task Agent'));
-        // General directive injected.
-        expect(
-          capturedSystemMessage,
-          contains('Be thorough and precise.'),
-        );
-        expect(
-          capturedSystemMessage,
-          contains('Your Personality & Directives'),
-        );
-        // Default report scaffold used when reportDirective is empty.
-        expect(capturedSystemMessage, contains('## Report'));
-        expect(capturedSystemMessage, isNot(contains('## Report Directive')));
-      });
+          expect(capturedSystemMessage, isNotNull);
+          // Core scaffold present.
+          expect(capturedSystemMessage, contains('You are a Task Agent'));
+          // General directive injected.
+          expect(
+            capturedSystemMessage,
+            contains('Be thorough and precise.'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('Your Personality & Directives'),
+          );
+          // Default report scaffold used when reportDirective is empty.
+          expect(capturedSystemMessage, contains('## Report'));
+          expect(capturedSystemMessage, isNot(contains('## Report Directive')));
+        },
+      );
 
       test(
-          'system prompt uses custom report directive when reportDirective is set',
-          () async {
-        final splitVersion = makeTestTemplateVersion(
-          generalDirective: 'Be concise.',
-          reportDirective: 'Write reports in bullet points only.',
-        );
-        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-            .thenAnswer((_) async => splitVersion);
+        'system prompt uses custom report directive when reportDirective is set',
+        () async {
+          final splitVersion = makeTestTemplateVersion(
+            generalDirective: 'Be concise.',
+            reportDirective: 'Write reports in bullet points only.',
+          );
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer((_) async => splitVersion);
 
-        String? capturedSystemMessage;
-        final capturingRepo = _CapturingConversationRepository(
-          mockConversationManager,
-          onSystemMessage: (msg) => capturedSystemMessage = msg,
-        );
-        final capturingWorkflow = TaskAgentWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: capturingRepo,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-        );
+          String? capturedSystemMessage;
+          final capturingRepo = _CapturingConversationRepository(
+            mockConversationManager,
+            onSystemMessage: (msg) => capturedSystemMessage = msg,
+          );
+          final capturingWorkflow = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: capturingRepo,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
 
-        await capturingWorkflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+          await capturingWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
 
-        expect(capturedSystemMessage, isNotNull);
-        // Custom report directive replaces the default report section.
-        expect(
-          capturedSystemMessage,
-          contains('## Report Directive'),
-        );
-        expect(
-          capturedSystemMessage,
-          contains('Write reports in bullet points only.'),
-        );
-        // General directive present.
-        expect(capturedSystemMessage, contains('Be concise.'));
-        // Tool usage guidelines (trailing scaffold) still present.
-        expect(capturedSystemMessage, contains('## Tool Usage Guidelines'));
-      });
+          expect(capturedSystemMessage, isNotNull);
+          // Custom report directive replaces the default report section.
+          expect(
+            capturedSystemMessage,
+            contains('## Report Directive'),
+          );
+          expect(
+            capturedSystemMessage,
+            contains('Write reports in bullet points only.'),
+          );
+          // General directive present.
+          expect(capturedSystemMessage, contains('Be concise.'));
+          // Tool usage guidelines (trailing scaffold) still present.
+          expect(capturedSystemMessage, contains('## Tool Usage Guidelines'));
+        },
+      );
 
       test('records template provenance on wake run', () async {
         await workflow.execute(
@@ -709,171 +759,185 @@ void main() {
         expect(result.success, isTrue);
       });
 
-      test('persists observations from record_observations tool calls',
-          () async {
-        // Set up sendMessage to simulate the strategy accumulating
-        // observations via the record_observations tool during conversation.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          // Simulate the LLM calling record_observations by directly
-          // invoking processToolCalls with a record_observations call.
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                const ChatCompletionMessageToolCall(
-                  id: 'obs-call',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'record_observations',
-                    arguments: '{"observations":["Pattern A","Pattern B"]}',
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+      test(
+        'persists observations from record_observations tool calls',
+        () async {
+          // Set up sendMessage to simulate the strategy accumulating
+          // observations via the record_observations tool during conversation.
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                // Simulate the LLM calling record_observations by directly
+                // invoking processToolCalls with a record_observations call.
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'obs-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'record_observations',
+                          arguments:
+                              '{"observations":["Pattern A","Pattern B"]}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
 
-        when(() => mockConversationManager.messages).thenReturn([]);
+          when(() => mockConversationManager.messages).thenReturn([]);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-
-        // Should persist: assistant message (from processToolCalls)
-        // + 2 observation payloads + 2 observation messages
-        // + state update = 6 total.
-        verify(() => mockSyncService.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(6));
-      });
-
-      test('persists observation payloads with priority and category fields',
-          () async {
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                const ChatCompletionMessageToolCall(
-                  id: 'obs-structured',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'record_observations',
-                    arguments: '{"observations":[{"text":"User is frustrated",'
-                        ' "priority":"critical","category":"grievance"}]}',
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
-
-        when(() => mockConversationManager.messages).thenReturn([]);
-
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
-
-        // Find the persisted observation payload entity (has priority key).
-        final payloads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
-            )
-            .cast<AgentMessagePayloadEntity>()
-            .where((p) => p.content.containsKey('priority'))
-            .toList();
-
-        expect(payloads, hasLength(1));
-        final payload = payloads.first;
-        expect(payload.content['text'], 'User is frustrated');
-        expect(payload.content['priority'], 'critical');
-        expect(payload.content['category'], 'grievance');
-      });
-
-      test('persists wakeTokenUsage entity when usage data is returned',
-          () async {
-        // Return non-null usage from sendMessage.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          return const InferenceUsage(
-            inputTokens: 150,
-            outputTokens: 75,
-            thoughtsTokens: 30,
-            cachedInputTokens: 20,
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
           );
-        };
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+          expect(result.success, isTrue);
 
-        expect(result.success, isTrue);
+          // Should persist: assistant message (from processToolCalls)
+          // + 2 observation payloads + 2 observation messages
+          // + state update = 6 total.
+          verify(
+            () => mockSyncService.upsertEntity(any()),
+          ).called(greaterThanOrEqualTo(6));
+        },
+      );
 
-        // Verify a wakeTokenUsage entity was persisted.
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      test(
+        'persists observation payloads with priority and category fields',
+        () async {
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'obs-structured',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'record_observations',
+                          arguments:
+                              '{"observations":[{"text":"User is frustrated",'
+                              ' "priority":"critical","category":"grievance"}]}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
 
-        final tokenUsageEntities = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
-            )
-            .toList();
+          when(() => mockConversationManager.messages).thenReturn([]);
 
-        expect(tokenUsageEntities, hasLength(1));
-        final entity = tokenUsageEntities.first as WakeTokenUsageEntity;
-        expect(entity.agentId, agentId);
-        expect(entity.runKey, runKey);
-        expect(entity.threadId, threadId);
-        expect(entity.inputTokens, 150);
-        expect(entity.outputTokens, 75);
-        expect(entity.thoughtsTokens, 30);
-        expect(entity.cachedInputTokens, 20);
-      });
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          // Find the persisted observation payload entity (has priority key).
+          final payloads = captured
+              .whereType<AgentDomainEntity>()
+              .where(
+                (e) => e.mapOrNull(agentMessagePayload: (_) => true) ?? false,
+              )
+              .cast<AgentMessagePayloadEntity>()
+              .where((p) => p.content.containsKey('priority'))
+              .toList();
+
+          expect(payloads, hasLength(1));
+          final payload = payloads.first;
+          expect(payload.content['text'], 'User is frustrated');
+          expect(payload.content['priority'], 'critical');
+          expect(payload.content['category'], 'grievance');
+        },
+      );
+
+      test(
+        'persists wakeTokenUsage entity when usage data is returned',
+        () async {
+          // Return non-null usage from sendMessage.
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                return const InferenceUsage(
+                  inputTokens: 150,
+                  outputTokens: 75,
+                  thoughtsTokens: 30,
+                  cachedInputTokens: 20,
+                );
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+
+          // Verify a wakeTokenUsage entity was persisted.
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+
+          final tokenUsageEntities = captured
+              .whereType<AgentDomainEntity>()
+              .where(
+                (e) => e.mapOrNull(wakeTokenUsage: (_) => true) ?? false,
+              )
+              .toList();
+
+          expect(tokenUsageEntities, hasLength(1));
+          final entity = tokenUsageEntities.first as WakeTokenUsageEntity;
+          expect(entity.agentId, agentId);
+          expect(entity.runKey, runKey);
+          expect(entity.threadId, threadId);
+          expect(entity.inputTokens, 150);
+          expect(entity.outputTokens, 75);
+          expect(entity.thoughtsTokens, 30);
+          expect(entity.cachedInputTokens, 20);
+        },
+      );
 
       test('does not persist wakeTokenUsage when usage is null', () async {
         // Default delegate returns null.
@@ -886,8 +950,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final tokenUsageEntities = captured
             .whereType<AgentDomainEntity>()
@@ -901,18 +966,19 @@ void main() {
 
       test('does not persist wakeTokenUsage when usage has no data', () async {
         // Return an empty usage (hasData == false).
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          return InferenceUsage.empty;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              return InferenceUsage.empty;
+            };
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -923,8 +989,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final tokenUsageEntities = captured
             .whereType<AgentDomainEntity>()
@@ -938,21 +1005,22 @@ void main() {
 
       test('handles _persistTokenUsage failure gracefully', () async {
         // Return usage data, but make the sync service throw on wakeTokenUsage.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          return const InferenceUsage(
-            inputTokens: 100,
-            outputTokens: 50,
-          );
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              return const InferenceUsage(
+                inputTokens: 100,
+                outputTokens: 50,
+              );
+            };
 
         // Make upsertEntity throw only for wakeTokenUsage entities.
         var callCount = 0;
@@ -996,20 +1064,24 @@ void main() {
 
     group('failed execute', () {
       test('increments consecutiveFailureCount on exception', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -1017,18 +1089,19 @@ void main() {
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
         // Make sendMessage throw to trigger the catch branch.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          throw Exception('Network error');
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('Network error');
+            };
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1041,8 +1114,9 @@ void main() {
         expect(result.error, contains('Network error'));
 
         // Verify state was updated with incremented failure count.
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         // Find the state entity that was persisted.
         final stateUpdates = captured
@@ -1087,20 +1161,24 @@ void main() {
     group('_resolveGeminiProvider edge cases', () {
       /// Stubs common to all provider-resolution tests.
       void stubContextToProviderStep() {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
       }
 
       test('returns error when provider is not an InferenceProvider', () async {
@@ -1128,14 +1206,16 @@ void main() {
       test('returns error when provider has empty API key', () async {
         stubContextToProviderStep();
 
-        final providerNoKey = AiConfig.inferenceProvider(
-          id: 'gemini-provider-001',
-          baseUrl: 'https://generativelanguage.googleapis.com',
-          apiKey: '',
-          name: 'Gemini',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.gemini,
-        ) as AiConfigInferenceProvider;
+        final providerNoKey =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-provider-001',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: '',
+                  name: 'Gemini',
+                  createdAt: DateTime(2024),
+                  inferenceProviderType: InferenceProviderType.gemini,
+                )
+                as AiConfigInferenceProvider;
 
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
@@ -1158,125 +1238,135 @@ void main() {
 
     group('report and thought persistence', () {
       setUp(() {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
       });
 
-      test('persists report and report head when strategy produces report',
-          () async {
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                const ChatCompletionMessageToolCall(
-                  id: 'rpt-call',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'update_report',
-                    arguments: r'{"markdown":"# Report\nAll good."}',
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+      test(
+        'persists report and report head when strategy produces report',
+        () async {
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments: r'{"markdown":"# Report\nAll good."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
 
-        when(() => mockConversationManager.messages).thenReturn([]);
+          when(() => mockConversationManager.messages).thenReturn([]);
 
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
 
-        expect(result.success, isTrue);
+          expect(result.success, isTrue);
 
-        // Report + report head + state update + assistant message = 4+
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+          // Report + report head + state update + assistant message = 4+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
 
-        final reports = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentReport: (_) => true) ?? false,
-            )
-            .toList();
-        expect(reports, hasLength(1));
-        final report = reports.first as AgentReportEntity;
-        expect(report.content, '# Report\nAll good.');
+          final reports = captured
+              .whereType<AgentDomainEntity>()
+              .where(
+                (e) => e.mapOrNull(agentReport: (_) => true) ?? false,
+              )
+              .toList();
+          expect(reports, hasLength(1));
+          final report = reports.first as AgentReportEntity;
+          expect(report.content, '# Report\nAll good.');
 
-        final heads = captured
-            .whereType<AgentDomainEntity>()
-            .where(
-              (e) => e.mapOrNull(agentReportHead: (_) => true) ?? false,
-            )
-            .toList();
-        expect(heads, hasLength(1));
-      });
+          final heads = captured
+              .whereType<AgentDomainEntity>()
+              .where(
+                (e) => e.mapOrNull(agentReportHead: (_) => true) ?? false,
+              )
+              .toList();
+          expect(heads, hasLength(1));
+        },
+      );
 
       test('persists report with tldr when provided', () async {
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                ChatCompletionMessageToolCall(
-                  id: 'rpt-call',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'update_report',
-                    arguments: jsonEncode({
-                      'content': '# Detailed Report\nFull analysis.',
-                      'tldr': 'Brief summary.',
-                    }),
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'rpt-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments: jsonEncode({
+                          'content': '# Detailed Report\nFull analysis.',
+                          'tldr': 'Brief summary.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
 
         when(() => mockConversationManager.messages).thenReturn([]);
 
@@ -1289,8 +1379,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final reports = captured
             .whereType<AgentDomainEntity>()
@@ -1320,8 +1411,9 @@ void main() {
 
         expect(result.success, isTrue);
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         // Find the thought payload entity (the one with the LLM response,
         // not the user message payload).
@@ -1337,50 +1429,56 @@ void main() {
         final thoughtPayload = payloads.firstWhere(
           (p) => p.content['text'] == 'I analyzed the task and it looks good.',
         );
-        expect(thoughtPayload.content['text'],
-            'I analyzed the task and it looks good.');
+        expect(
+          thoughtPayload.content['text'],
+          'I analyzed the task and it looks good.',
+        );
       });
 
       test('uses existing report head ID when one exists', () async {
-        final existingHead = AgentDomainEntity.agentReportHead(
-          id: 'existing-head-id',
-          agentId: agentId,
-          scope: 'current',
-          reportId: 'old-report',
-          updatedAt: testDate,
-          vectorClock: null,
-        ) as AgentReportHeadEntity;
+        final existingHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'existing-head-id',
+                  agentId: agentId,
+                  scope: 'current',
+                  reportId: 'old-report',
+                  updatedAt: testDate,
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
 
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => existingHead);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => existingHead);
 
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                const ChatCompletionMessageToolCall(
-                  id: 'rpt-call',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'update_report',
-                    arguments: '{"markdown":"# Updated"}',
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    const ChatCompletionMessageToolCall(
+                      id: 'rpt-call',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: 'update_report',
+                        arguments: '{"markdown":"# Updated"}',
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
 
         when(() => mockConversationManager.messages).thenReturn([]);
 
@@ -1391,8 +1489,9 @@ void main() {
           threadId: threadId,
         );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final heads = captured
             .whereType<AgentDomainEntity>()
@@ -1413,61 +1512,68 @@ void main() {
         String toolName,
         String arguments,
       ) async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(() => mockConversationManager.messages).thenReturn([]);
 
         // Stub the task entity lookup used by _executeToolHandler.
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => null);
 
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                ChatCompletionMessageToolCall(
-                  id: 'tool-call-1',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: toolName,
-                    arguments: arguments,
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'tool-call-1',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: toolName,
+                        arguments: arguments,
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
 
         return workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1477,29 +1583,33 @@ void main() {
         );
       }
 
-      test('tool call with missing task entity triggers policy denial',
-          () async {
-        // journalEntityById returns null, so category resolution yields null
-        // and the executor's fail-closed policy denies the call. This verifies
-        // the wake doesn't crash on a missing task.
-        final result = await executeWithToolCall(
-          'nonexistent_tool',
-          '{}',
-        );
+      test(
+        'tool call with missing task entity triggers policy denial',
+        () async {
+          // journalEntityById returns null, so category resolution yields null
+          // and the executor's fail-closed policy denies the call. This verifies
+          // the wake doesn't crash on a missing task.
+          final result = await executeWithToolCall(
+            'nonexistent_tool',
+            '{}',
+          );
 
-        // Tool errors don't fail the overall wake.
-        expect(result.success, isTrue);
-      });
+          // Tool errors don't fail the overall wake.
+          expect(result.success, isTrue);
+        },
+      );
 
-      test('set_task_title with missing task entity is denied gracefully',
-          () async {
-        // Same as above — task entity is null so executor denies the call.
-        final result = await executeWithToolCall(
-          'set_task_title',
-          '{"title":""}',
-        );
-        expect(result.success, isTrue);
-      });
+      test(
+        'set_task_title with missing task entity is denied gracefully',
+        () async {
+          // Same as above — task entity is null so executor denies the call.
+          final result = await executeWithToolCall(
+            'set_task_title',
+            '{"title":""}',
+          );
+          expect(result.success, isTrue);
+        },
+      );
     });
 
     group('_buildUserMessage context', () {
@@ -1533,59 +1643,68 @@ void main() {
         }
 
         final parsed = jsonDecode(linkedTasksJson);
-        final linkedMap =
-            parsed is Map<String, dynamic> ? parsed : <String, dynamic>{};
+        final linkedMap = parsed is Map<String, dynamic>
+            ? parsed
+            : <String, dynamic>{};
         final linkedFrom = parseLinkedTasks(linkedMap['linked_from']);
         final linkedTo = [
           ...parseLinkedTasks(linkedMap['linked_to']),
           ...parseLinkedTasks(linkedMap['linked']),
         ];
 
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => lastReport);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => lastReport);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => observations);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
         if (throwOnLinkedContextBuild) {
-          when(() => mockAiInputRepository.buildLinkedFromContext(taskId))
-              .thenThrow(Exception('linked context failed'));
+          when(
+            () => mockAiInputRepository.buildLinkedFromContext(taskId),
+          ).thenThrow(Exception('linked context failed'));
         } else {
-          when(() => mockAiInputRepository.buildLinkedFromContext(taskId))
-              .thenAnswer((_) async => linkedFrom);
+          when(
+            () => mockAiInputRepository.buildLinkedFromContext(taskId),
+          ).thenAnswer((_) async => linkedFrom);
         }
-        when(() => mockAiInputRepository.buildLinkedToContext(taskId))
-            .thenAnswer((_) async => linkedTo);
+        when(
+          () => mockAiInputRepository.buildLinkedToContext(taskId),
+        ).thenAnswer((_) async => linkedTo);
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(() => mockConversationManager.messages).thenReturn([]);
 
         String? capturedMessage;
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          capturedMessage = message;
-          return null;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
 
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -1598,14 +1717,16 @@ void main() {
       }
 
       test('includes existing report in user message', () async {
-        final report = AgentDomainEntity.agentReport(
-          id: 'rpt-1',
-          agentId: agentId,
-          scope: 'current',
-          createdAt: testDate,
-          vectorClock: null,
-          content: '# My Report\nAll good.',
-        ) as AgentReportEntity;
+        final report =
+            AgentDomainEntity.agentReport(
+                  id: 'rpt-1',
+                  agentId: agentId,
+                  scope: 'current',
+                  createdAt: testDate,
+                  vectorClock: null,
+                  content: '# My Report\nAll good.',
+                )
+                as AgentReportEntity;
 
         final message = await executeAndCaptureMessage(lastReport: report);
 
@@ -1624,16 +1745,18 @@ void main() {
       });
 
       test('includes observation text in user message', () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-1',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          contentEntryId: 'payload-obs-1',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final obs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-1',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 15, 9),
+                  vectorClock: null,
+                  contentEntryId: 'payload-obs-1',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
         final payload = AgentDomainEntity.agentMessagePayload(
           id: 'payload-obs-1',
@@ -1643,8 +1766,9 @@ void main() {
           content: <String, Object?>{'text': 'Task needs refactoring'},
         );
 
-        when(() => mockAgentRepository.getEntity('payload-obs-1'))
-            .thenAnswer((_) async => payload);
+        when(
+          () => mockAgentRepository.getEntity('payload-obs-1'),
+        ).thenAnswer((_) async => payload);
 
         final message = await executeAndCaptureMessage(observations: [obs]);
 
@@ -1653,145 +1777,179 @@ void main() {
         expect(message, contains('Task needs refactoring'));
       });
 
-      test('shows "(no content)" for observation with missing payload',
-          () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-2',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          contentEntryId: 'missing-payload',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+      test(
+        'shows "(no content)" for observation with missing payload',
+        () async {
+          final obs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-2',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 15, 9),
+                    vectorClock: null,
+                    contentEntryId: 'missing-payload',
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('missing-payload'))
-            .thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getEntity('missing-payload'),
+          ).thenAnswer((_) async => null);
 
-        final message = await executeAndCaptureMessage(observations: [obs]);
+          final message = await executeAndCaptureMessage(observations: [obs]);
 
-        expect(message, isNotNull);
-        expect(message, contains('(no content)'));
-      });
-
-      test('shows "(no content)" for observation with null contentEntryId',
-          () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-3',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
-
-        final message = await executeAndCaptureMessage(observations: [obs]);
-
-        expect(message, isNotNull);
-        expect(message, contains('(no content)'));
-      });
+          expect(message, isNotNull);
+          expect(message, contains('(no content)'));
+        },
+      );
 
       test(
-          'includes linked tasks and uses linked task-agent report instead of summary',
-          () async {
-        final linkedReport = AgentDomainEntity.agentReport(
-          id: 'linked-report-1',
-          agentId: 'linked-agent-1',
-          scope: 'current',
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          content: '## Linked Agent Report\nFrom task agent.',
-        ) as AgentReportEntity;
-        final link = AgentLink.agentTask(
-          id: 'link-1',
-          fromId: 'linked-agent-1',
-          toId: 't2',
-          createdAt: DateTime(2024, 6, 14),
-          updatedAt: DateTime(2024, 6, 14),
-          vectorClock: null,
-        );
-        when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
-            .thenAnswer((_) async => [link]);
-        when(() => mockAgentRepository.getLatestReport(
-            'linked-agent-1', 'current')).thenAnswer((_) async => linkedReport);
+        'shows "(no content)" for observation with null contentEntryId',
+        () async {
+          final obs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-3',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 15, 9),
+                    vectorClock: null,
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        final message = await executeAndCaptureMessage(
-          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
-              '"latestSummary":"Legacy summary"}]}',
-        );
+          final message = await executeAndCaptureMessage(observations: [obs]);
 
-        expect(message, isNotNull);
-        expect(message, contains('## Linked Tasks'));
-        expect(message, contains('Related'));
-        expect(message, contains('latestTaskAgentReport'));
-        expect(message, contains('From task agent.'));
-        expect(message, isNot(contains('latestSummary')));
-      });
+          expect(message, isNotNull);
+          expect(message, contains('(no content)'));
+        },
+      );
 
-      test('uses link id as deterministic tie-breaker for equal createdAt',
-          () async {
-        final now = DateTime(2024, 6, 14, 8);
-        final linkB = AgentLink.agentTask(
-          id: 'link-b',
-          fromId: 'linked-agent-b',
-          toId: 't2',
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        );
-        final linkA = AgentLink.agentTask(
-          id: 'link-a',
-          fromId: 'linked-agent-a',
-          toId: 't2',
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        );
-        when(() => mockAgentRepository.getLinksTo('t2', type: 'agent_task'))
-            .thenAnswer((_) async => [linkB, linkA]);
+      test(
+        'includes linked tasks and uses linked task-agent report instead of summary',
+        () async {
+          final linkedReport =
+              AgentDomainEntity.agentReport(
+                    id: 'linked-report-1',
+                    agentId: 'linked-agent-1',
+                    scope: 'current',
+                    createdAt: DateTime(2024, 6, 14, 8),
+                    vectorClock: null,
+                    content: '## Linked Agent Report\nFrom task agent.',
+                  )
+                  as AgentReportEntity;
+          final link = AgentLink.agentTask(
+            id: 'link-1',
+            fromId: 'linked-agent-1',
+            toId: 't2',
+            createdAt: DateTime(2024, 6, 14),
+            updatedAt: DateTime(2024, 6, 14),
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepository.getLinksTo('t2', type: 'agent_task'),
+          ).thenAnswer((_) async => [link]);
+          when(
+            () => mockAgentRepository.getLatestReport(
+              'linked-agent-1',
+              'current',
+            ),
+          ).thenAnswer((_) async => linkedReport);
 
-        // With descending tie-breaking on ID, 'link-b' sorts before 'link-a',
-        // so the workflow resolves the report for 'linked-agent-b' first.
-        final reportB = AgentDomainEntity.agentReport(
-          id: 'linked-report-b',
-          agentId: 'linked-agent-b',
-          scope: 'current',
-          createdAt: now,
-          vectorClock: null,
-          content: 'report-b',
-        ) as AgentReportEntity;
-        when(() => mockAgentRepository.getLatestReport(
-            'linked-agent-b', 'current')).thenAnswer((_) async => reportB);
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson:
+                '{"linked":[{"id":"t2","title":"Related",'
+                '"latestSummary":"Legacy summary"}]}',
+          );
 
-        final message = await executeAndCaptureMessage(
-          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
-        );
+          expect(message, isNotNull);
+          expect(message, contains('## Linked Tasks'));
+          expect(message, contains('Related'));
+          expect(message, contains('latestTaskAgentReport'));
+          expect(message, contains('From task agent.'));
+          expect(message, isNot(contains('latestSummary')));
+        },
+      );
 
-        verify(
-          () =>
-              mockAgentRepository.getLatestReport('linked-agent-b', 'current'),
-        ).called(1);
-        verifyNever(
-          () =>
-              mockAgentRepository.getLatestReport('linked-agent-a', 'current'),
-        );
-        expect(message, isNotNull);
-        expect(message, contains('report-b'));
-      });
+      test(
+        'uses link id as deterministic tie-breaker for equal createdAt',
+        () async {
+          final now = DateTime(2024, 6, 14, 8);
+          final linkB = AgentLink.agentTask(
+            id: 'link-b',
+            fromId: 'linked-agent-b',
+            toId: 't2',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          );
+          final linkA = AgentLink.agentTask(
+            id: 'link-a',
+            fromId: 'linked-agent-a',
+            toId: 't2',
+            createdAt: now,
+            updatedAt: now,
+            vectorClock: null,
+          );
+          when(
+            () => mockAgentRepository.getLinksTo('t2', type: 'agent_task'),
+          ).thenAnswer((_) async => [linkB, linkA]);
 
-      test('falls back to empty linked-task context when build throws',
-          () async {
-        final message = await executeAndCaptureMessage(
-          linkedTasksJson: '{"linked":[{"id":"t2","title":"Related",'
-              '"latestSummary":"Legacy summary"}]}',
-          throwOnLinkedContextBuild: true,
-        );
+          // With descending tie-breaking on ID, 'link-b' sorts before 'link-a',
+          // so the workflow resolves the report for 'linked-agent-b' first.
+          final reportB =
+              AgentDomainEntity.agentReport(
+                    id: 'linked-report-b',
+                    agentId: 'linked-agent-b',
+                    scope: 'current',
+                    createdAt: now,
+                    vectorClock: null,
+                    content: 'report-b',
+                  )
+                  as AgentReportEntity;
+          when(
+            () => mockAgentRepository.getLatestReport(
+              'linked-agent-b',
+              'current',
+            ),
+          ).thenAnswer((_) async => reportB);
 
-        expect(message, isNotNull);
-        expect(message, isNot(contains('## Linked Tasks')));
-      });
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson: '{"linked":[{"id":"t2","title":"Related"}]}',
+          );
+
+          verify(
+            () => mockAgentRepository.getLatestReport(
+              'linked-agent-b',
+              'current',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockAgentRepository.getLatestReport(
+              'linked-agent-a',
+              'current',
+            ),
+          );
+          expect(message, isNotNull);
+          expect(message, contains('report-b'));
+        },
+      );
+
+      test(
+        'falls back to empty linked-task context when build throws',
+        () async {
+          final message = await executeAndCaptureMessage(
+            linkedTasksJson:
+                '{"linked":[{"id":"t2","title":"Related",'
+                '"latestSummary":"Legacy summary"}]}',
+            throwOnLinkedContextBuild: true,
+          );
+
+          expect(message, isNotNull);
+          expect(message, isNot(contains('## Linked Tasks')));
+        },
+      );
 
       test('omits linked tasks section when empty', () async {
         final message = await executeAndCaptureMessage();
@@ -1819,65 +1977,74 @@ void main() {
       });
 
       test(
-          'shows "(no content)" for observation with empty string text payload',
-          () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-empty',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          contentEntryId: 'payload-empty-text',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        'shows "(no content)" for observation with empty string text payload',
+        () async {
+          final obs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-empty',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 15, 9),
+                    vectorClock: null,
+                    contentEntryId: 'payload-empty-text',
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        final payload = AgentDomainEntity.agentMessagePayload(
-          id: 'payload-empty-text',
-          agentId: agentId,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          content: <String, Object?>{'text': ''},
-        );
+          final payload = AgentDomainEntity.agentMessagePayload(
+            id: 'payload-empty-text',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 15, 9),
+            vectorClock: null,
+            content: <String, Object?>{'text': ''},
+          );
 
-        when(() => mockAgentRepository.getEntity('payload-empty-text'))
-            .thenAnswer((_) async => payload);
+          when(
+            () => mockAgentRepository.getEntity('payload-empty-text'),
+          ).thenAnswer((_) async => payload);
 
-        final message = await executeAndCaptureMessage(observations: [obs]);
+          final message = await executeAndCaptureMessage(observations: [obs]);
 
-        expect(message, isNotNull);
-        expect(message, contains('(no content)'));
-      });
+          expect(message, isNotNull);
+          expect(message, contains('(no content)'));
+        },
+      );
 
-      test('shows "(no content)" for observation with non-string text payload',
-          () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-wrong-type',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          contentEntryId: 'payload-wrong-type',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+      test(
+        'shows "(no content)" for observation with non-string text payload',
+        () async {
+          final obs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-wrong-type',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 15, 9),
+                    vectorClock: null,
+                    contentEntryId: 'payload-wrong-type',
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        final payload = AgentDomainEntity.agentMessagePayload(
-          id: 'payload-wrong-type',
-          agentId: agentId,
-          createdAt: DateTime(2024, 6, 15, 9),
-          vectorClock: null,
-          content: <String, Object?>{'text': 42},
-        );
+          final payload = AgentDomainEntity.agentMessagePayload(
+            id: 'payload-wrong-type',
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 15, 9),
+            vectorClock: null,
+            content: <String, Object?>{'text': 42},
+          );
 
-        when(() => mockAgentRepository.getEntity('payload-wrong-type'))
-            .thenAnswer((_) async => payload);
+          when(
+            () => mockAgentRepository.getEntity('payload-wrong-type'),
+          ).thenAnswer((_) async => payload);
 
-        final message = await executeAndCaptureMessage(observations: [obs]);
+          final message = await executeAndCaptureMessage(observations: [obs]);
 
-        expect(message, isNotNull);
-        expect(message, contains('(no content)'));
-      });
+          expect(message, isNotNull);
+          expect(message, contains('(no content)'));
+        },
+      );
 
       group('decision history', () {
         ChangeDecisionEntity makeDecision({
@@ -1887,18 +2054,19 @@ void main() {
           String? humanSummary,
         }) {
           return AgentDomainEntity.changeDecision(
-            id: 'dec-${toolName.hashCode}',
-            agentId: agentId,
-            changeSetId: 'cs-1',
-            itemIndex: 0,
-            toolName: toolName,
-            verdict: verdict,
-            createdAt: DateTime(2024, 6, 15),
-            vectorClock: null,
-            taskId: taskId,
-            rejectionReason: rejectionReason,
-            humanSummary: humanSummary,
-          ) as ChangeDecisionEntity;
+                id: 'dec-${toolName.hashCode}',
+                agentId: agentId,
+                changeSetId: 'cs-1',
+                itemIndex: 0,
+                toolName: toolName,
+                verdict: verdict,
+                createdAt: DateTime(2024, 6, 15),
+                vectorClock: null,
+                taskId: taskId,
+                rejectionReason: rejectionReason,
+                humanSummary: humanSummary,
+              )
+              as ChangeDecisionEntity;
         }
 
         test('includes decision history when decisions exist', () async {
@@ -1908,12 +2076,14 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeDecision(
-                  toolName: 'set_task_title',
-                  verdict: ChangeDecisionVerdict.confirmed,
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeDecision(
+                toolName: 'set_task_title',
+                verdict: ChangeDecisionVerdict.confirmed,
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -1938,13 +2108,15 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeDecision(
-                  toolName: 'update_task_estimate',
-                  verdict: ChangeDecisionVerdict.rejected,
-                  rejectionReason: 'I know better',
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeDecision(
+                toolName: 'update_task_estimate',
+                verdict: ChangeDecisionVerdict.rejected,
+                rejectionReason: 'I know better',
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -1961,21 +2133,23 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeDecision(
-                  toolName: 'set_task_title',
-                  verdict: ChangeDecisionVerdict.confirmed,
-                ),
-                makeDecision(
-                  toolName: 'update_task_estimate',
-                  verdict: ChangeDecisionVerdict.rejected,
-                  rejectionReason: 'Too high',
-                ),
-                makeDecision(
-                  toolName: 'assign_task_labels',
-                  verdict: ChangeDecisionVerdict.deferred,
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeDecision(
+                toolName: 'set_task_title',
+                verdict: ChangeDecisionVerdict.confirmed,
+              ),
+              makeDecision(
+                toolName: 'update_task_estimate',
+                verdict: ChangeDecisionVerdict.rejected,
+                rejectionReason: 'Too high',
+              ),
+              makeDecision(
+                toolName: 'assign_task_labels',
+                verdict: ChangeDecisionVerdict.deferred,
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -1990,38 +2164,42 @@ void main() {
           expect(message, contains('deferred'));
         });
 
-        test('displays human summary instead of tool name when available',
-            () async {
-          when(
-            () => mockAgentRepository.getRecentDecisions(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) async => [
+        test(
+          'displays human summary instead of tool name when available',
+          () async {
+            when(
+              () => mockAgentRepository.getRecentDecisions(
+                any(),
+                taskId: any(named: 'taskId'),
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer(
+              (_) async => [
                 makeDecision(
                   toolName: 'update_checklist_item',
                   verdict: ChangeDecisionVerdict.rejected,
                   humanSummary: 'Check off: "Buy milk"',
                   rejectionReason: 'Not relevant',
                 ),
-              ]);
+              ],
+            );
 
-          final message = await executeAndCaptureMessage();
+            final message = await executeAndCaptureMessage();
 
-          expect(message, isNotNull);
-          expect(
-            message,
-            contains('Check off: "Buy milk"'),
-            reason: 'should show human summary, not raw tool name',
-          );
-          expect(
-            message,
-            isNot(contains('update_checklist_item')),
-            reason: 'tool name should be replaced by human summary',
-          );
-          expect(message, contains('(reason: "Not relevant")'));
-        });
+            expect(message, isNotNull);
+            expect(
+              message,
+              contains('Check off: "Buy milk"'),
+              reason: 'should show human summary, not raw tool name',
+            );
+            expect(
+              message,
+              isNot(contains('update_checklist_item')),
+              reason: 'tool name should be replaced by human summary',
+            );
+            expect(message, contains('(reason: "Not relevant")'));
+          },
+        );
 
         test('error in getRecentDecisions does not crash the wake', () async {
           when(
@@ -2046,16 +2224,17 @@ void main() {
           required List<ChangeItem> items,
         }) {
           return AgentDomainEntity.changeSet(
-            id: 'cs-${items.hashCode}',
-            agentId: agentId,
-            taskId: taskId,
-            threadId: threadId,
-            runKey: runKey,
-            status: ChangeSetStatus.pending,
-            items: items,
-            createdAt: DateTime(2024, 6, 15),
-            vectorClock: null,
-          ) as ChangeSetEntity;
+                id: 'cs-${items.hashCode}',
+                agentId: agentId,
+                taskId: taskId,
+                threadId: threadId,
+                runKey: runKey,
+                status: ChangeSetStatus.pending,
+                items: items,
+                createdAt: DateTime(2024, 6, 15),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
         }
 
         test('includes pending proposals when change sets exist', () async {
@@ -2065,17 +2244,19 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeChangeSet(
-                  items: [
-                    const ChangeItem(
-                      toolName: 'set_task_title',
-                      args: <String, dynamic>{'title': 'New Title'},
-                      humanSummary: 'Rename task to "New Title"',
-                    ),
-                  ],
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeChangeSet(
+                items: [
+                  const ChangeItem(
+                    toolName: 'set_task_title',
+                    args: <String, dynamic>{'title': 'New Title'},
+                    humanSummary: 'Rename task to "New Title"',
+                  ),
+                ],
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -2108,31 +2289,33 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeChangeSet(
-                  items: [
-                    const ChangeItem(
-                      toolName: 'set_task_title',
-                      args: <String, dynamic>{'title': 'Title A'},
-                      humanSummary: 'Rename task to "Title A"',
-                    ),
-                  ],
-                ),
-                makeChangeSet(
-                  items: [
-                    const ChangeItem(
-                      toolName: 'add_checklist_item',
-                      args: <String, dynamic>{'text': 'Buy milk'},
-                      humanSummary: 'Add checklist item: "Buy milk"',
-                    ),
-                    const ChangeItem(
-                      toolName: 'add_checklist_item',
-                      args: <String, dynamic>{'text': 'Buy bread'},
-                      humanSummary: 'Add checklist item: "Buy bread"',
-                    ),
-                  ],
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeChangeSet(
+                items: [
+                  const ChangeItem(
+                    toolName: 'set_task_title',
+                    args: <String, dynamic>{'title': 'Title A'},
+                    humanSummary: 'Rename task to "Title A"',
+                  ),
+                ],
+              ),
+              makeChangeSet(
+                items: [
+                  const ChangeItem(
+                    toolName: 'add_checklist_item',
+                    args: <String, dynamic>{'text': 'Buy milk'},
+                    humanSummary: 'Add checklist item: "Buy milk"',
+                  ),
+                  const ChangeItem(
+                    toolName: 'add_checklist_item',
+                    args: <String, dynamic>{'text': 'Buy bread'},
+                    humanSummary: 'Add checklist item: "Buy bread"',
+                  ),
+                ],
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -2151,15 +2334,17 @@ void main() {
           );
         });
 
-        test('excludes already-resolved items from partially resolved sets',
-            () async {
-          when(
-            () => mockAgentRepository.getPendingChangeSets(
-              any(),
-              taskId: any(named: 'taskId'),
-              limit: any(named: 'limit'),
-            ),
-          ).thenAnswer((_) async => [
+        test(
+          'excludes already-resolved items from partially resolved sets',
+          () async {
+            when(
+              () => mockAgentRepository.getPendingChangeSets(
+                any(),
+                taskId: any(named: 'taskId'),
+                limit: any(named: 'limit'),
+              ),
+            ).thenAnswer(
+              (_) async => [
                 makeChangeSet(
                   items: [
                     const ChangeItem(
@@ -2181,32 +2366,34 @@ void main() {
                     ),
                   ],
                 ),
-              ]);
+              ],
+            );
 
-          final message = await executeAndCaptureMessage();
+            final message = await executeAndCaptureMessage();
 
-          expect(message, isNotNull);
-          expect(
-            message,
-            contains('## Pending Proposals Awaiting Review'),
-          );
-          // Only the pending item should appear.
-          expect(
-            message,
-            contains('Add checklist item: "Still waiting"'),
-          );
-          // Confirmed and rejected items must be excluded.
-          expect(
-            message,
-            isNot(contains('Already Done')),
-            reason: 'confirmed items should be filtered out',
-          );
-          expect(
-            message,
-            isNot(contains('Set estimate to 2 hours')),
-            reason: 'rejected items should be filtered out',
-          );
-        });
+            expect(message, isNotNull);
+            expect(
+              message,
+              contains('## Pending Proposals Awaiting Review'),
+            );
+            // Only the pending item should appear.
+            expect(
+              message,
+              contains('Add checklist item: "Still waiting"'),
+            );
+            // Confirmed and rejected items must be excluded.
+            expect(
+              message,
+              isNot(contains('Already Done')),
+              reason: 'confirmed items should be filtered out',
+            );
+            expect(
+              message,
+              isNot(contains('Set estimate to 2 hours')),
+              reason: 'rejected items should be filtered out',
+            );
+          },
+        );
 
         test('omits section when all items in sets are resolved', () async {
           when(
@@ -2215,18 +2402,20 @@ void main() {
               taskId: any(named: 'taskId'),
               limit: any(named: 'limit'),
             ),
-          ).thenAnswer((_) async => [
-                makeChangeSet(
-                  items: [
-                    const ChangeItem(
-                      toolName: 'set_task_title',
-                      args: <String, dynamic>{'title': 'Done'},
-                      humanSummary: 'Rename task',
-                      status: ChangeItemStatus.confirmed,
-                    ),
-                  ],
-                ),
-              ]);
+          ).thenAnswer(
+            (_) async => [
+              makeChangeSet(
+                items: [
+                  const ChangeItem(
+                    toolName: 'set_task_title',
+                    args: <String, dynamic>{'title': 'Done'},
+                    humanSummary: 'Rename task',
+                    status: ChangeItemStatus.confirmed,
+                  ),
+                ],
+              ),
+            ],
+          );
 
           final message = await executeAndCaptureMessage();
 
@@ -2245,21 +2434,23 @@ void main() {
           // Index 0 = newest (hour 24), index 24 = oldest (hour 0).
           final hour = 24 - i;
           return AgentDomainEntity.agentMessage(
-            id: 'obs-$hour',
-            agentId: agentId,
-            threadId: threadId,
-            kind: AgentMessageKind.observation,
-            createdAt: DateTime(2024, 6, 15, hour),
-            vectorClock: null,
-            contentEntryId: 'pay-$hour',
-            metadata: const AgentMessageMetadata(runKey: runKey),
-          ) as AgentMessageEntity;
+                id: 'obs-$hour',
+                agentId: agentId,
+                threadId: threadId,
+                kind: AgentMessageKind.observation,
+                createdAt: DateTime(2024, 6, 15, hour),
+                vectorClock: null,
+                contentEntryId: 'pay-$hour',
+                metadata: const AgentMessageMetadata(runKey: runKey),
+              )
+              as AgentMessageEntity;
         });
 
         // Stub all payloads.
         for (var i = 0; i < 25; i++) {
-          when(() => mockAgentRepository.getEntity('pay-$i'))
-              .thenAnswer((_) async {
+          when(() => mockAgentRepository.getEntity('pay-$i')).thenAnswer((
+            _,
+          ) async {
             return AgentDomainEntity.agentMessagePayload(
               id: 'pay-$i',
               agentId: agentId,
@@ -2270,8 +2461,9 @@ void main() {
           });
         }
 
-        final message =
-            await executeAndCaptureMessage(observations: observations);
+        final message = await executeAndCaptureMessage(
+          observations: observations,
+        );
 
         expect(message, isNotNull);
         // The 20 most recent (hours 5-24) should appear; oldest 5 dropped.
@@ -2282,44 +2474,50 @@ void main() {
         expect(message, isNot(contains('Obs 4')));
       });
 
-      test(
-          'includes prior critical observations section '
+      test('includes prior critical observations section '
           'with grievances and excellence', () async {
-        final grievanceObs = AgentDomainEntity.agentMessage(
-          id: 'obs-grievance',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          contentEntryId: 'pay-grievance',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final grievanceObs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-grievance',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 8),
+                  vectorClock: null,
+                  contentEntryId: 'pay-grievance',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
-        final excellenceObs = AgentDomainEntity.agentMessage(
-          id: 'obs-excellence',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 9),
-          vectorClock: null,
-          contentEntryId: 'pay-excellence',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final excellenceObs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-excellence',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 9),
+                  vectorClock: null,
+                  contentEntryId: 'pay-excellence',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
-        final routineObs = AgentDomainEntity.agentMessage(
-          id: 'obs-routine',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 10),
-          vectorClock: null,
-          contentEntryId: 'pay-routine',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final routineObs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-routine',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 10),
+                  vectorClock: null,
+                  contentEntryId: 'pay-routine',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('pay-grievance'))
-            .thenAnswer((_) async {
+        when(() => mockAgentRepository.getEntity('pay-grievance')).thenAnswer((
+          _,
+        ) async {
           return AgentDomainEntity.agentMessagePayload(
             id: 'pay-grievance',
             agentId: agentId,
@@ -2333,8 +2531,9 @@ void main() {
           );
         });
 
-        when(() => mockAgentRepository.getEntity('pay-excellence'))
-            .thenAnswer((_) async {
+        when(() => mockAgentRepository.getEntity('pay-excellence')).thenAnswer((
+          _,
+        ) async {
           return AgentDomainEntity.agentMessagePayload(
             id: 'pay-excellence',
             agentId: agentId,
@@ -2348,8 +2547,9 @@ void main() {
           );
         });
 
-        when(() => mockAgentRepository.getEntity('pay-routine'))
-            .thenAnswer((_) async {
+        when(() => mockAgentRepository.getEntity('pay-routine')).thenAnswer((
+          _,
+        ) async {
           return AgentDomainEntity.agentMessagePayload(
             id: 'pay-routine',
             agentId: agentId,
@@ -2394,63 +2594,70 @@ void main() {
         expect(message, contains('Routine observation note'));
       });
 
-      test('omits critical section when no critical observations exist',
-          () async {
-        final routineObs = AgentDomainEntity.agentMessage(
-          id: 'obs-routine',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 10),
-          vectorClock: null,
-          contentEntryId: 'pay-routine',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
-
-        when(() => mockAgentRepository.getEntity('pay-routine'))
-            .thenAnswer((_) async {
-          return AgentDomainEntity.agentMessagePayload(
-            id: 'pay-routine',
-            agentId: agentId,
-            createdAt: DateTime(2024, 6, 14, 10),
-            vectorClock: null,
-            content: <String, Object?>{
-              'text': 'Just a routine note',
-              'priority': 'routine',
-              'category': 'operational',
-            },
-          );
-        });
-
-        final message = await executeAndCaptureMessage(
-          observations: [routineObs],
-        );
-
-        expect(message, isNotNull);
-        expect(
-          message,
-          isNot(contains('Prior Critical Observations')),
-        );
-        expect(message, contains('## Agent Journal'));
-        expect(message, contains('Just a routine note'));
-      });
-
       test(
-          'critical section appears before Agent Journal '
-          'in message order', () async {
-        final critObs = AgentDomainEntity.agentMessage(
-          id: 'obs-crit',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          contentEntryId: 'pay-crit',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        'omits critical section when no critical observations exist',
+        () async {
+          final routineObs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-routine',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 14, 10),
+                    vectorClock: null,
+                    contentEntryId: 'pay-routine',
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('pay-crit'))
-            .thenAnswer((_) async {
+          when(() => mockAgentRepository.getEntity('pay-routine')).thenAnswer((
+            _,
+          ) async {
+            return AgentDomainEntity.agentMessagePayload(
+              id: 'pay-routine',
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 14, 10),
+              vectorClock: null,
+              content: <String, Object?>{
+                'text': 'Just a routine note',
+                'priority': 'routine',
+                'category': 'operational',
+              },
+            );
+          });
+
+          final message = await executeAndCaptureMessage(
+            observations: [routineObs],
+          );
+
+          expect(message, isNotNull);
+          expect(
+            message,
+            isNot(contains('Prior Critical Observations')),
+          );
+          expect(message, contains('## Agent Journal'));
+          expect(message, contains('Just a routine note'));
+        },
+      );
+
+      test('critical section appears before Agent Journal '
+          'in message order', () async {
+        final critObs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-crit',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 8),
+                  vectorClock: null,
+                  contentEntryId: 'pay-crit',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
+
+        when(() => mockAgentRepository.getEntity('pay-crit')).thenAnswer((
+          _,
+        ) async {
           return AgentDomainEntity.agentMessagePayload(
             id: 'pay-crit',
             agentId: agentId,
@@ -2474,22 +2681,24 @@ void main() {
         expect(criticalIdx, lessThan(journalIdx));
       });
 
-      test(
-          'handles payload resolution errors gracefully '
+      test('handles payload resolution errors gracefully '
           'in critical observation filtering', () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-err',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          contentEntryId: 'pay-err',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final obs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-err',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 8),
+                  vectorClock: null,
+                  contentEntryId: 'pay-err',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('pay-err'))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockAgentRepository.getEntity('pay-err'),
+        ).thenThrow(Exception('DB error'));
 
         final message = await executeAndCaptureMessage(
           observations: [obs],
@@ -2506,65 +2715,73 @@ void main() {
         );
       });
 
-      test('treats template_improvement as grievance in critical section',
-          () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-tmpl',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          contentEntryId: 'pay-tmpl',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+      test(
+        'treats template_improvement as grievance in critical section',
+        () async {
+          final obs =
+              AgentDomainEntity.agentMessage(
+                    id: 'obs-tmpl',
+                    agentId: agentId,
+                    threadId: threadId,
+                    kind: AgentMessageKind.observation,
+                    createdAt: DateTime(2024, 6, 14, 8),
+                    vectorClock: null,
+                    contentEntryId: 'pay-tmpl',
+                    metadata: const AgentMessageMetadata(runKey: runKey),
+                  )
+                  as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('pay-tmpl'))
-            .thenAnswer((_) async {
-          return AgentDomainEntity.agentMessagePayload(
-            id: 'pay-tmpl',
-            agentId: agentId,
-            createdAt: DateTime(2024, 6, 14, 8),
-            vectorClock: null,
-            content: <String, Object?>{
-              'text': 'User wants different behavior',
-              'priority': 'critical',
-              'category': 'template_improvement',
-            },
+          when(() => mockAgentRepository.getEntity('pay-tmpl')).thenAnswer((
+            _,
+          ) async {
+            return AgentDomainEntity.agentMessagePayload(
+              id: 'pay-tmpl',
+              agentId: agentId,
+              createdAt: DateTime(2024, 6, 14, 8),
+              vectorClock: null,
+              content: <String, Object?>{
+                'text': 'User wants different behavior',
+                'priority': 'critical',
+                'category': 'template_improvement',
+              },
+            );
+          });
+
+          final message = await executeAndCaptureMessage(
+            observations: [obs],
           );
-        });
 
-        final message = await executeAndCaptureMessage(
-          observations: [obs],
-        );
-
-        expect(message, isNotNull);
-        expect(message, contains('### Grievances'));
-        expect(
-          message,
-          contains('User wants different behavior'),
-        );
-        // Should not appear in excellence.
-        expect(
-          message,
-          isNot(contains('### Excellence')),
-        );
-      });
+          expect(message, isNotNull);
+          expect(message, contains('### Grievances'));
+          expect(
+            message,
+            contains('User wants different behavior'),
+          );
+          // Should not appear in excellence.
+          expect(
+            message,
+            isNot(contains('### Excellence')),
+          );
+        },
+      );
 
       test('skips critical observations with empty text', () async {
-        final obs = AgentDomainEntity.agentMessage(
-          id: 'obs-empty',
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2024, 6, 14, 8),
-          vectorClock: null,
-          contentEntryId: 'pay-empty',
-          metadata: const AgentMessageMetadata(runKey: runKey),
-        ) as AgentMessageEntity;
+        final obs =
+            AgentDomainEntity.agentMessage(
+                  id: 'obs-empty',
+                  agentId: agentId,
+                  threadId: threadId,
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime(2024, 6, 14, 8),
+                  vectorClock: null,
+                  contentEntryId: 'pay-empty',
+                  metadata: const AgentMessageMetadata(runKey: runKey),
+                )
+                as AgentMessageEntity;
 
-        when(() => mockAgentRepository.getEntity('pay-empty'))
-            .thenAnswer((_) async {
+        when(() => mockAgentRepository.getEntity('pay-empty')).thenAnswer((
+          _,
+        ) async {
           return AgentDomainEntity.agentMessagePayload(
             id: 'pay-empty',
             agentId: agentId,
@@ -2594,28 +2811,33 @@ void main() {
     group('tool handler dispatch with real Task', () {
       /// Common stubs for execute path up through sendMessage.
       void stubFullExecutePath() {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(() => mockConversationManager.messages).thenReturn([]);
       }
 
@@ -2653,8 +2875,9 @@ void main() {
 
         // Return a real Task entity from the DB so tool handler dispatch
         // actually exercises the handler code.
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => task ?? taskWithCategory);
+        when(
+          () => mockJournalDb.journalEntityById(taskId),
+        ).thenAnswer((_) async => task ?? taskWithCategory);
 
         // Stub addToolResponse on the conversation manager.
         when(
@@ -2664,33 +2887,34 @@ void main() {
           ),
         ).thenReturn(null);
 
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                ChatCompletionMessageToolCall(
-                  id: 'tc-1',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: toolName,
-                    arguments: arguments,
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'tc-1',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: toolName,
+                        arguments: arguments,
+                      ),
+                    ),
+                  ],
+                  manager: mockConversationManager,
+                );
+              }
+              return null;
+            };
 
         return workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -2734,8 +2958,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalRepository.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepository.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
         registerFallbackValue(taskNoTitle);
 
         final result = await executeWithToolCallOnRealTask(
@@ -2863,23 +3088,25 @@ void main() {
         ).called(1);
       });
 
-      test('add_multiple_checklist_items with non-array items is deferred',
-          () async {
-        final result = await executeWithToolCallOnRealTask(
-          'add_multiple_checklist_items',
-          '{"items":"not an array"}',
-        );
-        expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: contains('Proposal queued for user review'),
+      test(
+        'add_multiple_checklist_items with non-array items is deferred',
+        () async {
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":"not an array"}',
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Proposal queued for user review'),
+              ),
             ),
-          ),
-        ).called(1);
-      });
+          ).called(1);
+        },
+      );
 
       test('update_checklist_items with non-array items is deferred', () async {
         final result = await executeWithToolCallOnRealTask(
@@ -2915,43 +3142,47 @@ void main() {
         ).called(1);
       });
 
-      test('add_multiple_checklist_items with empty array is deferred',
-          () async {
-        final result = await executeWithToolCallOnRealTask(
-          'add_multiple_checklist_items',
-          '{"items":[]}',
-        );
-        expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: contains('Proposal queued for user review'),
+      test(
+        'add_multiple_checklist_items with empty array is deferred',
+        () async {
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":[]}',
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('Proposal queued for user review'),
+              ),
             ),
-          ),
-        ).called(1);
-      });
+          ).called(1);
+        },
+      );
 
-      test('add_multiple_checklist_items with string items reports skipped',
-          () async {
-        // String items are skipped by the ChangeSetBuilder's batch
-        // exploder (they are not Map<String, dynamic>).
-        final result = await executeWithToolCallOnRealTask(
-          'add_multiple_checklist_items',
-          '{"items":["Buy milk","Pay bills"]}',
-        );
-        expect(result.success, isTrue);
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: contains('skipped'),
+      test(
+        'add_multiple_checklist_items with string items reports skipped',
+        () async {
+          // String items are skipped by the ChangeSetBuilder's batch
+          // exploder (they are not Map<String, dynamic>).
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":["Buy milk","Pay bills"]}',
+          );
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('skipped'),
+              ),
             ),
-          ),
-        ).called(1);
-      });
+          ).called(1);
+        },
+      );
 
       test('update_checklist_items with missing id is deferred', () async {
         // Items with missing id are still valid Maps and get deferred.
@@ -2973,8 +3204,9 @@ void main() {
       });
 
       test('update_task_estimate accepts numeric string minutes', () async {
-        when(() => mockJournalRepository.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepository.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final result = await executeWithToolCallOnRealTask(
           'update_task_estimate',
@@ -2995,29 +3227,30 @@ void main() {
       });
 
       test(
-          'add_multiple_checklist_items with valid object items passes parsing',
-          () async {
-        // Valid format: array of objects with "title" field, matching the
-        // handler's expected schema.
-        final result = await executeWithToolCallOnRealTask(
-          'add_multiple_checklist_items',
-          '{"items":[{"title":"Buy milk"},{"title":"Walk dog","isChecked":true}]}',
-        );
-        expect(result.success, isTrue);
-        // The tool response should NOT contain the type-validation error.
-        // It may report "Created 0 checklist items" because the handler's
-        // internal getIt call isn't set up, but that's fine — the point is
-        // the args format was accepted.
-        verifyNever(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-1',
-            response: any(
-              named: 'response',
-              that: contains('non-empty array'),
+        'add_multiple_checklist_items with valid object items passes parsing',
+        () async {
+          // Valid format: array of objects with "title" field, matching the
+          // handler's expected schema.
+          final result = await executeWithToolCallOnRealTask(
+            'add_multiple_checklist_items',
+            '{"items":[{"title":"Buy milk"},{"title":"Walk dog","isChecked":true}]}',
+          );
+          expect(result.success, isTrue);
+          // The tool response should NOT contain the type-validation error.
+          // It may report "Created 0 checklist items" because the handler's
+          // internal getIt call isn't set up, but that's fine — the point is
+          // the args format was accepted.
+          verifyNever(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('non-empty array'),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
 
       test('update_checklist_items with valid items passes parsing', () async {
         // Valid format: array of objects with "id" and "isChecked" fields,
@@ -3144,25 +3377,27 @@ void main() {
           ).called(1);
         });
 
-        test('update_task_estimate with already-set estimate is suppressed',
-            () async {
-          // When the proposed value matches the current value, the redundancy
-          // filter suppresses it and feeds back a skip message to the LLM.
-          final result = await executeWithToolCallOnRealTask(
-            'update_task_estimate',
-            '{"minutes":240}',
-          );
-          expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('Skipped: estimate is already 240 minutes'),
+        test(
+          'update_task_estimate with already-set estimate is suppressed',
+          () async {
+            // When the proposed value matches the current value, the redundancy
+            // filter suppresses it and feeds back a skip message to the LLM.
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_estimate',
+              '{"minutes":240}',
+            );
+            expect(result.success, isTrue);
+            verify(
+              () => mockConversationManager.addToolResponse(
+                toolCallId: 'tc-1',
+                response: any(
+                  named: 'response',
+                  that: contains('Skipped: estimate is already 240 minutes'),
+                ),
               ),
-            ),
-          ).called(1);
-        });
+            ).called(1);
+          },
+        );
 
         test('update_task_due_date with invalid format is deferred', () async {
           // Invalid args are still deferred — validation happens at
@@ -3184,79 +3419,84 @@ void main() {
           ).called(1);
         });
 
-        test('update_task_priority with invalid priority is deferred',
-            () async {
-          final result = await executeWithToolCallOnRealTask(
-            'update_task_priority',
-            '{"priority":"P9"}',
-            task: taskForUpdates,
-          );
-          expect(result.success, isTrue);
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('Proposal queued for user review'),
+        test(
+          'update_task_priority with invalid priority is deferred',
+          () async {
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_priority',
+              '{"priority":"P9"}',
+              task: taskForUpdates,
+            );
+            expect(result.success, isTrue);
+            verify(
+              () => mockConversationManager.addToolResponse(
+                toolCallId: 'tc-1',
+                response: any(
+                  named: 'response',
+                  that: contains('Proposal queued for user review'),
+                ),
               ),
-            ),
-          ).called(1);
-        });
+            ).called(1);
+          },
+        );
 
-        test('update_task_estimate with persistence failure is deferred',
-            () async {
-          // The tool call is deferred regardless — no DB write happens yet.
-          final result = await executeWithToolCallOnRealTask(
-            'update_task_estimate',
-            '{"minutes":60}',
-            task: taskForUpdates,
-          );
-          expect(result.success, isTrue);
-          verifyNever(
-            () => mockJournalRepository.updateJournalEntity(any()),
-          );
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('Proposal queued for user review'),
+        test(
+          'update_task_estimate with persistence failure is deferred',
+          () async {
+            // The tool call is deferred regardless — no DB write happens yet.
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_estimate',
+              '{"minutes":60}',
+              task: taskForUpdates,
+            );
+            expect(result.success, isTrue);
+            verifyNever(
+              () => mockJournalRepository.updateJournalEntity(any()),
+            );
+            verify(
+              () => mockConversationManager.addToolResponse(
+                toolCallId: 'tc-1',
+                response: any(
+                  named: 'response',
+                  that: contains('Proposal queued for user review'),
+                ),
               ),
-            ),
-          ).called(1);
-        });
+            ).called(1);
+          },
+        );
       });
 
       group('deferred checklist handler paths', () {
         test(
-            'add_multiple_checklist_items is deferred, not executed immediately',
-            () async {
-          final result = await executeWithToolCallOnRealTask(
-            'add_multiple_checklist_items',
-            '{"items":[{"title":"Buy milk"}]}',
-          );
+          'add_multiple_checklist_items is deferred, not executed immediately',
+          () async {
+            final result = await executeWithToolCallOnRealTask(
+              'add_multiple_checklist_items',
+              '{"items":[{"title":"Buy milk"}]}',
+            );
 
-          expect(result.success, isTrue);
-          // Checklist items are NOT created immediately — they are deferred.
-          verifyNever(
-            () => mockChecklistRepository.addItemToChecklist(
-              checklistId: any(named: 'checklistId'),
-              title: any(named: 'title'),
-              isChecked: any(named: 'isChecked'),
-              categoryId: any(named: 'categoryId'),
-              checkedBy: any(named: 'checkedBy'),
-            ),
-          );
-          verify(
-            () => mockConversationManager.addToolResponse(
-              toolCallId: 'tc-1',
-              response: any(
-                named: 'response',
-                that: contains('Proposal queued for user review'),
+            expect(result.success, isTrue);
+            // Checklist items are NOT created immediately — they are deferred.
+            verifyNever(
+              () => mockChecklistRepository.addItemToChecklist(
+                checklistId: any(named: 'checklistId'),
+                title: any(named: 'title'),
+                isChecked: any(named: 'isChecked'),
+                categoryId: any(named: 'categoryId'),
+                checkedBy: any(named: 'checkedBy'),
               ),
-            ),
-          ).called(1);
-        });
+            );
+            verify(
+              () => mockConversationManager.addToolResponse(
+                toolCallId: 'tc-1',
+                response: any(
+                  named: 'response',
+                  that: contains('Proposal queued for user review'),
+                ),
+              ),
+            ).called(1);
+          },
+        );
 
         test('update_checklist_items is deferred', () async {
           final result = await executeWithToolCallOnRealTask(
@@ -3276,140 +3516,154 @@ void main() {
           ).called(1);
         });
 
-        test('update_checklist_items resolves title from DB for ID-only items',
-            () async {
-          // Stub journalEntityById to return a ChecklistItem for the
-          // referenced item ID so the resolver closure is exercised.
-          final checklistItem = JournalEntity.checklistItem(
+        test(
+          'update_checklist_items resolves title from DB for ID-only items',
+          () async {
+            // Stub journalEntityById to return a ChecklistItem for the
+            // referenced item ID so the resolver closure is exercised.
+            final checklistItem = JournalEntity.checklistItem(
+              meta: Metadata(
+                id: 'cl-item-1',
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+              ),
+              data: const ChecklistItemData(
+                title: 'Buy groceries',
+                isChecked: false,
+                linkedChecklists: [],
+              ),
+            );
+
+            when(
+              () => mockJournalDb.journalEntityById('cl-item-1'),
+            ).thenAnswer((_) async => checklistItem);
+
+            final result = await executeWithToolCallOnRealTask(
+              'update_checklist_items',
+              '{"items":[{"id":"cl-item-1","isChecked":true}]}',
+            );
+
+            expect(result.success, isTrue);
+
+            // Verify the resolver looked up the checklist item.
+            verify(
+              () => mockJournalDb.journalEntityById('cl-item-1'),
+            ).called(1);
+          },
+        );
+      });
+
+      test(
+        'task entity is not a Task type — set_task_title is still deferred',
+        () async {
+          stubFullExecutePath();
+
+          // Return a non-Task journal entity. The strategy defers the tool
+          // call regardless — type validation happens at confirmation time.
+          final nonTaskEntity = JournalEntry(
             meta: Metadata(
-              id: 'cl-item-1',
+              id: taskId,
               createdAt: DateTime(2024, 3, 15),
               dateFrom: DateTime(2024, 3, 15),
               dateTo: DateTime(2024, 3, 15),
               updatedAt: DateTime(2024, 3, 15),
+              categoryId: 'cat-001',
             ),
-            data: const ChecklistItemData(
-              title: 'Buy groceries',
-              isChecked: false,
-              linkedChecklists: [],
-            ),
+            entryText: const EntryText(plainText: 'Not a task'),
           );
 
-          when(() => mockJournalDb.journalEntityById('cl-item-1'))
-              .thenAnswer((_) async => checklistItem);
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => nonTaskEntity);
+          when(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          ).thenReturn(null);
 
-          final result = await executeWithToolCallOnRealTask(
-            'update_checklist_items',
-            '{"items":[{"id":"cl-item-1","isChecked":true}]}',
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'tc-2',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'set_task_title',
+                          arguments: '{"title":"Test"}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
           );
 
           expect(result.success, isTrue);
-
-          // Verify the resolver looked up the checklist item.
-          verify(() => mockJournalDb.journalEntityById('cl-item-1')).called(1);
-        });
-      });
-
-      test('task entity is not a Task type — set_task_title is still deferred',
-          () async {
-        stubFullExecutePath();
-
-        // Return a non-Task journal entity. The strategy defers the tool
-        // call regardless — type validation happens at confirmation time.
-        final nonTaskEntity = JournalEntry(
-          meta: Metadata(
-            id: taskId,
-            createdAt: DateTime(2024, 3, 15),
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            categoryId: 'cat-001',
-          ),
-          entryText: const EntryText(plainText: 'Not a task'),
-        );
-
-        when(() => mockJournalDb.journalEntityById(taskId))
-            .thenAnswer((_) async => nonTaskEntity);
-        when(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          ),
-        ).thenReturn(null);
-
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: [
-                const ChatCompletionMessageToolCall(
-                  id: 'tc-2',
-                  type: ChatCompletionMessageToolCallType.function,
-                  function: ChatCompletionMessageFunctionCall(
-                    name: 'set_task_title',
-                    arguments: '{"title":"Test"}',
-                  ),
-                ),
-              ],
-              manager: mockConversationManager,
-            );
-          }
-          return null;
-        };
-
-        final result = await workflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: runKey,
-          triggerTokens: {'entity-a'},
-          threadId: threadId,
-        );
-
-        expect(result.success, isTrue);
-        // Tool call is deferred — not validated against entity type.
-        verify(
-          () => mockConversationManager.addToolResponse(
-            toolCallId: 'tc-2',
-            response: any(
-              named: 'response',
-              that: contains('Proposal queued for user review'),
+          // Tool call is deferred — not validated against entity type.
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-2',
+              response: any(
+                named: 'response',
+                that: contains('Proposal queued for user review'),
+              ),
             ),
-          ),
-        ).called(1);
-      });
+          ).called(1);
+        },
+      );
     });
 
     group('_extractFinalAssistantContent', () {
       setUp(() {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
       });
 
       test('picks last assistant message with content', () async {
@@ -3432,8 +3686,9 @@ void main() {
           threadId: threadId,
         );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -3452,8 +3707,9 @@ void main() {
 
       test('no thought persisted when getConversation returns null', () async {
         // Use a new repository mock that returns null for getConversation.
-        final nullManagerRepo =
-            _NullManagerConversationRepository(mockConversationManager);
+        final nullManagerRepo = _NullManagerConversationRepository(
+          mockConversationManager,
+        );
         final nullWorkflow = TaskAgentWorkflow(
           agentRepository: mockAgentRepository,
           conversationRepository: nullManagerRepo,
@@ -3478,8 +3734,9 @@ void main() {
         expect(result.success, isTrue);
 
         // Only user message payload (no thought payload since manager null).
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
         final payloads = captured
             .whereType<AgentDomainEntity>()
             .where(
@@ -3508,8 +3765,9 @@ void main() {
           threadId: threadId,
         );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -3539,8 +3797,9 @@ void main() {
           threadId: threadId,
         );
 
-        final captured =
-            verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
 
         final payloads = captured
             .whereType<AgentDomainEntity>()
@@ -3560,20 +3819,24 @@ void main() {
 
     group('failure state update error handling', () {
       test('swallows error when updating failure count fails', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -3582,22 +3845,24 @@ void main() {
         ).thenAnswer((_) async => geminiProvider);
 
         // Make sendMessage throw.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          throw Exception('Network failure');
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('Network failure');
+            };
 
         // Make the state update also throw (the nested try/catch).
-        when(() => mockSyncService.upsertEntity(any()))
-            .thenThrow(Exception('DB write failed'));
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenThrow(Exception('DB write failed'));
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -3615,28 +3880,33 @@ void main() {
     group('syncService pass-through', () {
       test('routes writes through syncService', () async {
         // Set up stubs for a successful execute path.
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
         when(
           () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(() => mockConversationManager.messages).thenReturn([]);
 
         final result = await workflow.execute(
@@ -3649,8 +3919,9 @@ void main() {
         expect(result.success, isTrue);
 
         // Writes go through syncService, not the repository directly.
-        verify(() => mockSyncService.upsertEntity(any()))
-            .called(greaterThanOrEqualTo(1));
+        verify(
+          () => mockSyncService.upsertEntity(any()),
+        ).called(greaterThanOrEqualTo(1));
       });
     });
 
@@ -3659,7 +3930,7 @@ void main() {
         const result = WakeResult(
           success: true,
           mutatedEntries: {
-            'entity-1': VectorClock({'host-a': 1})
+            'entity-1': VectorClock({'host-a': 1}),
           },
         );
 
@@ -3667,7 +3938,7 @@ void main() {
         expect(
           result.mutatedEntries,
           {
-            'entity-1': const VectorClock({'host-a': 1})
+            'entity-1': const VectorClock({'host-a': 1}),
           },
         );
         expect(result.error, isNull);
@@ -3693,75 +3964,83 @@ void main() {
     });
 
     group('null domainLogger fallback', () {
-      test('_logError falls back to developer.log when domainLogger is null',
-          () async {
-        // Create a workflow without domainLogger.
-        final nullLoggerWorkflow = TaskAgentWorkflow(
-          agentRepository: mockAgentRepository,
-          conversationRepository: mockConversationRepository,
-          aiInputRepository: mockAiInputRepository,
-          aiConfigRepository: mockAiConfigRepository,
-          journalDb: mockJournalDb,
-          cloudInferenceRepository: mockCloudInferenceRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: mockChecklistRepository,
-          labelsRepository: mockLabelsRepository,
-          syncService: mockSyncService,
-          templateService: mockTemplateService,
-        );
+      test(
+        '_logError falls back to developer.log when domainLogger is null',
+        () async {
+          // Create a workflow without domainLogger.
+          final nullLoggerWorkflow = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+          );
 
-        // Set up enough stubs to get into the main try block, then make
-        // sendMessage throw to trigger _logError via the outer catch.
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
-        when(
-          () => mockAgentRepository.getMessagesByKind(
-            agentId,
-            AgentMessageKind.observation,
-          ),
-        ).thenAnswer((_) async => []);
-        when(() => mockAiInputRepository.buildTaskDetailsJson(id: taskId))
-            .thenAnswer((_) async => '{"title":"Test Task"}');
-        when(() => mockAiInputRepository.buildLinkedTasksJson(taskId))
-            .thenAnswer((_) async => '{}');
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
-        when(() => mockConversationManager.messages).thenReturn([]);
+          // Set up enough stubs to get into the main try block, then make
+          // sendMessage throw to trigger _logError via the outer catch.
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => testAgentState);
+          when(
+            () => mockAgentRepository.getLatestReport(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => '{"title":"Test Task"}');
+          when(
+            () => mockAiInputRepository.buildLinkedTasksJson(taskId),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => [geminiModel]);
+          when(
+            () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+          ).thenAnswer((_) async => geminiProvider);
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => null);
+          when(() => mockConversationManager.messages).thenReturn([]);
 
-        // Make sendMessage throw to trigger the outer catch → _logError.
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          throw Exception('LLM unavailable');
-        };
+          // Make sendMessage throw to trigger the outer catch → _logError.
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                throw Exception('LLM unavailable');
+              };
 
-        final result = await nullLoggerWorkflow.execute(
-          agentIdentity: testAgentIdentity,
-          runKey: 'run-key-1',
-          triggerTokens: const {},
-          threadId: 'thread-1',
-        );
+          final result = await nullLoggerWorkflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: 'run-key-1',
+            triggerTokens: const {},
+            threadId: 'thread-1',
+          );
 
-        // Should return error result (not throw), having logged via
-        // developer.log fallback.
-        expect(result.success, isFalse);
-        expect(result.error, contains('LLM unavailable'));
-      });
+          // Should return error result (not throw), having logged via
+          // developer.log fallback.
+          expect(result.success, isFalse);
+          expect(result.error, contains('LLM unavailable'));
+        },
+      );
     });
   });
 }

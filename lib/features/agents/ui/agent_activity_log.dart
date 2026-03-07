@@ -20,8 +20,8 @@ class AgentActivityLog extends ConsumerWidget {
   const AgentActivityLog({
     required this.agentId,
     super.key,
-  })  : _preloadedMessages = null,
-        expandToolCalls = false;
+  }) : _preloadedMessages = null,
+       expandToolCalls = false;
 
   /// Render a pre-fetched list of messages (e.g., from a thread group).
   ///
@@ -43,7 +43,7 @@ class AgentActivityLog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (_preloadedMessages != null) {
-      return _buildMessageList(context, _preloadedMessages!);
+      return _buildMessageList(context, _preloadedMessages);
     }
 
     final messagesAsync = ref.watch(agentRecentMessagesProvider(agentId));
@@ -60,8 +60,9 @@ class AgentActivityLog extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages
-              .agentMessagesErrorLoading(messagesAsync.error.toString()),
+          context.messages.agentMessagesErrorLoading(
+            messagesAsync.error.toString(),
+          ),
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -92,7 +93,7 @@ class AgentActivityLog extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: messages.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppTheme.spacingXSmall),
       itemBuilder: (context, index) {
         final entity = messages[index];
@@ -127,8 +128,9 @@ class AgentObservationLog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final observationsAsync =
-        ref.watch(agentObservationMessagesProvider(agentId));
+    final observationsAsync = ref.watch(
+      agentObservationMessagesProvider(agentId),
+    );
 
     final observations = observationsAsync.value;
 
@@ -143,8 +145,9 @@ class AgentObservationLog extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.all(AppTheme.cardPadding),
         child: Text(
-          context.messages
-              .agentMessagesErrorLoading(observationsAsync.error.toString()),
+          context.messages.agentMessagesErrorLoading(
+            observationsAsync.error.toString(),
+          ),
           style: context.textTheme.bodyMedium?.copyWith(
             color: context.colorScheme.error,
           ),
@@ -168,7 +171,7 @@ class AgentObservationLog extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: observations.length,
-      separatorBuilder: (_, __) =>
+      separatorBuilder: (_, _) =>
           const SizedBox(height: AppTheme.spacingXSmall),
       itemBuilder: (context, index) {
         final entity = observations[index];
@@ -304,13 +307,16 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
                       vertical: 2,
                     ),
                     decoration: BoxDecoration(
-                      color:
-                          context.colorScheme.tertiary.withValues(alpha: 0.12),
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.spacingXSmall),
+                      color: context.colorScheme.tertiary.withValues(
+                        alpha: 0.12,
+                      ),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.spacingXSmall,
+                      ),
                       border: Border.all(
-                        color:
-                            context.colorScheme.tertiary.withValues(alpha: 0.4),
+                        color: context.colorScheme.tertiary.withValues(
+                          alpha: 0.4,
+                        ),
                       ),
                     ),
                     child: Text(
@@ -386,8 +392,9 @@ class _MessageCardState extends ConsumerState<_MessageCard> {
         borderRadius: BorderRadius.circular(AppTheme.spacingSmall),
       ),
       child: InkWell(
-        onTap:
-            isExpandable ? () => setState(() => _expanded = !_expanded) : null,
+        onTap: isExpandable
+            ? () => setState(() => _expanded = !_expanded)
+            : null,
         borderRadius: BorderRadius.circular(AppTheme.spacingSmall),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -553,23 +560,23 @@ class _KindBadge extends StatelessWidget {
     final l10n = context.messages;
     return switch (kind) {
       AgentMessageKind.observation => (
-          l10n.agentMessageKindObservation,
-          scheme.primary
-        ),
+        l10n.agentMessageKindObservation,
+        scheme.primary,
+      ),
       AgentMessageKind.user => (l10n.agentMessageKindUser, scheme.secondary),
       AgentMessageKind.thought => (
-          l10n.agentMessageKindThought,
-          scheme.tertiary
-        ),
+        l10n.agentMessageKindThought,
+        scheme.tertiary,
+      ),
       AgentMessageKind.action => (l10n.agentMessageKindAction, scheme.primary),
       AgentMessageKind.toolResult => (
-          l10n.agentMessageKindToolResult,
-          scheme.secondary
-        ),
+        l10n.agentMessageKindToolResult,
+        scheme.secondary,
+      ),
       AgentMessageKind.summary => (
-          l10n.agentMessageKindSummary,
-          scheme.outline
-        ),
+        l10n.agentMessageKindSummary,
+        scheme.outline,
+      ),
       AgentMessageKind.system => (l10n.agentMessageKindSystem, scheme.outline),
     };
   }

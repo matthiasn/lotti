@@ -57,7 +57,8 @@ class ModernCardContent extends StatelessWidget {
               // Title
               Text(
                 title,
-                style: titleStyle ??
+                style:
+                    titleStyle ??
                     context.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       letterSpacing: AppTheme.letterSpacingTitle,
@@ -86,10 +87,12 @@ class ModernCardContent extends StatelessWidget {
                 ),
                 Text(
                   subtitle!,
-                  style: subtitleStyle ??
+                  style:
+                      subtitleStyle ??
                       context.textTheme.bodySmall?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant
-                            .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                        color: context.colorScheme.onSurfaceVariant.withValues(
+                          alpha: AppTheme.alphaSurfaceVariant,
+                        ),
                         fontSize: isCompact
                             ? AppTheme.subtitleFontSizeCompact
                             : AppTheme.subtitleFontSize,

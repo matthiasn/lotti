@@ -56,14 +56,16 @@ void main() {
       expect(response, contains('Skipped 1 redundant update(s)'));
     });
 
-    test('shows queued message when zero added but no skipped or redundant',
-        () {
-      const result = BatchAddResult(added: 0, skipped: 0);
-      expect(
-        ChangeProposalFilter.formatBatchResponse(result),
-        'Proposal queued for user review (0 item(s) queued).',
-      );
-    });
+    test(
+      'shows queued message when zero added but no skipped or redundant',
+      () {
+        const result = BatchAddResult(added: 0, skipped: 0);
+        expect(
+          ChangeProposalFilter.formatBatchResponse(result),
+          'Proposal queued for user review (0 item(s) queued).',
+        );
+      },
+    );
 
     test('omits queued line when zero added but has skipped', () {
       const result = BatchAddResult(added: 0, skipped: 3);
@@ -296,8 +298,9 @@ void main() {
         meta: testTask.meta,
         entryText: testTask.entryText,
       );
-      when(() => mockDb.journalEntityById('task-1'))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockDb.journalEntityById('task-1'),
+      ).thenAnswer((_) async => task);
 
       final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
         mockDb,
@@ -313,8 +316,9 @@ void main() {
     });
 
     test('returns null for non-Task entity', () async {
-      when(() => mockDb.journalEntityById('entry-1'))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockDb.journalEntityById('entry-1'),
+      ).thenAnswer((_) async => testTextEntry);
 
       final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
         mockDb,
@@ -325,8 +329,9 @@ void main() {
     });
 
     test('returns null when entity is not found', () async {
-      when(() => mockDb.journalEntityById('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockDb.journalEntityById('missing'),
+      ).thenAnswer((_) async => null);
 
       final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
         mockDb,
@@ -352,8 +357,9 @@ void main() {
         meta: testTask.meta,
         entryText: testTask.entryText,
       );
-      when(() => mockDb.journalEntityById('task-2'))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockDb.journalEntityById('task-2'),
+      ).thenAnswer((_) async => task);
 
       final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
         mockDb,

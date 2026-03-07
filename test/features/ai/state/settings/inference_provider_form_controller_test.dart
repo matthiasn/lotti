@@ -45,39 +45,42 @@ void main() {
   });
 
   group('ApiKeyFormController Tests', () {
-    test('should load existing config in build when configId is provided',
-        () async {
-      // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
-        (_) async => testConfig,
-      );
+    test(
+      'should load existing config in build when configId is provided',
+      () async {
+        // Arrange
+        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+          (_) async => testConfig,
+        );
 
-      // Act
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
-      );
-      final formState = await container.read(
-        inferenceProviderFormControllerProvider(configId: 'test-id').future,
-      );
+        // Act
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').notifier,
+        );
+        final formState = await container.read(
+          inferenceProviderFormControllerProvider(configId: 'test-id').future,
+        );
 
-      // Assert
-      expect(formState, isA<InferenceProviderFormState>());
-      expect(controller.nameController.text, equals('Test API'));
-      expect(controller.apiKeyController.text, equals('test-api-key'));
-      expect(
-        controller.baseUrlController.text,
-        equals('https://api.example.com'),
-      );
-      verify(() => mockRepository.getConfigById('test-id')).called(1);
-    });
+        // Assert
+        expect(formState, isA<InferenceProviderFormState>());
+        expect(controller.nameController.text, equals('Test API'));
+        expect(controller.apiKeyController.text, equals('test-api-key'));
+        expect(
+          controller.baseUrlController.text,
+          equals('https://api.example.com'),
+        );
+        verify(() => mockRepository.getConfigById('test-id')).called(1);
+      },
+    );
 
     test('should have empty form state when configId is null', () async {
       // Act
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      final formState = await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      final formState = await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Assert
       expect(formState, isA<InferenceProviderFormState>());
@@ -90,8 +93,9 @@ void main() {
     test('should add a new configuration', () async {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
 
       // Act
       final controller = container.read(
@@ -161,8 +165,9 @@ void main() {
         providerName: 'Test Provider',
       );
 
-      when(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
-          .thenAnswer((_) async => mockResult);
+      when(
+        () => mockRepository.deleteInferenceProviderWithModels('test-id'),
+      ).thenAnswer((_) async => mockResult);
 
       // Act
       final controller = container.read(
@@ -173,8 +178,9 @@ void main() {
       // Assert
       expect(result.deletedModels.length, equals(1));
       expect(result.providerName, equals('Test Provider'));
-      verify(() => mockRepository.deleteInferenceProviderWithModels('test-id'))
-          .called(1);
+      verify(
+        () => mockRepository.deleteInferenceProviderWithModels('test-id'),
+      ).called(1);
     });
 
     test('should update form state when name is changed', () async {
@@ -182,8 +188,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.nameChanged('New Name');
@@ -200,8 +207,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.apiKeyChanged('new-api-key');
@@ -218,8 +226,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.baseUrlChanged('https://new.example.com');
@@ -236,8 +245,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.descriptionChanged('New comment');
@@ -249,35 +259,41 @@ void main() {
       expect(formState?.description.value, equals('New comment'));
     });
 
-    test('should update form state when inference provider type is changed',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+    test(
+      'should update form state when inference provider type is changed',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.anthropic,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(
-        formState?.inferenceProviderType,
-        equals(InferenceProviderType.anthropic),
-      );
-    });
+        // Assert
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.anthropic),
+        );
+      },
+    );
 
     test('should set baseUrl when Gemini provider type is selected', () async {
       // Arrange
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
@@ -300,31 +316,34 @@ void main() {
       );
     });
 
-    test('updates baseUrl when inferenceProviderType changes to gemini',
-        () async {
-      // Initially base URL is empty
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      expect(controller.baseUrlController.text, isEmpty);
+    test(
+      'updates baseUrl when inferenceProviderType changes to gemini',
+      () async {
+        // Initially base URL is empty
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        expect(controller.baseUrlController.text, isEmpty);
 
-      // Change inference provider type to Gemini
-      controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+        // Change inference provider type to Gemini
+        controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
 
-      // Verify base URL is updated
-      expect(
-        controller.baseUrlController.text,
-        'https://generativelanguage.googleapis.com/v1beta/openai',
-      );
-    });
+        // Verify base URL is updated
+        expect(
+          controller.baseUrlController.text,
+          'https://generativelanguage.googleapis.com/v1beta/openai',
+        );
+      },
+    );
 
     test('should set baseUrl when OpenAI provider type is selected', () async {
       // Arrange
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
@@ -347,131 +366,154 @@ void main() {
       );
     });
 
-    test('should set baseUrl when Anthropic provider type is selected',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+    test(
+      'should set baseUrl when Anthropic provider type is selected',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.anthropic,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(
-        controller.baseUrlController.text,
-        equals('https://api.anthropic.com/v1'),
-      );
-      expect(
-        formState?.baseUrl.value,
-        equals('https://api.anthropic.com/v1'),
-      );
-      expect(
-        formState?.inferenceProviderType,
-        equals(InferenceProviderType.anthropic),
-      );
-    });
-
-    test('should set baseUrl when OpenRouter provider type is selected',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
-
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-
-      // Assert
-      expect(
-        controller.baseUrlController.text,
-        equals('https://openrouter.ai/api/v1'),
-      );
-      expect(
-        formState?.baseUrl.value,
-        equals('https://openrouter.ai/api/v1'),
-      );
-      expect(
-        formState?.inferenceProviderType,
-        equals(InferenceProviderType.openRouter),
-      );
-    });
+        // Assert
+        expect(
+          controller.baseUrlController.text,
+          equals('https://api.anthropic.com/v1'),
+        );
+        expect(
+          formState?.baseUrl.value,
+          equals('https://api.anthropic.com/v1'),
+        );
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.anthropic),
+        );
+      },
+    );
 
     test(
-        'should set name when Anthropic provider type is selected and name is empty',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      'should set baseUrl when OpenRouter provider type is selected',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.openRouter,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(controller.nameController.text, equals('Anthropic'));
-      expect(formState?.name.value, equals('Anthropic'));
-    });
+        // Assert
+        expect(
+          controller.baseUrlController.text,
+          equals('https://openrouter.ai/api/v1'),
+        );
+        expect(
+          formState?.baseUrl.value,
+          equals('https://openrouter.ai/api/v1'),
+        );
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.openRouter),
+        );
+      },
+    );
 
     test(
-        'should set name when OpenRouter provider type is selected and name is empty',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      'should set name when Anthropic provider type is selected and name is empty',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.openRouter);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.anthropic,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(controller.nameController.text, equals('OpenRouter'));
-      expect(formState?.name.value, equals('OpenRouter'));
-    });
+        // Assert
+        expect(controller.nameController.text, equals('Anthropic'));
+        expect(formState?.name.value, equals('Anthropic'));
+      },
+    );
 
-    test('should not override existing name when provider type is changed',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+    test(
+      'should set name when OpenRouter provider type is selected and name is empty',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Set a custom name first
-      controller.nameChanged('My Custom Provider');
+        // Act
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.openRouter,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Act
-      // ignore_for_file: cascade_invocations
-      controller.inferenceProviderTypeChanged(InferenceProviderType.anthropic);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Assert
+        expect(controller.nameController.text, equals('OpenRouter'));
+        expect(formState?.name.value, equals('OpenRouter'));
+      },
+    );
 
-      // Assert
-      expect(controller.nameController.text, equals('My Custom Provider'));
-      expect(formState?.name.value, equals('My Custom Provider'));
-    });
+    test(
+      'should not override existing name when provider type is changed',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        // Set a custom name first
+        controller.nameChanged('My Custom Provider');
+
+        // Act
+        // ignore_for_file: cascade_invocations
+        controller.inferenceProviderTypeChanged(
+          InferenceProviderType.anthropic,
+        );
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+
+        // Assert
+        expect(controller.nameController.text, equals('My Custom Provider'));
+        expect(formState?.name.value, equals('My Custom Provider'));
+      },
+    );
   });
 
   group('API Key Validation for Ollama', () {
@@ -480,8 +522,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
@@ -496,7 +539,9 @@ void main() {
       // Assert
       expect(formState?.apiKey.value, isEmpty);
       expect(
-          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+        formState?.apiKey.isValid,
+        isTrue,
+      ); // Should be valid even when empty
       expect(formState?.isValid, isTrue); // Overall form should be valid
     });
 
@@ -505,8 +550,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // First set up a provider with API key
       controller.nameChanged('OpenAI Provider');
@@ -529,8 +575,9 @@ void main() {
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act - Set up OpenAI without API key
       controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
@@ -545,7 +592,9 @@ void main() {
       // Assert
       expect(formState?.apiKey.value, isEmpty);
       expect(
-          formState?.apiKey.isValid, isFalse); // Should be invalid when empty
+        formState?.apiKey.isValid,
+        isFalse,
+      ); // Should be invalid when empty
       expect(formState?.isValid, isFalse); // Overall form should be invalid
     });
 
@@ -565,149 +614,167 @@ void main() {
       expect(formState?.name.value, equals('Ollama Local'));
       expect(formState?.apiKey.value, isEmpty);
       expect(
-          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+        formState?.apiKey.isValid,
+        isTrue,
+      ); // Should be valid even when empty
       expect(formState?.baseUrl.value, equals('http://localhost:11434'));
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.ollama));
-      expect(formState?.isValid, isTrue);
-    });
-
-    test('should set baseUrl and clear API key when Ollama is selected',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
-
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-
-      // Assert
-      expect(
-        controller.baseUrlController.text,
-        equals('http://localhost:11434'),
-      );
-      expect(
-        formState?.baseUrl.value,
-        equals('http://localhost:11434'),
-      );
-      expect(controller.apiKeyController.text, isEmpty);
-      expect(formState?.apiKey.value, isEmpty);
       expect(
         formState?.inferenceProviderType,
         equals(InferenceProviderType.ollama),
       );
-    });
-
-    test('should properly validate form when switching between providers',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
-
-      // Start with OpenAI
-      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
-      controller.nameChanged('My Provider');
-      controller.baseUrlChanged('https://api.openai.com/v1');
-
-      var formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-      expect(formState?.isValid, isFalse); // Invalid without API key
-
-      // Add API key
-      controller.apiKeyChanged('sk-test-key');
-      formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-      expect(formState?.isValid, isTrue); // Now valid with API key
-
-      // Switch to Ollama
-      controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
-      formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-      expect(formState?.isValid, isTrue); // Still valid without API key
-
-      // Switch back to OpenAI
-      controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
-      formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-      expect(formState?.isValid,
-          isFalse); // Invalid again because API key was cleared
-    });
-  });
-
-  group('Whisper Provider Tests', () {
-    test('should set baseUrl and clear API key when Whisper is selected',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
-
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
-
-      // Assert
-      expect(
-        controller.baseUrlController.text,
-        equals('http://localhost:8084'),
-      );
-      expect(
-        formState?.baseUrl.value,
-        equals('http://localhost:8084'),
-      );
-      expect(controller.apiKeyController.text, isEmpty);
-      expect(formState?.apiKey.value, isEmpty);
-      expect(
-        formState?.inferenceProviderType,
-        equals(InferenceProviderType.whisper),
-      );
+      expect(formState?.isValid, isTrue);
     });
 
     test(
-        'should set name when Whisper provider type is selected and name is empty',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      'should set baseUrl and clear API key when Ollama is selected',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
-      final formState = container
-          .read(inferenceProviderFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(controller.nameController.text, equals('Whisper (local)'));
-      expect(formState?.name.value, equals('Whisper (local)'));
-    });
+        // Assert
+        expect(
+          controller.baseUrlController.text,
+          equals('http://localhost:11434'),
+        );
+        expect(
+          formState?.baseUrl.value,
+          equals('http://localhost:11434'),
+        );
+        expect(controller.apiKeyController.text, isEmpty);
+        expect(formState?.apiKey.value, isEmpty);
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.ollama),
+        );
+      },
+    );
+
+    test(
+      'should properly validate form when switching between providers',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        // Start with OpenAI
+        controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+        controller.nameChanged('My Provider');
+        controller.baseUrlChanged('https://api.openai.com/v1');
+
+        var formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+        expect(formState?.isValid, isFalse); // Invalid without API key
+
+        // Add API key
+        controller.apiKeyChanged('sk-test-key');
+        formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+        expect(formState?.isValid, isTrue); // Now valid with API key
+
+        // Switch to Ollama
+        controller.inferenceProviderTypeChanged(InferenceProviderType.ollama);
+        formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+        expect(formState?.isValid, isTrue); // Still valid without API key
+
+        // Switch back to OpenAI
+        controller.inferenceProviderTypeChanged(InferenceProviderType.openAi);
+        formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+        expect(
+          formState?.isValid,
+          isFalse,
+        ); // Invalid again because API key was cleared
+      },
+    );
+  });
+
+  group('Whisper Provider Tests', () {
+    test(
+      'should set baseUrl and clear API key when Whisper is selected',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        // Act
+        controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+
+        // Assert
+        expect(
+          controller.baseUrlController.text,
+          equals('http://localhost:8084'),
+        );
+        expect(
+          formState?.baseUrl.value,
+          equals('http://localhost:8084'),
+        );
+        expect(controller.apiKeyController.text, isEmpty);
+        expect(formState?.apiKey.value, isEmpty);
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.whisper),
+        );
+      },
+    );
+
+    test(
+      'should set name when Whisper provider type is selected and name is empty',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
+
+        // Act
+        controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
+        final formState = container
+            .read(inferenceProviderFormControllerProvider(configId: null))
+            .value;
+
+        // Assert
+        expect(controller.nameController.text, equals('Whisper (local)'));
+        expect(formState?.name.value, equals('Whisper (local)'));
+      },
+    );
 
     test('should allow empty API key for Whisper provider', () async {
       // Arrange
       final controller = container.read(
         inferenceProviderFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceProviderFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceProviderFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.inferenceProviderTypeChanged(InferenceProviderType.whisper);
@@ -722,99 +789,110 @@ void main() {
       // Assert
       expect(formState?.apiKey.value, isEmpty);
       expect(
-          formState?.apiKey.isValid, isTrue); // Should be valid even when empty
+        formState?.apiKey.isValid,
+        isTrue,
+      ); // Should be valid even when empty
       expect(formState?.isValid, isTrue); // Overall form should be valid
     });
   });
 
   group('Preselected Provider Type Tests', () {
     test(
-        'should pre-fill form with Gemini defaults when preselectedType is Gemini',
-        () async {
-      // Act
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.gemini,
-        ).notifier,
-      );
-      final formState = await container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.gemini,
-        ).future,
-      );
+      'should pre-fill form with Gemini defaults when preselectedType is Gemini',
+      () async {
+        // Act
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.gemini,
+          ).notifier,
+        );
+        final formState = await container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.gemini,
+          ).future,
+        );
 
-      // Assert
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.gemini));
-      expect(controller.nameController.text, equals('Gemini'));
-      expect(
-        controller.baseUrlController.text,
-        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
-      );
-      expect(formState?.name.value, equals('Gemini'));
-      expect(
-        formState?.baseUrl.value,
-        equals('https://generativelanguage.googleapis.com/v1beta/openai'),
-      );
-    });
-
-    test(
-        'should pre-fill form with Anthropic defaults when preselectedType is Anthropic',
-        () async {
-      // Act
-      final formState = await container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.anthropic,
-        ).future,
-      );
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.anthropic,
-        ).notifier,
-      );
-
-      // Assert
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.anthropic));
-      expect(controller.nameController.text, equals('Anthropic'));
-      expect(
-        controller.baseUrlController.text,
-        equals('https://api.anthropic.com/v1'),
-      );
-    });
+        // Assert
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.gemini),
+        );
+        expect(controller.nameController.text, equals('Gemini'));
+        expect(
+          controller.baseUrlController.text,
+          equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+        );
+        expect(formState?.name.value, equals('Gemini'));
+        expect(
+          formState?.baseUrl.value,
+          equals('https://generativelanguage.googleapis.com/v1beta/openai'),
+        );
+      },
+    );
 
     test(
-        'should pre-fill form with Ollama defaults when preselectedType is Ollama',
-        () async {
-      // Act
-      final formState = await container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.ollama,
-        ).future,
-      );
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(
-          configId: null,
-          preselectedType: InferenceProviderType.ollama,
-        ).notifier,
-      );
+      'should pre-fill form with Anthropic defaults when preselectedType is Anthropic',
+      () async {
+        // Act
+        final formState = await container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.anthropic,
+          ).future,
+        );
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.anthropic,
+          ).notifier,
+        );
 
-      // Assert
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.ollama));
-      expect(controller.nameController.text, equals('Ollama (local)'));
-      expect(
-        controller.baseUrlController.text,
-        equals('http://localhost:11434'),
-      );
-      // Ollama doesn't require API key
-      expect(formState?.apiKey.isValid, isTrue);
-    });
+        // Assert
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.anthropic),
+        );
+        expect(controller.nameController.text, equals('Anthropic'));
+        expect(
+          controller.baseUrlController.text,
+          equals('https://api.anthropic.com/v1'),
+        );
+      },
+    );
+
+    test(
+      'should pre-fill form with Ollama defaults when preselectedType is Ollama',
+      () async {
+        // Act
+        final formState = await container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.ollama,
+          ).future,
+        );
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(
+            configId: null,
+            preselectedType: InferenceProviderType.ollama,
+          ).notifier,
+        );
+
+        // Assert
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.ollama),
+        );
+        expect(controller.nameController.text, equals('Ollama (local)'));
+        expect(
+          controller.baseUrlController.text,
+          equals('http://localhost:11434'),
+        );
+        // Ollama doesn't require API key
+        expect(formState?.apiKey.isValid, isTrue);
+      },
+    );
 
     test('should ignore preselectedType when configId is provided', () async {
       // Arrange
@@ -831,8 +909,10 @@ void main() {
       );
 
       // Assert - should load existing config, not use preselectedType
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.genericOpenAi));
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.genericOpenAi),
+      );
       expect(formState?.name.value, equals('Test API'));
       verify(() => mockRepository.getConfigById('test-id')).called(1);
     });
@@ -844,8 +924,10 @@ void main() {
       );
 
       // Assert
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.genericOpenAi));
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.genericOpenAi),
+      );
     });
   });
 
@@ -853,8 +935,9 @@ void main() {
     test('should save config when adding a new inference provider', () async {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
 
       // Act
       final controller = container.read(
@@ -879,8 +962,9 @@ void main() {
     test('should prepopulate models when adding Gemini provider', () async {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
 
       // Act
       final controller = container.read(
@@ -900,34 +984,37 @@ void main() {
 
       // Assert - should save provider and check for existing models
       verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
-      verify(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .called(1);
+      verify(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).called(1);
     });
   });
 
   group('Edge Cases', () {
-    test('should handle inferenceProviderTypeChanged when state is null',
-        () async {
-      // This tests the edge case where inferenceProviderTypeChanged is called
-      // before build() completes. The method should create initial state.
-      final controller = container.read(
-        inferenceProviderFormControllerProvider(configId: null).notifier,
-      );
+    test(
+      'should handle inferenceProviderTypeChanged when state is null',
+      () async {
+        // This tests the edge case where inferenceProviderTypeChanged is called
+        // before build() completes. The method should create initial state.
+        final controller = container.read(
+          inferenceProviderFormControllerProvider(configId: null).notifier,
+        );
 
-      // Call the method before awaiting the future
-      controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
+        // Call the method before awaiting the future
+        controller.inferenceProviderTypeChanged(InferenceProviderType.gemini);
 
-      // Now await to ensure state is set
-      final formState = await container.read(
-        inferenceProviderFormControllerProvider(configId: null).future,
-      );
+        // Now await to ensure state is set
+        final formState = await container.read(
+          inferenceProviderFormControllerProvider(configId: null).future,
+        );
 
-      // The state should have Gemini as the provider type
-      expect(
-        formState?.inferenceProviderType,
-        equals(InferenceProviderType.gemini),
-      );
-    });
+        // The state should have Gemini as the provider type
+        expect(
+          formState?.inferenceProviderType,
+          equals(InferenceProviderType.gemini),
+        );
+      },
+    );
 
     test('should handle empty default name for genericOpenAi', () async {
       // Arrange
@@ -947,8 +1034,10 @@ void main() {
           .value;
 
       // Assert - name should remain empty (no default for genericOpenAi)
-      expect(formState?.inferenceProviderType,
-          equals(InferenceProviderType.genericOpenAi));
+      expect(
+        formState?.inferenceProviderType,
+        equals(InferenceProviderType.genericOpenAi),
+      );
     });
 
     test('should sync controller text when value differs', () async {

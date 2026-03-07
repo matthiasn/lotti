@@ -112,23 +112,26 @@ void main() {
     }
 
     group('Provider Type Checks', () {
-      testWidgets('should return false for unsupported providers',
-          (WidgetTester tester) async {
+      testWidgets('should return false for unsupported providers', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: unsupportedProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: unsupportedProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pump();
@@ -137,24 +140,28 @@ void main() {
         expect(find.text('Set Up Default Prompts?'), findsNothing);
       });
 
-      testWidgets('should show dialog for Gemini provider',
-          (WidgetTester tester) async {
+      testWidgets('should show dialog for Gemini provider', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -162,24 +169,28 @@ void main() {
         expect(find.text('Set Up Default Prompts?'), findsOneWidget);
       });
 
-      testWidgets('should show dialog for Ollama provider',
-          (WidgetTester tester) async {
+      testWidgets('should show dialog for Ollama provider', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -189,24 +200,28 @@ void main() {
     });
 
     group('Gemini - Dialog UI', () {
-      testWidgets('should display correct prompts for Gemini',
-          (WidgetTester tester) async {
+      testWidgets('should display correct prompts for Gemini', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -226,24 +241,28 @@ void main() {
         expect(find.text('Uses Gemini 2.5 Pro'), findsNWidgets(3));
       });
 
-      testWidgets('should display correct icons for Gemini prompts',
-          (WidgetTester tester) async {
+      testWidgets('should display correct icons for Gemini prompts', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -256,24 +275,28 @@ void main() {
     });
 
     group('Ollama - Dialog UI', () {
-      testWidgets('should display correct prompts for Ollama (no audio)',
-          (WidgetTester tester) async {
+      testWidgets('should display correct prompts for Ollama (no audio)', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -296,24 +319,28 @@ void main() {
         expect(find.text('Uses Gemma 3 12B'), findsOneWidget);
       });
 
-      testWidgets('should display correct icons for Ollama prompts',
-          (WidgetTester tester) async {
+      testWidgets('should display correct icons for Ollama prompts', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -327,26 +354,30 @@ void main() {
     });
 
     group('User Interaction - Cancel', () {
-      testWidgets('should return false when user taps "No Thanks"',
-          (WidgetTester tester) async {
+      testWidgets('should return false when user taps "No Thanks"', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -361,27 +392,31 @@ void main() {
     });
 
     group('Gemini - Prompt Creation', () {
-      testWidgets('should create 3 prompts for Gemini when user confirms',
-          (WidgetTester tester) async {
+      testWidgets('should create 3 prompts for Gemini when user confirms', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -393,13 +428,15 @@ void main() {
         verify(() => mockRepository.saveConfig(any())).called(3);
       });
 
-      testWidgets('should create prompts with correct names for Gemini',
-          (WidgetTester tester) async {
+      testWidgets('should create prompts with correct names for Gemini', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -407,16 +444,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -430,34 +469,40 @@ void main() {
             .toList();
 
         expect(promptNames, contains('Audio Transcription - Gemini 2.5 Flash'));
-        expect(promptNames,
-            contains('Image Analysis in Task Context - Gemini 2.5 Pro'));
+        expect(
+          promptNames,
+          contains('Image Analysis in Task Context - Gemini 2.5 Pro'),
+        );
         expect(promptNames, contains('Checklist Updates - Gemini 2.5 Pro'));
       });
     });
 
     group('Ollama - Prompt Creation', () {
-      testWidgets('should create 2 prompts for Ollama when user confirms',
-          (WidgetTester tester) async {
+      testWidgets('should create 2 prompts for Ollama when user confirms', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
         bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -469,13 +514,15 @@ void main() {
         verify(() => mockRepository.saveConfig(any())).called(2);
       });
 
-      testWidgets('should create prompts with correct names for Ollama',
-          (WidgetTester tester) async {
+      testWidgets('should create prompts with correct names for Ollama', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -483,16 +530,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -507,18 +556,22 @@ void main() {
 
         // No audio prompt for Ollama
         expect(promptNames.any((n) => n.contains('Audio')), isFalse);
-        expect(promptNames,
-            contains('Image Analysis in Task Context - Gemma 3 12B'));
+        expect(
+          promptNames,
+          contains('Image Analysis in Task Context - Gemma 3 12B'),
+        );
         expect(promptNames, contains('Checklist Updates - DeepSeek R1 8B'));
       });
 
-      testWidgets('should assign DeepSeek to reasoning prompts',
-          (WidgetTester tester) async {
+      testWidgets('should assign DeepSeek to reasoning prompts', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -526,16 +579,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -543,8 +598,9 @@ void main() {
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
 
-        final deepSeekModelId =
-            ollamaModels.firstWhere((m) => m.name.contains('DeepSeek')).id;
+        final deepSeekModelId = ollamaModels
+            .firstWhere((m) => m.name.contains('DeepSeek'))
+            .id;
 
         final checklistPrompt = savedConfigs
             .whereType<AiConfigPrompt>()
@@ -552,13 +608,15 @@ void main() {
         expect(checklistPrompt.defaultModelId, deepSeekModelId);
       });
 
-      testWidgets('should assign Gemma to image analysis prompt',
-          (WidgetTester tester) async {
+      testWidgets('should assign Gemma to image analysis prompt', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -566,16 +624,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -583,36 +643,41 @@ void main() {
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
 
-        final gemmaModelId =
-            ollamaModels.firstWhere((m) => m.name.contains('Gemma')).id;
+        final gemmaModelId = ollamaModels
+            .firstWhere((m) => m.name.contains('Gemma'))
+            .id;
 
-        final imagePrompt = savedConfigs
-            .whereType<AiConfigPrompt>()
-            .firstWhere((p) => p.name.contains('Image Analysis'));
+        final imagePrompt = savedConfigs.whereType<AiConfigPrompt>().firstWhere(
+          (p) => p.name.contains('Image Analysis'),
+        );
         expect(imagePrompt.defaultModelId, gemmaModelId);
       });
     });
 
     group('Snackbar Feedback', () {
-      testWidgets('should show correct count for Gemini (3 prompts)',
-          (WidgetTester tester) async {
+      testWidgets('should show correct count for Gemini (3 prompts)', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => geminiModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => geminiModels);
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -624,25 +689,29 @@ void main() {
         expect(find.text('3 prompts created successfully!'), findsOneWidget);
       });
 
-      testWidgets('should show correct count for Ollama (2 prompts)',
-          (WidgetTester tester) async {
+      testWidgets('should show correct count for Ollama (2 prompts)', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
         when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -657,37 +726,42 @@ void main() {
 
     group('Edge Cases', () {
       testWidgets(
-          'should return false and not show dialog when no models available',
-          (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'should return false and not show dialog when no models available',
+        (WidgetTester tester) async {
+          await tester.binding.setSurfaceSize(const Size(1024, 900));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => []);
 
-        bool? result;
+          bool? result;
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Test Button'),
+              onPressed: (context, ref) async {
+                result = await setupService.offerPromptSetup(
+                  context: context,
+                  ref: ref,
+                  provider: geminiProvider,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Test Button'));
-        await tester.pump();
+          await tester.tap(find.text('Test Button'));
+          await tester.pump();
 
-        expect(find.text('Set Up Default Prompts?'), findsNothing);
-        expect(result, isFalse);
-        verifyNever(() => mockRepository.saveConfig(any()));
-      });
+          expect(find.text('Set Up Default Prompts?'), findsNothing);
+          expect(result, isFalse);
+          verifyNever(() => mockRepository.saveConfig(any()));
+        },
+      );
 
-      testWidgets('should handle models from different providers',
-          (WidgetTester tester) async {
+      testWidgets('should handle models from different providers', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -700,8 +774,9 @@ void main() {
           ),
         ];
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => mixedModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => mixedModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -709,16 +784,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -733,8 +810,9 @@ void main() {
         }
       });
 
-      testWidgets('should fallback to first model when DeepSeek not found',
-          (WidgetTester tester) async {
+      testWidgets('should fallback to first model when DeepSeek not found', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -747,8 +825,9 @@ void main() {
           ),
         ];
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => gemmaOnlyModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => gemmaOnlyModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -756,16 +835,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -797,28 +878,31 @@ void main() {
       });
 
       test(
-          'supportedProviders should include Alibaba, Gemini, Ollama, and OpenAI',
-          () {
-        expect(
-          ProviderPromptSetupService.supportedProviders,
-          containsAll([
-            InferenceProviderType.alibaba,
-            InferenceProviderType.gemini,
-            InferenceProviderType.ollama,
-            InferenceProviderType.openAi,
-          ]),
-        );
-      });
+        'supportedProviders should include Alibaba, Gemini, Ollama, and OpenAI',
+        () {
+          expect(
+            ProviderPromptSetupService.supportedProviders,
+            containsAll([
+              InferenceProviderType.alibaba,
+              InferenceProviderType.gemini,
+              InferenceProviderType.ollama,
+              InferenceProviderType.openAi,
+            ]),
+          );
+        },
+      );
     });
 
     group('Prompt Configuration', () {
-      testWidgets('should set trackPreconfigured to true for all prompts',
-          (WidgetTester tester) async {
+      testWidgets('should set trackPreconfigured to true for all prompts', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -826,16 +910,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -848,13 +934,15 @@ void main() {
         }
       });
 
-      testWidgets('should set correct aiResponseType for each prompt type',
-          (WidgetTester tester) async {
+      testWidgets('should set correct aiResponseType for each prompt type', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => ollamaModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -862,16 +950,18 @@ void main() {
           return Future.value();
         });
 
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: ollamaProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
@@ -884,33 +974,38 @@ void main() {
         final imagePrompt = prompts.firstWhere((p) => p.name.contains('Image'));
         expect(imagePrompt.aiResponseType, AiResponseType.imageAnalysis);
 
-        final checklistPrompt =
-            prompts.firstWhere((p) => p.name.contains('Checklist'));
+        final checklistPrompt = prompts.firstWhere(
+          (p) => p.name.contains('Checklist'),
+        );
         expect(checklistPrompt.aiResponseType, AiResponseType.checklistUpdates);
       });
     });
 
     group('Error Handling', () {
-      testWidgets('should return false when no models exist for provider',
-          (WidgetTester tester) async {
+      testWidgets('should return false when no models exist for provider', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         // Return empty models list
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
 
         var result = false;
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: geminiProvider,
+              );
+            },
+          ),
+        );
 
         await tester.tap(find.text('Test Button'));
         await tester.pump();
@@ -920,71 +1015,79 @@ void main() {
       });
 
       testWidgets(
-          'should return false when models exist but none belong to provider',
-          (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'should return false when models exist but none belong to provider',
+        (WidgetTester tester) async {
+          await tester.binding.setSurfaceSize(const Size(1024, 900));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        // Return models for a different provider
-        final otherProviderModels = [
-          AiTestDataFactory.createTestModel(
-            id: 'other-provider_model1',
-            name: 'Other Model',
-            inferenceProviderId: 'other-provider-id',
-            inputModalities: [Modality.text],
-          ),
-        ];
+          // Return models for a different provider
+          final otherProviderModels = [
+            AiTestDataFactory.createTestModel(
+              id: 'other-provider_model1',
+              name: 'Other Model',
+              inferenceProviderId: 'other-provider-id',
+              inputModalities: [Modality.text],
+            ),
+          ];
 
-        when(() => mockRepository.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => otherProviderModels);
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => otherProviderModels);
 
-        var result = false;
-        await tester.pumpWidget(createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            result = await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: geminiProvider,
-            );
-          },
-        ));
+          var result = false;
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Test Button'),
+              onPressed: (context, ref) async {
+                result = await setupService.offerPromptSetup(
+                  context: context,
+                  ref: ref,
+                  provider: geminiProvider,
+                );
+              },
+            ),
+          );
 
-        await tester.tap(find.text('Test Button'));
-        await tester.pump();
+          await tester.tap(find.text('Test Button'));
+          await tester.pump();
 
-        // Should return false because no models for this provider
-        expect(result, isFalse);
-      });
+          // Should return false because no models for this provider
+          expect(result, isFalse);
+        },
+      );
     });
   });
 
   group('GeminiFtueResult', () {
-    test('totalModels should return sum of modelsCreated and modelsVerified',
-        () {
-      const result = GeminiFtueResult(
-        modelsCreated: 2,
-        modelsVerified: 1,
-        promptsCreated: 5,
-        promptsSkipped: 3,
-        categoryCreated: true,
-      );
+    test(
+      'totalModels should return sum of modelsCreated and modelsVerified',
+      () {
+        const result = GeminiFtueResult(
+          modelsCreated: 2,
+          modelsVerified: 1,
+          promptsCreated: 5,
+          promptsSkipped: 3,
+          categoryCreated: true,
+        );
 
-      expect(result.totalModels, equals(3));
-    });
+        expect(result.totalModels, equals(3));
+      },
+    );
 
-    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
-        () {
-      const result = GeminiFtueResult(
-        modelsCreated: 2,
-        modelsVerified: 1,
-        promptsCreated: 5,
-        promptsSkipped: 3,
-        categoryCreated: true,
-      );
+    test(
+      'totalPrompts should return sum of promptsCreated and promptsSkipped',
+      () {
+        const result = GeminiFtueResult(
+          modelsCreated: 2,
+          modelsVerified: 1,
+          promptsCreated: 5,
+          promptsSkipped: 3,
+          categoryCreated: true,
+        );
 
-      expect(result.totalPrompts, equals(8));
-    });
+        expect(result.totalPrompts, equals(8));
+      },
+    );
 
     test('should handle zero values correctly', () {
       const result = GeminiFtueResult(
@@ -1031,31 +1134,35 @@ void main() {
   });
 
   group('OpenAiFtueResult', () {
-    test('totalModels should return sum of modelsCreated and modelsVerified',
-        () {
-      const result = OpenAiFtueResult(
-        modelsCreated: 3,
-        modelsVerified: 1,
-        promptsCreated: 7,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalModels should return sum of modelsCreated and modelsVerified',
+      () {
+        const result = OpenAiFtueResult(
+          modelsCreated: 3,
+          modelsVerified: 1,
+          promptsCreated: 7,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalModels, equals(4));
-    });
+        expect(result.totalModels, equals(4));
+      },
+    );
 
-    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
-        () {
-      const result = OpenAiFtueResult(
-        modelsCreated: 3,
-        modelsVerified: 1,
-        promptsCreated: 7,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalPrompts should return sum of promptsCreated and promptsSkipped',
+      () {
+        const result = OpenAiFtueResult(
+          modelsCreated: 3,
+          modelsVerified: 1,
+          promptsCreated: 7,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalPrompts, equals(9));
-    });
+        expect(result.totalPrompts, equals(9));
+      },
+    );
 
     test('should handle zero values correctly', () {
       const result = OpenAiFtueResult(
@@ -1185,7 +1292,7 @@ void main() {
 
     Widget createOpenAiFtueTestWidget({
       required Future<OpenAiFtueResult?> Function(BuildContext, WidgetRef)
-          onPressed,
+      onPressed,
     }) {
       return ProviderScope(
         overrides: [
@@ -1209,8 +1316,9 @@ void main() {
       );
     }
 
-    testWidgets('should return null for non-OpenAI provider',
-        (WidgetTester tester) async {
+    testWidgets('should return null for non-OpenAI provider', (
+      WidgetTester tester,
+    ) async {
       final geminiProvider = AiTestDataFactory.createTestProvider(
         id: 'gemini-id',
         name: 'Gemini',
@@ -1218,15 +1326,17 @@ void main() {
       );
 
       OpenAiFtueResult? result;
-      await tester.pumpWidget(createOpenAiFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performOpenAiFtueSetup(
-            context: context,
-            ref: ref,
-            provider: geminiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createOpenAiFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOpenAiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1234,41 +1344,52 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('should create models when they do not exist',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should create models when they do not exist', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: 'Test Category OpenAI Enabled',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: 'Test Category OpenAI Enabled',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       OpenAiFtueResult? result;
-      await tester.pumpWidget(createOpenAiFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performOpenAiFtueSetup(
-            context: context,
-            ref: ref,
-            provider: openAiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createOpenAiFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOpenAiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: openAiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1283,8 +1404,9 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(12);
     });
 
-    testWidgets('should verify existing models and skip creation',
-        (WidgetTester tester) async {
+    testWidgets('should verify existing models and skip creation', (
+      WidgetTester tester,
+    ) async {
       final existingModels = [
         AiTestDataFactory.createTestModel(
           id: 'existing-flash',
@@ -1312,39 +1434,49 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => existingModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: 'Test Category OpenAI Enabled',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: 'Test Category OpenAI Enabled',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       OpenAiFtueResult? result;
-      await tester.pumpWidget(createOpenAiFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performOpenAiFtueSetup(
-            context: context,
-            ref: ref,
-            provider: openAiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createOpenAiFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOpenAiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: openAiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1354,58 +1486,65 @@ void main() {
       expect(result!.modelsVerified, equals(4));
     });
 
-    testWidgets('should skip existing prompts with same preconfiguredPromptId',
-        (WidgetTester tester) async {
-      final existingModels = [
-        AiTestDataFactory.createTestModel(
-          id: 'existing-flash',
-          providerModelId: ftueOpenAiFlashModelId,
-          inferenceProviderId: openAiProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-reasoning',
-          providerModelId: ftueOpenAiReasoningModelId,
-          inferenceProviderId: openAiProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-audio',
-          providerModelId: ftueOpenAiAudioModelId,
-          inferenceProviderId: openAiProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-image',
-          providerModelId: ftueOpenAiImageModelId,
-          inferenceProviderId: openAiProvider.id,
-        ),
-      ];
+    testWidgets(
+      'should skip existing prompts with same preconfiguredPromptId',
+      (WidgetTester tester) async {
+        final existingModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'existing-flash',
+            providerModelId: ftueOpenAiFlashModelId,
+            inferenceProviderId: openAiProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-reasoning',
+            providerModelId: ftueOpenAiReasoningModelId,
+            inferenceProviderId: openAiProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-audio',
+            providerModelId: ftueOpenAiAudioModelId,
+            inferenceProviderId: openAiProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-image',
+            providerModelId: ftueOpenAiImageModelId,
+            inferenceProviderId: openAiProvider.id,
+          ),
+        ];
 
-      final existingPrompts = <AiConfig>[
-        AiConfig.prompt(
-          id: 'existing-prompt-id',
-          name: 'Checklist OpenAI GPT-5.2',
-          systemMessage: 'system',
-          userMessage: 'user',
-          defaultModelId: 'existing-reasoning',
-          modelIds: ['existing-reasoning'],
-          createdAt: DateTime(2024, 3, 15),
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
-          preconfiguredPromptId: 'checklist_updates',
-          useReasoning: false,
-        ),
-      ];
+        final existingPrompts = <AiConfig>[
+          AiConfig.prompt(
+            id: 'existing-prompt-id',
+            name: 'Checklist OpenAI GPT-5.2',
+            systemMessage: 'system',
+            userMessage: 'user',
+            defaultModelId: 'existing-reasoning',
+            modelIds: ['existing-reasoning'],
+            createdAt: DateTime(2024, 3, 15),
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.checklistUpdates,
+            preconfiguredPromptId: 'checklist_updates',
+            useReasoning: false,
+          ),
+        ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => existingPrompts);
-      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => existingPrompts);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
             name: any(named: 'name'),
             color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
             id: 'test-category-id',
             name: 'Test Category OpenAI Enabled',
             createdAt: DateTime.now(),
@@ -1413,36 +1552,44 @@ void main() {
             vectorClock: null,
             private: false,
             active: true,
-          ));
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          ),
+        );
+        when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
           (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
-      OpenAiFtueResult? result;
-      await tester.pumpWidget(createOpenAiFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performOpenAiFtueSetup(
-            context: context,
-            ref: ref,
-            provider: openAiProvider,
-          );
-        },
-      ));
+        OpenAiFtueResult? result;
+        await tester.pumpWidget(
+          createOpenAiFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performOpenAiFtueSetup(
+                context: context,
+                ref: ref,
+                provider: openAiProvider,
+              );
+            },
+          ),
+        );
 
-      await tester.tap(find.text('Test'));
-      await tester.pump();
+        await tester.tap(find.text('Test'));
+        await tester.pump();
 
-      expect(result, isNotNull);
-      expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(7));
-    });
+        expect(result, isNotNull);
+        expect(result!.promptsSkipped, equals(1));
+        expect(result!.promptsCreated, equals(7));
+      },
+    );
 
-    testWidgets('should update existing category instead of creating new one',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should update existing category instead of creating new one', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       final existingCategory = CategoryDefinition(
@@ -1454,22 +1601,26 @@ void main() {
         private: false,
         active: true,
       );
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => [existingCategory]);
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => [existingCategory]);
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       OpenAiFtueResult? result;
-      await tester.pumpWidget(createOpenAiFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performOpenAiFtueSetup(
-            context: context,
-            ref: ref,
-            provider: openAiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createOpenAiFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performOpenAiFtueSetup(
+              context: context,
+              ref: ref,
+              provider: openAiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1480,10 +1631,12 @@ void main() {
       expect(result!.categoryName, equals('Test Category OpenAI Enabled'));
 
       verify(() => mockCategoryRepository.updateCategory(any())).called(1);
-      verifyNever(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          ));
+      verifyNever(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      );
     });
   });
 
@@ -1497,31 +1650,35 @@ void main() {
   });
 
   group('MistralFtueResult', () {
-    test('totalModels should return sum of modelsCreated and modelsVerified',
-        () {
-      const result = MistralFtueResult(
-        modelsCreated: 2,
-        modelsVerified: 1,
-        promptsCreated: 6,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalModels should return sum of modelsCreated and modelsVerified',
+      () {
+        const result = MistralFtueResult(
+          modelsCreated: 2,
+          modelsVerified: 1,
+          promptsCreated: 6,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalModels, equals(3));
-    });
+        expect(result.totalModels, equals(3));
+      },
+    );
 
-    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
-        () {
-      const result = MistralFtueResult(
-        modelsCreated: 2,
-        modelsVerified: 1,
-        promptsCreated: 6,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalPrompts should return sum of promptsCreated and promptsSkipped',
+      () {
+        const result = MistralFtueResult(
+          modelsCreated: 2,
+          modelsVerified: 1,
+          promptsCreated: 6,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalPrompts, equals(8));
-    });
+        expect(result.totalPrompts, equals(8));
+      },
+    );
 
     test('should handle zero values correctly', () {
       const result = MistralFtueResult(
@@ -1629,7 +1786,7 @@ void main() {
 
     Widget createMistralFtueTestWidget({
       required Future<MistralFtueResult?> Function(BuildContext, WidgetRef)
-          onPressed,
+      onPressed,
     }) {
       return ProviderScope(
         overrides: [
@@ -1653,8 +1810,9 @@ void main() {
       );
     }
 
-    testWidgets('should return null for non-Mistral provider',
-        (WidgetTester tester) async {
+    testWidgets('should return null for non-Mistral provider', (
+      WidgetTester tester,
+    ) async {
       final geminiProvider = AiTestDataFactory.createTestProvider(
         id: 'gemini-id',
         name: 'Gemini',
@@ -1662,15 +1820,17 @@ void main() {
       );
 
       MistralFtueResult? result;
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: geminiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createMistralFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performMistralFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1678,41 +1838,52 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('should create 3 models when they do not exist',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should create 3 models when they do not exist', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: 'Test Category Mistral Enabled',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: 'Test Category Mistral Enabled',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       MistralFtueResult? result;
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: mistralProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createMistralFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performMistralFtueSetup(
+              context: context,
+              ref: ref,
+              provider: mistralProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1728,8 +1899,9 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(10);
     });
 
-    testWidgets('should verify existing models and skip creation',
-        (WidgetTester tester) async {
+    testWidgets('should verify existing models and skip creation', (
+      WidgetTester tester,
+    ) async {
       final existingModels = [
         AiTestDataFactory.createTestModel(
           id: 'existing-flash',
@@ -1751,39 +1923,49 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => existingModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: 'Test Category Mistral Enabled',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: 'Test Category Mistral Enabled',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       MistralFtueResult? result;
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: mistralProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createMistralFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performMistralFtueSetup(
+              context: context,
+              ref: ref,
+              provider: mistralProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1793,53 +1975,60 @@ void main() {
       expect(result!.modelsVerified, equals(3));
     });
 
-    testWidgets('should skip existing prompts with same preconfiguredPromptId',
-        (WidgetTester tester) async {
-      final existingModels = [
-        AiTestDataFactory.createTestModel(
-          id: 'existing-flash',
-          providerModelId: ftueMistralFlashModelId,
-          inferenceProviderId: mistralProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-reasoning',
-          providerModelId: ftueMistralReasoningModelId,
-          inferenceProviderId: mistralProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-audio',
-          providerModelId: ftueMistralAudioModelId,
-          inferenceProviderId: mistralProvider.id,
-        ),
-      ];
+    testWidgets(
+      'should skip existing prompts with same preconfiguredPromptId',
+      (WidgetTester tester) async {
+        final existingModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'existing-flash',
+            providerModelId: ftueMistralFlashModelId,
+            inferenceProviderId: mistralProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-reasoning',
+            providerModelId: ftueMistralReasoningModelId,
+            inferenceProviderId: mistralProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-audio',
+            providerModelId: ftueMistralAudioModelId,
+            inferenceProviderId: mistralProvider.id,
+          ),
+        ];
 
-      final existingPrompts = <AiConfig>[
-        AiConfig.prompt(
-          id: 'existing-prompt-id',
-          name: 'Checklist Mistral Magistral',
-          systemMessage: 'system',
-          userMessage: 'user',
-          defaultModelId: 'existing-reasoning',
-          modelIds: ['existing-reasoning'],
-          createdAt: DateTime(2024, 3, 15),
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
-          preconfiguredPromptId: 'checklist_updates',
-          useReasoning: false,
-        ),
-      ];
+        final existingPrompts = <AiConfig>[
+          AiConfig.prompt(
+            id: 'existing-prompt-id',
+            name: 'Checklist Mistral Magistral',
+            systemMessage: 'system',
+            userMessage: 'user',
+            defaultModelId: 'existing-reasoning',
+            modelIds: ['existing-reasoning'],
+            createdAt: DateTime(2024, 3, 15),
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.checklistUpdates,
+            preconfiguredPromptId: 'checklist_updates',
+            useReasoning: false,
+          ),
+        ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => existingPrompts);
-      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => existingPrompts);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
             name: any(named: 'name'),
             color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
             id: 'test-category-id',
             name: 'Test Category Mistral Enabled',
             createdAt: DateTime.now(),
@@ -1847,36 +2036,44 @@ void main() {
             vectorClock: null,
             private: false,
             active: true,
-          ));
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          ),
+        );
+        when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
           (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
-      MistralFtueResult? result;
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: mistralProvider,
-          );
-        },
-      ));
+        MistralFtueResult? result;
+        await tester.pumpWidget(
+          createMistralFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performMistralFtueSetup(
+                context: context,
+                ref: ref,
+                provider: mistralProvider,
+              );
+            },
+          ),
+        );
 
-      await tester.tap(find.text('Test'));
-      await tester.pump();
+        await tester.tap(find.text('Test'));
+        await tester.pump();
 
-      expect(result, isNotNull);
-      expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(6));
-    });
+        expect(result, isNotNull);
+        expect(result!.promptsSkipped, equals(1));
+        expect(result!.promptsCreated, equals(6));
+      },
+    );
 
-    testWidgets('should update existing category instead of creating new one',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should update existing category instead of creating new one', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       final existingCategory = CategoryDefinition(
@@ -1888,22 +2085,26 @@ void main() {
         private: false,
         active: true,
       );
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => [existingCategory]);
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => [existingCategory]);
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       MistralFtueResult? result;
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: mistralProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createMistralFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performMistralFtueSetup(
+              context: context,
+              ref: ref,
+              provider: mistralProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -1914,83 +2115,102 @@ void main() {
       expect(result!.categoryName, equals('Test Category Mistral Enabled'));
 
       verify(() => mockCategoryRepository.updateCategory(any())).called(1);
-      verifyNever(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          ));
+      verifyNever(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      );
     });
 
-    testWidgets('should create category with Mistral orange color',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should create category with Mistral orange color', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: 'Test Category Mistral Enabled',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: 'Test Category Mistral Enabled',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
-      await tester.pumpWidget(createMistralFtueTestWidget(
-        onPressed: (context, ref) async {
-          return setupService.performMistralFtueSetup(
-            context: context,
-            ref: ref,
-            provider: mistralProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createMistralFtueTestWidget(
+          onPressed: (context, ref) async {
+            return setupService.performMistralFtueSetup(
+              context: context,
+              ref: ref,
+              provider: mistralProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
 
-      verify(() => mockCategoryRepository.createCategory(
-            name: 'Test Category Mistral Enabled',
-            color: '#FF7000', // Mistral Orange
-          )).called(1);
+      verify(
+        () => mockCategoryRepository.createCategory(
+          name: 'Test Category Mistral Enabled',
+          color: '#FF7000', // Mistral Orange
+        ),
+      ).called(1);
     });
   });
 
   group('AlibabaFtueResult', () {
-    test('totalModels should return sum of modelsCreated and modelsVerified',
-        () {
-      const result = AlibabaFtueResult(
-        modelsCreated: 3,
-        modelsVerified: 2,
-        promptsCreated: 7,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalModels should return sum of modelsCreated and modelsVerified',
+      () {
+        const result = AlibabaFtueResult(
+          modelsCreated: 3,
+          modelsVerified: 2,
+          promptsCreated: 7,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalModels, equals(5));
-    });
+        expect(result.totalModels, equals(5));
+      },
+    );
 
-    test('totalPrompts should return sum of promptsCreated and promptsSkipped',
-        () {
-      const result = AlibabaFtueResult(
-        modelsCreated: 3,
-        modelsVerified: 2,
-        promptsCreated: 7,
-        promptsSkipped: 2,
-        categoryCreated: true,
-      );
+    test(
+      'totalPrompts should return sum of promptsCreated and promptsSkipped',
+      () {
+        const result = AlibabaFtueResult(
+          modelsCreated: 3,
+          modelsVerified: 2,
+          promptsCreated: 7,
+          promptsSkipped: 2,
+          categoryCreated: true,
+        );
 
-      expect(result.totalPrompts, equals(9));
-    });
+        expect(result.totalPrompts, equals(9));
+      },
+    );
 
     test('should handle zero values correctly', () {
       const result = AlibabaFtueResult(
@@ -2101,24 +2321,28 @@ void main() {
       );
     }
 
-    testWidgets('should show dialog for Alibaba provider',
-        (WidgetTester tester) async {
+    testWidgets('should show dialog for Alibaba provider', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2126,24 +2350,28 @@ void main() {
       expect(find.text('Set Up Default Prompts?'), findsOneWidget);
     });
 
-    testWidgets('should display correct prompts for Alibaba',
-        (WidgetTester tester) async {
+    testWidgets('should display correct prompts for Alibaba', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2167,24 +2395,28 @@ void main() {
       expect(find.text('Uses Qwen3 Max'), findsNWidgets(2));
     });
 
-    testWidgets('should display correct icons for Alibaba prompts',
-        (WidgetTester tester) async {
+    testWidgets('should display correct icons for Alibaba prompts', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2195,27 +2427,31 @@ void main() {
       expect(find.byIcon(Icons.summarize), findsOneWidget);
     });
 
-    testWidgets('should create 3 prompts for Alibaba when user confirms',
-        (WidgetTester tester) async {
+    testWidgets('should create 3 prompts for Alibaba when user confirms', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       bool? result;
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          result = await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            result = await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2227,13 +2463,15 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(3);
     });
 
-    testWidgets('should create prompts with correct names for Alibaba',
-        (WidgetTester tester) async {
+    testWidgets('should create prompts with correct names for Alibaba', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
 
       final savedConfigs = <AiConfig>[];
       when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -2241,16 +2479,18 @@ void main() {
         return Future.value();
       });
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2258,8 +2498,10 @@ void main() {
       await tester.tap(find.text('Set Up Prompts'));
       await tester.pump();
 
-      final promptNames =
-          savedConfigs.whereType<AiConfigPrompt>().map((p) => p.name).toList();
+      final promptNames = savedConfigs
+          .whereType<AiConfigPrompt>()
+          .map((p) => p.name)
+          .toList();
 
       expect(
         promptNames,
@@ -2272,25 +2514,29 @@ void main() {
       expect(promptNames, contains('Checklist Updates - Qwen3 Max'));
     });
 
-    testWidgets('should show correct snackbar count for Alibaba (3 prompts)',
-        (WidgetTester tester) async {
+    testWidgets('should show correct snackbar count for Alibaba (3 prompts)', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => alibabaModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => alibabaModels);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
-      await tester.pumpWidget(createTestWidget(
-        child: const Text('Test Button'),
-        onPressed: (context, ref) async {
-          await setupService.offerPromptSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createTestWidget(
+          child: const Text('Test Button'),
+          onPressed: (context, ref) async {
+            await setupService.offerPromptSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test Button'));
       await tester.pumpAndSettle();
@@ -2365,7 +2611,7 @@ void main() {
 
     Widget createAlibabaFtueTestWidget({
       required Future<AlibabaFtueResult?> Function(BuildContext, WidgetRef)
-          onPressed,
+      onPressed,
     }) {
       return ProviderScope(
         overrides: [
@@ -2389,8 +2635,9 @@ void main() {
       );
     }
 
-    testWidgets('should return null for non-Alibaba provider',
-        (WidgetTester tester) async {
+    testWidgets('should return null for non-Alibaba provider', (
+      WidgetTester tester,
+    ) async {
       final geminiProvider = AiTestDataFactory.createTestProvider(
         id: 'gemini-id',
         name: 'Gemini',
@@ -2398,15 +2645,17 @@ void main() {
       );
 
       AlibabaFtueResult? result;
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: geminiProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createAlibabaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAlibabaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: geminiProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -2414,41 +2663,52 @@ void main() {
       expect(result, isNull);
     });
 
-    testWidgets('should create 5 models and 8 prompts when none exist',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should create 5 models and 8 prompts when none exist', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: ftueAlibabaCategoryName,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: ftueAlibabaCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       AlibabaFtueResult? result;
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createAlibabaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAlibabaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -2464,8 +2724,9 @@ void main() {
       verify(() => mockRepository.saveConfig(any())).called(13);
     });
 
-    testWidgets('should verify existing models and skip creation',
-        (WidgetTester tester) async {
+    testWidgets('should verify existing models and skip creation', (
+      WidgetTester tester,
+    ) async {
       final existingModels = [
         AiTestDataFactory.createTestModel(
           id: 'existing-flash',
@@ -2499,39 +2760,49 @@ void main() {
         ),
       ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => existingModels);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: ftueAlibabaCategoryName,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: ftueAlibabaCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       AlibabaFtueResult? result;
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createAlibabaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAlibabaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -2541,63 +2812,70 @@ void main() {
       expect(result!.modelsVerified, equals(5));
     });
 
-    testWidgets('should skip existing prompts with same preconfiguredPromptId',
-        (WidgetTester tester) async {
-      final existingModels = [
-        AiTestDataFactory.createTestModel(
-          id: 'existing-flash',
-          providerModelId: ftueAlibabaFlashModelId,
-          inferenceProviderId: alibabaProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-reasoning',
-          providerModelId: ftueAlibabaReasoningModelId,
-          inferenceProviderId: alibabaProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-audio',
-          providerModelId: ftueAlibabaAudioModelId,
-          inferenceProviderId: alibabaProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-vision',
-          providerModelId: ftueAlibabaVisionModelId,
-          inferenceProviderId: alibabaProvider.id,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'existing-image',
-          providerModelId: ftueAlibabaImageModelId,
-          inferenceProviderId: alibabaProvider.id,
-        ),
-      ];
+    testWidgets(
+      'should skip existing prompts with same preconfiguredPromptId',
+      (WidgetTester tester) async {
+        final existingModels = [
+          AiTestDataFactory.createTestModel(
+            id: 'existing-flash',
+            providerModelId: ftueAlibabaFlashModelId,
+            inferenceProviderId: alibabaProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-reasoning',
+            providerModelId: ftueAlibabaReasoningModelId,
+            inferenceProviderId: alibabaProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-audio',
+            providerModelId: ftueAlibabaAudioModelId,
+            inferenceProviderId: alibabaProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-vision',
+            providerModelId: ftueAlibabaVisionModelId,
+            inferenceProviderId: alibabaProvider.id,
+          ),
+          AiTestDataFactory.createTestModel(
+            id: 'existing-image',
+            providerModelId: ftueAlibabaImageModelId,
+            inferenceProviderId: alibabaProvider.id,
+          ),
+        ];
 
-      final existingPrompts = <AiConfig>[
-        AiConfig.prompt(
-          id: 'existing-prompt-id',
-          name: 'Checklist Alibaba Qwen3 Max',
-          systemMessage: 'system',
-          userMessage: 'user',
-          defaultModelId: 'existing-reasoning',
-          modelIds: ['existing-reasoning'],
-          createdAt: DateTime(2024, 3, 15),
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
-          preconfiguredPromptId: 'checklist_updates',
-          useReasoning: false,
-        ),
-      ];
+        final existingPrompts = <AiConfig>[
+          AiConfig.prompt(
+            id: 'existing-prompt-id',
+            name: 'Checklist Alibaba Qwen3 Max',
+            systemMessage: 'system',
+            userMessage: 'user',
+            defaultModelId: 'existing-reasoning',
+            modelIds: ['existing-reasoning'],
+            createdAt: DateTime(2024, 3, 15),
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.checklistUpdates,
+            preconfiguredPromptId: 'checklist_updates',
+            useReasoning: false,
+          ),
+        ];
 
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => existingModels);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => existingPrompts);
-      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => existingModels);
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => existingPrompts);
+        when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
+        when(
+          () => mockCategoryRepository.getAllCategories(),
+        ).thenAnswer((_) async => <CategoryDefinition>[]);
+        when(
+          () => mockCategoryRepository.createCategory(
             name: any(named: 'name'),
             color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
+          ),
+        ).thenAnswer(
+          (_) async => CategoryDefinition(
             id: 'test-category-id',
             name: ftueAlibabaCategoryName,
             createdAt: DateTime(2024, 3, 15),
@@ -2605,36 +2883,44 @@ void main() {
             vectorClock: null,
             private: false,
             active: true,
-          ));
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          ),
+        );
+        when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
           (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
-      AlibabaFtueResult? result;
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+        AlibabaFtueResult? result;
+        await tester.pumpWidget(
+          createAlibabaFtueTestWidget(
+            onPressed: (context, ref) async {
+              return result = await setupService.performAlibabaFtueSetup(
+                context: context,
+                ref: ref,
+                provider: alibabaProvider,
+              );
+            },
+          ),
+        );
 
-      await tester.tap(find.text('Test'));
-      await tester.pump();
+        await tester.tap(find.text('Test'));
+        await tester.pump();
 
-      expect(result, isNotNull);
-      expect(result!.promptsSkipped, equals(1));
-      expect(result!.promptsCreated, equals(7));
-    });
+        expect(result, isNotNull);
+        expect(result!.promptsSkipped, equals(1));
+        expect(result!.promptsCreated, equals(7));
+      },
+    );
 
-    testWidgets('should update existing category instead of creating new one',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should update existing category instead of creating new one', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       final existingCategory = CategoryDefinition(
@@ -2646,22 +2932,26 @@ void main() {
         private: false,
         active: true,
       );
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => [existingCategory]);
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => [existingCategory]);
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
       AlibabaFtueResult? result;
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return result = await setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createAlibabaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return result = await setupService.performAlibabaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
@@ -2672,54 +2962,69 @@ void main() {
       expect(result!.categoryName, equals(ftueAlibabaCategoryName));
 
       verify(() => mockCategoryRepository.updateCategory(any())).called(1);
-      verifyNever(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          ));
+      verifyNever(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      );
     });
 
-    testWidgets('should create category with Alibaba orange color',
-        (WidgetTester tester) async {
-      when(() => mockRepository.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => <AiConfig>[]);
-      when(() => mockRepository.getConfigsByType(AiConfigType.prompt))
-          .thenAnswer((_) async => <AiConfig>[]);
+    testWidgets('should create category with Alibaba orange color', (
+      WidgetTester tester,
+    ) async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => <AiConfig>[]);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) async => <AiConfig>[]);
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-      when(() => mockCategoryRepository.getAllCategories())
-          .thenAnswer((_) async => <CategoryDefinition>[]);
-      when(() => mockCategoryRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-          )).thenAnswer((_) async => CategoryDefinition(
-            id: 'test-category-id',
-            name: ftueAlibabaCategoryName,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-            private: false,
-            active: true,
-          ));
+      when(
+        () => mockCategoryRepository.getAllCategories(),
+      ).thenAnswer((_) async => <CategoryDefinition>[]);
+      when(
+        () => mockCategoryRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+        ),
+      ).thenAnswer(
+        (_) async => CategoryDefinition(
+          id: 'test-category-id',
+          name: ftueAlibabaCategoryName,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+      );
       when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-          (invocation) async =>
-              invocation.positionalArguments[0] as CategoryDefinition);
+        (invocation) async =>
+            invocation.positionalArguments[0] as CategoryDefinition,
+      );
 
-      await tester.pumpWidget(createAlibabaFtueTestWidget(
-        onPressed: (context, ref) async {
-          return setupService.performAlibabaFtueSetup(
-            context: context,
-            ref: ref,
-            provider: alibabaProvider,
-          );
-        },
-      ));
+      await tester.pumpWidget(
+        createAlibabaFtueTestWidget(
+          onPressed: (context, ref) async {
+            return setupService.performAlibabaFtueSetup(
+              context: context,
+              ref: ref,
+              provider: alibabaProvider,
+            );
+          },
+        ),
+      );
 
       await tester.tap(find.text('Test'));
       await tester.pump();
 
-      verify(() => mockCategoryRepository.createCategory(
-            name: ftueAlibabaCategoryName,
-            color: '#FF6D00', // Alibaba Orange
-          )).called(1);
+      verify(
+        () => mockCategoryRepository.createCategory(
+          name: ftueAlibabaCategoryName,
+          color: '#FF6D00', // Alibaba Orange
+        ),
+      ).called(1);
     });
   });
 }

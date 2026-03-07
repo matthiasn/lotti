@@ -12,23 +12,20 @@ part of 'survey_chart_controller.dart';
 @ProviderFor(SurveyChartDataController)
 final surveyChartDataControllerProvider = SurveyChartDataControllerFamily._();
 
-final class SurveyChartDataControllerProvider extends $AsyncNotifierProvider<
-    SurveyChartDataController, List<JournalEntity>> {
-  SurveyChartDataControllerProvider._(
-      {required SurveyChartDataControllerFamily super.from,
-      required ({
-        String surveyType,
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'surveyChartDataControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class SurveyChartDataControllerProvider
+    extends
+        $AsyncNotifierProvider<SurveyChartDataController, List<JournalEntity>> {
+  SurveyChartDataControllerProvider._({
+    required SurveyChartDataControllerFamily super.from,
+    required ({String surveyType, DateTime rangeStart, DateTime rangeEnd})
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'surveyChartDataControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$surveyChartDataControllerHash();
@@ -62,34 +59,33 @@ String _$surveyChartDataControllerHash() =>
 final class SurveyChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            SurveyChartDataController,
-            AsyncValue<List<JournalEntity>>,
-            List<JournalEntity>,
-            FutureOr<List<JournalEntity>>,
-            ({
-              String surveyType,
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          SurveyChartDataController,
+          AsyncValue<List<JournalEntity>>,
+          List<JournalEntity>,
+          FutureOr<List<JournalEntity>>,
+          ({String surveyType, DateTime rangeStart, DateTime rangeEnd})
+        > {
   SurveyChartDataControllerFamily._()
-      : super(
-          retry: null,
-          name: r'surveyChartDataControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'surveyChartDataControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   SurveyChartDataControllerProvider call({
     required String surveyType,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      SurveyChartDataControllerProvider._(argument: (
-        surveyType: surveyType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => SurveyChartDataControllerProvider._(
+    argument: (
+      surveyType: surveyType,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'surveyChartDataControllerProvider';
@@ -97,11 +93,8 @@ final class SurveyChartDataControllerFamily extends $Family
 
 abstract class _$SurveyChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
-  late final _$args = ref.$arg as ({
-    String surveyType,
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args =
+      ref.$arg as ({String surveyType, DateTime rangeStart, DateTime rangeEnd});
   String get surveyType => _$args.surveyType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -116,17 +109,21 @@ abstract class _$SurveyChartDataController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<JournalEntity>>, List<JournalEntity>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
-        AsyncValue<List<JournalEntity>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
+              AsyncValue<List<JournalEntity>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              surveyType: _$args.surveyType,
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(
+        surveyType: _$args.surveyType,
+        rangeStart: _$args.rangeStart,
+        rangeEnd: _$args.rangeEnd,
+      ),
+    );
   }
 }

@@ -228,8 +228,10 @@ class GameyGlows {
   // ============================================================================
 
   /// Get glow for a feature type
-  static List<BoxShadow> forFeature(String feature,
-      {bool highlighted = false}) {
+  static List<BoxShadow> forFeature(
+    String feature, {
+    bool highlighted = false,
+  }) {
     switch (feature.toLowerCase()) {
       case 'journal':
       case 'entry':

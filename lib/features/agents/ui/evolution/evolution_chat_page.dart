@@ -34,8 +34,9 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
     final chatAsync = ref.watch(evolutionChatStateProvider(widget.templateId));
     final templateAsync = ref.watch(agentTemplateProvider(widget.templateId));
     final templateEntity = templateAsync.value;
-    final templateName =
-        templateEntity is AgentTemplateEntity ? templateEntity.displayName : '';
+    final templateName = templateEntity is AgentTemplateEntity
+        ? templateEntity.displayName
+        : '';
 
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -141,23 +142,24 @@ class _MessageList extends StatelessWidget {
   Widget _buildMessage(BuildContext context, EvolutionChatMessage message) {
     return switch (message) {
       EvolutionUserMessage(:final text) => EvolutionChatBubble(
-          text: text,
-          role: 'user',
-        ),
+        text: text,
+        role: 'user',
+      ),
       EvolutionAssistantMessage(:final text) => EvolutionChatBubble(
-          text: text,
-          role: 'assistant',
-        ),
+        text: text,
+        role: 'assistant',
+      ),
       EvolutionSystemMessage(:final text) => EvolutionChatBubble(
-          text: _resolveSystemText(context, text),
-          role: 'system',
-        ),
-      EvolutionSurfaceMessage(:final surfaceId) => processor != null
-          ? GenUiSurface(
-              host: processor!,
-              surfaceId: surfaceId,
-            )
-          : const SizedBox.shrink(),
+        text: _resolveSystemText(context, text),
+        role: 'system',
+      ),
+      EvolutionSurfaceMessage(:final surfaceId) =>
+        processor != null
+            ? GenUiSurface(
+                host: processor!,
+                surfaceId: surfaceId,
+              )
+            : const SizedBox.shrink(),
     };
   }
 

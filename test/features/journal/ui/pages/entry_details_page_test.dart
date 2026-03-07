@@ -71,8 +71,9 @@ void main() {
       );
 
       when(
-        () => mockJournalDb
-            .getMeasurableDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) async => measurableWater);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
@@ -97,7 +98,7 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
@@ -111,12 +112,14 @@ void main() {
       );
 
       when(
-        () => mockHealthImport
-            .fetchHealthDataDelta(testWeightEntry.data.dataType),
+        () => mockHealthImport.fetchHealthDataDelta(
+          testWeightEntry.data.dataType,
+        ),
       ).thenAnswer((_) async {});
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
       when(
         () => mockJournalDb.getMeasurementsByType(
@@ -136,8 +139,9 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets('Text Entry is rendered', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -175,8 +179,9 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
-      when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
-          .thenAnswer((_) async => testWeightEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testWeightEntry.meta.id),
+      ).thenAnswer((_) async => testWeightEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

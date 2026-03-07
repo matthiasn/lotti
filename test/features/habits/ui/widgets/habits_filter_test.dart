@@ -39,8 +39,9 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateController.stream);
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([
       categoryMindfulness,
@@ -82,8 +83,9 @@ void main() {
       expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
     });
 
-    testWidgets('renders pie chart when habits have categories',
-        (tester) async {
+    testWidgets('renders pie chart when habits have categories', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

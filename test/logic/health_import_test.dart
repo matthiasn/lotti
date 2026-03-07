@@ -134,15 +134,17 @@ void main() {
       const type = 'cumulative_step_count';
       const unit = 'count';
 
-      when(() => mockPersistenceLogic.createQuantitativeEntry(any()))
-          .thenAnswer((_) async {
+      when(
+        () => mockPersistenceLogic.createQuantitativeEntry(any()),
+      ).thenAnswer((_) async {
         return null;
       });
 
       await healthImport.addActivityEntries(data, type, unit);
 
-      verify(() => mockPersistenceLogic.createQuantitativeEntry(any()))
-          .called(1);
+      verify(
+        () => mockPersistenceLogic.createQuantitativeEntry(any()),
+      ).called(1);
     });
   });
 
@@ -207,8 +209,9 @@ void main() {
       final distanceByDay = <DateTime, num>{};
 
       // Mock health service responses
-      when(() => mockHealthService.getTotalStepsInInterval(any(), any()))
-          .thenAnswer((_) async => 10000);
+      when(
+        () => mockHealthService.getTotalStepsInInterval(any(), any()),
+      ).thenAnswer((_) async => 10000);
 
       when(
         () => mockHealthService.getHealthDataFromTypes(
@@ -217,8 +220,9 @@ void main() {
           endTime: any(named: 'endTime'),
         ),
       ).thenAnswer((invocation) async {
-        final types = invocation.namedArguments[const Symbol('types')]
-            as List<HealthDataType>;
+        final types =
+            invocation.namedArguments[const Symbol('types')]
+                as List<HealthDataType>;
 
         if (types.contains(HealthDataType.FLIGHTS_CLIMBED)) {
           return [
@@ -279,8 +283,9 @@ void main() {
       expect(distanceByDay[testDate], 5000);
 
       // Verify health service was called
-      verify(() => mockHealthService.getTotalStepsInInterval(any(), any()))
-          .called(1);
+      verify(
+        () => mockHealthService.getTotalStepsInInterval(any(), any()),
+      ).called(1);
       verify(
         () => mockHealthService.getHealthDataFromTypes(
           types: any(named: 'types'),
@@ -296,8 +301,9 @@ void main() {
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
-      when(() => mockHealthService.getTotalStepsInInterval(any(), any()))
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockHealthService.getTotalStepsInInterval(any(), any()),
+      ).thenAnswer((_) async => 0);
 
       when(
         () => mockHealthService.getHealthDataFromTypes(
@@ -325,8 +331,9 @@ void main() {
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
-      when(() => mockHealthService.getTotalStepsInInterval(any(), any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockHealthService.getTotalStepsInInterval(any(), any()),
+      ).thenAnswer((_) async => null);
 
       when(
         () => mockHealthService.getHealthDataFromTypes(

@@ -18,7 +18,7 @@ export 'transcription_exception.dart';
 /// a closure that sends the request.
 class TranscriptionRepository {
   TranscriptionRepository({http.Client? httpClient})
-      : httpClient = httpClient ?? http.Client();
+    : httpClient = httpClient ?? http.Client();
 
   final http.Client httpClient;
 
@@ -42,7 +42,8 @@ class TranscriptionRepository {
     required Future<http.Response> Function(
       Duration timeout,
       String timeoutErrorMessage,
-    ) sendRequest,
+    )
+    sendRequest,
     required int audioLengthForLog,
     Duration? timeout,
   }) {
@@ -51,7 +52,8 @@ class TranscriptionRepository {
 
     final timeoutDisplay = _formatTimeoutDisplay(requestTimeout);
 
-    final timeoutErrorMessage = 'Transcription request timed out after '
+    final timeoutErrorMessage =
+        'Transcription request timed out after '
         '$timeoutDisplay. '
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording.';
@@ -65,8 +67,10 @@ class TranscriptionRepository {
             name: providerName,
           );
 
-          final response =
-              await sendRequest(requestTimeout, timeoutErrorMessage);
+          final response = await sendRequest(
+            requestTimeout,
+            timeoutErrorMessage,
+          );
 
           if (response.statusCode != 200) {
             developer.log(

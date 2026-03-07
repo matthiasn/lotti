@@ -258,9 +258,11 @@ void main() {
       // Content beyond the cap should not appear.
       expect(
         ctx.initialUserMessage,
-        isNot(contains(
-          'Report content ${EvolutionContextBuilder.maxInstanceReports + 1}',
-        )),
+        isNot(
+          contains(
+            'Report content ${EvolutionContextBuilder.maxInstanceReports + 1}',
+          ),
+        ),
       );
     });
 

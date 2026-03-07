@@ -28,9 +28,9 @@ class GeolocationService {
     required LoggingService loggingService,
     required MetadataService metadataService,
     this.deviceLocation,
-  })  : _journalDb = journalDb,
-        _loggingService = loggingService,
-        _metadataService = metadataService;
+  }) : _journalDb = journalDb,
+       _loggingService = loggingService,
+       _metadataService = metadataService;
 
   final JournalDb _journalDb;
   final LoggingService _loggingService;
@@ -105,8 +105,9 @@ class GeolocationService {
       // Only add geolocation if the entry doesn't already have one.
       // Geolocation should be set once at creation and never overwritten.
       if (journalEntity != null && journalEntity.geolocation == null) {
-        final updatedMeta =
-            await _metadataService.updateMetadata(journalEntity.meta);
+        final updatedMeta = await _metadataService.updateMetadata(
+          journalEntity.meta,
+        );
         await persister(
           journalEntity.copyWith(
             meta: updatedMeta,

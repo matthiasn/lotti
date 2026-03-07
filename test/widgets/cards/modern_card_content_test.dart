@@ -34,7 +34,8 @@ void main() {
     });
 
     testWidgets('title truncates with ellipsis when too long', (tester) async {
-      const longTitle = 'This is a very long title that should be truncated '
+      const longTitle =
+          'This is a very long title that should be truncated '
           'with ellipsis when it exceeds the available space in the card';
 
       await tester.pumpWidget(
@@ -262,7 +263,8 @@ void main() {
 
     testWidgets('max lines for subtitle works correctly', (tester) async {
       const testTitle = 'Title';
-      const testSubtitle = 'This is a very long subtitle that could span '
+      const testSubtitle =
+          'This is a very long subtitle that could span '
           'multiple lines depending on the available width';
 
       await tester.pumpWidget(
@@ -308,8 +310,9 @@ void main() {
       expect(column.children.length, 1); // Only title
     });
 
-    testWidgets('subtitle widget takes precedence over subtitle text',
-        (tester) async {
+    testWidgets('subtitle widget takes precedence over subtitle text', (
+      tester,
+    ) async {
       const testTitle = 'Test Title';
       const testSubtitle = 'Text Subtitle';
       const widgetText = 'Widget Subtitle';

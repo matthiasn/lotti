@@ -37,8 +37,9 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
           color: context.colorScheme.surface,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.circular(AppTheme.errorModalBorderRadius),
+            borderRadius: BorderRadius.circular(
+              AppTheme.errorModalBorderRadius,
+            ),
             side: BorderSide(
               color: context.colorScheme.error.withValues(alpha: 0.25),
               width: 1.5,
@@ -55,7 +56,8 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                   decoration: BoxDecoration(
                     color: context.colorScheme.error.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(
-                        AppTheme.errorModalIconBorderRadius),
+                      AppTheme.errorModalIconBorderRadius,
+                    ),
                   ),
                   child: Icon(
                     _getErrorIcon(),
@@ -87,12 +89,14 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                   const SizedBox(height: AppTheme.errorModalSpacingLarge),
                   Container(
                     padding: const EdgeInsets.all(
-                        AppTheme.errorModalSuggestionPadding),
+                      AppTheme.errorModalSuggestionPadding,
+                    ),
                     decoration: BoxDecoration(
                       color: context.colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(
-                          AppTheme.errorModalSuggestionBorderRadius),
+                        AppTheme.errorModalSuggestionBorderRadius,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,29 +108,32 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                           ),
                         ),
                         const SizedBox(height: AppTheme.errorModalSpacingSmall),
-                        ..._getSuggestions().map((suggestion) => Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: AppTheme.errorModalSuggestionSpacing),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    '• ',
-                                    style: context.textTheme.bodySmall,
+                        ..._getSuggestions().map(
+                          (suggestion) => Padding(
+                            padding: const EdgeInsets.only(
+                              bottom: AppTheme.errorModalSuggestionSpacing,
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '• ',
+                                  style: context.textTheme.bodySmall,
+                                ),
+                                Expanded(
+                                  child: SelectableText(
+                                    suggestion,
+                                    style: context.textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: context.colorScheme.onSurface
+                                              .withValues(alpha: 0.7),
+                                        ),
                                   ),
-                                  Expanded(
-                                    child: SelectableText(
-                                      suggestion,
-                                      style:
-                                          context.textTheme.bodySmall?.copyWith(
-                                        color: context.colorScheme.onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -142,7 +149,8 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
                 ],
                 // View Log button
                 const SizedBox(
-                    height: AppTheme.errorModalSpacingButtonSecondary),
+                  height: AppTheme.errorModalSpacingButtonSecondary,
+                ),
                 LottiSecondaryButton(
                   label: context.messages.aiInferenceErrorViewLogButton,
                   icon: Icons.article_outlined,
@@ -209,8 +217,9 @@ class _AiErrorDisplayState extends State<AiErrorDisplay> {
       case InferenceErrorType.invalidRequest:
         if (error.message.contains('not found') &&
             error.message.contains('model')) {
-          final modelMatch =
-              RegExp(r'model\s*"([^"]+)"').firstMatch(error.message);
+          final modelMatch = RegExp(
+            r'model\s*"([^"]+)"',
+          ).firstMatch(error.message);
           final modelName = modelMatch?.group(1) ?? 'the model';
           if (error.message.contains('pulling')) {
             return [

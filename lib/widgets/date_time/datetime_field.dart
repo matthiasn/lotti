@@ -33,22 +33,23 @@ class _DateTimeFieldState extends State<DateTimeField> {
     final df = widget.mode == CupertinoDatePickerMode.date
         ? dfYmd
         : widget.mode == CupertinoDatePickerMode.time
-            ? hhMmFormat
-            : dfShorter;
+        ? hhMmFormat
+        : dfShorter;
 
     return TextField(
-      decoration: createDialogInputDecoration(
-        labelText: widget.labelText,
-        style: style,
-        themeData: Theme.of(context),
-      ).copyWith(
-        suffixIcon: widget.clear != null
-            ? IconButton(
-                onPressed: widget.clear,
-                icon: const Icon(Icons.clear),
-              )
-            : null,
-      ),
+      decoration:
+          createDialogInputDecoration(
+            labelText: widget.labelText,
+            style: style,
+            themeData: Theme.of(context),
+          ).copyWith(
+            suffixIcon: widget.clear != null
+                ? IconButton(
+                    onPressed: widget.clear,
+                    icon: const Icon(Icons.clear),
+                  )
+                : null,
+          ),
       style: style,
       readOnly: true,
       controller: TextEditingController(

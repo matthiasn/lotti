@@ -45,8 +45,9 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => updateStreamController.stream);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => updateStreamController.stream);
 
       // Reset getIt and register mocks
       if (getIt.isRegistered<PersistenceLogic>()) {
@@ -87,10 +88,12 @@ void main() {
 
     group('watchCategories', () {
       test('emits categories from initial fetch', () async {
-        final category1 =
-            CategoryTestUtils.createTestCategory(name: 'Category 1');
-        final category2 =
-            CategoryTestUtils.createTestCategory(name: 'Category 2');
+        final category1 = CategoryTestUtils.createTestCategory(
+          name: 'Category 1',
+        );
+        final category2 = CategoryTestUtils.createTestCategory(
+          name: 'Category 2',
+        );
         final categories = [category1, category2];
 
         when(() => mockJournalDb.getAllCategories()).thenAnswer(
@@ -105,12 +108,15 @@ void main() {
 
       test('emits updated categories on notification', () {
         fakeAsync((async) {
-          final category1 =
-              CategoryTestUtils.createTestCategory(name: 'Category 1');
-          final category2 =
-              CategoryTestUtils.createTestCategory(name: 'Category 2');
-          final category3 =
-              CategoryTestUtils.createTestCategory(name: 'Category 3');
+          final category1 = CategoryTestUtils.createTestCategory(
+            name: 'Category 1',
+          );
+          final category2 = CategoryTestUtils.createTestCategory(
+            name: 'Category 2',
+          );
+          final category3 = CategoryTestUtils.createTestCategory(
+            name: 'Category 3',
+          );
 
           var callCount = 0;
           when(() => mockJournalDb.getAllCategories()).thenAnswer((_) async {
@@ -154,8 +160,9 @@ void main() {
       });
 
       test('emits null when category not found', () async {
-        when(() => mockJournalDb.getCategoryById('non-existent-id'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getCategoryById('non-existent-id'),
+        ).thenAnswer((_) async => null);
 
         final result = await repository.watchCategory('non-existent-id').first;
 
@@ -166,21 +173,27 @@ void main() {
         fakeAsync((async) {
           final categoryId = const Uuid().v4();
           final category1 = CategoryTestUtils.createTestCategory(
-              id: categoryId, name: 'Original');
+            id: categoryId,
+            name: 'Original',
+          );
           final category2 = CategoryTestUtils.createTestCategory(
-              id: categoryId, name: 'Updated');
+            id: categoryId,
+            name: 'Updated',
+          );
 
           var callCount = 0;
-          when(() => mockJournalDb.getCategoryById(categoryId))
-              .thenAnswer((_) async {
+          when(() => mockJournalDb.getCategoryById(categoryId)).thenAnswer((
+            _,
+          ) async {
             callCount++;
             if (callCount == 1) return category1;
             return category2;
           });
 
           final results = <CategoryDefinition?>[];
-          final subscription =
-              repository.watchCategory(categoryId).listen(results.add);
+          final subscription = repository
+              .watchCategory(categoryId)
+              .listen(results.add);
 
           async.flushMicrotasks();
           expect(results, hasLength(1));
@@ -204,8 +217,9 @@ void main() {
         const name = 'New Category';
         const color = '#FF0000';
 
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
         final result = await repository.createCategory(
           name: name,
@@ -221,17 +235,20 @@ void main() {
         expect(result.allowedPromptIds, isNull);
         expect(result.automaticPrompts, isNull);
 
-        final captured = verify(
-                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
-            .captured
-            .single as CategoryDefinition;
+        final captured =
+            verify(
+                  () =>
+                      mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
         expect(captured.name, equals(name));
         expect(captured.color, equals(color));
       });
 
       test('generates unique ID for new category', () async {
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
         final result1 = await repository.createCategory(
           name: 'Category 1',
@@ -252,44 +269,50 @@ void main() {
       test('returns category from cache service', () async {
         final category = CategoryTestUtils.createTestCategory();
 
-        when(() => mockEntitiesCacheService.getCategoryById(category.id))
-            .thenReturn(category);
+        when(
+          () => mockEntitiesCacheService.getCategoryById(category.id),
+        ).thenReturn(category);
 
         final result = await repository.getCategoryById(category.id);
 
         expect(result, equals(category));
-        verify(() => mockEntitiesCacheService.getCategoryById(category.id))
-            .called(1);
+        verify(
+          () => mockEntitiesCacheService.getCategoryById(category.id),
+        ).called(1);
       });
 
       test('returns null when category not found in cache', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('non-existent-id'))
-            .thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('non-existent-id'),
+        ).thenReturn(null);
 
         final result = await repository.getCategoryById('non-existent-id');
 
         expect(result, isNull);
-        verify(() =>
-                mockEntitiesCacheService.getCategoryById('non-existent-id'))
-            .called(1);
+        verify(
+          () => mockEntitiesCacheService.getCategoryById('non-existent-id'),
+        ).called(1);
       });
     });
 
     group('updateCategory', () {
       test('updates category via persistence logic', () async {
-        final category =
-            CategoryTestUtils.createTestCategory(name: 'Updated Category');
+        final category = CategoryTestUtils.createTestCategory(
+          name: 'Updated Category',
+        );
 
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
         final result = await repository.updateCategory(category);
 
         expect(result.name, equals(category.name));
         expect(result.updatedAt.isAfter(category.updatedAt), isTrue);
 
-        verify(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .called(1);
+        verify(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).called(1);
       });
 
       test('preserves all fields during update', () async {
@@ -307,15 +330,18 @@ void main() {
           },
         );
 
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
         await repository.updateCategory(category);
 
-        final captured = verify(
-                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
-            .captured
-            .single as CategoryDefinition;
+        final captured =
+            verify(
+                  () =>
+                      mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
 
         expect(captured.name, equals(category.name));
         expect(captured.color, equals(category.color));
@@ -323,53 +349,67 @@ void main() {
         expect(captured.active, equals(category.active));
         expect(captured.favorite, equals(category.favorite));
         expect(
-            captured.defaultLanguageCode, equals(category.defaultLanguageCode));
+          captured.defaultLanguageCode,
+          equals(category.defaultLanguageCode),
+        );
         expect(captured.allowedPromptIds, equals(category.allowedPromptIds));
         expect(captured.automaticPrompts, equals(category.automaticPrompts));
       });
     });
 
     group('deleteCategory', () {
-      test('successfully soft deletes category by setting deletedAt timestamp',
-          () async {
-        const categoryId = 'test-id-123';
-        final existingCategory = CategoryTestUtils.createTestCategory(
-          id: categoryId,
-          name: 'Category to Delete',
-        );
+      test(
+        'successfully soft deletes category by setting deletedAt timestamp',
+        () async {
+          const categoryId = 'test-id-123';
+          final existingCategory = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            name: 'Category to Delete',
+          );
 
-        // Mock category exists
-        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
-            .thenReturn(existingCategory);
+          // Mock category exists
+          when(
+            () => mockEntitiesCacheService.getCategoryById(categoryId),
+          ).thenReturn(existingCategory);
 
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+          when(
+            () => mockPersistenceLogic.upsertEntityDefinition(any()),
+          ).thenAnswer((_) async => 1);
 
-        await repository.deleteCategory(categoryId);
+          await repository.deleteCategory(categoryId);
 
-        // Verify upsertEntityDefinition was called with the deleted category
-        final captured = verify(
-                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
-            .captured
-            .single as CategoryDefinition;
+          // Verify upsertEntityDefinition was called with the deleted category
+          final captured =
+              verify(
+                    () => mockPersistenceLogic.upsertEntityDefinition(
+                      captureAny(),
+                    ),
+                  ).captured.single
+                  as CategoryDefinition;
 
-        // Verify the category has deletedAt set
-        expect(captured.id, equals(categoryId));
-        expect(captured.name, equals('Category to Delete'));
-        expect(captured.deletedAt, isNotNull);
-        expect(captured.deletedAt?.difference(DateTime.now()).inSeconds.abs(),
-            lessThan(5)); // Within 5 seconds
-        expect(captured.updatedAt, isNotNull);
-        expect(captured.updatedAt.difference(DateTime.now()).inSeconds.abs(),
-            lessThan(5)); // Within 5 seconds
-      });
+          // Verify the category has deletedAt set
+          expect(captured.id, equals(categoryId));
+          expect(captured.name, equals('Category to Delete'));
+          expect(captured.deletedAt, isNotNull);
+          expect(
+            captured.deletedAt?.difference(DateTime.now()).inSeconds.abs(),
+            lessThan(5),
+          ); // Within 5 seconds
+          expect(captured.updatedAt, isNotNull);
+          expect(
+            captured.updatedAt.difference(DateTime.now()).inSeconds.abs(),
+            lessThan(5),
+          ); // Within 5 seconds
+        },
+      );
 
       test('does nothing when category ID does not exist', () async {
         const nonExistentId = 'non-existent-id';
 
         // Mock category doesn't exist
-        when(() => mockEntitiesCacheService.getCategoryById(nonExistentId))
-            .thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.getCategoryById(nonExistentId),
+        ).thenReturn(null);
 
         await repository.deleteCategory(nonExistentId);
 
@@ -377,28 +417,32 @@ void main() {
         verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
       });
 
-      test('propagates errors from persistence logic during deletion',
-          () async {
-        const categoryId = 'test-id-456';
-        final existingCategory = CategoryTestUtils.createTestCategory(
-          id: categoryId,
-          name: 'Category with Error',
-        );
-        final error = Exception('Delete error');
+      test(
+        'propagates errors from persistence logic during deletion',
+        () async {
+          const categoryId = 'test-id-456';
+          final existingCategory = CategoryTestUtils.createTestCategory(
+            id: categoryId,
+            name: 'Category with Error',
+          );
+          final error = Exception('Delete error');
 
-        // Mock category exists
-        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
-            .thenReturn(existingCategory);
+          // Mock category exists
+          when(
+            () => mockEntitiesCacheService.getCategoryById(categoryId),
+          ).thenReturn(existingCategory);
 
-        // Mock persistence logic throws error
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenThrow(error);
+          // Mock persistence logic throws error
+          when(
+            () => mockPersistenceLogic.upsertEntityDefinition(any()),
+          ).thenThrow(error);
 
-        expect(
-          () => repository.deleteCategory(categoryId),
-          throwsA(error),
-        );
-      });
+          expect(
+            () => repository.deleteCategory(categoryId),
+            throwsA(error),
+          );
+        },
+      );
 
       test('preserves other category properties when soft deleting', () async {
         const categoryId = 'test-id-789';
@@ -417,19 +461,23 @@ void main() {
         );
 
         // Mock category exists
-        when(() => mockEntitiesCacheService.getCategoryById(categoryId))
-            .thenReturn(existingCategory);
+        when(
+          () => mockEntitiesCacheService.getCategoryById(categoryId),
+        ).thenReturn(existingCategory);
 
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenAnswer((_) async => 1);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
 
         await repository.deleteCategory(categoryId);
 
         // Verify all properties are preserved except deletedAt and updatedAt
-        final captured = verify(
-                () => mockPersistenceLogic.upsertEntityDefinition(captureAny()))
-            .captured
-            .single as CategoryDefinition;
+        final captured =
+            verify(
+                  () =>
+                      mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
 
         expect(captured.id, equals(categoryId));
         expect(captured.name, equals('Category with Properties'));
@@ -440,10 +488,11 @@ void main() {
         expect(captured.defaultLanguageCode, equals('en'));
         expect(captured.allowedPromptIds, equals(['prompt1', 'prompt2']));
         expect(
-            captured.automaticPrompts,
-            equals({
-              AiResponseType.taskSummary: ['prompt1']
-            }));
+          captured.automaticPrompts,
+          equals({
+            AiResponseType.taskSummary: ['prompt1'],
+          }),
+        );
         expect(captured.deletedAt, isNotNull);
         expect(captured.updatedAt, isNotNull);
       });
@@ -462,8 +511,9 @@ void main() {
 
       test('createCategory propagates errors from persistence logic', () async {
         final error = Exception('Create error');
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenThrow(error);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenThrow(error);
 
         expect(
           () => repository.createCategory(name: 'Test', color: '#000000'),
@@ -474,8 +524,9 @@ void main() {
       test('updateCategory propagates errors from persistence logic', () async {
         final error = Exception('Update error');
         final category = CategoryTestUtils.createTestCategory();
-        when(() => mockPersistenceLogic.upsertEntityDefinition(any()))
-            .thenThrow(error);
+        when(
+          () => mockPersistenceLogic.upsertEntityDefinition(any()),
+        ).thenThrow(error);
 
         expect(
           () => repository.updateCategory(category),

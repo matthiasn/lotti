@@ -13,18 +13,22 @@ part of 'reference_image_selection_controller.dart';
 final referenceImageSelectionControllerProvider =
     ReferenceImageSelectionControllerFamily._();
 
-final class ReferenceImageSelectionControllerProvider extends $NotifierProvider<
-    ReferenceImageSelectionController, ReferenceImageSelectionState> {
-  ReferenceImageSelectionControllerProvider._(
-      {required ReferenceImageSelectionControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'referenceImageSelectionControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class ReferenceImageSelectionControllerProvider
+    extends
+        $NotifierProvider<
+          ReferenceImageSelectionController,
+          ReferenceImageSelectionState
+        > {
+  ReferenceImageSelectionControllerProvider._({
+    required ReferenceImageSelectionControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'referenceImageSelectionControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() =>
@@ -68,23 +72,22 @@ String _$referenceImageSelectionControllerHash() =>
 final class ReferenceImageSelectionControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            ReferenceImageSelectionController,
-            ReferenceImageSelectionState,
-            ReferenceImageSelectionState,
-            ReferenceImageSelectionState,
-            String> {
+          ReferenceImageSelectionController,
+          ReferenceImageSelectionState,
+          ReferenceImageSelectionState,
+          ReferenceImageSelectionState,
+          String
+        > {
   ReferenceImageSelectionControllerFamily._()
-      : super(
-          retry: null,
-          name: r'referenceImageSelectionControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'referenceImageSelectionControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  ReferenceImageSelectionControllerProvider call({
-    required String taskId,
-  }) =>
+  ReferenceImageSelectionControllerProvider call({required String taskId}) =>
       ReferenceImageSelectionControllerProvider._(argument: taskId, from: this);
 
   @override
@@ -96,23 +99,24 @@ abstract class _$ReferenceImageSelectionController
   late final _$args = ref.$arg as String;
   String get taskId => _$args;
 
-  ReferenceImageSelectionState build({
-    required String taskId,
-  });
+  ReferenceImageSelectionState build({required String taskId});
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref
-        as $Ref<ReferenceImageSelectionState, ReferenceImageSelectionState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ReferenceImageSelectionState, ReferenceImageSelectionState>,
-        ReferenceImageSelectionState,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              taskId: _$args,
-            ));
+    final ref =
+        this.ref
+            as $Ref<ReferenceImageSelectionState, ReferenceImageSelectionState>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                ReferenceImageSelectionState,
+                ReferenceImageSelectionState
+              >,
+              ReferenceImageSelectionState,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(taskId: _$args));
   }
 }

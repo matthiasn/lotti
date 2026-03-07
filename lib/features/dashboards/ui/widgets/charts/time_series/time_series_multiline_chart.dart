@@ -38,10 +38,10 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     final gridInterval = rangeInDays > 182
         ? 30
         : rangeInDays > 92
-            ? 14
-            : rangeInDays > 30
-                ? 7
-                : 1;
+        ? 14
+        : rangeInDays > 30
+        ? 7
+        : 1;
 
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());

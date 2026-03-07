@@ -54,14 +54,16 @@ class ScreenshotPortalService extends PortalService {
       }
 
       // Call the screenshot method
-      final result = await object.callMethod(
-        ScreenshotPortalConstants.interfaceName,
-        ScreenshotPortalConstants.screenshotMethod,
-        [
-          const DBusString(''), // parent_window (empty for root)
-          DBusDict.stringVariant(options),
-        ],
-      ).timeout(PortalConstants.responseTimeout);
+      final result = await object
+          .callMethod(
+            ScreenshotPortalConstants.interfaceName,
+            ScreenshotPortalConstants.screenshotMethod,
+            [
+              const DBusString(''), // parent_window (empty for root)
+              DBusDict.stringVariant(options),
+            ],
+          )
+          .timeout(PortalConstants.responseTimeout);
 
       if (result.returnValues.isEmpty) {
         throw Exception('Screenshot portal returned no response');

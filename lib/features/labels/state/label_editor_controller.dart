@@ -32,7 +32,7 @@ class LabelEditorState {
       isPrivate: label?.private ?? false,
       description: label?.description,
       selectedCategoryIds: {
-        ...(label?.applicableCategoryIds ?? const <String>[])
+        ...(label?.applicableCategoryIds ?? const <String>[]),
       },
     );
   }
@@ -82,8 +82,8 @@ class LabelEditorArgs {
 
 final labelEditorControllerProvider = NotifierProvider.autoDispose
     .family<LabelEditorController, LabelEditorState, LabelEditorArgs>(
-  LabelEditorController.new,
-);
+      LabelEditorController.new,
+    );
 
 class LabelEditorController extends Notifier<LabelEditorState> {
   LabelEditorController(this.params);
@@ -148,8 +148,10 @@ class LabelEditorController extends Notifier<LabelEditorState> {
   }
 
   void setPrivate({required bool isPrivateValue}) {
-    final updated =
-        state.copyWith(isPrivate: isPrivateValue, errorMessage: null);
+    final updated = state.copyWith(
+      isPrivate: isPrivateValue,
+      errorMessage: null,
+    );
     state = updated.copyWith(
       hasChanges: _hasChanges(isPrivate: isPrivateValue),
     );
@@ -198,7 +200,7 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     }
 
     final initialCats = {
-      ...(_initialLabel!.applicableCategoryIds ?? const <String>[])
+      ...(_initialLabel!.applicableCategoryIds ?? const <String>[]),
     };
     return effectiveName != _initialLabel!.name ||
         effectiveColor != _initialLabel!.color.toUpperCase() ||

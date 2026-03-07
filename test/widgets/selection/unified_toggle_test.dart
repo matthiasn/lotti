@@ -57,11 +57,14 @@ void main() {
       // The active color should be the error color for warning variant
       final context = tester.element(find.byType(Switch));
       expect(
-          switchWidget.activeTrackColor, Theme.of(context).colorScheme.error);
+        switchWidget.activeTrackColor,
+        Theme.of(context).colorScheme.error,
+      );
     });
 
-    testWidgets('UnifiedToggleField renders with title and subtitle',
-        (WidgetTester tester) async {
+    testWidgets('UnifiedToggleField renders with title and subtitle', (
+      WidgetTester tester,
+    ) async {
       var value = false;
 
       await tester.pumpWidget(
@@ -85,8 +88,9 @@ void main() {
       expect(find.byType(Switch), findsOneWidget);
     });
 
-    testWidgets('toggle changes value when tapped',
-        (WidgetTester tester) async {
+    testWidgets('toggle changes value when tapped', (
+      WidgetTester tester,
+    ) async {
       var value = false;
 
       await tester.pumpWidget(
@@ -124,8 +128,9 @@ void main() {
       expect(switchWidget.value, true);
     });
 
-    testWidgets('disabled toggle does not respond to taps',
-        (WidgetTester tester) async {
+    testWidgets('disabled toggle does not respond to taps', (
+      WidgetTester tester,
+    ) async {
       const value = false;
 
       await tester.pumpWidget(
@@ -196,7 +201,9 @@ void main() {
 
       final context = tester.element(find.byType(Switch));
       expect(
-          switchWidget.activeTrackColor, Theme.of(context).colorScheme.outline);
+        switchWidget.activeTrackColor,
+        Theme.of(context).colorScheme.outline,
+      );
     });
 
     testWidgets('renders with ai variant', (WidgetTester tester) async {
@@ -224,7 +231,9 @@ void main() {
 
       final context = tester.element(find.byType(Switch));
       expect(
-          switchWidget.activeTrackColor, Theme.of(context).colorScheme.primary);
+        switchWidget.activeTrackColor,
+        Theme.of(context).colorScheme.primary,
+      );
     });
 
     testWidgets('renders with cupertino variant', (WidgetTester tester) async {
@@ -249,13 +258,15 @@ void main() {
       expect(find.byType(Switch), findsNothing);
 
       // Verify the CupertinoSwitch is rendered
-      final cupertinoSwitch =
-          tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch));
+      final cupertinoSwitch = tester.widget<CupertinoSwitch>(
+        find.byType(CupertinoSwitch),
+      );
       expect(cupertinoSwitch.value, false);
     });
 
-    testWidgets('custom active color overrides variant color',
-        (WidgetTester tester) async {
+    testWidgets('custom active color overrides variant color', (
+      WidgetTester tester,
+    ) async {
       const customColor = Colors.purple;
       var value = false;
 
@@ -362,8 +373,9 @@ void main() {
   });
 
   group('UnifiedAiToggleField', () {
-    testWidgets('renders with AI-specific styling',
-        (WidgetTester tester) async {
+    testWidgets('renders with AI-specific styling', (
+      WidgetTester tester,
+    ) async {
       var value = false;
 
       await tester.pumpWidget(

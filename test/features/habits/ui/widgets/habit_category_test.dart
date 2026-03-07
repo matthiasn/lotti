@@ -40,8 +40,9 @@ void main() {
       [categoryMindfulness],
     );
 
-    when(() => mockEntitiesCacheService.getCategoryById(any()))
-        .thenReturn(null);
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(null);
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -67,8 +68,9 @@ void main() {
   });
 
   testWidgets('opens category modal and selects category', (tester) async {
-    when(() => mockEntitiesCacheService.getCategoryById(categoryMindfulness.id))
-        .thenReturn(categoryMindfulness);
+    when(
+      () => mockEntitiesCacheService.getCategoryById(categoryMindfulness.id),
+    ).thenReturn(categoryMindfulness);
 
     await tester.pumpWidget(
       RiverpodWidgetTestBench(

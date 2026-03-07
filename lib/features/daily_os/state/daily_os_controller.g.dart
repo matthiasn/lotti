@@ -18,15 +18,15 @@ final class DailyOsSelectedDateProvider
     extends $NotifierProvider<DailyOsSelectedDate, DateTime> {
   /// Provides the selected date for the Daily OS view.
   DailyOsSelectedDateProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'dailyOsSelectedDateProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dailyOsSelectedDateProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$dailyOsSelectedDateHash();
@@ -55,8 +55,14 @@ abstract class _$DailyOsSelectedDate extends $Notifier<DateTime> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<DateTime, DateTime>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<DateTime, DateTime>, DateTime, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<DateTime, DateTime>,
+              DateTime,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -83,15 +89,15 @@ final class DailyOsControllerProvider
   /// Uses the UnifiedDailyOsDataController for data that auto-updates when
   /// entries are created or synced.
   DailyOsControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'dailyOsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dailyOsControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$dailyOsControllerHash();
@@ -115,11 +121,14 @@ abstract class _$DailyOsController extends $AsyncNotifier<DailyOsState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<DailyOsState>, DailyOsState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<DailyOsState>, DailyOsState>,
-        AsyncValue<DailyOsState>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<DailyOsState>, DailyOsState>,
+              AsyncValue<DailyOsState>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }
@@ -136,15 +145,15 @@ final class HighlightedCategoryIdProvider
     with $Provider<String?> {
   /// Provides just the highlighted category ID for efficient rebuilds.
   HighlightedCategoryIdProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'highlightedCategoryIdProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'highlightedCategoryIdProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$highlightedCategoryIdHash();
@@ -183,15 +192,15 @@ final class ExpandedFoldRegionsProvider
     with $Provider<Set<int>> {
   /// Provides just the expanded fold regions for efficient rebuilds.
   ExpandedFoldRegionsProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'expandedFoldRegionsProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'expandedFoldRegionsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$expandedFoldRegionsHash();
@@ -266,15 +275,15 @@ final class ActiveFocusCategoryIdProvider
   /// without excessive resource usage. Handles midnight crossings by
   /// recalculating "today" on each iteration.
   ActiveFocusCategoryIdProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'activeFocusCategoryIdProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'activeFocusCategoryIdProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$activeFocusCategoryIdHash();
@@ -315,15 +324,15 @@ final class RunningTimerCategoryIdProvider
   /// is actively running, or null when no timer is running.
   /// Used for visual indicators in the UI (e.g., showing a timer icon).
   RunningTimerCategoryIdProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'runningTimerCategoryIdProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'runningTimerCategoryIdProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$runningTimerCategoryIdHash();
@@ -356,8 +365,14 @@ abstract class _$RunningTimerCategoryId extends $Notifier<String?> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<String?, String?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<String?, String?>, String?, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<String?, String?>,
+              String?,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

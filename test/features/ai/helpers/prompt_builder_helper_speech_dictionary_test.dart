@@ -107,10 +107,12 @@ void main() {
 
     // Default stubs
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -136,36 +138,40 @@ void main() {
       // Note: {{speech_dictionary}} is intentionally NOT supported in system messages
       // to avoid token waste from duplication. Use it only in user messages.
 
-      test('does not process speech_dictionary placeholder in system message',
-          () async {
-        // Speech dictionary is only supported in user messages for efficiency
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage:
+      test(
+        'does not process speech_dictionary placeholder in system message',
+        () async {
+          // Speech dictionary is only supported in user messages for efficiency
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Audio Transcription',
+            systemMessage:
+                'You are a transcription assistant.\n\n{{speech_dictionary}}',
+            userMessage: 'Transcribe the audio.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          final result = await promptBuilder.buildSystemMessageWithData(
+            promptConfig: config,
+            entity: testTask,
+          );
+
+          // Placeholder should remain unchanged - not processed in system messages
+          expect(
+            result,
+            equals(
               'You are a transcription assistant.\n\n{{speech_dictionary}}',
-          userMessage: 'Transcribe the audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final result = await promptBuilder.buildSystemMessageWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
-
-        // Placeholder should remain unchanged - not processed in system messages
-        expect(
-          result,
-          equals('You are a transcription assistant.\n\n{{speech_dictionary}}'),
-        );
-        // Cache service should NOT be called for system message placeholder
-        verifyNever(() => mockEntitiesCacheService.getCategoryById(any()));
-      });
+            ),
+          );
+          // Cache service should NOT be called for system message placeholder
+          verifyNever(() => mockEntitiesCacheService.getCategoryById(any()));
+        },
+      );
 
       test('returns system message unchanged', () async {
         final config = AiConfigPrompt(
@@ -192,8 +198,9 @@ void main() {
 
     group('buildPromptWithData - speech_dictionary in user message', () {
       test('injects speech dictionary into user message for task', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategory);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(testCategory);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -222,77 +229,87 @@ void main() {
         expect(result, contains('Transcribe this audio.'));
       });
 
-      test('injects speech dictionary for audio entry linked to task',
-          () async {
-        when(() => mockJournalRepository.getLinkedEntities(
+      test(
+        'injects speech dictionary for audio entry linked to task',
+        () async {
+          when(
+            () => mockJournalRepository.getLinkedEntities(
               linkedTo: 'audio-1',
-            )).thenAnswer((_) async => [testTask]);
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategory);
+            ),
+          ).thenAnswer((_) async => [testTask]);
+          when(
+            () => mockEntitiesCacheService.getCategoryById('category-1'),
+          ).thenReturn(testCategory);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage: 'System message',
-          userMessage: '{{speech_dictionary}}\n\nTranscribe this audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Audio Transcription',
+            systemMessage: 'System message',
+            userMessage: '{{speech_dictionary}}\n\nTranscribe this audio.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testAudio,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testAudio,
+          );
 
-        expect(result, isNotNull);
-        expect(
-          result,
-          contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
-        );
-      });
+          expect(result, isNotNull);
+          expect(
+            result,
+            contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
+          );
+        },
+      );
 
-      test('injects speech dictionary for image entry linked to task',
-          () async {
-        when(() => mockJournalRepository.getLinkedEntities(
+      test(
+        'injects speech dictionary for image entry linked to task',
+        () async {
+          when(
+            () => mockJournalRepository.getLinkedEntities(
               linkedTo: 'image-1',
-            )).thenAnswer((_) async => [testTask]);
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategory);
+            ),
+          ).thenAnswer((_) async => [testTask]);
+          when(
+            () => mockEntitiesCacheService.getCategoryById('category-1'),
+          ).thenReturn(testCategory);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Image Analysis',
-          systemMessage: 'System message',
-          userMessage: '{{speech_dictionary}}\n\nAnalyze this image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Image Analysis',
+            systemMessage: 'System message',
+            userMessage: '{{speech_dictionary}}\n\nAnalyze this image.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testImage,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testImage,
+          );
 
-        expect(result, isNotNull);
-        expect(
-          result,
-          contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
-        );
-      });
+          expect(result, isNotNull);
+          expect(
+            result,
+            contains('["macOS", "iPhone", "Kirkjubaejarklaustur"]'),
+          );
+        },
+      );
 
-      test('replaces with empty when getCategoryById throws exception',
-          () async {
+      test('replaces with empty when getCategoryById throws exception', () async {
         // This tests the catch block in _buildSpeechDictionaryPromptText
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenThrow(Exception('Cache service error'));
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenThrow(Exception('Cache service error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -318,9 +335,11 @@ void main() {
       });
 
       test('replaces with empty when audio not linked to any task', () async {
-        when(() => mockJournalRepository.getLinkedEntities(
-              linkedTo: 'audio-1',
-            )).thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getLinkedEntities(
+            linkedTo: 'audio-1',
+          ),
+        ).thenAnswer((_) async => []);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -382,8 +401,9 @@ void main() {
 
       test('replaces with empty when category not found in cache', () async {
         // Category lookup returns null
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(null);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -432,8 +452,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-many'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-many'))
-            .thenReturn(categoryWithManyTerms);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-many'),
+        ).thenReturn(categoryWithManyTerms);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -461,7 +482,8 @@ void main() {
         expect(
           result,
           contains(
-              '["TensorFlow", "PyTorch", "scikit-learn", "NumPy", "pandas"]'),
+            '["TensorFlow", "PyTorch", "scikit-learn", "NumPy", "pandas"]',
+          ),
         );
       });
 
@@ -483,8 +505,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-one'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-one'))
-            .thenReturn(categoryWithOneTerm);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-one'),
+        ).thenReturn(categoryWithOneTerm);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -525,8 +548,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-empty'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-empty'))
-            .thenReturn(categoryWithEmptyList);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-empty'),
+        ).thenReturn(categoryWithEmptyList);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -553,34 +577,36 @@ void main() {
     });
 
     group('EntitiesCacheService not registered', () {
-      test('replaces with empty string when cache service not registered',
-          () async {
-        // Unregister the cache service
-        if (getIt.isRegistered<EntitiesCacheService>()) {
-          getIt.unregister<EntitiesCacheService>();
-        }
+      test(
+        'replaces with empty string when cache service not registered',
+        () async {
+          // Unregister the cache service
+          if (getIt.isRegistered<EntitiesCacheService>()) {
+            getIt.unregister<EntitiesCacheService>();
+          }
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage: 'You are a transcription assistant.',
-          userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Audio Transcription',
+            systemMessage: 'You are a transcription assistant.',
+            userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testTask,
+          );
 
-        // When cache service is not registered, placeholder is replaced with empty
-        expect(result, equals('\n\nTranscribe.'));
-      });
+          // When cache service is not registered, placeholder is replaced with empty
+          expect(result, equals('\n\nTranscribe.'));
+        },
+      );
     });
 
     group('special character handling', () {
@@ -597,8 +623,9 @@ void main() {
           speechDictionary: ['Term with "quotes"', 'Normal term'],
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(categoryWithQuotes);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(categoryWithQuotes);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -636,8 +663,9 @@ void main() {
           speechDictionary: [r'Path\To\File', 'Normal'],
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(categoryWithBackslash);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(categoryWithBackslash);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -674,8 +702,9 @@ void main() {
           speechDictionary: ['Term with\nnewline', 'Normal'],
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(categoryWithNewline);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(categoryWithNewline);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -702,8 +731,9 @@ void main() {
       });
 
       test('includes casing guidance in prompt', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategory);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(testCategory);
 
         final config = AiConfigPrompt(
           id: 'prompt',

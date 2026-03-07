@@ -141,13 +141,16 @@ void main() {
   group('SpeechDictionaryService', () {
     group('addTermForEntry', () {
       test('successfully adds term to task category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-1'),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
         when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-            (invocation) async =>
-                invocation.positionalArguments[0] as CategoryDefinition);
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
         final result = await service.addTermForEntry(
           entryId: 'task-1',
@@ -167,47 +170,55 @@ void main() {
         );
       });
 
-      test('successfully adds term to category without existing dictionary',
-          () async {
-        final taskWithCategory2 = Task(
-          data: testTask.data,
-          meta: testTask.meta.copyWith(categoryId: 'category-2'),
-        );
+      test(
+        'successfully adds term to category without existing dictionary',
+        () async {
+          final taskWithCategory2 = Task(
+            data: testTask.data,
+            meta: testTask.meta.copyWith(categoryId: 'category-2'),
+          );
 
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => taskWithCategory2);
-        when(() => mockCategoryRepository.getCategoryById('category-2'))
-            .thenAnswer((_) async => testCategoryNoDict);
-        when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
+          when(
+            () => mockJournalRepository.getJournalEntityById('task-1'),
+          ).thenAnswer((_) async => taskWithCategory2);
+          when(
+            () => mockCategoryRepository.getCategoryById('category-2'),
+          ).thenAnswer((_) async => testCategoryNoDict);
+          when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
             (invocation) async =>
-                invocation.positionalArguments[0] as CategoryDefinition);
+                invocation.positionalArguments[0] as CategoryDefinition,
+          );
 
-        final result = await service.addTermForEntry(
-          entryId: 'task-1',
-          term: 'firstTerm',
-        );
+          final result = await service.addTermForEntry(
+            entryId: 'task-1',
+            term: 'firstTerm',
+          );
 
-        expect(result, equals(SpeechDictionaryResult.success));
+          expect(result, equals(SpeechDictionaryResult.success));
 
-        // Verify category was updated with new term
-        final captured = verify(
-          () => mockCategoryRepository.updateCategory(captureAny()),
-        ).captured;
-        final updatedCategory = captured.first as CategoryDefinition;
-        expect(updatedCategory.speechDictionary, equals(['firstTerm']));
-      });
+          // Verify category was updated with new term
+          final captured = verify(
+            () => mockCategoryRepository.updateCategory(captureAny()),
+          ).captured;
+          final updatedCategory = captured.first as CategoryDefinition;
+          expect(updatedCategory.speechDictionary, equals(['firstTerm']));
+        },
+      );
 
       test('adds term from audio entry linked to task', () async {
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => testAudio);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => [testTask]);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => testAudio);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
         when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-            (invocation) async =>
-                invocation.positionalArguments[0] as CategoryDefinition);
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
         final result = await service.addTermForEntry(
           entryId: 'audio-1',
@@ -218,16 +229,19 @@ void main() {
       });
 
       test('adds term from image entry linked to task', () async {
-        when(() => mockJournalRepository.getJournalEntityById('image-1'))
-            .thenAnswer((_) async => testImage);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'image-1'))
-            .thenAnswer((_) async => [testTask]);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('image-1'),
+        ).thenAnswer((_) async => testImage);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'image-1'),
+        ).thenAnswer((_) async => [testTask]);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
         when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-            (invocation) async =>
-                invocation.positionalArguments[0] as CategoryDefinition);
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
         final result = await service.addTermForEntry(
           entryId: 'image-1',
@@ -270,8 +284,9 @@ void main() {
       });
 
       test('returns entryNotFound when entry does not exist', () async {
-        when(() => mockJournalRepository.getJournalEntityById('nonexistent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalRepository.getJournalEntityById('nonexistent'),
+        ).thenAnswer((_) async => null);
 
         final result = await service.addTermForEntry(
           entryId: 'nonexistent',
@@ -282,8 +297,9 @@ void main() {
       });
 
       test('returns noCategory when task has no category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-2'))
-            .thenAnswer((_) async => testTaskNoCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-2'),
+        ).thenAnswer((_) async => testTaskNoCategory);
 
         final result = await service.addTermForEntry(
           entryId: 'task-2',
@@ -293,25 +309,29 @@ void main() {
         expect(result, equals(SpeechDictionaryResult.noCategory));
       });
 
-      test('returns noCategory for text entry (not task/audio/image)',
-          () async {
-        when(() => mockJournalRepository.getJournalEntityById('entry-1'))
-            .thenAnswer((_) async => testTextEntry);
+      test(
+        'returns noCategory for text entry (not task/audio/image)',
+        () async {
+          when(
+            () => mockJournalRepository.getJournalEntityById('entry-1'),
+          ).thenAnswer((_) async => testTextEntry);
 
-        final result = await service.addTermForEntry(
-          entryId: 'entry-1',
-          term: 'term',
-        );
+          final result = await service.addTermForEntry(
+            entryId: 'entry-1',
+            term: 'term',
+          );
 
-        expect(result, equals(SpeechDictionaryResult.noCategory));
-      });
+          expect(result, equals(SpeechDictionaryResult.noCategory));
+        },
+      );
 
       test('returns noCategory when audio has no linked task', () async {
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => testAudio);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => testAudio);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => []);
 
         final result = await service.addTermForEntry(
           entryId: 'audio-1',
@@ -322,11 +342,12 @@ void main() {
       });
 
       test('returns noCategory when linked task has no category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => testAudio);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => [testTaskNoCategory]);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => testAudio);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => [testTaskNoCategory]);
 
         final result = await service.addTermForEntry(
           entryId: 'audio-1',
@@ -337,10 +358,12 @@ void main() {
       });
 
       test('returns categoryNotFound when category does not exist', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-1'),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => null);
 
         final result = await service.addTermForEntry(
           entryId: 'task-1',
@@ -351,13 +374,16 @@ void main() {
       });
 
       test('trims whitespace from term before adding', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-1'),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
         when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-            (invocation) async =>
-                invocation.positionalArguments[0] as CategoryDefinition);
+          (invocation) async =>
+              invocation.positionalArguments[0] as CategoryDefinition,
+        );
 
         final result = await service.addTermForEntry(
           entryId: 'task-1',
@@ -376,45 +402,56 @@ void main() {
         );
       });
 
-      test('returns duplicate when term already exists (exact match)',
-          () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+      test(
+        'returns duplicate when term already exists (exact match)',
+        () async {
+          when(
+            () => mockJournalRepository.getJournalEntityById('task-1'),
+          ).thenAnswer((_) async => testTask);
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
 
-        final result = await service.addTermForEntry(
-          entryId: 'task-1',
-          term: 'existingTerm',
-        );
+          final result = await service.addTermForEntry(
+            entryId: 'task-1',
+            term: 'existingTerm',
+          );
 
-        expect(result, equals(SpeechDictionaryResult.duplicate));
-        verifyNever(() => mockCategoryRepository.updateCategory(any()));
-      });
+          expect(result, equals(SpeechDictionaryResult.duplicate));
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        },
+      );
 
-      test('returns duplicate when term already exists (case-insensitive)',
-          () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+      test(
+        'returns duplicate when term already exists (case-insensitive)',
+        () async {
+          when(
+            () => mockJournalRepository.getJournalEntityById('task-1'),
+          ).thenAnswer((_) async => testTask);
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
 
-        final result = await service.addTermForEntry(
-          entryId: 'task-1',
-          term: 'EXISTINGTERM',
-        );
+          final result = await service.addTermForEntry(
+            entryId: 'task-1',
+            term: 'EXISTINGTERM',
+          );
 
-        expect(result, equals(SpeechDictionaryResult.duplicate));
-        verifyNever(() => mockCategoryRepository.updateCategory(any()));
-      });
+          expect(result, equals(SpeechDictionaryResult.duplicate));
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        },
+      );
 
       test('returns saveFailed when updateCategory throws', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
-        when(() => mockCategoryRepository.updateCategory(any()))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-1'),
+        ).thenAnswer((_) async => testTask);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.updateCategory(any()),
+        ).thenThrow(Exception('Database error'));
 
         final result = await service.addTermForEntry(
           entryId: 'task-1',
@@ -427,8 +464,9 @@ void main() {
 
     group('canAddTermForEntry', () {
       test('returns true for task with category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-1'))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-1'),
+        ).thenAnswer((_) async => testTask);
 
         final result = await service.canAddTermForEntry('task-1');
 
@@ -436,8 +474,9 @@ void main() {
       });
 
       test('returns false for task without category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('task-2'))
-            .thenAnswer((_) async => testTaskNoCategory);
+        when(
+          () => mockJournalRepository.getJournalEntityById('task-2'),
+        ).thenAnswer((_) async => testTaskNoCategory);
 
         final result = await service.canAddTermForEntry('task-2');
 
@@ -445,8 +484,9 @@ void main() {
       });
 
       test('returns false for non-existent entry', () async {
-        when(() => mockJournalRepository.getJournalEntityById('nonexistent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalRepository.getJournalEntityById('nonexistent'),
+        ).thenAnswer((_) async => null);
 
         final result = await service.canAddTermForEntry('nonexistent');
 
@@ -454,11 +494,12 @@ void main() {
       });
 
       test('returns true for audio linked to task with category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => testAudio);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => [testTask]);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => testAudio);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => [testTask]);
 
         final result = await service.canAddTermForEntry('audio-1');
 
@@ -466,11 +507,12 @@ void main() {
       });
 
       test('returns false for audio not linked to any task', () async {
-        when(() => mockJournalRepository.getJournalEntityById('audio-1'))
-            .thenAnswer((_) async => testAudio);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepository.getJournalEntityById('audio-1'),
+        ).thenAnswer((_) async => testAudio);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'audio-1'),
+        ).thenAnswer((_) async => []);
 
         final result = await service.canAddTermForEntry('audio-1');
 
@@ -478,11 +520,12 @@ void main() {
       });
 
       test('returns true for image linked to task with category', () async {
-        when(() => mockJournalRepository.getJournalEntityById('image-1'))
-            .thenAnswer((_) async => testImage);
-        when(() =>
-                mockJournalRepository.getLinkedToEntities(linkedTo: 'image-1'))
-            .thenAnswer((_) async => [testTask]);
+        when(
+          () => mockJournalRepository.getJournalEntityById('image-1'),
+        ).thenAnswer((_) async => testImage);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(linkedTo: 'image-1'),
+        ).thenAnswer((_) async => [testTask]);
 
         final result = await service.canAddTermForEntry('image-1');
 
@@ -490,8 +533,9 @@ void main() {
       });
 
       test('returns false for text entry', () async {
-        when(() => mockJournalRepository.getJournalEntityById('entry-1'))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalRepository.getJournalEntityById('entry-1'),
+        ).thenAnswer((_) async => testTextEntry);
 
         final result = await service.canAddTermForEntry('entry-1');
 

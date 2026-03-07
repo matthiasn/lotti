@@ -55,8 +55,9 @@ class TextChunker {
 
   /// Regex matching CJK Unified Ideographs, Hiragana, Katakana, and
   /// Korean Hangul syllables — scripts that use no word-separating spaces.
-  static final _cjkPattern =
-      RegExp(r'[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]');
+  static final _cjkPattern = RegExp(
+    r'[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]',
+  );
 
   /// Maximum character length before a single whitespace-free token is
   /// considered long enough to need character-based estimation. Derived

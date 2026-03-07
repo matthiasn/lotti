@@ -44,12 +44,13 @@ class AgentSubscription {
 ///
 /// Returns a map of mutated entity IDs → vector clocks for self-notification
 /// suppression. An empty map or `null` indicates no mutations occurred.
-typedef WakeExecutor = Future<Map<String, VectorClock>?> Function(
-  String agentId,
-  String runKey,
-  Set<String> triggers,
-  String threadId,
-);
+typedef WakeExecutor =
+    Future<Map<String, VectorClock>?> Function(
+      String agentId,
+      String runKey,
+      Set<String> triggers,
+      String threadId,
+    );
 
 /// Notification-driven wake orchestrator.
 ///

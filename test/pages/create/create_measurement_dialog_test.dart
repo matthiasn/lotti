@@ -41,8 +41,9 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(
-        () => mockEntitiesCacheService
-            .getDataTypeById('83ebf58d-9cea-4c15-a034-89c84a8b8178'),
+        () => mockEntitiesCacheService.getDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+        ),
       ).thenAnswer((_) => measurableWater);
 
       when(
@@ -60,104 +61,110 @@ void main() {
     tearDown(getIt.reset);
 
     testWidgets(
-        'create measurement dialog is displayed with measurable type water, '
-        'then data entry and tap save button (becomes visible after data entry)',
-        (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          private: false,
+      'create measurement dialog is displayed with measurable type water, '
+      'then data entry and tap save button (becomes visible after data entry)',
+      (tester) async {
+        Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+          return mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            private: false,
+          );
+        }
+
+        when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+        final delegate = BeamerDelegate(
+          locationBuilder: RoutesLocationBuilder(
+            routes: {
+              '/': (context, state, data) => Container(),
+            },
+          ).call,
         );
-      }
 
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
-      final delegate = BeamerDelegate(
-        locationBuilder: RoutesLocationBuilder(
-          routes: {
-            '/': (context, state, data) => Container(),
-          },
-        ).call,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BeamerProvider(
-            routerDelegate: delegate,
-            child: Material(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 800,
-                  maxWidth: 800,
-                ),
-                child: MeasurementDialog(
-                  measurableId: measurableWater.id,
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BeamerProvider(
+              routerDelegate: delegate,
+              child: Material(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 800,
+                    maxWidth: 800,
+                  ),
+                  child: MeasurementDialog(
+                    measurableId: measurableWater.id,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // The displayName appears in the value field label (e.g., "Water [ml]")
-      // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
-      expect(
-        find.textContaining(measurableWater.displayName),
-        findsOneWidget,
-      );
+        // The displayName appears in the value field label (e.g., "Water [ml]")
+        // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
+        expect(
+          find.textContaining(measurableWater.displayName),
+          findsOneWidget,
+        );
 
-      final valueFieldFinder = find.byKey(const Key('measurement_value_field'));
-      final saveButtonFinder = find.byKey(const Key('measurement_save'));
+        final valueFieldFinder = find.byKey(
+          const Key('measurement_value_field'),
+        );
+        final saveButtonFinder = find.byKey(const Key('measurement_save'));
 
-      expect(valueFieldFinder, findsOneWidget);
+        expect(valueFieldFinder, findsOneWidget);
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        // save button is invisible - no changes yet
+        expect(saveButtonFinder, findsNothing);
 
-      await tester.enterText(valueFieldFinder, '1000');
-      await tester.pump();
+        await tester.enterText(valueFieldFinder, '1000');
+        await tester.pump();
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        // save button is now visible
+        expect(saveButtonFinder, findsOneWidget);
 
-      await tester.tap(saveButtonFinder);
-      await tester.pumpAndSettle();
+        await tester.tap(saveButtonFinder);
+        await tester.pumpAndSettle();
 
-      verify(mockCreateMeasurementEntry).called(1);
-    });
+        verify(mockCreateMeasurementEntry).called(1);
+      },
+    );
 
     testWidgets(
-        'create measurement page is displayed with selected measurable type '
-        'if only one exists', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 600,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
+      'create measurement page is displayed with selected measurable type '
+      'if only one exists',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 600,
+                maxWidth: 800,
+              ),
+              child: MeasurementDialog(
+                measurableId: measurableWater.id,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // The displayName appears in the value field label (e.g., "Water [ml]")
-      // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
-      expect(
-        find.textContaining('Water'),
-        findsOneWidget,
-      );
-    });
+        // The displayName appears in the value field label (e.g., "Water [ml]")
+        // Title is now provided by Wolt Modal Sheet wrapper, not the dialog itself
+        expect(
+          find.textContaining('Water'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('renders FilledButton for save action after entering data',
-        (tester) async {
+    testWidgets('renders FilledButton for save action after entering data', (
+      tester,
+    ) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
@@ -201,8 +208,9 @@ void main() {
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
     });
 
-    testWidgets('dialog uses Column layout instead of AlertDialog',
-        (tester) async {
+    testWidgets('dialog uses Column layout instead of AlertDialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(
@@ -259,8 +267,9 @@ void main() {
       expect(textFieldWidget.autofocus, isTrue);
     });
 
-    testWidgets('displays unit badge when unitName is not empty',
-        (tester) async {
+    testWidgets('displays unit badge when unitName is not empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(
@@ -325,8 +334,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final commentFieldFinder =
-          find.byKey(const Key('measurement_comment_field'));
+      final commentFieldFinder = find.byKey(
+        const Key('measurement_comment_field'),
+      );
       expect(commentFieldFinder, findsOneWidget);
 
       // Enter a comment
@@ -336,8 +346,9 @@ void main() {
       expect(find.text('Test comment'), findsOneWidget);
     });
 
-    testWidgets('shows suggestions initially when form is not dirty',
-        (tester) async {
+    testWidgets('shows suggestions initially when form is not dirty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(
@@ -361,123 +372,126 @@ void main() {
     });
 
     testWidgets(
-        'tapping suggestion chip saves measurement without validation error',
-        (tester) async {
-      // Register UpdateNotifications mock needed by the suggestions provider
-      final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
-      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      'tapping suggestion chip saves measurement without validation error',
+      (tester) async {
+        // Register UpdateNotifications mock needed by the suggestions provider
+        final mockUpdateNotifications = MockUpdateNotifications();
+        when(
+          () => mockUpdateNotifications.updateStream,
+        ).thenAnswer((_) => const Stream.empty());
+        getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-      // Create mock measurements with popular values
-      final mockMeasurements = [
-        MeasurementEntry(
-          meta: Metadata(
-            id: 'test-1',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-            starred: false,
-            private: false,
+        // Create mock measurements with popular values
+        final mockMeasurements = [
+          MeasurementEntry(
+            meta: Metadata(
+              id: 'test-1',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+              starred: false,
+              private: false,
+            ),
+            data: MeasurementData(
+              value: 500,
+              dataTypeId: measurableWater.id,
+              dateTo: DateTime.now(),
+              dateFrom: DateTime.now(),
+            ),
           ),
-          data: MeasurementData(
-            value: 500,
-            dataTypeId: measurableWater.id,
-            dateTo: DateTime.now(),
-            dateFrom: DateTime.now(),
+          MeasurementEntry(
+            meta: Metadata(
+              id: 'test-2',
+              createdAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              updatedAt: DateTime.now(),
+              starred: false,
+              private: false,
+            ),
+            data: MeasurementData(
+              value: 500,
+              dataTypeId: measurableWater.id,
+              dateTo: DateTime.now(),
+              dateFrom: DateTime.now(),
+            ),
           ),
-        ),
-        MeasurementEntry(
-          meta: Metadata(
-            id: 'test-2',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-            starred: false,
-            private: false,
+        ];
+
+        // Override the mock to return measurements for suggestions
+        when(
+          () => mockJournalDb.getMeasurementsByType(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+            type: measurableWater.id,
           ),
-          data: MeasurementData(
-            value: 500,
-            dataTypeId: measurableWater.id,
-            dateTo: DateTime.now(),
-            dateFrom: DateTime.now(),
+        ).thenAnswer((_) async => mockMeasurements);
+
+        MeasurementData? capturedData;
+        when(
+          () => mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            private: any(named: 'private'),
           ),
-        ),
-      ];
+        ).thenAnswer((invocation) async {
+          capturedData =
+              invocation.namedArguments[const Symbol('data')]
+                  as MeasurementData;
+          return null;
+        });
 
-      // Override the mock to return measurements for suggestions
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableWater.id,
-        ),
-      ).thenAnswer((_) async => mockMeasurements);
+        final delegate = BeamerDelegate(
+          locationBuilder: RoutesLocationBuilder(
+            routes: {
+              '/': (context, state, data) => Container(),
+            },
+          ).call,
+        );
 
-      MeasurementData? capturedData;
-      when(
-        () => mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          private: any(named: 'private'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedData =
-            invocation.namedArguments[const Symbol('data')] as MeasurementData;
-        return null;
-      });
-
-      final delegate = BeamerDelegate(
-        locationBuilder: RoutesLocationBuilder(
-          routes: {
-            '/': (context, state, data) => Container(),
-          },
-        ).call,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          BeamerProvider(
-            routerDelegate: delegate,
-            child: Material(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxHeight: 800,
-                  maxWidth: 800,
-                ),
-                child: MeasurementDialog(
-                  measurableId: measurableWater.id,
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BeamerProvider(
+              routerDelegate: delegate,
+              child: Material(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 800,
+                    maxWidth: 800,
+                  ),
+                  child: MeasurementDialog(
+                    measurableId: measurableWater.id,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Wait for async providers to load
-      await tester.pumpAndSettle();
+        // Wait for async providers to load
+        await tester.pumpAndSettle();
 
-      // Find and tap the suggestion chip with value 500
-      final chipFinder = find.text('500');
-      expect(chipFinder, findsOneWidget);
+        // Find and tap the suggestion chip with value 500
+        final chipFinder = find.text('500');
+        expect(chipFinder, findsOneWidget);
 
-      await tester.tap(chipFinder);
-      await tester.pumpAndSettle();
+        await tester.tap(chipFinder);
+        await tester.pumpAndSettle();
 
-      // Verify createMeasurementEntry was called with the chip value
-      verify(
-        () => mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          private: any(named: 'private'),
-        ),
-      ).called(1);
+        // Verify createMeasurementEntry was called with the chip value
+        verify(
+          () => mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            private: any(named: 'private'),
+          ),
+        ).called(1);
 
-      // Verify the captured value is 500 (from the chip)
-      expect(capturedData?.value, equals(500));
-    });
+        // Verify the captured value is 500 (from the chip)
+        expect(capturedData?.value, equals(500));
+      },
+    );
 
     testWidgets('returns empty widget when dataType is null', (tester) async {
       // Configure mock to return null for a nonexistent ID
@@ -506,8 +520,9 @@ void main() {
       expect(find.byType(FormBuilder), findsNothing);
     });
 
-    testWidgets('shows validation error for invalid numeric input like 1..2',
-        (tester) async {
+    testWidgets('shows validation error for invalid numeric input like 1..2', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ConstrainedBox(
@@ -564,8 +579,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // The modal should open with "now" button
-      final nowButton =
-          find.textContaining(RegExp('now', caseSensitive: false));
+      final nowButton = find.textContaining(
+        RegExp('now', caseSensitive: false),
+      );
       expect(nowButton, findsOneWidget);
 
       // Tap "now" to set the date time and close the modal

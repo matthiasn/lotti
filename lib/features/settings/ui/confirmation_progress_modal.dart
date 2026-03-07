@@ -54,14 +54,17 @@ class ConfirmationProgressModal {
                   Container(
                     padding: const EdgeInsets.all(ModalTheme.iconPadding),
                     decoration: BoxDecoration(
-                      color: colorScheme.errorContainer
-                          .withValues(alpha: AppTheme.alphaPrimary),
+                      color: colorScheme.errorContainer.withValues(
+                        alpha: AppTheme.alphaPrimary,
+                      ),
                       borderRadius: BorderRadius.circular(
-                          AppTheme.cardBorderRadius +
-                              ModalTheme.iconBorderRadiusExtra),
+                        AppTheme.cardBorderRadius +
+                            ModalTheme.iconBorderRadiusExtra,
+                      ),
                       border: Border.all(
-                        color: colorScheme.errorContainer
-                            .withValues(alpha: AppTheme.alphaOutline),
+                        color: colorScheme.errorContainer.withValues(
+                          alpha: AppTheme.alphaOutline,
+                        ),
                       ),
                     ),
                     child: Icon(

@@ -26,56 +26,68 @@ void main() {
   });
 
   group('PromptFormController Preconfigured Tracking', () {
-    test('should copy preconfigured prompt values when switching tracking off',
-        () async {
-      // Create a prompt config that tracks a preconfigured prompt
-      final promptConfig = AiConfigPrompt(
-        id: 'test-prompt',
-        name: 'Test Prompt',
-        systemMessage: 'Old system message',
-        userMessage: 'Old user message',
-        defaultModelId: 'model1',
-        modelIds: ['model1'],
-        createdAt: DateTime(2024, 3, 15),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-        trackPreconfigured: true,
-        preconfiguredPromptId: 'checklist_updates',
-      );
+    test(
+      'should copy preconfigured prompt values when switching tracking off',
+      () async {
+        // Create a prompt config that tracks a preconfigured prompt
+        final promptConfig = AiConfigPrompt(
+          id: 'test-prompt',
+          name: 'Test Prompt',
+          systemMessage: 'Old system message',
+          userMessage: 'Old user message',
+          defaultModelId: 'model1',
+          modelIds: ['model1'],
+          createdAt: DateTime(2024, 3, 15),
+          useReasoning: false,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.checklistUpdates,
+          trackPreconfigured: true,
+          preconfiguredPromptId: 'checklist_updates',
+        );
 
-      when(() => mockRepository.getConfigById('test-prompt'))
-          .thenAnswer((_) async => promptConfig);
+        when(
+          () => mockRepository.getConfigById('test-prompt'),
+        ).thenAnswer((_) async => promptConfig);
 
-      // Build the controller
-      final controller = container.read(
-        promptFormControllerProvider(configId: 'test-prompt').notifier,
-      );
-      await container
-          .read(promptFormControllerProvider(configId: 'test-prompt').future);
+        // Build the controller
+        final controller = container.read(
+          promptFormControllerProvider(configId: 'test-prompt').notifier,
+        );
+        await container.read(
+          promptFormControllerProvider(configId: 'test-prompt').future,
+        );
 
-      // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
+        // Get the preconfigured prompt
+        final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
-      // Toggle tracking off
-      controller.toggleTrackPreconfigured(false);
+        // Toggle tracking off
+        controller.toggleTrackPreconfigured(false);
 
-      // Verify the controllers have the preconfigured values
-      expect(controller.systemMessageController.text,
-          equals(preconfiguredPrompt.systemMessage));
-      expect(controller.userMessageController.text,
-          equals(preconfiguredPrompt.userMessage));
+        // Verify the controllers have the preconfigured values
+        expect(
+          controller.systemMessageController.text,
+          equals(preconfiguredPrompt.systemMessage),
+        );
+        expect(
+          controller.userMessageController.text,
+          equals(preconfiguredPrompt.userMessage),
+        );
 
-      // Verify the form state has the preconfigured values and tracking is off
-      final formState = container
-          .read(promptFormControllerProvider(configId: 'test-prompt'))
-          .value;
-      expect(formState?.trackPreconfigured, isFalse);
-      expect(formState?.systemMessage.value,
-          equals(preconfiguredPrompt.systemMessage));
-      expect(formState?.userMessage.value,
-          equals(preconfiguredPrompt.userMessage));
-    });
+        // Verify the form state has the preconfigured values and tracking is off
+        final formState = container
+            .read(promptFormControllerProvider(configId: 'test-prompt'))
+            .value;
+        expect(formState?.trackPreconfigured, isFalse);
+        expect(
+          formState?.systemMessage.value,
+          equals(preconfiguredPrompt.systemMessage),
+        );
+        expect(
+          formState?.userMessage.value,
+          equals(preconfiguredPrompt.userMessage),
+        );
+      },
+    );
 
     test('should load preconfigured values when tracking is enabled', () async {
       // Create a prompt config that tracks a preconfigured prompt
@@ -94,24 +106,30 @@ void main() {
         preconfiguredPromptId: 'checklist_updates',
       );
 
-      when(() => mockRepository.getConfigById('test-prompt'))
-          .thenAnswer((_) async => promptConfig);
+      when(
+        () => mockRepository.getConfigById('test-prompt'),
+      ).thenAnswer((_) async => promptConfig);
 
       // Build the controller
       final controller = container.read(
         promptFormControllerProvider(configId: 'test-prompt').notifier,
       );
-      await container
-          .read(promptFormControllerProvider(configId: 'test-prompt').future);
+      await container.read(
+        promptFormControllerProvider(configId: 'test-prompt').future,
+      );
 
       // Get the preconfigured prompt
       final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
       // Verify the controllers loaded the preconfigured values
-      expect(controller.systemMessageController.text,
-          equals(preconfiguredPrompt.systemMessage));
-      expect(controller.userMessageController.text,
-          equals(preconfiguredPrompt.userMessage));
+      expect(
+        controller.systemMessageController.text,
+        equals(preconfiguredPrompt.systemMessage),
+      );
+      expect(
+        controller.userMessageController.text,
+        equals(preconfiguredPrompt.userMessage),
+      );
     });
 
     test('should update values when re-enabling tracking', () async {
@@ -130,21 +148,27 @@ void main() {
         preconfiguredPromptId: 'checklist_updates',
       );
 
-      when(() => mockRepository.getConfigById('test-prompt'))
-          .thenAnswer((_) async => promptConfig);
+      when(
+        () => mockRepository.getConfigById('test-prompt'),
+      ).thenAnswer((_) async => promptConfig);
 
       // Build the controller
       final controller = container.read(
         promptFormControllerProvider(configId: 'test-prompt').notifier,
       );
-      await container
-          .read(promptFormControllerProvider(configId: 'test-prompt').future);
+      await container.read(
+        promptFormControllerProvider(configId: 'test-prompt').future,
+      );
 
       // Initially should have custom values
-      expect(controller.systemMessageController.text,
-          equals('Custom system message'));
       expect(
-          controller.userMessageController.text, equals('Custom user message'));
+        controller.systemMessageController.text,
+        equals('Custom system message'),
+      );
+      expect(
+        controller.userMessageController.text,
+        equals('Custom user message'),
+      );
 
       // Toggle tracking on
       controller.toggleTrackPreconfigured(true);
@@ -153,10 +177,14 @@ void main() {
       final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
 
       // Should now have preconfigured values
-      expect(controller.systemMessageController.text,
-          equals(preconfiguredPrompt.systemMessage));
-      expect(controller.userMessageController.text,
-          equals(preconfiguredPrompt.userMessage));
+      expect(
+        controller.systemMessageController.text,
+        equals(preconfiguredPrompt.systemMessage),
+      );
+      expect(
+        controller.userMessageController.text,
+        equals(preconfiguredPrompt.userMessage),
+      );
     });
   });
 }

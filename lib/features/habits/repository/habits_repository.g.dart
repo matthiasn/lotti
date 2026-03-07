@@ -21,24 +21,28 @@ final habitsRepositoryProvider = HabitsRepositoryProvider._();
 /// This provider bridges the gap between getIt service locator and Riverpod,
 /// allowing the repository to be easily overridden in tests.
 
-final class HabitsRepositoryProvider extends $FunctionalProvider<
-    HabitsRepository,
-    HabitsRepository,
-    HabitsRepository> with $Provider<HabitsRepository> {
+final class HabitsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          HabitsRepository,
+          HabitsRepository,
+          HabitsRepository
+        >
+    with $Provider<HabitsRepository> {
   /// Provides the [HabitsRepository] instance.
   ///
   /// This provider bridges the gap between getIt service locator and Riverpod,
   /// allowing the repository to be easily overridden in tests.
   HabitsRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'habitsRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'habitsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$habitsRepositoryHash();

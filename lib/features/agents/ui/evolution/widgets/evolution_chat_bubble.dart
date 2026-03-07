@@ -211,15 +211,16 @@ class _AnimatedEntryState extends State<_AnimatedEntry>
       parent: _controller,
       curve: GameyAnimations.smooth,
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: GameyAnimations.smooth,
-      ),
-    );
+    _slideAnimation =
+        Tween<Offset>(
+          begin: const Offset(0, 0.15),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: GameyAnimations.smooth,
+          ),
+        );
     _controller.forward();
   }
 

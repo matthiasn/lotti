@@ -54,8 +54,9 @@ class BmiRangeLegend extends StatelessWidget {
                             child: Container(
                               width: 12,
                               height: 12,
-                              color: colorFromCssHex(range.hexColor)
-                                  .withAlpha(178),
+                              color: colorFromCssHex(
+                                range.hexColor,
+                              ).withAlpha(178),
                             ),
                           ),
                           const SizedBox(
@@ -99,13 +100,15 @@ class BmiChartInfoWidget extends ConsumerWidget {
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
 
-    final heightEntries = ref
+    final heightEntries =
+        ref
             .watch(
               healthObservationsControllerProvider(
                 healthDataType: 'HealthDataType.HEIGHT',
                 rangeStart: DateTime(0),
-                rangeEnd:
-                    DateTime.now().dayAtMidnight.add(const Duration(days: 1)),
+                rangeEnd: DateTime.now().dayAtMidnight.add(
+                  const Duration(days: 1),
+                ),
               ),
             )
             .value ??
@@ -165,7 +168,8 @@ class DashboardHealthBmiChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weightData = ref
+    final weightData =
+        ref
             .watch(
               healthObservationsControllerProvider(
                 healthDataType: 'HealthDataType.WEIGHT',

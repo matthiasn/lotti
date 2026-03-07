@@ -43,18 +43,18 @@ class JournalDb extends _$JournalDb {
     Future<Directory> Function()? tempDirectoryProvider,
     LoggingService? loggingService,
     Directory? documentsDirectory,
-  })  : _loggingService = loggingService,
-        _documentsDirectory = documentsDirectory,
-        super(
-          openDbConnection(
-            overriddenFilename ?? journalDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-            readPool: readPool,
-            background: background,
-            documentsDirectoryProvider: documentsDirectoryProvider,
-            tempDirectoryProvider: tempDirectoryProvider,
-          ),
-        );
+  }) : _loggingService = loggingService,
+       _documentsDirectory = documentsDirectory,
+       super(
+         openDbConnection(
+           overriddenFilename ?? journalDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           readPool: readPool,
+           background: background,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   bool inMemoryDatabase = false;
   final LoggingService? _loggingService;
@@ -74,28 +74,33 @@ class JournalDb extends _$JournalDb {
       },
       onUpgrade: (Migrator m, int from, int to) async {
         DevLogger.log(
-            name: 'JournalDb', message: 'Migration from v$from to v$to');
+          name: 'JournalDb',
+          message: 'Migration from v$from to v$to',
+        );
 
         if (!inMemoryDatabase) {
           try {
             await createDbBackup(journalDbFileName);
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Database backup created before migration');
+              name: 'JournalDb',
+              message: 'Database backup created before migration',
+            );
           } catch (e, s) {
             DevLogger.error(
-                name: 'JournalDb',
-                message: 'Failed to create backup before migration',
-                error: e,
-                stackTrace: s);
+              name: 'JournalDb',
+              message: 'Failed to create backup before migration',
+              error: e,
+              stackTrace: s,
+            );
           }
         }
 
         if (from < 19) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Creating category_definitions table and indices');
+              name: 'JournalDb',
+              message: 'Creating category_definitions table and indices',
+            );
             await m.createTable(categoryDefinitions);
             await m.createIndex(idxCategoryDefinitionsName);
             await m.createIndex(idxCategoryDefinitionsId);
@@ -106,8 +111,9 @@ class JournalDb extends _$JournalDb {
         if (from < 21) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Add category_id in journal table, with index');
+              name: 'JournalDb',
+              message: 'Add category_id in journal table, with index',
+            );
             await m.addColumn(journal, journal.category);
           }();
         }
@@ -115,8 +121,9 @@ class JournalDb extends _$JournalDb {
         if (from < 22) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Add hidden in linked_entries table, with index');
+              name: 'JournalDb',
+              message: 'Add hidden in linked_entries table, with index',
+            );
             await m.addColumn(linkedEntries, linkedEntries.hidden);
             await m.createIndex(idxLinkedEntriesHidden);
           }();
@@ -125,8 +132,9 @@ class JournalDb extends _$JournalDb {
         if (from < 23) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Add timestamps in linked_entries table, with index');
+              name: 'JournalDb',
+              message: 'Add timestamps in linked_entries table, with index',
+            );
             await m.addColumn(linkedEntries, linkedEntries.createdAt);
             await m.addColumn(linkedEntries, linkedEntries.updatedAt);
           }();
@@ -135,7 +143,9 @@ class JournalDb extends _$JournalDb {
         if (from < 24) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb', message: 'Adding composite indices');
+              name: 'JournalDb',
+              message: 'Adding composite indices',
+            );
             await m.createIndex(idxLinkedEntriesFromIdHidden);
             await m.createIndex(idxLinkedEntriesToIdHidden);
           }();
@@ -144,7 +154,9 @@ class JournalDb extends _$JournalDb {
         if (from < 25) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb', message: 'Adding composite indices');
+              name: 'JournalDb',
+              message: 'Adding composite indices',
+            );
             await m.createIndex(idxJournalTab);
             await m.createIndex(idxJournalTasks);
             await m.createIndex(idxJournalTypeSubtype);
@@ -154,8 +166,9 @@ class JournalDb extends _$JournalDb {
         if (from < 26) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Creating label_definitions and labeled tables');
+              name: 'JournalDb',
+              message: 'Creating label_definitions and labeled tables',
+            );
             await m.createTable(labelDefinitions);
             await m.createIndex(idxLabelDefinitionsId);
             await m.createIndex(idxLabelDefinitionsName);
@@ -170,8 +183,9 @@ class JournalDb extends _$JournalDb {
         if (from < 27) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Ensuring label tables exist for legacy v26 installs');
+              name: 'JournalDb',
+              message: 'Ensuring label tables exist for legacy v26 installs',
+            );
             await _ensureLabelTables(m);
           }();
         }
@@ -180,9 +194,10 @@ class JournalDb extends _$JournalDb {
         if (from < 28) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message:
-                    'Rebuilding labeled table to add FK with ON DELETE CASCADE');
+              name: 'JournalDb',
+              message:
+                  'Rebuilding labeled table to add FK with ON DELETE CASCADE',
+            );
             await _rebuildLabeledWithFkCascade();
           }();
         }
@@ -191,18 +206,23 @@ class JournalDb extends _$JournalDb {
         if (from < 29) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message: 'Adding task priority columns and updating index');
+              name: 'JournalDb',
+              message: 'Adding task priority columns and updating index',
+            );
 
             // Add columns only if missing to avoid masking other errors
-            final hasTaskPriority =
-                await _columnExists('journal', 'task_priority');
+            final hasTaskPriority = await _columnExists(
+              'journal',
+              'task_priority',
+            );
             if (!hasTaskPriority) {
               await m.addColumn(journal, journal.taskPriority);
             }
 
-            final hasTaskPriorityRank =
-                await _columnExists('journal', 'task_priority_rank');
+            final hasTaskPriorityRank = await _columnExists(
+              'journal',
+              'task_priority_rank',
+            );
             if (!hasTaskPriorityRank) {
               await m.addColumn(journal, journal.taskPriorityRank);
             }
@@ -223,9 +243,9 @@ class JournalDb extends _$JournalDb {
         if (from < 30) {
           await () async {
             DevLogger.log(
-                name: 'JournalDb',
-                message:
-                    'Fixing idx_linked_entries_to_id_hidden to index to_id');
+              name: 'JournalDb',
+              message: 'Fixing idx_linked_entries_to_id_hidden to index to_id',
+            );
             await customStatement(
               'DROP INDEX IF EXISTS idx_linked_entries_to_id_hidden',
             );
@@ -272,9 +292,10 @@ class JournalDb extends _$JournalDb {
       );
     } catch (e) {
       DevLogger.error(
-          name: 'JournalDb',
-          message: 'updateTaskPriorityColumn error',
-          error: e);
+        name: 'JournalDb',
+        message: 'updateTaskPriorityColumn error',
+        error: e,
+      );
     }
   }
 
@@ -294,7 +315,9 @@ class JournalDb extends _$JournalDb {
 
       if (status == VclockStatus.concurrent) {
         DevLogger.warning(
-            name: 'JournalDb', message: 'Conflicting vector clocks: $status');
+          name: 'JournalDb',
+          message: 'Conflicting vector clocks: $status',
+        );
         final now = DateTime.now();
         await addConflict(
           Conflict(
@@ -325,7 +348,10 @@ class JournalDb extends _$JournalDb {
       );
     } catch (ex) {
       DevLogger.error(
-          name: 'JournalDb', message: 'insertTag failed', error: ex);
+        name: 'JournalDb',
+        message: 'insertTag failed',
+        error: ex,
+      );
     }
   }
 
@@ -350,7 +376,10 @@ class JournalDb extends _$JournalDb {
       );
     } catch (ex) {
       DevLogger.error(
-          name: 'JournalDb', message: 'insertLabel failed', error: ex);
+        name: 'JournalDb',
+        message: 'insertLabel failed',
+        error: ex,
+      );
     }
   }
 
@@ -408,7 +437,8 @@ class JournalDb extends _$JournalDb {
         skipReason = JournalUpdateSkipReason.conflict;
       }
 
-      final canApply = status == VclockStatus.b_gt_a ||
+      final canApply =
+          status == VclockStatus.b_gt_a ||
           (overrideComparison && status != null);
 
       if (canApply) {
@@ -452,10 +482,11 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalDbEntity?> entityById(String id) async {
-    final res = await (select(journal)
-          ..where((t) => t.id.equals(id))
-          ..where((t) => t.deleted.equals(false)))
-        .get();
+    final res =
+        await (select(journal)
+              ..where((t) => t.id.equals(id))
+              ..where((t) => t.deleted.equals(false)))
+            .get();
 
     return res.firstOrNull;
   }
@@ -510,7 +541,7 @@ class JournalDb extends _$JournalDb {
   /// Yields batches of records with entry ID and vector clock map.
   /// Uses lightweight JSON extraction to avoid full deserialization.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
-      streamEntriesWithVectorClock({int batchSize = 1000}) async* {
+  streamEntriesWithVectorClock({int batchSize = 1000}) async* {
     var offset = 0;
 
     while (true) {
@@ -534,7 +565,7 @@ class JournalDb extends _$JournalDb {
   /// Yields batches of records with link ID and vector clock map.
   /// Uses lightweight JSON extraction to avoid full deserialization.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
-      streamEntryLinksWithVectorClock({int batchSize = 1000}) async* {
+  streamEntryLinksWithVectorClock({int batchSize = 1000}) async* {
     var offset = 0;
 
     while (true) {
@@ -688,15 +719,17 @@ class JournalDb extends _$JournalDb {
     final types = <String>['Task'];
     final selectedLabelIds = labelIds ?? <String>[];
     final includeUnlabeled = selectedLabelIds.contains('');
-    final filteredLabelIds =
-        selectedLabelIds.where((id) => id.isNotEmpty).toList();
+    final filteredLabelIds = selectedLabelIds
+        .where((id) => id.isNotEmpty)
+        .toList();
     final labelFilterCount = filteredLabelIds.length;
     // Avoid passing an empty list to the SQL `IN (:labelIds)` clause.
     // SQLite (and SQL generally) does not allow an empty `IN ()`, so we
     // substitute a dummy value when no label IDs are selected. The query
     // never matches this magic string; it only keeps the SQL valid.
-    final effectiveLabelIds =
-        labelFilterCount == 0 ? <String>['__no_label__'] : filteredLabelIds;
+    final effectiveLabelIds = labelFilterCount == 0
+        ? <String>['__no_label__']
+        : filteredLabelIds;
     final filterByLabels = includeUnlabeled || labelFilterCount > 0;
     final dbTaskStatuses = taskStatuses.cast<String?>();
     final selectedPriorities = priorities ?? <String>[];
@@ -810,10 +843,10 @@ class JournalDb extends _$JournalDb {
 
     // Group by parent ID with deduplication tracking
     final result = <String, List<JournalEntity>>{
-      for (final id in fromIds) id: []
+      for (final id in fromIds) id: [],
     };
     final seenEntities = <String, Set<String>>{
-      for (final id in fromIds) id: {}
+      for (final id in fromIds) id: {},
     };
 
     // Create entity lookup map for O(1) access
@@ -845,8 +878,10 @@ class JournalDb extends _$JournalDb {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
-    final dbEntities =
-        await sortedCalenderEntriesInRange(rangeStart, rangeEnd).get();
+    final dbEntities = await sortedCalenderEntriesInRange(
+      rangeStart,
+      rangeEnd,
+    ).get();
     return dbEntities.map(fromDbEntity).toList();
   }
 
@@ -891,8 +926,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> purgeDeletedFiles() async {
-    final deletedEntries =
-        await (select(journal)..where((tbl) => tbl.deleted.equals(true))).get();
+    final deletedEntries = await (select(
+      journal,
+    )..where((tbl) => tbl.deleted.equals(true))).get();
 
     for (final entry in deletedEntries) {
       try {
@@ -943,25 +979,27 @@ class JournalDb extends _$JournalDb {
     await purgeDeletedFiles();
 
     // Get counts for each type
-    final dashboardCount = await (select(dashboardDefinitions)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .get()
-        .then((list) => list.length);
+    final dashboardCount =
+        await (select(dashboardDefinitions)
+              ..where((tbl) => tbl.deleted.equals(true)))
+            .get()
+            .then((list) => list.length);
 
-    final measurableCount = await (select(measurableTypes)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .get()
-        .then((list) => list.length);
+    final measurableCount =
+        await (select(measurableTypes)
+              ..where((tbl) => tbl.deleted.equals(true)))
+            .get()
+            .then((list) => list.length);
 
-    final tagCount = await (select(tagEntities)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .get()
-        .then((list) => list.length);
+    final tagCount =
+        await (select(tagEntities)..where((tbl) => tbl.deleted.equals(true)))
+            .get()
+            .then((list) => list.length);
 
-    final journalCount = await (select(journal)
-          ..where((tbl) => tbl.deleted.equals(true)))
-        .get()
-        .then((list) => list.length);
+    final journalCount =
+        await (select(journal)..where((tbl) => tbl.deleted.equals(true)))
+            .get()
+            .then((list) => list.length);
 
     final totalItems =
         dashboardCount + measurableCount + tagCount + journalCount;
@@ -973,25 +1011,27 @@ class JournalDb extends _$JournalDb {
 
     // Purge dashboards
     if (dashboardCount > 0) {
-      await (delete(dashboardDefinitions)
-            ..where((tbl) => tbl.deleted.equals(true)))
-          .go();
+      await (delete(
+        dashboardDefinitions,
+      )..where((tbl) => tbl.deleted.equals(true))).go();
     }
     yield 0.25; // 25% complete after dashboards
     await Future<void>.delayed(stepDelay);
 
     // Purge measurables
     if (measurableCount > 0) {
-      await (delete(measurableTypes)..where((tbl) => tbl.deleted.equals(true)))
-          .go();
+      await (delete(
+        measurableTypes,
+      )..where((tbl) => tbl.deleted.equals(true))).go();
     }
     yield 0.5; // 50% complete after measurables
     await Future<void>.delayed(stepDelay);
 
     // Purge tags
     if (tagCount > 0) {
-      await (delete(tagEntities)..where((tbl) => tbl.deleted.equals(true)))
-          .go();
+      await (delete(
+        tagEntities,
+      )..where((tbl) => tbl.deleted.equals(true))).go();
     }
     yield 0.75; // 75% complete after tags
     await Future<void>.delayed(stepDelay);
@@ -1080,8 +1120,11 @@ class JournalDb extends _$JournalDb {
     required DateTime rangeStart,
     required DateTime rangeEnd,
   }) async {
-    final res =
-        await habitCompletionsByHabitId(habitId, rangeStart, rangeEnd).get();
+    final res = await habitCompletionsByHabitId(
+      habitId,
+      rangeStart,
+      rangeEnd,
+    ).get();
     return res.map(fromDbEntity).toList();
   }
 
@@ -1176,8 +1219,9 @@ class JournalDb extends _$JournalDb {
     final dbEntities = await latestQuantByType(type).get();
     if (dbEntities.isEmpty) {
       DevLogger.log(
-          name: 'JournalDb',
-          message: 'latestQuantitativeByType no result for $type');
+        name: 'JournalDb',
+        message: 'latestQuantitativeByType no result for $type',
+      );
       return null;
     }
     return fromDbEntity(dbEntities.first) as QuantitativeEntry;
@@ -1293,21 +1337,25 @@ class JournalDb extends _$JournalDb {
     int limit = 10,
     bool inactive = false,
   }) async {
-    return (await matchingTagEntities('%$match%', inactive, limit).get())
-        .map(fromTagDbEntity)
-        .toList();
+    return (await matchingTagEntities(
+      '%$match%',
+      inactive,
+      limit,
+    ).get()).map(fromTagDbEntity).toList();
   }
 
   Future<int> resolveConflict(Conflict conflict) {
-    return (update(conflicts)..where((t) => t.id.equals(conflict.id)))
-        .write(conflict.copyWith(status: ConflictStatus.resolved.index));
+    return (update(conflicts)..where((t) => t.id.equals(conflict.id))).write(
+      conflict.copyWith(status: ConflictStatus.resolved.index),
+    );
   }
 
   Future<int> upsertMeasurableDataType(
     MeasurableDataType entityDefinition,
   ) async {
-    return into(measurableTypes)
-        .insertOnConflictUpdate(measurableDbEntity(entityDefinition));
+    return into(
+      measurableTypes,
+    ).insertOnConflictUpdate(measurableDbEntity(entityDefinition));
   }
 
   Future<int> upsertTagEntity(TagEntity tag) async {
@@ -1316,8 +1364,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {
-    return into(habitDefinitions)
-        .insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
+    return into(
+      habitDefinitions,
+    ).insertOnConflictUpdate(habitDefinitionDbEntity(habitDefinition));
   }
 
   Future<int> upsertDashboardDefinition(
@@ -1346,28 +1395,29 @@ class JournalDb extends _$JournalDb {
   /// RatingLinks at the SQL level using the `type` column.
   Future<List<EntryLink>> basicLinksForEntryIds(Set<String> ids) async {
     if (ids.isEmpty) return <EntryLink>[];
-    final entryLinks = await (select(linkedEntries)
-          ..where(
-            (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
-          ))
-        .get();
+    final entryLinks =
+        await (select(linkedEntries)..where(
+              (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
+            ))
+            .get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 
   Future<List<EntryLink>> linksForEntryIdsBidirectional(Set<String> ids) async {
     if (ids.isEmpty) return <EntryLink>[];
     final idList = ids.toList();
-    final entryLinks = await (select(linkedEntries)
-          ..where(
-            (t) => t.fromId.isIn(idList) | t.toId.isIn(idList),
-          ))
-        .get();
+    final entryLinks =
+        await (select(linkedEntries)..where(
+              (t) => t.fromId.isIn(idList) | t.toId.isIn(idList),
+            ))
+            .get();
     return entryLinks.map(entryLinkFromLinkedDbEntry).toList();
   }
 
   Future<EntryLink?> entryLinkById(String id) async {
-    final res = await (select(linkedEntries)..where((t) => t.id.equals(id)))
-        .getSingleOrNull();
+    final res = await (select(
+      linkedEntries,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
     if (res == null) return null;
     return entryLinkFromLinkedDbEntry(res);
   }
@@ -1378,9 +1428,9 @@ class JournalDb extends _$JournalDb {
         // Equality precheck: if an entry with the same id exists and the
         // serialized payload is identical, skip the UPSERT to avoid a no-op
         // UPDATE and downstream log noise.
-        final existing = await (select(linkedEntries)
-              ..where((t) => t.id.equals(link.id)))
-            .getSingleOrNull();
+        final existing = await (select(
+          linkedEntries,
+        )..where((t) => t.id.equals(link.id))).getSingleOrNull();
         if (existing != null) {
           final incomingSerialized = jsonEncode(link);
           if (existing.serialized == incomingSerialized) {
@@ -1416,8 +1466,9 @@ class JournalDb extends _$JournalDb {
   Future<int> upsertLabelDefinition(
     LabelDefinition labelDefinition,
   ) async {
-    return into(labelDefinitions)
-        .insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
+    return into(
+      labelDefinitions,
+    ).insertOnConflictUpdate(labelDefinitionDbEntity(labelDefinition));
   }
 
   Future<void> _ensureLabelTables(Migrator migrator) async {
@@ -1466,9 +1517,11 @@ WHERE EXISTS (
     await customStatement('DROP TABLE IF EXISTS labeled');
     await customStatement('ALTER TABLE labeled_new RENAME TO labeled');
     await customStatement(
-        'CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)');
+      'CREATE INDEX IF NOT EXISTS idx_labeled_journal_id ON labeled (journal_id)',
+    );
     await customStatement(
-        'CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)');
+      'CREATE INDEX IF NOT EXISTS idx_labeled_label_id ON labeled (label_id)',
+    );
   }
 
   Future<bool> _tableExists(String tableName) async {

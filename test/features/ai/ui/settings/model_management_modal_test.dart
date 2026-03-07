@@ -119,8 +119,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -185,8 +186,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -234,8 +236,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -270,8 +273,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -299,8 +303,9 @@ void main() {
                       onPressed: () => showModelManagementModal(
                         context: context,
                         currentSelectedIds: List.from(selectedIds),
-                        currentDefaultId:
-                            selectedIds.isNotEmpty ? selectedIds.first : '',
+                        currentDefaultId: selectedIds.isNotEmpty
+                            ? selectedIds.first
+                            : '',
                         onSave: (newSelectedIds, defaultId) {
                           setState(() {
                             selectedIds
@@ -321,9 +326,11 @@ void main() {
                           }
                         });
                       },
-                      child: Text(selectedIds.isEmpty
-                          ? 'Add Selection'
-                          : 'Clear Selection'),
+                      child: Text(
+                        selectedIds.isEmpty
+                            ? 'Add Selection'
+                            : 'Clear Selection',
+                      ),
                     ),
                   ],
                 ),
@@ -331,8 +338,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -377,8 +385,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -420,8 +429,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -430,8 +440,10 @@ void main() {
       await openModalAndWaitForContent(tester);
 
       // Find save button and verify it's disabled
-      final saveButton =
-          find.widgetWithText(LottiPrimaryButton, l10n.saveButtonLabel);
+      final saveButton = find.widgetWithText(
+        LottiPrimaryButton,
+        l10n.saveButtonLabel,
+      );
       expect(saveButton, findsOneWidget);
 
       final primaryButton = tester.widget<LottiPrimaryButton>(saveButton);
@@ -457,8 +469,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController([])),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController([])),
           ],
         ),
       );
@@ -490,8 +503,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(ErrorTestAiConfigByTypeController.new),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(ErrorTestAiConfigByTypeController.new),
           ],
         ),
       );
@@ -503,8 +517,9 @@ void main() {
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
-    testWidgets('glassmorphic effect is present in sticky action bar',
-        (tester) async {
+    testWidgets('glassmorphic effect is present in sticky action bar', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestApp(
           child: Builder(
@@ -523,8 +538,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -560,8 +576,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
           ],
         ),
       );
@@ -581,8 +598,9 @@ void main() {
       expect(find.text('Open Modal'), findsOneWidget);
     });
 
-    testWidgets('complete interaction test - select models and save',
-        (tester) async {
+    testWidgets('complete interaction test - select models and save', (
+      tester,
+    ) async {
       List<String>? savedSelectedIds;
       String? savedDefaultId;
 
@@ -607,8 +625,9 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(() => TestAiConfigByTypeController(mockModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(() => TestAiConfigByTypeController(mockModels)),
             // Add provider overrides for provider names (optional)
             aiConfigByIdProvider('provider1').overrideWith(
               (ref) async => AiConfigInferenceProvider(
@@ -780,9 +799,9 @@ void main() {
 
       expect(filteredByProvider1.length, equals(2));
       expect(
-          filteredByProvider1
-              .every((m) => m.inferenceProviderId == 'provider1'),
-          isTrue);
+        filteredByProvider1.every((m) => m.inferenceProviderId == 'provider1'),
+        isTrue,
+      );
       expect(filteredByProvider1.any((m) => m.name == 'GPT-4'), isTrue);
       expect(filteredByProvider1.any((m) => m.name == 'GPT-3.5'), isTrue);
 
@@ -823,8 +842,8 @@ void main() {
       final displayedModels = selectedProviderId == null
           ? multiProviderModels
           : multiProviderModels
-              .where((m) => m.inferenceProviderId == selectedProviderId)
-              .toList();
+                .where((m) => m.inferenceProviderId == selectedProviderId)
+                .toList();
 
       expect(displayedModels.length, equals(4));
       expect(displayedModels, equals(multiProviderModels));
@@ -849,12 +868,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(multiProviderModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(multiProviderModels),
+            ),
             for (final provider in providers)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );
@@ -872,18 +894,21 @@ void main() {
       );
     });
 
-    test('model count changes with filtering but list reference stays same',
-        () {
-      // Test that filtering changes count but original list is preserved
-      final allModels = multiProviderModels;
+    test(
+      'model count changes with filtering but list reference stays same',
+      () {
+        // Test that filtering changes count but original list is preserved
+        final allModels = multiProviderModels;
 
-      final filteredModels =
-          allModels.where((m) => m.inferenceProviderId == 'provider1').toList();
+        final filteredModels = allModels
+            .where((m) => m.inferenceProviderId == 'provider1')
+            .toList();
 
-      expect(filteredModels.length, equals(2));
-      expect(allModels.length, equals(4)); // Original list unchanged
-      expect(identical(allModels, multiProviderModels), isTrue);
-    });
+        expect(filteredModels.length, equals(2));
+        expect(allModels.length, equals(4)); // Original list unchanged
+        expect(identical(allModels, multiProviderModels), isTrue);
+      },
+    );
   });
 
   group('Provider Filter Integration Tests', () {
@@ -957,12 +982,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(multiProviderModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(multiProviderModels),
+            ),
             for (final provider in providers)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );
@@ -1005,12 +1033,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(multiProviderModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(multiProviderModels),
+            ),
             for (final provider in providers)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );
@@ -1053,12 +1084,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(multiProviderModels)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(multiProviderModels),
+            ),
             for (final provider in providers)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );
@@ -1134,12 +1168,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(modelsForOneProvider)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(modelsForOneProvider),
+            ),
             for (final provider in providersWithNoModels)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );
@@ -1152,8 +1189,9 @@ void main() {
       expect(find.text('GPT-4'), findsOneWidget);
     });
 
-    testWidgets('all models from same provider still shows filter',
-        (tester) async {
+    testWidgets('all models from same provider still shows filter', (
+      tester,
+    ) async {
       final multiProviderConfig = [
         AiConfigInferenceProvider(
           id: 'provider1',
@@ -1214,12 +1252,15 @@ void main() {
             ),
           ),
           overrides: [
-            aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-                .overrideWith(
-                    () => TestAiConfigByTypeController(allFromSameProvider)),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => TestAiConfigByTypeController(allFromSameProvider),
+            ),
             for (final provider in multiProviderConfig)
-              aiConfigByIdProvider(provider.id)
-                  .overrideWith((ref) async => provider),
+              aiConfigByIdProvider(
+                provider.id,
+              ).overrideWith((ref) async => provider),
           ],
         ),
       );

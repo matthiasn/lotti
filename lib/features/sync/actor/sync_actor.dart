@@ -33,10 +33,11 @@ enum SyncActorState {
 /// Typedef for the factory that creates a [MatrixSdkGateway].
 ///
 /// Used for dependency injection in tests.
-typedef GatewayFactory = MatrixSdkGateway Function({
-  required Client client,
-  required SentEventRegistry sentEventRegistry,
-});
+typedef GatewayFactory =
+    MatrixSdkGateway Function({
+      required Client client,
+      required SentEventRegistry sentEventRegistry,
+    });
 
 /// Typedef for the vodozemac initializer.
 ///
@@ -46,26 +47,28 @@ typedef VodInitializer = Future<void> Function();
 /// Typedef for the Matrix client factory.
 ///
 /// Used for dependency injection in tests.
-typedef MatrixClientFactory = Future<Client> Function({
-  required Directory documentsDirectory,
-  String? deviceDisplayName,
-  String? dbName,
-});
+typedef MatrixClientFactory =
+    Future<Client> Function({
+      required Directory documentsDirectory,
+      String? deviceDisplayName,
+      String? dbName,
+    });
 
 typedef TimelineEventStreamFactory = Stream<Event> Function(Client client);
 typedef SyncDatabaseFactory = SyncDatabase Function(String dbRootPath);
-typedef OutboundQueueFactory = OutboundQueue Function({
-  required SyncDatabase syncDatabase,
-  required MatrixSdkGateway gateway,
-  required OutboundQueueEventSink emitEvent,
-  Duration leaseDuration,
-  Duration retryDelay,
-  Duration errorDelay,
-  int maxRetries,
-  Duration sendTimeout,
-  bool connected,
-  String? syncRoomId,
-});
+typedef OutboundQueueFactory =
+    OutboundQueue Function({
+      required SyncDatabase syncDatabase,
+      required MatrixSdkGateway gateway,
+      required OutboundQueueEventSink emitEvent,
+      Duration leaseDuration,
+      Duration retryDelay,
+      Duration errorDelay,
+      int maxRetries,
+      Duration sendTimeout,
+      bool connected,
+      String? syncRoomId,
+    });
 
 /// Command handler that implements the sync actor's state machine.
 ///
@@ -88,24 +91,25 @@ class SyncActorCommandHandler {
     SyncDatabaseFactory? syncDatabaseFactory,
     OutboundQueueFactory? outboundQueueFactory,
     Duration retryBaseDelay = const Duration(milliseconds: 250),
-  })  : _retryBaseDelay = retryBaseDelay,
-        _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
-        _createMatrixClientFactory =
-            createMatrixClientFactory ?? createMatrixClient,
-        _vodInitializer = vodInitializer ?? vod.init,
-        _syncUpdateStreamFactory = syncUpdateStreamFactory,
-        _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
-        _timelineEventStreamFactory = timelineEventStreamFactory,
-        _syncDatabaseFactory = syncDatabaseFactory ??
-            ((String dbRootPath) => SyncDatabase(
-                  documentsDirectoryProvider: () async => Directory(dbRootPath),
-                  tempDirectoryProvider: () async => Directory(dbRootPath),
-                  background: false,
-                )),
-        _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new,
-        _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
-        _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
-        _enableLogging = enableLogging;
+  }) : _retryBaseDelay = retryBaseDelay,
+       _gatewayFactory = gatewayFactory ?? _defaultGatewayFactory,
+       _createMatrixClientFactory =
+           createMatrixClientFactory ?? createMatrixClient,
+       _vodInitializer = vodInitializer ?? vod.init,
+       _syncUpdateStreamFactory = syncUpdateStreamFactory,
+       _toDeviceEventStreamFactory = toDeviceEventStreamFactory,
+       _timelineEventStreamFactory = timelineEventStreamFactory,
+       _syncDatabaseFactory =
+           syncDatabaseFactory ??
+           ((String dbRootPath) => SyncDatabase(
+             documentsDirectoryProvider: () async => Directory(dbRootPath),
+             tempDirectoryProvider: () async => Directory(dbRootPath),
+             background: false,
+           )),
+       _outboundQueueFactory = outboundQueueFactory ?? OutboundQueue.new,
+       _verificationPeerDiscoveryAttempts = verificationPeerDiscoveryAttempts,
+       _verificationPeerDiscoveryInterval = verificationPeerDiscoveryInterval,
+       _enableLogging = enableLogging;
 
   late final VerificationHandler _verificationHandler = VerificationHandler(
     onStateChanged: _emitEvent,
@@ -301,8 +305,9 @@ class SyncActorCommandHandler {
         });
       });
 
-      _incomingVerificationSub =
-          _gateway!.keyVerificationRequests.listen((verification) {
+      _incomingVerificationSub = _gateway!.keyVerificationRequests.listen((
+        verification,
+      ) {
         _log(
           'event: incoming verification, '
           'step=${verification.lastStep}, '
@@ -413,17 +418,20 @@ class SyncActorCommandHandler {
       }
     }
 
-    return _ok(requestId: requestId, extra: {
-      'state': _state.name,
-      'loginState': _latestLoginState?.name,
-      'encryptionEnabled': client?.encryptionEnabled ?? false,
-      'deviceId': client?.deviceID,
-      'userId': userId,
-      'deviceKeys': deviceKeyInfo,
-      'syncLoopActive': _state == SyncActorState.syncing,
-      'syncCount': _syncCount,
-      'toDeviceEventCount': _toDeviceEventCount,
-    });
+    return _ok(
+      requestId: requestId,
+      extra: {
+        'state': _state.name,
+        'loginState': _latestLoginState?.name,
+        'encryptionEnabled': client?.encryptionEnabled ?? false,
+        'deviceId': client?.deviceID,
+        'userId': userId,
+        'deviceKeys': deviceKeyInfo,
+        'syncLoopActive': _state == SyncActorState.syncing,
+        'syncCount': _syncCount,
+        'toDeviceEventCount': _toDeviceEventCount,
+      },
+    );
   }
 
   Future<Map<String, Object?>> _handleStartSync({String? requestId}) async {
@@ -485,7 +493,8 @@ class SyncActorCommandHandler {
   }
 
   Future<T> _sendWithTransientSyncPause<T>(
-      Future<T> Function() operation) async {
+    Future<T> Function() operation,
+  ) async {
     final wasSyncing = _state == SyncActorState.syncing;
     if (!wasSyncing) {
       return operation();
@@ -516,7 +525,7 @@ class SyncActorCommandHandler {
     bool Function(Object)? isRetryable,
   }) async {
     final effectiveDelay = baseDelay ?? _retryBaseDelay;
-    for (var attempt = 0;; attempt++) {
+    for (var attempt = 0; ; attempt++) {
       try {
         return await operation();
       } on Object catch (e, stackTrace) {
@@ -630,8 +639,8 @@ class SyncActorCommandHandler {
     }
 
     try {
-      final inviteUserIds =
-          (command['inviteUserIds'] as List<dynamic>?)?.cast<String>();
+      final inviteUserIds = (command['inviteUserIds'] as List<dynamic>?)
+          ?.cast<String>();
 
       final roomId = await _gateway!.createRoom(
         name: name,
@@ -812,8 +821,9 @@ class SyncActorCommandHandler {
         roomId == null || peerDevice.userId == clientUserId;
 
     if (shouldUseDirectVerification) {
-      final directVerification =
-          await _gateway!.startKeyVerification(peerDevice);
+      final directVerification = await _gateway!.startKeyVerification(
+        peerDevice,
+      );
       return _ensureVerificationRequestProgress(directVerification);
     }
 
@@ -1051,7 +1061,8 @@ class SyncActorCommandHandler {
 
     unawaited(_refreshPeerDeviceKeys(userId));
 
-    final discoveryAttempts = _verificationPeerDiscoveryAttempts >
+    final discoveryAttempts =
+        _verificationPeerDiscoveryAttempts >
             _maxVerificationPeerDiscoveryAttempts
         ? _maxVerificationPeerDiscoveryAttempts
         : _verificationPeerDiscoveryAttempts;
@@ -1118,7 +1129,7 @@ class SyncActorCommandHandler {
   }) {
     return <String, Object?>{
       'ok': true,
-      if (requestId != null) 'requestId': requestId,
+      'requestId': ?requestId,
       ...?extra,
     };
   }
@@ -1132,8 +1143,8 @@ class SyncActorCommandHandler {
     return <String, Object?>{
       'ok': false,
       'error': message,
-      if (errorCode != null) 'errorCode': errorCode,
-      if (requestId != null) 'requestId': requestId,
+      'errorCode': ?errorCode,
+      'requestId': ?requestId,
       if (stackTrace != null) 'stackTrace': '$stackTrace',
     };
   }

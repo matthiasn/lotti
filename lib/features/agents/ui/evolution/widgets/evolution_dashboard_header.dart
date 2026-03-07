@@ -31,8 +31,9 @@ class _EvolutionDashboardHeaderState
 
   @override
   Widget build(BuildContext context) {
-    final metricsAsync =
-        ref.watch(templatePerformanceMetricsProvider(widget.templateId));
+    final metricsAsync = ref.watch(
+      templatePerformanceMetricsProvider(widget.templateId),
+    );
 
     return Column(
       children: [
@@ -96,7 +97,7 @@ class _EvolutionDashboardHeaderState
                       ),
                     ),
                   ),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 )
               : const SizedBox.shrink(),
         ),

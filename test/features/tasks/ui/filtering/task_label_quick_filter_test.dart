@@ -158,18 +158,21 @@ void main() {
     expect(find.text('Unassigned'), findsOneWidget);
   });
 
-  testWidgets('stays hidden when no labels selected or tasks hidden',
-      (tester) async {
+  testWidgets('stays hidden when no labels selected or tasks hidden', (
+    tester,
+  ) async {
     final hidden = pumpFilter(_baseState(selectedLabelIds: {}));
     await tester.pumpWidget(hidden);
     await tester.pumpAndSettle();
     expect(find.textContaining('Active label filters'), findsNothing);
 
     final state = _baseState(selectedLabelIds: {'label-a'}, showTasks: false);
-    when(() => mockCache.getLabelById(any())).thenReturn(_buildLabel(
-      'label-a',
-      'Alpha',
-    ));
+    when(() => mockCache.getLabelById(any())).thenReturn(
+      _buildLabel(
+        'label-a',
+        'Alpha',
+      ),
+    );
     final widget = pumpFilter(state);
     await tester.pumpWidget(widget);
     await tester.pumpAndSettle();

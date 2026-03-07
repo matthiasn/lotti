@@ -89,8 +89,8 @@ void main() {
         name: 'update_task_priority',
         arguments: jsonEncode({
           'priority': priority,
-          if (reason != null) 'reason': reason,
-          if (confidence != null) 'confidence': confidence,
+          'reason': ?reason,
+          'confidence': ?confidence,
         }),
       ),
     );
@@ -127,7 +127,9 @@ void main() {
 
     test('should trim whitespace', () {
       expect(
-          TaskPriorityHandler.parsePriority('  P0  '), TaskPriority.p0Urgent);
+        TaskPriorityHandler.parsePriority('  P0  '),
+        TaskPriority.p0Urgent,
+      );
       expect(TaskPriorityHandler.parsePriority('\tP1\n'), TaskPriority.p1High);
     });
 
@@ -152,46 +154,49 @@ void main() {
 
   group('TaskPriorityHandler', () {
     group('successful updates', () {
-      test('should update priority when currently default (p2Medium)',
-          () async {
-        final task = createTask(); // default is p2Medium
-        final toolCall = createPriorityToolCall(
-          priority: 'P1',
-          reason: 'User said high priority',
-          confidence: 'high',
-        );
+      test(
+        'should update priority when currently default (p2Medium)',
+        () async {
+          final task = createTask(); // default is p2Medium
+          final toolCall = createPriorityToolCall(
+            priority: 'P1',
+            reason: 'User said high priority',
+            confidence: 'high',
+          );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        Task? capturedTask;
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-          onTaskUpdated: (t) => capturedTask = t,
-        );
+          Task? capturedTask;
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+            onTaskUpdated: (t) => capturedTask = t,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p1High);
-        expect(result.reason, 'User said high priority');
-        expect(result.confidence, 'high');
-        expect(result.updatedTask, isNotNull);
-        expect(result.updatedTask!.data.priority, TaskPriority.p1High);
-        expect(result.error, isNull);
+          expect(result.success, isTrue);
+          expect(result.requestedPriority, TaskPriority.p1High);
+          expect(result.reason, 'User said high priority');
+          expect(result.confidence, 'high');
+          expect(result.updatedTask, isNotNull);
+          expect(result.updatedTask!.data.priority, TaskPriority.p1High);
+          expect(result.error, isNull);
 
-        expect(capturedTask, isNotNull);
-        expect(capturedTask!.data.priority, TaskPriority.p1High);
+          expect(capturedTask, isNotNull);
+          expect(capturedTask!.data.priority, TaskPriority.p1High);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-        verify(
-          () => mockManager.addToolResponse(
-            toolCallId: 'call_priority_123',
-            response: 'Task priority updated to P1.',
-          ),
-        ).called(1);
-      });
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call_priority_123',
+              response: 'Task priority updated to P1.',
+            ),
+          ).called(1);
+        },
+      );
 
       test('should update to P0 (Urgent)', () async {
         final task = createTask();
@@ -201,8 +206,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -226,8 +232,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -247,8 +254,9 @@ void main() {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'P0');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -262,40 +270,44 @@ void main() {
         expect(handler.task.data.priority, TaskPriority.p0Urgent);
       });
 
-      test('should work without ConversationManager (for unit testing)',
-          () async {
-        final task = createTask();
-        final toolCall = createPriorityToolCall(priority: 'P1');
+      test(
+        'should work without ConversationManager (for unit testing)',
+        () async {
+          final task = createTask();
+          final toolCall = createPriorityToolCall(priority: 'P1');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        // Call without manager
-        final result = await handler.processToolCall(toolCall);
+          // Call without manager
+          final result = await handler.processToolCall(toolCall);
 
-        expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p1High);
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-        // Manager methods should not be called
-        verifyNever(
-          () => mockManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          ),
-        );
-      });
+          expect(result.success, isTrue);
+          expect(result.requestedPriority, TaskPriority.p1High);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          // Manager methods should not be called
+          verifyNever(
+            () => mockManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          );
+        },
+      );
 
       test('should handle lowercase priority strings', () async {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'p1');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -359,8 +371,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -381,8 +394,9 @@ void main() {
         final task = createTask(priority: TaskPriority.p3Low);
         final toolCall = createPriorityToolCall(priority: 'P0');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -484,66 +498,72 @@ void main() {
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
-      test('should handle non-string priority type (integer) gracefully',
-          () async {
-        // AI might send {"priority": 1} instead of {"priority": "P1"}
-        final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call_priority_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_priority',
-            arguments:
-                '{"priority": 1, "reason": "test", "confidence": "high"}',
-          ),
-        );
+      test(
+        'should handle non-string priority type (integer) gracefully',
+        () async {
+          // AI might send {"priority": 1} instead of {"priority": "P1"}
+          final task = createTask();
+          const toolCall = ChatCompletionMessageToolCall(
+            id: 'call_priority_123',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_priority',
+              arguments:
+                  '{"priority": 1, "reason": "test", "confidence": "high"}',
+            ),
+          );
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        // Should fail validation (1 != "P1") but not throw
-        expect(result.success, isFalse);
-        expect(result.wasSkipped, isFalse);
-        expect(result.error, isNotNull);
-        expect(result.error, contains('must be P0, P1, P2, or P3'));
+          // Should fail validation (1 != "P1") but not throw
+          expect(result.success, isFalse);
+          expect(result.wasSkipped, isFalse);
+          expect(result.error, isNotNull);
+          expect(result.error, contains('must be P0, P1, P2, or P3'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
-      test('should handle non-string confidence/reason types gracefully',
-          () async {
-        // AI might send non-string values for optional fields
-        final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call_priority_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_priority',
-            arguments: '{"priority": "P1", "reason": 123, "confidence": true}',
-          ),
-        );
+      test(
+        'should handle non-string confidence/reason types gracefully',
+        () async {
+          // AI might send non-string values for optional fields
+          final task = createTask();
+          const toolCall = ChatCompletionMessageToolCall(
+            id: 'call_priority_123',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_priority',
+              arguments:
+                  '{"priority": "P1", "reason": 123, "confidence": true}',
+            ),
+          );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        // Should succeed - non-string values are converted via toString()
-        expect(result.success, isTrue);
-        expect(result.reason, '123');
-        expect(result.confidence, 'true');
+          // Should succeed - non-string values are converted via toString()
+          expect(result.success, isTrue);
+          expect(result.reason, '123');
+          expect(result.confidence, 'true');
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-      });
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        },
+      );
 
       test('should handle malformed JSON', () async {
         final task = createTask();
@@ -582,8 +602,9 @@ void main() {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'P1');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database connection lost'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -612,8 +633,9 @@ void main() {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: 'P1');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
         final handler = TaskPriorityHandler(
@@ -627,24 +649,27 @@ void main() {
         expect(callbackCalled, isFalse);
       });
 
-      test('should not update handler task reference when repository fails',
-          () async {
-        final task = createTask();
-        final toolCall = createPriorityToolCall(priority: 'P1');
+      test(
+        'should not update handler task reference when repository fails',
+        () async {
+          final task = createTask();
+          final toolCall = createPriorityToolCall(priority: 'P1');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenThrow(Exception('Database error'));
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        await handler.processToolCall(toolCall);
+          await handler.processToolCall(toolCall);
 
-        // Task should remain unchanged
-        expect(handler.task.data.priority, TaskPriority.p2Medium);
-      });
+          // Task should remain unchanged
+          expect(handler.task.data.priority, TaskPriority.p2Medium);
+        },
+      );
     });
 
     group('TaskPriorityResult', () {
@@ -680,60 +705,64 @@ void main() {
     });
 
     group('edge cases', () {
-      test('should preserve other task fields when updating priority',
-          () async {
-        final task = Task(
-          meta: Metadata(
-            id: 'test-task-id',
-            createdAt: fixedDate,
-            updatedAt: fixedDate,
-            dateFrom: fixedDate,
-            dateTo: fixedDate,
-            categoryId: 'test-category',
-          ),
-          data: TaskData(
-            title: 'Important Task',
-            status: TaskStatus.inProgress(
-              id: 'status-2',
+      test(
+        'should preserve other task fields when updating priority',
+        () async {
+          final task = Task(
+            meta: Metadata(
+              id: 'test-task-id',
               createdAt: fixedDate,
-              utcOffset: 0,
+              updatedAt: fixedDate,
+              dateFrom: fixedDate,
+              dateTo: fixedDate,
+              categoryId: 'test-category',
             ),
-            statusHistory: const [],
-            dateFrom: fixedDate,
-            dateTo: DateTime(2024, 1, 20),
-            due: DateTime(2024, 1, 25),
-            estimate: const Duration(minutes: 60),
-            // priority is default p2Medium
-          ),
-        );
-        final toolCall = createPriorityToolCall(priority: 'P0');
+            data: TaskData(
+              title: 'Important Task',
+              status: TaskStatus.inProgress(
+                id: 'status-2',
+                createdAt: fixedDate,
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: fixedDate,
+              dateTo: DateTime(2024, 1, 20),
+              due: DateTime(2024, 1, 25),
+              estimate: const Duration(minutes: 60),
+              // priority is default p2Medium
+            ),
+          );
+          final toolCall = createPriorityToolCall(priority: 'P0');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        final updated = result.updatedTask!;
-        expect(updated.data.title, 'Important Task');
-        expect(updated.data.status.id, 'status-2');
-        expect(updated.data.due, DateTime(2024, 1, 25));
-        expect(updated.data.estimate, const Duration(minutes: 60));
-        expect(updated.data.priority, TaskPriority.p0Urgent);
-        expect(updated.meta.id, 'test-task-id');
-      });
+          expect(result.success, isTrue);
+          final updated = result.updatedTask!;
+          expect(updated.data.title, 'Important Task');
+          expect(updated.data.status.id, 'status-2');
+          expect(updated.data.due, DateTime(2024, 1, 25));
+          expect(updated.data.estimate, const Duration(minutes: 60));
+          expect(updated.data.priority, TaskPriority.p0Urgent);
+          expect(updated.meta.id, 'test-task-id');
+        },
+      );
 
       test('should handle priority with whitespace', () async {
         final task = createTask();
         final toolCall = createPriorityToolCall(priority: '  P1  ');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -747,37 +776,39 @@ void main() {
       });
 
       test(
-          'should skip DB write when setting P2 on default P2 task (no-op optimization)',
-          () async {
-        // This is an edge case: user says "medium priority" and task is already p2Medium
-        // We skip the DB write since nothing would actually change
-        final task = createTask(); // default is p2Medium
-        final toolCall = createPriorityToolCall(priority: 'P2');
+        'should skip DB write when setting P2 on default P2 task (no-op optimization)',
+        () async {
+          // This is an edge case: user says "medium priority" and task is already p2Medium
+          // We skip the DB write since nothing would actually change
+          final task = createTask(); // default is p2Medium
+          final toolCall = createPriorityToolCall(priority: 'P2');
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        // Should succeed but NOT call updateJournalEntity (optimization)
-        expect(result.success, isTrue);
-        expect(result.requestedPriority, TaskPriority.p2Medium);
-        expect(result.updatedTask!.data.priority, TaskPriority.p2Medium);
-        expect(result.message, contains('No change needed'));
+          // Should succeed but NOT call updateJournalEntity (optimization)
+          expect(result.success, isTrue);
+          expect(result.requestedPriority, TaskPriority.p2Medium);
+          expect(result.updatedTask!.data.priority, TaskPriority.p2Medium);
+          expect(result.message, contains('No change needed'));
 
-        // Verify no DB write occurred
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          // Verify no DB write occurred
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
       test('should handle all valid priority values sequentially', () async {
         for (final priorityStr in ['P0', 'P1', 'P2', 'P3']) {
           final task = createTask(); // fresh task with default priority
           final toolCall = createPriorityToolCall(priority: priorityStr);
 
-          when(() => mockJournalRepo.updateJournalEntity(any()))
-              .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
           final handler = TaskPriorityHandler(
             task: task,
@@ -805,8 +836,9 @@ void main() {
           reason: 'User explicitly said P0',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -827,8 +859,9 @@ void main() {
           reason: 'User implied importance',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -849,8 +882,9 @@ void main() {
           reason: 'Uncertain about priority level',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,
@@ -875,8 +909,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskPriorityHandler(
           task: task,

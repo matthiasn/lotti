@@ -53,29 +53,33 @@ class AgentService {
     final linkId = _uuid.v4();
     final now = clock.now();
 
-    final identity = AgentDomainEntity.agent(
-      id: agentId,
-      agentId: agentId,
-      kind: kind,
-      displayName: displayName,
-      lifecycle: AgentLifecycle.active,
-      mode: AgentInteractionMode.autonomous,
-      allowedCategoryIds: allowedCategoryIds,
-      currentStateId: stateId,
-      config: config,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: null,
-    ) as AgentIdentityEntity;
+    final identity =
+        AgentDomainEntity.agent(
+              id: agentId,
+              agentId: agentId,
+              kind: kind,
+              displayName: displayName,
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: allowedCategoryIds,
+              currentStateId: stateId,
+              config: config,
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
 
-    final state = AgentDomainEntity.agentState(
-      id: stateId,
-      agentId: agentId,
-      revision: 0,
-      slots: const AgentSlots(),
-      updatedAt: now,
-      vectorClock: null,
-    ) as AgentStateEntity;
+    final state =
+        AgentDomainEntity.agentState(
+              id: stateId,
+              agentId: agentId,
+              revision: 0,
+              slots: const AgentSlots(),
+              updatedAt: now,
+              vectorClock: null,
+            )
+            as AgentStateEntity;
 
     final link = AgentLink.agentState(
       id: linkId,

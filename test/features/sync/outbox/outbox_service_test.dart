@@ -100,8 +100,9 @@ MockUserActivityGate createGate({
   when(gate.waitUntilIdle).thenAnswer((_) async {});
   when(gate.dispose).thenAnswer((_) async {});
   when(() => gate.canProcess).thenReturn(canProcess);
-  when(() => gate.canProcessStream)
-      .thenAnswer((_) => canProcessStream ?? Stream<bool>.value(canProcess));
+  when(
+    () => gate.canProcessStream,
+  ).thenAnswer((_) => canProcessStream ?? Stream<bool>.value(canProcess));
   return gate;
 }
 
@@ -118,8 +119,9 @@ void expectDelayCloseTo(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const connectivityMethodChannel =
-      MethodChannel('dev.fluttercommunity.plus/connectivity');
+  const connectivityMethodChannel = MethodChannel(
+    'dev.fluttercommunity.plus/connectivity',
+  );
 
   setUpAll(() {
     registerFallbackValue(const SyncMessage.aiConfigDelete(id: 'fallback'));
@@ -129,18 +131,19 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(const VectorClock({'fallback': 1}));
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(connectivityMethodChannel,
-            (MethodCall call) async {
-      if (call.method == 'check') {
-        return 'wifi';
-      }
-      return 'wifi';
-    });
+        .setMockMethodCallHandler(connectivityMethodChannel, (
+          MethodCall call,
+        ) async {
+          if (call.method == 'check') {
+            return 'wifi';
+          }
+          return 'wifi';
+        });
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMessageHandler(
-      'dev.fluttercommunity.plus/connectivity_status',
-      (ByteData? message) async => null,
-    );
+          'dev.fluttercommunity.plus/connectivity_status',
+          (ByteData? message) async => null,
+        );
   });
 
   late MockSyncDatabase syncDatabase;
@@ -165,8 +168,9 @@ void main() {
     journalDb = MockJournalDb();
     vectorClockService = MockVectorClockService();
     userActivityService = MockUserActivityService();
-    documentsDirectory =
-        Directory.systemTemp.createTempSync('outbox_service_test_');
+    documentsDirectory = Directory.systemTemp.createTempSync(
+      'outbox_service_test_',
+    );
     hadDirectoryRegistered = getIt.isRegistered<Directory>();
     if (hadDirectoryRegistered) {
       previousDirectory = getIt<Directory>();
@@ -177,36 +181,47 @@ void main() {
     getIt.allowReassignment = true;
     getIt.registerSingleton<Directory>(documentsDirectory);
 
-    when(() => processor.processQueue())
-        .thenAnswer((_) async => OutboxProcessingResult.none);
-    when(() => loggingService.captureEvent(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenAnswer((_) {});
-    when(() => loggingService.captureException(
-          any<Object>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        )).thenAnswer((_) async {});
-    when(() => vectorClockService.getHostHash())
-        .thenAnswer((_) async => 'hhash');
+    when(
+      () => processor.processQueue(),
+    ).thenAnswer((_) async => OutboxProcessingResult.none);
+    when(
+      () => loggingService.captureEvent(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+    when(
+      () => loggingService.captureException(
+        any<Object>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => vectorClockService.getHostHash(),
+    ).thenAnswer((_) async => 'hhash');
     when(() => vectorClockService.getHost()).thenAnswer((_) async => 'hostA');
-    when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+    ).thenAnswer((_) async => 1);
     // Avoid null stream issues from db-driven nudge subscription in service ctor
-    when(() => syncDatabase.watchOutboxCount())
-        .thenAnswer((_) => const Stream<int>.empty());
+    when(
+      () => syncDatabase.watchOutboxCount(),
+    ).thenAnswer((_) => const Stream<int>.empty());
     // Default stub for findPendingByEntryId - no existing pending item
-    when(() => syncDatabase.findPendingByEntryId(any()))
-        .thenAnswer((_) async => null);
-    when(() => journalDb.linksForEntryIdsBidirectional(any()))
-        .thenAnswer((_) async => <EntryLink>[]);
+    when(
+      () => syncDatabase.findPendingByEntryId(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => journalDb.linksForEntryIdsBidirectional(any()),
+    ).thenAnswer((_) async => <EntryLink>[]);
     // Ensure activity gate can construct if needed
     when(() => userActivityService.lastActivity).thenReturn(DateTime.now());
-    when(() => userActivityService.activityStream)
-        .thenAnswer((_) => const Stream<DateTime>.empty());
+    when(
+      () => userActivityService.activityStream,
+    ).thenAnswer((_) => const Stream<DateTime>.empty());
 
     service = TestableOutboxService(
       syncDatabase: syncDatabase,
@@ -253,11 +268,13 @@ void main() {
 
     await service.enqueueMessage(def);
 
-    verify(() => loggingService.captureEvent(
-          contains('type=SyncEntityDefinition'),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        contains('type=SyncEntityDefinition'),
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
   });
 
   test('enqueueMessage logs SyncEntryLink with from/to', () async {
@@ -275,15 +292,17 @@ void main() {
 
     await service.enqueueMessage(link);
 
-    verify(() => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncEntryLink'),
-            contains('from=A'),
-            contains('to=B'),
-          ]),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        allOf([
+          contains('type=SyncEntryLink'),
+          contains('from=A'),
+          contains('to=B'),
+        ]),
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
   });
 
   test('enqueueMessage refreshes JSON before reading descriptor', () async {
@@ -317,8 +336,9 @@ void main() {
       ..parent.createSync(recursive: true)
       ..writeAsStringSync(jsonEncode(staleChecklist));
 
-    when(() => journalDb.journalEntityById(id))
-        .thenAnswer((_) async => freshChecklist);
+    when(
+      () => journalDb.journalEntityById(id),
+    ).thenAnswer((_) async => freshChecklist);
 
     final message = SyncMessage.journalEntity(
       id: id,
@@ -338,45 +358,47 @@ void main() {
     );
   });
 
-  test('enqueueMessage logs missing entity when DB lookup returns null',
-      () async {
-    const id = 'missing-entity';
-    final entity = JournalEntity.journalEntry(
-      meta: Metadata(
+  test(
+    'enqueueMessage logs missing entity when DB lookup returns null',
+    () async {
+      const id = 'missing-entity';
+      final entity = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: id,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          vectorClock: const VectorClock({'host': 1}),
+        ),
+        entryText: const EntryText(plainText: 'draft'),
+      );
+      final jsonPath = relativeEntityPath(entity);
+      File('${documentsDirectory.path}$jsonPath')
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(entity.toJson()));
+
+      when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+
+      final message = SyncMessage.journalEntity(
         id: id,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        vectorClock: const VectorClock({'host': 1}),
-      ),
-      entryText: const EntryText(plainText: 'draft'),
-    );
-    final jsonPath = relativeEntityPath(entity);
-    File('${documentsDirectory.path}$jsonPath')
-      ..parent.createSync(recursive: true)
-      ..writeAsStringSync(jsonEncode(entity.toJson()));
+        jsonPath: jsonPath,
+        vectorClock: entity.meta.vectorClock,
+        status: SyncEntryStatus.initial,
+      );
 
-    when(() => journalDb.journalEntityById(id)).thenAnswer((_) async => null);
+      await service.enqueueMessage(message);
 
-    final message = SyncMessage.journalEntity(
-      id: id,
-      jsonPath: jsonPath,
-      vectorClock: entity.meta.vectorClock,
-      status: SyncEntryStatus.initial,
-    );
-
-    await service.enqueueMessage(message);
-
-    verify(
-      () => loggingService.captureEvent(
-        contains('enqueueMessage.missingEntity id=$id'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'enqueueMessage',
-      ),
-    ).called(1);
-    verify(() => syncDatabase.addOutboxItem(any())).called(1);
-  });
+      verify(
+        () => loggingService.captureEvent(
+          contains('enqueueMessage.missingEntity id=$id'),
+          domain: 'MATRIX_SERVICE',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
+      verify(() => syncDatabase.addOutboxItem(any())).called(1);
+    },
+  );
 
   test('continues when saveJson throws during refresh', () async {
     const id = 'save-fails';
@@ -414,7 +436,7 @@ void main() {
       processor: processor,
       activityGate: failingGate,
       ownsActivityGate: false,
-      saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+      saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
     );
 
     final message = SyncMessage.journalEntity(
@@ -465,11 +487,13 @@ void main() {
 
     await service.enqueueMessage(cfg);
 
-    verify(() => loggingService.captureEvent(
-          contains('type=SyncAiConfig'),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        contains('type=SyncAiConfig'),
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
   });
 
   test('enqueueMessage logs SyncAiConfigDelete', () async {
@@ -477,11 +501,13 @@ void main() {
 
     await service.enqueueMessage(del);
 
-    verify(() => loggingService.captureEvent(
-          contains('type=SyncAiConfigDelete'),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        contains('type=SyncAiConfigDelete'),
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
   });
 
   test('enqueueMessage logs SyncTagEntity', () async {
@@ -499,11 +525,13 @@ void main() {
 
     await service.enqueueMessage(tag);
 
-    verify(() => loggingService.captureEvent(
-          contains('type=SyncTagEntity'),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        )).called(1);
+    verify(
+      () => loggingService.captureEvent(
+        contains('type=SyncTagEntity'),
+        domain: 'OUTBOX',
+        subDomain: 'enqueueMessage',
+      ),
+    ).called(1);
   });
 
   test('dispose closes owned activity gate', () async {
@@ -555,102 +583,107 @@ void main() {
 
   group('enqueueMessage', () {
     test(
-        'stores relative attachment path for initial journal entry and schedules',
-        () async {
-      final capturedCompanions = <OutboxCompanion>[];
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenAnswer((invocation) async {
-        capturedCompanions
-            .add(invocation.positionalArguments.first as OutboxCompanion);
-        return 1;
-      });
+      'stores relative attachment path for initial journal entry and schedules',
+      () async {
+        final capturedCompanions = <OutboxCompanion>[];
+        when(
+          () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+        ).thenAnswer((invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        });
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
 
-      final sampleDate = DateTime.utc(2024);
-      final metadata = Metadata(
-        id: 'entry',
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        dateFrom: sampleDate,
-        dateTo: sampleDate,
-        vectorClock: const VectorClock({'hostA': 1}),
-      );
-      final imageData = ImageData(
-        capturedAt: sampleDate,
-        imageId: 'image-id',
-        imageFile: 'image.jpg',
-        imageDirectory: '/images/',
-      );
-      final journalEntity = JournalEntity.journalImage(
-        meta: metadata,
-        data: imageData,
-        entryText: const EntryText(plainText: 'Test'),
-      );
-
-      const jsonPath = '/entries/test.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
-
-      final imagePath =
-          '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
-      File(imagePath)
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(List<int>.filled(10, 42));
-
-      await testService.enqueueMessage(
-        const SyncMessage.journalEntity(
+        final sampleDate = DateTime.utc(2024);
+        final metadata = Metadata(
           id: 'entry',
-          jsonPath: jsonPath,
-          vectorClock: VectorClock({'device': 1}),
-          status: SyncEntryStatus.initial,
-        ),
-      );
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: const VectorClock({'hostA': 1}),
+        );
+        final imageData = ImageData(
+          capturedAt: sampleDate,
+          imageId: 'image-id',
+          imageFile: 'image.jpg',
+          imageDirectory: '/images/',
+        );
+        final journalEntity = JournalEntity.journalImage(
+          meta: metadata,
+          data: imageData,
+          entryText: const EntryText(plainText: 'Test'),
+        );
 
-      expect(capturedCompanions, hasLength(1));
-      final companion = capturedCompanions.single;
-      expect(companion.filePath.value, getRelativeAssetPath(imagePath));
-      expect(companion.subject.value, 'hhash:1');
-      expect(companion.status.value, OutboxStatus.pending.index);
-      final decodedMessage = SyncMessage.fromJson(
-        jsonDecode(companion.message.value) as Map<String, dynamic>,
-      );
-      final journalMsg = decodedMessage as SyncJournalEntity;
-      expect(journalMsg.coveredVectorClocks, isNotNull);
-      final coveredCounters = journalMsg.coveredVectorClocks!
-          .map((vc) => vc.vclock['device'])
-          .whereType<int>()
-          .toSet();
-      expect(coveredCounters, contains(1));
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-      // Ensure scheduling happens after enqueue
-      expect(testService.enqueueCalls, 1);
-      expect(testService.lastDelay, const Duration(seconds: 1));
+        final imagePath =
+            '${documentsDirectory.path}${imageData.imageDirectory}${imageData.imageFile}';
+        File(imagePath)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(List<int>.filled(10, 42));
 
-      // Verify payloadSize includes file length (10 bytes) + JSON length
-      expect(companion.payloadSize.value, isNotNull);
-      expect(companion.payloadSize.value, greaterThan(10));
-    });
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry',
+            jsonPath: jsonPath,
+            vectorClock: VectorClock({'device': 1}),
+            status: SyncEntryStatus.initial,
+          ),
+        );
+
+        expect(capturedCompanions, hasLength(1));
+        final companion = capturedCompanions.single;
+        expect(companion.filePath.value, getRelativeAssetPath(imagePath));
+        expect(companion.subject.value, 'hhash:1');
+        expect(companion.status.value, OutboxStatus.pending.index);
+        final decodedMessage = SyncMessage.fromJson(
+          jsonDecode(companion.message.value) as Map<String, dynamic>,
+        );
+        final journalMsg = decodedMessage as SyncJournalEntity;
+        expect(journalMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = journalMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['device'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, contains(1));
+
+        // Ensure scheduling happens after enqueue
+        expect(testService.enqueueCalls, 1);
+        expect(testService.lastDelay, const Duration(seconds: 1));
+
+        // Verify payloadSize includes file length (10 bytes) + JSON length
+        expect(companion.payloadSize.value, isNotNull);
+        expect(companion.payloadSize.value, greaterThan(10));
+      },
+    );
 
     test('payloadSize includes file bytes for journal image', () async {
       final capturedCompanions = <OutboxCompanion>[];
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenAnswer((invocation) async {
-        capturedCompanions
-            .add(invocation.positionalArguments.first as OutboxCompanion);
-        return 1;
-      });
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(
+        (invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        },
+      );
 
       final testService = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -719,12 +752,14 @@ void main() {
 
     test('payloadSize is JSON length for entry link (no file)', () async {
       final capturedCompanions = <OutboxCompanion>[];
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenAnswer((invocation) async {
-        capturedCompanions
-            .add(invocation.positionalArguments.first as OutboxCompanion);
-        return 1;
-      });
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(
+        (invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        },
+      );
 
       final testService = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -766,12 +801,14 @@ void main() {
 
     test('payloadSize is JSON length for simple message types', () async {
       final capturedCompanions = <OutboxCompanion>[];
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenAnswer((invocation) async {
-        capturedCompanions
-            .add(invocation.positionalArguments.first as OutboxCompanion);
-        return 1;
-      });
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(
+        (invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        },
+      );
 
       final testService = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -798,12 +835,14 @@ void main() {
 
     test('enqueues entry link with coveredVectorClocks populated', () async {
       final capturedCompanions = <OutboxCompanion>[];
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenAnswer((invocation) async {
-        capturedCompanions
-            .add(invocation.positionalArguments.first as OutboxCompanion);
-        return 1;
-      });
+      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>())).thenAnswer(
+        (invocation) async {
+          capturedCompanions.add(
+            invocation.positionalArguments.first as OutboxCompanion,
+          );
+          return 1;
+        },
+      );
 
       final testService = TestableOutboxService(
         syncDatabase: syncDatabase,
@@ -850,351 +889,362 @@ void main() {
     });
 
     test(
-        'merges consecutive updates to same journal entry with coveredVectorClocks',
-        () async {
-      final sampleDate = DateTime.utc(2024);
-      const oldVc = VectorClock({'hostA': 5});
-      const newVc = VectorClock({'hostA': 7});
+      'merges consecutive updates to same journal entry with coveredVectorClocks',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5});
+        const newVc = VectorClock({'hostA': 7});
 
-      // Create the "old" message that's already in the outbox
-      const oldMessage = SyncMessage.journalEntity(
-        id: 'entry-id',
-        jsonPath: '/entries/test.json',
-        vectorClock: oldVc,
-        status: SyncEntryStatus.update,
-      );
-
-      // Existing pending outbox item
-      final existingItem = OutboxItem(
-        id: 1,
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        message: jsonEncode(oldMessage.toJson()),
-        subject: 'hhash:5',
-        filePath: null,
-        outboxEntryId: 'entry-id',
-        priority: OutboxPriority.low.index,
-      );
-
-      // Return existing item for this entry
-      when(() => syncDatabase.findPendingByEntryId('entry-id'))
-          .thenAnswer((_) async => existingItem);
-
-      // Capture the update call
-      String? capturedMessage;
-      String? capturedSubject;
-      int? capturedPayloadSize;
-      when(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedMessage = invocation.namedArguments[#newMessage] as String?;
-        capturedSubject = invocation.namedArguments[#newSubject] as String?;
-        capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
-        return 1;
-      });
-
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
-
-      final metadata = Metadata(
-        id: 'entry-id',
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        dateFrom: sampleDate,
-        dateTo: sampleDate,
-        vectorClock: newVc,
-      );
-      final journalEntity = JournalEntity.journalEntry(
-        meta: metadata,
-        entryText: const EntryText(plainText: 'Updated text'),
-      );
-
-      const jsonPath = '/entries/test.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
-
-      await testService.enqueueMessage(
-        const SyncMessage.journalEntity(
-          id: 'entry-id',
-          jsonPath: jsonPath,
-          vectorClock: newVc,
-          status: SyncEntryStatus.update,
-        ),
-      );
-
-      // Verify updateOutboxMessage was called instead of addOutboxItem
-      verify(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: 1,
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).called(1);
-      verifyNever(() => syncDatabase.addOutboxItem(any()));
-
-      // Verify the merged message contains coveredVectorClocks
-      expect(capturedMessage, isNotNull);
-      final decodedMessage = SyncMessage.fromJson(
-        jsonDecode(capturedMessage!) as Map<String, dynamic>,
-      );
-      expect(decodedMessage, isA<SyncJournalEntity>());
-      final journalMsg = decodedMessage as SyncJournalEntity;
-      expect(journalMsg.coveredVectorClocks, isNotNull);
-      final coveredCounters = journalMsg.coveredVectorClocks!
-          .map((vc) => vc.vclock['hostA'])
-          .whereType<int>()
-          .toSet();
-      expect(coveredCounters, containsAll([5, 7]));
-      expect(coveredCounters, hasLength(2));
-      expect(capturedSubject, 'hhash:7');
-
-      // Verify merged payloadSize = utf8 byte length of merged JSON
-      // (no file attachment for text-only journal entry)
-      expect(capturedPayloadSize, isNotNull);
-      expect(
-        capturedPayloadSize,
-        utf8.encode(capturedMessage!).length,
-      );
-    });
-
-    test('accumulates multiple covered clocks across successive merges',
-        () async {
-      final sampleDate = DateTime.utc(2024);
-      const vc5 = VectorClock({'hostA': 5});
-      const vc6 = VectorClock({'hostA': 6});
-      const vc7 = VectorClock({'hostA': 7});
-
-      // Existing item already has one covered clock from previous merge
-      const oldMessage = SyncMessage.journalEntity(
-        id: 'entry-id',
-        jsonPath: '/entries/test.json',
-        vectorClock: vc6,
-        status: SyncEntryStatus.update,
-        coveredVectorClocks: [vc5], // Already covered VC5
-      );
-
-      final existingItem = OutboxItem(
-        id: 1,
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        message: jsonEncode(oldMessage.toJson()),
-        subject: 'hhash:6',
-        filePath: null,
-        outboxEntryId: 'entry-id',
-        priority: OutboxPriority.low.index,
-      );
-
-      when(() => syncDatabase.findPendingByEntryId('entry-id'))
-          .thenAnswer((_) async => existingItem);
-
-      String? capturedMessage;
-      when(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedMessage = invocation.namedArguments[#newMessage] as String?;
-        return 1;
-      });
-
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
-
-      final metadata = Metadata(
-        id: 'entry-id',
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        dateFrom: sampleDate,
-        dateTo: sampleDate,
-        vectorClock: vc7,
-      );
-      final journalEntity = JournalEntity.journalEntry(
-        meta: metadata,
-        entryText: const EntryText(plainText: 'Third update'),
-      );
-
-      const jsonPath = '/entries/test.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
-
-      await testService.enqueueMessage(
-        const SyncMessage.journalEntity(
-          id: 'entry-id',
-          jsonPath: jsonPath,
-          vectorClock: vc7,
-          status: SyncEntryStatus.update,
-        ),
-      );
-
-      // Verify coveredVectorClocks accumulated both VC5 and VC6
-      expect(capturedMessage, isNotNull);
-      final decodedMessage = SyncMessage.fromJson(
-        jsonDecode(capturedMessage!) as Map<String, dynamic>,
-      );
-      final journalMsg = decodedMessage as SyncJournalEntity;
-      final coveredCounters = journalMsg.coveredVectorClocks!
-          .map((vc) => vc.vclock['hostA'])
-          .whereType<int>()
-          .toSet();
-      expect(coveredCounters, containsAll([5, 6, 7]));
-      expect(coveredCounters, hasLength(3));
-    });
-
-    test('captures intermediate VC when DB has newer version than enqueue call',
-        () async {
-      // This tests the race condition scenario:
-      // 1. Entry created with VC {A:5}, enqueue#1 called
-      // 2. Entry updated to VC {A:6}, enqueue#2 called
-      // 3. Entry updated to VC {A:7} (before enqueue#2 runs)
-      // 4. enqueue#1 runs: creates outbox item with VC {A:5}
-      // 5. enqueue#2 runs: journalEntityMsg.VC={A:6}, DB has VC={A:7}
-      //    -> coveredClocks should be [{A:5}, {A:6}, {A:7}],
-      //       final VC is {A:7}
-      final sampleDate = DateTime.utc(2024);
-      const oldVc = VectorClock({'hostA': 5}); // VC in existing outbox item
-      const intermediateVc = VectorClock({'hostA': 6}); // VC from enqueue call
-      const latestVc = VectorClock({'hostA': 7}); // VC now in DB
-
-      // Existing item has VC 5 (from enqueue#1)
-      const oldMessage = SyncMessage.journalEntity(
-        id: 'entry-id',
-        jsonPath: '/entries/test.json',
-        vectorClock: oldVc,
-        status: SyncEntryStatus.update,
-      );
-
-      final existingItem = OutboxItem(
-        id: 1,
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        message: jsonEncode(oldMessage.toJson()),
-        subject: 'hhash:5',
-        filePath: null,
-        outboxEntryId: 'entry-id',
-        priority: OutboxPriority.low.index,
-      );
-
-      when(() => syncDatabase.findPendingByEntryId('entry-id'))
-          .thenAnswer((_) async => existingItem);
-
-      String? capturedMessage;
-      when(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((invocation) async {
-        capturedMessage = invocation.namedArguments[#newMessage] as String?;
-        return 1;
-      });
-
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
-
-      // Setup: DB returns entry with latest VC (7)
-      final metadata = Metadata(
-        id: 'entry-id',
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        dateFrom: sampleDate,
-        dateTo: sampleDate,
-        vectorClock: latestVc,
-      );
-      final journalEntity = JournalEntity.journalEntry(
-        meta: metadata,
-        entryText: const EntryText(plainText: 'Updated'),
-      );
-
-      when(() => journalDb.journalEntityById('entry-id'))
-          .thenAnswer((_) async => journalEntity);
-
-      final jsonPath = '${documentsDirectory.path}/entries/test.json';
-      File(jsonPath)
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
-
-      // Call enqueue with INTERMEDIATE VC (6) - simulating a call that was
-      // delayed and the DB was updated in the meantime
-      await testService.enqueueMessage(
-        const SyncMessage.journalEntity(
+        // Create the "old" message that's already in the outbox
+        const oldMessage = SyncMessage.journalEntity(
           id: 'entry-id',
           jsonPath: '/entries/test.json',
-          vectorClock: intermediateVc, // VC from when enqueue was called
+          vectorClock: oldVc,
           status: SyncEntryStatus.update,
-        ),
-      );
+        );
 
-      // Verify the merge captured both the old VC and the intermediate VC
-      expect(capturedMessage, isNotNull);
-      final decodedMessage = SyncMessage.fromJson(
-        jsonDecode(capturedMessage!) as Map<String, dynamic>,
-      );
-      expect(decodedMessage, isA<SyncJournalEntity>());
-      final journalMsg = decodedMessage as SyncJournalEntity;
+        // Existing pending outbox item
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
 
-      // Final VC should be from DB (latest)
-      expect(journalMsg.vectorClock?.vclock['hostA'], 7);
+        // Return existing item for this entry
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
 
-      // coveredVectorClocks should contain old VC (5), intermediate (6),
-      // and current (7)
-      expect(journalMsg.coveredVectorClocks, isNotNull);
-      final coveredCounters = journalMsg.coveredVectorClocks!
-          .map((vc) => vc.vclock['hostA'])
-          .whereType<int>()
-          .toSet();
-      expect(coveredCounters, containsAll([5, 6, 7]));
-      expect(coveredCounters, hasLength(3));
-    });
+        // Capture the update call
+        String? capturedMessage;
+        String? capturedSubject;
+        int? capturedPayloadSize;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          capturedSubject = invocation.namedArguments[#newSubject] as String?;
+          capturedPayloadSize = invocation.namedArguments[#payloadSize] as int?;
+          return 1;
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final metadata = Metadata(
+          id: 'entry-id',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: newVc,
+        );
+        final journalEntity = JournalEntity.journalEntry(
+          meta: metadata,
+          entryText: const EntryText(plainText: 'Updated text'),
+        );
+
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        // Verify updateOutboxMessage was called instead of addOutboxItem
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 1,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+        verifyNever(() => syncDatabase.addOutboxItem(any()));
+
+        // Verify the merged message contains coveredVectorClocks
+        expect(capturedMessage, isNotNull);
+        final decodedMessage = SyncMessage.fromJson(
+          jsonDecode(capturedMessage!) as Map<String, dynamic>,
+        );
+        expect(decodedMessage, isA<SyncJournalEntity>());
+        final journalMsg = decodedMessage as SyncJournalEntity;
+        expect(journalMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = journalMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([5, 7]));
+        expect(coveredCounters, hasLength(2));
+        expect(capturedSubject, 'hhash:7');
+
+        // Verify merged payloadSize = utf8 byte length of merged JSON
+        // (no file attachment for text-only journal entry)
+        expect(capturedPayloadSize, isNotNull);
+        expect(
+          capturedPayloadSize,
+          utf8.encode(capturedMessage!).length,
+        );
+      },
+    );
+
+    test(
+      'accumulates multiple covered clocks across successive merges',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const vc5 = VectorClock({'hostA': 5});
+        const vc6 = VectorClock({'hostA': 6});
+        const vc7 = VectorClock({'hostA': 7});
+
+        // Existing item already has one covered clock from previous merge
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: vc6,
+          status: SyncEntryStatus.update,
+          coveredVectorClocks: [vc5], // Already covered VC5
+        );
+
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:6',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+
+        String? capturedMessage;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          return 1;
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        final metadata = Metadata(
+          id: 'entry-id',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: vc7,
+        );
+        final journalEntity = JournalEntity.journalEntry(
+          meta: metadata,
+          entryText: const EntryText(plainText: 'Third update'),
+        );
+
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: vc7,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        // Verify coveredVectorClocks accumulated both VC5 and VC6
+        expect(capturedMessage, isNotNull);
+        final decodedMessage = SyncMessage.fromJson(
+          jsonDecode(capturedMessage!) as Map<String, dynamic>,
+        );
+        final journalMsg = decodedMessage as SyncJournalEntity;
+        final coveredCounters = journalMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([5, 6, 7]));
+        expect(coveredCounters, hasLength(3));
+      },
+    );
+
+    test(
+      'captures intermediate VC when DB has newer version than enqueue call',
+      () async {
+        // This tests the race condition scenario:
+        // 1. Entry created with VC {A:5}, enqueue#1 called
+        // 2. Entry updated to VC {A:6}, enqueue#2 called
+        // 3. Entry updated to VC {A:7} (before enqueue#2 runs)
+        // 4. enqueue#1 runs: creates outbox item with VC {A:5}
+        // 5. enqueue#2 runs: journalEntityMsg.VC={A:6}, DB has VC={A:7}
+        //    -> coveredClocks should be [{A:5}, {A:6}, {A:7}],
+        //       final VC is {A:7}
+        final sampleDate = DateTime.utc(2024);
+        const oldVc = VectorClock({'hostA': 5}); // VC in existing outbox item
+        const intermediateVc = VectorClock({
+          'hostA': 6,
+        }); // VC from enqueue call
+        const latestVc = VectorClock({'hostA': 7}); // VC now in DB
+
+        // Existing item has VC 5 (from enqueue#1)
+        const oldMessage = SyncMessage.journalEntity(
+          id: 'entry-id',
+          jsonPath: '/entries/test.json',
+          vectorClock: oldVc,
+          status: SyncEntryStatus.update,
+        );
+
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: jsonEncode(oldMessage.toJson()),
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
+
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+
+        String? capturedMessage;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          return 1;
+        });
+
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
+
+        // Setup: DB returns entry with latest VC (7)
+        final metadata = Metadata(
+          id: 'entry-id',
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
+          vectorClock: latestVc,
+        );
+        final journalEntity = JournalEntity.journalEntry(
+          meta: metadata,
+          entryText: const EntryText(plainText: 'Updated'),
+        );
+
+        when(
+          () => journalDb.journalEntityById('entry-id'),
+        ).thenAnswer((_) async => journalEntity);
+
+        final jsonPath = '${documentsDirectory.path}/entries/test.json';
+        File(jsonPath)
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        // Call enqueue with INTERMEDIATE VC (6) - simulating a call that was
+        // delayed and the DB was updated in the meantime
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: '/entries/test.json',
+            vectorClock: intermediateVc, // VC from when enqueue was called
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        // Verify the merge captured both the old VC and the intermediate VC
+        expect(capturedMessage, isNotNull);
+        final decodedMessage = SyncMessage.fromJson(
+          jsonDecode(capturedMessage!) as Map<String, dynamic>,
+        );
+        expect(decodedMessage, isA<SyncJournalEntity>());
+        final journalMsg = decodedMessage as SyncJournalEntity;
+
+        // Final VC should be from DB (latest)
+        expect(journalMsg.vectorClock?.vclock['hostA'], 7);
+
+        // coveredVectorClocks should contain old VC (5), intermediate (6),
+        // and current (7)
+        expect(journalMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = journalMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([5, 6, 7]));
+        expect(coveredCounters, hasLength(3));
+      },
+    );
 
     test('merges entry link updates with coveredVectorClocks', () async {
       final sampleDate = DateTime.utc(2024);
@@ -1228,8 +1278,9 @@ void main() {
         priority: OutboxPriority.low.index,
       );
 
-      when(() => syncDatabase.findPendingByEntryId('link-id'))
-          .thenAnswer((_) async => existingItem);
+      when(
+        () => syncDatabase.findPendingByEntryId('link-id'),
+      ).thenAnswer((_) async => existingItem);
 
       String? capturedMessage;
       String? capturedSubject;
@@ -1338,8 +1389,9 @@ void main() {
         priority: OutboxPriority.low.index,
       );
 
-      when(() => syncDatabase.findPendingByEntryId('entry-id'))
-          .thenAnswer((_) async => existingItem);
+      when(
+        () => syncDatabase.findPendingByEntryId('entry-id'),
+      ).thenAnswer((_) async => existingItem);
       when(
         () => syncDatabase.updateOutboxMessage(
           itemId: any(named: 'itemId'),
@@ -1439,8 +1491,9 @@ void main() {
         priority: OutboxPriority.low.index,
       );
 
-      when(() => syncDatabase.findPendingByEntryId('link-id'))
-          .thenAnswer((_) async => existingItem);
+      when(
+        () => syncDatabase.findPendingByEntryId('link-id'),
+      ).thenAnswer((_) async => existingItem);
       when(
         () => syncDatabase.updateOutboxMessage(
           itemId: any(named: 'itemId'),
@@ -1497,94 +1550,102 @@ void main() {
       ).called(1);
     });
 
-    test('falls through to create new item when merge message decode fails',
-        () async {
-      final sampleDate = DateTime.utc(2024);
-      const newVc = VectorClock({'hostA': 7});
+    test(
+      'falls through to create new item when merge message decode fails',
+      () async {
+        final sampleDate = DateTime.utc(2024);
+        const newVc = VectorClock({'hostA': 7});
 
-      // Existing item with invalid JSON message
-      final existingItem = OutboxItem(
-        id: 1,
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        status: OutboxStatus.pending.index,
-        retries: 0,
-        message: 'invalid-json{{{',
-        subject: 'hhash:5',
-        filePath: null,
-        outboxEntryId: 'entry-id',
-        priority: OutboxPriority.low.index,
-      );
+        // Existing item with invalid JSON message
+        final existingItem = OutboxItem(
+          id: 1,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          message: 'invalid-json{{{',
+          subject: 'hhash:5',
+          filePath: null,
+          outboxEntryId: 'entry-id',
+          priority: OutboxPriority.low.index,
+        );
 
-      when(() => syncDatabase.findPendingByEntryId('entry-id'))
-          .thenAnswer((_) async => existingItem);
-      when(() => syncDatabase.addOutboxItem(any())).thenAnswer((_) async => 2);
+        when(
+          () => syncDatabase.findPendingByEntryId('entry-id'),
+        ).thenAnswer((_) async => existingItem);
+        when(
+          () => syncDatabase.addOutboxItem(any()),
+        ).thenAnswer((_) async => 2);
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+        final testService = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+        );
 
-      final metadata = Metadata(
-        id: 'entry-id',
-        createdAt: sampleDate,
-        updatedAt: sampleDate,
-        dateFrom: sampleDate,
-        dateTo: sampleDate,
-        vectorClock: newVc,
-      );
-      final journalEntity = JournalEntity.journalEntry(
-        meta: metadata,
-        entryText: const EntryText(plainText: 'New text'),
-      );
-
-      const jsonPath = '/entries/test.json';
-      File('${documentsDirectory.path}$jsonPath')
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
-
-      await testService.enqueueMessage(
-        const SyncMessage.journalEntity(
+        final metadata = Metadata(
           id: 'entry-id',
-          jsonPath: jsonPath,
+          createdAt: sampleDate,
+          updatedAt: sampleDate,
+          dateFrom: sampleDate,
+          dateTo: sampleDate,
           vectorClock: newVc,
-          status: SyncEntryStatus.update,
-        ),
-      );
+        );
+        final journalEntity = JournalEntity.journalEntry(
+          meta: metadata,
+          entryText: const EntryText(plainText: 'New text'),
+        );
 
-      // Should fall through to create new item since merge decode failed
-      verify(() => syncDatabase.addOutboxItem(any())).called(1);
-      verifyNever(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      );
-    });
+        const jsonPath = '/entries/test.json';
+        File('${documentsDirectory.path}$jsonPath')
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+        await testService.enqueueMessage(
+          const SyncMessage.journalEntity(
+            id: 'entry-id',
+            jsonPath: jsonPath,
+            vectorClock: newVc,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        // Should fall through to create new item since merge decode failed
+        verify(() => syncDatabase.addOutboxItem(any())).called(1);
+        verifyNever(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        );
+      },
+    );
   });
 
   group('sendNext', () {
     test('uses SyncTuning.outboxIdleThreshold for default gate', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
@@ -1611,8 +1672,9 @@ void main() {
     });
 
     test('skips processing when Matrix disabled', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => false);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => false);
 
       final gate = createGate();
 
@@ -1638,8 +1700,9 @@ void main() {
     });
 
     test('schedules next run when processor requests it', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       when(() => processor.processQueue()).thenAnswer(
         (_) async => OutboxProcessingResult.schedule(
           const Duration(seconds: 3),
@@ -1672,10 +1735,12 @@ void main() {
     });
 
     test('does not reschedule when queue empty', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = createGate();
 
@@ -1699,8 +1764,9 @@ void main() {
     });
 
     test('logs error and reschedules on failure', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final exception = Exception('boom');
       when(() => processor.processQueue()).thenThrow(exception);
 
@@ -1736,54 +1802,59 @@ void main() {
     });
 
     test(
-        'schedules immediate continuation when drain pass cap reached and items remain',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      // Always indicate more work immediately.
-      when(() => processor.processQueue()).thenAnswer(
-        (_) async => OutboxProcessingResult.schedule(Duration.zero),
-      );
-      // Indicate there are still pending items after the pass cap is reached.
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  status: 0,
-                  retries: 0,
-                  message: '{}',
-                  subject: 'test',
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      'schedules immediate continuation when drain pass cap reached and items remain',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        // Always indicate more work immediately.
+        when(() => processor.processQueue()).thenAnswer(
+          (_) async => OutboxProcessingResult.schedule(Duration.zero),
+        );
+        // Indicate there are still pending items after the pass cap is reached.
+        when(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            OutboxItem(
+              id: 1,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              status: 0,
+              retries: 0,
+              message: '{}',
+              subject: 'test',
+              filePath: null,
+              priority: OutboxPriority.low.index,
+            ),
+          ],
+        );
 
-      final gate = createGate();
+        final gate = createGate();
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: gate,
-      );
+        final svc = TestableOutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: gate,
+        );
 
-      await svc.sendNext();
+        await svc.sendNext();
 
-      // After hitting the internal pass cap, service should schedule an
-      // immediate continuation because items remain pending.
-      expect(svc.enqueueCalls, 1);
-      expect(svc.lastDelay, Duration.zero);
+        // After hitting the internal pass cap, service should schedule an
+        // immediate continuation because items remain pending.
+        expect(svc.enqueueCalls, 1);
+        expect(svc.lastDelay, Duration.zero);
 
-      await svc.dispose();
-    });
+        await svc.dispose();
+      },
+    );
   });
 
   test('throws when neither matrix service nor message sender provided', () {
@@ -1805,8 +1876,9 @@ void main() {
     final client = MockMatrixClient();
     when(() => matrixService.client).thenReturn(client);
     final cached = MockCachedLoginController();
-    when(() => cached.stream)
-        .thenAnswer((_) => const Stream<LoginState>.empty());
+    when(
+      () => cached.stream,
+    ).thenAnswer((_) => const Stream<LoginState>.empty());
     when(() => cached.value).thenReturn(LoginState.loggedOut);
     when(() => client.onLoginStateChanged).thenReturn(cached);
 
@@ -1826,8 +1898,9 @@ void main() {
   test('MatrixOutboxMessageSender delegates to MatrixService', () async {
     final matrixService = MockMatrixService();
     const message = SyncMessage.aiConfigDelete(id: 'abc');
-    when(() => matrixService.sendMatrixMsg(message))
-        .thenAnswer((_) async => true);
+    when(
+      () => matrixService.sendMatrixMsg(message),
+    ).thenAnswer((_) async => true);
 
     final sender = MatrixOutboxMessageSender(matrixService);
 
@@ -1839,10 +1912,12 @@ void main() {
 
   group('sendNext login gate - ', () {
     test('returns early when sync enabled but not logged in', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = createGate();
 
@@ -1850,8 +1925,9 @@ void main() {
       final client = MockMatrixClient();
       when(() => matrixService.client).thenReturn(client);
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(matrixService.isLoggedIn).thenReturn(false);
@@ -1896,10 +1972,12 @@ void main() {
     });
 
     test('drains when sync enabled and logged in', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final gate = createGate();
 
@@ -1907,8 +1985,9 @@ void main() {
       final client = MockMatrixClient();
       when(() => matrixService.client).thenReturn(client);
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(matrixService.isLoggedIn).thenReturn(true);
@@ -1935,133 +2014,149 @@ void main() {
       await svc.dispose();
     });
 
-    test('post-login nudge enqueues and drains after LoginState.loggedIn',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+    test(
+      'post-login nudge enqueues and drains after LoginState.loggedIn',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final gate = createGate();
+        final gate = createGate();
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      final loginController = StreamController<LoginState>.broadcast();
-      addTearDown(loginController.close);
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(() => cached.stream).thenAnswer((_) => loginController.stream);
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
+        final matrixService = MockMatrixService();
+        final client = MockMatrixClient();
+        final loginController = StreamController<LoginState>.broadcast();
+        addTearDown(loginController.close);
+        when(() => matrixService.client).thenReturn(client);
+        final cached = MockCachedLoginController();
+        when(() => cached.stream).thenAnswer((_) => loginController.stream);
+        when(() => cached.value).thenReturn(LoginState.loggedOut);
+        when(() => client.onLoginStateChanged).thenReturn(cached);
 
-      var loggedIn = false;
-      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
+        var loggedIn = false;
+        when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
 
-      fakeAsync((async) {
-        final svc = OutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          processor: processor,
-          activityGate: gate,
-          ownsActivityGate: false,
-          matrixService: matrixService,
+        fakeAsync((async) {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+            matrixService: matrixService,
+          );
+          // Flip to logged in and emit login event
+          loggedIn = true;
+          loginController.add(LoginState.loggedIn);
+          // Advance time to allow scheduled drain, then flush microtasks
+          async
+            ..elapse(const Duration(milliseconds: 50))
+            ..flushMicrotasks();
+          verify(
+            () => processor.processQueue(),
+          ).called(greaterThanOrEqualTo(1));
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
+
+    test(
+      'connectivity regain pre-login does not drain, drains after login',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
+        when(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            OutboxItem(
+              id: 1,
+              message: '{}',
+              subject: 's',
+              status: OutboxStatus.pending.index,
+              retries: 0,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              filePath: null,
+              priority: OutboxPriority.low.index,
+            ),
+          ],
         );
-        // Flip to logged in and emit login event
-        loggedIn = true;
-        loginController.add(LoginState.loggedIn);
-        // Advance time to allow scheduled drain, then flush microtasks
-        async
-          ..elapse(const Duration(milliseconds: 50))
-          ..flushMicrotasks();
-        verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
-        unawaited(svc.dispose());
-        async.flushMicrotasks();
-      });
-    });
 
-    test('connectivity regain pre-login does not drain, drains after login',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+        final gate = createGate();
 
-      final gate = createGate();
+        final matrixService = MockMatrixService();
+        final client = MockMatrixClient();
+        final loginController = StreamController<LoginState>.broadcast();
+        addTearDown(loginController.close);
+        when(() => matrixService.client).thenReturn(client);
+        final cached = MockCachedLoginController();
+        when(() => cached.stream).thenAnswer((_) => loginController.stream);
+        when(() => cached.value).thenReturn(LoginState.loggedOut);
+        when(() => client.onLoginStateChanged).thenReturn(cached);
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      final loginController = StreamController<LoginState>.broadcast();
-      addTearDown(loginController.close);
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(() => cached.stream).thenAnswer((_) => loginController.stream);
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
+        var loggedIn = false;
+        when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
 
-      var loggedIn = false;
-      when(matrixService.isLoggedIn).thenAnswer((_) => loggedIn);
+        final connectivityController =
+            StreamController<List<ConnectivityResult>>.broadcast();
+        addTearDown(connectivityController.close);
 
-      final connectivityController =
-          StreamController<List<ConnectivityResult>>.broadcast();
-      addTearDown(connectivityController.close);
+        fakeAsync((async) {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+            matrixService: matrixService,
+            connectivityStream: connectivityController.stream,
+          );
+          // Connectivity regain before login — should enqueue but not drain
+          connectivityController.add([ConnectivityResult.wifi]);
+          async
+            ..elapse(const Duration(milliseconds: 20))
+            ..flushMicrotasks();
+          verifyNever(() => processor.processQueue());
 
-      fakeAsync((async) {
-        final svc = OutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          processor: processor,
-          activityGate: gate,
-          ownsActivityGate: false,
-          matrixService: matrixService,
-          connectivityStream: connectivityController.stream,
-        );
-        // Connectivity regain before login — should enqueue but not drain
-        connectivityController.add([ConnectivityResult.wifi]);
-        async
-          ..elapse(const Duration(milliseconds: 20))
-          ..flushMicrotasks();
-        verifyNever(() => processor.processQueue());
+          // Now login completes — post-login nudge should drain
+          loggedIn = true;
+          loginController.add(LoginState.loggedIn);
+          async
+            ..elapse(const Duration(milliseconds: 40))
+            ..flushMicrotasks();
+          verify(
+            () => processor.processQueue(),
+          ).called(greaterThanOrEqualTo(1));
 
-        // Now login completes — post-login nudge should drain
-        loggedIn = true;
-        loginController.add(LoginState.loggedIn);
-        async
-          ..elapse(const Duration(milliseconds: 40))
-          ..flushMicrotasks();
-        verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
-
-        unawaited(svc.dispose());
-        async.flushMicrotasks();
-      });
-    });
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 
   group('drainOutbox behavior', () {
     test('pauses when canProcess is false initially', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate(canProcess: false);
 
       final svc = TestableOutboxService(
@@ -2088,8 +2183,9 @@ void main() {
     });
 
     test('pauses mid-burst when canProcess flips to false', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       var canProcess = true;
       final gate = createGate();
       when(() => gate.canProcess).thenAnswer((_) => canProcess);
@@ -2129,8 +2225,9 @@ void main() {
     });
 
     test('post-settle drain is skipped when activity resumes', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       var canProcess = true;
       final gate = createGate();
       when(() => gate.canProcess).thenAnswer((_) => canProcess);
@@ -2170,8 +2267,9 @@ void main() {
     });
 
     test('respects retry backoff and skips immediate re-entry', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
 
       const delay = Duration(seconds: 5);
@@ -2206,26 +2304,31 @@ void main() {
     });
 
     test('pass cap schedules immediate continuation (delay=0)', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
 
       // Processor always returns schedule(Duration.zero) to keep the loop running
-      when(() => processor.processQueue()).thenAnswer(
-          (_) async => OutboxProcessingResult.schedule(Duration.zero));
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.schedule(Duration.zero));
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 1,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
 
       // Gate returns immediately to avoid delaying the test
       final gate = createGate();
@@ -2256,15 +2359,18 @@ void main() {
     });
 
     test('runner logs gate wait when > 50ms', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       // Gate simulates a short delay to exceed logging threshold
       final gate = createGate();
       when(gate.waitUntilIdle).thenAnswer(
-          (_) => Future<void>.delayed(const Duration(milliseconds: 120)));
+        (_) => Future<void>.delayed(const Duration(milliseconds: 120)),
+      );
 
       final svc = OutboxService(
         syncDatabase: syncDatabase,
@@ -2287,42 +2393,50 @@ void main() {
       // Allow enough wall time for the gate wait to exceed 50ms and the
       // runner to log the instrumentation line.
       await Future<void>.delayed(const Duration(milliseconds: 200));
-      verify(() => loggingService.captureEvent(
-            startsWith('activityGate.wait ms='),
-            domain: 'OUTBOX',
-            subDomain: 'activityGate',
-          )).called(greaterThanOrEqualTo(1));
+      verify(
+        () => loggingService.captureEvent(
+          startsWith('activityGate.wait ms='),
+          domain: 'OUTBOX',
+          subDomain: 'activityGate',
+        ),
+      ).called(greaterThanOrEqualTo(1));
       await svc.dispose();
     });
   });
 
   group('watchdog', () {
     test('enqueues when pending + logged in + idle queue', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 1,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
@@ -2330,8 +2444,9 @@ void main() {
       // Controlled outbox count stream to avoid extra nudges
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2354,11 +2469,13 @@ void main() {
           ..elapse(const Duration(seconds: 10))
           // Allow pending tasks and the post-drain settle (250ms)
           ..elapse(const Duration(milliseconds: 300));
-        verify(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            )).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          ),
+        ).called(1);
         verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
         unawaited(svc.dispose());
         async.flushMicrotasks();
@@ -2366,39 +2483,47 @@ void main() {
     });
 
     test('does not enqueue when queue active', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 1,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
       final gate = createGate();
       // Keep the runner busy so queueSize > 0 when watchdog fires
-      when(gate.waitUntilIdle)
-          .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 30)));
+      when(
+        gate.waitUntilIdle,
+      ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 30)));
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => const Stream<int>.empty());
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => const Stream<int>.empty());
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2422,47 +2547,56 @@ void main() {
           ..elapse(Duration.zero)
           // Now watchdog fires while the queue is active
           ..elapse(const Duration(seconds: 10));
-        verifyNever(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            ));
+        verifyNever(
+          () => loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          ),
+        );
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
     test('does not enqueue when not logged in', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(false);
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => const Stream<int>.empty());
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 1,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => const Stream<int>.empty());
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2480,35 +2614,42 @@ void main() {
           matrixService: matrixService,
         );
         async.elapse(const Duration(seconds: 10));
-        verifyNever(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            ));
+        verifyNever(
+          () => loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          ),
+        );
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
     test('handles fetchPending errors gracefully', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenThrow(Exception('boom'));
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenThrow(Exception('boom'));
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => const Stream<int>.empty());
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => const Stream<int>.empty());
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2526,48 +2667,57 @@ void main() {
           matrixService: matrixService,
         );
         async.elapse(const Duration(seconds: 10));
-        verify(() => loggingService.captureException(
-              any<Object>(),
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-            )).called(1);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
     test('stops after dispose', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 1,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
       final gate = createGate();
       final matrixService = MockMatrixService();
       when(() => matrixService.isLoggedIn()).thenReturn(true);
       final client = MockMatrixClient();
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedOut);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.client).thenReturn(client);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => const Stream<int>.empty());
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => const Stream<int>.empty());
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2588,27 +2738,32 @@ void main() {
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
-        verify(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            )).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          ),
+        ).called(1);
       });
     });
   });
 
   group('dbNudge', () {
     test('enqueues when count increases (>0)', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2630,32 +2785,39 @@ void main() {
         async
           ..elapse(const Duration(milliseconds: 60))
           ..flushMicrotasks();
-        verify(() => loggingService.captureEvent(
-              'dbNudge count=5 → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'dbNudge',
-            )).called(1);
-        verify(() => loggingService.captureEvent(
-              'enqueueRequest() done',
-              domain: 'OUTBOX',
-              subDomain: any(named: 'subDomain'),
-            )).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            'dbNudge count=5 → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'dbNudge',
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.captureEvent(
+            'enqueueRequest() done',
+            domain: 'OUTBOX',
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
     test('ignores count <= 0', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2676,32 +2838,39 @@ void main() {
         async
           ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
-        verifyNever(() => loggingService.captureEvent(
-              startsWith('dbNudge'),
-              domain: any(named: 'domain'),
-              subDomain: any(named: 'subDomain'),
-            ));
-        verifyNever(() => loggingService.captureEvent(
-              'enqueueRequest() done',
-              domain: 'OUTBOX',
-              subDomain: any(named: 'subDomain'),
-            ));
+        verifyNever(
+          () => loggingService.captureEvent(
+            startsWith('dbNudge'),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        );
+        verifyNever(
+          () => loggingService.captureEvent(
+            'enqueueRequest() done',
+            domain: 'OUTBOX',
+            subDomain: any(named: 'subDomain'),
+          ),
+        );
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
     test('stops after dispose', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2722,49 +2891,57 @@ void main() {
         async
           ..elapse(const Duration(milliseconds: 100))
           ..flushMicrotasks();
-        verifyNever(() => loggingService.captureEvent(
-              startsWith('dbNudge'),
-              domain: any(named: 'domain'),
-              subDomain: any(named: 'subDomain'),
-            ));
+        verifyNever(
+          () => loggingService.captureEvent(
+            startsWith('dbNudge'),
+            domain: any(named: 'domain'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        );
       });
     });
 
     test('handles stream errors without crashing the test', () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       final gate = createGate();
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       fakeAsync((async) {
         Object? capturedError;
         StackTrace? capturedSt;
         OutboxService? svc;
-        runZonedGuarded(() {
-          svc = OutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
-            activityGate: gate,
-            ownsActivityGate: false,
-          );
-          countController.addError(Exception('stream error'));
-        }, (e, st) {
-          capturedError = e;
-          capturedSt = st;
-        });
+        runZonedGuarded(
+          () {
+            svc = OutboxService(
+              syncDatabase: syncDatabase,
+              loggingService: loggingService,
+              vectorClockService: vectorClockService,
+              journalDb: journalDb,
+              documentsDirectory: documentsDirectory,
+              userActivityService: userActivityService,
+              repository: repository,
+              messageSender: messageSender,
+              processor: processor,
+              activityGate: gate,
+              ownsActivityGate: false,
+            );
+            countController.addError(Exception('stream error'));
+          },
+          (e, st) {
+            capturedError = e;
+            capturedSt = st;
+          },
+        );
         // Allow the stream error to propagate
         async.flushMicrotasks();
         expect(capturedError, isNotNull);
@@ -2776,37 +2953,42 @@ void main() {
   });
 
   group('integration: triggers interplay', () {
-    test('watchdog does not duplicate work when dbNudge already active',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
+    test('watchdog does not duplicate work when dbNudge already active', () async {
+      when(
+        () => journalDb.getConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) async => true);
       // One pending item in repository
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 42,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
+      when(
+        () => repository.fetchPending(limit: any(named: 'limit')),
+      ).thenAnswer(
+        (_) async => [
+          OutboxItem(
+            id: 42,
+            message: '{}',
+            subject: 's',
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            filePath: null,
+            priority: OutboxPriority.low.index,
+          ),
+        ],
+      );
 
       // Gate delays long enough so watchdog fires while runner is active
       final gate = createGate();
-      when(gate.waitUntilIdle)
-          .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
+      when(
+        gate.waitUntilIdle,
+      ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
 
       final matrixService = MockMatrixService();
       final client = MockMatrixClient();
       when(() => matrixService.client).thenReturn(client);
       final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
+      when(
+        () => cached.stream,
+      ).thenAnswer((_) => const Stream<LoginState>.empty());
       when(() => cached.value).thenReturn(LoginState.loggedIn);
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(() => matrixService.isLoggedIn()).thenReturn(true);
@@ -2814,12 +2996,14 @@ void main() {
       // Track db count stream
       final countController = StreamController<int>.broadcast();
       addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
+      when(
+        () => syncDatabase.watchOutboxCount(),
+      ).thenAnswer((_) => countController.stream);
 
       // Processor returns none for each drain (sendNext runs two drains per invocation)
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
+      when(
+        () => processor.processQueue(),
+      ).thenAnswer((_) async => OutboxProcessingResult.none);
 
       fakeAsync((async) {
         final svc = OutboxService(
@@ -2854,190 +3038,210 @@ void main() {
         // Exactly one runner invocation → two drains
         verify(() => processor.processQueue()).called(2);
         // Watchdog must not enqueue when queue active → no watchdog enqueue log
-        verifyNever(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            ));
+        verifyNever(
+          () => loggingService.captureEvent(
+            'watchdog: pending+loggedIn idleQueue → enqueue',
+            domain: 'OUTBOX',
+            subDomain: 'watchdog',
+          ),
+        );
 
         unawaited(svc.dispose());
         async.flushMicrotasks();
       });
     });
 
-    test('connectivity + login + watchdog dont cause triple processing',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async => [
-                OutboxItem(
-                  id: 1,
-                  message: '{}',
-                  subject: 's',
-                  status: OutboxStatus.pending.index,
-                  retries: 0,
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  filePath: null,
-                  priority: OutboxPriority.low.index,
-                )
-              ]);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
-
-      // Long wait to keep the queue active till after watchdog
-      final gate = createGate();
-      when(gate.waitUntilIdle)
-          .thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
-
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      final loginController = StreamController<LoginState>.broadcast();
-      addTearDown(loginController.close);
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(() => cached.stream).thenAnswer((_) => loginController.stream);
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.isLoggedIn()).thenReturn(false);
-
-      final connectivityController =
-          StreamController<List<ConnectivityResult>>.broadcast();
-      addTearDown(connectivityController.close);
-
-      // DB count stream inert for this test
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => const Stream<int>.empty());
-
-      fakeAsync((async) {
-        final svc = OutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-          activityGate: gate,
-          ownsActivityGate: false,
-          matrixService: matrixService,
-          connectivityStream: connectivityController.stream,
+    test(
+      'connectivity + login + watchdog dont cause triple processing',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer(
+          (_) async => [
+            OutboxItem(
+              id: 1,
+              message: '{}',
+              subject: 's',
+              status: OutboxStatus.pending.index,
+              retries: 0,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              filePath: null,
+              priority: OutboxPriority.low.index,
+            ),
+          ],
         );
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
 
-        // T=0: Connectivity regain → enqueue
-        connectivityController.add([ConnectivityResult.wifi]);
-        async.flushMicrotasks();
+        // Long wait to keep the queue active till after watchdog
+        final gate = createGate();
+        when(
+          gate.waitUntilIdle,
+        ).thenAnswer((_) => Future<void>.delayed(const Duration(seconds: 12)));
 
-        // T=10ms: Login completes → enqueue
+        final matrixService = MockMatrixService();
+        final client = MockMatrixClient();
+        final loginController = StreamController<LoginState>.broadcast();
+        addTearDown(loginController.close);
+        when(() => matrixService.client).thenReturn(client);
+        final cached = MockCachedLoginController();
+        when(() => cached.stream).thenAnswer((_) => loginController.stream);
+        when(() => cached.value).thenReturn(LoginState.loggedOut);
+        when(() => client.onLoginStateChanged).thenReturn(cached);
+        when(() => matrixService.isLoggedIn()).thenReturn(false);
+
+        final connectivityController =
+            StreamController<List<ConnectivityResult>>.broadcast();
+        addTearDown(connectivityController.close);
+
+        // DB count stream inert for this test
+        when(
+          () => syncDatabase.watchOutboxCount(),
+        ).thenAnswer((_) => const Stream<int>.empty());
+
+        fakeAsync((async) {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+            matrixService: matrixService,
+            connectivityStream: connectivityController.stream,
+          );
+
+          // T=0: Connectivity regain → enqueue
+          connectivityController.add([ConnectivityResult.wifi]);
+          async.flushMicrotasks();
+
+          // T=10ms: Login completes → enqueue
+          when(() => matrixService.isLoggedIn()).thenReturn(true);
+          loginController.add(LoginState.loggedIn);
+          async.flushMicrotasks();
+
+          // T=10s: Watchdog fires while queue active → should not enqueue
+          async.elapse(const Duration(seconds: 10));
+
+          // Allow runner completion and second drains
+          async
+            ..elapse(const Duration(seconds: 3))
+            ..flushMicrotasks();
+
+          // Upper bound: two drains per runner invocation, at most two runner
+          // callbacks (connectivity + login) = 4 drains total. Not 6+.
+          verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));
+          verifyNever(
+            () => loggingService.captureEvent(
+              'watchdog: pending+loggedIn idleQueue → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'watchdog',
+            ),
+          );
+
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
+
+    test(
+      'dbNudge during watchdog fetchPending does not duplicate excessively',
+      () async {
+        when(
+          () => journalDb.getConfigFlag(enableMatrixFlag),
+        ).thenAnswer((_) async => true);
+        when(
+          () => processor.processQueue(),
+        ).thenAnswer((_) async => OutboxProcessingResult.none);
+        // Slow fetchPending simulates overlap window with dbNudge
+        when(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        ).thenAnswer((_) async {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          return [
+            OutboxItem(
+              id: 7,
+              message: '{}',
+              subject: 's',
+              status: OutboxStatus.pending.index,
+              retries: 0,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              filePath: null,
+              priority: OutboxPriority.low.index,
+            ),
+          ];
+        });
+
+        // Gate immediate
+        final gate = createGate();
+
+        final matrixService = MockMatrixService();
+        final client = MockMatrixClient();
+        when(() => matrixService.client).thenReturn(client);
+        final cached = MockCachedLoginController();
+        when(
+          () => cached.stream,
+        ).thenAnswer((_) => const Stream<LoginState>.empty());
+        when(() => cached.value).thenReturn(LoginState.loggedIn);
+        when(() => client.onLoginStateChanged).thenReturn(cached);
         when(() => matrixService.isLoggedIn()).thenReturn(true);
-        loginController.add(LoginState.loggedIn);
-        async.flushMicrotasks();
 
-        // T=10s: Watchdog fires while queue active → should not enqueue
-        async.elapse(const Duration(seconds: 10));
+        // DB count stream for nudge
+        final countController = StreamController<int>.broadcast();
+        addTearDown(countController.close);
+        when(
+          () => syncDatabase.watchOutboxCount(),
+        ).thenAnswer((_) => countController.stream);
 
-        // Allow runner completion and second drains
-        async
-          ..elapse(const Duration(seconds: 3))
-          ..flushMicrotasks();
+        fakeAsync((async) {
+          final svc = OutboxService(
+            syncDatabase: syncDatabase,
+            loggingService: loggingService,
+            vectorClockService: vectorClockService,
+            journalDb: journalDb,
+            documentsDirectory: documentsDirectory,
+            userActivityService: userActivityService,
+            repository: repository,
+            messageSender: messageSender,
+            processor: processor,
+            activityGate: gate,
+            ownsActivityGate: false,
+            matrixService: matrixService,
+          );
 
-        // Upper bound: two drains per runner invocation, at most two runner
-        // callbacks (connectivity + login) = 4 drains total. Not 6+.
-        verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));
-        verifyNever(() => loggingService.captureEvent(
-              'watchdog: pending+loggedIn idleQueue → enqueue',
-              domain: 'OUTBOX',
-              subDomain: 'watchdog',
-            ));
+          // T=10s: Watchdog fires and begins slow fetchPending
+          async.elapse(const Duration(seconds: 10));
+          // T=10s+20ms: DB nudge enqueues while watchdog is in-flight
+          async.elapse(const Duration(milliseconds: 20));
+          countController.add(1);
+          // Let debounce (50ms) + remaining watchdog (30ms) pass
+          async.elapse(const Duration(milliseconds: 80));
+          async.flushMicrotasks();
 
-        unawaited(svc.dispose());
-        async.flushMicrotasks();
-      });
-    });
+          // Allow drains to complete
+          async
+            ..elapse(const Duration(seconds: 1))
+            ..flushMicrotasks();
 
-    test('dbNudge during watchdog fetchPending does not duplicate excessively',
-        () async {
-      when(() => journalDb.getConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) async => true);
-      when(() => processor.processQueue())
-          .thenAnswer((_) async => OutboxProcessingResult.none);
-      // Slow fetchPending simulates overlap window with dbNudge
-      when(() => repository.fetchPending(limit: any(named: 'limit')))
-          .thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return [
-          OutboxItem(
-            id: 7,
-            message: '{}',
-            subject: 's',
-            status: OutboxStatus.pending.index,
-            retries: 0,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            filePath: null,
-            priority: OutboxPriority.low.index,
-          )
-        ];
-      });
-
-      // Gate immediate
-      final gate = createGate();
-
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(() => cached.stream)
-          .thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedIn);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.isLoggedIn()).thenReturn(true);
-
-      // DB count stream for nudge
-      final countController = StreamController<int>.broadcast();
-      addTearDown(countController.close);
-      when(() => syncDatabase.watchOutboxCount())
-          .thenAnswer((_) => countController.stream);
-
-      fakeAsync((async) {
-        final svc = OutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-          activityGate: gate,
-          ownsActivityGate: false,
-          matrixService: matrixService,
-        );
-
-        // T=10s: Watchdog fires and begins slow fetchPending
-        async.elapse(const Duration(seconds: 10));
-        // T=10s+20ms: DB nudge enqueues while watchdog is in-flight
-        async.elapse(const Duration(milliseconds: 20));
-        countController.add(1);
-        // Let debounce (50ms) + remaining watchdog (30ms) pass
-        async.elapse(const Duration(milliseconds: 80));
-        async.flushMicrotasks();
-
-        // Allow drains to complete
-        async
-          ..elapse(const Duration(seconds: 1))
-          ..flushMicrotasks();
-
-        // Should not explode in duplicate processing; 4 drains is an upper bound here
-        verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));
-        unawaited(svc.dispose());
-        async.flushMicrotasks();
-      });
-    });
+          // Should not explode in duplicate processing; 4 drains is an upper bound here
+          verify(() => processor.processQueue()).called(lessThanOrEqualTo(4));
+          unawaited(svc.dispose());
+          async.flushMicrotasks();
+        });
+      },
+    );
   });
 
   group('SyncThemingSelection', () {
@@ -3053,8 +3257,8 @@ void main() {
       await service.enqueueMessage(message);
 
       final captured = verify(
-              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
-          .captured;
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
       expect(captured.length, 1);
 
       final companion = captured.first as OutboxCompanion;
@@ -3072,16 +3276,18 @@ void main() {
 
       await service.enqueueMessage(message);
 
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncThemingSelection'),
-              contains('light=Indigo'),
-              contains('dark=Shark'),
-              contains('mode=dark'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncThemingSelection'),
+            contains('light=Indigo'),
+            contains('dark=Shark'),
+            contains('mode=dark'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
   });
 
@@ -3106,8 +3312,9 @@ void main() {
       );
 
       // Mock journalDb to return links for this entry (both directions)
-      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
-          .thenAnswer((_) async => [link1, link2]);
+      when(
+        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+      ).thenAnswer((_) async => [link1, link2]);
 
       final journalEntity = JournalEntity.journalEntry(
         meta: Metadata(
@@ -3121,8 +3328,9 @@ void main() {
         entryText: const EntryText(plainText: 'Test entry'),
       );
 
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path.json';
@@ -3140,31 +3348,36 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
-          .called(1);
+      verify(
+        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+      ).called(1);
 
       // Verify logging shows embedded links count
-      verify(() => loggingService.captureEvent(
-            contains(
-              'enqueueMessage.attachedLinks id=$entryId count=2 from=1 to=1',
-            ),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage.attachLinks',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains(
+            'enqueueMessage.attachedLinks id=$entryId count=2 from=1 to=1',
+          ),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage.attachLinks',
+        ),
+      ).called(1);
 
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncJournalEntity'),
-              contains('embeddedLinks=2'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncJournalEntity'),
+            contains('embeddedLinks=2'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
 
       // Verify the message was encoded with embedded links
       final captured = verify(
-              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
-          .captured;
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
       final companion = captured.first as OutboxCompanion;
       final encodedMessage =
           json.decode(companion.message.value) as Map<String, dynamic>;
@@ -3180,8 +3393,9 @@ void main() {
       const entryId = 'entry-456';
 
       // Mock journalDb.linksForEntryIdsBidirectional to throw an error
-      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
-          .thenThrow(Exception('Database error'));
+      when(
+        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+      ).thenThrow(Exception('Database error'));
 
       final journalEntity = JournalEntity.journalEntry(
         meta: Metadata(
@@ -3195,8 +3409,9 @@ void main() {
         entryText: const EntryText(plainText: 'Test entry'),
       );
 
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path2.json';
@@ -3215,17 +3430,19 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify exception was logged
-      verify(() => loggingService.captureException(
-            any<Exception>(),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage.fetchLinks',
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => loggingService.captureException(
+          any<Exception>(),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage.fetchLinks',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
 
       // Verify message was still enqueued (without links)
       final captured = verify(
-              () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()))
-          .captured;
+        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+      ).captured;
       final companion = captured.first as OutboxCompanion;
       final encodedMessage =
           json.decode(companion.message.value) as Map<String, dynamic>;
@@ -3236,8 +3453,9 @@ void main() {
       const entryId = 'entry-789';
 
       // Mock journalDb to return empty list
-      when(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
-          .thenAnswer((_) async => []);
+      when(
+        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+      ).thenAnswer((_) async => []);
 
       final journalEntity = JournalEntity.journalEntry(
         meta: Metadata(
@@ -3251,8 +3469,9 @@ void main() {
         entryText: const EntryText(plainText: 'Test entry'),
       );
 
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       // Create the JSON file so it can be read
       const jsonPath = '/test/path3.json';
@@ -3270,32 +3489,39 @@ void main() {
       await service.enqueueMessage(message);
 
       // Verify links were fetched
-      verify(() => journalDb.linksForEntryIdsBidirectional(const {entryId}))
-          .called(1);
+      verify(
+        () => journalDb.linksForEntryIdsBidirectional(const {entryId}),
+      ).called(1);
 
       // Verify attachedLinks log was NOT called (no links to attach)
-      verifyNever(() => loggingService.captureEvent(
-            contains('enqueueMessage.attachedLinks'),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          ));
+      verifyNever(
+        () => loggingService.captureEvent(
+          contains('enqueueMessage.attachedLinks'),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      );
 
       // Verify no-links log was emitted
-      verify(() => loggingService.captureEvent(
-            contains('enqueueMessage.noLinks id=$entryId'),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage.attachLinks',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('enqueueMessage.noLinks id=$entryId'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage.attachLinks',
+        ),
+      ).called(1);
 
       // Verify embeddedLinks=0 in the log
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncJournalEntity'),
-              contains('embeddedLinks=0'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncJournalEntity'),
+            contains('embeddedLinks=0'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
   });
 
@@ -3312,47 +3538,53 @@ void main() {
       await serviceWithSequenceLog.dispose();
     });
 
-    test('records entry link in sequence log when vectorClock present',
-        () async {
-      const vc = VectorClock({'host-A': 10});
-      final link = SyncMessage.entryLink(
-        entryLink: EntryLink.basic(
-          id: 'link-seq-1',
-          fromId: 'A',
-          toId: 'B',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: vc,
-        ),
-        status: SyncEntryStatus.initial,
-      );
+    test(
+      'records entry link in sequence log when vectorClock present',
+      () async {
+        const vc = VectorClock({'host-A': 10});
+        final link = SyncMessage.entryLink(
+          entryLink: EntryLink.basic(
+            id: 'link-seq-1',
+            fromId: 'A',
+            toId: 'B',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: vc,
+          ),
+          status: SyncEntryStatus.initial,
+        );
 
-      when(() => sequenceLogService.recordSentEntryLink(
+        when(
+          () => sequenceLogService.recordSentEntryLink(
             linkId: any(named: 'linkId'),
             vectorClock: any(named: 'vectorClock'),
-          )).thenAnswer((_) async {});
+          ),
+        ).thenAnswer((_) async {});
 
-      serviceWithSequenceLog = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-        sequenceLogService: sequenceLogService,
-      );
+        serviceWithSequenceLog = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          sequenceLogService: sequenceLogService,
+        );
 
-      await serviceWithSequenceLog.enqueueMessage(link);
+        await serviceWithSequenceLog.enqueueMessage(link);
 
-      verify(() => sequenceLogService.recordSentEntryLink(
+        verify(
+          () => sequenceLogService.recordSentEntryLink(
             linkId: 'link-seq-1',
             vectorClock: vc,
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
     test('skips sequence log recording when vectorClock is null', () async {
       final link = SyncMessage.entryLink(
@@ -3384,10 +3616,12 @@ void main() {
       await serviceWithSequenceLog.enqueueMessage(link);
 
       // Should NOT call recordSentEntryLink
-      verifyNever(() => sequenceLogService.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          ));
+      verifyNever(
+        () => sequenceLogService.recordSentEntryLink(
+          linkId: any(named: 'linkId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      );
     });
 
     test('handles recordSentEntryLink errors gracefully', () async {
@@ -3404,10 +3638,12 @@ void main() {
         status: SyncEntryStatus.initial,
       );
 
-      when(() => sequenceLogService.recordSentEntryLink(
-            linkId: any(named: 'linkId'),
-            vectorClock: any(named: 'vectorClock'),
-          )).thenThrow(Exception('sequence log error'));
+      when(
+        () => sequenceLogService.recordSentEntryLink(
+          linkId: any(named: 'linkId'),
+          vectorClock: any(named: 'vectorClock'),
+        ),
+      ).thenThrow(Exception('sequence log error'));
 
       serviceWithSequenceLog = OutboxService(
         syncDatabase: syncDatabase,
@@ -3427,12 +3663,14 @@ void main() {
       await serviceWithSequenceLog.enqueueMessage(link);
 
       // Verify exception was logged
-      verify(() => loggingService.captureException(
-            any<Object>(),
-            domain: 'SYNC_SEQUENCE',
-            subDomain: 'recordSent',
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'recordSent',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     test('skips recording when sequenceLogService is null', () async {
@@ -3469,11 +3707,13 @@ void main() {
 
       // sequenceLogService is null so this is effectively a no-op test
       // Verify the message was still enqueued (logging event)
-      verify(() => loggingService.captureEvent(
-            contains('type=SyncEntryLink'),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('type=SyncEntryLink'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
   });
 
@@ -3491,103 +3731,115 @@ void main() {
       await serviceWithSequenceLog.dispose();
     });
 
-    test('records agent entity in sequence log when vectorClock present',
-        () async {
-      const vc = VectorClock({'host-A': 10});
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-seq-1',
-        agentId: 'agent-seq-1',
-        kind: 'task_agent',
-        displayName: 'Test',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: vc,
-      );
+    test(
+      'records agent entity in sequence log when vectorClock present',
+      () async {
+        const vc = VectorClock({'host-A': 10});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-seq-1',
+          agentId: 'agent-seq-1',
+          kind: 'task_agent',
+          displayName: 'Test',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
-      );
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
 
-      when(() => sequenceLogService.recordSentEntry(
+        when(
+          () => sequenceLogService.recordSentEntry(
             entryId: any(named: 'entryId'),
             vectorClock: any(named: 'vectorClock'),
             payloadType: any(named: 'payloadType'),
-          )).thenAnswer((_) async {});
+          ),
+        ).thenAnswer((_) async {});
 
-      serviceWithSequenceLog = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-        sequenceLogService: sequenceLogService,
-      );
+        serviceWithSequenceLog = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          sequenceLogService: sequenceLogService,
+        );
 
-      await serviceWithSequenceLog.enqueueMessage(message);
+        await serviceWithSequenceLog.enqueueMessage(message);
 
-      verify(() => sequenceLogService.recordSentEntry(
+        verify(
+          () => sequenceLogService.recordSentEntry(
             entryId: 'agent-seq-1',
             vectorClock: vc,
             payloadType: SyncSequencePayloadType.agentEntity,
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
-    test('records agent link in sequence log when vectorClock present',
-        () async {
-      const vc = VectorClock({'host-B': 5});
-      final link = AgentLink.basic(
-        id: 'link-seq-1',
-        fromId: 'agent-1',
-        toId: 'state-1',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: vc,
-      );
+    test(
+      'records agent link in sequence log when vectorClock present',
+      () async {
+        const vc = VectorClock({'host-B': 5});
+        final link = AgentLink.basic(
+          id: 'link-seq-1',
+          fromId: 'agent-1',
+          toId: 'state-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
 
-      final message = SyncMessage.agentLink(
-        agentLink: link,
-        status: SyncEntryStatus.update,
-      );
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        );
 
-      when(() => sequenceLogService.recordSentEntry(
+        when(
+          () => sequenceLogService.recordSentEntry(
             entryId: any(named: 'entryId'),
             vectorClock: any(named: 'vectorClock'),
             payloadType: any(named: 'payloadType'),
-          )).thenAnswer((_) async {});
+          ),
+        ).thenAnswer((_) async {});
 
-      serviceWithSequenceLog = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-        sequenceLogService: sequenceLogService,
-      );
+        serviceWithSequenceLog = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          sequenceLogService: sequenceLogService,
+        );
 
-      await serviceWithSequenceLog.enqueueMessage(message);
+        await serviceWithSequenceLog.enqueueMessage(message);
 
-      verify(() => sequenceLogService.recordSentEntry(
+        verify(
+          () => sequenceLogService.recordSentEntry(
             entryId: 'link-seq-1',
             vectorClock: vc,
             payloadType: SyncSequencePayloadType.agentLink,
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
 
     test('skips agent entity recording when vectorClock is null', () async {
       final entity = AgentDomainEntity.agent(
@@ -3626,100 +3878,110 @@ void main() {
 
       await serviceWithSequenceLog.enqueueMessage(message);
 
-      verifyNever(() => sequenceLogService.recordSentEntry(
-            entryId: any(named: 'entryId'),
-            vectorClock: any(named: 'vectorClock'),
-            payloadType: any(named: 'payloadType'),
-          ));
+      verifyNever(
+        () => sequenceLogService.recordSentEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      );
     });
 
-    test('handles recordSentEntry errors gracefully for agent entity',
-        () async {
-      const vc = VectorClock({'host-C': 3});
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-err',
-        agentId: 'agent-err',
-        kind: 'task_agent',
-        displayName: 'Err',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: vc,
-      );
+    test(
+      'handles recordSentEntry errors gracefully for agent entity',
+      () async {
+        const vc = VectorClock({'host-C': 3});
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-err',
+          agentId: 'agent-err',
+          kind: 'task_agent',
+          displayName: 'Err',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: vc,
+        );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
-      );
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
 
-      when(() => sequenceLogService.recordSentEntry(
+        when(
+          () => sequenceLogService.recordSentEntry(
             entryId: any(named: 'entryId'),
             vectorClock: any(named: 'vectorClock'),
             payloadType: any(named: 'payloadType'),
-          )).thenThrow(Exception('sequence log error'));
+          ),
+        ).thenThrow(Exception('sequence log error'));
 
-      serviceWithSequenceLog = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-        sequenceLogService: sequenceLogService,
-      );
+        serviceWithSequenceLog = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: vectorClockService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+          sequenceLogService: sequenceLogService,
+        );
 
-      // Should not throw
-      await serviceWithSequenceLog.enqueueMessage(message);
+        // Should not throw
+        await serviceWithSequenceLog.enqueueMessage(message);
 
-      // Verify exception was logged
-      verify(() => loggingService.captureException(
+        // Verify exception was logged
+        verify(
+          () => loggingService.captureException(
             any<Object>(),
             domain: 'SYNC_SEQUENCE',
             subDomain: 'recordSent',
             stackTrace: any<StackTrace>(named: 'stackTrace'),
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('Simple message handler edge cases', () {
-    test('SyncEntityDefinition with null vectorClock uses null in subject',
-        () async {
-      final entityDef = HabitDefinition(
-        id: 'habit-no-vc',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-        vectorClock: null, // Null vector clock
-        name: 'Test Habit',
-        description: 'A habit without vector clock',
-        private: false,
-        active: true,
-        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
-      );
+    test(
+      'SyncEntityDefinition with null vectorClock uses null in subject',
+      () async {
+        final entityDef = HabitDefinition(
+          id: 'habit-no-vc',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          vectorClock: null, // Null vector clock
+          name: 'Test Habit',
+          description: 'A habit without vector clock',
+          private: false,
+          active: true,
+          habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+        );
 
-      final message = SyncMessage.entityDefinition(
-        entityDefinition: entityDef,
-        status: SyncEntryStatus.initial,
-      );
+        final message = SyncMessage.entityDefinition(
+          entityDefinition: entityDef,
+          status: SyncEntryStatus.initial,
+        );
 
-      await service.enqueueMessage(message);
+        await service.enqueueMessage(message);
 
-      final captured = verify(
-        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
-      ).captured;
-      expect(captured.length, 1);
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
 
-      final companion = captured.first as OutboxCompanion;
-      // Subject should contain null for the counter part (hhash is the mock value)
-      expect(companion.subject.value, 'hhash:null');
-    });
+        final companion = captured.first as OutboxCompanion;
+        // Subject should contain null for the counter part (hhash is the mock value)
+        expect(companion.subject.value, 'hhash:null');
+      },
+    );
 
     test('SyncTagEntity with null hostHash handles gracefully', () async {
       // Create a vectorClockService that returns null hostHash
@@ -3783,11 +4045,13 @@ void main() {
       final companion = captured.first as OutboxCompanion;
       expect(companion.subject.value, 'backfillRequest:batch:0');
 
-      verify(() => loggingService.captureEvent(
-            contains('entries=0'),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('entries=0'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
 
     test('SyncBackfillRequest with multiple entries', () async {
@@ -3820,16 +4084,18 @@ void main() {
 
       await service.enqueueMessage(message);
 
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncBackfillResponse'),
-              contains('hostId=host-abc'),
-              contains('counter=42'),
-              contains('deleted=true'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncBackfillResponse'),
+            contains('hostId=host-abc'),
+            contains('counter=42'),
+            contains('deleted=true'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
 
     test('SyncBackfillResponse with deleted=false and entryId', () async {
@@ -3850,11 +4116,13 @@ void main() {
       final companion = captured.first as OutboxCompanion;
       expect(companion.subject.value, 'backfillResponse:host-abc:42');
 
-      verify(() => loggingService.captureEvent(
-            contains('deleted=false'),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('deleted=false'),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
 
     test('SyncAiConfig logs config id correctly', () async {
@@ -3874,14 +4142,16 @@ void main() {
 
       await service.enqueueMessage(message);
 
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncAiConfig'),
-              contains('id=config-xyz-789'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncAiConfig'),
+            contains('id=config-xyz-789'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
 
     test('SyncAiConfigDelete logs deleted config id', () async {
@@ -3891,19 +4161,22 @@ void main() {
 
       await service.enqueueMessage(message);
 
-      verify(() => loggingService.captureEvent(
-            allOf([
-              contains('type=SyncAiConfigDelete'),
-              contains('id=config-to-delete-456'),
-            ]),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          allOf([
+            contains('type=SyncAiConfigDelete'),
+            contains('id=config-to-delete-456'),
+          ]),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        ),
+      ).called(1);
     });
 
     test('enqueueMessage handles addOutboxItem error gracefully', () async {
-      when(() => syncDatabase.addOutboxItem(any<OutboxCompanion>()))
-          .thenThrow(Exception('DB write failed'));
+      when(
+        () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
+      ).thenThrow(Exception('DB write failed'));
 
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Light',
@@ -3916,64 +4189,70 @@ void main() {
       // Should not throw - error is caught and logged
       await service.enqueueMessage(message);
 
-      verify(() => loggingService.captureException(
-            any<Object>(),
-            domain: 'OUTBOX',
-            subDomain: 'enqueueMessage',
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => loggingService.captureException(
+          any<Object>(),
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
-    test('SyncEntityDefinition with null host uses null in counter lookup',
-        () async {
-      // Create a vectorClockService that returns null host
-      final nullHostVcs = MockVectorClockService();
-      when(() => nullHostVcs.getHost()).thenAnswer((_) async => null);
-      when(() => nullHostVcs.getHostHash()).thenAnswer((_) async => 'hash123');
+    test(
+      'SyncEntityDefinition with null host uses null in counter lookup',
+      () async {
+        // Create a vectorClockService that returns null host
+        final nullHostVcs = MockVectorClockService();
+        when(() => nullHostVcs.getHost()).thenAnswer((_) async => null);
+        when(
+          () => nullHostVcs.getHostHash(),
+        ).thenAnswer((_) async => 'hash123');
 
-      final serviceWithNullHost = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: nullHostVcs,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-      );
+        final serviceWithNullHost = OutboxService(
+          syncDatabase: syncDatabase,
+          loggingService: loggingService,
+          vectorClockService: nullHostVcs,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          userActivityService: userActivityService,
+          repository: repository,
+          messageSender: messageSender,
+          processor: processor,
+          activityGate: createGate(),
+        );
 
-      final entityDef = HabitDefinition(
-        id: 'habit-1',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-        vectorClock: const VectorClock({'someHost': 5}),
-        name: 'Test Habit',
-        description: 'A habit with VC but null host lookup',
-        private: false,
-        active: true,
-        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
-      );
+        final entityDef = HabitDefinition(
+          id: 'habit-1',
+          createdAt: DateTime(2025, 1, 1),
+          updatedAt: DateTime(2025, 1, 1),
+          vectorClock: const VectorClock({'someHost': 5}),
+          name: 'Test Habit',
+          description: 'A habit with VC but null host lookup',
+          private: false,
+          active: true,
+          habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+        );
 
-      final message = SyncMessage.entityDefinition(
-        entityDefinition: entityDef,
-        status: SyncEntryStatus.initial,
-      );
+        final message = SyncMessage.entityDefinition(
+          entityDefinition: entityDef,
+          status: SyncEntryStatus.initial,
+        );
 
-      await serviceWithNullHost.enqueueMessage(message);
+        await serviceWithNullHost.enqueueMessage(message);
 
-      final captured = verify(
-        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
-      ).captured;
-      expect(captured.length, 1);
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
 
-      final companion = captured.first as OutboxCompanion;
-      // With null host, the vclock lookup returns null
-      expect(companion.subject.value, 'hash123:null');
+        final companion = captured.first as OutboxCompanion;
+        // With null host, the vclock lookup returns null
+        expect(companion.subject.value, 'hash123:null');
 
-      await serviceWithNullHost.dispose();
-    });
+        await serviceWithNullHost.dispose();
+      },
+    );
   });
 
   group('Message preparation', () {
@@ -3998,8 +4277,9 @@ void main() {
         ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
       // Mock journalEntityById to return the entity
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       final message = SyncMessage.journalEntity(
         id: entryId,
@@ -4048,8 +4328,9 @@ void main() {
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       final message = SyncMessage.journalEntity(
         id: entryId,
@@ -4095,8 +4376,9 @@ void main() {
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-      when(() => journalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => journalEntity);
+      when(
+        () => journalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntity);
 
       final message = SyncMessage.journalEntity(
         id: entryId,
@@ -4192,8 +4474,7 @@ void main() {
       expect(linkMsg.coveredVectorClocks!.length, 3);
     });
 
-    test('prepareMessage passes through non-entity messages unchanged',
-        () async {
+    test('prepareMessage passes through non-entity messages unchanged', () async {
       final message = SyncMessage.themingSelection(
         lightThemeName: 'Light',
         darkThemeName: 'Dark',
@@ -4220,61 +4501,65 @@ void main() {
       expect(themingMsg.darkThemeName, 'Dark');
     });
 
-    test('SyncAgentEntity enqueues with correct subject and saves JSON',
-        () async {
-      final entity = AgentDomainEntity.agent(
-        id: 'agent-xyz',
-        agentId: 'agent-xyz',
-        kind: 'task_agent',
-        displayName: 'Test',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
+    test(
+      'SyncAgentEntity enqueues with correct subject and saves JSON',
+      () async {
+        final entity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Test',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
 
-      final message = SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
-      );
+        final message = SyncMessage.agentEntity(
+          agentEntity: entity,
+          status: SyncEntryStatus.update,
+        );
 
-      await service.enqueueMessage(message);
+        await service.enqueueMessage(message);
 
-      final captured = verify(
-        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
-      ).captured;
-      expect(captured.length, 1);
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
 
-      final companion = captured.first as OutboxCompanion;
-      expect(companion.subject.value, 'agentEntity:agent-xyz');
-      expect(companion.outboxEntryId.value, 'agent-xyz');
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentEntity:agent-xyz');
+        expect(companion.outboxEntryId.value, 'agent-xyz');
 
-      // Verify JSON was saved to disk
-      final expectedPath =
-          '${documentsDirectory.path}/agent_entities/agent-xyz.json';
-      expect(File(expectedPath).existsSync(), isTrue);
+        // Verify JSON was saved to disk
+        final expectedPath =
+            '${documentsDirectory.path}/agent_entities/agent-xyz.json';
+        expect(File(expectedPath).existsSync(), isTrue);
 
-      // Verify the enriched message has jsonPath set
-      final storedMessage = SyncMessage.fromJson(
-        json.decode(companion.message.value) as Map<String, dynamic>,
-      ) as SyncAgentEntity;
-      expect(storedMessage.jsonPath, '/agent_entities/agent-xyz.json');
+        // Verify the enriched message has jsonPath set
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentEntity;
+        expect(storedMessage.jsonPath, '/agent_entities/agent-xyz.json');
 
-      verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncAgentEntity'),
-            contains('subject=agentEntity:agent-xyz'),
-          ]),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAgentEntity'),
+              contains('subject=agentEntity:agent-xyz'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
 
     test('SyncAgentEntity merges with existing pending item', () async {
       final entity = AgentDomainEntity.agent(
@@ -4297,88 +4582,97 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      when(() => syncDatabase.findPendingByEntryId('agent-xyz'))
-          .thenAnswer((_) async => OutboxItem(
-                id: 42,
-                message: json.encode(message.toJson()),
-                status: OutboxStatus.pending.index,
-                retries: 0,
-                createdAt: DateTime(2024, 3, 15),
-                updatedAt: DateTime(2024, 3, 15),
-                subject: 'agentEntity:agent-xyz',
-                priority: OutboxPriority.low.index,
-              ));
-      when(() => syncDatabase.updateOutboxMessage(
-            itemId: any(named: 'itemId'),
-            newMessage: any(named: 'newMessage'),
-            newSubject: any(named: 'newSubject'),
-            payloadSize: any(named: 'payloadSize'),
-            priority: any(named: 'priority'),
-          )).thenAnswer((_) async => 1);
+      when(() => syncDatabase.findPendingByEntryId('agent-xyz')).thenAnswer(
+        (_) async => OutboxItem(
+          id: 42,
+          message: json.encode(message.toJson()),
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          subject: 'agentEntity:agent-xyz',
+          priority: OutboxPriority.low.index,
+        ),
+      );
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+        ),
+      ).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
 
-      verify(() => syncDatabase.updateOutboxMessage(
-            itemId: 42,
-            newMessage: any(named: 'newMessage'),
-            newSubject: 'agentEntity:agent-xyz',
-            payloadSize: any(named: 'payloadSize'),
-            priority: any(named: 'priority'),
-          )).called(1);
+      verify(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: 42,
+          newMessage: any(named: 'newMessage'),
+          newSubject: 'agentEntity:agent-xyz',
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+        ),
+      ).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
     });
 
-    test('SyncAgentLink enqueues with correct subject and saves JSON',
-        () async {
-      final link = AgentLink.agentTask(
-        id: 'link-abc',
-        fromId: 'agent-1',
-        toId: 'task-1',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
+    test(
+      'SyncAgentLink enqueues with correct subject and saves JSON',
+      () async {
+        final link = AgentLink.agentTask(
+          id: 'link-abc',
+          fromId: 'agent-1',
+          toId: 'task-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
 
-      final message = SyncMessage.agentLink(
-        agentLink: link,
-        status: SyncEntryStatus.update,
-      );
+        final message = SyncMessage.agentLink(
+          agentLink: link,
+          status: SyncEntryStatus.update,
+        );
 
-      await service.enqueueMessage(message);
+        await service.enqueueMessage(message);
 
-      final captured = verify(
-        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
-      ).captured;
-      expect(captured.length, 1);
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured.length, 1);
 
-      final companion = captured.first as OutboxCompanion;
-      expect(companion.subject.value, 'agentLink:link-abc');
-      expect(companion.outboxEntryId.value, 'link-abc');
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.subject.value, 'agentLink:link-abc');
+        expect(companion.outboxEntryId.value, 'link-abc');
 
-      // Verify JSON was saved to disk
-      final expectedPath =
-          '${documentsDirectory.path}/agent_links/link-abc.json';
-      expect(File(expectedPath).existsSync(), isTrue);
+        // Verify JSON was saved to disk
+        final expectedPath =
+            '${documentsDirectory.path}/agent_links/link-abc.json';
+        expect(File(expectedPath).existsSync(), isTrue);
 
-      // Verify the enriched message has jsonPath set
-      final storedMessage = SyncMessage.fromJson(
-        json.decode(companion.message.value) as Map<String, dynamic>,
-      ) as SyncAgentLink;
-      expect(storedMessage.jsonPath, '/agent_links/link-abc.json');
+        // Verify the enriched message has jsonPath set
+        final storedMessage =
+            SyncMessage.fromJson(
+                  json.decode(companion.message.value) as Map<String, dynamic>,
+                )
+                as SyncAgentLink;
+        expect(storedMessage.jsonPath, '/agent_links/link-abc.json');
 
-      verify(
-        () => loggingService.captureEvent(
-          allOf([
-            contains('type=SyncAgentLink'),
-            contains('subject=agentLink:link-abc'),
-          ]),
-          domain: 'OUTBOX',
-          subDomain: 'enqueueMessage',
-        ),
-      ).called(1);
-    });
+        verify(
+          () => loggingService.captureEvent(
+            allOf([
+              contains('type=SyncAgentLink'),
+              contains('subject=agentLink:link-abc'),
+            ]),
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          ),
+        ).called(1);
+      },
+    );
 
     test('SyncAgentEntity skips enqueue when entity is null', () async {
       const message = SyncMessage.agentEntity(
@@ -4433,34 +4727,39 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      when(() => syncDatabase.findPendingByEntryId('link-abc'))
-          .thenAnswer((_) async => OutboxItem(
-                id: 43,
-                message: json.encode(message.toJson()),
-                status: OutboxStatus.pending.index,
-                retries: 0,
-                createdAt: DateTime(2024, 3, 15),
-                updatedAt: DateTime(2024, 3, 15),
-                subject: 'agentLink:link-abc',
-                priority: OutboxPriority.low.index,
-              ));
-      when(() => syncDatabase.updateOutboxMessage(
-            itemId: any(named: 'itemId'),
-            newMessage: any(named: 'newMessage'),
-            newSubject: any(named: 'newSubject'),
-            payloadSize: any(named: 'payloadSize'),
-            priority: any(named: 'priority'),
-          )).thenAnswer((_) async => 1);
+      when(() => syncDatabase.findPendingByEntryId('link-abc')).thenAnswer(
+        (_) async => OutboxItem(
+          id: 43,
+          message: json.encode(message.toJson()),
+          status: OutboxStatus.pending.index,
+          retries: 0,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          subject: 'agentLink:link-abc',
+          priority: OutboxPriority.low.index,
+        ),
+      );
+      when(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: any(named: 'itemId'),
+          newMessage: any(named: 'newMessage'),
+          newSubject: any(named: 'newSubject'),
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+        ),
+      ).thenAnswer((_) async => 1);
 
       await service.enqueueMessage(message);
 
-      verify(() => syncDatabase.updateOutboxMessage(
-            itemId: 43,
-            newMessage: any(named: 'newMessage'),
-            newSubject: 'agentLink:link-abc',
-            payloadSize: any(named: 'payloadSize'),
-            priority: any(named: 'priority'),
-          )).called(1);
+      verify(
+        () => syncDatabase.updateOutboxMessage(
+          itemId: 43,
+          newMessage: any(named: 'newMessage'),
+          newSubject: 'agentLink:link-abc',
+          payloadSize: any(named: 'payloadSize'),
+          priority: any(named: 'priority'),
+        ),
+      ).called(1);
       verifyNever(
         () => syncDatabase.addOutboxItem(any<OutboxCompanion>()),
       );
@@ -4479,7 +4778,7 @@ void main() {
         processor: processor,
         activityGate: createGate(),
         ownsActivityGate: false,
-        saveJsonHandler: (_, __) => Future.error(Exception('disk full')),
+        saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
       );
 
       final entity = AgentDomainEntity.agent(

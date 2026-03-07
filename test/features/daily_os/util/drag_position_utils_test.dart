@@ -363,9 +363,11 @@ void main() {
 
       // Try to move block starting at 9:00 up (before section)
       var newStartMinutes = 8 * 60; // 8:00, before section
-      newStartMinutes =
-          clampToSection(newStartMinutes, sectionStart, sectionEnd)
-              .clamp(sectionStart * 60, sectionEnd * 60 - blockDuration);
+      newStartMinutes = clampToSection(
+        newStartMinutes,
+        sectionStart,
+        sectionEnd,
+      ).clamp(sectionStart * 60, sectionEnd * 60 - blockDuration);
       expect(newStartMinutes, equals(9 * 60)); // Clamped to 9:00
 
       // Try to move block ending after section

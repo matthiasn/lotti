@@ -91,8 +91,9 @@ class LabelsRepository {
       color: color,
       description: description?.trim(),
       sortOrder: sortOrder,
-      applicableCategoryIds:
-          normalizedCategoryIds.isEmpty ? null : normalizedCategoryIds,
+      applicableCategoryIds: normalizedCategoryIds.isEmpty
+          ? null
+          : normalizedCategoryIds,
       createdAt: now,
       updatedAt: now,
       vectorClock: null,
@@ -137,8 +138,8 @@ class LabelsRepository {
       private: private ?? label.private,
       applicableCategoryIds:
           (normalizedCategoryIds == null || normalizedCategoryIds.isEmpty)
-              ? null
-              : normalizedCategoryIds,
+          ? null
+          : normalizedCategoryIds,
       updatedAt: DateTime.now(),
     );
 
@@ -319,7 +320,8 @@ class LabelsRepository {
         }
       }
 
-      final sorted = [...resolved]..sort(
+      final sorted = [...resolved]
+        ..sort(
           (a, b) => (nameLookup[a] ?? a).compareTo(nameLookup[b] ?? b),
         );
 

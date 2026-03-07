@@ -19,10 +19,12 @@ class DayHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final unifiedDataAsync =
-        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
-    final budgetStatsAsync =
-        ref.watch(dayBudgetStatsProvider(date: selectedDate));
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    );
+    final budgetStatsAsync = ref.watch(
+      dayBudgetStatsProvider(date: selectedDate),
+    );
 
     return GestureDetector(
       onHorizontalDragEnd: (details) {
@@ -65,8 +67,10 @@ class DayHeader extends ConsumerWidget {
                   },
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
 
                 // Date display
@@ -107,8 +111,10 @@ class DayHeader extends ConsumerWidget {
                   },
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 32, minHeight: 32),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
                 ),
               ],
             ),
@@ -129,7 +135,7 @@ class DayHeader extends ConsumerWidget {
                     return _DayLabelChip(label: label);
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
                 // Status indicator
@@ -137,13 +143,14 @@ class DayHeader extends ConsumerWidget {
                   data: (stats) {
                     if (stats.budgetCount == 0) return const SizedBox.shrink();
                     return Padding(
-                      padding:
-                          const EdgeInsets.only(left: AppTheme.spacingSmall),
+                      padding: const EdgeInsets.only(
+                        left: AppTheme.spacingSmall,
+                      ),
                       child: _StatusIndicator(stats: stats),
                     );
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (_, __) => const SizedBox.shrink(),
+                  error: (_, _) => const SizedBox.shrink(),
                 ),
 
                 // Today button (if not on today)
@@ -310,8 +317,9 @@ class _StatusIndicator extends StatelessWidget {
     return (
       MdiIcons.clockOutline,
       context.colorScheme.onSurfaceVariant,
-      context.messages
-          .dailyOsTimeLeft(_formatDuration(context, stats.totalRemaining)),
+      context.messages.dailyOsTimeLeft(
+        _formatDuration(context, stats.totalRemaining),
+      ),
     );
   }
 

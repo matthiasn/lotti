@@ -21,26 +21,27 @@ ChatSession _createSession({
   String id = 'session-1',
   String title = 'Test Session',
   List<ChatMessage> messages = const [],
-}) =>
-    ChatSession(
-      id: id,
-      title: title,
-      createdAt: DateTime(2024, 3, 15, 10, 30),
-      lastMessageAt: DateTime(2024, 3, 15, 10, 30),
-      messages: messages,
-      metadata: const {'selectedModelId': 'test-model'},
-    );
+}) => ChatSession(
+  id: id,
+  title: title,
+  createdAt: DateTime(2024, 3, 15, 10, 30),
+  lastMessageAt: DateTime(2024, 3, 15, 10, 30),
+  messages: messages,
+  metadata: const {'selectedModelId': 'test-model'},
+);
 
 /// Stubs `sendMessage` with a stream controller and stubs `saveSession`.
 /// Returns the controller so the test can push events.
 StreamController<String> _stubStreaming(MockChatRepository repo) {
   final controller = StreamController<String>();
-  when(() => repo.sendMessage(
-        message: any(named: 'message'),
-        conversationHistory: any(named: 'conversationHistory'),
-        categoryId: any(named: 'categoryId'),
-        modelId: any(named: 'modelId'),
-      )).thenAnswer((_) => controller.stream);
+  when(
+    () => repo.sendMessage(
+      message: any(named: 'message'),
+      conversationHistory: any(named: 'conversationHistory'),
+      categoryId: any(named: 'categoryId'),
+      modelId: any(named: 'modelId'),
+    ),
+  ).thenAnswer((_) => controller.stream);
   when(() => repo.saveSession(any())).thenAnswer((_) async => _createSession());
   return controller;
 }
@@ -101,12 +102,14 @@ void main() {
     mockLoggingService = MockLoggingService();
     GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
 
-    when(() => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(() async {
@@ -115,10 +118,12 @@ void main() {
   });
 
   group('ChatInterface thinking blocks', () {
-    testWidgets('renders separate disclosures for multiple thinking blocks',
-        (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer(
+    testWidgets('renders separate disclosures for multiple thinking blocks', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer(
         (_) async => _createSession(
           messages: [
             ChatMessage.assistant(
@@ -152,10 +157,12 @@ void main() {
       expect(find.textContaining('Final thought'), findsOneWidget);
     });
 
-    testWidgets('renders message with thinking content properly',
-        (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer(
+    testWidgets('renders message with thinking content properly', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer(
         (_) async => _createSession(
           messages: [
             ChatMessage.assistant(
@@ -180,10 +187,12 @@ void main() {
       expect(find.textContaining('Internal reasoning'), findsOneWidget);
     });
 
-    testWidgets('handles streaming response with thinking blocks',
-        (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+    testWidgets('handles streaming response with thinking blocks', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       final streamController = _stubStreaming(mockRepo);
 
@@ -263,10 +272,12 @@ void main() {
       }
     });
 
-    testWidgets('handles multiple thinking blocks in streaming',
-        (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+    testWidgets('handles multiple thinking blocks in streaming', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       final streamController = _stubStreaming(mockRepo);
 
@@ -297,10 +308,12 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('handles open-ended thinking block during streaming',
-        (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+    testWidgets('handles open-ended thinking block during streaming', (
+      tester,
+    ) async {
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       final streamController = _stubStreaming(mockRepo);
 
@@ -318,7 +331,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.textContaining('The answer is 42'), findsOneWidget);
-      final hasToggle = find.text('Show reasoning').evaluate().isNotEmpty ||
+      final hasToggle =
+          find.text('Show reasoning').evaluate().isNotEmpty ||
           find.text('Hide reasoning').evaluate().isNotEmpty;
       expect(hasToggle, isTrue);
       if (find.text('Show reasoning').evaluate().isNotEmpty) {
@@ -335,8 +349,9 @@ void main() {
     });
 
     testWidgets('reasoning uses the same Markdown renderer', (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer(
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer(
         (_) async => _createSession(
           id: 'session-3',
           messages: [
@@ -353,8 +368,9 @@ void main() {
     });
 
     testWidgets('tap toggles reasoning visibility', (tester) async {
-      when(() => mockRepo.createSession(categoryId: 'test-category'))
-          .thenAnswer(
+      when(
+        () => mockRepo.createSession(categoryId: 'test-category'),
+      ).thenAnswer(
         (_) async => _createSession(
           id: 's-kb',
           title: 'Session',

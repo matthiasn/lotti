@@ -43,7 +43,8 @@ class _InferenceModelEditPageState
         .watch(inferenceModelFormControllerProvider(configId: widget.configId))
         .value;
 
-    final isFormValid = formState != null &&
+    final isFormValid =
+        formState != null &&
         formState.isValid &&
         formState.inferenceProviderId.isNotEmpty &&
         formState.inputModalities.isNotEmpty &&
@@ -120,15 +121,21 @@ class _InferenceModelEditPageState
                   // Form Content
                   SliverToBoxAdapter(
                     child: switch (configAsync) {
-                      AsyncData(value: final config) => _buildForm(context, ref,
-                          config, formState, isFormValid, handleSave),
+                      AsyncData(value: final config) => _buildForm(
+                        context,
+                        ref,
+                        config,
+                        formState,
+                        isFormValid,
+                        handleSave,
+                      ),
                       AsyncError() => _buildErrorState(context),
                       _ => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(48),
-                            child: CircularProgressIndicator(),
-                          ),
+                        child: Padding(
+                          padding: EdgeInsets.all(48),
+                          child: CircularProgressIndicator(),
                         ),
+                      ),
                     },
                   ),
                 ],
@@ -204,8 +211,9 @@ class _InferenceModelEditPageState
                     prefixIcon: Icons.cloud_rounded,
                     suffixIcon: Icon(
                       Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                   ),
                 ),
@@ -288,8 +296,9 @@ class _InferenceModelEditPageState
                     prefixIcon: Icons.input_rounded,
                     suffixIcon: Icon(
                       Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                   ),
                 ),
@@ -315,8 +324,9 @@ class _InferenceModelEditPageState
                     prefixIcon: Icons.output_rounded,
                     suffixIcon: Icon(
                       Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                   ),
                 ),
@@ -392,8 +402,9 @@ class _InferenceModelEditPageState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color:
-                    context.colorScheme.errorContainer.withValues(alpha: 0.2),
+                color: context.colorScheme.errorContainer.withValues(
+                  alpha: 0.2,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(

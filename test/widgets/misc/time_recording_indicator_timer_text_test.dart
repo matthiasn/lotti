@@ -70,4 +70,5 @@ class _FakeTimeService extends TimeService {
 
   void emit(JournalEntity? entity) => _controller.add(entity);
 }
+
 // ignore_for_file: avoid_redundant_argument_values

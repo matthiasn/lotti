@@ -29,16 +29,16 @@ final class EvolutionChatStateProvider
   /// On [build], starts a new multi-turn session via
   /// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
   /// approve/reject proposals, and end the session.
-  EvolutionChatStateProvider._(
-      {required EvolutionChatStateFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'evolutionChatStateProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  EvolutionChatStateProvider._({
+    required EvolutionChatStateFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'evolutionChatStateProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$evolutionChatStateHash();
@@ -76,16 +76,21 @@ String _$evolutionChatStateHash() =>
 
 final class EvolutionChatStateFamily extends $Family
     with
-        $ClassFamilyOverride<EvolutionChatState, AsyncValue<EvolutionChatData>,
-            EvolutionChatData, FutureOr<EvolutionChatData>, String> {
+        $ClassFamilyOverride<
+          EvolutionChatState,
+          AsyncValue<EvolutionChatData>,
+          EvolutionChatData,
+          FutureOr<EvolutionChatData>,
+          String
+        > {
   EvolutionChatStateFamily._()
-      : super(
-          retry: null,
-          name: r'evolutionChatStateProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'evolutionChatStateProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Manages the lifecycle of an evolution chat session for a specific template.
   ///
@@ -93,9 +98,7 @@ final class EvolutionChatStateFamily extends $Family
   /// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
   /// approve/reject proposals, and end the session.
 
-  EvolutionChatStateProvider call(
-    String templateId,
-  ) =>
+  EvolutionChatStateProvider call(String templateId) =>
       EvolutionChatStateProvider._(argument: templateId, from: this);
 
   @override
@@ -112,23 +115,20 @@ abstract class _$EvolutionChatState extends $AsyncNotifier<EvolutionChatData> {
   late final _$args = ref.$arg as String;
   String get templateId => _$args;
 
-  FutureOr<EvolutionChatData> build(
-    String templateId,
-  );
+  FutureOr<EvolutionChatData> build(String templateId);
   @$mustCallSuper
   @override
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<EvolutionChatData>, EvolutionChatData>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<EvolutionChatData>, EvolutionChatData>,
-        AsyncValue<EvolutionChatData>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<EvolutionChatData>, EvolutionChatData>,
+              AsyncValue<EvolutionChatData>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
   }
 }

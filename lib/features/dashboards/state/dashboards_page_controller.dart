@@ -12,20 +12,20 @@ import 'package:lotti/services/notification_stream.dart';
 /// Stream provider for all active dashboards from database.
 final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
     StreamProvider.autoDispose<List<DashboardDefinition>>((ref) {
-  final db = getIt<JournalDb>();
-  return notificationDrivenStream(
-    notifications: getIt<UpdateNotifications>(),
-    notificationKeys: {dashboardsNotification, privateToggleNotification},
-    fetcher: () async =>
-        (await db.getAllDashboards()).where((d) => d.active).toList(),
-  );
-});
+      final db = getIt<JournalDb>();
+      return notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {dashboardsNotification, privateToggleNotification},
+        fetcher: () async =>
+            (await db.getAllDashboards()).where((d) => d.active).toList(),
+      );
+    });
 
 /// Stateful provider for selected category IDs used for filtering dashboards.
 final selectedCategoryIdsProvider =
     NotifierProvider.autoDispose<SelectedCategoryIds, Set<String>>(
-  SelectedCategoryIds.new,
-);
+      SelectedCategoryIds.new,
+    );
 
 class SelectedCategoryIds extends Notifier<Set<String>> {
   @override
@@ -47,36 +47,38 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
 /// Stream provider for categories from database.
 final StreamProvider<List<CategoryDefinition>> dashboardCategoriesProvider =
     StreamProvider.autoDispose<List<CategoryDefinition>>((ref) {
-  final db = getIt<JournalDb>();
-  return notificationDrivenStream(
-    notifications: getIt<UpdateNotifications>(),
-    notificationKeys: {categoriesNotification, privateToggleNotification},
-    fetcher: db.getAllCategories,
-  );
-});
+      final db = getIt<JournalDb>();
+      return notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {categoriesNotification, privateToggleNotification},
+        fetcher: db.getAllCategories,
+      );
+    });
 
 /// Provider for a single dashboard by ID that reacts to dashboard changes.
-final dashboardByIdProvider =
-    Provider.autoDispose.family<DashboardDefinition?, String>((ref, id) {
-  // Watch the dashboards stream to trigger rebuild when any dashboard changes
-  ref.watch(dashboardsProvider);
-  return getIt<EntitiesCacheService>().getDashboardById(id);
-});
+final dashboardByIdProvider = Provider.autoDispose
+    .family<DashboardDefinition?, String>((ref, id) {
+      // Watch the dashboards stream to trigger rebuild when any dashboard changes
+      ref.watch(dashboardsProvider);
+      return getIt<EntitiesCacheService>().getDashboardById(id);
+    });
 
 /// Computed provider for dashboards filtered by selected categories and sorted
 /// by name.
 final Provider<List<DashboardDefinition>> filteredSortedDashboardsProvider =
     Provider.autoDispose<List<DashboardDefinition>>((ref) {
-  final dashboardsAsync = ref.watch(dashboardsProvider);
-  final selectedCategories = ref.watch(selectedCategoryIdsProvider);
+      final dashboardsAsync = ref.watch(dashboardsProvider);
+      final selectedCategories = ref.watch(selectedCategoryIdsProvider);
 
-  return dashboardsAsync.maybeWhen(
-    data: (dashboards) {
-      final filtered = selectedCategories.isNotEmpty
-          ? dashboards.where((d) => selectedCategories.contains(d.categoryId))
-          : dashboards;
-      return filtered.sortedBy((item) => item.name.toLowerCase());
-    },
-    orElse: () => [],
-  );
-});
+      return dashboardsAsync.maybeWhen(
+        data: (dashboards) {
+          final filtered = selectedCategories.isNotEmpty
+              ? dashboards.where(
+                  (d) => selectedCategories.contains(d.categoryId),
+                )
+              : dashboards;
+          return filtered.sortedBy((item) => item.name.toLowerCase());
+        },
+        orElse: () => [],
+      );
+    });

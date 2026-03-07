@@ -182,11 +182,13 @@ extension DayPlanDataX on DayPlanData {
         Duration.zero,
         (total, block) => total + block.duration,
       );
-      budgets.add(DerivedTimeBudget(
-        categoryId: categoryId,
-        plannedDuration: duration,
-        blocks: blocks,
-      ));
+      budgets.add(
+        DerivedTimeBudget(
+          categoryId: categoryId,
+          plannedDuration: duration,
+          blocks: blocks,
+        ),
+      );
     }
     // Sort by earliest block start time
     budgets.sort((a, b) {
@@ -199,9 +201,9 @@ extension DayPlanDataX on DayPlanData {
 
   /// Total planned duration across all blocks.
   Duration get totalPlannedDuration => plannedBlocks.fold(
-        Duration.zero,
-        (total, block) => total + block.duration,
-      );
+    Duration.zero,
+    (total, block) => total + block.duration,
+  );
 
   /// Get pinned tasks for a specific category.
   List<PinnedTaskRef> pinnedTasksForCategory(String categoryId) =>

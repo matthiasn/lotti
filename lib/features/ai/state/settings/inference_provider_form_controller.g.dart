@@ -14,22 +14,22 @@ final inferenceProviderFormControllerProvider =
     InferenceProviderFormControllerFamily._();
 
 final class InferenceProviderFormControllerProvider
-    extends $AsyncNotifierProvider<InferenceProviderFormController,
-        InferenceProviderFormState?> {
-  InferenceProviderFormControllerProvider._(
-      {required InferenceProviderFormControllerFamily super.from,
-      required ({
-        String? configId,
-        InferenceProviderType? preselectedType,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'inferenceProviderFormControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    extends
+        $AsyncNotifierProvider<
+          InferenceProviderFormController,
+          InferenceProviderFormState?
+        > {
+  InferenceProviderFormControllerProvider._({
+    required InferenceProviderFormControllerFamily super.from,
+    required ({String? configId, InferenceProviderType? preselectedType})
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'inferenceProviderFormControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$inferenceProviderFormControllerHash();
@@ -63,31 +63,28 @@ String _$inferenceProviderFormControllerHash() =>
 final class InferenceProviderFormControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            InferenceProviderFormController,
-            AsyncValue<InferenceProviderFormState?>,
-            InferenceProviderFormState?,
-            FutureOr<InferenceProviderFormState?>,
-            ({
-              String? configId,
-              InferenceProviderType? preselectedType,
-            })> {
+          InferenceProviderFormController,
+          AsyncValue<InferenceProviderFormState?>,
+          InferenceProviderFormState?,
+          FutureOr<InferenceProviderFormState?>,
+          ({String? configId, InferenceProviderType? preselectedType})
+        > {
   InferenceProviderFormControllerFamily._()
-      : super(
-          retry: null,
-          name: r'inferenceProviderFormControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'inferenceProviderFormControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   InferenceProviderFormControllerProvider call({
     required String? configId,
     InferenceProviderType? preselectedType,
-  }) =>
-      InferenceProviderFormControllerProvider._(argument: (
-        configId: configId,
-        preselectedType: preselectedType,
-      ), from: this);
+  }) => InferenceProviderFormControllerProvider._(
+    argument: (configId: configId, preselectedType: preselectedType),
+    from: this,
+  );
 
   @override
   String toString() => r'inferenceProviderFormControllerProvider';
@@ -95,10 +92,8 @@ final class InferenceProviderFormControllerFamily extends $Family
 
 abstract class _$InferenceProviderFormController
     extends $AsyncNotifier<InferenceProviderFormState?> {
-  late final _$args = ref.$arg as ({
-    String? configId,
-    InferenceProviderType? preselectedType,
-  });
+  late final _$args =
+      ref.$arg as ({String? configId, InferenceProviderType? preselectedType});
   String? get configId => _$args.configId;
   InferenceProviderType? get preselectedType => _$args.preselectedType;
 
@@ -109,19 +104,29 @@ abstract class _$InferenceProviderFormController
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AsyncValue<InferenceProviderFormState?>,
-        InferenceProviderFormState?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<InferenceProviderFormState?>,
-            InferenceProviderFormState?>,
-        AsyncValue<InferenceProviderFormState?>,
-        Object?,
-        Object?>;
+    final ref =
+        this.ref
+            as $Ref<
+              AsyncValue<InferenceProviderFormState?>,
+              InferenceProviderFormState?
+            >;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<
+                AsyncValue<InferenceProviderFormState?>,
+                InferenceProviderFormState?
+              >,
+              AsyncValue<InferenceProviderFormState?>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              configId: _$args.configId,
-              preselectedType: _$args.preselectedType,
-            ));
+      ref,
+      () => build(
+        configId: _$args.configId,
+        preselectedType: _$args.preselectedType,
+      ),
+    );
   }
 }

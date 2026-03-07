@@ -14,19 +14,25 @@ void main() {
 
         expect(exception.message, equals('Test message'));
         expect(exception.cause, isNull);
-        expect(exception.toString(),
-            equals('ChatRepositoryException: Test message'));
+        expect(
+          exception.toString(),
+          equals('ChatRepositoryException: Test message'),
+        );
       });
 
       test('creates exception with message and cause', () {
         final originalError = Exception('Original error');
-        final exception =
-            ChatRepositoryException('Test message', originalError);
+        final exception = ChatRepositoryException(
+          'Test message',
+          originalError,
+        );
 
         expect(exception.message, equals('Test message'));
         expect(exception.cause, equals(originalError));
-        expect(exception.toString(),
-            equals('ChatRepositoryException: Test message'));
+        expect(
+          exception.toString(),
+          equals('ChatRepositoryException: Test message'),
+        );
       });
 
       test('is a ChatException', () {
@@ -45,8 +51,10 @@ void main() {
         const exception = ChatProcessingException('Processing failed');
 
         expect(exception.message, equals('Processing failed'));
-        expect(exception.toString(),
-            equals('ChatProcessingException: Processing failed'));
+        expect(
+          exception.toString(),
+          equals('ChatProcessingException: Processing failed'),
+        );
         expect(exception, isA<ChatException>());
       });
 
@@ -54,8 +62,10 @@ void main() {
         final cause = StateError('boom');
         final exception = ChatProcessingException('Processing failed', cause);
         expect(exception.cause, same(cause));
-        expect(exception.toString(),
-            equals('ChatProcessingException: Processing failed'));
+        expect(
+          exception.toString(),
+          equals('ChatProcessingException: Processing failed'),
+        );
       });
     });
 
@@ -64,8 +74,10 @@ void main() {
         const exception = ChatToolException('Tool call failed');
 
         expect(exception.message, equals('Tool call failed'));
-        expect(exception.toString(),
-            equals('ChatToolException: Tool call failed'));
+        expect(
+          exception.toString(),
+          equals('ChatToolException: Tool call failed'),
+        );
         expect(exception, isA<ChatException>());
       });
 

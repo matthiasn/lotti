@@ -73,8 +73,9 @@ class StatusIndicator extends StatelessWidget {
     return (
       MdiIcons.clockOutline,
       context.colorScheme.onSurfaceVariant,
-      context.messages
-          .dailyOsTimeLeft(_formatDuration(context, stats.totalRemaining)),
+      context.messages.dailyOsTimeLeft(
+        _formatDuration(context, stats.totalRemaining),
+      ),
     );
   }
 

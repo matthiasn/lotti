@@ -226,8 +226,9 @@ void main() {
           ),
           PlannedTimeSlot(
             startTime: testDate.add(const Duration(hours: 14)),
-            endTime:
-                testDate.add(const Duration(hours: 15, minutes: 30)), // 1.5h
+            endTime: testDate.add(
+              const Duration(hours: 15, minutes: 30),
+            ), // 1.5h
             categoryId: 'cat-personal',
             block: PlannedBlock(
               id: 'block-2',
@@ -265,8 +266,9 @@ void main() {
         id: 'entry-1',
         categoryId: 'cat-work',
         dateFrom: testDate.add(const Duration(hours: 9)),
-        dateTo:
-            testDate.add(const Duration(hours: 10, minutes: 30)), // 1.5 hours
+        dateTo: testDate.add(
+          const Duration(hours: 10, minutes: 30),
+        ), // 1.5 hours
       );
       final entry2 = createTestEntry(
         id: 'entry-2',

@@ -52,11 +52,11 @@ void main() {
     FutureOr<AgentDomainEntity?> Function(Ref, String)? stateOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)? messagesOverride,
     FutureOr<Map<String, List<AgentDomainEntity>>> Function(Ref, String)?
-        threadOverride,
+    threadOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
-        observationsOverride,
+    observationsOverride,
     FutureOr<List<AgentDomainEntity>> Function(Ref, String)?
-        reportHistoryOverride,
+    reportHistoryOverride,
     Stream<bool> Function(Ref, String)? isRunningOverride,
     FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
     List<Override> extraOverrides = const [],
@@ -151,8 +151,9 @@ void main() {
       expect(find.text('Active'), findsOneWidget);
     });
 
-    testWidgets('shows lifecycle badge as Paused for dormant agent',
-        (tester) async {
+    testWidgets('shows lifecycle badge as Paused for dormant agent', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildDataSubject(
           identity: makeTestIdentity(lifecycle: AgentLifecycle.dormant),
@@ -185,8 +186,9 @@ void main() {
       expect(find.text('Created'), findsOneWidget);
     });
 
-    testWidgets('shows "Agent not found" when identity is null',
-        (tester) async {
+    testWidgets('shows "Agent not found" when identity is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildDataSubject());
       await tester.pump();
 
@@ -209,19 +211,20 @@ void main() {
     });
 
     testWidgets(
-        'shows Stats, Reports, Conversations, Observations, and Activity tabs',
-        (tester) async {
-      await tester.pumpWidget(
-        buildDataSubject(identity: makeTestIdentity()),
-      );
-      await tester.pump();
+      'shows Stats, Reports, Conversations, Observations, and Activity tabs',
+      (tester) async {
+        await tester.pumpWidget(
+          buildDataSubject(identity: makeTestIdentity()),
+        );
+        await tester.pump();
 
-      expect(find.text('Stats'), findsOneWidget);
-      expect(find.text('Reports'), findsOneWidget);
-      expect(find.text('Conversations'), findsOneWidget);
-      expect(find.text('Observations'), findsOneWidget);
-      expect(find.text('Activity'), findsOneWidget);
-    });
+        expect(find.text('Stats'), findsOneWidget);
+        expect(find.text('Reports'), findsOneWidget);
+        expect(find.text('Conversations'), findsOneWidget);
+        expect(find.text('Observations'), findsOneWidget);
+        expect(find.text('Activity'), findsOneWidget);
+      },
+    );
 
     testWidgets('shows state info section with values', (tester) async {
       await tester.pumpWidget(
@@ -280,8 +283,9 @@ void main() {
       },
     );
 
-    testWidgets('shows "Unexpected entity type" for non-agent identity',
-        (tester) async {
+    testWidgets('shows "Unexpected entity type" for non-agent identity', (
+      tester,
+    ) async {
       // Return an agentState (non-agent) entity as identity.
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestState()),
@@ -445,8 +449,9 @@ void main() {
       );
     });
 
-    testWidgets('hides running spinner when agent is not running',
-        (tester) async {
+    testWidgets('hides running spinner when agent is not running', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),
@@ -593,8 +598,9 @@ void main() {
   });
 
   group('AgentDetailPage - back navigation', () {
-    testWidgets('back chevron calls Navigator.pop when not in settings path',
-        (tester) async {
+    testWidgets('back chevron calls Navigator.pop when not in settings path', (
+      tester,
+    ) async {
       // Default setUp already sets currentPath to '/tasks'.
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestIdentity()),
@@ -613,10 +619,12 @@ void main() {
       verifyNever(() => mockNavService.beamBack());
     });
 
-    testWidgets('back chevron calls beamBack when in settings path',
-        (tester) async {
-      when(() => mockNavService.currentPath)
-          .thenReturn('/settings/agents/agent-1');
+    testWidgets('back chevron calls beamBack when in settings path', (
+      tester,
+    ) async {
+      when(
+        () => mockNavService.currentPath,
+      ).thenReturn('/settings/agents/agent-1');
 
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestIdentity()),
@@ -660,8 +668,9 @@ void main() {
       verifyNever(() => mockNavService.beamBack());
     });
 
-    testWidgets('back chevron works on unexpected entity type scaffold',
-        (tester) async {
+    testWidgets('back chevron works on unexpected entity type scaffold', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildDataSubject(identity: makeTestState()),
       );
@@ -678,8 +687,9 @@ void main() {
   });
 
   group('AgentDetailPage - Profile section', () {
-    testWidgets('shows resolved profile name when profileId is set',
-        (tester) async {
+    testWidgets('shows resolved profile name when profileId is set', (
+      tester,
+    ) async {
       final profile = testInferenceProfile(
         id: 'prof-1',
         name: 'Fast Flash',
@@ -727,8 +737,9 @@ void main() {
       );
     });
 
-    testWidgets('does not show profile name when profileId is null',
-        (tester) async {
+    testWidgets('does not show profile name when profileId is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           identityOverride: (ref, agentId) async => makeTestIdentity(),

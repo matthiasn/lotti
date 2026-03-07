@@ -61,23 +61,28 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Setup default mock behavior for logging
-    when(() => mockLoggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
 
-    when(() => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     // Setup default mock behavior for prompt capability filter
     // By default, return the first prompt from any list (simulating all prompts are available)
-    when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
-        .thenAnswer((invocation) async {
+    when(
+      () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+    ).thenAnswer((invocation) async {
       final promptIds = invocation.positionalArguments[0] as List<String>;
       if (promptIds.isEmpty) return null;
       final firstPromptId = promptIds.first;
@@ -102,8 +107,9 @@ void main() {
       overrides: [
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-        promptCapabilityFilterProvider
-            .overrideWithValue(mockPromptCapabilityFilter),
+        promptCapabilityFilterProvider.overrideWithValue(
+          mockPromptCapabilityFilter,
+        ),
       ],
     );
   });
@@ -126,8 +132,9 @@ void main() {
         name: 'Test Category',
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
       final trigger = container.read(automaticPromptTriggerProvider);
 
@@ -149,14 +156,17 @@ void main() {
       );
 
       // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
+      verify(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).called(1);
       // Should not log any triggering events
-      verifyNever(() => mockLoggingService.captureEvent(
-            any<String>(that: contains('Triggering')),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ));
+      verifyNever(
+        () => mockLoggingService.captureEvent(
+          any<String>(that: contains('Triggering')),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      );
     });
 
     test('should not trigger when category is null', () async {
@@ -164,8 +174,9 @@ void main() {
       const categoryId = 'non-existent';
       const entryId = 'test-entry';
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => null);
 
       final trigger = container.read(automaticPromptTriggerProvider);
 
@@ -187,13 +198,16 @@ void main() {
       );
 
       // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      verifyNever(() => mockLoggingService.captureEvent(
-            any<String>(that: contains('Triggering')),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ));
+      verify(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).called(1);
+      verifyNever(
+        () => mockLoggingService.captureEvent(
+          any<String>(that: contains('Triggering')),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      );
     });
 
     test('should handle exceptions gracefully', () async {
@@ -201,8 +215,9 @@ void main() {
       const categoryId = 'test-category';
       const entryId = 'test-entry';
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenThrow(Exception('Database error'));
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenThrow(Exception('Database error'));
 
       final trigger = container.read(automaticPromptTriggerProvider);
 
@@ -224,62 +239,70 @@ void main() {
       );
 
       // Assert
-      verify(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'automatic_prompt_trigger',
-            subDomain: 'triggerAutomaticPrompts',
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: 'automatic_prompt_trigger',
+          subDomain: 'triggerAutomaticPrompts',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
-    test('should not trigger transcription when user explicitly disables it',
-        () async {
-      // Arrange
-      const categoryId = 'test-category';
-      const entryId = 'test-entry';
-      const promptId = 'transcription-prompt';
+    test(
+      'should not trigger transcription when user explicitly disables it',
+      () async {
+        // Arrange
+        const categoryId = 'test-category';
+        const entryId = 'test-entry';
+        const promptId = 'transcription-prompt';
 
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.audioTranscription: [promptId],
-        },
-      );
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+          automaticPrompts: {
+            AiResponseType.audioTranscription: [promptId],
+          },
+        );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
 
-      final trigger = container.read(automaticPromptTriggerProvider);
+        final trigger = container.read(automaticPromptTriggerProvider);
 
-      final state = AudioRecorderState(
-        status: AudioRecorderStatus.stopped,
-        enableSpeechRecognition: false, // User explicitly disabled
-        vu: 0,
-        dBFS: -60,
-        progress: Duration.zero,
-        showIndicator: false,
-        modalVisible: false,
-      );
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.stopped,
+          enableSpeechRecognition: false, // User explicitly disabled
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+        );
 
-      // Act
-      await trigger.triggerAutomaticPrompts(
-        entryId,
-        categoryId,
-        state,
-        isLinkedToTask: false,
-      );
+        // Act
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: false,
+        );
 
-      // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      // Should not log triggering event
-      verifyNever(() => mockLoggingService.captureEvent(
+        // Assert
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+        // Should not log triggering event
+        verifyNever(
+          () => mockLoggingService.captureEvent(
             any<String>(that: contains('Triggering audio transcription')),
             domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
-          ));
-    });
+          ),
+        );
+      },
+    );
 
     test('should handle empty prompt lists', () async {
       // Arrange
@@ -295,8 +318,9 @@ void main() {
         },
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
       final trigger = container.read(automaticPromptTriggerProvider);
 
@@ -319,154 +343,171 @@ void main() {
       );
 
       // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
+      verify(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).called(1);
       // Should not trigger anything for empty lists
-      verifyNever(() => mockLoggingService.captureEvent(
-            any<String>(that: contains('Triggering')),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          ));
+      verifyNever(
+        () => mockLoggingService.captureEvent(
+          any<String>(that: contains('Triggering')),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      );
     });
 
     group('User preference overrides', () {
       test(
-          'should trigger transcription when user preference is true even without category config',
-          () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const promptId = 'transcription-prompt';
+        'should trigger transcription when user preference is true even without category config',
+        () async {
+          // Arrange
+          const categoryId = 'test-category';
+          const entryId = 'test-entry';
+          const promptId = 'transcription-prompt';
 
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.audioTranscription: [promptId],
-          },
-        );
+          final category = createTestCategory(
+            id: categoryId,
+            name: 'Test Category',
+            automaticPrompts: {
+              AiResponseType.audioTranscription: [promptId],
+            },
+          );
 
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-        var inferenceTriggered = false;
+          var inferenceTriggered = false;
 
-        final testContainer = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            promptCapabilityFilterProvider
-                .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider((
-              entityId: entryId,
-              promptId: promptId,
-              linkedEntityId: null,
-            )).overrideWith((ref) async {
-              inferenceTriggered = true;
-            }),
-          ],
-        );
+          final testContainer = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
+              triggerNewInferenceProvider((
+                entityId: entryId,
+                promptId: promptId,
+                linkedEntityId: null,
+              )).overrideWith((ref) async {
+                inferenceTriggered = true;
+              }),
+            ],
+          );
 
-        final trigger = testContainer.read(automaticPromptTriggerProvider);
+          final trigger = testContainer.read(automaticPromptTriggerProvider);
 
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          enableSpeechRecognition: true, // User explicitly wants transcription
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
+          final state = AudioRecorderState(
+            status: AudioRecorderStatus.stopped,
+            enableSpeechRecognition:
+                true, // User explicitly wants transcription
+            vu: 0,
+            dBFS: -60,
+            progress: Duration.zero,
+            showIndicator: false,
+            modalVisible: false,
+          );
 
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: false,
-        );
+          // Act
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            categoryId,
+            state,
+            isLinkedToTask: false,
+          );
 
-        // Assert
-        expect(inferenceTriggered, isTrue);
+          // Assert
+          expect(inferenceTriggered, isTrue);
 
-        verify(() => mockLoggingService.captureEvent(
+          verify(
+            () => mockLoggingService.captureEvent(
               'Triggering audio transcription (user preference: true)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
-            )).called(1);
+            ),
+          ).called(1);
 
-        testContainer.dispose();
-      });
+          testContainer.dispose();
+        },
+      );
 
-      test('should trigger checklist updates when category has them configured',
-          () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const taskId = 'test-task';
-        const checklistPromptId = 'checklist-prompt';
+      test(
+        'should trigger checklist updates when category has them configured',
+        () async {
+          // Arrange
+          const categoryId = 'test-category';
+          const entryId = 'test-entry';
+          const taskId = 'test-task';
+          const checklistPromptId = 'checklist-prompt';
 
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.checklistUpdates: [checklistPromptId],
-          },
-        );
+          final category = createTestCategory(
+            id: categoryId,
+            name: 'Test Category',
+            automaticPrompts: {
+              AiResponseType.checklistUpdates: [checklistPromptId],
+            },
+          );
 
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-        var inferenceTriggered = false;
+          var inferenceTriggered = false;
 
-        final testContainer = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            promptCapabilityFilterProvider
-                .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider((
-              entityId: taskId,
-              promptId: checklistPromptId,
-              linkedEntityId: entryId,
-            )).overrideWith((ref) async {
-              inferenceTriggered = true;
-            }),
-          ],
-        );
+          final testContainer = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
+              triggerNewInferenceProvider((
+                entityId: taskId,
+                promptId: checklistPromptId,
+                linkedEntityId: entryId,
+              )).overrideWith((ref) async {
+                inferenceTriggered = true;
+              }),
+            ],
+          );
 
-        final trigger = testContainer.read(automaticPromptTriggerProvider);
+          final trigger = testContainer.read(automaticPromptTriggerProvider);
 
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
+          final state = AudioRecorderState(
+            status: AudioRecorderStatus.stopped,
+            vu: 0,
+            dBFS: -60,
+            progress: Duration.zero,
+            showIndicator: false,
+            modalVisible: false,
+          );
 
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: true,
-          linkedTaskId: taskId,
-        );
+          // Act
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            categoryId,
+            state,
+            isLinkedToTask: true,
+            linkedTaskId: taskId,
+          );
 
-        // Assert
-        expect(inferenceTriggered, isTrue);
+          // Assert
+          expect(inferenceTriggered, isTrue);
 
-        verify(() => mockLoggingService.captureEvent(
+          verify(
+            () => mockLoggingService.captureEvent(
               any<String>(that: contains('Triggering checklist updates')),
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
-            )).called(1);
+            ),
+          ).called(1);
 
-        testContainer.dispose();
-      });
+          testContainer.dispose();
+        },
+      );
     });
 
     group('Sequential execution', () {
@@ -488,18 +529,21 @@ void main() {
             },
           );
 
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
           var transcriptionCompleted = false;
           var checklistTriggered = false;
 
           final testContainer = ProviderContainer(
             overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
               triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: transcriptionPromptId,
@@ -513,8 +557,11 @@ void main() {
                 linkedEntityId: entryId,
               )).overrideWith((ref) async {
                 // Verify transcription completed before checklist
-                expect(transcriptionCompleted, isTrue,
-                    reason: 'Checklist updates should wait for transcription');
+                expect(
+                  transcriptionCompleted,
+                  isTrue,
+                  reason: 'Checklist updates should wait for transcription',
+                );
                 checklistTriggered = true;
               }),
             ],
@@ -533,126 +580,139 @@ void main() {
           );
 
           // Act
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
+          unawaited(
+            trigger.triggerAutomaticPrompts(
+              entryId,
+              categoryId,
+              state,
+              isLinkedToTask: true,
+              linkedTaskId: taskId,
+            ),
+          );
           async.flushMicrotasks();
 
           // Assert
           expect(transcriptionCompleted, isTrue);
           expect(checklistTriggered, isTrue);
 
-          verify(() => mockLoggingService.captureEvent(
-                'Waiting for transcription to complete before checklist updates',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              )).called(1);
+          verify(
+            () => mockLoggingService.captureEvent(
+              'Waiting for transcription to complete before checklist updates',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            ),
+          ).called(1);
 
-          verify(() => mockLoggingService.captureEvent(
-                'Transcription completed, now triggering checklist updates',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              )).called(1);
-
-          testContainer.dispose();
-        });
-      });
-
-      test('should execute transcription and checklist in correct sequence',
-          () {
-        fakeAsync((async) {
-          // Arrange
-          const categoryId = 'test-category';
-          const entryId = 'test-entry';
-          const taskId = 'test-task';
-          const transcriptionPromptId = 'transcription-prompt';
-          const checklistPromptId = 'checklist-prompt';
-
-          final category = createTestCategory(
-            id: categoryId,
-            name: 'Test Category',
-            automaticPrompts: {
-              AiResponseType.audioTranscription: [transcriptionPromptId],
-              AiResponseType.checklistUpdates: [checklistPromptId],
-            },
-          );
-
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
-
-          var transcriptionCompleted = false;
-          var checklistCompleted = false;
-          final executionOrder = <String>[];
-
-          final testContainer = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
-              triggerNewInferenceProvider((
-                entityId: entryId,
-                promptId: transcriptionPromptId,
-                linkedEntityId: taskId,
-              )).overrideWith((ref) async {
-                executionOrder.add('transcription-start');
-                transcriptionCompleted = true;
-                executionOrder.add('transcription-end');
-              }),
-              triggerNewInferenceProvider((
-                entityId: taskId,
-                promptId: checklistPromptId,
-                linkedEntityId: entryId,
-              )).overrideWith((ref) async {
-                executionOrder.add('checklist-start');
-                expect(transcriptionCompleted, isTrue);
-                checklistCompleted = true;
-                executionOrder.add('checklist-end');
-              }),
-            ],
-          );
-
-          final trigger = testContainer.read(automaticPromptTriggerProvider);
-
-          final state = AudioRecorderState(
-            status: AudioRecorderStatus.stopped,
-            enableSpeechRecognition: true,
-            vu: 0,
-            dBFS: -60,
-            progress: Duration.zero,
-            showIndicator: false,
-            modalVisible: false,
-          );
-
-          // Act
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
-          async.flushMicrotasks();
-
-          // Assert
-          expect(transcriptionCompleted, isTrue);
-          expect(checklistCompleted, isTrue);
-
-          // Verify execution order
-          expect(executionOrder, [
-            'transcription-start',
-            'transcription-end',
-            'checklist-start',
-            'checklist-end',
-          ]);
+          verify(
+            () => mockLoggingService.captureEvent(
+              'Transcription completed, now triggering checklist updates',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            ),
+          ).called(1);
 
           testContainer.dispose();
         });
       });
+
+      test(
+        'should execute transcription and checklist in correct sequence',
+        () {
+          fakeAsync((async) {
+            // Arrange
+            const categoryId = 'test-category';
+            const entryId = 'test-entry';
+            const taskId = 'test-task';
+            const transcriptionPromptId = 'transcription-prompt';
+            const checklistPromptId = 'checklist-prompt';
+
+            final category = createTestCategory(
+              id: categoryId,
+              name: 'Test Category',
+              automaticPrompts: {
+                AiResponseType.audioTranscription: [transcriptionPromptId],
+                AiResponseType.checklistUpdates: [checklistPromptId],
+              },
+            );
+
+            when(
+              () => mockCategoryRepository.getCategoryById(categoryId),
+            ).thenAnswer((_) async => category);
+
+            var transcriptionCompleted = false;
+            var checklistCompleted = false;
+            final executionOrder = <String>[];
+
+            final testContainer = ProviderContainer(
+              overrides: [
+                categoryRepositoryProvider.overrideWithValue(
+                  mockCategoryRepository,
+                ),
+                promptCapabilityFilterProvider.overrideWithValue(
+                  mockPromptCapabilityFilter,
+                ),
+                triggerNewInferenceProvider((
+                  entityId: entryId,
+                  promptId: transcriptionPromptId,
+                  linkedEntityId: taskId,
+                )).overrideWith((ref) async {
+                  executionOrder.add('transcription-start');
+                  transcriptionCompleted = true;
+                  executionOrder.add('transcription-end');
+                }),
+                triggerNewInferenceProvider((
+                  entityId: taskId,
+                  promptId: checklistPromptId,
+                  linkedEntityId: entryId,
+                )).overrideWith((ref) async {
+                  executionOrder.add('checklist-start');
+                  expect(transcriptionCompleted, isTrue);
+                  checklistCompleted = true;
+                  executionOrder.add('checklist-end');
+                }),
+              ],
+            );
+
+            final trigger = testContainer.read(automaticPromptTriggerProvider);
+
+            final state = AudioRecorderState(
+              status: AudioRecorderStatus.stopped,
+              enableSpeechRecognition: true,
+              vu: 0,
+              dBFS: -60,
+              progress: Duration.zero,
+              showIndicator: false,
+              modalVisible: false,
+            );
+
+            // Act
+            unawaited(
+              trigger.triggerAutomaticPrompts(
+                entryId,
+                categoryId,
+                state,
+                isLinkedToTask: true,
+                linkedTaskId: taskId,
+              ),
+            );
+            async.flushMicrotasks();
+
+            // Assert
+            expect(transcriptionCompleted, isTrue);
+            expect(checklistCompleted, isTrue);
+
+            // Verify execution order
+            expect(executionOrder, [
+              'transcription-start',
+              'transcription-end',
+              'checklist-start',
+              'checklist-end',
+            ]);
+
+            testContainer.dispose();
+          });
+        },
+      );
     });
 
     group('Integration scenarios', () {
@@ -661,150 +721,164 @@ void main() {
       // This provides more robust and deterministic testing by directly
       // verifying that the inference is triggered with the correct parameters.
 
-      test('should trigger transcription when category has it configured',
-          () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const promptId = 'transcription-prompt';
+      test(
+        'should trigger transcription when category has it configured',
+        () async {
+          // Arrange
+          const categoryId = 'test-category';
+          const entryId = 'test-entry';
+          const promptId = 'transcription-prompt';
 
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.audioTranscription: [promptId],
-          },
-        );
+          final category = createTestCategory(
+            id: categoryId,
+            name: 'Test Category',
+            automaticPrompts: {
+              AiResponseType.audioTranscription: [promptId],
+            },
+          );
 
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-        var inferenceTriggered = false;
-        String? capturedEntityId;
-        String? capturedPromptId;
+          var inferenceTriggered = false;
+          String? capturedEntityId;
+          String? capturedPromptId;
 
-        // Override the triggerNewInferenceProvider for this specific test
-        final testContainer = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            promptCapabilityFilterProvider
-                .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider((
-              entityId: entryId,
-              promptId: promptId,
-              linkedEntityId: null,
-            )).overrideWith((ref) async {
-              inferenceTriggered = true;
-              capturedEntityId = entryId;
-              capturedPromptId = promptId;
-            }),
-          ],
-        );
+          // Override the triggerNewInferenceProvider for this specific test
+          final testContainer = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
+              triggerNewInferenceProvider((
+                entityId: entryId,
+                promptId: promptId,
+                linkedEntityId: null,
+              )).overrideWith((ref) async {
+                inferenceTriggered = true;
+                capturedEntityId = entryId;
+                capturedPromptId = promptId;
+              }),
+            ],
+          );
 
-        final trigger = testContainer.read(automaticPromptTriggerProvider);
+          final trigger = testContainer.read(automaticPromptTriggerProvider);
 
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
+          final state = AudioRecorderState(
+            status: AudioRecorderStatus.stopped,
+            vu: 0,
+            dBFS: -60,
+            progress: Duration.zero,
+            showIndicator: false,
+            modalVisible: false,
+          );
 
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: false,
-        );
+          // Act
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            categoryId,
+            state,
+            isLinkedToTask: false,
+          );
 
-        // Assert
-        expect(inferenceTriggered, isTrue);
-        expect(capturedEntityId, equals(entryId));
-        expect(capturedPromptId, equals(promptId));
+          // Assert
+          expect(inferenceTriggered, isTrue);
+          expect(capturedEntityId, equals(entryId));
+          expect(capturedPromptId, equals(promptId));
 
-        // Also verify logging
-        verify(() => mockLoggingService.captureEvent(
+          // Also verify logging
+          verify(
+            () => mockLoggingService.captureEvent(
               'Triggering audio transcription (user preference: null)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
-            )).called(1);
+            ),
+          ).called(1);
 
-        // Clean up
-        testContainer.dispose();
-      });
+          // Clean up
+          testContainer.dispose();
+        },
+      );
 
-      test('should properly log checklist updates without task summary',
-          () async {
-        // Arrange
-        const categoryId = 'test-category';
-        const entryId = 'test-entry';
-        const taskId = 'test-task';
-        const checklistPromptId = 'checklist-prompt';
+      test(
+        'should properly log checklist updates without task summary',
+        () async {
+          // Arrange
+          const categoryId = 'test-category';
+          const entryId = 'test-entry';
+          const taskId = 'test-task';
+          const checklistPromptId = 'checklist-prompt';
 
-        final category = createTestCategory(
-          id: categoryId,
-          name: 'Test Category',
-          automaticPrompts: {
-            AiResponseType.checklistUpdates: [checklistPromptId],
-          },
-        );
+          final category = createTestCategory(
+            id: categoryId,
+            name: 'Test Category',
+            automaticPrompts: {
+              AiResponseType.checklistUpdates: [checklistPromptId],
+            },
+          );
 
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-        var checklistTriggered = false;
+          var checklistTriggered = false;
 
-        final testContainer = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
-            promptCapabilityFilterProvider
-                .overrideWithValue(mockPromptCapabilityFilter),
-            triggerNewInferenceProvider((
-              entityId: taskId,
-              promptId: checklistPromptId,
-              linkedEntityId: entryId,
-            )).overrideWith((ref) async {
-              checklistTriggered = true;
-            }),
-          ],
-        );
+          final testContainer = ProviderContainer(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
+              triggerNewInferenceProvider((
+                entityId: taskId,
+                promptId: checklistPromptId,
+                linkedEntityId: entryId,
+              )).overrideWith((ref) async {
+                checklistTriggered = true;
+              }),
+            ],
+          );
 
-        final trigger = testContainer.read(automaticPromptTriggerProvider);
+          final trigger = testContainer.read(automaticPromptTriggerProvider);
 
-        final state = AudioRecorderState(
-          status: AudioRecorderStatus.stopped,
-          vu: 0,
-          dBFS: -60,
-          progress: Duration.zero,
-          showIndicator: false,
-          modalVisible: false,
-        );
+          final state = AudioRecorderState(
+            status: AudioRecorderStatus.stopped,
+            vu: 0,
+            dBFS: -60,
+            progress: Duration.zero,
+            showIndicator: false,
+            modalVisible: false,
+          );
 
-        // Act
-        await trigger.triggerAutomaticPrompts(
-          entryId,
-          categoryId,
-          state,
-          isLinkedToTask: true,
-          linkedTaskId: taskId,
-        );
+          // Act
+          await trigger.triggerAutomaticPrompts(
+            entryId,
+            categoryId,
+            state,
+            isLinkedToTask: true,
+            linkedTaskId: taskId,
+          );
 
-        // Assert
-        expect(checklistTriggered, isTrue);
+          // Assert
+          expect(checklistTriggered, isTrue);
 
-        verify(() => mockLoggingService.captureEvent(
+          verify(
+            () => mockLoggingService.captureEvent(
               'Triggering checklist updates for task $taskId (transcription pending: false)',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
-            )).called(1);
+            ),
+          ).called(1);
 
-        testContainer.dispose();
-      });
+          testContainer.dispose();
+        },
+      );
     });
 
     // Platform filtering scenarios
@@ -821,12 +895,14 @@ void main() {
           },
         );
 
-        when(() => mockCategoryRepository.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
 
         // Simulate mobile filtering - return null for transcription prompt
-        when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+        ).thenAnswer((_) async => null);
 
         final trigger = container.read(automaticPromptTriggerProvider);
 
@@ -873,11 +949,13 @@ void main() {
             },
           );
 
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-          when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
-              .thenAnswer((_) async {
+          when(
+            () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+          ).thenAnswer((_) async {
             return AiConfigPrompt(
               id: transcriptionPromptId,
               name: 'Transcription',
@@ -895,10 +973,12 @@ void main() {
           var transcriptionCompleted = false;
           final testContainer = ProviderContainer(
             overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
               triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: transcriptionPromptId,
@@ -921,13 +1001,15 @@ void main() {
             modalVisible: false,
           );
 
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
+          unawaited(
+            trigger.triggerAutomaticPrompts(
+              entryId,
+              categoryId,
+              state,
+              isLinkedToTask: true,
+              linkedTaskId: taskId,
+            ),
+          );
           async.flushMicrotasks();
 
           // Should have waited for transcription to complete
@@ -955,11 +1037,13 @@ void main() {
             },
           );
 
-          when(() => mockCategoryRepository.getCategoryById(categoryId))
-              .thenAnswer((_) async => category);
+          when(
+            () => mockCategoryRepository.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
 
-          when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()))
-              .thenAnswer((invocation) async {
+          when(
+            () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+          ).thenAnswer((invocation) async {
             final promptIds = invocation.positionalArguments[0] as List<String>;
             if (promptIds.contains(transcriptionPromptId)) {
               return AiConfigPrompt(
@@ -997,10 +1081,12 @@ void main() {
 
           final testContainer = ProviderContainer(
             overrides: [
-              categoryRepositoryProvider
-                  .overrideWithValue(mockCategoryRepository),
-              promptCapabilityFilterProvider
-                  .overrideWithValue(mockPromptCapabilityFilter),
+              categoryRepositoryProvider.overrideWithValue(
+                mockCategoryRepository,
+              ),
+              promptCapabilityFilterProvider.overrideWithValue(
+                mockPromptCapabilityFilter,
+              ),
               triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: transcriptionPromptId,
@@ -1030,13 +1116,15 @@ void main() {
             modalVisible: false,
           );
 
-          unawaited(trigger.triggerAutomaticPrompts(
-            entryId,
-            categoryId,
-            state,
-            isLinkedToTask: true,
-            linkedTaskId: taskId,
-          ));
+          unawaited(
+            trigger.triggerAutomaticPrompts(
+              entryId,
+              categoryId,
+              state,
+              isLinkedToTask: true,
+              linkedTaskId: taskId,
+            ),
+          );
           async.flushMicrotasks();
 
           // Should have waited for both to complete

@@ -48,8 +48,9 @@ class AudioTranscriptionService {
     final aiRepo = ref.read(aiConfigRepositoryProvider);
     // Fetch models and providers in parallel to reduce I/O latency
     final modelsFuture = aiRepo.getConfigsByType(AiConfigType.model);
-    final providersFuture =
-        aiRepo.getConfigsByType(AiConfigType.inferenceProvider);
+    final providersFuture = aiRepo.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
     final models = await modelsFuture;
     final providers = await providersFuture;
 
@@ -62,15 +63,17 @@ class AudioTranscriptionService {
           (m) => m.inputModalities.contains(Modality.audio),
         )
         .where((m) {
-      final provider =
-          allProviders.where((p) => p.id == m.inferenceProviderId).firstOrNull;
-      if (provider == null) return true; // keep orphan models, fail later
-      return !(provider.inferenceProviderType ==
-              InferenceProviderType.mistral &&
-          MistralRealtimeTranscriptionRepository.isRealtimeModel(
-            m.providerModelId,
-          ));
-    }).toList();
+          final provider = allProviders
+              .where((p) => p.id == m.inferenceProviderId)
+              .firstOrNull;
+          if (provider == null) return true; // keep orphan models, fail later
+          return !(provider.inferenceProviderType ==
+                  InferenceProviderType.mistral &&
+              MistralRealtimeTranscriptionRepository.isRealtimeModel(
+                m.providerModelId,
+              ));
+        })
+        .toList();
 
     if (audioModels.isEmpty) {
       throw Exception('No audio-capable models configured');
@@ -85,9 +88,10 @@ class AudioTranscriptionService {
     // Get the provider for the selected model
     final provider = providers
         .whereType<AiConfigInferenceProvider>()
-        .firstWhere((p) => p.id == model.inferenceProviderId,
-            orElse: () =>
-                throw Exception('Provider not found for audio model'));
+        .firstWhere(
+          (p) => p.id == model.inferenceProviderId,
+          orElse: () => throw Exception('Provider not found for audio model'),
+        );
 
     final bytes = await File(filePath).readAsBytes();
     final audioBase64 = base64Encode(bytes);
@@ -114,5 +118,5 @@ class AudioTranscriptionService {
 
 final Provider<AudioTranscriptionService> audioTranscriptionServiceProvider =
     Provider<AudioTranscriptionService>((ref) {
-  return AudioTranscriptionService(ref);
-});
+      return AudioTranscriptionService(ref);
+    });

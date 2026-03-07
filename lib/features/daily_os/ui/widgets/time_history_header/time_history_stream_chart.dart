@@ -151,10 +151,11 @@ class TimeHistoryStreamChart extends StatelessWidget {
       computeEffectiveScaleMinutes(maxDailyTotal);
 
   List<StreamChartItem> _buildChartData() => buildChartData(
-        days: days,
-        categoryOrder:
-            getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id),
-      );
+    days: days,
+    categoryOrder: getIt<EntitiesCacheService>().sortedCategories.map(
+      (c) => c.id,
+    ),
+  );
 
   /// Computes the effective Y-axis scale in minutes.
   ///

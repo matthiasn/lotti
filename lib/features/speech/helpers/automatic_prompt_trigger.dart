@@ -45,18 +45,24 @@ class AutomaticPromptTrigger {
 
       if (category?.automaticPrompts != null) {
         // Determine if speech recognition should be triggered
-        final hasAutomaticTranscription = category!.automaticPrompts!
-                .containsKey(AiResponseType.audioTranscription) &&
-            category.automaticPrompts![AiResponseType.audioTranscription]!
+        final hasAutomaticTranscription =
+            category!.automaticPrompts!.containsKey(
+              AiResponseType.audioTranscription,
+            ) &&
+            category
+                .automaticPrompts![AiResponseType.audioTranscription]!
                 .isNotEmpty;
         final shouldTriggerTranscription =
             state.enableSpeechRecognition ?? hasAutomaticTranscription;
 
         // Determine if checklist updates should be triggered
-        final hasAutomaticChecklistUpdates = category.automaticPrompts!
-                .containsKey(AiResponseType.checklistUpdates) &&
+        final hasAutomaticChecklistUpdates =
+            category.automaticPrompts!.containsKey(
+              AiResponseType.checklistUpdates,
+            ) &&
             category
-                .automaticPrompts![AiResponseType.checklistUpdates]!.isNotEmpty;
+                .automaticPrompts![AiResponseType.checklistUpdates]!
+                .isNotEmpty;
         final shouldTriggerChecklistUpdates =
             isLinkedToTask && hasAutomaticChecklistUpdates;
 
@@ -71,10 +77,10 @@ class AutomaticPromptTrigger {
 
           // Get the first available prompt for the current platform
           final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-          final availablePrompt =
-              await capabilityFilter.getFirstAvailablePrompt(
-            transcriptionPromptIds,
-          );
+          final availablePrompt = await capabilityFilter
+              .getFirstAvailablePrompt(
+                transcriptionPromptIds,
+              );
 
           if (availablePrompt == null) {
             loggingService.captureEvent(
@@ -121,10 +127,10 @@ class AutomaticPromptTrigger {
 
           // Get the first available prompt for the current platform
           final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-          final availablePrompt =
-              await capabilityFilter.getFirstAvailablePrompt(
-            checklistUpdatesPromptIds,
-          );
+          final availablePrompt = await capabilityFilter
+              .getFirstAvailablePrompt(
+                checklistUpdatesPromptIds,
+              );
 
           if (availablePrompt == null) {
             loggingService.captureEvent(

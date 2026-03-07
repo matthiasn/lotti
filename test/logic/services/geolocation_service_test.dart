@@ -91,8 +91,9 @@ void main() {
       test('returns true when operation is pending', () async {
         // Setup: device location returns a delayed response
         final completer = Completer<Geolocation?>();
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) => completer.future);
 
         // Start the async operation (don't await)
         final future = geolocationService.addGeolocationAsync(
@@ -119,8 +120,9 @@ void main() {
 
       test('increments during operation', () async {
         final completer = Completer<Geolocation?>();
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) => completer.future);
 
         final future = geolocationService.addGeolocationAsync(
           'test-id',
@@ -139,8 +141,9 @@ void main() {
     group('addGeolocationAsync', () {
       test('returns null when another operation is already pending', () async {
         final completer = Completer<Geolocation?>();
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) => completer.future);
 
         // Start first operation
         final future1 = geolocationService.addGeolocationAsync(
@@ -210,8 +213,9 @@ void main() {
       });
 
       test('returns null when device location returns null', () async {
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => null);
 
         final result = await geolocationService.addGeolocationAsync(
           'test-id',
@@ -222,10 +226,12 @@ void main() {
       });
 
       test('returns null when entry does not exist', () async {
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => testGeolocation);
-        when(() => mockJournalDb.journalEntityById('non-existent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => testGeolocation);
+        when(
+          () => mockJournalDb.journalEntityById('non-existent'),
+        ).thenAnswer((_) async => null);
 
         final result = await geolocationService.addGeolocationAsync(
           'non-existent',
@@ -241,10 +247,12 @@ void main() {
           geolocation: testGeolocation,
         );
 
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => testGeolocation);
-        when(() => mockJournalDb.journalEntityById('test-id'))
-            .thenAnswer((_) async => entryWithGeolocation);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => testGeolocation);
+        when(
+          () => mockJournalDb.journalEntityById('test-id'),
+        ).thenAnswer((_) async => entryWithGeolocation);
 
         var persisterCalled = false;
         final result = await geolocationService.addGeolocationAsync(
@@ -265,12 +273,15 @@ void main() {
           meta: testMetadata.copyWith(id: 'test-id'),
         );
 
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => testGeolocation);
-        when(() => mockJournalDb.journalEntityById('test-id'))
-            .thenAnswer((_) async => entryWithoutGeolocation);
-        when(() => mockMetadataService.updateMetadata(any()))
-            .thenAnswer((_) async => updatedMetadata);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => testGeolocation);
+        when(
+          () => mockJournalDb.journalEntityById('test-id'),
+        ).thenAnswer((_) async => entryWithoutGeolocation);
+        when(
+          () => mockMetadataService.updateMetadata(any()),
+        ).thenAnswer((_) async => updatedMetadata);
 
         JournalEntity? persistedEntity;
         final result = await geolocationService.addGeolocationAsync(
@@ -284,8 +295,10 @@ void main() {
         expect(result, equals(testGeolocation));
         expect(persistedEntity, isNotNull);
         expect(persistedEntity!.geolocation, equals(testGeolocation));
-        expect(persistedEntity!.meta.vectorClock,
-            equals(updatedMetadata.vectorClock));
+        expect(
+          persistedEntity!.meta.vectorClock,
+          equals(updatedMetadata.vectorClock),
+        );
 
         verify(() => mockMetadataService.updateMetadata(any())).called(1);
       });
@@ -293,12 +306,15 @@ void main() {
       test('clears pending set after successful completion', () async {
         final entry = createTestEntry(id: 'test-id');
 
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => testGeolocation);
-        when(() => mockJournalDb.journalEntityById('test-id'))
-            .thenAnswer((_) async => entry);
-        when(() => mockMetadataService.updateMetadata(any()))
-            .thenAnswer((_) async => updatedMetadata);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => testGeolocation);
+        when(
+          () => mockJournalDb.journalEntityById('test-id'),
+        ).thenAnswer((_) async => entry);
+        when(
+          () => mockMetadataService.updateMetadata(any()),
+        ).thenAnswer((_) async => updatedMetadata);
 
         expect(geolocationService.isPending('test-id'), isFalse);
 
@@ -311,8 +327,9 @@ void main() {
       });
 
       test('clears pending set after error', () async {
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenThrow(Exception('Location error'));
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenThrow(Exception('Location error'));
 
         await geolocationService.addGeolocationAsync(
           'test-id',
@@ -324,8 +341,9 @@ void main() {
 
       test('logs exception when getting location fails', () async {
         final exception = Exception('Location error');
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenThrow(exception);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenThrow(exception);
 
         await geolocationService.addGeolocationAsync(
           'test-id',
@@ -345,12 +363,15 @@ void main() {
         final entry = createTestEntry(id: 'test-id');
         final exception = Exception('Persistence error');
 
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async => testGeolocation);
-        when(() => mockJournalDb.journalEntityById('test-id'))
-            .thenAnswer((_) async => entry);
-        when(() => mockMetadataService.updateMetadata(any()))
-            .thenThrow(exception);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) async => testGeolocation);
+        when(
+          () => mockJournalDb.journalEntityById('test-id'),
+        ).thenAnswer((_) async => entry);
+        when(
+          () => mockMetadataService.updateMetadata(any()),
+        ).thenThrow(exception);
 
         await geolocationService.addGeolocationAsync(
           'test-id',
@@ -368,8 +389,9 @@ void main() {
       });
 
       test('returns null on error but does not throw', () async {
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenThrow(Exception('Location error'));
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenThrow(Exception('Location error'));
 
         // Should not throw
         final result = await geolocationService.addGeolocationAsync(
@@ -384,8 +406,9 @@ void main() {
     group('addGeolocation (fire-and-forget)', () {
       test('calls addGeolocationAsync without awaiting', () async {
         final completer = Completer<Geolocation?>();
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockDeviceLocation.getCurrentGeoLocation(),
+        ).thenAnswer((_) => completer.future);
 
         // Fire-and-forget call
         geolocationService.addGeolocation('test-id', (_) async => true);
@@ -437,8 +460,9 @@ void main() {
       test('second call after first completes can proceed', () async {
         var callCount = 0;
 
-        when(() => mockDeviceLocation.getCurrentGeoLocation())
-            .thenAnswer((_) async {
+        when(() => mockDeviceLocation.getCurrentGeoLocation()).thenAnswer((
+          _,
+        ) async {
           callCount++;
           return null;
         });

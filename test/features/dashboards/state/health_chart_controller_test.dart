@@ -66,80 +66,83 @@ void main() {
       ).called(1);
     });
 
-    test('refreshes when update notification contains healthDataType',
-        () async {
-      final updateController = StreamController<Set<String>>.broadcast();
-      when(() => mocks.updateNotifications.updateStream)
-          .thenAnswer((_) => updateController.stream);
+    test(
+      'refreshes when update notification contains healthDataType',
+      () async {
+        final updateController = StreamController<Set<String>>.broadcast();
+        when(
+          () => mocks.updateNotifications.updateStream,
+        ).thenAnswer((_) => updateController.stream);
 
-      final firstEntities = [
-        makeQuantitativeEntry(
-          dateFrom: DateTime(2024, 3, 12),
-          value: 72.0,
-          dataType: dataType,
-        ),
-      ];
-      final secondEntities = [
-        makeQuantitativeEntry(
-          dateFrom: DateTime(2024, 3, 12),
-          value: 73.0,
-          dataType: dataType,
-          id: 'updated',
-        ),
-      ];
+        final firstEntities = [
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 12),
+            value: 72.0,
+            dataType: dataType,
+          ),
+        ];
+        final secondEntities = [
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 12),
+            value: 73.0,
+            dataType: dataType,
+            id: 'updated',
+          ),
+        ];
 
-      var callCount = 0;
-      when(
-        () => mocks.journalDb.getQuantitativeByType(
-          type: any(named: 'type'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async {
-        callCount++;
-        return callCount == 1 ? firstEntities : secondEntities;
-      });
+        var callCount = 0;
+        when(
+          () => mocks.journalDb.getQuantitativeByType(
+            type: any(named: 'type'),
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1 ? firstEntities : secondEntities;
+        });
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final provider = healthChartDataControllerProvider(
-        healthDataType: dataType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
+        final provider = healthChartDataControllerProvider(
+          healthDataType: dataType,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
 
-      // Initial load
-      await container.read(provider.future);
+        // Initial load
+        await container.read(provider.future);
 
-      // Listen for the refresh to complete
-      final refreshed = Completer<List<JournalEntity>>();
-      container.listen<AsyncValue<List<JournalEntity>>>(
-        provider,
-        (_, next) {
-          if (next is AsyncData<List<JournalEntity>> &&
-              !refreshed.isCompleted) {
-            refreshed.complete(next.value);
-          }
-        },
-      );
+        // Listen for the refresh to complete
+        final refreshed = Completer<List<JournalEntity>>();
+        container.listen<AsyncValue<List<JournalEntity>>>(
+          provider,
+          (_, next) {
+            if (next is AsyncData<List<JournalEntity>> &&
+                !refreshed.isCompleted) {
+              refreshed.complete(next.value);
+            }
+          },
+        );
 
-      // Trigger notification for this health type
-      updateController.add({dataType});
+        // Trigger notification for this health type
+        updateController.add({dataType});
 
-      // Wait for the refresh to complete
-      await refreshed.future;
+        // Wait for the refresh to complete
+        await refreshed.future;
 
-      verify(
-        () => mocks.journalDb.getQuantitativeByType(
-          type: dataType,
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).called(2);
+        verify(
+          () => mocks.journalDb.getQuantitativeByType(
+            type: dataType,
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).called(2);
 
-      await updateController.close();
-    });
+        await updateController.close();
+      },
+    );
   });
 
   group('HealthObservationsController', () {

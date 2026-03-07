@@ -57,14 +57,14 @@ Map<String, dynamic> createSseChunkEvent({
       {
         'index': 0,
         'delta': {
-          if (content != null) 'content': content,
-          if (role != null) 'role': role,
-          if (toolCalls != null) 'tool_calls': toolCalls,
+          'content': ?content,
+          'role': ?role,
+          'tool_calls': ?toolCalls,
         },
         'finish_reason': finishReason,
-      }
+      },
     ],
-    if (usage != null) 'usage': usage,
+    'usage': ?usage,
   };
 }
 
@@ -84,7 +84,7 @@ Map<String, dynamic> createSseFinalEvent({
         'index': 0,
         'delta': <String, dynamic>{},
         'finish_reason': 'stop',
-      }
+      },
     ],
   };
 }
@@ -138,13 +138,16 @@ void main() {
         // Assert
         expect(results.length, equals(3));
         expect(results[0].choices?.first.delta?.content, equals(chunk1));
-        expect(results[0].choices?.first.delta?.role,
-            equals(ChatCompletionMessageRole.assistant));
+        expect(
+          results[0].choices?.first.delta?.role,
+          equals(ChatCompletionMessageRole.assistant),
+        );
         expect(results[1].choices?.first.delta?.content, equals(chunk2));
 
         // Verify the request
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         expect(request.url.toString(), equals('$baseUrl/chat/completions'));
         expect(request.headers['Content-Type'], equals('application/json'));
@@ -159,7 +162,9 @@ void main() {
         expect(messages.length, equals(1));
         expect((messages[0] as Map<String, dynamic>)['role'], equals('user'));
         expect(
-            (messages[0] as Map<String, dynamic>)['content'], equals(prompt));
+          (messages[0] as Map<String, dynamic>)['content'],
+          equals(prompt),
+        );
       });
 
       test('should include system message when provided', () async {
@@ -185,19 +190,24 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
 
         final messages = requestBody['messages'] as List<dynamic>;
         expect(messages.length, equals(2));
         expect((messages[0] as Map<String, dynamic>)['role'], equals('system'));
-        expect((messages[0] as Map<String, dynamic>)['content'],
-            equals('You are a helpful assistant.'));
+        expect(
+          (messages[0] as Map<String, dynamic>)['content'],
+          equals('You are a helpful assistant.'),
+        );
         expect((messages[1] as Map<String, dynamic>)['role'], equals('user'));
         expect(
-            (messages[1] as Map<String, dynamic>)['content'], equals(prompt));
+          (messages[1] as Map<String, dynamic>)['content'],
+          equals(prompt),
+        );
       });
 
       test('should include temperature when provided', () async {
@@ -223,8 +233,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['temperature'], equals(0.7));
@@ -253,8 +264,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['max_tokens'], equals(1000));
@@ -272,7 +284,7 @@ void main() {
                   'name': 'get_weather',
                   'arguments': '{"location": "Paris"}',
                 },
-              }
+              },
             ],
           ),
           createSseFinalEvent(),
@@ -314,14 +326,19 @@ void main() {
         expect(results.length, equals(2));
         expect(results[0].choices?.first.delta?.toolCalls, isNotNull);
         expect(results[0].choices?.first.delta?.toolCalls?.length, equals(1));
-        expect(results[0].choices?.first.delta?.toolCalls?.first.id,
-            equals('call_123'));
-        expect(results[0].choices?.first.delta?.toolCalls?.first.function?.name,
-            equals('get_weather'));
+        expect(
+          results[0].choices?.first.delta?.toolCalls?.first.id,
+          equals('call_123'),
+        );
+        expect(
+          results[0].choices?.first.delta?.toolCalls?.first.function?.name,
+          equals('get_weather'),
+        );
 
         // Verify request body includes tools
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['tools'], isNotNull);
@@ -330,8 +347,9 @@ void main() {
 
       test('should handle HTTP error responses', () async {
         // Arrange
-        final stream =
-            Stream.fromIterable([utf8.encode('{"error": "Invalid API key"}')]);
+        final stream = Stream.fromIterable([
+          utf8.encode('{"error": "Invalid API key"}'),
+        ]);
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => http.StreamedResponse(stream, 401),
         );
@@ -346,16 +364,19 @@ void main() {
 
         expect(
           responseStream.toList(),
-          throwsA(isA<MistralInferenceException>()
-              .having((e) => e.message, 'message', contains('HTTP 401'))
-              .having((e) => e.statusCode, 'statusCode', 401)),
+          throwsA(
+            isA<MistralInferenceException>()
+                .having((e) => e.message, 'message', contains('HTTP 401'))
+                .having((e) => e.statusCode, 'statusCode', 401),
+          ),
         );
       });
 
       test('should handle 404 error', () async {
         // Arrange
-        final stream = Stream.fromIterable(
-            [utf8.encode('{"message": "no Route matched with those values"}')]);
+        final stream = Stream.fromIterable([
+          utf8.encode('{"message": "no Route matched with those values"}'),
+        ]);
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => http.StreamedResponse(stream, 404),
         );
@@ -370,8 +391,13 @@ void main() {
 
         expect(
           responseStream.toList(),
-          throwsA(isA<MistralInferenceException>()
-              .having((e) => e.statusCode, 'statusCode', 404)),
+          throwsA(
+            isA<MistralInferenceException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              404,
+            ),
+          ),
         );
       });
     });
@@ -394,7 +420,8 @@ void main() {
 
         final messages = [
           const ChatCompletionMessage.system(
-              content: 'You are a helpful assistant.'),
+            content: 'You are a helpful assistant.',
+          ),
           const ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.string('Hello'),
           ),
@@ -411,16 +438,19 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
 
         final reqMessages = requestBody['messages'] as List<dynamic>;
         expect(reqMessages.length, equals(2));
         expect((reqMessages[0] as Map)['role'], equals('system'));
-        expect((reqMessages[0] as Map)['content'],
-            equals('You are a helpful assistant.'));
+        expect(
+          (reqMessages[0] as Map)['content'],
+          equals('You are a helpful assistant.'),
+        );
         expect((reqMessages[1] as Map)['role'], equals('user'));
         expect((reqMessages[1] as Map)['content'], equals('Hello'));
       });
@@ -466,8 +496,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
 
@@ -516,8 +547,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
 
@@ -578,7 +610,7 @@ void main() {
                 ],
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -614,7 +646,7 @@ void main() {
                 'content': ['Hello ', 'world'],
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -650,7 +682,7 @@ void main() {
                 'role': 'assistant',
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -670,8 +702,10 @@ void main() {
 
         // Assert
         expect(results[0].choices?.first.delta?.content, isNull);
-        expect(results[0].choices?.first.delta?.role,
-            equals(ChatCompletionMessageRole.assistant));
+        expect(
+          results[0].choices?.first.delta?.role,
+          equals(ChatCompletionMessageRole.assistant),
+        );
       });
 
       test('should handle empty array content', () async {
@@ -688,7 +722,7 @@ void main() {
                 'content': <dynamic>[],
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -752,7 +786,9 @@ void main() {
         expect(results.length, equals(2));
         expect(results[0].choices?.first.delta?.content, equals('First chunk'));
         expect(
-            results[1].choices?.first.delta?.content, equals('Second chunk'));
+          results[1].choices?.first.delta?.content,
+          equals('Second chunk'),
+        );
       });
 
       test('should handle multiple events in single chunk', () async {
@@ -819,7 +855,9 @@ data: [DONE]
         expect(results.length, equals(2));
         expect(results[0].choices?.first.delta?.content, equals('Valid chunk'));
         expect(
-            results[1].choices?.first.delta?.content, equals('Another valid'));
+          results[1].choices?.first.delta?.content,
+          equals('Another valid'),
+        );
       });
 
       test('should handle empty stream', () async {
@@ -868,11 +906,14 @@ data: [DONE]
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
-        expect(request.url.toString(),
-            equals('https://api.mistral.ai/v1/chat/completions'));
+        expect(
+          request.url.toString(),
+          equals('https://api.mistral.ai/v1/chat/completions'),
+        );
       });
 
       test('should construct URL correctly with trailing slash', () async {
@@ -893,11 +934,14 @@ data: [DONE]
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
-        expect(request.url.toString(),
-            equals('https://api.mistral.ai/v1/chat/completions'));
+        expect(
+          request.url.toString(),
+          equals('https://api.mistral.ai/v1/chat/completions'),
+        );
       });
     });
 
@@ -925,11 +969,11 @@ data: [DONE]
                       'name': 'get_weather',
                       'arguments': '{"location": "Paris"}',
                     },
-                  }
+                  },
                 ],
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -955,8 +999,10 @@ data: [DONE]
         expect(toolCalls?.first.id, equals('call_abc123'));
         expect(toolCalls?.first.index, equals(0));
         expect(toolCalls?.first.function?.name, equals('get_weather'));
-        expect(toolCalls?.first.function?.arguments,
-            equals('{"location": "Paris"}'));
+        expect(
+          toolCalls?.first.function?.arguments,
+          equals('{"location": "Paris"}'),
+        );
       });
 
       test('should parse multiple tool calls', () async {
@@ -984,7 +1030,7 @@ data: [DONE]
                 ],
               },
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -1077,8 +1123,10 @@ data: [DONE]
 
       test('should parse stop finish reason', () async {
         // Arrange
-        final event =
-            createSseChunkEvent(content: 'Done', finishReason: 'stop');
+        final event = createSseChunkEvent(
+          content: 'Done',
+          finishReason: 'stop',
+        );
 
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => createSseStreamedResponse(events: [event]),
@@ -1095,14 +1143,18 @@ data: [DONE]
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.finishReason,
-            equals(ChatCompletionFinishReason.stop));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.stop),
+        );
       });
 
       test('should parse tool_calls finish reason', () async {
         // Arrange
-        final event =
-            createSseChunkEvent(content: null, finishReason: 'tool_calls');
+        final event = createSseChunkEvent(
+          content: null,
+          finishReason: 'tool_calls',
+        );
 
         when(() => mockHttpClient.send(any())).thenAnswer(
           (_) async => createSseStreamedResponse(events: [event]),
@@ -1119,8 +1171,10 @@ data: [DONE]
         final results = await stream.toList();
 
         // Assert
-        expect(results[0].choices?.first.finishReason,
-            equals(ChatCompletionFinishReason.toolCalls));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.toolCalls),
+        );
       });
 
       test('should fallback to stop for unknown finish reason', () async {
@@ -1135,7 +1189,7 @@ data: [DONE]
               'index': 0,
               'delta': {'content': 'test'},
               'finish_reason': 'unknown_reason',
-            }
+            },
           ],
         };
 
@@ -1154,8 +1208,10 @@ data: [DONE]
         final results = await stream.toList();
 
         // Assert - should fallback to stop
-        expect(results[0].choices?.first.finishReason,
-            equals(ChatCompletionFinishReason.stop));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.stop),
+        );
       });
     });
 
@@ -1232,7 +1288,7 @@ data: [DONE]
               'index': 0,
               'delta': null,
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -1265,7 +1321,7 @@ data: [DONE]
               'index': 0,
               'delta': {'content': 'test'},
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -1298,7 +1354,7 @@ data: [DONE]
               'index': 0,
               'delta': {'content': 'test'},
               'finish_reason': null,
-            }
+            },
           ],
         };
 
@@ -1329,8 +1385,10 @@ data: [DONE]
           originalError: Exception('Original'),
         );
 
-        expect(exception.toString(),
-            equals('MistralInferenceException: Test error'));
+        expect(
+          exception.toString(),
+          equals('MistralInferenceException: Test error'),
+        );
         expect(exception.message, equals('Test error'));
         expect(exception.statusCode, equals(404));
         expect(exception.originalError, isA<Exception>());
@@ -1376,8 +1434,9 @@ data: [DONE]
           ),
         ).thenReturn(null);
 
-        when(() => mockHttpClient.send(any()))
-            .thenThrow(StateError('Unexpected error'));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenThrow(StateError('Unexpected error'));
 
         // Act & Assert
         final responseStream = repository.generateText(
@@ -1389,8 +1448,13 @@ data: [DONE]
 
         expect(
           responseStream.toList(),
-          throwsA(isA<MistralInferenceException>()
-              .having((e) => e.message, 'message', contains('Unexpected'))),
+          throwsA(
+            isA<MistralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Unexpected'),
+            ),
+          ),
         );
 
         // Wait for exception to be logged

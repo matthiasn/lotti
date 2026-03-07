@@ -29,15 +29,14 @@ ChatSession _createSession({
   String title = 'New Chat',
   List<ChatMessage> messages = const [],
   Map<String, dynamic>? metadata = const {'selectedModelId': 'test-model'},
-}) =>
-    ChatSession(
-      id: id,
-      title: title,
-      createdAt: DateTime(2024),
-      lastMessageAt: DateTime(2024),
-      messages: messages,
-      metadata: metadata,
-    );
+}) => ChatSession(
+  id: id,
+  title: title,
+  createdAt: DateTime(2024),
+  lastMessageAt: DateTime(2024),
+  messages: messages,
+  metadata: metadata,
+);
 
 /// Stubs `createSession`, `getSession`, and `saveSession` on the given
 /// repository to return [session].
@@ -46,8 +45,9 @@ void _stubRepository(
   required ChatSession session,
   String categoryId = 'test-category',
 }) {
-  when(() => repo.createSession(categoryId: categoryId))
-      .thenAnswer((_) async => session);
+  when(
+    () => repo.createSession(categoryId: categoryId),
+  ).thenAnswer((_) async => session);
   when(() => repo.getSession(any())).thenAnswer((_) async => session);
   when(() => repo.saveSession(any())).thenAnswer((_) async => session);
 }
@@ -76,8 +76,9 @@ Future<void> _pumpChatInterface(
   );
   if (!hasModelsOverride) {
     allOverrides.add(
-      eligibleChatModelsForCategoryProvider(categoryId)
-          .overrideWith((_) async => []),
+      eligibleChatModelsForCategoryProvider(
+        categoryId,
+      ).overrideWith((_) async => []),
     );
   }
 
@@ -148,10 +149,12 @@ void main() {
       'shows "No eligible models" inside settings sheet when none',
       (tester) async {
         final mockAiRepo = MockAiConfigRepository();
-        when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => []);
-        when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockAiRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => []);
 
         final session = _createSession();
         _stubRepository(mockChatRepository, session: session);
@@ -173,8 +176,9 @@ void main() {
       },
     );
 
-    testWidgets('input disabled and settings action when no model selected',
-        (tester) async {
+    testWidgets('input disabled and settings action when no model selected', (
+      tester,
+    ) async {
       final session = _createSession(metadata: const {});
       _stubRepository(mockChatRepository, session: session);
 
@@ -186,16 +190,19 @@ void main() {
       );
       expect(tf.enabled, isFalse);
       expect(find.byIcon(Icons.mic), findsNothing);
-      final tuneBtn = tester.widget<IconButton>(find.ancestor(
-        of: find.byIcon(Icons.tune).first,
-        matching: find.byType(IconButton),
-      ));
+      final tuneBtn = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byIcon(Icons.tune).first,
+          matching: find.byType(IconButton),
+        ),
+      );
       expect(tuneBtn.onPressed, isNotNull);
     });
 
     testWidgets('error banner close hides the banner', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenThrow(Exception('fail'));
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenThrow(Exception('fail'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -212,26 +219,31 @@ void main() {
         messages: [ChatMessage.user('Hello')],
       );
 
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => session);
-      when(() => mockChatRepository.getSession(any()))
-          .thenAnswer((_) async => session);
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => session);
+      when(
+        () => mockChatRepository.getSession(any()),
+      ).thenAnswer((_) async => session);
 
       var sendCallCount = 0;
-      when(() => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          )).thenAnswer((_) {
+      when(
+        () => mockChatRepository.sendMessage(
+          message: any(named: 'message'),
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: any(named: 'categoryId'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) {
         sendCallCount++;
         if (sendCallCount == 1) {
           return Stream<String>.error(Exception('Network error'));
         }
         return Stream.value('Response');
       });
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => session);
+      when(
+        () => mockChatRepository.saveSession(any()),
+      ).thenAnswer((_) async => session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -260,13 +272,15 @@ void main() {
       final emptySession = _createSession(id: 'new-session');
 
       var createCallCount = 0;
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async {
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async {
         createCallCount++;
         return createCallCount == 1 ? sessionWithMessages : emptySession;
       });
-      when(() => mockChatRepository.getSession(any()))
-          .thenAnswer((_) async => sessionWithMessages);
+      when(
+        () => mockChatRepository.getSession(any()),
+      ).thenAnswer((_) async => sessionWithMessages);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -280,8 +294,9 @@ void main() {
     });
 
     testWidgets('displays empty state with helper text', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -335,11 +350,14 @@ void main() {
     });
 
     testWidgets('shows clear chat button when messages exist', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession(
-                title: 'Chat with Messages',
-                messages: [ChatMessage.user('Hello')],
-              ));
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer(
+        (_) async => _createSession(
+          title: 'Chat with Messages',
+          messages: [ChatMessage.user('Hello')],
+        ),
+      );
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -348,8 +366,9 @@ void main() {
     });
 
     testWidgets('hides clear chat button when no messages', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession(title: 'Empty Chat'));
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession(title: 'Empty Chat'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -358,8 +377,9 @@ void main() {
     });
 
     testWidgets('displays input field and send button', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -373,8 +393,9 @@ void main() {
     });
 
     testWidgets('shows error banner when error exists', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenThrow(Exception('Connection failed'));
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenThrow(Exception('Connection failed'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -385,20 +406,24 @@ void main() {
     });
 
     testWidgets('sends message when send button pressed', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
-      when(() => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          )).thenAnswer((_) async* {
+      when(
+        () => mockChatRepository.sendMessage(
+          message: any(named: 'message'),
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: any(named: 'categoryId'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) async* {
         yield 'Hello there!';
       });
 
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.saveSession(any()),
+      ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -415,29 +440,35 @@ void main() {
       await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
 
-      verify(() => mockChatRepository.sendMessage(
-            message: 'Hello, AI!',
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: 'test-category',
-            modelId: 'test-model',
-          )).called(1);
+      verify(
+        () => mockChatRepository.sendMessage(
+          message: 'Hello, AI!',
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: 'test-category',
+          modelId: 'test-model',
+        ),
+      ).called(1);
     });
 
     testWidgets('sends message when Enter key pressed', (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
-      when(() => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          )).thenAnswer((_) async* {
+      when(
+        () => mockChatRepository.sendMessage(
+          message: any(named: 'message'),
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: any(named: 'categoryId'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) async* {
         yield 'Response via Enter key!';
       });
 
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.saveSession(any()),
+      ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -446,18 +477,22 @@ void main() {
       await tester.testTextInput.receiveAction(TextInputAction.send);
       await tester.pumpAndSettle();
 
-      verify(() => mockChatRepository.sendMessage(
-            message: 'Hello via Enter!',
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: 'test-category',
-            modelId: 'test-model',
-          )).called(1);
+      verify(
+        () => mockChatRepository.sendMessage(
+          message: 'Hello via Enter!',
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: 'test-category',
+          modelId: 'test-model',
+        ),
+      ).called(1);
     });
 
-    testWidgets('shows UI elements correctly when session loads',
-        (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession(metadata: null));
+    testWidgets('shows UI elements correctly when session loads', (
+      tester,
+    ) async {
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession(metadata: null));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -466,21 +501,26 @@ void main() {
       expect(find.text('AI Assistant'), findsOneWidget);
     });
 
-    testWidgets('shows streaming indicator when message is streaming',
-        (tester) async {
-      when(() => mockChatRepository.createSession(categoryId: 'test-category'))
-          .thenAnswer((_) async => _createSession());
+    testWidgets('shows streaming indicator when message is streaming', (
+      tester,
+    ) async {
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => _createSession());
 
       final streamController = StreamController<String>();
-      when(() => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          )).thenAnswer((_) => streamController.stream);
+      when(
+        () => mockChatRepository.sendMessage(
+          message: any(named: 'message'),
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: any(named: 'categoryId'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockChatRepository.saveSession(any()))
-          .thenAnswer((_) async => _createSession());
+      when(
+        () => mockChatRepository.saveSession(any()),
+      ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
       await tester.pumpAndSettle();
@@ -513,8 +553,9 @@ void main() {
         metadata: null,
       );
 
-      when(() => mockChatRepository.getSession('existing-session-id'))
-          .thenAnswer((_) async => existingSession);
+      when(
+        () => mockChatRepository.getSession('existing-session-id'),
+      ).thenAnswer((_) async => existingSession);
 
       await _pumpChatInterface(
         tester,
@@ -523,8 +564,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      verify(() => mockChatRepository.getSession('existing-session-id'))
-          .called(1);
+      verify(
+        () => mockChatRepository.getSession('existing-session-id'),
+      ).called(1);
       expect(find.text('Previous message'), findsOneWidget);
     });
 
@@ -552,38 +594,46 @@ void main() {
           supportsFunctionCalling: true,
         );
 
-        when(() => mockAiRepo.getConfigsByType(AiConfigType.model))
-            .thenAnswer((_) async => [model]);
-        when(() => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider))
-            .thenAnswer((_) async => [provider]);
+        when(
+          () => mockAiRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => [provider]);
 
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenAnswer((_) async => _createSession(
-                  id: 's1',
-                  metadata: const {'selectedModelId': 'm1'},
-                ));
+        when(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).thenAnswer(
+          (_) async => _createSession(
+            id: 's1',
+            metadata: const {'selectedModelId': 'm1'},
+          ),
+        );
 
         final streamController = StreamController<String>();
-        when(() => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            )).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any()))
-            .thenAnswer((_) async => _createSession(
-                  id: 's1',
-                  metadata: const {'selectedModelId': 'm1'},
-                ));
+        when(
+          () => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+        when(() => mockChatRepository.saveSession(any())).thenAnswer(
+          (_) async => _createSession(
+            id: 's1',
+            metadata: const {'selectedModelId': 'm1'},
+          ),
+        );
 
         await _pumpChatInterface(
           tester,
           chatRepository: mockChatRepository,
           extraOverrides: [
             aiConfigRepositoryProvider.overrideWithValue(mockAiRepo),
-            eligibleChatModelsForCategoryProvider('test-category')
-                .overrideWith((_) async => [model]),
+            eligibleChatModelsForCategoryProvider(
+              'test-category',
+            ).overrideWith((_) async => [model]),
           ],
         );
         await tester.pumpAndSettle();
@@ -598,7 +648,8 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.text('Assistant Settings'), findsOneWidget);
         final dd = tester.widget<DropdownButtonFormField<String>>(
-            find.byType(DropdownButtonFormField<String>));
+          find.byType(DropdownButtonFormField<String>),
+        );
         expect(dd.onChanged, isNull);
 
         await streamController.close();
@@ -610,9 +661,9 @@ void main() {
       'new chat button triggers session creation',
       (tester) async {
         var callCount = 0;
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenAnswer((_) async {
+        when(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).thenAnswer((_) async {
           callCount++;
           return _createSession(
             id: 's-new-$callCount',

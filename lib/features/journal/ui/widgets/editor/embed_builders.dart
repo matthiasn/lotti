@@ -54,12 +54,14 @@ class UnknownEmbedBuilder extends EmbedBuilder {
       margin: const EdgeInsets.symmetric(vertical: _verticalMargin),
       padding: const EdgeInsets.all(_padding),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest
-            .withValues(alpha: _containerOpacity),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: _containerOpacity,
+        ),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: theme.colorScheme.outlineVariant
-              .withValues(alpha: _outlineOpacity),
+          color: theme.colorScheme.outlineVariant.withValues(
+            alpha: _outlineOpacity,
+          ),
         ),
       ),
       child: Row(
@@ -73,8 +75,9 @@ class UnknownEmbedBuilder extends EmbedBuilder {
           Expanded(
             child: Text(
               'Unsupported content ($label)',
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

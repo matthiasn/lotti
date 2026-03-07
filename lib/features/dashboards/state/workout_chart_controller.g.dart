@@ -12,22 +12,22 @@ part of 'workout_chart_controller.dart';
 @ProviderFor(WorkoutChartDataController)
 final workoutChartDataControllerProvider = WorkoutChartDataControllerFamily._();
 
-final class WorkoutChartDataControllerProvider extends $AsyncNotifierProvider<
-    WorkoutChartDataController, List<JournalEntity>> {
-  WorkoutChartDataControllerProvider._(
-      {required WorkoutChartDataControllerFamily super.from,
-      required ({
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'workoutChartDataControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class WorkoutChartDataControllerProvider
+    extends
+        $AsyncNotifierProvider<
+          WorkoutChartDataController,
+          List<JournalEntity>
+        > {
+  WorkoutChartDataControllerProvider._({
+    required WorkoutChartDataControllerFamily super.from,
+    required ({DateTime rangeStart, DateTime rangeEnd}) super.argument,
+  }) : super(
+         retry: null,
+         name: r'workoutChartDataControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$workoutChartDataControllerHash();
@@ -61,31 +61,28 @@ String _$workoutChartDataControllerHash() =>
 final class WorkoutChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            WorkoutChartDataController,
-            AsyncValue<List<JournalEntity>>,
-            List<JournalEntity>,
-            FutureOr<List<JournalEntity>>,
-            ({
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          WorkoutChartDataController,
+          AsyncValue<List<JournalEntity>>,
+          List<JournalEntity>,
+          FutureOr<List<JournalEntity>>,
+          ({DateTime rangeStart, DateTime rangeEnd})
+        > {
   WorkoutChartDataControllerFamily._()
-      : super(
-          retry: null,
-          name: r'workoutChartDataControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'workoutChartDataControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   WorkoutChartDataControllerProvider call({
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      WorkoutChartDataControllerProvider._(argument: (
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => WorkoutChartDataControllerProvider._(
+    argument: (rangeStart: rangeStart, rangeEnd: rangeEnd),
+    from: this,
+  );
 
   @override
   String toString() => r'workoutChartDataControllerProvider';
@@ -93,10 +90,7 @@ final class WorkoutChartDataControllerFamily extends $Family
 
 abstract class _$WorkoutChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
-  late final _$args = ref.$arg as ({
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args = ref.$arg as ({DateTime rangeStart, DateTime rangeEnd});
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
 
@@ -109,17 +103,18 @@ abstract class _$WorkoutChartDataController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<JournalEntity>>, List<JournalEntity>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
-        AsyncValue<List<JournalEntity>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
+              AsyncValue<List<JournalEntity>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(rangeStart: _$args.rangeStart, rangeEnd: _$args.rangeEnd),
+    );
   }
 }
 
@@ -128,23 +123,26 @@ final workoutObservationsControllerProvider =
     WorkoutObservationsControllerFamily._();
 
 final class WorkoutObservationsControllerProvider
-    extends $AsyncNotifierProvider<WorkoutObservationsController,
-        List<Observation>> {
-  WorkoutObservationsControllerProvider._(
-      {required WorkoutObservationsControllerFamily super.from,
-      required ({
-        DashboardItem chartConfig,
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'workoutObservationsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    extends
+        $AsyncNotifierProvider<
+          WorkoutObservationsController,
+          List<Observation>
+        > {
+  WorkoutObservationsControllerProvider._({
+    required WorkoutObservationsControllerFamily super.from,
+    required ({
+      DashboardItem chartConfig,
+      DateTime rangeStart,
+      DateTime rangeEnd,
+    })
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'workoutObservationsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$workoutObservationsControllerHash();
@@ -178,34 +176,33 @@ String _$workoutObservationsControllerHash() =>
 final class WorkoutObservationsControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            WorkoutObservationsController,
-            AsyncValue<List<Observation>>,
-            List<Observation>,
-            FutureOr<List<Observation>>,
-            ({
-              DashboardItem chartConfig,
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          WorkoutObservationsController,
+          AsyncValue<List<Observation>>,
+          List<Observation>,
+          FutureOr<List<Observation>>,
+          ({DashboardItem chartConfig, DateTime rangeStart, DateTime rangeEnd})
+        > {
   WorkoutObservationsControllerFamily._()
-      : super(
-          retry: null,
-          name: r'workoutObservationsControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'workoutObservationsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   WorkoutObservationsControllerProvider call({
     required DashboardItem chartConfig,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      WorkoutObservationsControllerProvider._(argument: (
-        chartConfig: chartConfig,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => WorkoutObservationsControllerProvider._(
+    argument: (
+      chartConfig: chartConfig,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'workoutObservationsControllerProvider';
@@ -213,11 +210,13 @@ final class WorkoutObservationsControllerFamily extends $Family
 
 abstract class _$WorkoutObservationsController
     extends $AsyncNotifier<List<Observation>> {
-  late final _$args = ref.$arg as ({
-    DashboardItem chartConfig,
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args =
+      ref.$arg
+          as ({
+            DashboardItem chartConfig,
+            DateTime rangeStart,
+            DateTime rangeEnd,
+          });
   DashboardItem get chartConfig => _$args.chartConfig;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -232,17 +231,21 @@ abstract class _$WorkoutObservationsController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<Observation>>, List<Observation>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<Observation>>, List<Observation>>,
-        AsyncValue<List<Observation>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Observation>>, List<Observation>>,
+              AsyncValue<List<Observation>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              chartConfig: _$args.chartConfig,
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(
+        chartConfig: _$args.chartConfig,
+        rangeStart: _$args.rangeStart,
+        rangeEnd: _$args.rangeEnd,
+      ),
+    );
   }
 }

@@ -21,28 +21,29 @@ void main() {
     // Mock PackageInfo platform channel
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('dev.fluttercommunity.plus/package_info'),
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getAll') {
-          return <String, dynamic>{
-            'appName': 'Lotti',
-            'packageName': 'app.lotti',
-            'version': '99.99.99', // High version to include all test releases
-            'buildNumber': '1',
-          };
-        }
-        return null;
-      },
-    );
+          const MethodChannel('dev.fluttercommunity.plus/package_info'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getAll') {
+              return <String, dynamic>{
+                'appName': 'Lotti',
+                'packageName': 'app.lotti',
+                'version':
+                    '99.99.99', // High version to include all test releases
+                'buildNumber': '1',
+              };
+            }
+            return null;
+          },
+        );
   });
 
   tearDownAll(() {
     // Clear the PackageInfo mock to prevent leaking to other tests
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('dev.fluttercommunity.plus/package_info'),
-      null,
-    );
+          const MethodChannel('dev.fluttercommunity.plus/package_info'),
+          null,
+        );
   });
 
   late MockWhatsNewService mockService;
@@ -111,12 +112,15 @@ void main() {
     });
 
     test('returns all unseen releases when none seen before', () async {
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1, testRelease2]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
-      when(() => mockService.fetchContent(testRelease2))
-          .thenAnswer((_) async => testContent2);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1, testRelease2]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchContent(testRelease2),
+      ).thenAnswer((_) async => testContent2);
 
       final state = await container.read(whatsNewControllerProvider.future);
 
@@ -139,10 +143,12 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1, testRelease2]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1, testRelease2]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
 
       final state = await container.read(whatsNewControllerProvider.future);
 
@@ -168,8 +174,9 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1, testRelease2]);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1, testRelease2]);
 
       final state = await container.read(whatsNewControllerProvider.future);
 
@@ -188,12 +195,15 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1, testRelease2]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
-      when(() => mockService.fetchContent(testRelease2))
-          .thenAnswer((_) async => testContent2);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1, testRelease2]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchContent(testRelease2),
+      ).thenAnswer((_) async => testContent2);
 
       var state = await container.read(whatsNewControllerProvider.future);
       expect(state.hasUnseenRelease, isTrue);
@@ -219,12 +229,15 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1, testRelease2]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
-      when(() => mockService.fetchContent(testRelease2))
-          .thenAnswer((_) async => testContent2);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1, testRelease2]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchContent(testRelease2),
+      ).thenAnswer((_) async => testContent2);
 
       var state = await container.read(whatsNewControllerProvider.future);
       expect(state.unseenContent, hasLength(2));
@@ -275,10 +288,12 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
 
       await container.read(whatsNewControllerProvider.future);
       await container
@@ -293,31 +308,37 @@ void main() {
   });
 
   group('shouldAutoShowWhatsNew', () {
-    test('returns true on first launch when there are unseen releases',
-        () async {
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
+    test(
+      'returns true on first launch when there are unseen releases',
+      () async {
+        when(
+          () => mockService.fetchIndex(),
+        ).thenAnswer((_) async => [testRelease1]);
+        when(
+          () => mockService.fetchContent(testRelease1),
+        ).thenAnswer((_) async => testContent1);
 
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
+        final shouldShow = await container.read(
+          shouldAutoShowWhatsNewProvider.future,
+        );
 
-      expect(shouldShow, isTrue);
+        expect(shouldShow, isTrue);
 
-      // Should have stored the current version
-      final prefs = await SharedPreferences.getInstance();
-      expect(
-        prefs.getString('whats_new_last_launched_version'),
-        equals('99.99.99'),
-      );
-    });
+        // Should have stored the current version
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('whats_new_last_launched_version'),
+          equals('99.99.99'),
+        );
+      },
+    );
 
     test('returns false on first launch when no releases available', () async {
       when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
 
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
+      final shouldShow = await container.read(
+        shouldAutoShowWhatsNewProvider.future,
+      );
 
       expect(shouldShow, isFalse);
     });
@@ -335,13 +356,16 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
 
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
+      final shouldShow = await container.read(
+        shouldAutoShowWhatsNewProvider.future,
+      );
 
       expect(shouldShow, isFalse);
     });
@@ -359,13 +383,16 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1]);
-      when(() => mockService.fetchContent(testRelease1))
-          .thenAnswer((_) async => testContent1);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
 
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
+      final shouldShow = await container.read(
+        shouldAutoShowWhatsNewProvider.future,
+      );
 
       expect(shouldShow, isTrue);
 
@@ -391,35 +418,40 @@ void main() {
         ],
       );
 
-      when(() => mockService.fetchIndex())
-          .thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
 
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
-
-      expect(shouldShow, isFalse);
-    });
-
-    test('returns false when version changed but no releases available',
-        () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_last_launched_version': '98.98.98',
-      });
-
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
+      final shouldShow = await container.read(
+        shouldAutoShowWhatsNewProvider.future,
       );
 
-      when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
-
-      final shouldShow =
-          await container.read(shouldAutoShowWhatsNewProvider.future);
-
       expect(shouldShow, isFalse);
     });
+
+    test(
+      'returns false when version changed but no releases available',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'whats_new_last_launched_version': '98.98.98',
+        });
+
+        container.dispose();
+        mockService = MockWhatsNewService();
+        container = ProviderContainer(
+          overrides: [
+            whatsNewServiceProvider.overrideWithValue(mockService),
+          ],
+        );
+
+        when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
+
+        final shouldShow = await container.read(
+          shouldAutoShowWhatsNewProvider.future,
+        );
+
+        expect(shouldShow, isFalse);
+      },
+    );
   });
 }

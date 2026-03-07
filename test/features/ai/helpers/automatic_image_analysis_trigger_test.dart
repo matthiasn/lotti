@@ -78,26 +78,31 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Setup default mock behavior for logging
-    when(() => mockLoggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
 
-    when(() => mockLoggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     // Create container with overridden providers
     container = ProviderContainer(
       overrides: [
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-        promptCapabilityFilterProvider
-            .overrideWithValue(mockPromptCapabilityFilter),
+        promptCapabilityFilterProvider.overrideWithValue(
+          mockPromptCapabilityFilter,
+        ),
         // Override the trigger provider to capture calls
         triggerNewInferenceProvider((
           entityId: '',
@@ -117,75 +122,84 @@ void main() {
 
   group('AutomaticImageAnalysisTrigger', () {
     test(
-        'triggers image analysis when category has automatic prompts configured',
-        () async {
-      // Arrange
-      const categoryId = 'test-category';
-      const imageEntryId = 'test-image';
-      const linkedTaskId = 'test-task';
-      const promptId = 'image-analysis-prompt';
+      'triggers image analysis when category has automatic prompts configured',
+      () async {
+        // Arrange
+        const categoryId = 'test-category';
+        const imageEntryId = 'test-image';
+        const linkedTaskId = 'test-task';
+        const promptId = 'image-analysis-prompt';
 
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.imageAnalysis: [promptId],
-        },
-      );
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+          automaticPrompts: {
+            AiResponseType.imageAnalysis: [promptId],
+          },
+        );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
 
-      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
-          .thenAnswer((_) async => createTestPrompt(id: promptId));
+        when(
+          () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
+        ).thenAnswer((_) async => createTestPrompt(id: promptId));
 
-      // Create a new container that tracks inference calls
-      var inferenceCalled = false;
-      String? capturedEntityId;
-      String? capturedPromptId;
-      String? capturedLinkedEntityId;
+        // Create a new container that tracks inference calls
+        var inferenceCalled = false;
+        String? capturedEntityId;
+        String? capturedPromptId;
+        String? capturedLinkedEntityId;
 
-      final testContainer = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          promptCapabilityFilterProvider
-              .overrideWithValue(mockPromptCapabilityFilter),
-          triggerNewInferenceProvider((
-            entityId: imageEntryId,
-            promptId: promptId,
-            linkedEntityId: linkedTaskId,
-          )).overrideWith((ref) async {
-            inferenceCalled = true;
-            capturedEntityId = imageEntryId;
-            capturedPromptId = promptId;
-            capturedLinkedEntityId = linkedTaskId;
-          }),
-        ],
-      );
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            triggerNewInferenceProvider((
+              entityId: imageEntryId,
+              promptId: promptId,
+              linkedEntityId: linkedTaskId,
+            )).overrideWith((ref) async {
+              inferenceCalled = true;
+              capturedEntityId = imageEntryId;
+              capturedPromptId = promptId;
+              capturedLinkedEntityId = linkedTaskId;
+            }),
+          ],
+        );
 
-      final trigger = testContainer.read(automaticImageAnalysisTriggerProvider);
+        final trigger = testContainer.read(
+          automaticImageAnalysisTriggerProvider,
+        );
 
-      // Act
-      await trigger.triggerAutomaticImageAnalysis(
-        imageEntryId: imageEntryId,
-        categoryId: categoryId,
-        linkedTaskId: linkedTaskId,
-      );
+        // Act
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: imageEntryId,
+          categoryId: categoryId,
+          linkedTaskId: linkedTaskId,
+        );
 
-      // Assert
-      expect(inferenceCalled, isTrue);
-      expect(capturedEntityId, equals(imageEntryId));
-      expect(capturedPromptId, equals(promptId));
-      expect(capturedLinkedEntityId, equals(linkedTaskId));
+        // Assert
+        expect(inferenceCalled, isTrue);
+        expect(capturedEntityId, equals(imageEntryId));
+        expect(capturedPromptId, equals(promptId));
+        expect(capturedLinkedEntityId, equals(linkedTaskId));
 
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      verify(() =>
-              mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
-          .called(1);
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+        verify(
+          () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
+        ).called(1);
 
-      testContainer.dispose();
-    });
+        testContainer.dispose();
+      },
+    );
 
     test('does not trigger when categoryId is null', () async {
       // Arrange
@@ -200,7 +214,8 @@ void main() {
       // Assert
       verifyNever(() => mockCategoryRepository.getCategoryById(any()));
       verifyNever(
-          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()));
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+      );
     });
 
     test('does not trigger when category has no automatic prompts', () async {
@@ -214,8 +229,9 @@ void main() {
         automaticPrompts: null,
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
@@ -226,82 +242,94 @@ void main() {
       );
 
       // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
+      verify(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).called(1);
       verifyNever(
-          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()));
-    });
-
-    test('does not trigger when category has empty image analysis prompts list',
-        () async {
-      // Arrange
-      const categoryId = 'test-category';
-
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.imageAnalysis: [], // Empty list
-        },
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
       );
-
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
-
-      final trigger = container.read(automaticImageAnalysisTriggerProvider);
-
-      // Act
-      await trigger.triggerAutomaticImageAnalysis(
-        imageEntryId: 'test-image',
-        categoryId: categoryId,
-      );
-
-      // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      verifyNever(
-          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()));
     });
 
     test(
-        'does not trigger when category has other prompts but no image analysis',
-        () async {
-      // Arrange
-      const categoryId = 'test-category';
+      'does not trigger when category has empty image analysis prompts list',
+      () async {
+        // Arrange
+        const categoryId = 'test-category';
 
-      final category = createTestCategory(
-        id: categoryId,
-        name: 'Test Category',
-        automaticPrompts: {
-          AiResponseType.taskSummary: ['summary-prompt'],
-          AiResponseType.audioTranscription: ['transcription-prompt'],
-        },
-      );
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+          automaticPrompts: {
+            AiResponseType.imageAnalysis: [], // Empty list
+          },
+        );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
 
-      final trigger = container.read(automaticImageAnalysisTriggerProvider);
+        final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
-      // Act
-      await trigger.triggerAutomaticImageAnalysis(
-        imageEntryId: 'test-image',
-        categoryId: categoryId,
-      );
+        // Act
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: 'test-image',
+          categoryId: categoryId,
+        );
 
-      // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
-      verifyNever(
-          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()));
-    });
+        // Assert
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+        verifyNever(
+          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+        );
+      },
+    );
+
+    test(
+      'does not trigger when category has other prompts but no image analysis',
+      () async {
+        // Arrange
+        const categoryId = 'test-category';
+
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+          automaticPrompts: {
+            AiResponseType.taskSummary: ['summary-prompt'],
+            AiResponseType.audioTranscription: ['transcription-prompt'],
+          },
+        );
+
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+
+        final trigger = container.read(automaticImageAnalysisTriggerProvider);
+
+        // Act
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: 'test-image',
+          categoryId: categoryId,
+        );
+
+        // Assert
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+        verifyNever(
+          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+        );
+      },
+    );
 
     test('handles missing category gracefully', () async {
       // Arrange
       const categoryId = 'non-existent-category';
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => null);
 
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
@@ -312,10 +340,12 @@ void main() {
       );
 
       // Assert
-      verify(() => mockCategoryRepository.getCategoryById(categoryId))
-          .called(1);
+      verify(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).called(1);
       verifyNever(
-          () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()));
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
+      );
     });
 
     test('logs warning when no available prompts for platform', () async {
@@ -331,11 +361,13 @@ void main() {
         },
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
-      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
-          .thenAnswer((_) async => null); // No available prompt
+      when(
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
+      ).thenAnswer((_) async => null); // No available prompt
 
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
@@ -346,11 +378,13 @@ void main() {
       );
 
       // Assert
-      verify(() => mockLoggingService.captureEvent(
-            'No available image analysis prompts for current platform',
-            domain: 'automatic_image_analysis_trigger',
-            subDomain: 'triggerAutomaticImageAnalysis',
-          )).called(1);
+      verify(
+        () => mockLoggingService.captureEvent(
+          'No available image analysis prompts for current platform',
+          domain: 'automatic_image_analysis_trigger',
+          subDomain: 'triggerAutomaticImageAnalysis',
+        ),
+      ).called(1);
     });
 
     test('uses first available prompt from multiple prompts', () async {
@@ -367,12 +401,16 @@ void main() {
         },
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
-      when(() => mockPromptCapabilityFilter
-              .getFirstAvailablePrompt([promptId1, promptId2]))
-          .thenAnswer((_) async => createTestPrompt(id: promptId1));
+      when(
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt([
+          promptId1,
+          promptId2,
+        ]),
+      ).thenAnswer((_) async => createTestPrompt(id: promptId1));
 
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
@@ -383,16 +421,21 @@ void main() {
       );
 
       // Assert - verify it called with the full list, not just one
-      verify(() => mockPromptCapabilityFilter
-          .getFirstAvailablePrompt([promptId1, promptId2])).called(1);
+      verify(
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt([
+          promptId1,
+          promptId2,
+        ]),
+      ).called(1);
     });
 
     test('handles exception during category lookup gracefully', () async {
       // Arrange
       const categoryId = 'test-category';
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenThrow(Exception('Database error'));
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenThrow(Exception('Database error'));
 
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
@@ -403,12 +446,14 @@ void main() {
       );
 
       // Assert - exception should be logged
-      verify(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: 'automatic_image_analysis_trigger',
-            subDomain: 'triggerAutomaticImageAnalysis',
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: 'automatic_image_analysis_trigger',
+          subDomain: 'triggerAutomaticImageAnalysis',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
 
     test('works without linkedTaskId', () async {
@@ -425,11 +470,13 @@ void main() {
         },
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
-      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
-          .thenAnswer((_) async => createTestPrompt(id: promptId));
+      when(
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
+      ).thenAnswer((_) async => createTestPrompt(id: promptId));
 
       // Create container that tracks inference calls
       var inferenceCalled = false;
@@ -437,8 +484,9 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: [
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          promptCapabilityFilterProvider
-              .overrideWithValue(mockPromptCapabilityFilter),
+          promptCapabilityFilterProvider.overrideWithValue(
+            mockPromptCapabilityFilter,
+          ),
           triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,
@@ -465,8 +513,7 @@ void main() {
       testContainer.dispose();
     });
 
-    test('callback invocation triggers analysis with correct parameters',
-        () async {
+    test('callback invocation triggers analysis with correct parameters', () async {
       // This test verifies the integration between image import and analysis trigger.
       // When createImageEntry's onCreated callback is invoked, it should trigger
       // automatic image analysis with the correct parameters.
@@ -484,11 +531,13 @@ void main() {
         },
       );
 
-      when(() => mockCategoryRepository.getCategoryById(categoryId))
-          .thenAnswer((_) async => category);
+      when(
+        () => mockCategoryRepository.getCategoryById(categoryId),
+      ).thenAnswer((_) async => category);
 
-      when(() => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]))
-          .thenAnswer((_) async => createTestPrompt(id: promptId));
+      when(
+        () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
+      ).thenAnswer((_) async => createTestPrompt(id: promptId));
 
       // Track the parameters passed to inference
       String? capturedEntityId;
@@ -498,8 +547,9 @@ void main() {
       final testContainer = ProviderContainer(
         overrides: [
           categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          promptCapabilityFilterProvider
-              .overrideWithValue(mockPromptCapabilityFilter),
+          promptCapabilityFilterProvider.overrideWithValue(
+            mockPromptCapabilityFilter,
+          ),
           triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,

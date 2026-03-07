@@ -5,8 +5,9 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
 import '../../../../test_helper.dart';
 
 void main() {
-  testWidgets('shows export in overflow menu and triggers callback',
-      (tester) async {
+  testWidgets('shows export in overflow menu and triggers callback', (
+    tester,
+  ) async {
     var called = 0;
 
     await tester.pumpWidget(
@@ -37,8 +38,9 @@ void main() {
     expect(called, 1);
   });
 
-  testWidgets('does not show export item when callback is null',
-      (tester) async {
+  testWidgets('does not show export item when callback is null', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       WidgetTestBench(
         mediaQueryData: const MediaQueryData(size: Size(1280, 1000)),

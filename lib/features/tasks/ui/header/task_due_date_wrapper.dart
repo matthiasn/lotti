@@ -38,8 +38,9 @@ class TaskDueDateWrapper extends ConsumerWidget {
         task.data.status is TaskDone || task.data.status is TaskRejected;
 
     final label = dueDate != null
-        ? context.messages
-            .taskDueDateWithDate(DateFormat.yMMMd().format(dueDate))
+        ? context.messages.taskDueDateWithDate(
+            DateFormat.yMMMd().format(dueDate),
+          )
         : context.messages.taskNoDueDateLabel;
 
     return GestureDetector(

@@ -96,8 +96,9 @@ void main() {
   });
 
   test('createLabel upserts entity definition with trimmed values', () async {
-    when(() => persistenceLogic.upsertEntityDefinition(any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => persistenceLogic.upsertEntityDefinition(any()),
+    ).thenAnswer((_) async => 1);
 
     final label = await repository.createLabel(
       name: '  Release ',
@@ -108,10 +109,13 @@ void main() {
     expect(label.name, 'Release');
     expect(label.description, 'blockers');
 
-    final captured = verify(
-      () => persistenceLogic
-          .upsertEntityDefinition(captureAny<EntityDefinition>()),
-    ).captured.single as LabelDefinition;
+    final captured =
+        verify(
+              () => persistenceLogic.upsertEntityDefinition(
+                captureAny<EntityDefinition>(),
+              ),
+            ).captured.single
+            as LabelDefinition;
 
     expect(captured.name, 'Release');
     expect(captured.color, '#FF0000');
@@ -119,8 +123,9 @@ void main() {
   });
 
   test('updateLabel propagates changes through persistence logic', () async {
-    when(() => persistenceLogic.upsertEntityDefinition(any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => persistenceLogic.upsertEntityDefinition(any()),
+    ).thenAnswer((_) async => 1);
 
     final label = LabelDefinition(
       id: 'id',
@@ -146,50 +151,53 @@ void main() {
   });
 
   test(
-      'createLabel normalizes applicableCategoryIds (validates, dedups, sorts)',
-      () async {
-    when(() => persistenceLogic.upsertEntityDefinition(any()))
-        .thenAnswer((_) async => 1);
+    'createLabel normalizes applicableCategoryIds (validates, dedups, sorts)',
+    () async {
+      when(
+        () => persistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
-    // Provide two valid categories via cache + one unknown
-    when(() => cacheService.getCategoryById('cat-b')).thenReturn(
-      CategoryDefinition(
-        id: 'cat-b',
-        name: 'Bravo',
-        createdAt: baseTime,
-        updatedAt: baseTime,
-        vectorClock: const VectorClock(<String, int>{}),
-        private: false,
-        active: true,
-      ),
-    );
-    when(() => cacheService.getCategoryById('cat-a')).thenReturn(
-      CategoryDefinition(
-        id: 'cat-a',
-        name: 'Alpha',
-        createdAt: baseTime,
-        updatedAt: baseTime,
-        vectorClock: const VectorClock(<String, int>{}),
-        private: false,
-        active: true,
-      ),
-    );
+      // Provide two valid categories via cache + one unknown
+      when(() => cacheService.getCategoryById('cat-b')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-b',
+          name: 'Bravo',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          private: false,
+          active: true,
+        ),
+      );
+      when(() => cacheService.getCategoryById('cat-a')).thenReturn(
+        CategoryDefinition(
+          id: 'cat-a',
+          name: 'Alpha',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          private: false,
+          active: true,
+        ),
+      );
 
-    final label = await repository.createLabel(
-      name: 'Scoped',
-      color: '#ABCDEF',
-      description: 'desc',
-      applicableCategoryIds: const ['cat-b', 'unknown', 'cat-a', 'cat-a'],
-    );
+      final label = await repository.createLabel(
+        name: 'Scoped',
+        color: '#ABCDEF',
+        description: 'desc',
+        applicableCategoryIds: const ['cat-b', 'unknown', 'cat-a', 'cat-a'],
+      );
 
-    // Unknown filtered, duplicates removed, sorted by category name (Alpha, Bravo)
-    expect(label.applicableCategoryIds, equals(['cat-a', 'cat-b']));
-  });
+      // Unknown filtered, duplicates removed, sorted by category name (Alpha, Bravo)
+      expect(label.applicableCategoryIds, equals(['cat-a', 'cat-b']));
+    },
+  );
 
   group('updateLabel with applicableCategoryIds', () {
     test('normalizes (validates, dedups, sorts)', () async {
-      when(() => persistenceLogic.upsertEntityDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => persistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       // Cache returns two valid categories
       when(() => cacheService.getCategoryById('cat-b')).thenReturn(
@@ -235,8 +243,9 @@ void main() {
     });
 
     test('passing null keeps existing categories', () async {
-      when(() => persistenceLogic.upsertEntityDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => persistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       final existing = LabelDefinition(
         id: 'id',
@@ -248,14 +257,17 @@ void main() {
         applicableCategoryIds: const ['cat-1', 'cat-2'],
       );
 
-      final updated =
-          await repository.updateLabel(existing, applicableCategoryIds: null);
+      final updated = await repository.updateLabel(
+        existing,
+        applicableCategoryIds: null,
+      );
       expect(updated.applicableCategoryIds, equals(['cat-1', 'cat-2']));
     });
 
     test('empty list clears applicableCategoryIds (becomes null)', () async {
-      when(() => persistenceLogic.upsertEntityDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => persistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       final existing = LabelDefinition(
         id: 'id',
@@ -267,14 +279,17 @@ void main() {
         applicableCategoryIds: const ['cat-1'],
       );
 
-      final updated = await repository
-          .updateLabel(existing, applicableCategoryIds: const []);
+      final updated = await repository.updateLabel(
+        existing,
+        applicableCategoryIds: const [],
+      );
       expect(updated.applicableCategoryIds, isNull);
     });
 
     test('filters orphaned category IDs during update', () async {
-      when(() => persistenceLogic.upsertEntityDefinition(any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => persistenceLogic.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
 
       // Only cat-live exists now
       when(() => cacheService.getCategoryById('cat-live')).thenReturn(
@@ -299,8 +314,10 @@ void main() {
         applicableCategoryIds: const ['cat-deleted'],
       );
 
-      final updated = await repository.updateLabel(existing,
-          applicableCategoryIds: const ['cat-live', 'cat-deleted']);
+      final updated = await repository.updateLabel(
+        existing,
+        applicableCategoryIds: const ['cat-live', 'cat-deleted'],
+      );
       expect(updated.applicableCategoryIds, equals(['cat-live']));
     });
   });
@@ -315,25 +332,31 @@ void main() {
       vectorClock: const VectorClock(<String, int>{}),
     );
 
-    when(() => journalDb.getLabelDefinitionById(label.id))
-        .thenAnswer((_) async => label);
-    when(() => persistenceLogic.upsertEntityDefinition(any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => journalDb.getLabelDefinitionById(label.id),
+    ).thenAnswer((_) async => label);
+    when(
+      () => persistenceLogic.upsertEntityDefinition(any()),
+    ).thenAnswer((_) async => 1);
 
     await repository.deleteLabel(label.id);
 
-    final captured = verify(
-      () => persistenceLogic
-          .upsertEntityDefinition(captureAny<EntityDefinition>()),
-    ).captured.single as LabelDefinition;
+    final captured =
+        verify(
+              () => persistenceLogic.upsertEntityDefinition(
+                captureAny<EntityDefinition>(),
+              ),
+            ).captured.single
+            as LabelDefinition;
 
     expect(captured.deletedAt, isNotNull);
     expect(captured.updatedAt.isAfter(label.updatedAt), isTrue);
   });
 
   test('deleteLabel no-ops when definition is missing', () async {
-    when(() => journalDb.getLabelDefinitionById(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => journalDb.getLabelDefinitionById(any()),
+    ).thenAnswer((_) async => null);
 
     await repository.deleteLabel('missing');
 
@@ -353,8 +376,9 @@ void main() {
   test('addLabels merges unique ids and persists entity', () async {
     final entry = buildEntry(labelIds: const ['existing']);
 
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
 
     Metadata? capturedMetadata;
     when(
@@ -394,8 +418,9 @@ void main() {
   });
 
   test('addLabels returns false when journal entity is missing', () async {
-    when(() => journalDb.journalEntityById(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
 
     final result = await repository.addLabels(
       journalEntityId: 'missing',
@@ -407,8 +432,9 @@ void main() {
 
   test('removeLabel updates metadata and persists entity', () async {
     final entry = buildEntry(labelIds: const ['keep', 'remove']);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
 
     Metadata? capturedMetadata;
     when(
@@ -448,8 +474,9 @@ void main() {
   });
 
   test('removeLabel returns false when entity is missing', () async {
-    when(() => journalDb.journalEntityById(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => journalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
 
     final result = await repository.removeLabel(
       journalEntityId: 'missing',
@@ -461,14 +488,19 @@ void main() {
 
   test('addLabels returns false on exception', () async {
     final entry = buildEntry(labelIds: const ['a']);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
     when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata);
-    when(() => persistenceLogic.updateDbEntity(any(),
-            linkedId: any(named: 'linkedId'),
-            enqueueSync: any(named: 'enqueueSync')))
-        .thenThrow(Exception('db error'));
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        linkedId: any(named: 'linkedId'),
+        enqueueSync: any(named: 'enqueueSync'),
+      ),
+    ).thenThrow(Exception('db error'));
 
     final result = await repository.addLabels(
       journalEntityId: entry.meta.id,
@@ -481,13 +513,19 @@ void main() {
   test('addLabels does not modify original labelIds list', () async {
     final original = ['existing'];
     final entry = buildEntry(labelIds: original);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
     when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata);
-    when(() => persistenceLogic.updateDbEntity(any(),
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
         linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((_) async => true);
+        enqueueSync: any(named: 'enqueueSync'),
+      ),
+    ).thenAnswer((_) async => true);
 
     await repository.addLabels(
       journalEntityId: entry.meta.id,
@@ -499,14 +537,19 @@ void main() {
 
   test('removeLabel returns false on database error', () async {
     final entry = buildEntry(labelIds: const ['x']);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
     when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata);
-    when(() => persistenceLogic.updateDbEntity(any(),
-            linkedId: any(named: 'linkedId'),
-            enqueueSync: any(named: 'enqueueSync')))
-        .thenThrow(Exception('db error'));
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
+        linkedId: any(named: 'linkedId'),
+        enqueueSync: any(named: 'enqueueSync'),
+      ),
+    ).thenThrow(Exception('db error'));
 
     final result = await repository.removeLabel(
       journalEntityId: entry.meta.id,
@@ -517,17 +560,26 @@ void main() {
 
   test('setLabels handles empty list correctly', () async {
     final entry = buildEntry(labelIds: const ['a']);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
-    when(() =>
-        persistenceLogic.updateMetadata(any(),
-            labelIds: any(named: 'labelIds'),
-            clearLabelIds: any(named: 'clearLabelIds'))).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata);
+    when(
+      () => journalDb.journalEntityById(entry.meta.id),
+    ).thenAnswer((_) async => entry);
+    when(
+      () => persistenceLogic.updateMetadata(
+        any(),
+        labelIds: any(named: 'labelIds'),
+        clearLabelIds: any(named: 'clearLabelIds'),
+      ),
+    ).thenAnswer(
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
     JournalEntity? captured;
-    when(() => persistenceLogic.updateDbEntity(any(),
+    when(
+      () => persistenceLogic.updateDbEntity(
+        any(),
         linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((invocation) async {
+        enqueueSync: any(named: 'enqueueSync'),
+      ),
+    ).thenAnswer((invocation) async {
       captured = invocation.positionalArguments.first as JournalEntity;
       return true;
     });
@@ -540,66 +592,78 @@ void main() {
     expect(captured?.meta.labelIds, isNull);
   });
 
-  test('setLabels filters deleted labels from final list and sorts by name',
-      () async {
-    final entry = buildEntry(labelIds: const ['a']);
-    when(() => journalDb.journalEntityById(entry.meta.id))
-        .thenAnswer((_) async => entry);
-    when(() => cacheService.getLabelById('keep1')).thenReturn(
-      LabelDefinition(
-        id: 'keep1',
-        name: 'Bravo',
-        color: '#000000',
-        createdAt: baseTime,
-        updatedAt: baseTime,
-        vectorClock: const VectorClock(<String, int>{}),
-      ),
-    );
-    when(() => journalDb.getLabelDefinitionById('keep2')).thenAnswer(
-      (_) async => LabelDefinition(
-        id: 'keep2',
-        name: 'Alpha',
-        color: '#000000',
-        createdAt: baseTime,
-        updatedAt: baseTime,
-        vectorClock: const VectorClock(<String, int>{}),
-      ),
-    );
-    when(() => journalDb.getLabelDefinitionById('deleted')).thenAnswer(
-      (_) async => LabelDefinition(
-        id: 'deleted',
-        name: 'Zulu',
-        color: '#000000',
-        createdAt: baseTime,
-        updatedAt: baseTime,
-        vectorClock: const VectorClock(<String, int>{}),
-        deletedAt: baseTime,
-      ),
-    );
-    when(() => journalDb.getLabelDefinitionById('missing'))
-        .thenAnswer((_) async => null);
+  test(
+    'setLabels filters deleted labels from final list and sorts by name',
+    () async {
+      final entry = buildEntry(labelIds: const ['a']);
+      when(
+        () => journalDb.journalEntityById(entry.meta.id),
+      ).thenAnswer((_) async => entry);
+      when(() => cacheService.getLabelById('keep1')).thenReturn(
+        LabelDefinition(
+          id: 'keep1',
+          name: 'Bravo',
+          color: '#000000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+      );
+      when(() => journalDb.getLabelDefinitionById('keep2')).thenAnswer(
+        (_) async => LabelDefinition(
+          id: 'keep2',
+          name: 'Alpha',
+          color: '#000000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+        ),
+      );
+      when(() => journalDb.getLabelDefinitionById('deleted')).thenAnswer(
+        (_) async => LabelDefinition(
+          id: 'deleted',
+          name: 'Zulu',
+          color: '#000000',
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          vectorClock: const VectorClock(<String, int>{}),
+          deletedAt: baseTime,
+        ),
+      );
+      when(
+        () => journalDb.getLabelDefinitionById('missing'),
+      ).thenAnswer((_) async => null);
 
-    when(() =>
-        persistenceLogic.updateMetadata(any(),
-            labelIds: any(named: 'labelIds'),
-            clearLabelIds: any(named: 'clearLabelIds'))).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first as Metadata);
-    JournalEntity? captured;
-    when(() => persistenceLogic.updateDbEntity(any(),
-        linkedId: any(named: 'linkedId'),
-        enqueueSync: any(named: 'enqueueSync'))).thenAnswer((invocation) async {
-      captured = invocation.positionalArguments.first as JournalEntity;
-      return true;
-    });
+      when(
+        () => persistenceLogic.updateMetadata(
+          any(),
+          labelIds: any(named: 'labelIds'),
+          clearLabelIds: any(named: 'clearLabelIds'),
+        ),
+      ).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      JournalEntity? captured;
+      when(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+          enqueueSync: any(named: 'enqueueSync'),
+        ),
+      ).thenAnswer((invocation) async {
+        captured = invocation.positionalArguments.first as JournalEntity;
+        return true;
+      });
 
-    final result = await repository.setLabels(
-      journalEntityId: entry.meta.id,
-      labelIds: const ['keep1', 'deleted', 'missing', 'keep2'],
-    );
-    expect(result, isTrue);
-    // Sorted by name: Alpha (keep2), Bravo (keep1)
-    expect(captured?.meta.labelIds, equals(['keep2', 'keep1']));
-  });
+      final result = await repository.setLabels(
+        journalEntityId: entry.meta.id,
+        labelIds: const ['keep1', 'deleted', 'missing', 'keep2'],
+      );
+      expect(result, isTrue);
+      // Sorted by name: Alpha (keep2), Bravo (keep1)
+      expect(captured?.meta.labelIds, equals(['keep2', 'keep1']));
+    },
+  );
 
   test('addLabelsToMeta merges ids without duplicates', () {
     final meta = buildMetadata(labelIds: const ['a', 'b']);
@@ -641,8 +705,9 @@ void main() {
         ),
       ];
 
-      when(() => journalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => labels);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => labels);
 
       final result = await repository.buildLabelTuples(['label-1', 'label-2']);
 
@@ -663,16 +728,21 @@ void main() {
         ),
       ];
 
-      when(() => journalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => labels);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => labels);
 
-      final result =
-          await repository.buildLabelTuples(['label-1', 'unknown-label']);
+      final result = await repository.buildLabelTuples([
+        'label-1',
+        'unknown-label',
+      ]);
 
       expect(result, hasLength(2));
       expect(result[0], equals({'id': 'label-1', 'name': 'Known Label'}));
       expect(
-          result[1], equals({'id': 'unknown-label', 'name': 'unknown-label'}));
+        result[1],
+        equals({'id': 'unknown-label', 'name': 'unknown-label'}),
+      );
     });
 
     test('maintains order of input IDs', () async {
@@ -695,8 +765,9 @@ void main() {
         ),
       ];
 
-      when(() => journalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => labels);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => labels);
 
       final result = await repository.buildLabelTuples(['b', 'a']);
 
@@ -714,8 +785,9 @@ void main() {
         'label-3': 10,
       };
 
-      when(() => journalDb.getLabelUsageCounts())
-          .thenAnswer((_) async => expectedCounts);
+      when(
+        () => journalDb.getLabelUsageCounts(),
+      ).thenAnswer((_) async => expectedCounts);
 
       final result = await repository.getLabelUsageCounts();
 
@@ -724,8 +796,9 @@ void main() {
     });
 
     test('returns empty map when no labels are used', () async {
-      when(() => journalDb.getLabelUsageCounts())
-          .thenAnswer((_) async => <String, int>{});
+      when(
+        () => journalDb.getLabelUsageCounts(),
+      ).thenAnswer((_) async => <String, int>{});
 
       final result = await repository.getLabelUsageCounts();
 
@@ -763,8 +836,9 @@ void main() {
         updatedAt: baseTime,
         vectorClock: const VectorClock(<String, int>{}),
       );
-      when(() => journalDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => [label]);
+      when(
+        () => journalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => [label]);
 
       final result = await repoWithRealNotifications.watchLabels().first;
 
@@ -789,8 +863,9 @@ void main() {
         });
 
         final emissions = <List<LabelDefinition>>[];
-        final sub =
-            repoWithRealNotifications.watchLabels().listen(emissions.add);
+        final sub = repoWithRealNotifications.watchLabels().listen(
+          emissions.add,
+        );
 
         async.flushMicrotasks();
         expect(emissions, hasLength(1));
@@ -835,8 +910,9 @@ void main() {
         updatedAt: baseTime,
         vectorClock: const VectorClock(<String, int>{}),
       );
-      when(() => journalDb.getLabelDefinitionById('l-1'))
-          .thenAnswer((_) async => label);
+      when(
+        () => journalDb.getLabelDefinitionById('l-1'),
+      ).thenAnswer((_) async => label);
 
       final result = await repoWithRealNotifications.watchLabel('l-1').first;
 
@@ -844,11 +920,13 @@ void main() {
     });
 
     test('emits null for non-existent label', () async {
-      when(() => journalDb.getLabelDefinitionById('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => journalDb.getLabelDefinitionById('missing'),
+      ).thenAnswer((_) async => null);
 
-      final result =
-          await repoWithRealNotifications.watchLabel('missing').first;
+      final result = await repoWithRealNotifications
+          .watchLabel('missing')
+          .first;
 
       expect(result, isNull);
     });

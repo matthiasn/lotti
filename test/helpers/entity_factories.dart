@@ -57,7 +57,8 @@ class TestTaskDataFactory {
     String? languageCode,
   }) {
     final date = dateFrom ?? testFixedDate;
-    final taskStatus = status ??
+    final taskStatus =
+        status ??
         TaskStatus.open(
           id: 'status-1',
           createdAt: date,

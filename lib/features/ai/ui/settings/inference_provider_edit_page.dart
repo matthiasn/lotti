@@ -36,25 +36,25 @@ Future<Object?> runFtueSetupForType({
 }) async {
   return switch (providerType) {
     InferenceProviderType.alibaba => setupService.performAlibabaFtueSetup(
-        context: context,
-        ref: ref,
-        provider: config,
-      ),
+      context: context,
+      ref: ref,
+      provider: config,
+    ),
     InferenceProviderType.gemini => setupService.performGeminiFtueSetup(
-        context: context,
-        ref: ref,
-        provider: config,
-      ),
+      context: context,
+      ref: ref,
+      provider: config,
+    ),
     InferenceProviderType.openAi => setupService.performOpenAiFtueSetup(
-        context: context,
-        ref: ref,
-        provider: config,
-      ),
+      context: context,
+      ref: ref,
+      provider: config,
+    ),
     InferenceProviderType.mistral => setupService.performMistralFtueSetup(
-        context: context,
-        ref: ref,
-        provider: config,
-      ),
+      context: context,
+      ref: ref,
+      provider: config,
+    ),
     _ => null,
   };
 }
@@ -147,8 +147,9 @@ class _InferenceProviderEditPageState
   InferenceProviderFormControllerProvider get _formProvider =>
       inferenceProviderFormControllerProvider(
         configId: widget.configId,
-        preselectedType:
-            widget.configId == null ? widget.preselectedType : null,
+        preselectedType: widget.configId == null
+            ? widget.preselectedType
+            : null,
       );
 
   @override
@@ -161,7 +162,8 @@ class _InferenceProviderEditPageState
     // Watch the form state to enable/disable save button
     final formState = ref.watch(_formProvider).value;
 
-    final isFormValid = formState != null &&
+    final isFormValid =
+        formState != null &&
         formState.isValid &&
         (widget.configId == null || formState.isDirty);
 
@@ -245,15 +247,21 @@ class _InferenceProviderEditPageState
                   // Form Content
                   SliverToBoxAdapter(
                     child: switch (configAsync) {
-                      AsyncData(value: final config) => _buildForm(context, ref,
-                          config, formState, isFormValid, handleSave),
+                      AsyncData(value: final config) => _buildForm(
+                        context,
+                        ref,
+                        config,
+                        formState,
+                        isFormValid,
+                        handleSave,
+                      ),
                       AsyncError() => _buildErrorState(context),
                       _ => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(48),
-                            child: CircularProgressIndicator(),
-                          ),
+                        child: Padding(
+                          padding: EdgeInsets.all(48),
+                          child: CircularProgressIndicator(),
                         ),
+                      ),
                     },
                   ),
                 ],
@@ -311,14 +319,16 @@ class _InferenceProviderEditPageState
                     hint: 'Select a provider type',
                     readOnly: true,
                     controller: TextEditingController(
-                      text:
-                          formState.inferenceProviderType.displayName(context),
+                      text: formState.inferenceProviderType.displayName(
+                        context,
+                      ),
                     ),
                     prefixIcon: formState.inferenceProviderType.icon,
                     suffixIcon: Icon(
                       Icons.arrow_drop_down_rounded,
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                   ),
                 ),
@@ -351,8 +361,9 @@ class _InferenceProviderEditPageState
           const SizedBox(height: 32),
 
           // Authentication Section - Only show for providers that require API key
-          if (!ProviderConfig.noApiKeyRequired
-              .contains(formState.inferenceProviderType)) ...[
+          if (!ProviderConfig.noApiKeyRequired.contains(
+            formState.inferenceProviderType,
+          )) ...[
             AiFormSection(
               title: 'Authentication',
               icon: Icons.security_rounded,
@@ -372,8 +383,9 @@ class _InferenceProviderEditPageState
                       _showApiKey
                           ? Icons.visibility_off_rounded
                           : Icons.visibility_rounded,
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.6),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
                     ),
                     onPressed: () => setState(() {
                       _showApiKey = !_showApiKey;
@@ -494,8 +506,9 @@ class _InferenceProviderEditPageState
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color:
-                    context.colorScheme.errorContainer.withValues(alpha: 0.2),
+                color: context.colorScheme.errorContainer.withValues(
+                  alpha: 0.2,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
@@ -578,8 +591,9 @@ class _AvailableModelsSection extends ConsumerWidget {
               description: 'Quick-add preconfigured models for this provider',
               children: [
                 ...knownModels.map((knownModel) {
-                  final isAdded =
-                      existingModelIds.contains(knownModel.providerModelId);
+                  final isAdded = existingModelIds.contains(
+                    knownModel.providerModelId,
+                  );
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _KnownModelTile(
@@ -600,7 +614,7 @@ class _AvailableModelsSection extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -678,8 +692,9 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
       decoration: BoxDecoration(
         color: widget.isAdded
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.1)
-            : context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.3),
+            : context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.3,
+              ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: widget.isAdded
@@ -773,8 +788,9 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                   Text(
                     widget.knownModel.description,
                     style: context.textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant
-                          .withValues(alpha: 0.8),
+                      color: context.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.8,
+                      ),
                       height: 1.3,
                     ),
                     maxLines: 2,
@@ -829,15 +845,17 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                           gradient: LinearGradient(
                             colors: [
                               context.colorScheme.primaryContainer,
-                              context.colorScheme.primaryContainer
-                                  .withValues(alpha: 0.7),
+                              context.colorScheme.primaryContainer.withValues(
+                                alpha: 0.7,
+                              ),
                             ],
                           ),
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: context.colorScheme.primary
-                                  .withValues(alpha: 0.2),
+                              color: context.colorScheme.primary.withValues(
+                                alpha: 0.2,
+                              ),
                               blurRadius: 6,
                               offset: const Offset(0, 1),
                             ),
@@ -931,12 +949,14 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: context.colorScheme.surfaceContainerHighest
-                    .withValues(alpha: 0.3),
+                color: context.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.3,
+                ),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color:
-                      context.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  color: context.colorScheme.outlineVariant.withValues(
+                    alpha: 0.3,
+                  ),
                 ),
               ),
               child: Column(
@@ -947,8 +967,9 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: context.colorScheme.primary
-                              .withValues(alpha: 0.1),
+                          color: context.colorScheme.primary.withValues(
+                            alpha: 0.1,
+                          ),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -985,8 +1006,9 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: context.colorScheme.primaryContainer
-                          .withValues(alpha: 0.2),
+                      color: context.colorScheme.primaryContainer.withValues(
+                        alpha: 0.2,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -1056,8 +1078,9 @@ class _ModalityChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color:
-            context.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: context.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.5,
+        ),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -1072,8 +1095,9 @@ class _ModalityChip extends StatelessWidget {
           Text(
             label,
             style: context.textTheme.labelSmall?.copyWith(
-              color:
-                  context.colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
+              color: context.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.9,
+              ),
               fontSize: 9,
               letterSpacing: -0.2,
             ),

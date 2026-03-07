@@ -53,8 +53,10 @@ class RitualContextBuilder extends EvolutionContextBuilder {
     final buf = StringBuffer(baseContext.initialUserMessage)..writeln();
     // High-priority items first — grievances and excellence notes must be
     // reviewed before general feedback.
-    final highPriorityCount =
-        _writeHighPrioritySection(buf, classifiedFeedback);
+    final highPriorityCount = _writeHighPrioritySection(
+      buf,
+      classifiedFeedback,
+    );
 
     final remainingSlots = maxFeedbackItems - highPriorityCount;
     final nonCriticalItems = classifiedFeedback.items

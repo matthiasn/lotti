@@ -20,15 +20,15 @@ final class PlayerFactoryProvider
     with $Provider<PlayerFactory> {
   /// Provider for the player factory, can be overridden in tests.
   PlayerFactoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'playerFactoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'playerFactoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$playerFactoryHash();
@@ -70,15 +70,15 @@ final class AudioPlayerControllerProvider
   /// Marked as keepAlive since audio state should persist for the entire app
   /// lifecycle.
   AudioPlayerControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'audioPlayerControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioPlayerControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$audioPlayerControllerHash();
@@ -109,11 +109,14 @@ abstract class _$AudioPlayerController extends $Notifier<AudioPlayerState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AudioPlayerState, AudioPlayerState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AudioPlayerState, AudioPlayerState>,
-        AudioPlayerState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AudioPlayerState, AudioPlayerState>,
+              AudioPlayerState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

@@ -30,8 +30,10 @@ void main() {
 
       test('should have reasonable timeout values', () {
         expect(screenshotDelaySeconds, greaterThan(0));
-        expect(screenshotProcessTimeoutSeconds,
-            greaterThan(screenshotDelaySeconds));
+        expect(
+          screenshotProcessTimeoutSeconds,
+          greaterThan(screenshotDelaySeconds),
+        );
       });
     });
 
@@ -89,8 +91,10 @@ void main() {
 
     group('Error Messages', () {
       test('should have helpful no tool available message', () {
-        expect(noScreenshotToolAvailableMessage,
-            contains('No screenshot tool available'));
+        expect(
+          noScreenshotToolAvailableMessage,
+          contains('No screenshot tool available'),
+        );
       });
 
       test('should have install instructions message', () {
@@ -115,12 +119,16 @@ void main() {
 
       test('should have screencapture failed message', () {
         expect(
-            screencaptureFailedMessage, contains('macOS screencapture failed'));
+          screencaptureFailedMessage,
+          contains('macOS screencapture failed'),
+        );
       });
 
       test('should have unsupported platform message', () {
-        expect(unsupportedPlatformMessage,
-            contains('Screenshot functionality is not supported'));
+        expect(
+          unsupportedPlatformMessage,
+          contains('Screenshot functionality is not supported'),
+        );
       });
     });
 
@@ -134,8 +142,11 @@ void main() {
       test('should have configuration for all Linux tools', () {
         for (final tool in linuxScreenshotTools) {
           final config = screenshotToolConfigs[tool];
-          expect(config, isNotNull,
-              reason: 'Tool $tool should have configuration');
+          expect(
+            config,
+            isNotNull,
+            reason: 'Tool $tool should have configuration',
+          );
         }
       });
 
@@ -209,7 +220,9 @@ void main() {
     group('Constants Consistency', () {
       test('Linux tools list should match tool configurations', () {
         expect(
-            linuxScreenshotTools.length, equals(screenshotToolConfigs.length));
+          linuxScreenshotTools.length,
+          equals(screenshotToolConfigs.length),
+        );
 
         for (final tool in linuxScreenshotTools) {
           expect(screenshotToolConfigs.containsKey(tool), isTrue);
@@ -217,14 +230,22 @@ void main() {
       });
 
       test('tool arguments should match configuration arguments', () {
-        expect(screenshotToolConfigs[spectacleTool]!.arguments,
-            equals(spectacleArguments));
-        expect(screenshotToolConfigs[gnomeScreenshotTool]!.arguments,
-            equals(gnomeScreenshotArguments));
-        expect(screenshotToolConfigs[scrotTool]!.arguments,
-            equals(scrotArguments));
-        expect(screenshotToolConfigs[importTool]!.arguments,
-            equals(importArguments));
+        expect(
+          screenshotToolConfigs[spectacleTool]!.arguments,
+          equals(spectacleArguments),
+        );
+        expect(
+          screenshotToolConfigs[gnomeScreenshotTool]!.arguments,
+          equals(gnomeScreenshotArguments),
+        );
+        expect(
+          screenshotToolConfigs[scrotTool]!.arguments,
+          equals(scrotArguments),
+        );
+        expect(
+          screenshotToolConfigs[importTool]!.arguments,
+          equals(importArguments),
+        );
       });
 
       test('error messages should be properly formatted', () {
@@ -232,7 +253,9 @@ void main() {
         expect(unsupportedToolMessage, endsWith(': '));
         expect(toolFailedMessage, endsWith(' '));
         expect(
-            failedWithExitCodeMessage, startsWith(' failed with exit code '));
+          failedWithExitCodeMessage,
+          startsWith(' failed with exit code '),
+        );
       });
     });
   });

@@ -144,7 +144,9 @@ class AiConfigRepository {
 
   /// Stream of all AI configurations of a specific type
   Stream<List<AiConfig>> watchConfigsByType(AiConfigType type) {
-    return _db.watchConfigsByType(type.name).map(
+    return _db
+        .watchConfigsByType(type.name)
+        .map(
           (entities) => entities
               .map(
                 (entity) => AiConfig.fromJson(

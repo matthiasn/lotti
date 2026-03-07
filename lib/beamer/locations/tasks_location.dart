@@ -9,9 +9,9 @@ class TasksLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
-        '/tasks',
-        '/tasks/:taskId',
-      ];
+    '/tasks',
+    '/tasks/:taskId',
+  ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {

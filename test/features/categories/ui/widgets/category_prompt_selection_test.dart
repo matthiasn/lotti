@@ -11,46 +11,49 @@ void main() {
   group('CategoryPromptSelection', () {
     final testPrompts = <AiConfigPrompt>[
       AiConfig.prompt(
-        id: 'prompt1',
-        name: 'Task Summary',
-        description: 'Generate a summary of the task',
-        systemMessage: 'System message',
-        userMessage: 'User message',
-        defaultModelId: 'model1',
-        modelIds: ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt,
+            id: 'prompt1',
+            name: 'Task Summary',
+            description: 'Generate a summary of the task',
+            systemMessage: 'System message',
+            userMessage: 'User message',
+            defaultModelId: 'model1',
+            modelIds: ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'prompt2',
-        name: 'Action Items',
-        description: 'Update checklist items based on task content',
-        systemMessage: 'System message',
-        userMessage: 'User message',
-        defaultModelId: 'model1',
-        modelIds: ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-      ) as AiConfigPrompt,
+            id: 'prompt2',
+            name: 'Action Items',
+            description: 'Update checklist items based on task content',
+            systemMessage: 'System message',
+            userMessage: 'User message',
+            defaultModelId: 'model1',
+            modelIds: ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.checklistUpdates,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'prompt3',
-        name: 'Image Analysis',
-        systemMessage: 'System message',
-        userMessage: 'User message',
-        defaultModelId: 'model1',
-        modelIds: ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: [InputDataType.images],
-        aiResponseType: AiResponseType.imageAnalysis,
-      ) as AiConfigPrompt,
+            id: 'prompt3',
+            name: 'Image Analysis',
+            systemMessage: 'System message',
+            userMessage: 'User message',
+            defaultModelId: 'model1',
+            modelIds: ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          )
+          as AiConfigPrompt,
     ];
 
     testWidgets('displays loading state correctly', (tester) async {
@@ -107,8 +110,10 @@ void main() {
       expect(find.byType(EmptyStateWidget), findsOneWidget);
       expect(find.byIcon(Icons.psychology_outlined), findsOneWidget);
       expect(find.text('No prompts available'), findsOneWidget);
-      expect(find.text('Create AI prompts first to configure them here'),
-          findsOneWidget);
+      expect(
+        find.text('Create AI prompts first to configure them here'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('displays prompts correctly', (tester) async {
@@ -124,8 +129,10 @@ void main() {
       );
 
       // Verify header text
-      expect(find.text('Select which prompts are allowed for this category'),
-          findsOneWidget);
+      expect(
+        find.text('Select which prompts are allowed for this category'),
+        findsOneWidget,
+      );
 
       // Verify all prompts are displayed
       expect(find.byType(CheckboxListTile), findsNWidgets(3));
@@ -135,8 +142,10 @@ void main() {
 
       // Verify descriptions
       expect(find.text('Generate a summary of the task'), findsOneWidget);
-      expect(find.text('Update checklist items based on task content'),
-          findsOneWidget);
+      expect(
+        find.text('Update checklist items based on task content'),
+        findsOneWidget,
+      );
 
       // Verify checkbox states
       final checkboxes = tester
@@ -149,8 +158,9 @@ void main() {
       expect(checkboxes[2].value, isFalse); // prompt3 is not allowed
     });
 
-    testWidgets('calls onPromptToggled when checkbox is tapped',
-        (tester) async {
+    testWidgets('calls onPromptToggled when checkbox is tapped', (
+      tester,
+    ) async {
       String? toggledPromptId;
       bool? toggledValue;
 
@@ -244,20 +254,21 @@ void main() {
           child: CategoryPromptSelection(
             prompts: [
               AiConfig.prompt(
-                id: 'long-desc',
-                name: 'Long Description Prompt',
-                description:
-                    'This is a very long description that should be truncated with ellipsis when it exceeds the available space in the list tile',
-                systemMessage: 'System message',
-                userMessage: 'User message',
-                defaultModelId: 'model1',
-                modelIds: ['model1'],
-                createdAt: DateTime(2024),
-                updatedAt: DateTime(2024, 1, 2),
-                useReasoning: false,
-                requiredInputData: [],
-                aiResponseType: AiResponseType.taskSummary,
-              ) as AiConfigPrompt,
+                    id: 'long-desc',
+                    name: 'Long Description Prompt',
+                    description:
+                        'This is a very long description that should be truncated with ellipsis when it exceeds the available space in the list tile',
+                    systemMessage: 'System message',
+                    userMessage: 'User message',
+                    defaultModelId: 'model1',
+                    modelIds: ['model1'],
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024, 1, 2),
+                    useReasoning: false,
+                    requiredInputData: [],
+                    aiResponseType: AiResponseType.taskSummary,
+                  )
+                  as AiConfigPrompt,
             ],
             allowedPromptIds: const [],
             onPromptToggled: (_, {required isAllowed}) {},
@@ -279,25 +290,28 @@ void main() {
       expect(subtitleText.overflow, TextOverflow.ellipsis);
     });
 
-    testWidgets('handles multiple prompts with different states',
-        (tester) async {
+    testWidgets('handles multiple prompts with different states', (
+      tester,
+    ) async {
       final manyPrompts = <AiConfigPrompt>[
         ...List.generate(
           10,
-          (index) => AiConfig.prompt(
-            id: 'prompt$index',
-            name: 'Prompt $index',
-            description: 'Description for prompt $index',
-            systemMessage: 'System message',
-            userMessage: 'User message',
-            defaultModelId: 'model1',
-            modelIds: ['model1'],
-            createdAt: DateTime(2024),
-            updatedAt: DateTime(2024, 1, 2),
-            useReasoning: false,
-            requiredInputData: [],
-            aiResponseType: AiResponseType.taskSummary,
-          ) as AiConfigPrompt,
+          (index) =>
+              AiConfig.prompt(
+                    id: 'prompt$index',
+                    name: 'Prompt $index',
+                    description: 'Description for prompt $index',
+                    systemMessage: 'System message',
+                    userMessage: 'User message',
+                    defaultModelId: 'model1',
+                    modelIds: ['model1'],
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024, 1, 2),
+                    useReasoning: false,
+                    requiredInputData: [],
+                    aiResponseType: AiResponseType.taskSummary,
+                  )
+                  as AiConfigPrompt,
         ),
       ];
 
@@ -329,9 +343,12 @@ void main() {
 
       for (var i = 0; i < checkboxes.length; i++) {
         final expectedValue = allowedIds.contains('prompt$i');
-        expect(checkboxes[i].value, expectedValue,
-            reason:
-                'Checkbox $i should be ${expectedValue ? 'checked' : 'unchecked'}');
+        expect(
+          checkboxes[i].value,
+          expectedValue,
+          reason:
+              'Checkbox $i should be ${expectedValue ? 'checked' : 'unchecked'}',
+        );
       }
     });
 
@@ -505,8 +522,9 @@ void main() {
       expect(find.text('Gemini Prompt'), findsNothing);
     });
 
-    testWidgets('selecting Gemini chip shows only Gemini prompts',
-        (tester) async {
+    testWidgets('selecting Gemini chip shows only Gemini prompts', (
+      tester,
+    ) async {
       await pumpFilterWidget(tester);
 
       await tester.tap(find.text('Gemini'));
@@ -546,8 +564,9 @@ void main() {
       expect(anthropicChip.selected, isFalse);
     });
 
-    testWidgets('does not show filter when no models/providers provided',
-        (tester) async {
+    testWidgets('does not show filter when no models/providers provided', (
+      tester,
+    ) async {
       await pumpFilterWidget(
         tester,
         models: const [],
@@ -558,8 +577,9 @@ void main() {
       expect(find.byType(CheckboxListTile), findsNWidgets(3));
     });
 
-    testWidgets('toggling prompt while filtered calls onPromptToggled',
-        (tester) async {
+    testWidgets('toggling prompt while filtered calls onPromptToggled', (
+      tester,
+    ) async {
       String? toggledId;
 
       await pumpFilterWidget(

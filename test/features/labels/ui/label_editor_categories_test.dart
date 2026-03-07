@@ -49,8 +49,9 @@ void main() {
     await getIt.reset();
     getIt.registerSingleton<EntitiesCacheService>(cacheService);
 
-    when(() => cacheService.sortedCategories)
-        .thenReturn([categoryWork, categoryHome]);
+    when(
+      () => cacheService.sortedCategories,
+    ).thenReturn([categoryWork, categoryHome]);
     when(() => cacheService.getCategoryById('work')).thenReturn(categoryWork);
     when(() => cacheService.getCategoryById('home')).thenReturn(categoryHome);
 
@@ -130,8 +131,9 @@ void main() {
     expect(find.text('Applies to all categories'), findsOneWidget);
   });
 
-  testWidgets('saving forwards applicableCategoryIds to repository',
-      (tester) async {
+  testWidgets('saving forwards applicableCategoryIds to repository', (
+    tester,
+  ) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = const Size(1200, 2000);
     addTearDown(() {
@@ -240,8 +242,9 @@ void main() {
     expect(ids.toSet(), {'home', 'work'});
   });
 
-  testWidgets('chips use category color and contrast-aware text',
-      (tester) async {
+  testWidgets('chips use category color and contrast-aware text', (
+    tester,
+  ) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = const Size(1200, 2000);
     addTearDown(() {
@@ -289,10 +292,12 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Done'));
     await tester.pumpAndSettle();
 
-    final brightChip =
-        tester.widget<InputChip>(find.widgetWithText(InputChip, 'Bright'));
-    final deepChip =
-        tester.widget<InputChip>(find.widgetWithText(InputChip, 'Deep'));
+    final brightChip = tester.widget<InputChip>(
+      find.widgetWithText(InputChip, 'Bright'),
+    );
+    final deepChip = tester.widget<InputChip>(
+      find.widgetWithText(InputChip, 'Deep'),
+    );
 
     // Background colors reflect category colors
     expect(brightChip.backgroundColor, const Color(0xFFF9F871));

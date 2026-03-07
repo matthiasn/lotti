@@ -12,12 +12,14 @@ void main() {
     expect(prompt, isNot(contains('actionItemDescription')));
   });
 
-  test('Checklist updates prompt user message includes Assigned Labels section',
-      () {
-    final user = checklistUpdatesPrompt.userMessage;
-    expect(user, contains('Assigned Labels'));
-    expect(user, contains('{{assigned_labels}}'));
-  });
+  test(
+    'Checklist updates prompt user message includes Assigned Labels section',
+    () {
+      final user = checklistUpdatesPrompt.userMessage;
+      expect(user, contains('Assigned Labels'));
+      expect(user, contains('{{assigned_labels}}'));
+    },
+  );
 
   test('Checklist updates prompt includes entry-scoped directive guidance', () {
     final sys = checklistUpdatesPrompt.systemMessage;

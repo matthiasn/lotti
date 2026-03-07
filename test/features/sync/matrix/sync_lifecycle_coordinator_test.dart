@@ -55,23 +55,35 @@ void main() {
       logging = MockLoggingService();
       pipeline = MockPipeline();
       loginStates = StreamController<LoginState>.broadcast(sync: true);
-      when(() => gateway.loginStateChanges)
-          .thenAnswer((_) => loginStates.stream);
+      when(
+        () => gateway.loginStateChanges,
+      ).thenAnswer((_) => loginStates.stream);
 
       when(() => roomManager.initialize()).thenAnswer((_) async {});
-      when(() => roomManager.hydrateRoomSnapshot(
-          client: any<Client>(named: 'client'))).thenAnswer((_) async {});
+      when(
+        () => roomManager.hydrateRoomSnapshot(
+          client: any<Client>(named: 'client'),
+        ),
+      ).thenAnswer((_) async {});
       when(() => sessionManager.client).thenReturn(MockClient());
       when(() => pipeline.initialize()).thenAnswer((_) async {});
       when(() => pipeline.start()).thenAnswer((_) async {});
       when(() => pipeline.dispose()).thenAnswer((_) async {});
-      when(() => logging.captureEvent(any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenReturn(null);
-      when(() => logging.captureException(any<dynamic>(),
+      when(
+        () => logging.captureEvent(
+          any<String>(),
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'))).thenReturn(null);
+        ),
+      ).thenReturn(null);
+      when(
+        () => logging.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
     });
 
     tearDown(() async {
@@ -79,20 +91,21 @@ void main() {
     });
 
     test(
-        'initialize calls pipeline.initialize and activates if already logged in',
-        () async {
-      when(() => sessionManager.isLoggedIn()).thenReturn(true);
-      final coord = makeCoordinator();
+      'initialize calls pipeline.initialize and activates if already logged in',
+      () async {
+        when(() => sessionManager.isLoggedIn()).thenReturn(true);
+        final coord = makeCoordinator();
 
-      await coord.initialize();
+        await coord.initialize();
 
-      verify(() => pipeline.initialize()).called(1);
-      verify(() =>
-              roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
-          .called(1);
-      verify(() => pipeline.start()).called(1);
-      expect(coord.isActive, isTrue);
-    });
+        verify(() => pipeline.initialize()).called(1);
+        verify(
+          () => roomManager.hydrateRoomSnapshot(client: any(named: 'client')),
+        ).called(1);
+        verify(() => pipeline.start()).called(1);
+        expect(coord.isActive, isTrue);
+      },
+    );
 
     test('reacts to login event and starts pipeline once', () async {
       fakeAsync((async) {
@@ -107,9 +120,9 @@ void main() {
           ..add(LoginState.loggedIn);
         async.elapse(const Duration(milliseconds: 50));
 
-        verify(() =>
-                roomManager.hydrateRoomSnapshot(client: any(named: 'client')))
-            .called(greaterThanOrEqualTo(1));
+        verify(
+          () => roomManager.hydrateRoomSnapshot(client: any(named: 'client')),
+        ).called(greaterThanOrEqualTo(1));
         verify(() => pipeline.start()).called(1);
         expect(coord.isActive, isTrue);
       });

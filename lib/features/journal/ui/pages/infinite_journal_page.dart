@@ -28,8 +28,9 @@ class InfiniteJournalPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(journalPageControllerProvider(showTasks));
     final selectedCategoryIds = state.selectedCategoryIds;
-    final categoryId =
-        selectedCategoryIds.length == 1 ? selectedCategoryIds.first : null;
+    final categoryId = selectedCategoryIds.length == 1
+        ? selectedCategoryIds.first
+        : null;
 
     return ProviderScope(
       overrides: [
@@ -89,8 +90,9 @@ class _InfiniteJournalPageBodyState
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(journalPageControllerProvider(widget.showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(widget.showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(widget.showTasks).notifier,
+    );
 
     return VisibilityDetector(
       key: Key(widget.showTasks ? 'tasks_page' : 'journal_page'),
@@ -113,8 +115,9 @@ class _InfiniteJournalPageBodyState
                     alignment: Alignment.topCenter,
                     child: Container(
                       decoration: BoxDecoration(
-                        color:
-                            Theme.of(context).colorScheme.surfaceContainerHigh,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: const EdgeInsets.symmetric(

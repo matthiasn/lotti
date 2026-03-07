@@ -52,8 +52,9 @@ void main() {
   });
 
   group('EntryTypeFilter Tests', () {
-    testWidgets('filters out JournalEvent chip when enableEventsFlag is OFF',
-        (tester) async {
+    testWidgets('filters out JournalEvent chip when enableEventsFlag is OFF', (
+      tester,
+    ) async {
       // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: false
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -75,8 +76,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -91,8 +93,9 @@ void main() {
       expect(find.text('Audio'), findsOneWidget);
     });
 
-    testWidgets('shows JournalEvent chip when enableEventsFlag is ON',
-        (tester) async {
+    testWidgets('shows JournalEvent chip when enableEventsFlag is ON', (
+      tester,
+    ) async {
       // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: true
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -114,8 +117,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -130,8 +134,9 @@ void main() {
       expect(find.text('Audio'), findsOneWidget);
     });
 
-    testWidgets('defaults to filtering out Event when flag stream is empty',
-        (tester) async {
+    testWidgets('defaults to filtering out Event when flag stream is empty', (
+      tester,
+    ) async {
       // Mock stream returns empty set
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
@@ -145,8 +150,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -174,8 +180,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -207,8 +214,9 @@ void main() {
       await flagController.close();
     });
 
-    testWidgets('filters out Habit chip when enableHabitsPageFlag is OFF',
-        (tester) async {
+    testWidgets('filters out Habit chip when enableHabitsPageFlag is OFF', (
+      tester,
+    ) async {
       // Habits disabled
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -230,8 +238,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -242,8 +251,9 @@ void main() {
       expect(find.text('Habit'), findsNothing);
     });
 
-    testWidgets('shows Habit chip when enableHabitsPageFlag is ON',
-        (tester) async {
+    testWidgets('shows Habit chip when enableHabitsPageFlag is ON', (
+      tester,
+    ) async {
       // Habits enabled
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -265,8 +275,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -278,44 +289,47 @@ void main() {
     });
 
     testWidgets(
-        'filters out Measured and Health when enableDashboardsPageFlag is OFF',
-        (tester) async {
-      // Dashboards disabled
-      when(() => mockDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableDashboardsPageFlag,
-              description: 'Enable Dashboards Page?',
-              status: false,
-            ),
-          },
-        ]),
-      );
+      'filters out Measured and Health when enableDashboardsPageFlag is OFF',
+      (tester) async {
+        // Dashboards disabled
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: enableDashboardsPageFlag,
+                description: 'Enable Dashboards Page?',
+                status: false,
+              ),
+            },
+          ]),
+        );
 
-      GetIt.I.registerSingleton<JournalDb>(mockDb);
+        GetIt.I.registerSingleton<JournalDb>(mockDb);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
-          ],
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const EntryTypeFilter(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(MockJournalPageController.new),
+            ],
+          ),
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Assert: Measured and Health chips are hidden
-      expect(find.text('Measured'), findsNothing);
-      expect(find.text('Health'), findsNothing);
-    });
+        // Assert: Measured and Health chips are hidden
+        expect(find.text('Measured'), findsNothing);
+        expect(find.text('Health'), findsNothing);
+      },
+    );
 
-    testWidgets('shows Measured and Health when dashboards flag is ON',
-        (tester) async {
+    testWidgets('shows Measured and Health when dashboards flag is ON', (
+      tester,
+    ) async {
       // Dashboards enabled
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -337,8 +351,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -365,8 +380,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -414,8 +430,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -456,8 +473,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -498,8 +516,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -514,8 +533,9 @@ void main() {
       expect(find.text('Measured'), findsNothing);
     });
 
-    testWidgets('unwrapPrevious retains value during rapid state changes',
-        (tester) async {
+    testWidgets('unwrapPrevious retains value during rapid state changes', (
+      tester,
+    ) async {
       final flagController = StreamController<Set<ConfigFlag>>.broadcast();
 
       when(() => mockDb.watchConfigFlags()).thenAnswer(
@@ -530,8 +550,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(MockJournalPageController.new),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(MockJournalPageController.new),
           ],
         ),
       );
@@ -614,8 +635,9 @@ void main() {
       await GetIt.I.reset();
     });
 
-    testWidgets('tapping entry type chip calls toggleSelectedEntryTypes',
-        (tester) async {
+    testWidgets('tapping entry type chip calls toggleSelectedEntryTypes', (
+      tester,
+    ) async {
       const state = JournalPageState(
         taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
@@ -629,8 +651,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
           ],
         ),
       );
@@ -645,8 +668,9 @@ void main() {
       expect(fakeController.toggledEntryTypes, contains('Task'));
     });
 
-    testWidgets('long pressing entry type chip calls selectSingleEntryType',
-        (tester) async {
+    testWidgets('long pressing entry type chip calls selectSingleEntryType', (
+      tester,
+    ) async {
       const state = JournalPageState(
         taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
@@ -660,8 +684,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
           ],
         ),
       );
@@ -676,8 +701,9 @@ void main() {
       expect(fakeController.singleEntryTypeCalls, contains('JournalEntry'));
     });
 
-    testWidgets('selected entry type chip shows selected state',
-        (tester) async {
+    testWidgets('selected entry type chip shows selected state', (
+      tester,
+    ) async {
       const state = JournalPageState(
         taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
         selectedTaskStatuses: {'OPEN'},
@@ -691,8 +717,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
           ],
         ),
       );
@@ -734,8 +761,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
           ],
         ),
       );
@@ -799,40 +827,93 @@ void main() {
     });
 
     testWidgets(
-        'tapping All chip when not all selected calls selectAllEntryTypes',
-        (tester) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: ['Task'], // Only one selected, not all
-      );
-      fakeController = FakeJournalPageController(state);
+      'tapping All chip when not all selected calls selectAllEntryTypes',
+      (tester) async {
+        const state = JournalPageState(
+          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
+          selectedTaskStatuses: {'OPEN'},
+          selectedEntryTypes: ['Task'], // Only one selected, not all
+        );
+        fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
-          ],
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const EntryTypeFilter(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => fakeController),
+            ],
+          ),
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Tap the "All" chip
-      await tester.tap(find.text('All'));
-      await tester.pump();
+        // Tap the "All" chip
+        await tester.tap(find.text('All'));
+        await tester.pump();
 
-      // Verify selectAllEntryTypes was called
-      expect(fakeController.selectAllEntryTypesCalled, equals(1));
-    });
+        // Verify selectAllEntryTypes was called
+        expect(fakeController.selectAllEntryTypesCalled, equals(1));
+      },
+    );
 
     testWidgets(
-        'tapping All chip when all selected calls clearSelectedEntryTypes',
-        (tester) async {
+      'tapping All chip when all selected calls clearSelectedEntryTypes',
+      (tester) async {
+        // All entry types that are enabled by the flags
+        final allEntryTypes = [
+          'Task',
+          'JournalEntry',
+          'JournalEvent',
+          'JournalAudio',
+          'JournalImage',
+          'MeasurementEntry',
+          'SurveyEntry',
+          'WorkoutEntry',
+          'HabitCompletionEntry',
+          'QuantitativeEntry',
+          'Checklist',
+          'ChecklistItem',
+          'AiResponse',
+        ];
+
+        final state = JournalPageState(
+          taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
+          selectedTaskStatuses: const {'OPEN'},
+          selectedEntryTypes: allEntryTypes,
+        );
+        fakeController = FakeJournalPageController(state);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const EntryTypeFilter(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => fakeController),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        // Tap the "All" chip
+        await tester.tap(find.text('All'));
+        await tester.pump();
+
+        // Verify clearSelectedEntryTypes was called
+        expect(fakeController.clearSelectedEntryTypesCalled, equals(1));
+      },
+    );
+
+    testWidgets('All chip shows selected state when all types are selected', (
+      tester,
+    ) async {
       // All entry types that are enabled by the flags
       final allEntryTypes = [
         'Task',
@@ -863,56 +944,9 @@ void main() {
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
             journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
-          ],
-        ),
-      );
-
-      await tester.pump();
-
-      // Tap the "All" chip
-      await tester.tap(find.text('All'));
-      await tester.pump();
-
-      // Verify clearSelectedEntryTypes was called
-      expect(fakeController.clearSelectedEntryTypesCalled, equals(1));
-    });
-
-    testWidgets('All chip shows selected state when all types are selected',
-        (tester) async {
-      // All entry types that are enabled by the flags
-      final allEntryTypes = [
-        'Task',
-        'JournalEntry',
-        'JournalEvent',
-        'JournalAudio',
-        'JournalImage',
-        'MeasurementEntry',
-        'SurveyEntry',
-        'WorkoutEntry',
-        'HabitCompletionEntry',
-        'QuantitativeEntry',
-        'Checklist',
-        'ChecklistItem',
-        'AiResponse',
-      ];
-
-      final state = JournalPageState(
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: const {'OPEN'},
-        selectedEntryTypes: allEntryTypes,
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
           ],
         ),
       );
@@ -931,38 +965,40 @@ void main() {
     });
 
     testWidgets(
-        'All chip shows unselected state when not all types are selected',
-        (tester) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: ['Task', 'JournalEntry'], // Only some selected
-      );
-      fakeController = FakeJournalPageController(state);
+      'All chip shows unselected state when not all types are selected',
+      (tester) async {
+        const state = JournalPageState(
+          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
+          selectedTaskStatuses: {'OPEN'},
+          selectedEntryTypes: ['Task', 'JournalEntry'], // Only some selected
+        );
+        fakeController = FakeJournalPageController(state);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const EntryTypeFilter(),
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-            journalPageScopeProvider.overrideWithValue(false),
-            journalPageControllerProvider(false)
-                .overrideWith(() => fakeController),
-          ],
-        ),
-      );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const EntryTypeFilter(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => fakeController),
+            ],
+          ),
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      // Find the "All" FilterChoiceChip
-      final allChipFinder = find.ancestor(
-        of: find.text('All'),
-        matching: find.byType(FilterChoiceChip),
-      );
-      expect(allChipFinder, findsOneWidget);
+        // Find the "All" FilterChoiceChip
+        final allChipFinder = find.ancestor(
+          of: find.text('All'),
+          matching: find.byType(FilterChoiceChip),
+        );
+        expect(allChipFinder, findsOneWidget);
 
-      final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
-      expect(allChip.isSelected, isFalse);
-    });
+        final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
+        expect(allChip.isSelected, isFalse);
+      },
+    );
   });
 }

@@ -27,8 +27,9 @@ class TaskViewPreference extends _$TaskViewPreference {
 
   Future<void> toggle() async {
     final current = state.value ?? TaskViewMode.list;
-    final newMode =
-        current == TaskViewMode.list ? TaskViewMode.grid : TaskViewMode.list;
+    final newMode = current == TaskViewMode.list
+        ? TaskViewMode.grid
+        : TaskViewMode.list;
 
     await _settingsDb.saveSettingsItem(
       _settingsKey(_categoryId),

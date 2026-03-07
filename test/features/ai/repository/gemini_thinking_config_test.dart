@@ -142,24 +142,34 @@ void main() {
 
     group('isGemini3', () {
       test('matches Gemini 3.x model IDs with models/ prefix', () {
-        expect(GeminiThinkingConfig.isGemini3('models/gemini-3.1-pro-preview'),
-            isTrue);
-        expect(GeminiThinkingConfig.isGemini3('models/gemini-3-pro-preview'),
-            isTrue);
+        expect(
+          GeminiThinkingConfig.isGemini3('models/gemini-3.1-pro-preview'),
+          isTrue,
+        );
+        expect(
+          GeminiThinkingConfig.isGemini3('models/gemini-3-pro-preview'),
+          isTrue,
+        );
       });
 
       test('matches Gemini 3.x model IDs without prefix', () {
         expect(
-            GeminiThinkingConfig.isGemini3('gemini-3.1-pro-preview'), isTrue);
+          GeminiThinkingConfig.isGemini3('gemini-3.1-pro-preview'),
+          isTrue,
+        );
         expect(GeminiThinkingConfig.isGemini3('gemini-3-pro-preview'), isTrue);
       });
 
       test('does not match Gemini 2.x model IDs', () {
         expect(
-            GeminiThinkingConfig.isGemini3('models/gemini-2.5-pro'), isFalse);
+          GeminiThinkingConfig.isGemini3('models/gemini-2.5-pro'),
+          isFalse,
+        );
         expect(GeminiThinkingConfig.isGemini3('gemini-2.5-flash'), isFalse);
         expect(
-            GeminiThinkingConfig.isGemini3('models/gemini-2.0-flash'), isFalse);
+          GeminiThinkingConfig.isGemini3('models/gemini-2.0-flash'),
+          isFalse,
+        );
       });
     });
 

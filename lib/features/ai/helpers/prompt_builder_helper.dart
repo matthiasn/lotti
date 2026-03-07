@@ -46,10 +46,11 @@ Examples of what to correct:
 - Any phonetically similar word → use the exact dictionary term''';
 
 /// Helper class for building AI prompts with support for template tracking
-typedef LabelFilterFn = List<LabelDefinition> Function(
-  List<LabelDefinition> all,
-  String? categoryId,
-);
+typedef LabelFilterFn =
+    List<LabelDefinition> Function(
+      List<LabelDefinition> all,
+      String? categoryId,
+    );
 
 class PromptBuilderHelper {
   PromptBuilderHelper({
@@ -73,8 +74,9 @@ class PromptBuilderHelper {
     required AiConfigPrompt promptConfig,
     required bool isSystemMessage,
   }) {
-    final baseMessage =
-        isSystemMessage ? promptConfig.systemMessage : promptConfig.userMessage;
+    final baseMessage = isSystemMessage
+        ? promptConfig.systemMessage
+        : promptConfig.userMessage;
 
     if (promptConfig.trackPreconfigured &&
         promptConfig.preconfiguredPromptId != null) {
@@ -129,8 +131,9 @@ class PromptBuilderHelper {
         entity is Task) {
       // For prompts that require task data but don't use {{task}} placeholder
       // (legacy support for summaries, action items)
-      final jsonString =
-          await aiInputRepository.buildTaskDetailsJson(id: entity.id);
+      final jsonString = await aiInputRepository.buildTaskDetailsJson(
+        id: entity.id,
+      );
       prompt = '$userMessage \n $jsonString';
     }
 
@@ -401,15 +404,17 @@ class PromptBuilderHelper {
     }
 
     // Get linked entities for the task to find AI summaries
-    final linkedEntities =
-        await journalRepository.getLinkedToEntities(linkedTo: taskId);
+    final linkedEntities = await journalRepository.getLinkedToEntities(
+      linkedTo: taskId,
+    );
 
     // Filter for AiResponseEntry items with taskSummary type, sort by date
-    final summaries = linkedEntities
-        .whereType<AiResponseEntry>()
-        .where((e) => e.data.type == AiResponseType.taskSummary)
-        .toList()
-      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    final summaries =
+        linkedEntities
+            .whereType<AiResponseEntry>()
+            .where((e) => e.data.type == AiResponseType.taskSummary)
+            .toList()
+          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
 
     if (summaries.isEmpty) {
       developer.log(
@@ -438,8 +443,9 @@ class PromptBuilderHelper {
       // For images and audio, check if they are linked to a task
       final linkedTask = await _findLinkedTask(entity);
       if (linkedTask != null) {
-        final json =
-            await aiInputRepository.buildTaskDetailsJson(id: linkedTask.id);
+        final json = await aiInputRepository.buildTaskDetailsJson(
+          id: linkedTask.id,
+        );
         return json;
       }
     }
@@ -457,21 +463,26 @@ class PromptBuilderHelper {
   Future<Task?> _findLinkedTask(JournalEntity entity) async {
     // First, try to find tasks that this entry links TO (entry → task).
     // This is the preferred direction as it's an explicit reference.
-    final linkedEntities =
-        await journalRepository.getLinkedEntities(linkedTo: entity.id);
-    final task = linkedEntities.firstWhereOrNull(
-      (linked) => linked is Task,
-    ) as Task?;
+    final linkedEntities = await journalRepository.getLinkedEntities(
+      linkedTo: entity.id,
+    );
+    final task =
+        linkedEntities.firstWhereOrNull(
+              (linked) => linked is Task,
+            )
+            as Task?;
 
     if (task != null) return task;
 
     // Fallback: find tasks that link TO this entry (task → entry).
     // This handles the case where entry was added as a child of a task.
-    final fallbackEntities =
-        await journalRepository.getLinkedToEntities(linkedTo: entity.id);
+    final fallbackEntities = await journalRepository.getLinkedToEntities(
+      linkedTo: entity.id,
+    );
     return fallbackEntities.firstWhereOrNull(
-      (linked) => linked is Task,
-    ) as Task?;
+          (linked) => linked is Task,
+        )
+        as Task?;
   }
 
   /// Build JSON array of deleted checklist item titles for the task.
@@ -554,7 +565,7 @@ class PromptBuilderHelper {
   /// when available. Falls back to global behavior when no category is
   /// resolvable for the current context.
   Future<({String json, int selectedCount, int totalCount})>
-      _buildCategoryScopedLabelsJsonWithCounts(JournalEntity entity) async {
+  _buildCategoryScopedLabelsJsonWithCounts(JournalEntity entity) async {
     // Determine categoryId from the current entity or linked task
     String? categoryId;
     if (entity is Task) {
@@ -581,7 +592,8 @@ class PromptBuilderHelper {
         : scoped.where((l) => !suppressedIds.contains(l.id)).toList();
 
     // Sort into top usage and next alpha, within the scoped set
-    final byUsage = [...scopedNotSuppressed]..sort((a, b) {
+    final byUsage = [...scopedNotSuppressed]
+      ..sort((a, b) {
         final ua = usage[a.id] ?? 0;
         final ub = usage[b.id] ?? 0;
         if (ua != ub) return ub.compareTo(ua);
@@ -589,18 +601,23 @@ class PromptBuilderHelper {
       });
     final topUsage = byUsage.take(kLabelsPromptTopUsageCount).toList();
 
-    final remaining = scopedNotSuppressed
-        .where((l) => !topUsage.any((t) => t.id == l.id))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final remaining =
+        scopedNotSuppressed
+            .where((l) => !topUsage.any((t) => t.id == l.id))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
     final nextAlpha = remaining.take(kLabelsPromptNextAlphaCount).toList();
 
     final selected = [...topUsage, ...nextAlpha];
     final tuples = selected
-        .map((l) => {
-              'id': l.id,
-              'name': l.name,
-            })
+        .map(
+          (l) => {
+            'id': l.id,
+            'name': l.name,
+          },
+        )
         .toList();
 
     return (
@@ -782,7 +799,9 @@ class PromptBuilderHelper {
     final termsJson = dictionary.map((t) => '"${escapeForJson(t)}"').join(', ');
 
     return _kSpeechDictionaryPromptTemplate.replaceAll(
-        '{terms}', '[$termsJson]');
+      '{terms}',
+      '[$termsJson]',
+    );
   }
 
   /// Build correction examples prompt text for a given entity.
@@ -793,7 +812,8 @@ class PromptBuilderHelper {
   /// the speech dictionary pattern. If cache is not populated (cold start, tests),
   /// injection returns empty. Tests must stub EntitiesCacheService registration.
   Future<String> _buildCorrectionExamplesPromptText(
-      JournalEntity entity) async {
+    JournalEntity entity,
+  ) async {
     // Get the task (directly or via linked entity)
     final task = entity is Task ? entity : await _findLinkedTask(entity);
     if (task == null) {
@@ -848,13 +868,15 @@ class PromptBuilderHelper {
     }
 
     // Sort by capturedAt descending (most recent first) and cap at limit
-    final sortedExamples = [...examples]..sort((a, b) {
+    final sortedExamples = [...examples]
+      ..sort((a, b) {
         final aTime = a.capturedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         final bTime = b.capturedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         return bTime.compareTo(aTime); // Descending (most recent first)
       });
-    final cappedExamples =
-        sortedExamples.take(_kMaxCorrectionExamples).toList();
+    final cappedExamples = sortedExamples
+        .take(_kMaxCorrectionExamples)
+        .toList();
 
     developer.log(
       'Correction examples: injecting ${cappedExamples.length} examples '
@@ -863,11 +885,13 @@ class PromptBuilderHelper {
     );
 
     // Format examples as "before" -> "after" pairs
-    final formattedExamples = cappedExamples.map((e) {
-      final escapedBefore = e.before.replaceAll('"', r'\"');
-      final escapedAfter = e.after.replaceAll('"', r'\"');
-      return '- "$escapedBefore" → "$escapedAfter"';
-    }).join('\n');
+    final formattedExamples = cappedExamples
+        .map((e) {
+          final escapedBefore = e.before.replaceAll('"', r'\"');
+          final escapedAfter = e.after.replaceAll('"', r'\"');
+          return '- "$escapedBefore" → "$escapedAfter"';
+        })
+        .join('\n');
 
     return _kCorrectionExamplesPromptTemplate.replaceAll(
       '{examples}',

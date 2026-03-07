@@ -6,8 +6,8 @@ import 'package:lotti/get_it.dart';
 
 final sequenceLogPopulateControllerProvider =
     NotifierProvider<SequenceLogPopulateController, SequenceLogPopulateState>(
-  SequenceLogPopulateController.new,
-);
+      SequenceLogPopulateController.new,
+    );
 
 class SequenceLogPopulateState {
   const SequenceLogPopulateState({
@@ -49,8 +49,9 @@ class SequenceLogPopulateState {
       progress: progress ?? this.progress,
       isRunning: isRunning ?? this.isRunning,
       populatedCount: clearCount ? null : populatedCount ?? this.populatedCount,
-      populatedLinksCount:
-          clearCount ? null : populatedLinksCount ?? this.populatedLinksCount,
+      populatedLinksCount: clearCount
+          ? null
+          : populatedLinksCount ?? this.populatedLinksCount,
       populatedAgentEntitiesCount: clearCount
           ? null
           : populatedAgentEntitiesCount ?? this.populatedAgentEntitiesCount,
@@ -124,14 +125,14 @@ class SequenceLogPopulateController extends Notifier<SequenceLogPopulateState> {
       );
 
       // Phase 3: Populate from agent entities (0.5–0.75)
-      final populatedAgentEntities =
-          await sequenceLogService.populateFromAgentEntities(
-        entityStream: agentDb.streamAgentEntitiesWithVectorClock(),
-        getTotalCount: agentDb.countAllAgentEntities,
-        onProgress: (progress) {
-          state = state.copyWith(progress: 0.5 + progress * 0.25);
-        },
-      );
+      final populatedAgentEntities = await sequenceLogService
+          .populateFromAgentEntities(
+            entityStream: agentDb.streamAgentEntitiesWithVectorClock(),
+            getTotalCount: agentDb.countAllAgentEntities,
+            onProgress: (progress) {
+              state = state.copyWith(progress: 0.5 + progress * 0.25);
+            },
+          );
 
       state = state.copyWith(
         progress: 0.75,
@@ -140,14 +141,14 @@ class SequenceLogPopulateController extends Notifier<SequenceLogPopulateState> {
       );
 
       // Phase 4: Populate from agent links (0.75–1.0)
-      final populatedAgentLinks =
-          await sequenceLogService.populateFromAgentLinks(
-        linkStream: agentDb.streamAgentLinksWithVectorClock(),
-        getTotalCount: agentDb.countAllAgentLinks,
-        onProgress: (progress) {
-          state = state.copyWith(progress: 0.75 + progress * 0.25);
-        },
-      );
+      final populatedAgentLinks = await sequenceLogService
+          .populateFromAgentLinks(
+            linkStream: agentDb.streamAgentLinksWithVectorClock(),
+            getTotalCount: agentDb.countAllAgentLinks,
+            onProgress: (progress) {
+              state = state.copyWith(progress: 0.75 + progress * 0.25);
+            },
+          );
 
       state = state.copyWith(
         isRunning: false,

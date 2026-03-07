@@ -16,8 +16,9 @@ void main() {
     final aiRepo = MockAiInputRepository();
     getIt.registerSingleton<JournalDb>(db);
     final mockLabelsRepo = MockLabelsRepository();
-    when(() => mockLabelsRepo.buildLabelTuples(any()))
-        .thenThrow(Exception('db'));
+    when(
+      () => mockLabelsRepo.buildLabelTuples(any()),
+    ).thenThrow(Exception('db'));
     final helper = PromptBuilderHelper(
       aiInputRepository: aiRepo,
       checklistRepository: MockChecklistRepository(),
@@ -48,8 +49,9 @@ void main() {
       ),
     );
     when(db.getAllLabelDefinitions).thenThrow(Exception('db'));
-    when(() => aiRepo.buildTaskDetailsJson(id: any(named: 'id')))
-        .thenAnswer((_) async => '{}');
+    when(
+      () => aiRepo.buildTaskDetailsJson(id: any(named: 'id')),
+    ).thenAnswer((_) async => '{}');
 
     final prompt = AiConfigPrompt(
       id: 'p',

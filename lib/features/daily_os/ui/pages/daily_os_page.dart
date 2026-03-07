@@ -45,8 +45,9 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = ref.watch(dailyOsSelectedDateProvider);
-    final unifiedDataAsync =
-        ref.watch(unifiedDailyOsDataControllerProvider(date: selectedDate));
+    final unifiedDataAsync = ref.watch(
+      unifiedDailyOsDataControllerProvider(date: selectedDate),
+    );
 
     return Scaffold(
       body: SafeArea(
@@ -64,8 +65,9 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
                     unifiedDailyOsDataControllerProvider(date: selectedDate),
                   );
                   await ref.read(
-                    unifiedDailyOsDataControllerProvider(date: selectedDate)
-                        .future,
+                    unifiedDailyOsDataControllerProvider(
+                      date: selectedDate,
+                    ).future,
                   );
                 },
                 child: SingleChildScrollView(
@@ -115,7 +117,7 @@ class _DailyOsPageState extends ConsumerState<DailyOsPage> {
                           return const SizedBox.shrink();
                         },
                         loading: () => const SizedBox.shrink(),
-                        error: (_, __) => const SizedBox.shrink(),
+                        error: (_, _) => const SizedBox.shrink(),
                       ),
 
                       // Timeline section

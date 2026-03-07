@@ -8,8 +8,9 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 ///
 /// This service provides methods to add terms to a category's speech dictionary
 /// from various contexts (e.g., text editor context menu).
-final speechDictionaryServiceProvider =
-    Provider<SpeechDictionaryService>((ref) {
+final speechDictionaryServiceProvider = Provider<SpeechDictionaryService>((
+  ref,
+) {
   return SpeechDictionaryService(
     categoryRepository: ref.watch(categoryRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
@@ -67,8 +68,9 @@ class SpeechDictionaryService {
 
     // Check for duplicates (case-insensitive)
     final currentDictionary = category.speechDictionary ?? [];
-    final lowerCaseDictionary =
-        currentDictionary.map((t) => t.toLowerCase()).toSet();
+    final lowerCaseDictionary = currentDictionary
+        .map((t) => t.toLowerCase())
+        .toSet();
     if (lowerCaseDictionary.contains(trimmedTerm.toLowerCase())) {
       return SpeechDictionaryResult.duplicate;
     }

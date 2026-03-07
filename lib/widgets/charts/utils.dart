@@ -196,14 +196,20 @@ DateTime getRangeStart({
   final duration = Duration(days: durationDays);
   final now = DateTime.now();
   final from = now.subtract(duration);
-  return DateTime(from.year, from.month, from.day)
-      .subtract(Duration(days: shiftDays));
+  return DateTime(
+    from.year,
+    from.month,
+    from.day,
+  ).subtract(Duration(days: shiftDays));
 }
 
 DateTime getRangeEnd({int shiftDays = 0}) {
   final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day + 1)
-      .subtract(Duration(days: shiftDays));
+  return DateTime(
+    now.year,
+    now.month,
+    now.day + 1,
+  ).subtract(Duration(days: shiftDays));
 }
 
 DateTime getEndOfToday() {
@@ -229,22 +235,27 @@ bool showHabit(HabitDefinition item) {
 
 int habitSorter(HabitDefinition a, HabitDefinition b) {
   return <Comparator<HabitDefinition>>[
-    (o1, o2) {
-      final prio1 = o1.priority ?? false ? 1 : 0;
-      final prio2 = o2.priority ?? false ? 1 : 0;
-      return prio2.compareTo(prio1);
-    },
-    (o1, o2) {
-      final showFrom1 = o1.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
-          getEndOfToday();
-      final showFrom2 = o2.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
-          getEndOfToday();
+        (o1, o2) {
+          final prio1 = o1.priority ?? false ? 1 : 0;
+          final prio2 = o2.priority ?? false ? 1 : 0;
+          return prio2.compareTo(prio1);
+        },
+        (o1, o2) {
+          final showFrom1 =
+              o1.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
+              getEndOfToday();
+          final showFrom2 =
+              o2.habitSchedule.mapOrNull(daily: (d) => d.showFrom) ??
+              getEndOfToday();
 
-      return minutesSinceMidnight(showFrom1)
-          .compareTo(minutesSinceMidnight(showFrom2));
-    },
-    (o1, o2) => o1.name.compareTo(o2.name),
-  ].map((e) => e(a, b)).firstWhere(
+          return minutesSinceMidnight(
+            showFrom1,
+          ).compareTo(minutesSinceMidnight(showFrom2));
+        },
+        (o1, o2) => o1.name.compareTo(o2.name),
+      ]
+      .map((e) => e(a, b))
+      .firstWhere(
         (e) => e != 0,
         orElse: () => 0,
       );

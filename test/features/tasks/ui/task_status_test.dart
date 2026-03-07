@@ -18,12 +18,12 @@ class MockTask extends Mock implements Task {
 
   @override
   Metadata get meta => Metadata(
-        id: 'test-task-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-      );
+    id: 'test-task-id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+  );
 }
 
 void main() {
@@ -81,67 +81,68 @@ void main() {
     );
   });
 
-  testWidgets('renders with correct background color for each status',
-      (tester) async {
+  testWidgets('renders with correct background color for each status', (
+    tester,
+  ) async {
     // Test each task status color in light mode (default for WidgetTestBench)
     final testCases = [
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.open(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        const Color(0xFFE65100) // Dark orange for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+        ),
+        const Color(0xFFE65100), // Dark orange for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.groomed(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        const Color(0xFF2E7D32) // Dark green for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+        ),
+        const Color(0xFF2E7D32), // Dark green for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.inProgress(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        const Color(0xFF1565C0) // Dark blue for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+        ),
+        const Color(0xFF1565C0), // Dark blue for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.blocked(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-              reason: 'Test reason',
-            ),
-        const Color(0xFFC62828) // Dark red for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+          reason: 'Test reason',
+        ),
+        const Color(0xFFC62828), // Dark red for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.onHold(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-              reason: 'Test reason',
-            ),
-        const Color(0xFFC62828) // Dark red for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+          reason: 'Test reason',
+        ),
+        const Color(0xFFC62828), // Dark red for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.done(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        const Color(0xFF2E7D32) // Dark green for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+        ),
+        const Color(0xFF2E7D32), // Dark green for light mode
       ),
       (
         (String id, DateTime createdAt, int utcOffset) => TaskStatus.rejected(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        const Color(0xFFC62828) // Dark red for light mode
+          id: id,
+          createdAt: createdAt,
+          utcOffset: utcOffset,
+        ),
+        const Color(0xFFC62828), // Dark red for light mode
       ),
     ];
 
@@ -174,8 +175,9 @@ void main() {
     }
   });
 
-  testWidgets('text color is white for dark background colors in light mode',
-      (tester) async {
+  testWidgets('text color is white for dark background colors in light mode', (
+    tester,
+  ) async {
     // Use a status with a dark background color (in light mode)
     final status = createTaskStatus(
       (id, createdAt, utcOffset) => TaskStatus.groomed(
@@ -287,101 +289,104 @@ void main() {
   });
 
   testWidgets(
-      'renders with correct background color for each status in dark mode',
-      (tester) async {
-    // Test each task status color in dark mode
-    final testCases = [
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.open(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.orange // Bright orange for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.groomed(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.lightGreenAccent // Light green accent for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.inProgress(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.blue // Blue for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.blocked(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-              reason: 'Test reason',
-            ),
-        Colors.red // Red for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.onHold(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-              reason: 'Test reason',
-            ),
-        Colors.red // Red for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.done(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.green // Green for dark mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.rejected(
-              id: id,
-              createdAt: createdAt,
-              utcOffset: utcOffset,
-            ),
-        Colors.red // Red for dark mode
-      ),
-    ];
-
-    for (final testCase in testCases) {
-      final statusFactory = testCase.$1;
-      final expectedColor = testCase.$2;
-
-      final status = statusFactory(
-        'test-status-id',
-        now,
-        now.timeZoneOffset.inMinutes,
-      );
-
-      final mockTask = createMockTask(status);
-
-      await tester.pumpWidget(
-        DarkWidgetTestBench(
-          child: TaskStatusWidget(mockTask),
+    'renders with correct background color for each status in dark mode',
+    (tester) async {
+      // Test each task status color in dark mode
+      final testCases = [
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.open(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+          ),
+          Colors.orange, // Bright orange for dark mode
         ),
-      );
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.groomed(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+          ),
+          Colors.lightGreenAccent, // Light green accent for dark mode
+        ),
+        (
+          (String id, DateTime createdAt, int utcOffset) =>
+              TaskStatus.inProgress(
+                id: id,
+                createdAt: createdAt,
+                utcOffset: utcOffset,
+              ),
+          Colors.blue, // Blue for dark mode
+        ),
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.blocked(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+            reason: 'Test reason',
+          ),
+          Colors.red, // Red for dark mode
+        ),
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.onHold(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+            reason: 'Test reason',
+          ),
+          Colors.red, // Red for dark mode
+        ),
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.done(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+          ),
+          Colors.green, // Green for dark mode
+        ),
+        (
+          (String id, DateTime createdAt, int utcOffset) => TaskStatus.rejected(
+            id: id,
+            createdAt: createdAt,
+            utcOffset: utcOffset,
+          ),
+          Colors.red, // Red for dark mode
+        ),
+      ];
 
-      // Find the Chip widget
-      final chipWidget = tester.widget<Chip>(find.byType(Chip));
+      for (final testCase in testCases) {
+        final statusFactory = testCase.$1;
+        final expectedColor = testCase.$2;
 
-      // Verify the background color matches the expected color
-      expect(chipWidget.backgroundColor, expectedColor);
+        final status = statusFactory(
+          'test-status-id',
+          now,
+          now.timeZoneOffset.inMinutes,
+        );
 
-      // Reset for next test case
-      await tester.pumpAndSettle();
-    }
-  });
+        final mockTask = createMockTask(status);
 
-  testWidgets('text color is black for bright background colors in dark mode',
-      (tester) async {
+        await tester.pumpWidget(
+          DarkWidgetTestBench(
+            child: TaskStatusWidget(mockTask),
+          ),
+        );
+
+        // Find the Chip widget
+        final chipWidget = tester.widget<Chip>(find.byType(Chip));
+
+        // Verify the background color matches the expected color
+        expect(chipWidget.backgroundColor, expectedColor);
+
+        // Reset for next test case
+        await tester.pumpAndSettle();
+      }
+    },
+  );
+
+  testWidgets('text color is black for bright background colors in dark mode', (
+    tester,
+  ) async {
     // Use a status with a bright background color (in dark mode)
     final status = createTaskStatus(
       (id, createdAt, utcOffset) => TaskStatus.groomed(
@@ -410,8 +415,9 @@ void main() {
     expect(textWidget.style?.color, equals(Colors.black));
   });
 
-  testWidgets('uses correct color for in progress status in dark mode',
-      (tester) async {
+  testWidgets('uses correct color for in progress status in dark mode', (
+    tester,
+  ) async {
     // Test that the in progress status uses the correct blue color in dark mode
     final status = TaskStatus.inProgress(
       id: 'test-status-id',

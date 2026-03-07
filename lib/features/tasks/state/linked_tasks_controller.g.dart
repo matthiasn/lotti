@@ -17,16 +17,16 @@ final linkedTasksControllerProvider = LinkedTasksControllerFamily._();
 final class LinkedTasksControllerProvider
     extends $NotifierProvider<LinkedTasksController, LinkedTasksState> {
   /// Controller for managing the LinkedTasks section UI state.
-  LinkedTasksControllerProvider._(
-      {required LinkedTasksControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'linkedTasksControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  LinkedTasksControllerProvider._({
+    required LinkedTasksControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'linkedTasksControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$linkedTasksControllerHash();
@@ -68,22 +68,25 @@ String _$linkedTasksControllerHash() =>
 
 final class LinkedTasksControllerFamily extends $Family
     with
-        $ClassFamilyOverride<LinkedTasksController, LinkedTasksState,
-            LinkedTasksState, LinkedTasksState, String> {
+        $ClassFamilyOverride<
+          LinkedTasksController,
+          LinkedTasksState,
+          LinkedTasksState,
+          LinkedTasksState,
+          String
+        > {
   LinkedTasksControllerFamily._()
-      : super(
-          retry: null,
-          name: r'linkedTasksControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'linkedTasksControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Controller for managing the LinkedTasks section UI state.
 
-  LinkedTasksControllerProvider call({
-    required String taskId,
-  }) =>
+  LinkedTasksControllerProvider call({required String taskId}) =>
       LinkedTasksControllerProvider._(argument: taskId, from: this);
 
   @override
@@ -96,23 +99,20 @@ abstract class _$LinkedTasksController extends $Notifier<LinkedTasksState> {
   late final _$args = ref.$arg as String;
   String get taskId => _$args;
 
-  LinkedTasksState build({
-    required String taskId,
-  });
+  LinkedTasksState build({required String taskId});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<LinkedTasksState, LinkedTasksState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<LinkedTasksState, LinkedTasksState>,
-        LinkedTasksState,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              taskId: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<LinkedTasksState, LinkedTasksState>,
+              LinkedTasksState,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(taskId: _$args));
   }
 }
 
@@ -135,10 +135,14 @@ final outgoingLinkedTasksProvider = OutgoingLinkedTasksFamily._();
 ///
 /// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
 
-final class OutgoingLinkedTasksProvider extends $FunctionalProvider<
-    List<JournalEntity>,
-    List<JournalEntity>,
-    List<JournalEntity>> with $Provider<List<JournalEntity>> {
+final class OutgoingLinkedTasksProvider
+    extends
+        $FunctionalProvider<
+          List<JournalEntity>,
+          List<JournalEntity>,
+          List<JournalEntity>
+        >
+    with $Provider<List<JournalEntity>> {
   /// Provider that resolves outgoing entry links to Task entities.
   ///
   /// This is used by LinkedToSection to get resolved Task objects
@@ -146,16 +150,16 @@ final class OutgoingLinkedTasksProvider extends $FunctionalProvider<
   /// entryControllerProviders in the widget tree.
   ///
   /// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
-  OutgoingLinkedTasksProvider._(
-      {required OutgoingLinkedTasksFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'outgoingLinkedTasksProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  OutgoingLinkedTasksProvider._({
+    required OutgoingLinkedTasksFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'outgoingLinkedTasksProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$outgoingLinkedTasksHash();
@@ -170,16 +174,13 @@ final class OutgoingLinkedTasksProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<List<JournalEntity>> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   List<JournalEntity> create(Ref ref) {
     final argument = this.argument as String;
-    return outgoingLinkedTasks(
-      ref,
-      argument,
-    );
+    return outgoingLinkedTasks(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -215,13 +216,13 @@ String _$outgoingLinkedTasksHash() =>
 final class OutgoingLinkedTasksFamily extends $Family
     with $FunctionalFamilyOverride<List<JournalEntity>, String> {
   OutgoingLinkedTasksFamily._()
-      : super(
-          retry: null,
-          name: r'outgoingLinkedTasksProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'outgoingLinkedTasksProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provider that resolves outgoing entry links to Task entities.
   ///
@@ -231,9 +232,7 @@ final class OutgoingLinkedTasksFamily extends $Family
   ///
   /// Returns `List<JournalEntity>` (all Tasks) - caller should cast with `whereType<Task>()`.
 
-  OutgoingLinkedTasksProvider call(
-    String taskId,
-  ) =>
+  OutgoingLinkedTasksProvider call(String taskId) =>
       OutgoingLinkedTasksProvider._(argument: taskId, from: this);
 
   @override

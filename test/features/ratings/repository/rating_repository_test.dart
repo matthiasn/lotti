@@ -110,8 +110,9 @@ void main() {
           ),
         ).thenAnswer((_) async => testRatingEntry);
 
-        final result =
-            await repository.getRatingForTargetEntry(testTimeEntryId);
+        final result = await repository.getRatingForTargetEntry(
+          testTimeEntryId,
+        );
 
         expect(result, equals(testRatingEntry));
         verify(
@@ -128,8 +129,9 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        final result =
-            await repository.getRatingForTargetEntry(testTimeEntryId);
+        final result = await repository.getRatingForTargetEntry(
+          testTimeEntryId,
+        );
 
         expect(result, isNull);
       });
@@ -164,8 +166,9 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.journalEntityById(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -180,8 +183,9 @@ void main() {
             shouldAddGeolocation: false,
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockVectorClock.getNextVectorClock())
-            .thenAnswer((_) async => testVectorClock);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
         when(() => mockNotifications.notify(any())).thenReturn(null);
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -225,10 +229,12 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => testRatingEntry);
-        when(() => mockPersistence.updateMetadata(testMetadata))
-            .thenAnswer((_) async => updatedMeta);
-        when(() => mockPersistence.updateDbEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockPersistence.updateMetadata(testMetadata),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
 
         const newDimensions = [
           RatingDimension(key: 'productivity', value: 0.9),
@@ -267,8 +273,9 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.journalEntityById(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -283,8 +290,9 @@ void main() {
             shouldAddGeolocation: false,
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockVectorClock.getNextVectorClock())
-            .thenAnswer((_) async => testVectorClock);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
         when(() => mockNotifications.notify(any())).thenReturn(null);
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -322,8 +330,9 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.journalEntityById(testTimeEntryId))
-            .thenAnswer((_) async => timeEntry);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => timeEntry);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -338,8 +347,9 @@ void main() {
             shouldAddGeolocation: false,
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockVectorClock.getNextVectorClock())
-            .thenAnswer((_) async => testVectorClock);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
         when(() => mockNotifications.notify(any())).thenReturn(null);
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -405,8 +415,9 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.journalEntityById(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -421,8 +432,9 @@ void main() {
             shouldAddGeolocation: false,
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockVectorClock.getNextVectorClock())
-            .thenAnswer((_) async => testVectorClock);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
         when(() => mockNotifications.notify(any())).thenReturn(null);
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -433,9 +445,9 @@ void main() {
         );
 
         // Verify the link has correct structure
-        final captured = verify(() => mockDb.upsertEntryLink(captureAny()))
-            .captured
-            .single as EntryLink;
+        final captured =
+            verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+                as EntryLink;
 
         expect(captured, isA<RatingLink>());
         final ratingLink = captured as RatingLink;
@@ -450,8 +462,9 @@ void main() {
             testTimeEntryId,
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockDb.journalEntityById(testTimeEntryId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.journalEntityById(testTimeEntryId),
+        ).thenAnswer((_) async => null);
         when(
           () => mockPersistence.createMetadata(
             dateFrom: any(named: 'dateFrom'),
@@ -466,8 +479,9 @@ void main() {
             shouldAddGeolocation: false,
           ),
         ).thenAnswer((_) async => true);
-        when(() => mockVectorClock.getNextVectorClock())
-            .thenAnswer((_) async => testVectorClock);
+        when(
+          () => mockVectorClock.getNextVectorClock(),
+        ).thenAnswer((_) async => testVectorClock);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
         when(() => mockNotifications.notify(any())).thenReturn(null);
         when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
@@ -477,9 +491,11 @@ void main() {
           dimensions: testDimensions,
         );
 
-        final captured = verify(() => mockOutbox.enqueueMessage(captureAny()))
-            .captured
-            .single as SyncMessage;
+        final captured =
+            verify(
+                  () => mockOutbox.enqueueMessage(captureAny()),
+                ).captured.single
+                as SyncMessage;
 
         expect(captured, isA<SyncEntryLink>());
         final syncLink = captured as SyncEntryLink;

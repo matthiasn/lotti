@@ -48,12 +48,21 @@ void main() {
 
       final tasks = <JournalEntity>[
         buildTask('urgent-task', base, TaskPriority.p0Urgent),
-        buildTask('high-task', base.add(const Duration(hours: 1)),
-            TaskPriority.p1High),
-        buildTask('medium-task', base.add(const Duration(hours: 2)),
-            TaskPriority.p2Medium),
         buildTask(
-            'low-task', base.add(const Duration(hours: 3)), TaskPriority.p3Low),
+          'high-task',
+          base.add(const Duration(hours: 1)),
+          TaskPriority.p1High,
+        ),
+        buildTask(
+          'medium-task',
+          base.add(const Duration(hours: 2)),
+          TaskPriority.p2Medium,
+        ),
+        buildTask(
+          'low-task',
+          base.add(const Duration(hours: 3)),
+          TaskPriority.p3Low,
+        ),
       ];
 
       // Insert tasks directly via upsert to avoid filesystem interactions

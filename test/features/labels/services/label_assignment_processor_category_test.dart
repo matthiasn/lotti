@@ -106,15 +106,20 @@ void main() {
       vectorClock: null,
       applicableCategoryIds: const ['cat1'],
     );
-    final outScope =
-        inScope.copyWith(id: 'out', applicableCategoryIds: const ['other']);
+    final outScope = inScope.copyWith(
+      id: 'out',
+      applicableCategoryIds: const ['other'],
+    );
 
-    when(() => db.getLabelDefinitionById('in'))
-        .thenAnswer((_) async => inScope);
-    when(() => db.getLabelDefinitionById('out'))
-        .thenAnswer((_) async => outScope);
-    when(db.getAllLabelDefinitions)
-        .thenAnswer((_) async => [inScope, outScope]);
+    when(
+      () => db.getLabelDefinitionById('in'),
+    ).thenAnswer((_) async => inScope);
+    when(
+      () => db.getLabelDefinitionById('out'),
+    ).thenAnswer((_) async => outScope);
+    when(
+      db.getAllLabelDefinitions,
+    ).thenAnswer((_) async => [inScope, outScope]);
 
     final processor = LabelAssignmentProcessor(
       db: db,
@@ -134,8 +139,8 @@ void main() {
     expect(res.assigned, ['in']);
     expect(res.invalid, isEmpty);
     expect(
-        res.skipped
-            .any((m) => m['id'] == 'out' && m['reason'] == 'out_of_scope'),
-        isTrue);
+      res.skipped.any((m) => m['id'] == 'out' && m['reason'] == 'out_of_scope'),
+      isTrue,
+    );
   });
 }

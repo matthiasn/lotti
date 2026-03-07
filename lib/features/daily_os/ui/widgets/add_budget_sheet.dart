@@ -163,8 +163,9 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.3),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.3,
+                  ),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -268,7 +269,8 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: AppTheme.spacingSmall),
+                    horizontal: AppTheme.spacingSmall,
+                  ),
                   child: Icon(
                     MdiIcons.arrowRight,
                     color: context.colorScheme.onSurfaceVariant,
@@ -289,8 +291,10 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
             // Duration display
             Center(
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: context.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),

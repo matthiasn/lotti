@@ -18,10 +18,12 @@ void main() {
   });
 
   void stubResolution({String apiKey = 'test-key'}) {
-    when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-        .thenAnswer((_) async => [testAiModel()]);
-    when(() => mockAiConfig.getConfigById('provider-1'))
-        .thenAnswer((_) async => testInferenceProvider(apiKey: apiKey));
+    when(
+      () => mockAiConfig.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => [testAiModel()]);
+    when(
+      () => mockAiConfig.getConfigById('provider-1'),
+    ).thenAnswer((_) async => testInferenceProvider(apiKey: apiKey));
   }
 
   group('resolveInferenceProvider', () {
@@ -38,8 +40,9 @@ void main() {
     });
 
     test('returns null when model is not found', () async {
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/nonexistent',
@@ -50,11 +53,13 @@ void main() {
     });
 
     test('returns null when provider is not an inference provider', () async {
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [testAiModel()]);
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [testAiModel()]);
       // Return a model config instead of an inference provider.
-      when(() => mockAiConfig.getConfigById('provider-1'))
-          .thenAnswer((_) async => testAiModel());
+      when(
+        () => mockAiConfig.getConfigById('provider-1'),
+      ).thenAnswer((_) async => testAiModel());
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',
@@ -75,17 +80,19 @@ void main() {
       expect(provider, isNull);
     });
 
-    test('returns null when cloud provider has whitespace-only API key',
-        () async {
-      stubResolution(apiKey: '   ');
+    test(
+      'returns null when cloud provider has whitespace-only API key',
+      () async {
+        stubResolution(apiKey: '   ');
 
-      final provider = await resolveInferenceProvider(
-        modelId: 'models/gemini-3-flash-preview',
-        aiConfigRepository: mockAiConfig,
-      );
+        final provider = await resolveInferenceProvider(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
 
-      expect(provider, isNull);
-    });
+        expect(provider, isNull);
+      },
+    );
 
     test('returns provider for local provider with empty API key', () async {
       when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
@@ -93,8 +100,9 @@ void main() {
           testAiModel(inferenceProviderId: 'provider-local'),
         ],
       );
-      when(() => mockAiConfig.getConfigById('provider-local'))
-          .thenAnswer((_) async => testLocalInferenceProvider());
+      when(
+        () => mockAiConfig.getConfigById('provider-local'),
+      ).thenAnswer((_) async => testLocalInferenceProvider());
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',
@@ -127,10 +135,12 @@ void main() {
         inferenceProviderId: 'provider-b',
       );
 
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model))
-          .thenAnswer((_) async => [model1, model2]);
-      when(() => mockAiConfig.getConfigById('provider-a'))
-          .thenAnswer((_) async => testInferenceProvider(id: 'provider-a'));
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [model1, model2]);
+      when(
+        () => mockAiConfig.getConfigById('provider-a'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'provider-a'));
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',

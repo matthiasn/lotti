@@ -16,21 +16,25 @@ final providerPromptSetupServiceProvider =
 
 /// Provider for [ProviderPromptSetupService].
 
-final class ProviderPromptSetupServiceProvider extends $FunctionalProvider<
-    ProviderPromptSetupService,
-    ProviderPromptSetupService,
-    ProviderPromptSetupService> with $Provider<ProviderPromptSetupService> {
+final class ProviderPromptSetupServiceProvider
+    extends
+        $FunctionalProvider<
+          ProviderPromptSetupService,
+          ProviderPromptSetupService,
+          ProviderPromptSetupService
+        >
+    with $Provider<ProviderPromptSetupService> {
   /// Provider for [ProviderPromptSetupService].
   ProviderPromptSetupServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'providerPromptSetupServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'providerPromptSetupServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$providerPromptSetupServiceHash();
@@ -38,8 +42,8 @@ final class ProviderPromptSetupServiceProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<ProviderPromptSetupService> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   ProviderPromptSetupService create(Ref ref) {

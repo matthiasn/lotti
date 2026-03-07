@@ -38,16 +38,20 @@ void main() {
         (_) => FakeDraftsQuery(),
       );
 
-      when(() => mockEditorDb.insertDraftState(
-            entryId: any(named: 'entryId'),
-            lastSaved: any(named: 'lastSaved'),
-            draftDeltaJson: any(named: 'draftDeltaJson'),
-          )).thenAnswer((_) async => 1);
+      when(
+        () => mockEditorDb.insertDraftState(
+          entryId: any(named: 'entryId'),
+          lastSaved: any(named: 'lastSaved'),
+          draftDeltaJson: any(named: 'draftDeltaJson'),
+        ),
+      ).thenAnswer((_) async => 1);
 
-      when(() => mockEditorDb.setDraftSaved(
-            entryId: any(named: 'entryId'),
-            lastSaved: any(named: 'lastSaved'),
-          )).thenAnswer((_) async => 1);
+      when(
+        () => mockEditorDb.setDraftSaved(
+          entryId: any(named: 'entryId'),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => 1);
 
       // Mock entityById to return null by default
       when(() => mockJournalDb.entityById(any())).thenAnswer((_) async => null);
@@ -76,15 +80,18 @@ void main() {
         (_) => FakeDraftsQueryWithData([draftEntry]),
       );
 
-      when(() => mockJournalDb.entityById('test-entry-id'))
-          .thenAnswer((_) async => testEntity);
+      when(
+        () => mockJournalDb.entityById('test-entry-id'),
+      ).thenAnswer((_) async => testEntity);
 
       final service = EditorStateService();
       await service.init();
 
       expect(service.editorStateById['test-entry-id'], isNotNull);
-      expect(service.editorStateById['test-entry-id'],
-          '{"ops":[{"insert":"test"}]}');
+      expect(
+        service.editorStateById['test-entry-id'],
+        '{"ops":[{"insert":"test"}]}',
+      );
     });
 
     test('init skips drafts when updatedAt does not match', () async {
@@ -103,8 +110,9 @@ void main() {
         (_) => FakeDraftsQueryWithData([draftEntry]),
       );
 
-      when(() => mockJournalDb.entityById('test-entry-id'))
-          .thenAnswer((_) async => testEntity);
+      when(
+        () => mockJournalDb.entityById('test-entry-id'),
+      ).thenAnswer((_) async => testEntity);
 
       final service = EditorStateService();
       await service.init();
@@ -142,11 +150,17 @@ void main() {
       const entryId = 'test-entry-id';
       const deltaJson = '{"ops":[{"insert":"new content"}]}';
 
-      when(() => mockEditorDb.getLatestDraft(any(),
-          lastSaved: any(named: 'lastSaved'))).thenAnswer((_) async => null);
+      when(
+        () => mockEditorDb.getLatestDraft(
+          any(),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => null);
 
-      final stream =
-          editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+      final stream = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
 
       // The stream should first emit `false` (no unsaved changes),
       // then `true` after saveTempState is called.
@@ -181,11 +195,17 @@ void main() {
     test('entryWasSaved updates unsaved stream', () async {
       const entryId = 'test-entry-id';
 
-      when(() => mockEditorDb.getLatestDraft(any(),
-          lastSaved: any(named: 'lastSaved'))).thenAnswer((_) async => null);
+      when(
+        () => mockEditorDb.getLatestDraft(
+          any(),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => null);
 
-      final stream =
-          editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+      final stream = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
 
       // The stream should first emit `false` (initial state),
       // then `false` again after entryWasSaved clears unsaved changes.
@@ -233,12 +253,17 @@ void main() {
         lastSaved: testEpochDateTime,
       );
 
-      when(() => mockEditorDb.getLatestDraft(any(),
-              lastSaved: any(named: 'lastSaved')))
-          .thenAnswer((_) async => draftState);
+      when(
+        () => mockEditorDb.getLatestDraft(
+          any(),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => draftState);
 
-      final stream =
-          editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+      final stream = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
 
       // The stream should emit `false` initially, then `true` when draft is loaded
       await expectLater(stream, emitsInOrder([false, true]));
@@ -249,12 +274,18 @@ void main() {
     test('getUnsavedStream closes previous stream for same entry', () async {
       const entryId = 'test-entry-id';
 
-      when(() => mockEditorDb.getLatestDraft(any(),
-          lastSaved: any(named: 'lastSaved'))).thenAnswer((_) async => null);
+      when(
+        () => mockEditorDb.getLatestDraft(
+          any(),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Create first stream and subscribe to it
-      final stream1 =
-          editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+      final stream1 = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
 
       var stream1Completed = false;
       final stream1Emissions = <bool>[];
@@ -271,8 +302,10 @@ void main() {
       expect(stream1Emissions, isNotEmpty);
 
       // Create second stream - this should close the first stream
-      final stream2 =
-          editorStateService.getUnsavedStream(entryId, testEpochDateTime);
+      final stream2 = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
 
       // Wait for stream1 to complete
       await pumpEventQueue();

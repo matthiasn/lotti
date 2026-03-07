@@ -140,8 +140,9 @@ class HabitCompletionRateChart extends ConsumerWidget
                 borderData: FlBorderData(
                   show: true,
                   border: Border.all(
-                    color:
-                        chartTextColor.withAlpha((labelOpacity * 255).floor()),
+                    color: chartTextColor.withAlpha(
+                      (labelOpacity * 255).floor(),
+                    ),
                   ),
                 ),
                 minX: 0,

@@ -121,8 +121,9 @@ void main() {
         ),
       );
 
-      final textField =
-          tester.widget<TextFormField>(find.byType(TextFormField));
+      final textField = tester.widget<TextFormField>(
+        find.byType(TextFormField),
+      );
       expect(textField.enabled, isFalse);
     });
 
@@ -142,8 +143,9 @@ void main() {
       expect(find.text('Original text'), findsOneWidget);
 
       // Verify the widget is created with readOnly property
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.readOnly, isTrue);
 
       // The controller text remains as is
@@ -227,8 +229,9 @@ void main() {
       // When obscureText is true, the actual text should be hidden
       // We can't easily test the visual obscuring, but we can verify
       // the widget is created with the property
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.obscureText, isTrue);
     });
 
@@ -283,8 +286,9 @@ void main() {
       );
 
       // Verify the widget has maxLength set
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.maxLength, equals(5));
 
       // Enter text that exceeds maxLength
@@ -306,8 +310,9 @@ void main() {
       );
 
       // The widget should be created with the correct properties
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.maxLines, equals(3));
       expect(lottiTextField.minLines, equals(2));
     });
@@ -348,14 +353,17 @@ void main() {
       );
 
       // Verify the widget is created with all the properties
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.autocorrect, isFalse);
       expect(lottiTextField.autofocus, isTrue);
       expect(lottiTextField.keyboardType, equals(TextInputType.emailAddress));
       expect(lottiTextField.textInputAction, equals(TextInputAction.search));
       expect(
-          lottiTextField.textCapitalization, equals(TextCapitalization.words));
+        lottiTextField.textCapitalization,
+        equals(TextCapitalization.words),
+      );
     });
 
     testWidgets('applies custom style properties', (tester) async {
@@ -376,15 +384,17 @@ void main() {
         ),
       );
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.style, equals(customStyle));
       expect(lottiTextField.fillColor, equals(Colors.blue));
       expect(lottiTextField.borderRadius, equals(20.0));
     });
 
-    testWidgets('disabled text field shows with reduced opacity',
-        (tester) async {
+    testWidgets('disabled text field shows with reduced opacity', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Column(
@@ -409,8 +419,9 @@ void main() {
       expect(find.byIcon(Icons.search), findsNWidgets(2));
     });
 
-    testWidgets('prefix and suffix icons override prefix and suffix widgets',
-        (tester) async {
+    testWidgets('prefix and suffix icons override prefix and suffix widgets', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: LottiTextField(
@@ -447,8 +458,9 @@ void main() {
       expect(find.text('Helper'), findsOneWidget);
 
       // The LottiTextField widget should have all the properties set
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.labelText, equals('Label'));
       expect(lottiTextField.hintText, equals('Hint'));
       expect(lottiTextField.helperText, equals('Helper'));
@@ -509,8 +521,9 @@ void main() {
       expect(find.text('Text Area Label'), findsOneWidget);
       expect(find.text('Enter multiple lines'), findsOneWidget);
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.keyboardType, equals(TextInputType.multiline));
       expect(lottiTextField.textInputAction, equals(TextInputAction.newline));
     });
@@ -524,8 +537,9 @@ void main() {
         ),
       );
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.maxLines, equals(5));
       expect(lottiTextField.minLines, equals(3));
     });
@@ -541,14 +555,16 @@ void main() {
         ),
       );
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.maxLines, equals(10));
       expect(lottiTextField.minLines, equals(5));
     });
 
-    testWidgets('passes through all properties to LottiTextField',
-        (tester) async {
+    testWidgets('passes through all properties to LottiTextField', (
+      tester,
+    ) async {
       const helperText = 'Helper text';
       const errorText = 'Error text';
       const maxLength = 100;
@@ -572,8 +588,9 @@ void main() {
         ),
       );
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.helperText, equals(helperText));
       expect(lottiTextField.errorText, equals(errorText));
       expect(lottiTextField.enabled, isFalse);
@@ -611,8 +628,9 @@ void main() {
         ),
       );
 
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.focusNode, equals(focusNode));
 
       focusNode.dispose();
@@ -669,7 +687,9 @@ void main() {
 
       // Should pass with long enough text
       await tester.enterText(
-          find.byType(TextFormField), 'This is a long enough text');
+        find.byType(TextFormField),
+        'This is a long enough text',
+      );
       expect(form.validate(), isTrue);
     });
 
@@ -683,8 +703,9 @@ void main() {
         ),
       );
 
-      final textFormField =
-          tester.widget<TextFormField>(find.byType(TextFormField));
+      final textFormField = tester.widget<TextFormField>(
+        find.byType(TextFormField),
+      );
       expect(textFormField.enabled, isFalse);
     });
 
@@ -704,13 +725,15 @@ void main() {
       expect(find.text('Existing text'), findsOneWidget);
 
       // Verify the LottiTextArea has readOnly set to true
-      final lottiTextArea =
-          tester.widget<LottiTextArea>(find.byType(LottiTextArea));
+      final lottiTextArea = tester.widget<LottiTextArea>(
+        find.byType(LottiTextArea),
+      );
       expect(lottiTextArea.readOnly, isTrue);
 
       // The underlying LottiTextField should also be readOnly
-      final lottiTextField =
-          tester.widget<LottiTextField>(find.byType(LottiTextField));
+      final lottiTextField = tester.widget<LottiTextField>(
+        find.byType(LottiTextField),
+      );
       expect(lottiTextField.readOnly, isTrue);
     });
   });

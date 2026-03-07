@@ -59,8 +59,9 @@ void main() {
       );
 
       final json = jsonDecode(jsonEncode(feedback.toJson()));
-      final restored =
-          ClassifiedFeedback.fromJson(json as Map<String, dynamic>);
+      final restored = ClassifiedFeedback.fromJson(
+        json as Map<String, dynamic>,
+      );
 
       expect(restored.items, hasLength(1));
       expect(restored.items.first.sentiment, FeedbackSentiment.positive);
@@ -129,15 +130,17 @@ void main() {
       );
     });
 
-    test('positive, negative, and neutral return empty lists when no matches',
-        () {
-      final feedback = makeFeedback([
-        makeItem(),
-      ]);
+    test(
+      'positive, negative, and neutral return empty lists when no matches',
+      () {
+        final feedback = makeFeedback([
+          makeItem(),
+        ]);
 
-      expect(feedback.positive, isEmpty);
-      expect(feedback.negative, isEmpty);
-    });
+        expect(feedback.positive, isEmpty);
+        expect(feedback.negative, isEmpty);
+      },
+    );
 
     test('neutral returns empty list when no neutral items', () {
       final feedback = makeFeedback([

@@ -93,41 +93,44 @@ class MeasurableItemCard extends StatelessWidget {
         notificationKeys: {measurablesNotification, privateToggleNotification},
         fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<MeasurableDataType>> snapshot,
-      ) {
-        final measurableTypes = snapshot.data ?? [];
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<List<MeasurableDataType>> snapshot,
+          ) {
+            final measurableTypes = snapshot.data ?? [];
 
-        final matches = measurableTypes.where((m) => measurement.id == m.id);
-        var title = '';
-        if (matches.isNotEmpty) {
-          final aggregationType = measurement.aggregationType;
-          final aggregationTypeLabel = aggregationType != null
-              ? ' [${EnumToString.convertToString(measurement.aggregationType)}]'
-              : '';
-          title = '${matches.first.displayName}$aggregationTypeLabel';
-        }
-        return ItemCard(
-          leadingIcon: Icons.insights,
-          title: title,
-          onTap: () {
-            showModalBottomSheet<void>(
-              context: context,
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              builder: (BuildContext context) {
-                return DashboardItemModal(
-                  item: measurement,
-                  updateItemFn: updateItemFn,
-                  title: title,
-                  index: index,
+            final matches = measurableTypes.where(
+              (m) => measurement.id == m.id,
+            );
+            var title = '';
+            if (matches.isNotEmpty) {
+              final aggregationType = measurement.aggregationType;
+              final aggregationTypeLabel = aggregationType != null
+                  ? ' [${EnumToString.convertToString(measurement.aggregationType)}]'
+                  : '';
+              title = '${matches.first.displayName}$aggregationTypeLabel';
+            }
+            return ItemCard(
+              leadingIcon: Icons.insights,
+              title: title,
+              onTap: () {
+                showModalBottomSheet<void>(
+                  context: context,
+                  clipBehavior: Clip.antiAliasWithSaveLayer,
+                  builder: (BuildContext context) {
+                    return DashboardItemModal(
+                      item: measurement,
+                      updateItemFn: updateItemFn,
+                      title: title,
+                      index: index,
+                    );
+                  },
                 );
+                updateItemFn(measurement, index);
               },
             );
-            updateItemFn(measurement, index);
           },
-        );
-      },
     );
   }
 }
@@ -148,17 +151,18 @@ class HabitItemCard extends StatelessWidget {
         notificationKeys: {habitsNotification, privateToggleNotification},
         fetcher: () => getIt<JournalDb>().getHabitById(habitItem.habitId),
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<HabitDefinition?> snapshot,
-      ) {
-        final habitDefinition = snapshot.data;
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<HabitDefinition?> snapshot,
+          ) {
+            final habitDefinition = snapshot.data;
 
-        return ItemCard(
-          leadingIcon: MdiIcons.lightningBolt,
-          title: habitDefinition?.name ?? habitItem.habitId,
-        );
-      },
+            return ItemCard(
+              leadingIcon: MdiIcons.lightningBolt,
+              title: habitDefinition?.name ?? habitItem.habitId,
+            );
+          },
     );
   }
 }

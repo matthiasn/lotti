@@ -73,18 +73,22 @@ void main() {
       when(() => mockWindowManager.minimize()).thenAnswer((_) async {});
       when(() => mockWindowManager.show()).thenAnswer((_) async {});
 
-      when(() => mockLoggingService.captureEvent(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureEvent(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
 
-      when(() => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLoggingService.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
 
       when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });
@@ -98,7 +102,8 @@ void main() {
       test('shouldUsePortal returns correct value based on environment', () {
         final shouldUse = PortalService.shouldUsePortal;
         final isLinux = Platform.isLinux;
-        final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+        final hasFlatpakId =
+            Platform.environment['FLATPAK_ID'] != null &&
             Platform.environment['FLATPAK_ID']!.isNotEmpty;
 
         expect(shouldUse, equals(isLinux && hasFlatpakId));
@@ -117,8 +122,7 @@ void main() {
     });
 
     group('Portal Service Initialization', () {
-      test('service initializes correctly in non-Flatpak environment',
-          () async {
+      test('service initializes correctly in non-Flatpak environment', () async {
         // In non-Flatpak environment, initialization should succeed but not create DBus client
         if (!PortalService.shouldUsePortal) {
           await portalService.initialize();
@@ -169,14 +173,22 @@ void main() {
 
     group('Portal DBus Communication', () {
       test('portal constants are correctly defined', () {
-        expect(PortalConstants.portalBusName,
-            equals('org.freedesktop.portal.Desktop'));
-        expect(PortalConstants.portalPath,
-            equals('/org/freedesktop/portal/desktop'));
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
         expect(
-            ScreenshotPortalConstants.screenshotMethod, equals('Screenshot'));
+          PortalConstants.portalBusName,
+          equals('org.freedesktop.portal.Desktop'),
+        );
+        expect(
+          PortalConstants.portalPath,
+          equals('/org/freedesktop/portal/desktop'),
+        );
+        expect(
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
+        expect(
+          ScreenshotPortalConstants.screenshotMethod,
+          equals('Screenshot'),
+        );
       });
 
       test('handles successful portal response with file URI', () {
@@ -271,11 +283,13 @@ void main() {
 
     group('Portal Error Handling', () {
       test('handles DBus connection errors', () {
-        when(() => mockDBusRemoteObject.callMethod(
-              any(),
-              any(),
-              any(),
-            )).thenThrow(Exception('DBus connection failed'));
+        when(
+          () => mockDBusRemoteObject.callMethod(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenThrow(Exception('DBus connection failed'));
 
         // Would throw in actual portal call
         expect(
@@ -312,11 +326,13 @@ void main() {
           subDomain: 'screenshot',
         );
 
-        verify(() => mockLoggingService.captureException(
-              exception,
-              domain: 'PortalService',
-              subDomain: 'screenshot',
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            exception,
+            domain: 'PortalService',
+            subDomain: 'screenshot',
+          ),
+        ).called(1);
       });
     });
 

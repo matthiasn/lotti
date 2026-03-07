@@ -13,25 +13,29 @@ void main() {
       final params = tool.function.parameters!;
       expect(params, isNotNull);
       expect(
-          params['required'], containsAll(<String>['start_date', 'end_date']));
+        params['required'],
+        containsAll(<String>['start_date', 'end_date']),
+      );
       final limit = (params['properties'] as Map)['limit'] as Map;
       expect(limit['default'], 100);
     });
 
-    test('TaskSummaryRequest JSON uses start_date and end_date (date-only)',
-        () {
-      final req = TaskSummaryRequest(
-        startDate: '2024-01-01',
-        endDate: '2024-01-02',
-      );
-      final json = req.toJson();
-      expect(json['start_date'], '2024-01-01');
-      expect(json['end_date'], '2024-01-02');
-      final back = TaskSummaryRequest.fromJson(json);
-      expect(back.startDate, '2024-01-01');
-      expect(back.endDate, '2024-01-02');
-      expect(back.limit, 100);
-    });
+    test(
+      'TaskSummaryRequest JSON uses start_date and end_date (date-only)',
+      () {
+        final req = TaskSummaryRequest(
+          startDate: '2024-01-01',
+          endDate: '2024-01-02',
+        );
+        final json = req.toJson();
+        expect(json['start_date'], '2024-01-01');
+        expect(json['end_date'], '2024-01-02');
+        final back = TaskSummaryRequest.fromJson(json);
+        expect(back.startDate, '2024-01-01');
+        expect(back.endDate, '2024-01-02');
+        expect(back.limit, 100);
+      },
+    );
 
     test('TaskSummaryResult JSON roundtrip', () {
       final res = TaskSummaryResult(

@@ -26,16 +26,18 @@ part 'cloud_inference_repository.g.dart';
 
 class CloudInferenceRepository {
   CloudInferenceRepository(this.ref, {http.Client? httpClient})
-      : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
-        _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
-        _dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider),
-        _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
-        _mistralTranscriptionRepository =
-            MistralTranscriptionRepository(httpClient: httpClient),
-        _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-        _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
-        _openAiTranscriptionRepository =
-            OpenAiTranscriptionRepository(httpClient: httpClient);
+    : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
+      _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
+      _dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider),
+      _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
+      _mistralTranscriptionRepository = MistralTranscriptionRepository(
+        httpClient: httpClient,
+      ),
+      _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
+      _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
+      _openAiTranscriptionRepository = OpenAiTranscriptionRepository(
+        httpClient: httpClient,
+      );
 
   final Ref ref;
   final OllamaInferenceRepository _ollamaRepository;
@@ -87,8 +89,10 @@ class CloudInferenceRepository {
         final errorString = error.toString();
 
         // Anthropic ping messages cause a specific null subtype error when parsing choices
-        final isAnthropicPingError = errorString.contains(
-                "type 'Null' is not a subtype of type 'List<dynamic>'") &&
+        final isAnthropicPingError =
+            errorString.contains(
+              "type 'Null' is not a subtype of type 'List<dynamic>'",
+            ) &&
             errorString.contains('choices');
 
         if (isAnthropicPingError) {
@@ -184,7 +188,8 @@ class CloudInferenceRepository {
       );
     }
 
-    final client = overrideClient ??
+    final client =
+        overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
@@ -228,7 +233,8 @@ class CloudInferenceRepository {
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
   }) {
-    final client = overrideClient ??
+    final client =
+        overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
@@ -320,7 +326,8 @@ class CloudInferenceRepository {
         ChatCompletionMessageInputAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
   }) {
-    final client = overrideClient ??
+    final client =
+        overrideClient ??
         OpenAIClient(
           baseUrl: baseUrl,
           apiKey: apiKey,
@@ -395,8 +402,8 @@ class CloudInferenceRepository {
 
     final effectiveAudioBase64 =
         provider.inferenceProviderType.requiresDataUriForAudio
-            ? 'data:;base64,$audioBase64'
-            : audioBase64;
+        ? 'data:;base64,$audioBase64'
+        : audioBase64;
 
     return client
         .createChatCompletionStream(

@@ -9,25 +9,26 @@ void main() {
 
   group('TimeSpanSegmentedControl', () {
     testWidgets(
-        'displays default segments [30, 90, 180, 365] with short labels on phone',
-        (tester) async {
-      // Default phoneMediaQueryData has width 390 < 450, so short labels are shown
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: TimeSpanSegmentedControl(
-            timeSpanDays: 90,
-            onValueChanged: (_) {},
+      'displays default segments [30, 90, 180, 365] with short labels on phone',
+      (tester) async {
+        // Default phoneMediaQueryData has width 390 < 450, so short labels are shown
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: TimeSpanSegmentedControl(
+              timeSpanDays: 90,
+              onValueChanged: (_) {},
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Should display all 4 segment options with short labels
-      expect(find.text('30d'), findsOneWidget);
-      expect(find.text('90d'), findsOneWidget);
-      expect(find.text('180d'), findsOneWidget);
-      expect(find.text('365d'), findsOneWidget);
-    });
+        // Should display all 4 segment options with short labels
+        expect(find.text('30d'), findsOneWidget);
+        expect(find.text('90d'), findsOneWidget);
+        expect(find.text('180d'), findsOneWidget);
+        expect(find.text('365d'), findsOneWidget);
+      },
+    );
 
     testWidgets('displays custom segments when provided', (tester) async {
       await tester.pumpWidget(
@@ -90,8 +91,9 @@ void main() {
       expect(selectedValue, equals(30));
     });
 
-    testWidgets('calls onValueChanged with 365 when yearly segment is tapped',
-        (tester) async {
+    testWidgets('calls onValueChanged with 365 when yearly segment is tapped', (
+      tester,
+    ) async {
       int? selectedValue;
 
       await tester.pumpWidget(

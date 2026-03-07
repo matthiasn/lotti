@@ -21,7 +21,8 @@ Color colorFromCssHex(
 
 // Converts Color to CSS style hex color string
 String colorToCssHex(Color color, {bool leadingHashSign = true}) {
-  final rgb = '${leadingHashSign ? '#' : ''}'
+  final rgb =
+      '${leadingHashSign ? '#' : ''}'
       '${colorHexChannel(color.r)}'
       '${colorHexChannel(color.g)}'
       '${colorHexChannel(color.b)}';

@@ -81,7 +81,8 @@ class ModernJournalCard extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     // Tasks have their own labels display in ModernTaskCard
-    final showLabels = item is! Task &&
+    final showLabels =
+        item is! Task &&
         item.meta.labelIds != null &&
         item.meta.labelIds!.isNotEmpty;
 
@@ -126,8 +127,9 @@ class ModernJournalCard extends StatelessWidget {
                   Text(
                     _formatDate(),
                     style: monoTabularStyle(
-                        fontSize: fontSizeMedium,
-                        color: context.colorScheme.outline),
+                      fontSize: fontSizeMedium,
+                      color: context.colorScheme.outline,
+                    ),
                   ),
                   if (_shouldShowCategoryIcon()) ...[
                     const SizedBox(width: 8),
@@ -212,7 +214,8 @@ class ModernJournalCard extends StatelessWidget {
             Flexible(
               child: TextViewerWidgetNonScrollable(
                 entryText: task.entryText,
-                maxHeight: maxHeight -
+                maxHeight:
+                    maxHeight -
                     linkedDurationHeight, // Account for LinkedDuration height
               ),
             ),
@@ -221,8 +224,9 @@ class ModernJournalCard extends StatelessWidget {
       );
     }
 
-    final textColor =
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+    final textColor = context.colorScheme.onSurfaceVariant.withValues(
+      alpha: 0.7,
+    );
 
     return ConstrainedBox(
       constraints: BoxConstraints(maxHeight: maxHeight),
@@ -264,8 +268,9 @@ class ModernJournalCard extends StatelessWidget {
             return Text(
               ci.data.title,
               style: context.textTheme.bodyMedium?.copyWith(
-                decoration:
-                    ci.data.isChecked ? TextDecoration.lineThrough : null,
+                decoration: ci.data.isChecked
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             );
           case final DayPlanEntry dayPlan:
@@ -462,12 +467,15 @@ class _JournalCardLabelsRow extends ConsumerWidget {
     final showPrivate = cache.showPrivateEntries;
 
     // Use cache for fast label lookups
-    final labels = labelIds
-        .map(cache.getLabelById)
-        .whereType<LabelDefinition>()
-        .where((label) => showPrivate || !(label.private ?? false))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final labels =
+        labelIds
+            .map(cache.getLabelById)
+            .whereType<LabelDefinition>()
+            .where((label) => showPrivate || !(label.private ?? false))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     if (labels.isEmpty) {
       return const SizedBox.shrink();

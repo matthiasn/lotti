@@ -50,20 +50,30 @@ class ThinkingSegment {
 /// Compiled patterns and configuration for parsing thinking blocks.
 class ThinkingPatterns {
   // HTML-like tags (case-insensitive) — support <think> and <thinking>
-  static final RegExp htmlOpen =
-      RegExp('<think(?:ing)?>', caseSensitive: false);
-  static final RegExp htmlClose =
-      RegExp('</think(?:ing)?>', caseSensitive: false);
+  static final RegExp htmlOpen = RegExp(
+    '<think(?:ing)?>',
+    caseSensitive: false,
+  );
+  static final RegExp htmlClose = RegExp(
+    '</think(?:ing)?>',
+    caseSensitive: false,
+  );
 
   // Bracket-style tags (case-insensitive) — support [think] and [thinking]
-  static final RegExp bracketOpen =
-      RegExp(r'\[(?:think|thinking)\]', caseSensitive: false);
-  static final RegExp bracketClose =
-      RegExp(r'\[/(?:think|thinking)\]', caseSensitive: false);
+  static final RegExp bracketOpen = RegExp(
+    r'\[(?:think|thinking)\]',
+    caseSensitive: false,
+  );
+  static final RegExp bracketClose = RegExp(
+    r'\[/(?:think|thinking)\]',
+    caseSensitive: false,
+  );
 
   // Fenced code block language (case-insensitive) — support ```think and ```thinking
-  static final RegExp fenceOpen =
-      RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n', caseSensitive: false);
+  static final RegExp fenceOpen = RegExp(
+    r'```[ \t]*(?:think|thinking)[ \t]*\n',
+    caseSensitive: false,
+  );
   static const String fenceClose = '```';
 }
 
@@ -193,7 +203,7 @@ int? _fenceBodyStartFor(String content, int from) {
 
 // Given a block type and its start index, resolve tokens and body start.
 ({int bodyStart, String openToken, String closeToken, int afterCloseAdvance})
-    _resolveTokens(String content, String type, int nextIdx) {
+_resolveTokens(String content, String type, int nextIdx) {
   final lowerAll = content.toLowerCase();
   switch (type) {
     case 'html':
@@ -432,4 +442,5 @@ List<ThinkingSegment> splitThinkingSegments(String content) {
     return [ThinkingSegment(isThinking: false, text: content)];
   }
 }
+
 //

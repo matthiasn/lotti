@@ -29,17 +29,18 @@ void main() {
       String name = 'Test Prompt',
     }) {
       return AiConfig.prompt(
-        id: id,
-        name: name,
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+            id: id,
+            name: name,
+            systemMessage: 'test system',
+            userMessage: 'test user',
+            defaultModelId: 'test-model',
+            modelIds: const ['test-model'],
+            createdAt: DateTime(2024),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.audioTranscription,
+          )
+          as AiConfigPrompt;
     }
 
     test('returns false when categoryId is null', () {
@@ -82,8 +83,9 @@ void main() {
         active: true,
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
 
@@ -109,8 +111,9 @@ void main() {
         automaticPrompts: {}, // Empty map
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
 
@@ -143,21 +146,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Default Transcription',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Default Transcription',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -187,21 +193,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Default Checklist',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.checklistUpdates,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Default Checklist',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.checklistUpdates,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -230,21 +239,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Default Task Summary',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Default Task Summary',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.taskSummary,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -275,21 +287,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Second Prompt',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Second Prompt',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -318,21 +333,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Not In List',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Not In List',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -345,8 +363,9 @@ void main() {
     test('handles cache service exception gracefully', () {
       const categoryId = 'test-category';
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenThrow(Exception('Cache error'));
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenThrow(Exception('Cache error'));
 
       final testPrompt = createTestPrompt(id: 'test-prompt');
 
@@ -383,21 +402,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Multi Purpose',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Multi Purpose',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -426,21 +448,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final testPrompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Test',
-        systemMessage: 'test system',
-        userMessage: 'test user',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime(2024),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final testPrompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Test',
+                systemMessage: 'test system',
+                userMessage: 'test user',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime(2024),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final result = isDefaultPromptSync(
         categoryId,
@@ -469,21 +494,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final defaultPrompt = AiConfig.prompt(
-        id: defaultPromptId,
-        name: 'Default Prompt',
-        systemMessage: 'test',
-        userMessage: 'test',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final defaultPrompt =
+          AiConfig.prompt(
+                id: defaultPromptId,
+                name: 'Default Prompt',
+                systemMessage: 'test',
+                userMessage: 'test',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final now = DateTime.now();
       final journalEntity = JournalAudio(
@@ -507,16 +535,18 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(journalEntity.id)
-                .overrideWith((ref) async => [defaultPrompt]),
-            categoryChangesProvider(categoryId)
-                .overrideWith((ref) => Stream.value(null)),
+            availablePromptsProvider(
+              journalEntity.id,
+            ).overrideWith((ref) async => [defaultPrompt]),
+            categoryChangesProvider(
+              categoryId,
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: MaterialApp(
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),
@@ -529,8 +559,9 @@ void main() {
       expect(find.text('Default Prompt'), findsOneWidget);
     });
 
-    testWidgets('displays regular icon for non-default prompts',
-        (tester) async {
+    testWidgets('displays regular icon for non-default prompts', (
+      tester,
+    ) async {
       const categoryId = 'test-category';
       const regularPromptId = 'regular-prompt';
       const defaultPromptId = 'default-prompt';
@@ -548,21 +579,24 @@ void main() {
         },
       );
 
-      when(() => mockCacheService.getCategoryById(categoryId))
-          .thenReturn(category);
+      when(
+        () => mockCacheService.getCategoryById(categoryId),
+      ).thenReturn(category);
 
-      final regularPrompt = AiConfig.prompt(
-        id: regularPromptId,
-        name: 'Regular Prompt',
-        systemMessage: 'test',
-        userMessage: 'test',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final regularPrompt =
+          AiConfig.prompt(
+                id: regularPromptId,
+                name: 'Regular Prompt',
+                systemMessage: 'test',
+                userMessage: 'test',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final now = DateTime.now();
       final journalEntity = JournalAudio(
@@ -586,16 +620,18 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(journalEntity.id)
-                .overrideWith((ref) async => [regularPrompt]),
-            categoryChangesProvider(categoryId)
-                .overrideWith((ref) => Stream.value(null)),
+            availablePromptsProvider(
+              journalEntity.id,
+            ).overrideWith((ref) async => [regularPrompt]),
+            categoryChangesProvider(
+              categoryId,
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: MaterialApp(
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),
@@ -611,18 +647,20 @@ void main() {
     testWidgets('handles null categoryId', (tester) async {
       const promptId = 'test-prompt';
 
-      final prompt = AiConfig.prompt(
-        id: promptId,
-        name: 'Test Prompt',
-        systemMessage: 'test',
-        userMessage: 'test',
-        defaultModelId: 'test-model',
-        modelIds: const ['test-model'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: const [],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt;
+      final prompt =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Test Prompt',
+                systemMessage: 'test',
+                userMessage: 'test',
+                defaultModelId: 'test-model',
+                modelIds: const ['test-model'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: const [],
+                aiResponseType: AiResponseType.audioTranscription,
+              )
+              as AiConfigPrompt;
 
       final now = DateTime.now();
       final journalEntity = JournalAudio(
@@ -645,14 +683,15 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            availablePromptsProvider(journalEntity.id)
-                .overrideWith((ref) async => [prompt]),
+            availablePromptsProvider(
+              journalEntity.id,
+            ).overrideWith((ref) async => [prompt]),
           ],
           child: MaterialApp(
             home: Scaffold(
               body: UnifiedAiPromptsList(
                 journalEntity: journalEntity,
-                onPromptSelected: (_, __) async {},
+                onPromptSelected: (_, _) async {},
               ),
             ),
           ),

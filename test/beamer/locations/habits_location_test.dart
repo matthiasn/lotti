@@ -16,8 +16,9 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          HabitsLocation(RouteInformation(uri: Uri.parse('/habits')));
+      final location = HabitsLocation(
+        RouteInformation(uri: Uri.parse('/habits')),
+      );
       expect(location.pathPatterns, ['/habits']);
     });
 

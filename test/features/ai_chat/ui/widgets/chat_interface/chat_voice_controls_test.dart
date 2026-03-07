@@ -24,8 +24,9 @@ Future<void> _pumpControls(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        chatRecorderControllerProvider
-            .overrideWith(_FakeRecorderController.new),
+        chatRecorderControllerProvider.overrideWith(
+          _FakeRecorderController.new,
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: const [

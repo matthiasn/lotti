@@ -67,8 +67,9 @@ void main() {
         (_) async {},
       );
 
-      when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
-          .thenAnswer(
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+      ).thenAnswer(
         (_) async => true,
       );
 
@@ -76,17 +77,21 @@ void main() {
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.getHabitById(any())).thenReturn(null);
-      when(() => mockEntitiesCacheService.getDataTypeById(any()))
-          .thenReturn(null);
-      when(() => mockEntitiesCacheService.getDashboardById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDashboardById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       when(
         () => mockEditorStateService.getUnsavedStream(
@@ -126,8 +131,9 @@ void main() {
       );
 
       // Mock the database to return the flagged entry
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => flaggedTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => flaggedTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -172,8 +178,9 @@ void main() {
       // verify(entryCubit.togglePrivate).called(1);
     });
 
-    testWidgets('save button invisible when saved/clean',
-        (WidgetTester tester) async {
+    testWidgets('save button invisible when saved/clean', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailHeader(entryId: testTextEntry.meta.id),
@@ -185,12 +192,14 @@ void main() {
       expect(saveButtonFinder, findsNothing);
     });
 
-    testWidgets('map action not visible when no geolocation exists',
-        (WidgetTester tester) async {
+    testWidgets('map action not visible when no geolocation exists', (
+      WidgetTester tester,
+    ) async {
       // Create an entry without geolocation
       final entryWithoutGeo = testTextEntry.copyWith(geolocation: null);
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => entryWithoutGeo);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => entryWithoutGeo);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -214,11 +223,13 @@ void main() {
       expect(find.text('Hide map'), findsNothing);
     });
 
-    testWidgets('map action visible and tappable when geolocation exists',
-        (WidgetTester tester) async {
+    testWidgets('map action visible and tappable when geolocation exists', (
+      WidgetTester tester,
+    ) async {
       // testTextEntry already has geolocation, so we should see the map action
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -246,8 +257,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('map action not visible for Task entries',
-        (WidgetTester tester) async {
+    testWidgets('map action not visible for Task entries', (
+      WidgetTester tester,
+    ) async {
       // Create a Task entry with geolocation (map should still not show)
       final taskEntry = testTask.copyWith(
         geolocation: Geolocation(
@@ -257,8 +269,9 @@ void main() {
           createdAt: DateTime(2022, 7, 7, 13),
         ),
       );
-      when(() => mockJournalDb.journalEntityById(taskEntry.meta.id))
-          .thenAnswer((_) async => taskEntry);
+      when(
+        () => mockJournalDb.journalEntityById(taskEntry.meta.id),
+      ).thenAnswer((_) async => taskEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -288,8 +301,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final entryDateFromFinder =
-          find.text(dfShorter.format(testTextEntry.meta.dateFrom));
+      final entryDateFromFinder = find.text(
+        dfShorter.format(testTextEntry.meta.dateFrom),
+      );
       expect(entryDateFromFinder, findsOneWidget);
     });
   });

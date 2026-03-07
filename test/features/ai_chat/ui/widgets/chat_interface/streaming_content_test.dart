@@ -11,19 +11,22 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   Widget wrap(Widget child) => makeTestableWidgetWithScaffold(
-        Center(child: child),
-      );
+    Center(child: child),
+  );
 
   group('StreamingContent', () {
-    testWidgets('shows spinner and Thinking label when content is empty',
-        (tester) async {
-      await tester.pumpWidget(wrap(
-        StreamingContent(
-          content: '',
-          isUser: false,
-          theme: ThemeData(),
+    testWidgets('shows spinner and Thinking label when content is empty', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          StreamingContent(
+            content: '',
+            isUser: false,
+            theme: ThemeData(),
+          ),
         ),
-      ));
+      );
       // Use pump() instead of pumpAndSettle() because
       // CircularProgressIndicator animates indefinitely.
       await tester.pump();
@@ -32,18 +35,21 @@ void main() {
       expect(find.text('Thinking...'), findsOneWidget);
     });
 
-    testWidgets('renders visible markdown segments and reasoning disclosure',
-        (tester) async {
+    testWidgets('renders visible markdown segments and reasoning disclosure', (
+      tester,
+    ) async {
       const content =
           'Hello before <think>internal chain of thought</think> hello after';
 
-      await tester.pumpWidget(wrap(
-        StreamingContent(
-          content: content,
-          isUser: false, // assistant message path (no SelectionArea)
-          theme: ThemeData(),
+      await tester.pumpWidget(
+        wrap(
+          StreamingContent(
+            content: content,
+            isUser: false, // assistant message path (no SelectionArea)
+            theme: ThemeData(),
+          ),
         ),
-      ));
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       // One reasoning disclosure is rendered for the thinking segment
@@ -56,13 +62,15 @@ void main() {
     testWidgets('wraps user content segments in SelectionArea', (tester) async {
       const content = 'User says <think>draft</think> final';
 
-      await tester.pumpWidget(wrap(
-        StreamingContent(
-          content: content,
-          isUser: true,
-          theme: ThemeData(),
+      await tester.pumpWidget(
+        wrap(
+          StreamingContent(
+            content: content,
+            isUser: true,
+            theme: ThemeData(),
+          ),
         ),
-      ));
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       // For user messages, visible segments are wrapped in SelectionArea
@@ -70,17 +78,20 @@ void main() {
       expect(find.byType(GptMarkdown), findsNWidgets(2));
     });
 
-    testWidgets('thinking-only content renders only disclosures',
-        (tester) async {
+    testWidgets('thinking-only content renders only disclosures', (
+      tester,
+    ) async {
       const content = '<think>chain of thought</think>';
 
-      await tester.pumpWidget(wrap(
-        StreamingContent(
-          content: content,
-          isUser: false,
-          theme: ThemeData(),
+      await tester.pumpWidget(
+        wrap(
+          StreamingContent(
+            content: content,
+            isUser: false,
+            theme: ThemeData(),
+          ),
         ),
-      ));
+      );
       await tester.pump(const Duration(milliseconds: 16));
 
       // No visible markdown segments; only the disclosure is present
@@ -91,30 +102,31 @@ void main() {
 
   group('StreamingContent fallback', () {
     testWidgets(
-        'renders visible markdown and does not break on malformed content',
-        (tester) async {
-      // Malformed/open-ended thinking with some visible content before it.
-      const malformed =
-          'Visible part before bad block\n<thinking>Unclosed block';
+      'renders visible markdown and does not break on malformed content',
+      (tester) async {
+        // Malformed/open-ended thinking with some visible content before it.
+        const malformed =
+            'Visible part before bad block\n<thinking>Unclosed block';
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(
-            builder: (context) => StreamingContent(
-              content: malformed,
-              isUser: true,
-              theme: Theme.of(context),
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) => StreamingContent(
+                content: malformed,
+                isUser: true,
+                theme: Theme.of(context),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump(const Duration(milliseconds: 16));
+        await tester.pump(const Duration(milliseconds: 16));
 
-      // The visible portion should render as markdown and remain selectable
-      expect(find.byType(SelectionArea), findsOneWidget);
-      expect(find.byType(GptMarkdown), findsOneWidget);
-      expect(find.textContaining('Visible part before'), findsOneWidget);
-    });
+        // The visible portion should render as markdown and remain selectable
+        expect(find.byType(SelectionArea), findsOneWidget);
+        expect(find.byType(GptMarkdown), findsOneWidget);
+        expect(find.textContaining('Visible part before'), findsOneWidget);
+      },
+    );
   });
 }

@@ -45,8 +45,8 @@ class TaskPriorityWrapper extends ConsumerWidget {
             Text(
               context.messages.tasksPriorityTitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
+                color: Theme.of(context).colorScheme.outline,
+              ),
             ),
             const SizedBox(height: 4),
           ],
@@ -76,16 +76,18 @@ class TaskPriorityWrapper extends ConsumerWidget {
       builder: (ctx) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...options.map((p) => ListTile(
-                leading: ModernStatusChip(
-                  label: p.short,
-                  color: p.colorForBrightness(Theme.of(ctx).brightness),
-                  borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
-                ),
-                title: Text(_localizedDescription(ctx, p)),
-                trailing: current == p ? const Icon(Icons.check) : null,
-                onTap: () => Navigator.of(ctx).pop(p.short),
-              )),
+          ...options.map(
+            (p) => ListTile(
+              leading: ModernStatusChip(
+                label: p.short,
+                color: p.colorForBrightness(Theme.of(ctx).brightness),
+                borderWidth: AppTheme.statusIndicatorBorderWidth * 1.5,
+              ),
+              title: Text(_localizedDescription(ctx, p)),
+              trailing: current == p ? const Icon(Icons.check) : null,
+              onTap: () => Navigator.of(ctx).pop(p.short),
+            ),
+          ),
         ],
       ),
     );

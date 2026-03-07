@@ -399,11 +399,14 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     final sections = <_TimelineSection>[];
 
     // Combine all regions and sort by start hour
-    final allRegions = <({
-      int startHour,
-      int endHour,
-      bool isOriginallyCompressed,
-    })>[];
+    final allRegions =
+        <
+          ({
+            int startHour,
+            int endHour,
+            bool isOriginallyCompressed,
+          })
+        >[];
 
     for (final cluster in foldingState.visibleClusters) {
       allRegions.add((
@@ -647,8 +650,9 @@ class _VisibleTimelineSection extends ConsumerWidget {
                     color: context.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: context.colorScheme.outlineVariant
-                          .withValues(alpha: 0.5),
+                      color: context.colorScheme.outlineVariant.withValues(
+                        alpha: 0.5,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -792,8 +796,10 @@ class _ActualBlockWidget extends ConsumerWidget {
     final slotStartMinutes = minutesFromDate(date, slot.startTime);
     final slotEndMinutes = minutesFromDate(date, slot.endTime);
     final startMinutes = slotStartMinutes - (startHour * 60);
-    final durationMinutes =
-        (slotEndMinutes - slotStartMinutes).clamp(0, kMaxMinutesInDay);
+    final durationMinutes = (slotEndMinutes - slotStartMinutes).clamp(
+      0,
+      kMaxMinutesInDay,
+    );
     final top = startMinutes * DailyTimeline._hourHeight / 60;
     final height = durationMinutes * DailyTimeline._hourHeight / 60;
 
@@ -909,7 +915,8 @@ class _ActualBlockContent extends ConsumerWidget {
               : [
                   BoxShadow(
                     color: categoryColor.withValues(
-                        alpha: isHighlighted ? 0.5 : 0.3),
+                      alpha: isHighlighted ? 0.5 : 0.3,
+                    ),
                     blurRadius: isHighlighted ? 8 : 4,
                     offset: const Offset(0, 2),
                   ),
@@ -1039,8 +1046,10 @@ class _NestedChildBlock extends ConsumerWidget {
 
     final childStart = minutesFromDate(date, child.startTime);
     final childEnd = minutesFromDate(date, child.endTime);
-    final childDurationMinutes =
-        (childEnd - childStart).clamp(0, kMaxMinutesInDay);
+    final childDurationMinutes = (childEnd - childStart).clamp(
+      0,
+      kMaxMinutesInDay,
+    );
     final childHeight = childDurationMinutes * DailyTimeline._hourHeight / 60;
 
     // Inset from edges based on nesting depth

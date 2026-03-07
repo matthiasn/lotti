@@ -42,16 +42,17 @@ void main() {
       final processed = <int>[];
       final pending = <Completer<void>>[];
 
-      final runner = ClientRunner<int>(
-        callback: (value) async {
-          processed.add(value);
-          final completer = Completer<void>();
-          pending.add(completer);
-          await completer.future;
-        },
-      )
-        ..enqueueRequest(1)
-        ..enqueueRequest(2);
+      final runner =
+          ClientRunner<int>(
+              callback: (value) async {
+                processed.add(value);
+                final completer = Completer<void>();
+                pending.add(completer);
+                await completer.future;
+              },
+            )
+            ..enqueueRequest(1)
+            ..enqueueRequest(2);
 
       async.flushMicrotasks();
 
@@ -76,11 +77,14 @@ void main() {
     fakeAsync((async) {
       final processed = <int>[];
 
-      final runner = ClientRunner<int>(callback: (value) async {
-        processed.add(value);
-      })
-        ..enqueueRequest(1)
-        ..enqueueRequest(2);
+      final runner =
+          ClientRunner<int>(
+              callback: (value) async {
+                processed.add(value);
+              },
+            )
+            ..enqueueRequest(1)
+            ..enqueueRequest(2);
 
       async.flushMicrotasks();
 

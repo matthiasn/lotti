@@ -58,31 +58,33 @@ class _ConflictsPageState extends State<ConflictsPage> {
 
     controller
       ..onListen = () {
-        unresolvedSubscription =
-            _db.watchConflicts(ConflictStatus.unresolved).listen(
-          (value) {
-            unresolved = value;
-            emitIfReady();
-          },
-          onError: (Object error, StackTrace stackTrace) {
-            if (!controller.isClosed) {
-              controller.addError(error, stackTrace);
-            }
-          },
-        );
+        unresolvedSubscription = _db
+            .watchConflicts(ConflictStatus.unresolved)
+            .listen(
+              (value) {
+                unresolved = value;
+                emitIfReady();
+              },
+              onError: (Object error, StackTrace stackTrace) {
+                if (!controller.isClosed) {
+                  controller.addError(error, stackTrace);
+                }
+              },
+            );
 
-        resolvedSubscription =
-            _db.watchConflicts(ConflictStatus.resolved).listen(
-          (value) {
-            resolved = value;
-            emitIfReady();
-          },
-          onError: (Object error, StackTrace stackTrace) {
-            if (!controller.isClosed) {
-              controller.addError(error, stackTrace);
-            }
-          },
-        );
+        resolvedSubscription = _db
+            .watchConflicts(ConflictStatus.resolved)
+            .listen(
+              (value) {
+                resolved = value;
+                emitIfReady();
+              },
+              onError: (Object error, StackTrace stackTrace) {
+                if (!controller.isClosed) {
+                  controller.addError(error, stackTrace);
+                }
+              },
+            );
       }
       ..onPause = () {
         unresolvedSubscription?.pause();
@@ -187,129 +189,133 @@ class ConflictDetailRoute extends StatelessWidget {
 
         return FutureBuilder<JournalEntity?>(
           future: db.journalEntityById(conflict.id),
-          builder: (
-            BuildContext context,
-            AsyncSnapshot<JournalEntity?> snapshot,
-          ) {
-            final local = snapshot.data;
+          builder:
+              (
+                BuildContext context,
+                AsyncSnapshot<JournalEntity?> snapshot,
+              ) {
+                final local = snapshot.data;
 
-            if (local == null) {
-              return const EmptyScaffoldWithTitle('Entry not found');
-            }
+                if (local == null) {
+                  return const EmptyScaffoldWithTitle('Entry not found');
+                }
 
-            final merged = VectorClock.merge(
-              local.meta.vectorClock,
-              fromSync.meta.vectorClock,
-            );
+                final merged = VectorClock.merge(
+                  local.meta.vectorClock,
+                  fromSync.meta.vectorClock,
+                );
 
-            final localWithResolvedVectorClock = local.copyWith(
-              meta: local.meta.copyWith(vectorClock: merged),
-            );
+                final localWithResolvedVectorClock = local.copyWith(
+                  meta: local.meta.copyWith(vectorClock: merged),
+                );
 
-            final remoteWithResolvedVectorClock = fromSync.copyWith(
-              meta: local.meta.copyWith(vectorClock: merged),
-            );
+                final remoteWithResolvedVectorClock = fromSync.copyWith(
+                  meta: local.meta.copyWith(vectorClock: merged),
+                );
 
-            return Scaffold(
-              appBar: TitleAppBar(
-                title: context.messages.settingsConflictsResolutionTitle,
-              ),
-              body: SingleChildScrollView(
-                padding: const EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Local:', style: appBarTextStyleNew),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: IgnorePointer(
-                        child: ModernJournalCard(
-                          item: localWithResolvedVectorClock,
-                          maxHeight: 1000,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                return Scaffold(
+                  appBar: TitleAppBar(
+                    title: context.messages.settingsConflictsResolutionTitle,
+                  ),
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        LottiTertiaryButton(
-                          onPressed: () => beamToNamed(
-                            '/settings/advanced/conflicts/${conflict.id}/edit',
+                        const Text('Local:', style: appBarTextStyleNew),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: IgnorePointer(
+                            child: ModernJournalCard(
+                              item: localWithResolvedVectorClock,
+                              maxHeight: 1000,
+                            ),
                           ),
-                          label: context.messages.editMenuTitle,
                         ),
-                        LottiTertiaryButton(
-                          onPressed: () {
-                            getIt<PersistenceLogic>().updateJournalEntity(
-                              localWithResolvedVectorClock,
-                              localWithResolvedVectorClock.meta,
-                            );
-                            settingsBeamerDelegate.beamBack();
-                          },
-                          label: context.messages.conflictsResolveLocalVersion,
-                        ),
-                      ],
-                    ),
-                    const Divider(),
-                    const Text('From Sync:', style: appBarTextStyleNew),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: IgnorePointer(
-                        child: ModernJournalCard(
-                          item: remoteWithResolvedVectorClock,
-                          maxHeight: 1000,
-                        ),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        LottiTertiaryButton(
-                          onPressed: () {
-                            getIt<PersistenceLogic>().updateJournalEntity(
-                              remoteWithResolvedVectorClock,
-                              remoteWithResolvedVectorClock.meta,
-                            );
-                            settingsBeamerDelegate.beamBack();
-                          },
-                          label: context.messages.conflictsResolveRemoteVersion,
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        LottiTertiaryButton(
-                          onPressed: () {
-                            Clipboard.setData(
-                              ClipboardData(
-                                text: fromSync.entryText?.plainText ?? '',
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            LottiTertiaryButton(
+                              onPressed: () => beamToNamed(
+                                '/settings/advanced/conflicts/${conflict.id}/edit',
                               ),
-                            );
-                          },
-                          label: context.messages.conflictsCopyTextFromSync,
+                              label: context.messages.editMenuTitle,
+                            ),
+                            LottiTertiaryButton(
+                              onPressed: () {
+                                getIt<PersistenceLogic>().updateJournalEntity(
+                                  localWithResolvedVectorClock,
+                                  localWithResolvedVectorClock.meta,
+                                );
+                                settingsBeamerDelegate.beamBack();
+                              },
+                              label:
+                                  context.messages.conflictsResolveLocalVersion,
+                            ),
+                          ],
+                        ),
+                        const Divider(),
+                        const Text('From Sync:', style: appBarTextStyleNew),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: IgnorePointer(
+                            child: ModernJournalCard(
+                              item: remoteWithResolvedVectorClock,
+                              maxHeight: 1000,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            LottiTertiaryButton(
+                              onPressed: () {
+                                getIt<PersistenceLogic>().updateJournalEntity(
+                                  remoteWithResolvedVectorClock,
+                                  remoteWithResolvedVectorClock.meta,
+                                );
+                                settingsBeamerDelegate.beamBack();
+                              },
+                              label: context
+                                  .messages
+                                  .conflictsResolveRemoteVersion,
+                            ),
+                          ],
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            LottiTertiaryButton(
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(
+                                    text: fromSync.entryText?.plainText ?? '',
+                                  ),
+                                );
+                              },
+                              label: context.messages.conflictsCopyTextFromSync,
+                            ),
+                          ],
+                        ),
+                        const Divider(),
+                        Text(
+                          'Local: ${local.meta.vectorClock}',
+                          style: monoTabularStyle(fontSize: fontSizeSmall),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          'Resolved with local: ${localWithResolvedVectorClock.meta.vectorClock}',
+                          style: monoTabularStyle(fontSize: fontSizeSmall),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          'From Sync: ${fromSync.meta.vectorClock}',
+                          style: monoTabularStyle(fontSize: fontSizeSmall),
                         ),
                       ],
                     ),
-                    const Divider(),
-                    Text(
-                      'Local: ${local.meta.vectorClock}',
-                      style: monoTabularStyle(fontSize: fontSizeSmall),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Resolved with local: ${localWithResolvedVectorClock.meta.vectorClock}',
-                      style: monoTabularStyle(fontSize: fontSizeSmall),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'From Sync: ${fromSync.meta.vectorClock}',
-                      style: monoTabularStyle(fontSize: fontSizeSmall),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
+                  ),
+                );
+              },
         );
       },
     );

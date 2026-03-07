@@ -115,10 +115,12 @@ void main() {
       (invocation) =>
           invocation.positionalArguments.first as List<LabelDefinition>,
     );
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
   });
 
   tearDown(() async {
@@ -207,10 +209,12 @@ void main() {
     );
 
     // Stub removeLabel
-    when(() => repository.removeLabel(
-          journalEntityId: any(named: 'journalEntityId'),
-          labelId: any(named: 'labelId'),
-        )).thenAnswer((_) async => true);
+    when(
+      () => repository.removeLabel(
+        journalEntityId: any(named: 'journalEntityId'),
+        labelId: any(named: 'labelId'),
+      ),
+    ).thenAnswer((_) async => true);
 
     final task = taskWithLabels(['existing']);
     await tester.pumpWidget(buildWrapper(task));
@@ -235,18 +239,23 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pump();
 
-    verify(() => repository.removeLabel(
-          journalEntityId: 'task-123',
-          labelId: 'new-1',
-        )).called(1);
-    verify(() => repository.removeLabel(
-          journalEntityId: 'task-123',
-          labelId: 'new-2',
-        )).called(1);
+    verify(
+      () => repository.removeLabel(
+        journalEntityId: 'task-123',
+        labelId: 'new-1',
+      ),
+    ).called(1);
+    verify(
+      () => repository.removeLabel(
+        journalEntityId: 'task-123',
+        labelId: 'new-2',
+      ),
+    ).called(1);
   });
 
-  testWidgets('snackbar uses primary color scheme with onPrimary text',
-      (tester) async {
+  testWidgets('snackbar uses primary color scheme with onPrimary text', (
+    tester,
+  ) async {
     // Register event service for provider
     final eventService = LabelAssignmentEventService();
     getIt.registerSingleton<LabelAssignmentEventService>(eventService);
@@ -286,8 +295,9 @@ void main() {
     expect(textWidget.style?.fontWeight, equals(FontWeight.w600));
   });
 
-  testWidgets('handles rapid multiple assignments, showing latest toast',
-      (tester) async {
+  testWidgets('handles rapid multiple assignments, showing latest toast', (
+    tester,
+  ) async {
     // Register event service for provider
     final eventService = LabelAssignmentEventService();
     getIt.registerSingleton<LabelAssignmentEventService>(eventService);
@@ -308,25 +318,30 @@ void main() {
     await tester.pump();
 
     // First event
-    eventService.publish(const LabelAssignmentEvent(
-      taskId: 'task-123',
-      assignedIds: ['label-1'],
-    ));
+    eventService.publish(
+      const LabelAssignmentEvent(
+        taskId: 'task-123',
+        assignedIds: ['label-1'],
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Verify first toast is showing
     expect(find.text('Label 1'), findsOneWidget);
 
     // Clear the first SnackBar to ensure clean state for second
-    ScaffoldMessenger.of(tester.element(find.byType(Scaffold)))
-        .clearSnackBars();
+    ScaffoldMessenger.of(
+      tester.element(find.byType(Scaffold)),
+    ).clearSnackBars();
     await tester.pump();
 
     // Second event supersedes toast
-    eventService.publish(const LabelAssignmentEvent(
-      taskId: 'task-123',
-      assignedIds: ['label-2', 'label-3'],
-    ));
+    eventService.publish(
+      const LabelAssignmentEvent(
+        taskId: 'task-123',
+        assignedIds: ['label-2', 'label-3'],
+      ),
+    );
     await tester.pumpAndSettle();
 
     // Assert latest toast shows only the most recent assignment (via chip text)
@@ -389,12 +404,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final content = tester.widget<LabelSelectionSliverContent>(
-        find.byType(LabelSelectionSliverContent));
+      find.byType(LabelSelectionSliverContent),
+    );
     expect(content.categoryId, equals('work'));
   });
 
-  testWidgets('selector content has null categoryId when task has none',
-      (tester) async {
+  testWidgets('selector content has null categoryId when task has none', (
+    tester,
+  ) async {
     final base = taskWithLabels(const []);
     final task = base.copyWith(meta: base.meta.copyWith(categoryId: null));
 
@@ -405,12 +422,14 @@ void main() {
     await tester.pumpAndSettle();
 
     final content = tester.widget<LabelSelectionSliverContent>(
-        find.byType(LabelSelectionSliverContent));
+      find.byType(LabelSelectionSliverContent),
+    );
     expect(content.categoryId, isNull);
   });
 
-  testWidgets('wrapper extracts and passes categoryId to sheet',
-      (tester) async {
+  testWidgets('wrapper extracts and passes categoryId to sheet', (
+    tester,
+  ) async {
     final base = taskWithLabels(const []);
     final task = base.copyWith(meta: base.meta.copyWith(categoryId: 'work'));
 
@@ -423,12 +442,14 @@ void main() {
 
     // Verify modal content receives the task's categoryId
     final content = tester.widget<LabelSelectionSliverContent>(
-        find.byType(LabelSelectionSliverContent));
+      find.byType(LabelSelectionSliverContent),
+    );
     expect(content.categoryId, equals('work'));
   });
 
-  testWidgets('shows wrapper even when no labels assigned and none available',
-      (tester) async {
+  testWidgets('shows wrapper even when no labels assigned and none available', (
+    tester,
+  ) async {
     when(() => cacheService.sortedLabels).thenReturn(const <LabelDefinition>[]);
     final task = taskWithLabels(const []);
 
@@ -439,8 +460,9 @@ void main() {
     expect(find.text('Add Label'), findsOneWidget);
   });
 
-  testWidgets('does not show long-press dialog when no description',
-      (tester) async {
+  testWidgets('does not show long-press dialog when no description', (
+    tester,
+  ) async {
     final noDesc = testLabelDefinition1.copyWith(description: null);
     when(() => cacheService.getLabelById(noDesc.id)).thenReturn(noDesc);
     when(() => cacheService.sortedLabels).thenReturn([noDesc]);
@@ -512,8 +534,9 @@ void main() {
     expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
   });
 
-  testWidgets('shows fallback toast text when cache misses label names',
-      (tester) async {
+  testWidgets('shows fallback toast text when cache misses label names', (
+    tester,
+  ) async {
     // Register event service for provider
     final eventService = LabelAssignmentEventService();
     getIt.registerSingleton<LabelAssignmentEventService>(eventService);
@@ -538,7 +561,9 @@ void main() {
 
     // Should show fallback message (in Offstage for accessibility)
     expect(
-        find.text('Assigned 2 label(s)', skipOffstage: false), findsOneWidget);
+      find.text('Assigned 2 label(s)', skipOffstage: false),
+      findsOneWidget,
+    );
   });
 
   testWidgets('search in selector filters labels', (tester) async {
@@ -595,8 +620,9 @@ void main() {
     expect(find.text('Urgent'), findsOneWidget);
   });
 
-  testWidgets('successfully applies label changes and closes modal',
-      (tester) async {
+  testWidgets('successfully applies label changes and closes modal', (
+    tester,
+  ) async {
     final task = taskWithLabels(const []);
     when(
       () => repository.setLabels(

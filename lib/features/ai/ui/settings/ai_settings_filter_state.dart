@@ -61,7 +61,8 @@ enum AiSettingsTab {
   providers,
   models,
   prompts,
-  profiles;
+  profiles
+  ;
 
   /// Human-readable display name for the tab
   String get displayName {
@@ -105,16 +106,16 @@ extension AiSettingsFilterStateX on AiSettingsFilterState {
 
   /// Resets only model-specific filters (preserves search query)
   AiSettingsFilterState resetModelFilters() => copyWith(
-        selectedProviders: const {},
-        selectedCapabilities: const {},
-        reasoningFilter: false,
-      );
+    selectedProviders: const {},
+    selectedCapabilities: const {},
+    reasoningFilter: false,
+  );
 
   /// Resets only prompt-specific filters (preserves search query)
   AiSettingsFilterState resetPromptFilters() => copyWith(
-        selectedProviders: const {},
-        selectedResponseTypes: const {},
-      );
+    selectedProviders: const {},
+    selectedResponseTypes: const {},
+  );
 
   /// Resets filters for the current active tab
   AiSettingsFilterState resetCurrentTabFilters() {

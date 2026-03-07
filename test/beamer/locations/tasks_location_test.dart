@@ -18,8 +18,9 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          TasksLocation(RouteInformation(uri: Uri.parse('/tasks')));
+      final location = TasksLocation(
+        RouteInformation(uri: Uri.parse('/tasks')),
+      );
       expect(location.pathPatterns, ['/tasks', '/tasks/:taskId']);
     });
 
@@ -40,14 +41,16 @@ void main() {
 
     test('buildPages builds TaskDetailsPage', () {
       final taskId = const Uuid().v4();
-      final routeInformation =
-          RouteInformation(uri: Uri.parse('/tasks/$taskId'));
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/tasks/$taskId'),
+      );
       final location = TasksLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(
         routeInformation,
       );
-      final newPathParameters =
-          Map<String, String>.from(beamState.pathParameters);
+      final newPathParameters = Map<String, String>.from(
+        beamState.pathParameters,
+      );
       newPathParameters['taskId'] = taskId;
       final newBeamState = beamState.copyWith(
         pathParameters: newPathParameters,

@@ -45,8 +45,9 @@ void main() {
     final fullPath = getFullImagePath(image);
 
     // Create parent directories
-    Directory(fullPath.substring(0, fullPath.lastIndexOf('/')))
-        .createSync(recursive: true);
+    Directory(
+      fullPath.substring(0, fullPath.lastIndexOf('/')),
+    ).createSync(recursive: true);
 
     // Write invalid content (not a valid image format)
     File(fullPath).writeAsBytesSync([0x00, 0x01, 0x02, 0x03]);
@@ -61,8 +62,9 @@ void main() {
         getIt.allowReassignment = true;
 
         // Create a temp directory to simulate the documents directory
-        mockDocumentsDirectory =
-            Directory.systemTemp.createTempSync('cover_art_background_test_');
+        mockDocumentsDirectory = Directory.systemTemp.createTempSync(
+          'cover_art_background_test_',
+        );
 
         // Register temp directory for getDocumentsDirectory()
         getIt.registerSingleton<Directory>(mockDocumentsDirectory);
@@ -77,8 +79,9 @@ void main() {
         }
       });
 
-      testWidgets('errorBuilder triggers when image file is invalid',
-          (tester) async {
+      testWidgets('errorBuilder triggers when image file is invalid', (
+        tester,
+      ) async {
         final image = buildJournalImage();
         final filePath = createInvalidImageFile(image);
 
@@ -109,8 +112,9 @@ void main() {
       });
     });
 
-    testWidgets('renders SizedBox.shrink when entry is not JournalImage',
-        (tester) async {
+    testWidgets('renders SizedBox.shrink when entry is not JournalImage', (
+      tester,
+    ) async {
       final now = DateTime(2025, 12, 31, 12);
       final textEntry = JournalEntry(
         meta: Metadata(
@@ -194,8 +198,9 @@ void main() {
       expect(find.byType(SliverAppBar), findsOneWidget);
     });
 
-    testWidgets('renders nothing when provider returns loading state',
-        (tester) async {
+    testWidgets('renders nothing when provider returns loading state', (
+      tester,
+    ) async {
       // Without override, the provider should be in loading state
       await tester.pumpWidget(
         const ProviderScope(
@@ -212,8 +217,9 @@ void main() {
       expect(find.byType(CoverArtBackground), findsOneWidget);
     });
 
-    testWidgets('didUpdateWidget resets retries when imageId changes',
-        (tester) async {
+    testWidgets('didUpdateWidget resets retries when imageId changes', (
+      tester,
+    ) async {
       final image1 = buildJournalImage();
       final now = DateTime(2025, 12, 31, 12);
       final image2 = JournalImage(

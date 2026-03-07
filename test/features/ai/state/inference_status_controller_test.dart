@@ -35,15 +35,15 @@ void main() {
     });
 
     test('setStatus updates the state correctly', () {
-      final controller = container.read(
-        inferenceStatusControllerProvider(
-          id: testId,
-          aiResponseType: testAiResponseType,
-        ).notifier,
-      )
-
-        // Test setting to running
-        ..setStatus(InferenceStatus.running);
+      final controller =
+          container.read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testAiResponseType,
+              ).notifier,
+            )
+            // Test setting to running
+            ..setStatus(InferenceStatus.running);
       expect(
         container.read(
           inferenceStatusControllerProvider(
@@ -137,11 +137,11 @@ void main() {
       subscriptions.add(unsubscribe.close);
 
       container.read(
-        inferenceStatusControllerProvider(
-          id: testId,
-          aiResponseType: testAiResponseType,
-        ).notifier,
-      )
+          inferenceStatusControllerProvider(
+            id: testId,
+            aiResponseType: testAiResponseType,
+          ).notifier,
+        )
         ..setStatus(InferenceStatus.running)
         ..setStatus(InferenceStatus.error)
         ..setStatus(InferenceStatus.idle);

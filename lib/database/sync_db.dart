@@ -141,22 +141,23 @@ class SyncDatabase extends _$SyncDatabase {
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
-          openDbConnection(
-            overriddenFilename ?? syncDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-            background: background,
-            documentsDirectoryProvider: documentsDirectoryProvider,
-            tempDirectoryProvider: tempDirectoryProvider,
-          ),
-        );
+         openDbConnection(
+           overriddenFilename ?? syncDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           background: background,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   SyncDatabase.connect(super.c) : super.connect();
 
   bool inMemoryDatabase = false;
 
   Future<int> updateOutboxItem(OutboxCompanion item) {
-    return (update(outbox)..where((t) => t.id.equals(item.id.value)))
-        .write(item);
+    return (update(
+      outbox,
+    )..where((t) => t.id.equals(item.id.value))).write(item);
   }
 
   Future<int> addOutboxItem(OutboxCompanion entry) {
@@ -191,39 +192,40 @@ class SyncDatabase extends _$SyncDatabase {
     final reclaimWindow = effectiveNow.subtract(leaseDuration);
 
     return transaction(() async {
-      final candidate = await (select(outbox)
-            ..where(
-              (t) =>
-                  (t.status.equals(OutboxStatus.pending.index)) |
-                  (t.status.equals(_outboxSendingStatus) &
-                      t.updatedAt.isSmallerThanValue(reclaimWindow)),
-            )
-            ..orderBy([
-              (t) => OrderingTerm(expression: t.priority),
-              (t) => OrderingTerm(expression: t.createdAt),
-            ])
-            ..limit(1))
-          .getSingleOrNull();
+      final candidate =
+          await (select(outbox)
+                ..where(
+                  (t) =>
+                      (t.status.equals(OutboxStatus.pending.index)) |
+                      (t.status.equals(_outboxSendingStatus) &
+                          t.updatedAt.isSmallerThanValue(reclaimWindow)),
+                )
+                ..orderBy([
+                  (t) => OrderingTerm(expression: t.priority),
+                  (t) => OrderingTerm(expression: t.createdAt),
+                ])
+                ..limit(1))
+              .getSingleOrNull();
 
       if (candidate == null) {
         return null;
       }
 
-      final updated = await (update(outbox)
-            ..where(
-              (t) =>
-                  t.id.equals(candidate.id) &
-                  t.status.equals(candidate.status) &
-                  (candidate.status == _outboxSendingStatus
-                      ? t.updatedAt.equals(candidate.updatedAt)
-                      : const Constant(true)),
-            ))
-          .write(
-        OutboxCompanion(
-          status: Value(_outboxSendingStatus),
-          updatedAt: Value(effectiveNow),
-        ),
-      );
+      final updated =
+          await (update(outbox)..where(
+                (t) =>
+                    t.id.equals(candidate.id) &
+                    t.status.equals(candidate.status) &
+                    (candidate.status == _outboxSendingStatus
+                        ? t.updatedAt.equals(candidate.updatedAt)
+                        : const Constant(true)),
+              ))
+              .write(
+                OutboxCompanion(
+                  status: Value(_outboxSendingStatus),
+                  updatedAt: Value(effectiveNow),
+                ),
+              );
 
       if (updated != 1) {
         return null;
@@ -255,25 +257,25 @@ class SyncDatabase extends _$SyncDatabase {
   }) {
     return (select(outbox)
           ..where(
-            (t) => t.status
-                .isIn(statuses.map((OutboxStatus status) => status.index)),
+            (t) => t.status.isIn(
+              statuses.map((OutboxStatus status) => status.index),
+            ),
           )
           ..orderBy([
             (t) => OrderingTerm(expression: t.priority),
             (t) => OrderingTerm(
-                  expression: t.createdAt,
-                  mode: OrderingMode.desc,
-                ),
+              expression: t.createdAt,
+              mode: OrderingMode.desc,
+            ),
           ])
           ..limit(limit))
         .watch();
   }
 
   Stream<int> watchOutboxCount() {
-    return (select(outbox)
-          ..where(
-            (t) => t.status.equals(OutboxStatus.pending.index),
-          ))
+    return (select(outbox)..where(
+          (t) => t.status.equals(OutboxStatus.pending.index),
+        ))
         .watch()
         .map((res) => res.length);
   }
@@ -286,10 +288,10 @@ class SyncDatabase extends _$SyncDatabase {
   /// Get (hostId, counter) pairs from pending backfill request messages in outbox.
   /// Used to avoid enqueuing duplicate backfill requests.
   Future<Set<({String hostId, int counter})>>
-      getPendingBackfillEntries() async {
-    final pendingItems = await (select(outbox)
-          ..where((t) => t.status.equals(OutboxStatus.pending.index)))
-        .get();
+  getPendingBackfillEntries() async {
+    final pendingItems = await (select(
+      outbox,
+    )..where((t) => t.status.equals(OutboxStatus.pending.index))).get();
 
     final entries = <({String hostId, int counter})>{};
 
@@ -362,16 +364,15 @@ class SyncDatabase extends _$SyncDatabase {
     int counter,
     SyncSequenceStatus status,
   ) {
-    return (update(syncSequenceLog)
-          ..where(
-            (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
-          ))
+    return (update(syncSequenceLog)..where(
+          (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
+        ))
         .write(
-      SyncSequenceLogCompanion(
-        status: Value(status.index),
-        updatedAt: Value(DateTime.now()),
-      ),
-    );
+          SyncSequenceLogCompanion(
+            status: Value(status.index),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
   }
 
   /// Batch increment request counts for multiple entries.
@@ -409,10 +410,9 @@ class SyncDatabase extends _$SyncDatabase {
     String hostId,
     int counter,
   ) {
-    return (select(syncSequenceLog)
-          ..where(
-            (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
-          ))
+    return (select(syncSequenceLog)..where(
+          (t) => t.hostId.equals(hostId) & t.counter.equals(counter),
+        ))
         .getSingleOrNull();
   }
 
@@ -422,14 +422,13 @@ class SyncDatabase extends _$SyncDatabase {
     required SyncSequencePayloadType payloadType,
     required String payloadId,
   }) {
-    return (select(syncSequenceLog)
-          ..where(
-            (t) =>
-                t.entryId.equals(payloadId) &
-                t.payloadType.equals(payloadType.index) &
-                (t.status.equals(SyncSequenceStatus.missing.index) |
-                    t.status.equals(SyncSequenceStatus.requested.index)),
-          ))
+    return (select(syncSequenceLog)..where(
+          (t) =>
+              t.entryId.equals(payloadId) &
+              t.payloadType.equals(payloadType.index) &
+              (t.status.equals(SyncSequenceStatus.missing.index) |
+                  t.status.equals(SyncSequenceStatus.requested.index)),
+        ))
         .get();
   }
 
@@ -455,19 +454,18 @@ class SyncDatabase extends _$SyncDatabase {
 
   /// Get the last seen timestamp for a host.
   Future<DateTime?> getHostLastSeen(String hostId) async {
-    final result = await (select(hostActivity)
-          ..where((t) => t.hostId.equals(hostId)))
-        .getSingleOrNull();
+    final result = await (select(
+      hostActivity,
+    )..where((t) => t.hostId.equals(hostId))).getSingleOrNull();
     return result?.lastSeenAt;
   }
 
   /// Get all existing counters for a specific host.
   /// Used for efficient bulk population to avoid N+1 queries.
   Future<Set<int>> getCountersForHost(String hostId) async {
-    final entries = await (select(syncSequenceLog)
-          ..where((t) => t.hostId.equals(hostId)))
-        .map((row) => row.counter)
-        .get();
+    final entries = await (select(
+      syncSequenceLog,
+    )..where((t) => t.hostId.equals(hostId))).map((row) => row.counter).get();
     return entries.toSet();
   }
 
@@ -635,8 +633,9 @@ class SyncDatabase extends _$SyncDatabase {
         message: Value(newMessage),
         subject: Value(newSubject),
         updatedAt: Value(DateTime.now()),
-        payloadSize:
-            payloadSize != null ? Value(payloadSize) : const Value.absent(),
+        payloadSize: payloadSize != null
+            ? Value(payloadSize)
+            : const Value.absent(),
         priority: priority != null ? Value(priority) : const Value.absent(),
       ),
     );

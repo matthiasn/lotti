@@ -258,8 +258,9 @@ class _AudioRecordingModalContentState
                   ? theme.colorScheme.primary
                   : theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
-              fontWeight:
-                  !_useRealtimeMode ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: !_useRealtimeMode
+                  ? FontWeight.w600
+                  : FontWeight.normal,
             ),
           ),
           Switch.adaptive(
@@ -273,8 +274,9 @@ class _AudioRecordingModalContentState
                   ? theme.colorScheme.primary
                   : theme.colorScheme.onSurfaceVariant,
               fontSize: 12,
-              fontWeight:
-                  _useRealtimeMode ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: _useRealtimeMode
+                  ? FontWeight.w600
+                  : FontWeight.normal,
             ),
           ),
         ],
@@ -372,8 +374,11 @@ class _AudioRecordingModalContentState
     );
   }
 
-  Widget _buildRecordButton(BuildContext context,
-      AudioRecorderController controller, ThemeData theme) {
+  Widget _buildRecordButton(
+    BuildContext context,
+    AudioRecorderController controller,
+    ThemeData theme,
+  ) {
     return GestureDetector(
       key: const ValueKey('record'),
       onTap: () {

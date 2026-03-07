@@ -20,7 +20,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// - Model management (installation, checking, warm-up)
 class OllamaInferenceRepository implements InferenceRepositoryInterface {
   OllamaInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -95,8 +95,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
       if (content is ChatCompletionUserMessageContent) {
         // Extract text from ChatCompletionUserMessageContent
-        contentStr =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        contentStr = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
       } else if (content is String) {
         contentStr = content;
       } else if (content != null) {
@@ -125,15 +126,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     // Convert tools to Ollama format if provided
     final ollamaTools = tools != null && tools.isNotEmpty
         ? tools
-            .map((tool) => {
+              .map(
+                (tool) => {
                   'type': 'function',
                   'function': {
                     'name': tool.function.name,
                     'description': tool.function.description,
                     'parameters': tool.function.parameters ?? {},
                   },
-                })
-            .toList()
+                },
+              )
+              .toList()
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
@@ -160,8 +163,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'tools': ollamaTools,
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
-      }
+        'num_predict': ?maxCompletionTokens,
+      },
     };
 
     return _streamChatRequest(
@@ -212,7 +215,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         'role': 'user',
         'content': prompt,
         'images': images,
-      }
+      },
     ];
 
     final requestBody = {
@@ -221,14 +224,15 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'stream': true, // Use streaming for consistency
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
-      }
+        'num_predict': ?maxCompletionTokens,
+      },
     };
 
     final timeout = Duration(
-        seconds: images.isNotEmpty
-            ? ollamaImageAnalysisTimeoutSeconds
-            : ollamaDefaultTimeoutSeconds);
+      seconds: images.isNotEmpty
+          ? ollamaImageAnalysisTimeoutSeconds
+          : ollamaDefaultTimeoutSeconds,
+    );
 
     return _streamChatRequest(
       requestBody: requestBody,
@@ -257,15 +261,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     // Convert tools to Ollama format if provided
     final ollamaTools = tools != null && tools.isNotEmpty
         ? tools
-            .map((tool) => {
+              .map(
+                (tool) => {
                   'type': 'function',
                   'function': {
                     'name': tool.function.name,
                     'description': tool.function.description,
                     'parameters': tool.function.parameters ?? {},
                   },
-                })
-            .toList()
+                },
+              )
+              .toList()
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
@@ -296,8 +302,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       'tools': ollamaTools,
       'options': {
         'temperature': temperature,
-        if (maxCompletionTokens != null) 'num_predict': maxCompletionTokens,
-      }
+        'num_predict': ?maxCompletionTokens,
+      },
     };
 
     return _streamChatRequest(
@@ -353,13 +359,15 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           name: 'OllamaInferenceRepository',
         );
         throw Exception(
-            'Ollama chat API request failed with status ${request.statusCode}: $responseBody');
+          'Ollama chat API request failed with status ${request.statusCode}: $responseBody',
+        );
       }
 
       // Process streaming response
-      await for (final chunk in request.stream
-          .transform(utf8.decoder)
-          .transform(const LineSplitter())) {
+      await for (final chunk
+          in request.stream
+              .transform(utf8.decoder)
+              .transform(const LineSplitter())) {
         if (chunk.isEmpty) continue;
 
         try {
@@ -396,12 +404,14 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 // Create a dynamic object that matches the expected structure
                 // Check if arguments are already a string (JSON-encoded) or need encoding
                 final arguments = functionCall['arguments'];
-                final argumentsStr =
-                    arguments is String ? arguments : jsonEncode(arguments);
+                final argumentsStr = arguments is String
+                    ? arguments
+                    : jsonEncode(arguments);
 
                 toolCallsList.add({
                   'index': i,
-                  'id': toolCall['id'] ??
+                  'id':
+                      toolCall['id'] ??
                       'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
                   'type': 'function',
                   'function': {
@@ -502,8 +512,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           }
           final reason = e is TimeoutException ? 'Timeout' : 'Network error';
           developer.log(
-              ' [33m$reason during $context, retrying (attempt $attempt)... [0m',
-              name: 'OllamaInferenceRepository');
+            ' [33m$reason during $context, retrying (attempt $attempt)... [0m',
+            name: 'OllamaInferenceRepository',
+          );
           await Future<void>.delayed(baseDelay * (1 << (attempt - 1)));
           continue;
         }
@@ -529,7 +540,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     if (temperature < ollamaMinTemperature ||
         temperature > ollamaMaxTemperature) {
       throw Exception(
-          'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature');
+        'Temperature must be between $ollamaMinTemperature and $ollamaMaxTemperature',
+      );
     }
     if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
       throw Exception('maxCompletionTokens must be positive');
@@ -538,7 +550,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(
-      String modelName, String baseUrl) async* {
+    String modelName,
+    String baseUrl,
+  ) async* {
     const installTimeout = Duration(minutes: 10); // 10 minutes for large models
 
     final request = http.Request(
@@ -568,7 +582,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         name: 'OllamaInferenceRepository',
       );
       throw Exception(
-          'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.');
+        'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.',
+      );
     }
 
     await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
@@ -594,20 +609,24 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             throw Exception('Model installation failed: Model not found.');
           } else if (errorMessage.contains('disk full')) {
             throw Exception(
-                'Model installation failed: Disk is full. Please free up space and try again.');
+              'Model installation failed: Disk is full. Please free up space and try again.',
+            );
           } else if (errorMessage.contains('connection refused')) {
             throw Exception(
-                'Model installation failed: Connection refused. Is the Ollama server running?');
+              'Model installation failed: Connection refused. Is the Ollama server running?',
+            );
           } else {
             throw Exception(
-                'Model installation failed. Please check your Ollama installation and try again.');
+              'Model installation failed. Please check your Ollama installation and try again.',
+            );
           }
         }
 
         final status = data['status'] is String ? data['status'] as String : '';
         final total = data['total'] is int ? data['total'] as int : 0;
-        final completed =
-            data['completed'] is int ? data['completed'] as int : 0;
+        final completed = data['completed'] is int
+            ? data['completed'] as int
+            : 0;
 
         yield OllamaPullProgress(
           status: status,
@@ -634,7 +653,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             body: jsonEncode({
               'model': modelName,
               'messages': [
-                {'role': 'user', 'content': 'Hello'}
+                {'role': 'user', 'content': 'Hello'},
               ],
               'stream': false,
             }),

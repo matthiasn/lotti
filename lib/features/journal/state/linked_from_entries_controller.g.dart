@@ -13,18 +13,22 @@ part of 'linked_from_entries_controller.dart';
 final linkedFromEntriesControllerProvider =
     LinkedFromEntriesControllerFamily._();
 
-final class LinkedFromEntriesControllerProvider extends $AsyncNotifierProvider<
-    LinkedFromEntriesController, List<JournalEntity>> {
-  LinkedFromEntriesControllerProvider._(
-      {required LinkedFromEntriesControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'linkedFromEntriesControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class LinkedFromEntriesControllerProvider
+    extends
+        $AsyncNotifierProvider<
+          LinkedFromEntriesController,
+          List<JournalEntity>
+        > {
+  LinkedFromEntriesControllerProvider._({
+    required LinkedFromEntriesControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'linkedFromEntriesControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$linkedFromEntriesControllerHash();
@@ -58,23 +62,22 @@ String _$linkedFromEntriesControllerHash() =>
 final class LinkedFromEntriesControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            LinkedFromEntriesController,
-            AsyncValue<List<JournalEntity>>,
-            List<JournalEntity>,
-            FutureOr<List<JournalEntity>>,
-            String> {
+          LinkedFromEntriesController,
+          AsyncValue<List<JournalEntity>>,
+          List<JournalEntity>,
+          FutureOr<List<JournalEntity>>,
+          String
+        > {
   LinkedFromEntriesControllerFamily._()
-      : super(
-          retry: null,
-          name: r'linkedFromEntriesControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'linkedFromEntriesControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  LinkedFromEntriesControllerProvider call({
-    required String id,
-  }) =>
+  LinkedFromEntriesControllerProvider call({required String id}) =>
       LinkedFromEntriesControllerProvider._(argument: id, from: this);
 
   @override
@@ -86,23 +89,20 @@ abstract class _$LinkedFromEntriesController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<List<JournalEntity>> build({
-    required String id,
-  });
+  FutureOr<List<JournalEntity>> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<JournalEntity>>, List<JournalEntity>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
-        AsyncValue<List<JournalEntity>>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
+              AsyncValue<List<JournalEntity>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

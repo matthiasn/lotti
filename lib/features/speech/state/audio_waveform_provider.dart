@@ -32,11 +32,11 @@ class AudioWaveformRequest {
 
   @override
   int get hashCode => Object.hash(
-        audio.meta.id,
-        audio.data.audioFile,
-        audio.data.audioDirectory,
-        bucketCount,
-      );
+    audio.meta.id,
+    audio.data.audioFile,
+    audio.data.audioDirectory,
+    bucketCount,
+  );
 }
 
 @riverpod

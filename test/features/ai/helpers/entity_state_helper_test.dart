@@ -16,119 +16,127 @@ void main() {
 
   group('EntityStateHelper', () {
     group('getCurrentEntityState', () {
-      test('returns typed entity when fetch succeeds and type matches',
-          () async {
-        // Arrange
-        const entityId = 'test-image-id';
-        final expectedImage = JournalImage(
-          meta: Metadata(
-            id: entityId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: ImageData(
-            capturedAt: DateTime.now(),
-            imageId: 'img-123',
-            imageFile: 'test.jpg',
-            imageDirectory: '/images/',
-          ),
-        );
+      test(
+        'returns typed entity when fetch succeeds and type matches',
+        () async {
+          // Arrange
+          const entityId = 'test-image-id';
+          final expectedImage = JournalImage(
+            meta: Metadata(
+              id: entityId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            data: ImageData(
+              capturedAt: DateTime.now(),
+              imageId: 'img-123',
+              imageFile: 'test.jpg',
+              imageDirectory: '/images/',
+            ),
+          );
 
-        when(() => mockAiInputRepo.getEntity(entityId))
-            .thenAnswer((_) async => expectedImage);
+          when(
+            () => mockAiInputRepo.getEntity(entityId),
+          ).thenAnswer((_) async => expectedImage);
 
-        // Act
-        final result =
-            await EntityStateHelper.getCurrentEntityState<JournalImage>(
-          entityId: entityId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'image',
-        );
+          // Act
+          final result =
+              await EntityStateHelper.getCurrentEntityState<JournalImage>(
+                entityId: entityId,
+                aiInputRepo: mockAiInputRepo,
+                entityTypeName: 'image',
+              );
 
-        // Assert
-        expect(result, equals(expectedImage));
-        expect(result, isA<JournalImage>());
-        verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
-      });
+          // Assert
+          expect(result, equals(expectedImage));
+          expect(result, isA<JournalImage>());
+          verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
+        },
+      );
 
       test('returns null when entity is not found', () async {
         // Arrange
         const entityId = 'non-existent-id';
 
-        when(() => mockAiInputRepo.getEntity(entityId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepo.getEntity(entityId),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result =
             await EntityStateHelper.getCurrentEntityState<JournalImage>(
-          entityId: entityId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'image',
-        );
+              entityId: entityId,
+              aiInputRepo: mockAiInputRepo,
+              entityTypeName: 'image',
+            );
 
         // Assert
         expect(result, isNull);
         verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
       });
 
-      test('returns null when entity type does not match expected type',
-          () async {
-        // Arrange
-        const entityId = 'task-id';
-        final task = Task(
-          meta: Metadata(
-            id: entityId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            status: TaskStatus.open(
-              id: 'status-1',
+      test(
+        'returns null when entity type does not match expected type',
+        () async {
+          // Arrange
+          const entityId = 'task-id';
+          final task = Task(
+            meta: Metadata(
+              id: entityId,
               createdAt: DateTime.now(),
-              utcOffset: 0,
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            statusHistory: [],
-          ),
-        );
+            data: TaskData(
+              title: 'Test Task',
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              statusHistory: [],
+            ),
+          );
 
-        when(() => mockAiInputRepo.getEntity(entityId))
-            .thenAnswer((_) async => task);
+          when(
+            () => mockAiInputRepo.getEntity(entityId),
+          ).thenAnswer((_) async => task);
 
-        // Act
-        // Expecting JournalImage but getting Task
-        final result =
-            await EntityStateHelper.getCurrentEntityState<JournalImage>(
-          entityId: entityId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'image',
-        );
+          // Act
+          // Expecting JournalImage but getting Task
+          final result =
+              await EntityStateHelper.getCurrentEntityState<JournalImage>(
+                entityId: entityId,
+                aiInputRepo: mockAiInputRepo,
+                entityTypeName: 'image',
+              );
 
-        // Assert
-        expect(result, isNull);
-        verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
-      });
+          // Assert
+          expect(result, isNull);
+          verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
+        },
+      );
 
       test('returns null when repository throws exception', () async {
         // Arrange
         const entityId = 'error-id';
 
-        when(() => mockAiInputRepo.getEntity(entityId))
-            .thenThrow(Exception('Repository error'));
+        when(
+          () => mockAiInputRepo.getEntity(entityId),
+        ).thenThrow(Exception('Repository error'));
 
         // Act
         final result =
             await EntityStateHelper.getCurrentEntityState<JournalImage>(
-          entityId: entityId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'image',
-        );
+              entityId: entityId,
+              aiInputRepo: mockAiInputRepo,
+              entityTypeName: 'image',
+            );
 
         // Assert
         expect(result, isNull);
@@ -155,15 +163,16 @@ void main() {
           ),
         );
 
-        when(() => mockAiInputRepo.getEntity(audioId))
-            .thenAnswer((_) async => audio);
+        when(
+          () => mockAiInputRepo.getEntity(audioId),
+        ).thenAnswer((_) async => audio);
 
         final audioResult =
             await EntityStateHelper.getCurrentEntityState<JournalAudio>(
-          entityId: audioId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'audio',
-        );
+              entityId: audioId,
+              aiInputRepo: mockAiInputRepo,
+              entityTypeName: 'audio',
+            );
 
         expect(audioResult, equals(audio));
         expect(audioResult, isA<JournalAudio>());
@@ -191,8 +200,9 @@ void main() {
           ),
         );
 
-        when(() => mockAiInputRepo.getEntity(taskId))
-            .thenAnswer((_) async => task);
+        when(
+          () => mockAiInputRepo.getEntity(taskId),
+        ).thenAnswer((_) async => task);
 
         final taskResult = await EntityStateHelper.getCurrentEntityState<Task>(
           entityId: taskId,
@@ -221,16 +231,17 @@ void main() {
           ),
         );
 
-        when(() => mockAiInputRepo.getEntity(entityId))
-            .thenAnswer((_) async => journalEntity);
+        when(
+          () => mockAiInputRepo.getEntity(entityId),
+        ).thenAnswer((_) async => journalEntity);
 
         // Act - Request base type, should work since JournalEntry extends JournalEntity
         final result =
             await EntityStateHelper.getCurrentEntityState<JournalEntity>(
-          entityId: entityId,
-          aiInputRepo: mockAiInputRepo,
-          entityTypeName: 'entity',
-        );
+              entityId: entityId,
+              aiInputRepo: mockAiInputRepo,
+              entityTypeName: 'entity',
+            );
 
         // Assert
         expect(result, equals(journalEntity));

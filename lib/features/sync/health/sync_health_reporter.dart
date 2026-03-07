@@ -12,9 +12,9 @@ class SyncHealthReporter {
     required SyncDatabase syncDatabase,
     required DomainLogger domainLogger,
     Duration interval = const Duration(minutes: 5),
-  })  : _syncDatabase = syncDatabase,
-        _domainLogger = domainLogger,
-        _interval = interval;
+  }) : _syncDatabase = syncDatabase,
+       _domainLogger = domainLogger,
+       _interval = interval;
 
   final SyncDatabase _syncDatabase;
   final DomainLogger _domainLogger;

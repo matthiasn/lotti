@@ -104,12 +104,14 @@ class _AgentTemplateDetailPageState
     }
 
     final templateAsync = ref.watch(agentTemplateProvider(widget.templateId!));
-    final activeVersionAsync =
-        ref.watch(activeTemplateVersionProvider(widget.templateId!));
+    final activeVersionAsync = ref.watch(
+      activeTemplateVersionProvider(widget.templateId!),
+    );
 
     final template = templateAsync.value?.mapOrNull(agentTemplate: (e) => e);
-    final activeVersion =
-        activeVersionAsync.value?.mapOrNull(agentTemplateVersion: (v) => v);
+    final activeVersion = activeVersionAsync.value?.mapOrNull(
+      agentTemplateVersion: (v) => v,
+    );
 
     if (templateAsync.isLoading && template == null) {
       return const Scaffold(
@@ -152,8 +154,8 @@ class _AgentTemplateDetailPageState
       if (activeVersion != null) {
         _generalDirectiveController.text =
             activeVersion.generalDirective.isNotEmpty
-                ? activeVersion.generalDirective
-                : activeVersion.directives;
+            ? activeVersion.generalDirective
+            : activeVersion.directives;
         _reportDirectiveController.text = activeVersion.reportDirective;
         _seededVersionId = activeVersion.id;
       }
@@ -165,8 +167,8 @@ class _AgentTemplateDetailPageState
     } else if (activeVersion != null && activeVersion.id != _seededVersionId) {
       _generalDirectiveController.text =
           activeVersion.generalDirective.isNotEmpty
-              ? activeVersion.generalDirective
-              : activeVersion.directives;
+          ? activeVersion.generalDirective
+          : activeVersion.directives;
       _reportDirectiveController.text = activeVersion.reportDirective;
       _seededVersionId = activeVersion.id;
       _originalGeneralDirective = _generalDirectiveController.text;
@@ -189,7 +191,8 @@ class _AgentTemplateDetailPageState
         ? context.messages.agentTemplateCreateTitle
         : context.messages.agentTemplateEditTitle;
 
-    final saveEnabled = !_isSaving &&
+    final saveEnabled =
+        !_isSaving &&
         _nameController.text.trim().isNotEmpty &&
         (_selectedProfileId?.isNotEmpty ?? false);
 
@@ -209,33 +212,35 @@ class _AgentTemplateDetailPageState
                         label: context.messages.cancelButton,
                       ),
                       LottiPrimaryButton(
-                        onPressed:
-                            saveEnabled ? () => _handleSave(context) : null,
+                        onPressed: saveEnabled
+                            ? () => _handleSave(context)
+                            : null,
                         label: context.messages.createButton,
                       ),
                     ]
                   : _isDirty
-                      ? [
-                          LottiSecondaryButton(
-                            onPressed: () => navigateBackFromAgent(context),
-                            label: context.messages.cancelButton,
-                          ),
-                          LottiPrimaryButton(
-                            onPressed:
-                                saveEnabled ? () => _handleSave(context) : null,
-                            label: context.messages.agentTemplateSaveNewVersion,
-                          ),
-                        ]
-                      : [
-                          LottiPrimaryButton(
-                            onPressed: () => beamToNamed(
-                              '/settings/agents/templates/'
-                              '${widget.templateId}/review',
-                            ),
-                            label: context.messages.agentRitualReviewTitle,
-                            icon: Icons.rate_review,
-                          ),
-                        ],
+                  ? [
+                      LottiSecondaryButton(
+                        onPressed: () => navigateBackFromAgent(context),
+                        label: context.messages.cancelButton,
+                      ),
+                      LottiPrimaryButton(
+                        onPressed: saveEnabled
+                            ? () => _handleSave(context)
+                            : null,
+                        label: context.messages.agentTemplateSaveNewVersion,
+                      ),
+                    ]
+                  : [
+                      LottiPrimaryButton(
+                        onPressed: () => beamToNamed(
+                          '/settings/agents/templates/'
+                          '${widget.templateId}/review',
+                        ),
+                        label: context.messages.agentRitualReviewTitle,
+                        icon: Icons.rate_review,
+                      ),
+                    ],
             )
           : null,
     );
@@ -497,10 +502,12 @@ class _VersionHistorySection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final historyAsync = ref.watch(templateVersionHistoryProvider(templateId));
-    final activeVersionAsync =
-        ref.watch(activeTemplateVersionProvider(templateId));
-    final activeVersionId =
-        activeVersionAsync.value?.mapOrNull(agentTemplateVersion: (v) => v.id);
+    final activeVersionAsync = ref.watch(
+      activeTemplateVersionProvider(templateId),
+    );
+    final activeVersionId = activeVersionAsync.value?.mapOrNull(
+      agentTemplateVersion: (v) => v.id,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,8 +521,9 @@ class _VersionHistorySection extends ConsumerWidget {
         const SizedBox(height: AppTheme.spacingSmall),
         historyAsync.when(
           data: (versions) {
-            final typed =
-                versions.whereType<AgentTemplateVersionEntity>().toList();
+            final typed = versions
+                .whereType<AgentTemplateVersionEntity>()
+                .toList();
             if (typed.isEmpty) {
               return Text(context.messages.agentTemplateNoVersions);
             }
@@ -530,7 +538,7 @@ class _VersionHistorySection extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => Text(context.messages.commonError),
+          error: (_, _) => Text(context.messages.commonError),
         ),
       ],
     );

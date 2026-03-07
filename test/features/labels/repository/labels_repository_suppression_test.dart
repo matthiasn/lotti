@@ -77,67 +77,76 @@ void main() {
       );
     });
 
-    test('removeLabel adds to aiSuppressedLabelIds; addLabels unsuppresses',
-        () async {
-      // Arrange: a task with one assigned label 'a'
-      final task = Task(
-        meta: Metadata(
-          id: 't1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          labelIds: ['a'],
-        ),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 's',
+    test(
+      'removeLabel adds to aiSuppressedLabelIds; addLabels unsuppresses',
+      () async {
+        // Arrange: a task with one assigned label 'a'
+        final task = Task(
+          meta: Metadata(
+            id: 't1',
             createdAt: DateTime.now(),
-            utcOffset: 0,
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            labelIds: ['a'],
           ),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          statusHistory: [],
-          title: 'x',
-        ),
-      );
-      JournalEntity current = task;
-      when(() => mockDb.journalEntityById('t1'))
-          .thenAnswer((_) async => current);
-      when(() => mockPl.updateMetadata(
-                any(),
-                dateFrom: any(named: 'dateFrom'),
-                dateTo: any(named: 'dateTo'),
-                categoryId: any(named: 'categoryId'),
-                clearCategoryId: any(named: 'clearCategoryId'),
-                deletedAt: any(named: 'deletedAt'),
-                labelIds: any<List<String>?>(named: 'labelIds'),
-                clearLabelIds: any<bool>(named: 'clearLabelIds'),
-              ))
-          .thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
-      when(() => mockPl.updateDbEntity(any(),
-              linkedId: any(named: 'linkedId'),
-              enqueueSync: any(named: 'enqueueSync'),
-              overrideComparison: any(named: 'overrideComparison')))
-          .thenAnswer((inv) async {
-        current = inv.positionalArguments.first as JournalEntity;
-        return true;
-      });
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 's',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            statusHistory: [],
+            title: 'x',
+          ),
+        );
+        JournalEntity current = task;
+        when(
+          () => mockDb.journalEntityById('t1'),
+        ).thenAnswer((_) async => current);
+        when(
+          () => mockPl.updateMetadata(
+            any(),
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            categoryId: any(named: 'categoryId'),
+            clearCategoryId: any(named: 'clearCategoryId'),
+            deletedAt: any(named: 'deletedAt'),
+            labelIds: any<List<String>?>(named: 'labelIds'),
+            clearLabelIds: any<bool>(named: 'clearLabelIds'),
+          ),
+        ).thenAnswer((inv) async => inv.positionalArguments.first as Metadata);
+        when(
+          () => mockPl.updateDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+            enqueueSync: any(named: 'enqueueSync'),
+            overrideComparison: any(named: 'overrideComparison'),
+          ),
+        ).thenAnswer((inv) async {
+          current = inv.positionalArguments.first as JournalEntity;
+          return true;
+        });
 
-      // Act: remove 'a'
-      await repo.removeLabel(journalEntityId: 't1', labelId: 'a');
-      final afterRemove = current as Task;
+        // Act: remove 'a'
+        await repo.removeLabel(journalEntityId: 't1', labelId: 'a');
+        final afterRemove = current as Task;
 
-      // Assert: suppression contains 'a'
-      expect(afterRemove.data.aiSuppressedLabelIds, contains('a'));
+        // Assert: suppression contains 'a'
+        expect(afterRemove.data.aiSuppressedLabelIds, contains('a'));
 
-      // Act: add 'a' back manually
-      await repo.addLabels(journalEntityId: 't1', addedLabelIds: ['a']);
-      final afterAdd = current as Task;
+        // Act: add 'a' back manually
+        await repo.addLabels(journalEntityId: 't1', addedLabelIds: ['a']);
+        final afterAdd = current as Task;
 
-      // Assert: suppression no longer contains 'a'
-      expect(
-          afterAdd.data.aiSuppressedLabelIds?.contains('a') ?? false, isFalse);
-    });
+        // Assert: suppression no longer contains 'a'
+        expect(
+          afterAdd.data.aiSuppressedLabelIds?.contains('a') ?? false,
+          isFalse,
+        );
+      },
+    );
   });
 }

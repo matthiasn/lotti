@@ -11,7 +11,8 @@ void main() {
 
     group('## 📋 TLDR heading pattern', () {
       test('extracts TLDR and additional when both present', () {
-        const content = '## 📋 TLDR\n'
+        const content =
+            '## 📋 TLDR\n'
             'Task is on track.\n'
             '\n'
             '## ✅ Achieved\n'
@@ -31,7 +32,8 @@ void main() {
       });
 
       test('returns full content as tldr when TLDR is the only section', () {
-        const content = '## 📋 TLDR\n'
+        const content =
+            '## 📋 TLDR\n'
             'Everything is done. No remaining work.';
 
         final result = parseReportContent(content);
@@ -42,7 +44,8 @@ void main() {
       });
 
       test('includes content before TLDR heading in tldr portion', () {
-        const content = '# My Report\n'
+        const content =
+            '# My Report\n'
             'Status: Active\n'
             '\n'
             '## 📋 TLDR\n'
@@ -63,7 +66,8 @@ void main() {
 
     group('**TLDR:** bold prefix pattern', () {
       test('extracts bold TLDR and additional content', () {
-        const content = '**TLDR:** Quick summary of the task.\n'
+        const content =
+            '**TLDR:** Quick summary of the task.\n'
             '\n'
             '## Details\n'
             '- More info here';
@@ -76,20 +80,23 @@ void main() {
         expect(result.additional, contains('Details'));
       });
 
-      test('returns all as tldr when no additional content after bold TLDR',
-          () {
-        const content = '**TLDR:** Just this one line.';
+      test(
+        'returns all as tldr when no additional content after bold TLDR',
+        () {
+          const content = '**TLDR:** Just this one line.';
 
-        final result = parseReportContent(content);
+          final result = parseReportContent(content);
 
-        expect(result.tldr, contains('Just this one line.'));
-        expect(result.additional, isNull);
-      });
+          expect(result.tldr, contains('Just this one line.'));
+          expect(result.additional, isNull);
+        },
+      );
     });
 
     group('first paragraph fallback', () {
       test('uses first paragraph as tldr when no TLDR markers found', () {
-        const content = 'This is a plain report.\n'
+        const content =
+            'This is a plain report.\n'
             '\n'
             'Second paragraph with details.\n'
             '\n'
@@ -115,7 +122,8 @@ void main() {
 
     group('precedence', () {
       test('heading pattern takes priority over bold prefix', () {
-        const content = '**TLDR:** Bold version.\n'
+        const content =
+            '**TLDR:** Bold version.\n'
             '\n'
             '## 📋 TLDR\n'
             'Heading version.\n'

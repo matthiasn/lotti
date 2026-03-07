@@ -98,8 +98,9 @@ class MockJournalDb extends Mock implements JournalDb {
   @override
   Stream<Set<String>> watchActiveConfigFlagNames() {
     try {
-      final result = super
-          .noSuchMethod(Invocation.method(#watchActiveConfigFlagNames, []));
+      final result = super.noSuchMethod(
+        Invocation.method(#watchActiveConfigFlagNames, []),
+      );
       if (result is Stream<Set<String>>) {
         return result;
       }
@@ -112,8 +113,9 @@ class MockJournalDb extends Mock implements JournalDb {
   @override
   Stream<bool> watchConfigFlag(String flagName) {
     try {
-      final result =
-          super.noSuchMethod(Invocation.method(#watchConfigFlag, [flagName]));
+      final result = super.noSuchMethod(
+        Invocation.method(#watchConfigFlag, [flagName]),
+      );
       if (result is Stream<bool>) {
         return result;
       }
@@ -170,8 +172,9 @@ MockJournalDb mockJournalDbWithMeasurableTypes(
   ).thenAnswer((_) async => <JournalEntity>[]);
 
   for (final dataType in dataTypes) {
-    when(() => mock.getMeasurableDataTypeById(dataType.id))
-        .thenAnswer((_) async => dataType);
+    when(
+      () => mock.getMeasurableDataTypeById(dataType.id),
+    ).thenAnswer((_) async => dataType);
   }
 
   return mock;
@@ -190,8 +193,9 @@ MockJournalDb mockJournalDbWithHabits(
 
   // Override with specific stubs for known habits
   for (final habitDefinition in habitDefinitions) {
-    when(() => mock.getHabitById(habitDefinition.id))
-        .thenAnswer((_) async => habitDefinition);
+    when(
+      () => mock.getHabitById(habitDefinition.id),
+    ).thenAnswer((_) async => habitDefinition);
   }
 
   return mock;
@@ -267,7 +271,7 @@ class FakeMetadata extends Fake implements Metadata {}
 
 class FakeQuillController extends Fake implements QuillController {
   FakeQuillController({TextSelection? selection})
-      : _selection = selection ?? const TextSelection.collapsed(offset: 0);
+    : _selection = selection ?? const TextSelection.collapsed(offset: 0);
 
   TextSelection _selection;
 

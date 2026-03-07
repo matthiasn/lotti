@@ -132,8 +132,9 @@ void main() {
 
       test('genericOpenAi should require API key', () {
         expect(
-          ProviderConfig.noApiKeyRequired
-              .contains(InferenceProviderType.genericOpenAi),
+          ProviderConfig.noApiKeyRequired.contains(
+            InferenceProviderType.genericOpenAi,
+          ),
           isFalse,
         );
       });

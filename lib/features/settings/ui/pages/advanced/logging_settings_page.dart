@@ -53,7 +53,7 @@ class LoggingSettingsPage extends ConsumerWidget {
               value: logAgentRuntime,
               onChanged: enableLogging
                   ? (_) =>
-                      getIt<JournalDb>().toggleConfigFlag(logAgentRuntimeFlag)
+                        getIt<JournalDb>().toggleConfigFlag(logAgentRuntimeFlag)
                   : null,
             ),
           ),
@@ -65,8 +65,9 @@ class LoggingSettingsPage extends ConsumerWidget {
             trailing: Switch.adaptive(
               value: logAgentWorkflow,
               onChanged: enableLogging
-                  ? (_) =>
-                      getIt<JournalDb>().toggleConfigFlag(logAgentWorkflowFlag)
+                  ? (_) => getIt<JournalDb>().toggleConfigFlag(
+                      logAgentWorkflowFlag,
+                    )
                   : null,
             ),
           ),

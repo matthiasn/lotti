@@ -46,13 +46,16 @@ void main() {
       loggingService: loggingService,
     );
 
-    when(() => lifecycleCoordinator.updateHooks(
-          onLogin: any(named: 'onLogin'),
-          onLogout: any(named: 'onLogout'),
-        )).thenReturn(null);
+    when(
+      () => lifecycleCoordinator.updateHooks(
+        onLogin: any(named: 'onLogin'),
+        onLogout: any(named: 'onLogout'),
+      ),
+    ).thenReturn(null);
     when(() => lifecycleCoordinator.initialize()).thenAnswer((_) async {});
-    when(() => lifecycleCoordinator.reconcileLifecycleState())
-        .thenAnswer((_) async {});
+    when(
+      () => lifecycleCoordinator.reconcileLifecycleState(),
+    ).thenAnswer((_) async {});
     when(() => lifecycleCoordinator.dispose()).thenAnswer((_) async {});
   });
 
@@ -69,8 +72,9 @@ void main() {
     verify(() => lifecycleCoordinator.reconcileLifecycleState()).called(1);
 
     clearInteractions(lifecycleCoordinator);
-    when(() => lifecycleCoordinator.reconcileLifecycleState())
-        .thenAnswer((_) async {});
+    when(
+      () => lifecycleCoordinator.reconcileLifecycleState(),
+    ).thenAnswer((_) async {});
 
     await engine.initialize();
 
@@ -78,35 +82,40 @@ void main() {
     verify(() => lifecycleCoordinator.reconcileLifecycleState()).called(1);
   });
 
-  test('connect delegates to session manager and syncs lifecycle on success',
-      () async {
-    when(
-      () => sessionManager.connect(
-          shouldAttemptLogin: any(named: 'shouldAttemptLogin')),
-    ).thenAnswer((invocation) async {
-      final shouldAttemptLogin =
-          invocation.namedArguments[#shouldAttemptLogin] as bool;
-      return shouldAttemptLogin;
-    });
+  test(
+    'connect delegates to session manager and syncs lifecycle on success',
+    () async {
+      when(
+        () => sessionManager.connect(
+          shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
+        ),
+      ).thenAnswer((invocation) async {
+        final shouldAttemptLogin =
+            invocation.namedArguments[#shouldAttemptLogin] as bool;
+        return shouldAttemptLogin;
+      });
 
-    when(() => lifecycleCoordinator.reconcileLifecycleState())
-        .thenAnswer((_) async {});
+      when(
+        () => lifecycleCoordinator.reconcileLifecycleState(),
+      ).thenAnswer((_) async {});
 
-    final loginResult = await engine.connect(shouldAttemptLogin: true);
-    expect(loginResult, isTrue);
-    verify(
-      () => sessionManager.connect(shouldAttemptLogin: true),
-    ).called(1);
-    verify(() => lifecycleCoordinator.reconcileLifecycleState()).called(1);
+      final loginResult = await engine.connect(shouldAttemptLogin: true);
+      expect(loginResult, isTrue);
+      verify(
+        () => sessionManager.connect(shouldAttemptLogin: true),
+      ).called(1);
+      verify(() => lifecycleCoordinator.reconcileLifecycleState()).called(1);
 
-    final connectResult = await engine.connect(shouldAttemptLogin: false);
-    expect(connectResult, isFalse);
-  });
+      final connectResult = await engine.connect(shouldAttemptLogin: false);
+      expect(connectResult, isFalse);
+    },
+  );
 
   test('logout calls session manager and synchronises lifecycle', () async {
     when(() => sessionManager.logout()).thenAnswer((_) async {});
-    when(() => lifecycleCoordinator.reconcileLifecycleState())
-        .thenAnswer((_) async {});
+    when(
+      () => lifecycleCoordinator.reconcileLifecycleState(),
+    ).thenAnswer((_) async {});
 
     await engine.logout();
 
@@ -126,8 +135,9 @@ void main() {
 
     when(() => sessionManager.client).thenReturn(client);
     when(() => sessionManager.isLoggedIn()).thenReturn(true);
-    when(() => roomManager.loadPersistedRoomId())
-        .thenAnswer((_) async => '!saved:server');
+    when(
+      () => roomManager.loadPersistedRoomId(),
+    ).thenAnswer((_) async => '!saved:server');
     when(() => roomManager.currentRoomId).thenReturn('!current:server');
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => lifecycleCoordinator.isActive).thenReturn(true);
@@ -140,8 +150,9 @@ void main() {
     when(() => room.encrypted).thenReturn(true);
     when(() => room.summary).thenReturn(summary);
     when(() => summary.mJoinedMemberCount).thenReturn(2);
-    when(() => client.onLoginStateChanged.value)
-        .thenReturn(LoginState.loggedIn);
+    when(
+      () => client.onLoginStateChanged.value,
+    ).thenReturn(LoginState.loggedIn);
     when(
       () => loggingService.captureEvent(
         any<String>(),
@@ -183,8 +194,9 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      when(() => lifecycleCoordinator.reconcileLifecycleState())
-          .thenThrow(Exception('background error'));
+      when(
+        () => lifecycleCoordinator.reconcileLifecycleState(),
+      ).thenThrow(Exception('background error'));
 
       when(
         () => loggingService.captureException(

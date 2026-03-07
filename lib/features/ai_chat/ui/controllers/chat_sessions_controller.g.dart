@@ -14,16 +14,16 @@ final chatSessionsControllerProvider = ChatSessionsControllerFamily._();
 
 final class ChatSessionsControllerProvider
     extends $NotifierProvider<ChatSessionsController, ChatStateUiModel> {
-  ChatSessionsControllerProvider._(
-      {required ChatSessionsControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'chatSessionsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ChatSessionsControllerProvider._({
+    required ChatSessionsControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'chatSessionsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$chatSessionsControllerHash();
@@ -64,20 +64,23 @@ String _$chatSessionsControllerHash() =>
 
 final class ChatSessionsControllerFamily extends $Family
     with
-        $ClassFamilyOverride<ChatSessionsController, ChatStateUiModel,
-            ChatStateUiModel, ChatStateUiModel, String> {
+        $ClassFamilyOverride<
+          ChatSessionsController,
+          ChatStateUiModel,
+          ChatStateUiModel,
+          ChatStateUiModel,
+          String
+        > {
   ChatSessionsControllerFamily._()
-      : super(
-          retry: null,
-          name: r'chatSessionsControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'chatSessionsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  ChatSessionsControllerProvider call(
-    String categoryId,
-  ) =>
+  ChatSessionsControllerProvider call(String categoryId) =>
       ChatSessionsControllerProvider._(argument: categoryId, from: this);
 
   @override
@@ -88,22 +91,19 @@ abstract class _$ChatSessionsController extends $Notifier<ChatStateUiModel> {
   late final _$args = ref.$arg as String;
   String get categoryId => _$args;
 
-  ChatStateUiModel build(
-    String categoryId,
-  );
+  ChatStateUiModel build(String categoryId);
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<ChatStateUiModel, ChatStateUiModel>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ChatStateUiModel, ChatStateUiModel>,
-        ChatStateUiModel,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ChatStateUiModel, ChatStateUiModel>,
+              ChatStateUiModel,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
   }
 }

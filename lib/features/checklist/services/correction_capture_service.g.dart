@@ -15,21 +15,25 @@ final correctionCaptureServiceProvider = CorrectionCaptureServiceProvider._();
 
 /// Provider for the correction capture service.
 
-final class CorrectionCaptureServiceProvider extends $FunctionalProvider<
-    CorrectionCaptureService,
-    CorrectionCaptureService,
-    CorrectionCaptureService> with $Provider<CorrectionCaptureService> {
+final class CorrectionCaptureServiceProvider
+    extends
+        $FunctionalProvider<
+          CorrectionCaptureService,
+          CorrectionCaptureService,
+          CorrectionCaptureService
+        >
+    with $Provider<CorrectionCaptureService> {
   /// Provider for the correction capture service.
   CorrectionCaptureServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'correctionCaptureServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'correctionCaptureServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$correctionCaptureServiceHash();
@@ -37,8 +41,8 @@ final class CorrectionCaptureServiceProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<CorrectionCaptureService> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   CorrectionCaptureService create(Ref ref) {
@@ -70,15 +74,15 @@ final class CorrectionCaptureNotifierProvider
   /// Notifier for pending correction with countdown.
   /// UI watches this to show the snackbar with undo functionality.
   CorrectionCaptureNotifierProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'correctionCaptureProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'correctionCaptureProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$correctionCaptureNotifierHash();
@@ -109,11 +113,14 @@ abstract class _$CorrectionCaptureNotifier
   @override
   void runBuild() {
     final ref = this.ref as $Ref<PendingCorrection?, PendingCorrection?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<PendingCorrection?, PendingCorrection?>,
-        PendingCorrection?,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<PendingCorrection?, PendingCorrection?>,
+              PendingCorrection?,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

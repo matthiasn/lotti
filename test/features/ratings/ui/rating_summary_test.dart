@@ -35,8 +35,9 @@ void main() {
   }
 
   group('RatingSummary', () {
-    testWidgets('renders dimension labels from catalog fallback',
-        (tester) async {
+    testWidgets('renders dimension labels from catalog fallback', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -59,8 +60,9 @@ void main() {
       );
     });
 
-    testWidgets('renders progress indicators for tapBar dimensions',
-        (tester) async {
+    testWidgets('renders progress indicators for tapBar dimensions', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
@@ -82,8 +84,9 @@ void main() {
       );
     });
 
-    testWidgets('renders challenge-skill "Too easy" from catalog',
-        (tester) async {
+    testWidgets('renders challenge-skill "Too easy" from catalog', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-2',
@@ -113,8 +116,9 @@ void main() {
       expect(find.text(l10n.sessionRatingChallengeTooEasy), findsOneWidget);
     });
 
-    testWidgets('renders challenge-skill "Too challenging" from catalog',
-        (tester) async {
+    testWidgets('renders challenge-skill "Too challenging" from catalog', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-3',
@@ -204,8 +208,9 @@ void main() {
   });
 
   group('RatingSummary with stored metadata', () {
-    testWidgets('uses stored question as label (fallback chain step 1)',
-        (tester) async {
+    testWidgets('uses stored question as label (fallback chain step 1)', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-meta',
@@ -234,8 +239,9 @@ void main() {
       expect(find.text('Custom stored question'), findsOneWidget);
     });
 
-    testWidgets('uses stored optionLabels for segmented display',
-        (tester) async {
+    testWidgets('uses stored optionLabels for segmented display', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-seg',
@@ -268,8 +274,7 @@ void main() {
   });
 
   group('RatingSummary unknown catalog fallback', () {
-    testWidgets(
-        'falls back to dimension key when no stored question '
+    testWidgets('falls back to dimension key when no stored question '
         'and unknown catalog', (tester) async {
       final entry = RatingEntry(
         meta: Metadata(
@@ -298,8 +303,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('renders all dimensions even for unknown catalog',
-        (tester) async {
+    testWidgets('renders all dimensions even for unknown catalog', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-unknown-2',
@@ -341,8 +347,7 @@ void main() {
       expect(find.text('Good day overall'), findsOneWidget);
     });
 
-    testWidgets(
-        'segmented dimension with stored optionLabels shows '
+    testWidgets('segmented dimension with stored optionLabels shows '
         'percentage fallback for unmatched value', (tester) async {
       final entry = RatingEntry(
         meta: Metadata(
@@ -374,8 +379,7 @@ void main() {
       expect(find.text('37%'), findsOneWidget);
     });
 
-    testWidgets(
-        'segmented dimension without options falls back to '
+    testWidgets('segmented dimension without options falls back to '
         'progress bar', (tester) async {
       final entry = RatingEntry(
         meta: Metadata(
@@ -409,8 +413,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('uses stored optionValues for non-linear scales',
-        (tester) async {
+    testWidgets('uses stored optionValues for non-linear scales', (
+      tester,
+    ) async {
       final entry = RatingEntry(
         meta: Metadata(
           id: 'rating-nonlinear',

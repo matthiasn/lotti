@@ -12,9 +12,9 @@ class AutoChecklistService {
     required ChecklistRepository checklistRepository,
     JournalDb? journalDb,
     LoggingService? loggingService,
-  })  : _journalDb = journalDb ?? getIt<JournalDb>(),
-        _loggingService = loggingService ?? getIt<LoggingService>(),
-        _checklistRepository = checklistRepository;
+  }) : _journalDb = journalDb ?? getIt<JournalDb>(),
+       _loggingService = loggingService ?? getIt<LoggingService>(),
+       _checklistRepository = checklistRepository;
 
   final JournalDb _journalDb;
   final LoggingService _loggingService;
@@ -49,12 +49,14 @@ class AutoChecklistService {
   /// - [createdItems]: List of items with their generated IDs and details
   /// - [error]: Error message if creation failed
   Future<
-      ({
-        bool success,
-        String? checklistId,
-        List<({String id, String title, bool isChecked})>? createdItems,
-        String? error,
-      })> autoCreateChecklist({
+    ({
+      bool success,
+      String? checklistId,
+      List<({String id, String title, bool isChecked})>? createdItems,
+      String? error,
+    })
+  >
+  autoCreateChecklist({
     required String taskId,
     required List<ChecklistItemData> suggestions,
     String? title,
@@ -66,7 +68,7 @@ class AutoChecklistService {
           success: false,
           checklistId: null,
           createdItems: null,
-          error: 'No suggestions provided'
+          error: 'No suggestions provided',
         );
       }
 
@@ -78,7 +80,7 @@ class AutoChecklistService {
           success: false,
           checklistId: null,
           createdItems: null,
-          error: 'Checklists already exist'
+          error: 'Checklists already exist',
         );
       }
 
@@ -93,7 +95,7 @@ class AutoChecklistService {
           success: false,
           checklistId: null,
           createdItems: null,
-          error: 'Failed to create checklist'
+          error: 'Failed to create checklist',
         );
       }
 
@@ -107,7 +109,7 @@ class AutoChecklistService {
         success: true,
         checklistId: result.checklist!.id,
         createdItems: result.createdItems,
-        error: null
+        error: null,
       );
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -120,7 +122,7 @@ class AutoChecklistService {
         success: false,
         checklistId: null,
         createdItems: null,
-        error: exception.toString()
+        error: exception.toString(),
       );
     }
   }

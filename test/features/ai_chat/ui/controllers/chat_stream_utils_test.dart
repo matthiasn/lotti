@@ -58,18 +58,21 @@ void main() {
   group('ChatStreamUtils.closeRegexFromOpenToken', () {
     test('returns correct close regex for token kinds', () {
       expect(
-        ChatStreamUtils.closeRegexFromOpenToken('<thinking>')
-            .hasMatch('</thinking>'),
+        ChatStreamUtils.closeRegexFromOpenToken(
+          '<thinking>',
+        ).hasMatch('</thinking>'),
         isTrue,
       );
       expect(
-        ChatStreamUtils.closeRegexFromOpenToken('[thinking]')
-            .hasMatch('[/thinking]'),
+        ChatStreamUtils.closeRegexFromOpenToken(
+          '[thinking]',
+        ).hasMatch('[/thinking]'),
         isTrue,
       );
       expect(
-        ChatStreamUtils.closeRegexFromOpenToken('```thinking\n')
-            .hasMatch('```'),
+        ChatStreamUtils.closeRegexFromOpenToken(
+          '```thinking\n',
+        ).hasMatch('```'),
         isTrue,
       );
     });
@@ -127,30 +130,38 @@ void main() {
 
   group('ChatStreamUtils.prepareVisibleChunk', () {
     test('returns null text and sets pending for whitespace+newline', () {
-      final res =
-          ChatStreamUtils.prepareVisibleChunk(' \n', pendingSoftBreak: false);
+      final res = ChatStreamUtils.prepareVisibleChunk(
+        ' \n',
+        pendingSoftBreak: false,
+      );
       expect(res.text, isNull);
       expect(res.pendingSoftBreak, isTrue);
     });
 
     test('upgrades to single newline when next is not structural', () {
-      final res1 =
-          ChatStreamUtils.prepareVisibleChunk('para', pendingSoftBreak: true);
+      final res1 = ChatStreamUtils.prepareVisibleChunk(
+        'para',
+        pendingSoftBreak: true,
+      );
       expect(res1.text!.startsWith('\n'), isTrue);
       expect(res1.text!.startsWith('\n\n'), isFalse);
       expect(res1.pendingSoftBreak, isFalse);
     });
 
     test('empty raw text yields empty text and preserves pending', () {
-      final res =
-          ChatStreamUtils.prepareVisibleChunk('', pendingSoftBreak: true);
+      final res = ChatStreamUtils.prepareVisibleChunk(
+        '',
+        pendingSoftBreak: true,
+      );
       expect(res.text, '');
       expect(res.pendingSoftBreak, isTrue);
     });
 
     test('no pending soft break passes text through unchanged', () {
-      final res =
-          ChatStreamUtils.prepareVisibleChunk('hello', pendingSoftBreak: false);
+      final res = ChatStreamUtils.prepareVisibleChunk(
+        'hello',
+        pendingSoftBreak: false,
+      );
       expect(res.text, 'hello');
       expect(res.pendingSoftBreak, isFalse);
     });

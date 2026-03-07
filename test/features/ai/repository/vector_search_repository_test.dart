@@ -39,14 +39,17 @@ void main() {
       aiConfigRepository: mockAiConfigRepo,
     );
 
-    when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-        .thenAnswer((_) async => 'http://localhost:11434');
+    when(
+      () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+    ).thenAnswer((_) async => 'http://localhost:11434');
 
     // Default stubs for batch-fetch methods used by _resolveToTasks.
-    when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-        .thenAnswer((_) async => []);
-    when(() => mockJournalDb.linksForIds(any()))
-        .thenReturn(MockSelectable(<LinkedDbEntry>[]));
+    when(
+      () => mockJournalDb.getJournalEntitiesForIds(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => mockJournalDb.linksForIds(any()),
+    ).thenReturn(MockSelectable(<LinkedDbEntry>[]));
   });
 
   group('VectorSearchRepository', () {
@@ -72,8 +75,9 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask]);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTask]);
 
       final result = await sut.searchRelatedTasks(query: 'test query');
 
@@ -82,51 +86,56 @@ void main() {
       expect(result.elapsed, isNotNull);
     });
 
-    test('resolves non-task results to parent tasks via linked entries',
-        () async {
-      when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
-      ).thenAnswer((_) async => fakeVector);
+    test(
+      'resolves non-task results to parent tasks via linked entries',
+      () async {
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) async => fakeVector);
 
-      when(
-        () => mockEmbeddingsDb.search(
-          queryVector: any(named: 'queryVector'),
-          k: any(named: 'k'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenReturn([
-        const EmbeddingSearchResult(
-          entityId: 'text-entry-1',
-          distance: 0.3,
-          entityType: 'TextEntry',
-        ),
-      ]);
+        when(
+          () => mockEmbeddingsDb.search(
+            queryVector: any(named: 'queryVector'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenReturn([
+          const EmbeddingSearchResult(
+            entityId: 'text-entry-1',
+            distance: 0.3,
+            entityType: 'TextEntry',
+          ),
+        ]);
 
-      // The text entry links to a parent task via linked entries.
-      final taskId = testTask.meta.id;
-      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
-        LinkedDbEntry(
-          id: 'link-1',
-          fromId: taskId,
-          toId: 'text-entry-1',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          hidden: false,
-          type: 'BasicLink',
-          serialized: '{}',
-        ),
-      ]));
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask]);
+        // The text entry links to a parent task via linked entries.
+        final taskId = testTask.meta.id;
+        when(() => mockJournalDb.linksForIds(any())).thenReturn(
+          MockSelectable([
+            LinkedDbEntry(
+              id: 'link-1',
+              fromId: taskId,
+              toId: 'text-entry-1',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              hidden: false,
+              type: 'BasicLink',
+              serialized: '{}',
+            ),
+          ]),
+        );
+        when(
+          () => mockJournalDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => [testTask]);
 
-      final result = await sut.searchRelatedTasks(query: 'semantic query');
+        final result = await sut.searchRelatedTasks(query: 'semantic query');
 
-      expect(result.entities, hasLength(1));
-      expect(result.entities.first, isA<Task>());
-    });
+        expect(result.entities, hasLength(1));
+        expect(result.entities.first, isA<Task>());
+      },
+    );
 
     test('deduplicates when multiple results map to the same task', () async {
       when(
@@ -156,20 +165,23 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask]);
-      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
-        LinkedDbEntry(
-          id: 'link-1',
-          fromId: taskId,
-          toId: 'chunk-2',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          hidden: false,
-          type: 'BasicLink',
-          serialized: '{}',
-        ),
-      ]));
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTask]);
+      when(() => mockJournalDb.linksForIds(any())).thenReturn(
+        MockSelectable([
+          LinkedDbEntry(
+            id: 'link-1',
+            fromId: taskId,
+            toId: 'chunk-2',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            hidden: false,
+            type: 'BasicLink',
+            serialized: '{}',
+          ),
+        ]),
+      );
 
       final result = await sut.searchRelatedTasks(query: 'dup query');
 
@@ -177,8 +189,9 @@ void main() {
     });
 
     test('returns empty results when no Ollama provider configured', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       final result = await sut.searchRelatedTasks(query: 'query');
 
@@ -256,20 +269,23 @@ void main() {
 
       // The text entry links to another text entry, not a task.
       final textEntryId = testTextEntry.meta.id;
-      when(() => mockJournalDb.linksForIds(any())).thenReturn(MockSelectable([
-        LinkedDbEntry(
-          id: 'link-1',
-          fromId: textEntryId,
-          toId: 'text-entry-1',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          hidden: false,
-          type: 'BasicLink',
-          serialized: '{}',
-        ),
-      ]));
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTextEntry]);
+      when(() => mockJournalDb.linksForIds(any())).thenReturn(
+        MockSelectable([
+          LinkedDbEntry(
+            id: 'link-1',
+            fromId: textEntryId,
+            toId: 'text-entry-1',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            hidden: false,
+            type: 'BasicLink',
+            serialized: '{}',
+          ),
+        ]),
+      );
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedTasks(query: 'orphan');
 
@@ -304,39 +320,44 @@ void main() {
       ).called(1);
     });
 
-    test('resolves agent report results to tasks via taskId metadata',
-        () async {
-      when(
-        () => mockEmbeddingRepo.embed(
-          input: any(named: 'input'),
-          baseUrl: any(named: 'baseUrl'),
-        ),
-      ).thenAnswer((_) async => fakeVector);
+    test(
+      'resolves agent report results to tasks via taskId metadata',
+      () async {
+        when(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).thenAnswer((_) async => fakeVector);
 
-      final taskId = testTask.meta.id;
-      when(
-        () => mockEmbeddingsDb.search(
-          queryVector: any(named: 'queryVector'),
-          k: any(named: 'k'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenReturn([
-        EmbeddingSearchResult(
-          entityId: 'report-1',
-          distance: 0.3,
-          entityType: kEntityTypeAgentReport,
-          taskId: taskId,
-        ),
-      ]);
+        final taskId = testTask.meta.id;
+        when(
+          () => mockEmbeddingsDb.search(
+            queryVector: any(named: 'queryVector'),
+            k: any(named: 'k'),
+            categoryIds: any(named: 'categoryIds'),
+          ),
+        ).thenReturn([
+          EmbeddingSearchResult(
+            entityId: 'report-1',
+            distance: 0.3,
+            entityType: kEntityTypeAgentReport,
+            taskId: taskId,
+          ),
+        ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask]);
+        when(
+          () => mockJournalDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => [testTask]);
 
-      final result = await sut.searchRelatedTasks(query: 'agent report query');
+        final result = await sut.searchRelatedTasks(
+          query: 'agent report query',
+        );
 
-      expect(result.entities, hasLength(1));
-      expect(result.entities.first, isA<Task>());
-    });
+        expect(result.entities, hasLength(1));
+        expect(result.entities.first, isA<Task>());
+      },
+    );
 
     test('skips agent report results with empty taskId', () async {
       when(
@@ -395,8 +416,9 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask]);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTask]);
 
       final result = await sut.searchRelatedTasks(query: 'dedup query');
 
@@ -458,8 +480,9 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTextEntry]);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'journal query');
 
@@ -495,8 +518,9 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTextEntry]);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'dedup');
 
@@ -504,8 +528,9 @@ void main() {
     });
 
     test('returns empty when no Ollama provider configured', () async {
-      when(() => mockAiConfigRepo.resolveOllamaBaseUrl())
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiConfigRepo.resolveOllamaBaseUrl(),
+      ).thenAnswer((_) async => null);
 
       final result = await sut.searchRelatedEntries(query: 'query');
 
@@ -558,8 +583,9 @@ void main() {
         ),
       ]);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testTask, testTextEntry]);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testTask, testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'order test');
 

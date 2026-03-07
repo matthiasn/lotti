@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Global lock to ensure at most one verification modal is shown at a time.
 final matrixVerificationModalLockProvider =
     NotifierProvider<MatrixVerificationModalLock, bool>(
-  MatrixVerificationModalLock.new,
-);
+      MatrixVerificationModalLock.new,
+    );
 
 class MatrixVerificationModalLock extends Notifier<bool> {
   @override

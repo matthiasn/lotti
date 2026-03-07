@@ -51,25 +51,31 @@ class ConversationManager {
       _messages.add(ChatCompletionMessage.system(content: systemMessage));
     }
 
-    _eventController.add(ConversationEvent.initialized(
-      conversationId: conversationId,
-      systemMessage: systemMessage,
-    ));
+    _eventController.add(
+      ConversationEvent.initialized(
+        conversationId: conversationId,
+        systemMessage: systemMessage,
+      ),
+    );
   }
 
   /// Add a user message to the conversation
   void addUserMessage(String message) {
-    _messages.add(ChatCompletionMessage.user(
-      content: ChatCompletionUserMessageContent.string(message),
-    ));
+    _messages.add(
+      ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string(message),
+      ),
+    );
 
     _trimHistoryIfNeeded();
 
     if (!_eventController.isClosed) {
-      _eventController.add(ConversationEvent.userMessage(
-        message: message,
-        turnNumber: turnCount,
-      ));
+      _eventController.add(
+        ConversationEvent.userMessage(
+          message: message,
+          turnNumber: turnCount,
+        ),
+      );
     }
   }
 
@@ -88,22 +94,28 @@ class ConversationManager {
       _thoughtSignatures.addAll(signatures);
     }
 
-    _messages.add(ChatCompletionMessage.assistant(
-      content: content,
-      toolCalls: toolCalls,
-    ));
+    _messages.add(
+      ChatCompletionMessage.assistant(
+        content: content,
+        toolCalls: toolCalls,
+      ),
+    );
 
     if (!_eventController.isClosed) {
       if (toolCalls?.isNotEmpty ?? false) {
-        _eventController.add(ConversationEvent.toolCalls(
-          calls: toolCalls!,
-          turnNumber: turnCount,
-        ));
+        _eventController.add(
+          ConversationEvent.toolCalls(
+            calls: toolCalls!,
+            turnNumber: turnCount,
+          ),
+        );
       } else if (content != null) {
-        _eventController.add(ConversationEvent.assistantMessage(
-          message: content,
-          turnNumber: turnCount,
-        ));
+        _eventController.add(
+          ConversationEvent.assistantMessage(
+            message: content,
+            turnNumber: turnCount,
+          ),
+        );
       }
     }
   }
@@ -113,16 +125,20 @@ class ConversationManager {
     required String toolCallId,
     required String response,
   }) {
-    _messages.add(ChatCompletionMessage.tool(
-      toolCallId: toolCallId,
-      content: response,
-    ));
+    _messages.add(
+      ChatCompletionMessage.tool(
+        toolCallId: toolCallId,
+        content: response,
+      ),
+    );
 
     if (!_eventController.isClosed) {
-      _eventController.add(ConversationEvent.toolResponse(
-        toolCallId: toolCallId,
-        response: response,
-      ));
+      _eventController.add(
+        ConversationEvent.toolResponse(
+          toolCallId: toolCallId,
+          response: response,
+        ),
+      );
     }
   }
 
@@ -139,19 +155,23 @@ class ConversationManager {
   /// Emit an error event
   void emitError(String error) {
     if (!_eventController.isClosed) {
-      _eventController.add(ConversationEvent.error(
-        message: error,
-        turnNumber: turnCount,
-      ));
+      _eventController.add(
+        ConversationEvent.error(
+          message: error,
+          turnNumber: turnCount,
+        ),
+      );
     }
   }
 
   /// Emit thinking/processing event
   void emitThinking() {
     if (!_eventController.isClosed) {
-      _eventController.add(ConversationEvent.thinking(
-        turnNumber: turnCount,
-      ));
+      _eventController.add(
+        ConversationEvent.thinking(
+          turnNumber: turnCount,
+        ),
+      );
     }
   }
 
@@ -162,7 +182,8 @@ class ConversationManager {
       final effectiveMaxSize = maxHistorySize < 2 ? 2 : maxHistorySize;
 
       // Keep system message if present
-      final hasSystem = _messages.isNotEmpty &&
+      final hasSystem =
+          _messages.isNotEmpty &&
           _messages.first.role == ChatCompletionMessageRole.system;
 
       // Calculate how many messages to keep
@@ -171,12 +192,14 @@ class ConversationManager {
       final totalToKeep = effectiveMaxSize - 1; // -1 for truncation notice
 
       // Calculate how many to keep after system message (if present)
-      final messagesToKeepAfterSystem =
-          hasSystem ? totalToKeep - 1 : totalToKeep;
+      final messagesToKeepAfterSystem = hasSystem
+          ? totalToKeep - 1
+          : totalToKeep;
 
       // Ensure we keep at least one message after system
-      final keepAfterSystem =
-          messagesToKeepAfterSystem < 1 ? 1 : messagesToKeepAfterSystem;
+      final keepAfterSystem = messagesToKeepAfterSystem < 1
+          ? 1
+          : messagesToKeepAfterSystem;
 
       // Calculate trim range
       final start = hasSystem ? 1 : 0;

@@ -7,14 +7,14 @@ part of 'rating_data.dart';
 // **************************************************************************
 
 _RatingData _$RatingDataFromJson(Map<String, dynamic> json) => _RatingData(
-      targetId: json['timeEntryId'] as String,
-      dimensions: (json['dimensions'] as List<dynamic>)
-          .map((e) => RatingDimension.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      catalogId: json['catalogId'] as String? ?? 'session',
-      schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 1,
-      note: json['note'] as String?,
-    );
+  targetId: json['timeEntryId'] as String,
+  dimensions: (json['dimensions'] as List<dynamic>)
+      .map((e) => RatingDimension.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  catalogId: json['catalogId'] as String? ?? 'session',
+  schemaVersion: (json['schemaVersion'] as num?)?.toInt() ?? 1,
+  note: json['note'] as String?,
+);
 
 Map<String, dynamic> _$RatingDataToJson(_RatingData instance) =>
     <String, dynamic>{

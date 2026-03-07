@@ -32,8 +32,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(false),
-          journalPageControllerProvider(false)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            false,
+          ).overrideWith(() => fakeController),
         ],
         child: const Scaffold(
           body: JournalFilter(),
@@ -57,13 +58,17 @@ void main() {
     });
 
     testWidgets('shows filled icons when filters are active', (tester) async {
-      await tester.pumpWidget(buildSubject(createState(
-        filters: {
-          DisplayFilter.starredEntriesOnly,
-          DisplayFilter.flaggedEntriesOnly,
-          DisplayFilter.privateEntriesOnly,
-        },
-      )));
+      await tester.pumpWidget(
+        buildSubject(
+          createState(
+            filters: {
+              DisplayFilter.starredEntriesOnly,
+              DisplayFilter.flaggedEntriesOnly,
+              DisplayFilter.privateEntriesOnly,
+            },
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Active filters show filled icons
@@ -135,9 +140,13 @@ void main() {
     });
 
     testWidgets('deselecting active filter removes it', (tester) async {
-      await tester.pumpWidget(buildSubject(createState(
-        filters: {DisplayFilter.starredEntriesOnly},
-      )));
+      await tester.pumpWidget(
+        buildSubject(
+          createState(
+            filters: {DisplayFilter.starredEntriesOnly},
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Tap on the active starred filter to deselect

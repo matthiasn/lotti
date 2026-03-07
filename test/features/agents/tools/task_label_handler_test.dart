@@ -658,43 +658,45 @@ void main() {
         expect(result, isNot(contains('other-cat-label')));
       });
 
-      test('returns suppressed section even when no assigned/available',
-          () async {
-        // All labels are either suppressed or out-of-scope — no available.
-        final taskWithOnlySuppressed = task.copyWith(
-          meta: task.meta.copyWith(labelIds: null),
-          data: task.data.copyWith(
-            aiSuppressedLabelIds: {'label-1'},
-          ),
-        );
+      test(
+        'returns suppressed section even when no assigned/available',
+        () async {
+          // All labels are either suppressed or out-of-scope — no available.
+          final taskWithOnlySuppressed = task.copyWith(
+            meta: task.meta.copyWith(labelIds: null),
+            data: task.data.copyWith(
+              aiSuppressedLabelIds: {'label-1'},
+            ),
+          );
 
-        final outOfScopeLabel = LabelDefinition(
-          id: 'out-of-scope',
-          name: 'OutOfScope',
-          color: '#0000FF',
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          vectorClock: null,
-          applicableCategoryIds: ['cat-999'],
-        );
+          final outOfScopeLabel = LabelDefinition(
+            id: 'out-of-scope',
+            name: 'OutOfScope',
+            color: '#0000FF',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            applicableCategoryIds: ['cat-999'],
+          );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [testLabelDefinition1, outOfScopeLabel],
-        );
+          when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
+            (_) async => [testLabelDefinition1, outOfScopeLabel],
+          );
 
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: taskWithOnlySuppressed,
-          journalDb: mockDb,
-        );
+          final result = await TaskLabelHandler.buildLabelContext(
+            task: taskWithOnlySuppressed,
+            journalDb: mockDb,
+          );
 
-        // Should NOT be empty — suppressed guidance is critical.
-        expect(result, isNotEmpty);
-        expect(result, contains('## Suppressed Labels'));
-        expect(result, contains('label-1'));
-        // No assigned or available sections.
-        expect(result, isNot(contains('## Assigned Labels')));
-        expect(result, isNot(contains('## Available Labels')));
-      });
+          // Should NOT be empty — suppressed guidance is critical.
+          expect(result, isNotEmpty);
+          expect(result, contains('## Suppressed Labels'));
+          expect(result, contains('label-1'));
+          // No assigned or available sections.
+          expect(result, isNot(contains('## Assigned Labels')));
+          expect(result, isNot(contains('## Available Labels')));
+        },
+      );
 
       test('omits available labels section when task has 3+ labels', () async {
         final taskWith3Labels = task.copyWith(

@@ -28,32 +28,40 @@ void main() {
         deletedAt: deleted ? DateTime.now() : null,
       );
 
-  test('validates labels: valid vs invalid and deleted treated as invalid',
-      () async {
-    when(() => mockDb.getLabelDefinitionById('valid'))
-        .thenAnswer((_) async => makeLabel('valid'));
-    when(() => mockDb.getLabelDefinitionById('deleted'))
-        .thenAnswer((_) async => makeLabel('deleted', deleted: true));
-    when(() => mockDb.getLabelDefinitionById('missing'))
-        .thenAnswer((_) async => null);
-    when(() => mockDb.getLabelDefinitionById('')).thenAnswer((_) async => null);
+  test(
+    'validates labels: valid vs invalid and deleted treated as invalid',
+    () async {
+      when(
+        () => mockDb.getLabelDefinitionById('valid'),
+      ).thenAnswer((_) async => makeLabel('valid'));
+      when(
+        () => mockDb.getLabelDefinitionById('deleted'),
+      ).thenAnswer((_) async => makeLabel('deleted', deleted: true));
+      when(
+        () => mockDb.getLabelDefinitionById('missing'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.getLabelDefinitionById(''),
+      ).thenAnswer((_) async => null);
 
-    final validator = LabelValidator(db: mockDb);
-    final res = await validator.validate([
-      'valid',
-      'deleted',
-      'missing',
-      '',
-    ]);
+      final validator = LabelValidator(db: mockDb);
+      final res = await validator.validate([
+        'valid',
+        'deleted',
+        'missing',
+        '',
+      ]);
 
-    expect(res.valid, equals(['valid']));
-    expect(res.invalid, containsAll(['deleted', 'missing', '']));
-  });
+      expect(res.valid, equals(['valid']));
+      expect(res.invalid, containsAll(['deleted', 'missing', '']));
+    },
+  );
 
   test('handles concurrent validation requests reliably', () async {
     // Simulate slow DB responses
-    when(() => mockDb.getLabelDefinitionById(any()))
-        .thenAnswer((invocation) async {
+    when(() => mockDb.getLabelDefinitionById(any())).thenAnswer((
+      invocation,
+    ) async {
       await Future<void>.delayed(const Duration(milliseconds: 30));
       final id = invocation.positionalArguments.first as String;
       return makeLabel(id);

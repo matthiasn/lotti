@@ -12,9 +12,9 @@ class MatrixSessionManager {
     required MatrixSyncGateway gateway,
     required SyncRoomManager roomManager,
     required LoggingService loggingService,
-  })  : _gateway = gateway,
-        _roomManager = roomManager,
-        _loggingService = loggingService;
+  }) : _gateway = gateway,
+       _roomManager = roomManager,
+       _loggingService = loggingService;
 
   final MatrixSyncGateway _gateway;
   final SyncRoomManager _roomManager;

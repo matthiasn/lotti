@@ -41,8 +41,9 @@ void main() {
         type: AiResponseType.taskSummary,
       ),
     );
-    testWidgets('uses ExpandableAiResponseSummary for task summaries',
-        (tester) async {
+    testWidgets('uses ExpandableAiResponseSummary for task summaries', (
+      tester,
+    ) async {
       const responseWithTitle = '''
 # Implement user authentication system
 
@@ -82,8 +83,9 @@ Remaining steps:
       expect(find.byType(GptMarkdown), findsOneWidget);
     });
 
-    testWidgets('does not filter H1 for non-task summary responses',
-        (tester) async {
+    testWidgets('does not filter H1 for non-task summary responses', (
+      tester,
+    ) async {
       const responseWithH1 = '''
 # Analysis Results
 
@@ -115,38 +117,40 @@ The image shows a beautiful landscape with mountains.''';
     });
 
     testWidgets(
-        'applies fade out effect when fadeOut is true for non-task summaries',
-        (tester) async {
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: 'Test response content',
-          type:
-              AiResponseType.imageAnalysis, // Changed to non-task summary type
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: AiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-            fadeOut: true,
+      'applies fade out effect when fadeOut is true for non-task summaries',
+      (tester) async {
+        final aiResponse = testAiResponseEntry.copyWith(
+          data: testAiResponseEntry.data.copyWith(
+            response: 'Test response content',
+            type: AiResponseType
+                .imageAnalysis, // Changed to non-task summary type
           ),
-        ),
-      );
+        );
 
-      // Check for ShaderMask when fadeOut is true
-      expect(find.byType(ShaderMask), findsOneWidget);
-      // ConstrainedBox with maxHeight should be inside ShaderMask
-      final constrainedBox = find.descendant(
-        of: find.byType(ShaderMask),
-        matching: find.byType(ConstrainedBox),
-      );
-      expect(constrainedBox, findsOneWidget);
-    });
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: AiResponseSummary(
+              aiResponse,
+              linkedFromId: 'test-id',
+              fadeOut: true,
+            ),
+          ),
+        );
 
-    testWidgets('opens modal on double tap for non-task summaries',
-        (tester) async {
+        // Check for ShaderMask when fadeOut is true
+        expect(find.byType(ShaderMask), findsOneWidget);
+        // ConstrainedBox with maxHeight should be inside ShaderMask
+        final constrainedBox = find.descendant(
+          of: find.byType(ShaderMask),
+          matching: find.byType(ConstrainedBox),
+        );
+        expect(constrainedBox, findsOneWidget);
+      },
+    );
+
+    testWidgets('opens modal on double tap for non-task summaries', (
+      tester,
+    ) async {
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
           response: 'Test response content',
@@ -177,8 +181,9 @@ The image shows a beautiful landscape with mountains.''';
       // as it's shown in a different route)
     });
 
-    testWidgets('uses GeneratedPromptCard for prompt generation responses',
-        (tester) async {
+    testWidgets('uses GeneratedPromptCard for prompt generation responses', (
+      tester,
+    ) async {
       const promptResponse = '''
 ## Summary
 A well-crafted prompt for implementing OAuth authentication.
@@ -212,9 +217,9 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
     });
 
     testWidgets(
-        'uses GeneratedPromptCard for image prompt generation responses',
-        (tester) async {
-      const imagePromptResponse = '''
+      'uses GeneratedPromptCard for image prompt generation responses',
+      (tester) async {
+        const imagePromptResponse = '''
 ## Summary
 A vibrant isometric illustration of a fortress being built.
 
@@ -223,32 +228,34 @@ Digital illustration of a medieval fortress under construction, 60% complete.
 Style: isometric digital art. --ar 16:9
 ''';
 
-      final aiResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: imagePromptResponse,
-          type: AiResponseType.imagePromptGeneration,
-        ),
-      );
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: AiResponseSummary(
-            aiResponse,
-            linkedFromId: 'test-id',
-            fadeOut: false,
+        final aiResponse = testAiResponseEntry.copyWith(
+          data: testAiResponseEntry.data.copyWith(
+            response: imagePromptResponse,
+            type: AiResponseType.imagePromptGeneration,
           ),
-        ),
-      );
+        );
 
-      // Should use GeneratedPromptCard for image prompt generation
-      expect(find.byType(GeneratedPromptCard), findsOneWidget);
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: AiResponseSummary(
+              aiResponse,
+              linkedFromId: 'test-id',
+              fadeOut: false,
+            ),
+          ),
+        );
 
-      // Should not use ExpandableAiResponseSummary
-      expect(find.byType(ExpandableAiResponseSummary), findsNothing);
-    });
+        // Should use GeneratedPromptCard for image prompt generation
+        expect(find.byType(GeneratedPromptCard), findsOneWidget);
 
-    testWidgets('handles link tap in non-task summary responses',
-        (tester) async {
+        // Should not use ExpandableAiResponseSummary
+        expect(find.byType(ExpandableAiResponseSummary), findsNothing);
+      },
+    );
+
+    testWidgets('handles link tap in non-task summary responses', (
+      tester,
+    ) async {
       // Set up mock URL launcher and capture original for cleanup
       final originalPlatform = UrlLauncherPlatform.instance;
       final mockUrlLauncher = MockUrlLauncher();
@@ -256,10 +263,12 @@ Style: isometric digital art. --ar 16:9
       UrlLauncherPlatform.instance = mockUrlLauncher;
       addTearDown(() => UrlLauncherPlatform.instance = originalPlatform);
 
-      when(() => mockUrlLauncher.canLaunch(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockUrlLauncher.launchUrl(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.canLaunch(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockUrlLauncher.launchUrl(any(), any()),
+      ).thenAnswer((_) async => true);
 
       const responseWithLink =
           'Check the [docs](https://docs.flutter.dev) for info.';
@@ -286,8 +295,9 @@ Style: isometric digital art. --ar 16:9
       // Find GestureDetector widgets with onTap and manually call the callback
       // to verify the URL launcher integration
       var linkCallbackFound = false;
-      final gestureDetectors =
-          tester.widgetList<GestureDetector>(find.byType(GestureDetector));
+      final gestureDetectors = tester.widgetList<GestureDetector>(
+        find.byType(GestureDetector),
+      );
       for (final gd in gestureDetectors) {
         if (gd.onTap != null) {
           // Try to invoke the callback and check if it triggers URL launcher
@@ -296,19 +306,23 @@ Style: isometric digital art. --ar 16:9
 
           // Check if URL launcher was called with the expected URL
           try {
-            verify(() => mockUrlLauncher.launchUrl(
-                  'https://docs.flutter.dev',
-                  any(),
-                )).called(1);
+            verify(
+              () => mockUrlLauncher.launchUrl(
+                'https://docs.flutter.dev',
+                any(),
+              ),
+            ).called(1);
             linkCallbackFound = true;
             break;
           } catch (_) {
             // This callback didn't trigger the right URL, continue searching
             reset(mockUrlLauncher);
-            when(() => mockUrlLauncher.canLaunch(any()))
-                .thenAnswer((_) async => true);
-            when(() => mockUrlLauncher.launchUrl(any(), any()))
-                .thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.canLaunch(any()),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockUrlLauncher.launchUrl(any(), any()),
+            ).thenAnswer((_) async => true);
           }
         }
       }

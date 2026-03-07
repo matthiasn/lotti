@@ -129,8 +129,9 @@ void main() {
     );
   }
 
-  testWidgets('shows quick filter sliver with padding when labels selected',
-      (tester) async {
+  testWidgets('shows quick filter sliver with padding when labels selected', (
+    tester,
+  ) async {
     final work = _buildLabel('label-work', 'Work');
     mocktail.when(() => mockCache.getLabelById(work.id)).thenReturn(work);
 
@@ -178,8 +179,9 @@ void main() {
     expect(fakeController.clearSelectedLabelIdsCalled, 1);
   });
 
-  testWidgets('quick filter section hidden when no labels selected',
-      (tester) async {
+  testWidgets('quick filter section hidden when no labels selected', (
+    tester,
+  ) async {
     final widget = pumpBody(_baseState(selectedLabelIds: {}));
     await tester.pumpWidget(widget);
     await pumpWithDelay(tester);

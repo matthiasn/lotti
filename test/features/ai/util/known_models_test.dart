@@ -108,77 +108,89 @@ void main() {
       });
 
       test(
-          'should transfer maxCompletionTokens to AiConfigModel when converting',
-          () {
-        const testId = 'test-id';
-        const testProviderId = 'test-provider-id';
+        'should transfer maxCompletionTokens to AiConfigModel when converting',
+        () {
+          const testId = 'test-id';
+          const testProviderId = 'test-provider-id';
 
-        // Test model with maxCompletionTokens
-        const modelWithTokens = KnownModel(
-          providerModelId: 'test-model-with-tokens',
-          name: 'Test Model With Tokens',
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-          description: 'Test model with max completion tokens',
-          maxCompletionTokens: 5000,
-        );
+          // Test model with maxCompletionTokens
+          const modelWithTokens = KnownModel(
+            providerModelId: 'test-model-with-tokens',
+            name: 'Test Model With Tokens',
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Test model with max completion tokens',
+            maxCompletionTokens: 5000,
+          );
 
-        final aiConfigWithTokens = modelWithTokens.toAiConfigModel(
-          id: testId,
-          inferenceProviderId: testProviderId,
-        );
+          final aiConfigWithTokens = modelWithTokens.toAiConfigModel(
+            id: testId,
+            inferenceProviderId: testProviderId,
+          );
 
-        expect(aiConfigWithTokens.maxCompletionTokens, equals(5000));
+          expect(aiConfigWithTokens.maxCompletionTokens, equals(5000));
 
-        // Test model without maxCompletionTokens
-        const modelWithoutTokens = KnownModel(
-          providerModelId: 'test-model-without-tokens',
-          name: 'Test Model Without Tokens',
-          inputModalities: [Modality.text],
-          outputModalities: [Modality.text],
-          isReasoningModel: false,
-          description: 'Test model without max completion tokens',
-        );
+          // Test model without maxCompletionTokens
+          const modelWithoutTokens = KnownModel(
+            providerModelId: 'test-model-without-tokens',
+            name: 'Test Model Without Tokens',
+            inputModalities: [Modality.text],
+            outputModalities: [Modality.text],
+            isReasoningModel: false,
+            description: 'Test model without max completion tokens',
+          );
 
-        final aiConfigWithoutTokens = modelWithoutTokens.toAiConfigModel(
-          id: testId,
-          inferenceProviderId: testProviderId,
-        );
+          final aiConfigWithoutTokens = modelWithoutTokens.toAiConfigModel(
+            id: testId,
+            inferenceProviderId: testProviderId,
+          );
 
-        expect(aiConfigWithoutTokens.maxCompletionTokens, isNull);
-      });
+          expect(aiConfigWithoutTokens.maxCompletionTokens, isNull);
+        },
+      );
 
       test(
-          'should properly transfer all fields including maxCompletionTokens in toAiConfigModel',
-          () {
-        const testId = 'test-id';
-        const testProviderId = 'test-provider-id';
+        'should properly transfer all fields including maxCompletionTokens in toAiConfigModel',
+        () {
+          const testId = 'test-id';
+          const testProviderId = 'test-provider-id';
 
-        // Take a real Anthropic model as example
-        final anthropicModel = anthropicModels.first;
-        final aiConfig = anthropicModel.toAiConfigModel(
-          id: testId,
-          inferenceProviderId: testProviderId,
-        );
+          // Take a real Anthropic model as example
+          final anthropicModel = anthropicModels.first;
+          final aiConfig = anthropicModel.toAiConfigModel(
+            id: testId,
+            inferenceProviderId: testProviderId,
+          );
 
-        // Verify all fields are transferred correctly
-        expect(aiConfig.id, equals(testId));
-        expect(aiConfig.name, equals(anthropicModel.name));
-        expect(
-            aiConfig.providerModelId, equals(anthropicModel.providerModelId));
-        expect(aiConfig.inferenceProviderId, equals(testProviderId));
-        expect(
-            aiConfig.inputModalities, equals(anthropicModel.inputModalities));
-        expect(
-            aiConfig.outputModalities, equals(anthropicModel.outputModalities));
-        expect(
-            aiConfig.isReasoningModel, equals(anthropicModel.isReasoningModel));
-        expect(aiConfig.description, equals(anthropicModel.description));
-        expect(aiConfig.maxCompletionTokens,
-            equals(anthropicModel.maxCompletionTokens));
-        expect(aiConfig.createdAt, isA<DateTime>());
-      });
+          // Verify all fields are transferred correctly
+          expect(aiConfig.id, equals(testId));
+          expect(aiConfig.name, equals(anthropicModel.name));
+          expect(
+            aiConfig.providerModelId,
+            equals(anthropicModel.providerModelId),
+          );
+          expect(aiConfig.inferenceProviderId, equals(testProviderId));
+          expect(
+            aiConfig.inputModalities,
+            equals(anthropicModel.inputModalities),
+          );
+          expect(
+            aiConfig.outputModalities,
+            equals(anthropicModel.outputModalities),
+          );
+          expect(
+            aiConfig.isReasoningModel,
+            equals(anthropicModel.isReasoningModel),
+          );
+          expect(aiConfig.description, equals(anthropicModel.description));
+          expect(
+            aiConfig.maxCompletionTokens,
+            equals(anthropicModel.maxCompletionTokens),
+          );
+          expect(aiConfig.createdAt, isA<DateTime>());
+        },
+      );
     });
 
     group('generateModelId', () {
@@ -201,8 +213,11 @@ void main() {
           (m) => m.outputModalities.contains(Modality.image),
         );
 
-        expect(imageGenModel, isNotEmpty,
-            reason: 'Should have at least one image generation model');
+        expect(
+          imageGenModel,
+          isNotEmpty,
+          reason: 'Should have at least one image generation model',
+        );
 
         final model = imageGenModel.first;
         expect(model.providerModelId, contains('image'));
@@ -244,8 +259,10 @@ void main() {
         expect(models.flash.name, contains('GPT-5 Nano'));
 
         // Verify reasoning model (GPT-5.2)
-        expect(models.reasoning.providerModelId,
-            equals(ftueOpenAiReasoningModelId));
+        expect(
+          models.reasoning.providerModelId,
+          equals(ftueOpenAiReasoningModelId),
+        );
         expect(models.reasoning.isReasoningModel, isTrue);
 
         // Verify audio model
@@ -292,28 +309,46 @@ void main() {
 
           for (final model in models) {
             // Verify required fields are not empty
-            expect(model.providerModelId, isNotEmpty,
-                reason:
-                    'Model in $providerType should have non-empty providerModelId');
-            expect(model.name, isNotEmpty,
-                reason: 'Model in $providerType should have non-empty name');
-            expect(model.description, isNotEmpty,
-                reason:
-                    'Model in $providerType should have non-empty description');
+            expect(
+              model.providerModelId,
+              isNotEmpty,
+              reason:
+                  'Model in $providerType should have non-empty providerModelId',
+            );
+            expect(
+              model.name,
+              isNotEmpty,
+              reason: 'Model in $providerType should have non-empty name',
+            );
+            expect(
+              model.description,
+              isNotEmpty,
+              reason:
+                  'Model in $providerType should have non-empty description',
+            );
 
             // Verify modalities are not empty
-            expect(model.inputModalities, isNotEmpty,
-                reason:
-                    'Model ${model.name} should have at least one input modality');
-            expect(model.outputModalities, isNotEmpty,
-                reason:
-                    'Model ${model.name} should have at least one output modality');
+            expect(
+              model.inputModalities,
+              isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one input modality',
+            );
+            expect(
+              model.outputModalities,
+              isNotEmpty,
+              reason:
+                  'Model ${model.name} should have at least one output modality',
+            );
 
             // Verify maxCompletionTokens is positive if defined
             if (model.maxCompletionTokens != null) {
-              expect(model.maxCompletionTokens! > 0, isTrue,
-                  reason:
-                      'Model ${model.name} should have positive maxCompletionTokens if defined');
+              expect(
+                model.maxCompletionTokens! > 0,
+                isTrue,
+                reason:
+                    'Model ${model.name} should have positive maxCompletionTokens if defined',
+              );
             }
           }
         }
@@ -337,12 +372,21 @@ void main() {
 
       test('Voxtral models should have audio input and text output', () {
         for (final model in voxtralModels) {
-          expect(model.inputModalities, contains(Modality.audio),
-              reason: '${model.name} should accept audio input');
-          expect(model.outputModalities, contains(Modality.text),
-              reason: '${model.name} should output text');
-          expect(model.isReasoningModel, isFalse,
-              reason: '${model.name} should not be a reasoning model');
+          expect(
+            model.inputModalities,
+            contains(Modality.audio),
+            reason: '${model.name} should accept audio input',
+          );
+          expect(
+            model.outputModalities,
+            contains(Modality.text),
+            reason: '${model.name} should output text',
+          );
+          expect(
+            model.isReasoningModel,
+            isFalse,
+            reason: '${model.name} should not be a reasoning model',
+          );
         }
       });
 
@@ -369,12 +413,16 @@ void main() {
       test('Voxtral models should have informative descriptions', () {
         for (final model in voxtralModels) {
           expect(model.description, isNotEmpty);
-          expect(model.description, contains('30 min'),
-              reason:
-                  '${model.name} description should mention audio duration');
-          expect(model.description, contains('languages'),
-              reason:
-                  '${model.name} description should mention language support');
+          expect(
+            model.description,
+            contains('30 min'),
+            reason: '${model.name} description should mention audio duration',
+          );
+          expect(
+            model.description,
+            contains('languages'),
+            reason: '${model.name} description should mention language support',
+          );
         }
       });
     });
@@ -402,8 +450,11 @@ void main() {
         final flashModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralFlashModelId,
         );
-        expect(flashModel.inputModalities, contains(Modality.image),
-            reason: 'Mistral Small should accept image input');
+        expect(
+          flashModel.inputModalities,
+          contains(Modality.image),
+          reason: 'Mistral Small should accept image input',
+        );
         expect(flashModel.isReasoningModel, isFalse);
       });
 
@@ -411,34 +462,54 @@ void main() {
         final reasoningModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralReasoningModelId,
         );
-        expect(reasoningModel.isReasoningModel, isTrue,
-            reason: 'Magistral Medium should be a reasoning model');
+        expect(
+          reasoningModel.isReasoningModel,
+          isTrue,
+          reason: 'Magistral Medium should be a reasoning model',
+        );
       });
 
       test('Voxtral Mini Transcribe should have audio input', () {
         final audioModel = mistralModels.firstWhere(
           (m) => m.providerModelId == ftueMistralAudioModelId,
         );
-        expect(audioModel.inputModalities, contains(Modality.audio),
-            reason: 'Voxtral Mini Transcribe should accept audio input');
+        expect(
+          audioModel.inputModalities,
+          contains(Modality.audio),
+          reason: 'Voxtral Mini Transcribe should accept audio input',
+        );
         expect(audioModel.outputModalities, contains(Modality.text));
       });
 
       test('all Mistral models should have valid configurations', () {
         for (final model in mistralModels) {
-          expect(model.providerModelId, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have non-empty providerModelId');
-          expect(model.name, isNotEmpty,
-              reason: 'Model should have non-empty name');
-          expect(model.description, isNotEmpty,
-              reason: 'Model ${model.name} should have non-empty description');
-          expect(model.inputModalities, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have at least one input modality');
-          expect(model.outputModalities, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have at least one output modality');
+          expect(
+            model.providerModelId,
+            isNotEmpty,
+            reason: 'Model ${model.name} should have non-empty providerModelId',
+          );
+          expect(
+            model.name,
+            isNotEmpty,
+            reason: 'Model should have non-empty name',
+          );
+          expect(
+            model.description,
+            isNotEmpty,
+            reason: 'Model ${model.name} should have non-empty description',
+          );
+          expect(
+            model.inputModalities,
+            isNotEmpty,
+            reason:
+                'Model ${model.name} should have at least one input modality',
+          );
+          expect(
+            model.outputModalities,
+            isNotEmpty,
+            reason:
+                'Model ${model.name} should have at least one output modality',
+          );
         }
       });
     });
@@ -466,8 +537,11 @@ void main() {
         expect(textModels, isNotEmpty, reason: 'Should have text-only models');
         expect(visionModels, isNotEmpty, reason: 'Should have vision models');
         expect(audioModels, isNotEmpty, reason: 'Should have audio models');
-        expect(reasoningModels, isNotEmpty,
-            reason: 'Should have reasoning models');
+        expect(
+          reasoningModels,
+          isNotEmpty,
+          reason: 'Should have reasoning models',
+        );
       });
 
       test('Qwen3 Max should be a reasoning model', () {
@@ -485,10 +559,16 @@ void main() {
         expect(vlModels.length, equals(2));
 
         for (final model in vlModels) {
-          expect(model.inputModalities, contains(Modality.image),
-              reason: '${model.name} should accept image input');
-          expect(model.outputModalities, contains(Modality.text),
-              reason: '${model.name} should output text');
+          expect(
+            model.inputModalities,
+            contains(Modality.image),
+            reason: '${model.name} should accept image input',
+          );
+          expect(
+            model.outputModalities,
+            contains(Modality.text),
+            reason: '${model.name} should output text',
+          );
         }
       });
 
@@ -504,19 +584,33 @@ void main() {
 
       test('all Alibaba models should have valid configurations', () {
         for (final model in alibabaModels) {
-          expect(model.providerModelId, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have non-empty providerModelId');
-          expect(model.name, isNotEmpty,
-              reason: 'Model should have non-empty name');
-          expect(model.description, isNotEmpty,
-              reason: 'Model ${model.name} should have non-empty description');
-          expect(model.inputModalities, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have at least one input modality');
-          expect(model.outputModalities, isNotEmpty,
-              reason:
-                  'Model ${model.name} should have at least one output modality');
+          expect(
+            model.providerModelId,
+            isNotEmpty,
+            reason: 'Model ${model.name} should have non-empty providerModelId',
+          );
+          expect(
+            model.name,
+            isNotEmpty,
+            reason: 'Model should have non-empty name',
+          );
+          expect(
+            model.description,
+            isNotEmpty,
+            reason: 'Model ${model.name} should have non-empty description',
+          );
+          expect(
+            model.inputModalities,
+            isNotEmpty,
+            reason:
+                'Model ${model.name} should have at least one input modality',
+          );
+          expect(
+            model.outputModalities,
+            isNotEmpty,
+            reason:
+                'Model ${model.name} should have at least one output modality',
+          );
         }
       });
     });
@@ -594,8 +688,11 @@ void main() {
           (m) => m.outputModalities.contains(Modality.image),
         );
 
-        expect(imageGenModels, isNotEmpty,
-            reason: 'Should have at least one image generation model');
+        expect(
+          imageGenModels,
+          isNotEmpty,
+          reason: 'Should have at least one image generation model',
+        );
 
         final model = imageGenModels.first;
         expect(model.providerModelId, 'wan2.6-image');
@@ -638,12 +735,17 @@ void main() {
 
         // Verify flash model (Mistral Small)
         expect(models!.flash.providerModelId, equals(ftueMistralFlashModelId));
-        expect(models.flash.inputModalities, contains(Modality.image),
-            reason: 'Flash model should have vision');
+        expect(
+          models.flash.inputModalities,
+          contains(Modality.image),
+          reason: 'Flash model should have vision',
+        );
 
         // Verify reasoning model (Magistral Medium)
-        expect(models.reasoning.providerModelId,
-            equals(ftueMistralReasoningModelId));
+        expect(
+          models.reasoning.providerModelId,
+          equals(ftueMistralReasoningModelId),
+        );
         expect(models.reasoning.isReasoningModel, isTrue);
 
         // Verify audio model (Voxtral Mini Transcribe)

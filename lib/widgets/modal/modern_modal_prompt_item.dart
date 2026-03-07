@@ -61,15 +61,15 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
                   end: Alignment.bottomRight,
                 )
               : widget.isSelected
-                  ? LinearGradient(
-                      colors: [
-                        context.colorScheme.primary.withValues(alpha: 0.3),
-                        context.colorScheme.primary.withValues(alpha: 0.2),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
+              ? LinearGradient(
+                  colors: [
+                    context.colorScheme.primary.withValues(alpha: 0.3),
+                    context.colorScheme.primary.withValues(alpha: 0.2),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
         ),
         const SizedBox(width: AppTheme.spacingLarge),
 
@@ -105,8 +105,9 @@ class _ModernModalPromptItemState extends State<ModernModalPromptItem> {
               Text(
                 widget.description,
                 style: context.textTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.85),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.85,
+                  ),
                   fontSize: AppTheme.subtitleFontSize,
                   height: AppTheme.lineHeightSubtitle,
                   letterSpacing: AppTheme.letterSpacingSubtitle,

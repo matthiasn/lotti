@@ -33,7 +33,7 @@ void main() {
 
     test('legacy labelIds only → picks first 3 and marks legacy', () {
       final args = jsonEncode({
-        'labelIds': ['a', 'b', 'c', 'd', 'e']
+        'labelIds': ['a', 'b', 'c', 'd', 'e'],
       });
 
       final result = parseLabelCallArgs(args);

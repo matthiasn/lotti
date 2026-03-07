@@ -34,7 +34,8 @@ Future<bool> isLoggedIn(Ref ref) async {
 @riverpod
 Future<String?> loggedInUserId(Ref ref) async {
   final matrixService = ref.watch(matrixServiceProvider);
-  final loginState = ref.watch(loginStateStreamProvider).value ??
+  final loginState =
+      ref.watch(loginStateStreamProvider).value ??
       matrixService.client.onLoginStateChanged.value;
 
   if (loginState == LoginState.loggedIn) {

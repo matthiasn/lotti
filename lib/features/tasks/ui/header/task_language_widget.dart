@@ -24,8 +24,9 @@ class TaskLanguageWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final languageCode = task.data.languageCode;
-    final language =
-        languageCode != null ? SupportedLanguage.fromCode(languageCode) : null;
+    final language = languageCode != null
+        ? SupportedLanguage.fromCode(languageCode)
+        : null;
     final labelVisible =
         showLabel && (!hideLabelWhenValueSet || language == null);
 

@@ -58,31 +58,34 @@ void main() {
   const entryId = 'time-entry-1';
 
   group('ModernRateSessionItem', () {
-    testWidgets('shows "Rate Session" with outline icon when no rating exists',
-        (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(true),
-            ),
-            ratingControllerProvider(targetId: entryId)
-                .overrideWith(_FakeNoRatingController.new),
-          ],
-          child: const ModernRateSessionItem(entryId: entryId),
-        ),
-      );
+    testWidgets(
+      'shows "Rate Session" with outline icon when no rating exists',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(true),
+              ),
+              ratingControllerProvider(
+                targetId: entryId,
+              ).overrideWith(_FakeNoRatingController.new),
+            ],
+            child: const ModernRateSessionItem(entryId: entryId),
+          ),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      final context = tester.element(find.byType(ModernRateSessionItem));
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
-      expect(
-        find.text(context.messages.sessionRatingRateAction),
-        findsOneWidget,
-      );
-    });
+        final context = tester.element(find.byType(ModernRateSessionItem));
+        expect(find.byType(ActionMenuListItem), findsOneWidget);
+        expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
+        expect(
+          find.text(context.messages.sessionRatingRateAction),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('hidden when feature flag is disabled', (tester) async {
       await tester.pumpWidget(
@@ -91,8 +94,9 @@ void main() {
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(false),
             ),
-            ratingControllerProvider(targetId: entryId)
-                .overrideWith(_FakeNoRatingController.new),
+            ratingControllerProvider(
+              targetId: entryId,
+            ).overrideWith(_FakeNoRatingController.new),
           ],
           child: const ModernRateSessionItem(entryId: entryId),
         ),
@@ -103,16 +107,18 @@ void main() {
       expect(find.byType(ActionMenuListItem), findsNothing);
     });
 
-    testWidgets('shows "View Rating" with filled icon when rating exists',
-        (tester) async {
+    testWidgets('shows "View Rating" with filled icon when rating exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(true),
             ),
-            ratingControllerProvider(targetId: entryId)
-                .overrideWith(_FakeHasRatingController.new),
+            ratingControllerProvider(
+              targetId: entryId,
+            ).overrideWith(_FakeHasRatingController.new),
           ],
           child: const ModernRateSessionItem(entryId: entryId),
         ),

@@ -29,16 +29,16 @@ final class ChatSessionControllerProvider
   /// Owns UI-facing state (messages, streaming flags, errors) and delegates
   /// sending to `ChatRepository`. Enforces explicit model selection and manages
   /// streaming placeholders for assistant messages.
-  ChatSessionControllerProvider._(
-      {required ChatSessionControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'chatSessionControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ChatSessionControllerProvider._({
+    required ChatSessionControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'chatSessionControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$chatSessionControllerHash();
@@ -84,16 +84,21 @@ String _$chatSessionControllerHash() =>
 
 final class ChatSessionControllerFamily extends $Family
     with
-        $ClassFamilyOverride<ChatSessionController, ChatSessionUiModel,
-            ChatSessionUiModel, ChatSessionUiModel, String> {
+        $ClassFamilyOverride<
+          ChatSessionController,
+          ChatSessionUiModel,
+          ChatSessionUiModel,
+          ChatSessionUiModel,
+          String
+        > {
   ChatSessionControllerFamily._()
-      : super(
-          retry: null,
-          name: r'chatSessionControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'chatSessionControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Riverpod controller for a single AI chat session.
   ///
@@ -101,9 +106,7 @@ final class ChatSessionControllerFamily extends $Family
   /// sending to `ChatRepository`. Enforces explicit model selection and manages
   /// streaming placeholders for assistant messages.
 
-  ChatSessionControllerProvider call(
-    String categoryId,
-  ) =>
+  ChatSessionControllerProvider call(String categoryId) =>
       ChatSessionControllerProvider._(argument: categoryId, from: this);
 
   @override
@@ -120,22 +123,19 @@ abstract class _$ChatSessionController extends $Notifier<ChatSessionUiModel> {
   late final _$args = ref.$arg as String;
   String get categoryId => _$args;
 
-  ChatSessionUiModel build(
-    String categoryId,
-  );
+  ChatSessionUiModel build(String categoryId);
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<ChatSessionUiModel, ChatSessionUiModel>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<ChatSessionUiModel, ChatSessionUiModel>,
-        ChatSessionUiModel,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<ChatSessionUiModel, ChatSessionUiModel>,
+              ChatSessionUiModel,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(_$args));
   }
 }

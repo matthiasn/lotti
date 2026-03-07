@@ -7,10 +7,10 @@ part of 'event_data.dart';
 // **************************************************************************
 
 _EventData _$EventDataFromJson(Map<String, dynamic> json) => _EventData(
-      title: json['title'] as String,
-      stars: (json['stars'] as num).toDouble(),
-      status: $enumDecode(_$EventStatusEnumMap, json['status']),
-    );
+  title: json['title'] as String,
+  stars: (json['stars'] as num).toDouble(),
+  status: $enumDecode(_$EventStatusEnumMap, json['status']),
+);
 
 Map<String, dynamic> _$EventDataToJson(_EventData instance) =>
     <String, dynamic>{

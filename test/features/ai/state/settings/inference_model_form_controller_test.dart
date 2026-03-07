@@ -42,44 +42,50 @@ void main() {
   });
 
   group('InferenceModelFormController Tests', () {
-    test('should load existing config in build when configId is provided',
-        () async {
-      // Arrange
-      when(() => mockRepository.getConfigById('test-id')).thenAnswer(
-        (_) async => testConfig,
-      );
+    test(
+      'should load existing config in build when configId is provided',
+      () async {
+        // Arrange
+        when(() => mockRepository.getConfigById('test-id')).thenAnswer(
+          (_) async => testConfig,
+        );
 
-      // Act
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: 'test-id').notifier,
-      );
-      final formState = await container.read(
-        inferenceModelFormControllerProvider(configId: 'test-id').future,
-      );
+        // Act
+        final controller = container.read(
+          inferenceModelFormControllerProvider(configId: 'test-id').notifier,
+        );
+        final formState = await container.read(
+          inferenceModelFormControllerProvider(configId: 'test-id').future,
+        );
 
-      // Assert
-      expect(formState, isA<InferenceModelFormState>());
-      expect(controller.nameController.text, equals('Test Model'));
-      expect(
-        controller.providerModelIdController.text,
-        equals('test-provider-model-id'),
-      );
-      expect(controller.descriptionController.text, equals('Test description'));
-      expect(controller.maxCompletionTokensController.text, equals('4000'));
-      expect(formState?.inferenceProviderId, equals(testProviderId));
-      expect(formState?.inputModalities, equals([Modality.text]));
-      expect(formState?.outputModalities, equals([Modality.text]));
-      expect(formState?.isReasoningModel, isTrue);
-      verify(() => mockRepository.getConfigById('test-id')).called(1);
-    });
+        // Assert
+        expect(formState, isA<InferenceModelFormState>());
+        expect(controller.nameController.text, equals('Test Model'));
+        expect(
+          controller.providerModelIdController.text,
+          equals('test-provider-model-id'),
+        );
+        expect(
+          controller.descriptionController.text,
+          equals('Test description'),
+        );
+        expect(controller.maxCompletionTokensController.text, equals('4000'));
+        expect(formState?.inferenceProviderId, equals(testProviderId));
+        expect(formState?.inputModalities, equals([Modality.text]));
+        expect(formState?.outputModalities, equals([Modality.text]));
+        expect(formState?.isReasoningModel, isTrue);
+        verify(() => mockRepository.getConfigById('test-id')).called(1);
+      },
+    );
 
     test('should have empty form state when configId is null', () async {
       // Act
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      final formState = await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      final formState = await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Assert
       expect(formState, isA<InferenceModelFormState>());
@@ -149,8 +155,9 @@ void main() {
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.nameChanged('New Name');
@@ -167,8 +174,9 @@ void main() {
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.descriptionChanged('New description');
@@ -180,51 +188,58 @@ void main() {
       expect(formState?.description.value, equals('New description'));
     });
 
-    test('should update form state when maxCompletionTokens is changed',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+    test(
+      'should update form state when maxCompletionTokens is changed',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceModelFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceModelFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.maxCompletionTokensChanged('2000');
-      final formState = container
-          .read(inferenceModelFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.maxCompletionTokensChanged('2000');
+        final formState = container
+            .read(inferenceModelFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(formState?.maxCompletionTokens.value, equals('2000'));
-    });
+        // Assert
+        expect(formState?.maxCompletionTokens.value, equals('2000'));
+      },
+    );
 
-    test('should update form state when inferenceProviderId is changed',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+    test(
+      'should update form state when inferenceProviderId is changed',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceModelFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceModelFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.inferenceProviderIdChanged('new-provider-id');
-      final formState = container
-          .read(inferenceModelFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.inferenceProviderIdChanged('new-provider-id');
+        final formState = container
+            .read(inferenceModelFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(formState?.inferenceProviderId, equals('new-provider-id'));
-    });
+        // Assert
+        expect(formState?.inferenceProviderId, equals('new-provider-id'));
+      },
+    );
 
     test('should update form state when providerModelId is changed', () async {
       // Arrange
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.providerModelIdChanged('new-provider-model-id');
@@ -241,8 +256,9 @@ void main() {
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.inputModalitiesChanged([Modality.text, Modality.image]);
@@ -262,8 +278,9 @@ void main() {
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.outputModalitiesChanged([Modality.text, Modality.audio]);
@@ -283,8 +300,9 @@ void main() {
       final controller = container.read(
         inferenceModelFormControllerProvider(configId: null).notifier,
       );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+      await container.read(
+        inferenceModelFormControllerProvider(configId: null).future,
+      );
 
       // Act
       controller.isReasoningModelChanged(true);
@@ -296,23 +314,26 @@ void main() {
       expect(formState?.isReasoningModel, isTrue);
     });
 
-    test('should update form state when supportsFunctionCalling is changed',
-        () async {
-      // Arrange
-      final controller = container.read(
-        inferenceModelFormControllerProvider(configId: null).notifier,
-      );
-      await container
-          .read(inferenceModelFormControllerProvider(configId: null).future);
+    test(
+      'should update form state when supportsFunctionCalling is changed',
+      () async {
+        // Arrange
+        final controller = container.read(
+          inferenceModelFormControllerProvider(configId: null).notifier,
+        );
+        await container.read(
+          inferenceModelFormControllerProvider(configId: null).future,
+        );
 
-      // Act
-      controller.supportsFunctionCallingChanged(true);
-      final formState = container
-          .read(inferenceModelFormControllerProvider(configId: null))
-          .value;
+        // Act
+        controller.supportsFunctionCallingChanged(true);
+        final formState = container
+            .read(inferenceModelFormControllerProvider(configId: null))
+            .value;
 
-      // Assert
-      expect(formState?.supportsFunctionCalling, isTrue);
-    });
+        // Assert
+        expect(formState?.supportsFunctionCalling, isTrue);
+      },
+    );
   });
 }

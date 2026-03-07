@@ -17,7 +17,8 @@ void main() {
     DayBudgetStats? stats,
     List<Override> additionalOverrides = const [],
   }) {
-    final effectiveStats = stats ??
+    final effectiveStats =
+        stats ??
         const DayBudgetStats(
           totalPlanned: Duration(hours: 4),
           totalRecorded: Duration(hours: 2),

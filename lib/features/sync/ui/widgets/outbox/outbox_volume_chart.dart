@@ -48,8 +48,9 @@ class OutboxVolumeChart extends ConsumerWidget {
 
         final now = clock.now();
         final rangeEnd = DateTime(now.year, now.month, now.day + 1);
-        final rangeStart =
-            rangeEnd.subtract(const Duration(days: kOutboxVolumeDays));
+        final rangeStart = rangeEnd.subtract(
+          const Duration(days: kOutboxVolumeDays),
+        );
         final primaryColor = Theme.of(context).colorScheme.primary;
 
         return Column(

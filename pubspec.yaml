@@ -15,7 +15,7 @@ msix_config:
   logo_path: .\assets\icon\app_icon_1024.png
 
 environment:
-  sdk: '>=3.0.1 <4.0.0'
+  sdk: '>=3.11.0 <4.0.0'
 
 dependencies:
   async: ^2.13.0

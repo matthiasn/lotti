@@ -83,8 +83,9 @@ void main() {
       expect(icon.size, equals(30.0));
     });
 
-    testWidgets('calculates icon size from badge size when not specified',
-        (tester) async {
+    testWidgets('calculates icon size from badge size when not specified', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameyIconBadge(
@@ -245,8 +246,9 @@ void main() {
       expect(decoration?.borderRadius, equals(BorderRadius.circular(8)));
     });
 
-    testWidgets('starts pulse animation when isPulsing is true',
-        (tester) async {
+    testWidgets('starts pulse animation when isPulsing is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameyIconBadge(
@@ -264,8 +266,9 @@ void main() {
       expect(find.byType(GameyIconBadge), findsOneWidget);
     });
 
-    testWidgets('stops pulse animation when isPulsing changes to false',
-        (tester) async {
+    testWidgets('stops pulse animation when isPulsing changes to false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestableWidget(
           child: const GameyIconBadge(
@@ -351,8 +354,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.gradient, equals(GameyGradients.forFeature('journal')));
     });
 
@@ -366,8 +370,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.gradient, equals(GameyGradients.forFeature('habit')));
     });
 
@@ -381,8 +386,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.gradient, equals(GameyGradients.forFeature('task')));
     });
 
@@ -397,8 +403,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.size, equals(72.0));
     });
 
@@ -413,8 +420,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.isPulsing, isTrue);
     });
 
@@ -429,8 +437,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.isActive, isTrue);
     });
 
@@ -481,8 +490,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.borderRadius, equals(24.0)); // size / 2
     });
 
@@ -495,8 +505,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.size, equals(48.0));
     });
 
@@ -514,8 +525,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.gradient, equals(customGradient));
     });
 
@@ -529,8 +541,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.backgroundColor, equals(Colors.amber));
     });
 
@@ -549,8 +562,9 @@ void main() {
         ),
       );
 
-      final iconBadge =
-          tester.widget<GameyIconBadge>(find.byType(GameyIconBadge));
+      final iconBadge = tester.widget<GameyIconBadge>(
+        find.byType(GameyIconBadge),
+      );
       expect(iconBadge.iconColor, equals(Colors.white));
       expect(iconBadge.size, equals(60.0));
       expect(iconBadge.iconSize, equals(30.0));

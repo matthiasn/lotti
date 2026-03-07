@@ -102,9 +102,9 @@ void main() {
 
     when(() => pipeline.reportDbApplyDiagnostics(any())).thenReturn(null);
     when(() => pipeline.start()).thenAnswer((_) async {});
-    when(() =>
-            pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')))
-        .thenAnswer((_) async {});
+    when(
+      () => pipeline.forceRescan(includeCatchUp: any(named: 'includeCatchUp')),
+    ).thenAnswer((_) async {});
     when(() => pipeline.retryNow()).thenAnswer((_) async {});
     when(() => pipeline.metricsSnapshot()).thenReturn(metricsSnapshot);
     when(() => pipeline.diagnosticsStrings()).thenReturn(diagnostics);
@@ -230,38 +230,42 @@ void main() {
     });
   });
 
-  test('connectivity change calls recordConnectivitySignal before forceRescan',
-      () {
-    fakeAsync((async) {
-      final connectivityController =
-          StreamController<List<ConnectivityResult>>.broadcast();
-      addTearDown(connectivityController.close);
+  test(
+    'connectivity change calls recordConnectivitySignal before forceRescan',
+    () {
+      fakeAsync((async) {
+        final connectivityController =
+            StreamController<List<ConnectivityResult>>.broadcast();
+        addTearDown(connectivityController.close);
 
-      final service = createService(
-        connectivity: connectivityController.stream,
-      );
-      settleServiceStartup(async);
+        final service = createService(
+          connectivity: connectivityController.stream,
+        );
+        settleServiceStartup(async);
 
-      // Stub methods to track ordering
-      when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
-      when(() => pipeline.forceRescan(
-              includeCatchUp: any(named: 'includeCatchUp')))
-          .thenAnswer((_) async {});
+        // Stub methods to track ordering
+        when(() => pipeline.recordConnectivitySignal()).thenReturn(null);
+        when(
+          () => pipeline.forceRescan(
+            includeCatchUp: any(named: 'includeCatchUp'),
+          ),
+        ).thenAnswer((_) async {});
 
-      // Emit connectivity regain
-      connectivityController.add([ConnectivityResult.wifi]);
-      async.elapse(const Duration(milliseconds: 10));
+        // Emit connectivity regain
+        connectivityController.add([ConnectivityResult.wifi]);
+        async.elapse(const Duration(milliseconds: 10));
 
-      verifyInOrder([
-        () => pipeline.recordConnectivitySignal(),
-        () => pipeline.forceRescan(includeCatchUp: true),
-      ]);
+        verifyInOrder([
+          () => pipeline.recordConnectivitySignal(),
+          () => pipeline.forceRescan(includeCatchUp: true),
+        ]);
 
-      // Clean up
-      unawaited(service.dispose());
-      async.flushMicrotasks();
-    });
-  });
+        // Clean up
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
+    },
+  );
 
   test('getSyncDiagnosticsText joins metrics and diagnostics strings', () {
     fakeAsync((async) {
@@ -307,8 +311,9 @@ void main() {
       ),
     ];
 
-    when(() => roomManager.discoverExistingSyncRooms())
-        .thenAnswer((_) async => candidates);
+    when(
+      () => roomManager.discoverExistingSyncRooms(),
+    ).thenAnswer((_) async => candidates);
 
     fakeAsync((async) {
       final service = createService();

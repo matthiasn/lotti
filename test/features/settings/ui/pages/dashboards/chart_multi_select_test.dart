@@ -131,8 +131,9 @@ void main() {
       expect(find.text('Third Item'), findsOneWidget);
     });
 
-    testWidgets('modal allows selecting items and calls onConfirm',
-        (tester) async {
+    testWidgets('modal allows selecting items and calls onConfirm', (
+      tester,
+    ) async {
       List<String?>? confirmedItems;
 
       await tester.pumpWidget(
@@ -197,8 +198,9 @@ void main() {
       expect(find.text('Third Item'), findsNothing);
     });
 
-    testWidgets('modal cancel button closes without calling onConfirm',
-        (tester) async {
+    testWidgets('modal cancel button closes without calling onConfirm', (
+      tester,
+    ) async {
       var onConfirmCalled = false;
 
       await tester.pumpWidget(
@@ -231,8 +233,9 @@ void main() {
       expect(onConfirmCalled, isFalse);
     });
 
-    testWidgets('modal shows empty state when search has no results',
-        (tester) async {
+    testWidgets('modal shows empty state when search has no results', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChartMultiSelect<String>(

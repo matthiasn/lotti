@@ -20,10 +20,8 @@ enum OutboxStatus {
 enum OutboxPriority {
   /// User-created actions (journal entries, entry links).
   high, // index=0
-
   /// Agent actions, backfill, theming.
   normal, // index=1
-
   /// Bulk resync, entity definitions, tags, AI config.
   low, // index=2
 }
@@ -40,7 +38,9 @@ enum OutboxConnectionState {
 @riverpod
 Stream<OutboxConnectionState> outboxConnectionState(Ref ref) {
   final db = ref.watch(journalDbProvider);
-  return db.watchConfigFlag(enableMatrixFlag).map(
+  return db
+      .watchConfigFlag(enableMatrixFlag)
+      .map(
         (enabled) => enabled
             ? OutboxConnectionState.online
             : OutboxConnectionState.disabled,

@@ -5,13 +5,16 @@ import 'package:lotti/features/ai/util/gemini_config.dart';
 void main() {
   group('getDefaultThinkingConfig', () {
     group('Gemini 3 Pro Preview', () {
-      test('returns medium-budget config for models/gemini-3.1-pro-preview',
-          () {
-        final config =
-            getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
-        // Budget 4096 maps to thinkingLevel: MEDIUM for Gemini 3.x.
-        expect(config.thinkingBudget, 4096);
-      });
+      test(
+        'returns medium-budget config for models/gemini-3.1-pro-preview',
+        () {
+          final config = getDefaultThinkingConfig(
+            'models/gemini-3.1-pro-preview',
+          );
+          // Budget 4096 maps to thinkingLevel: MEDIUM for Gemini 3.x.
+          expect(config.thinkingBudget, 4096);
+        },
+      );
 
       test('returns medium-budget config for gemini-3.1-pro-preview', () {
         final config = getDefaultThinkingConfig('gemini-3.1-pro-preview');
@@ -119,18 +122,23 @@ void main() {
 
         for (final modelId in modelIds) {
           final config = getDefaultThinkingConfig(modelId);
-          expect(config, isA<GeminiThinkingConfig>(),
-              reason: 'Model $modelId should return a valid config');
+          expect(
+            config,
+            isA<GeminiThinkingConfig>(),
+            reason: 'Model $modelId should return a valid config',
+          );
         }
       });
     });
 
     group('Model ID formats', () {
       test('handles models with "models/" prefix consistently', () {
-        final withPrefix =
-            getDefaultThinkingConfig('models/gemini-3.1-pro-preview');
-        final withoutPrefix =
-            getDefaultThinkingConfig('gemini-3.1-pro-preview');
+        final withPrefix = getDefaultThinkingConfig(
+          'models/gemini-3.1-pro-preview',
+        );
+        final withoutPrefix = getDefaultThinkingConfig(
+          'gemini-3.1-pro-preview',
+        );
         expect(withPrefix.thinkingBudget, withoutPrefix.thinkingBudget);
       });
 

@@ -44,10 +44,11 @@ void main() {
 
     // Register a mock for the HapticFeedback service
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
   });
@@ -79,8 +80,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const TaskCoverArtDisplayToggle(),
       ),
@@ -88,8 +90,9 @@ void main() {
   }
 
   group('TaskCoverArtDisplayToggle', () {
-    testWidgets('renders correctly with SwitchListTile and label',
-        (tester) async {
+    testWidgets('renders correctly with SwitchListTile and label', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -103,8 +106,9 @@ void main() {
       expect(find.text('Show cover art on cards'), findsOneWidget);
     });
 
-    testWidgets('Switch is on when showCoverArt is true (default)',
-        (tester) async {
+    testWidgets('Switch is on when showCoverArt is true (default)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
@@ -120,20 +124,23 @@ void main() {
       expect(switchWidget.value, isFalse);
     });
 
-    testWidgets('calls setShowCoverArt(show: false) when Switch is turned off',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(createState()));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'calls setShowCoverArt(show: false) when Switch is turned off',
+      (tester) async {
+        await tester.pumpWidget(buildSubject(createState()));
+        await tester.pumpAndSettle();
 
-      // Tap on the Switch to turn it off
-      await tester.tap(find.byType(Switch));
-      await tester.pump();
+        // Tap on the Switch to turn it off
+        await tester.tap(find.byType(Switch));
+        await tester.pump();
 
-      expect(fakeController.showCoverArtCalls, contains(false));
-    });
+        expect(fakeController.showCoverArtCalls, contains(false));
+      },
+    );
 
-    testWidgets('calls setShowCoverArt(show: true) when Switch is turned on',
-        (tester) async {
+    testWidgets('calls setShowCoverArt(show: true) when Switch is turned on', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState(showCoverArt: false)));
       await tester.pumpAndSettle();
 

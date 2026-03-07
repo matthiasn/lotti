@@ -26,28 +26,27 @@ Metadata _meta({
   String id = 'entity-1',
   List<String>? labelIds,
   String? categoryId,
-}) =>
-    Metadata(
-      id: id,
-      createdAt: _fixedDate,
-      updatedAt: _fixedDate,
-      dateFrom: _fixedDate,
-      dateTo: _fixedDate,
-      labelIds: labelIds,
-      categoryId: categoryId,
-    );
+}) => Metadata(
+  id: id,
+  createdAt: _fixedDate,
+  updatedAt: _fixedDate,
+  dateFrom: _fixedDate,
+  dateTo: _fixedDate,
+  labelIds: labelIds,
+  categoryId: categoryId,
+);
 
 TaskData _taskData(String title) => TaskData(
-      status: TaskStatus.open(
-        id: 'status-id',
-        createdAt: _fixedDate,
-        utcOffset: 0,
-      ),
-      title: title,
-      statusHistory: [],
-      dateFrom: _fixedDate,
-      dateTo: _fixedDate,
-    );
+  status: TaskStatus.open(
+    id: 'status-id',
+    createdAt: _fixedDate,
+    utcOffset: 0,
+  ),
+  title: title,
+  statusHistory: [],
+  dateFrom: _fixedDate,
+  dateTo: _fixedDate,
+);
 
 Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
 
@@ -151,8 +150,9 @@ void main() {
     });
 
     test('returns false when entity not found', () async {
-      when(() => mockJournalDb.journalEntityById('missing'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById('missing'),
+      ).thenAnswer((_) async => null);
 
       final result = await EmbeddingProcessor.processEntity(
         entityId: 'missing',
@@ -212,8 +212,9 @@ void main() {
         entryText: const EntryText(plainText: _longText),
       );
       _stubEntity(mockJournalDb, entry);
-      when(() => mockEmbeddingsDb.getContentHash(entry.id))
-          .thenReturn(_hashOf(_longText));
+      when(
+        () => mockEmbeddingsDb.getContentHash(entry.id),
+      ).thenReturn(_hashOf(_longText));
 
       final result = await EmbeddingProcessor.processEntity(
         entityId: entry.id,
@@ -233,63 +234,69 @@ void main() {
       );
     });
 
-    test('uses extractText (not enriched template) when no label resolver',
-        () async {
-      final task = Task(
-        meta: _meta(),
-        data: _taskData('My task title that is long enough'),
-        entryText: const EntryText(plainText: _longText),
-      );
-      _stubEntity(mockJournalDb, task);
+    test(
+      'uses extractText (not enriched template) when no label resolver',
+      () async {
+        final task = Task(
+          meta: _meta(),
+          data: _taskData('My task title that is long enough'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, task);
 
-      await EmbeddingProcessor.processEntity(
-        entityId: task.id,
-        journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
-
-      // Without label resolver, uses the default extractText format
-      const expectedText = 'My task title that is long enough\n$_longText';
-      verify(
-        () => mockEmbeddingRepo.embed(
-          input: expectedText,
+        await EmbeddingProcessor.processEntity(
+          entityId: task.id,
+          journalDb: mockJournalDb,
+          embeddingsDb: mockEmbeddingsDb,
+          embeddingRepository: mockEmbeddingRepo,
           baseUrl: _baseUrl,
-        ),
-      ).called(1);
-    });
+        );
 
-    test('uses enriched template with labels when resolver is provided',
-        () async {
-      final task = Task(
-        meta: _meta(labelIds: ['label-1', 'label-2']),
-        data: _taskData('Fix auth bug'),
-        entryText: const EntryText(plainText: _longText),
-      );
-      _stubEntity(mockJournalDb, task);
+        // Without label resolver, uses the default extractText format
+        const expectedText = 'My task title that is long enough\n$_longText';
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: expectedText,
+            baseUrl: _baseUrl,
+          ),
+        ).called(1);
+      },
+    );
 
-      Future<List<String>> labelResolver(List<String> ids) async =>
-          ['security', 'backend'];
+    test(
+      'uses enriched template with labels when resolver is provided',
+      () async {
+        final task = Task(
+          meta: _meta(labelIds: ['label-1', 'label-2']),
+          data: _taskData('Fix auth bug'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, task);
 
-      await EmbeddingProcessor.processEntity(
-        entityId: task.id,
-        journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-        labelNameResolver: labelResolver,
-      );
+        Future<List<String>> labelResolver(List<String> ids) async => [
+          'security',
+          'backend',
+        ];
 
-      const expectedText =
-          'Fix auth bug\nLabels: security, backend\n$_longText';
-      verify(
-        () => mockEmbeddingRepo.embed(
-          input: expectedText,
+        await EmbeddingProcessor.processEntity(
+          entityId: task.id,
+          journalDb: mockJournalDb,
+          embeddingsDb: mockEmbeddingsDb,
+          embeddingRepository: mockEmbeddingRepo,
           baseUrl: _baseUrl,
-        ),
-      ).called(1);
-    });
+          labelNameResolver: labelResolver,
+        );
+
+        const expectedText =
+            'Fix auth bug\nLabels: security, backend\n$_longText';
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: expectedText,
+            baseUrl: _baseUrl,
+          ),
+        ).called(1);
+      },
+    );
 
     test('resolver with empty label IDs omits labels line', () async {
       final task = Task(
@@ -446,8 +453,9 @@ void main() {
 
     test('returns false when content hash unchanged', () async {
       const reportContent = 'This report content is long enough for embedding.';
-      when(() => mockEmbeddingsDb.getContentHash('report-1'))
-          .thenReturn(_hashOf(reportContent));
+      when(
+        () => mockEmbeddingsDb.getContentHash('report-1'),
+      ).thenReturn(_hashOf(reportContent));
 
       final result = await EmbeddingProcessor.processAgentReport(
         reportId: 'report-1',
@@ -465,8 +473,9 @@ void main() {
 
     test('embeds when content hash differs (content changed)', () async {
       const reportContent = 'Updated report content that is long enough.';
-      when(() => mockEmbeddingsDb.getContentHash('report-1'))
-          .thenReturn('old-hash-that-no-longer-matches');
+      when(
+        () => mockEmbeddingsDb.getContentHash('report-1'),
+      ).thenReturn('old-hash-that-no-longer-matches');
 
       final result = await EmbeddingProcessor.processAgentReport(
         reportId: 'report-1',

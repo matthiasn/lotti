@@ -28,61 +28,62 @@ class TagsListWidget extends ConsumerWidget {
 
     return StreamBuilder<List<TagEntity>>(
       stream: tagsService.watchTags(),
-      builder: (
-        BuildContext context,
-        // This stream is not used, the StreamBuilder is only here
-        // to trigger updates when any tag changes. In that case,
-        // data in the tags service will already have been updated.
-        AsyncSnapshot<List<TagEntity>> _,
-      ) {
-        final item = entryState?.entry;
+      builder:
+          (
+            BuildContext context,
+            // This stream is not used, the StreamBuilder is only here
+            // to trigger updates when any tag changes. In that case,
+            // data in the tags service will already have been updated.
+            AsyncSnapshot<List<TagEntity>> _,
+          ) {
+            final item = entryState?.entry;
 
-        if (item == null) {
-          return const SizedBox.shrink();
-        }
+            if (item == null) {
+              return const SizedBox.shrink();
+            }
 
-        final tagIds = item.meta.tagIds ?? [];
-        final tagsFromTagIds = <TagEntity>[];
+            final tagIds = item.meta.tagIds ?? [];
+            final tagsFromTagIds = <TagEntity>[];
 
-        for (final tagId in tagIds) {
-          final tagEntity = tagsService.getTagById(tagId);
-          if (tagEntity != null) {
-            tagsFromTagIds.add(tagEntity);
-          }
-        }
+            for (final tagId in tagIds) {
+              final tagEntity = tagsService.getTagById(tagId);
+              if (tagEntity != null) {
+                tagsFromTagIds.add(tagEntity);
+              }
+            }
 
-        if (tagIds.isEmpty || setsEqual(tagIds.toSet(), parentTags)) {
-          return const SizedBox.shrink();
-        }
+            if (tagIds.isEmpty || setsEqual(tagIds.toSet(), parentTags)) {
+              return const SizedBox.shrink();
+            }
 
-        return Padding(
-          padding: const EdgeInsets.only(
-            top: 10,
-            left: 5,
-            right: 14,
-            bottom: 5,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: max(MediaQuery.of(context).size.width - 24, 200),
-            ),
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: tagsFromTagIds
-                  .map(
-                    (TagEntity tagEntity) => TagWidget(
-                      tagEntity: tagEntity,
-                      onTapRemove: () {
-                        notifier.removeTagId(tagEntity.id);
-                      },
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-        );
-      },
+            return Padding(
+              padding: const EdgeInsets.only(
+                top: 10,
+                left: 5,
+                right: 14,
+                bottom: 5,
+              ),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: max(MediaQuery.of(context).size.width - 24, 200),
+                ),
+                child: Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: tagsFromTagIds
+                      .map(
+                        (TagEntity tagEntity) => TagWidget(
+                          tagEntity: tagEntity,
+                          onTapRemove: () {
+                            notifier.removeTagId(tagEntity.id);
+                          },
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+            );
+          },
     );
   }
 }

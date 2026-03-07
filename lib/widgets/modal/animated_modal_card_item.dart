@@ -23,7 +23,10 @@ class AnimatedModalCardItem extends StatefulWidget {
 
   final VoidCallback? onTap;
   final ModalCard Function(
-      BuildContext context, AnimatedModalItemController controller) cardBuilder;
+    BuildContext context,
+    AnimatedModalItemController controller,
+  )
+  cardBuilder;
   final bool isDisabled;
   final double hoverScale;
   final double tapScale;

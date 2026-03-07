@@ -17,10 +17,12 @@ void main() {
 
   setUp(() async {
     mockHealthImport = MockHealthImport();
-    when(() => mockHealthImport.getWorkoutsHealthDataDelta())
-        .thenAnswer((_) async {});
-    when(() => mockHealthImport.fetchHealthDataDelta(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockHealthImport.getWorkoutsHealthDataDelta(),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockHealthImport.fetchHealthDataDelta(any()),
+    ).thenAnswer((_) async {});
 
     await setUpTestGetIt(
       additionalSetup: () {

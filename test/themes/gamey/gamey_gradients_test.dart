@@ -134,13 +134,17 @@ void main() {
 
     group('forFeature helper', () {
       test('returns journal gradient for journal feature', () {
-        expect(GameyGradients.forFeature('journal'),
-            equals(GameyGradients.journal));
+        expect(
+          GameyGradients.forFeature('journal'),
+          equals(GameyGradients.journal),
+        );
       });
 
       test('returns habit gradient for habit feature', () {
         expect(
-            GameyGradients.forFeature('habit'), equals(GameyGradients.habit));
+          GameyGradients.forFeature('habit'),
+          equals(GameyGradients.habit),
+        );
       });
 
       test('returns task gradient for task feature', () {
@@ -153,7 +157,9 @@ void main() {
 
       test('returns health gradient for health feature', () {
         expect(
-            GameyGradients.forFeature('health'), equals(GameyGradients.health));
+          GameyGradients.forFeature('health'),
+          equals(GameyGradients.health),
+        );
       });
 
       test('returns ai gradient for ai feature', () {
@@ -212,17 +218,23 @@ void main() {
     group('forFeature additional aliases', () {
       test('returns journal gradient for entry alias', () {
         expect(
-            GameyGradients.forFeature('entry'), equals(GameyGradients.journal));
+          GameyGradients.forFeature('entry'),
+          equals(GameyGradients.journal),
+        );
       });
 
       test('returns journal gradient for text alias', () {
         expect(
-            GameyGradients.forFeature('text'), equals(GameyGradients.journal));
+          GameyGradients.forFeature('text'),
+          equals(GameyGradients.journal),
+        );
       });
 
       test('returns habit gradient for habits alias', () {
         expect(
-            GameyGradients.forFeature('habits'), equals(GameyGradients.habit));
+          GameyGradients.forFeature('habits'),
+          equals(GameyGradients.habit),
+        );
       });
 
       test('returns task gradient for tasks alias', () {
@@ -234,8 +246,10 @@ void main() {
       });
 
       test('returns health gradient for measurement alias', () {
-        expect(GameyGradients.forFeature('measurement'),
-            equals(GameyGradients.health));
+        expect(
+          GameyGradients.forFeature('measurement'),
+          equals(GameyGradients.health),
+        );
       });
 
       test('returns ai gradient for speech alias', () {
@@ -243,38 +257,52 @@ void main() {
       });
 
       test('returns ai gradient for transcription alias', () {
-        expect(GameyGradients.forFeature('transcription'),
-            equals(GameyGradients.ai));
+        expect(
+          GameyGradients.forFeature('transcription'),
+          equals(GameyGradients.ai),
+        );
       });
 
       test('returns gold gradient for achievement alias', () {
-        expect(GameyGradients.forFeature('achievement'),
-            equals(GameyGradients.gold));
+        expect(
+          GameyGradients.forFeature('achievement'),
+          equals(GameyGradients.gold),
+        );
       });
 
       test('returns gold gradient for reward alias', () {
         expect(
-            GameyGradients.forFeature('reward'), equals(GameyGradients.gold));
+          GameyGradients.forFeature('reward'),
+          equals(GameyGradients.gold),
+        );
       });
 
       test('returns streak gradient', () {
         expect(
-            GameyGradients.forFeature('streak'), equals(GameyGradients.streak));
+          GameyGradients.forFeature('streak'),
+          equals(GameyGradients.streak),
+        );
       });
 
       test('returns level gradient', () {
         expect(
-            GameyGradients.forFeature('level'), equals(GameyGradients.level));
+          GameyGradients.forFeature('level'),
+          equals(GameyGradients.level),
+        );
       });
 
       test('returns settings gradient for settings alias', () {
-        expect(GameyGradients.forFeature('settings'),
-            equals(GameyGradients.settings));
+        expect(
+          GameyGradients.forFeature('settings'),
+          equals(GameyGradients.settings),
+        );
       });
 
       test('returns settings gradient for config alias', () {
-        expect(GameyGradients.forFeature('config'),
-            equals(GameyGradients.settings));
+        expect(
+          GameyGradients.forFeature('config'),
+          equals(GameyGradients.settings),
+        );
       });
     });
 

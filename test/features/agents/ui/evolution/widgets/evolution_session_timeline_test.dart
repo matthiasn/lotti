@@ -41,8 +41,9 @@ void main() {
       );
     });
 
-    testWidgets('shows CircularProgressIndicator while loading',
-        (tester) async {
+    testWidgets('shows CircularProgressIndicator while loading', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildSubject(
           sessionsOverride: (ref, id) =>
@@ -72,8 +73,9 @@ void main() {
       );
     });
 
-    testWidgets('renders "Active" status badge for active session',
-        (tester) async {
+    testWidgets('renders "Active" status badge for active session', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -94,8 +96,9 @@ void main() {
       );
     });
 
-    testWidgets('renders "Completed" status badge for completed session',
-        (tester) async {
+    testWidgets('renders "Completed" status badge for completed session', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -115,8 +118,9 @@ void main() {
       );
     });
 
-    testWidgets('renders "Abandoned" status badge for abandoned session',
-        (tester) async {
+    testWidgets('renders "Abandoned" status badge for abandoned session', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -157,44 +161,46 @@ void main() {
     });
 
     testWidgets(
-        'shows "Version proposed" for completed session with proposedVersionId',
-        (tester) async {
-      final sessions = <AgentDomainEntity>[
-        makeTestEvolutionSession(
-          id: 'evo-1',
-          status: EvolutionSessionStatus.completed,
-          proposedVersionId: 'version-42',
-        ),
-      ];
+      'shows "Version proposed" for completed session with proposedVersionId',
+      (tester) async {
+        final sessions = <AgentDomainEntity>[
+          makeTestEvolutionSession(
+            id: 'evo-1',
+            status: EvolutionSessionStatus.completed,
+            proposedVersionId: 'version-42',
+          ),
+        ];
 
-      await tester.pumpWidget(
-        buildSubject(sessionsOverride: (ref, id) async => sessions),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildSubject(sessionsOverride: (ref, id) async => sessions),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Version proposed'), findsOneWidget);
-    });
-
-    testWidgets(
-        'does not show "Version proposed" for completed session without '
-        'proposedVersionId', (tester) async {
-      final sessions = <AgentDomainEntity>[
-        makeTestEvolutionSession(
-          id: 'evo-1',
-          status: EvolutionSessionStatus.completed,
-        ),
-      ];
-
-      await tester.pumpWidget(
-        buildSubject(sessionsOverride: (ref, id) async => sessions),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Version proposed'), findsNothing);
-    });
+        expect(find.text('Version proposed'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'does not show "Version proposed" for active session even with '
+      'does not show "Version proposed" for completed session without '
+      'proposedVersionId',
+      (tester) async {
+        final sessions = <AgentDomainEntity>[
+          makeTestEvolutionSession(
+            id: 'evo-1',
+            status: EvolutionSessionStatus.completed,
+          ),
+        ];
+
+        await tester.pumpWidget(
+          buildSubject(sessionsOverride: (ref, id) async => sessions),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Version proposed'), findsNothing);
+      },
+    );
+
+    testWidgets('does not show "Version proposed" for active session even with '
         'proposedVersionId', (tester) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
@@ -231,8 +237,9 @@ void main() {
       expect(find.text(summary), findsOneWidget);
     });
 
-    testWidgets('does not show feedback text when feedbackSummary is null',
-        (tester) async {
+    testWidgets('does not show feedback text when feedbackSummary is null', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -309,8 +316,9 @@ void main() {
       );
     });
 
-    testWidgets('renders timeline rail dots (circles) per session',
-        (tester) async {
+    testWidgets('renders timeline rail dots (circles) per session', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',
@@ -341,8 +349,9 @@ void main() {
       expect(circles, findsNWidgets(2));
     });
 
-    testWidgets('renders connector line between non-last sessions',
-        (tester) async {
+    testWidgets('renders connector line between non-last sessions', (
+      tester,
+    ) async {
       final sessions = <AgentDomainEntity>[
         makeTestEvolutionSession(
           id: 'evo-1',

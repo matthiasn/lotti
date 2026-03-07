@@ -161,21 +161,23 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     final runningEntry = _runningEntry;
     if (runningEntry == null) {
       // Timer stopped - refetch to get final saved duration
-      _fetchAllData().then((data) {
-        if (_isDisposed) return;
-        // Only update if timer is still stopped (no new timer started during refetch)
-        if (_runningEntry == null) {
-          state = AsyncData(data);
-        }
-      }).catchError((Object e, StackTrace stackTrace) {
-        if (_isDisposed) return;
-        getIt<LoggingService>().captureException(
-          e,
-          domain: 'unified_daily_os_data_controller',
-          subDomain: '_updateWithRunningTimer',
-          stackTrace: stackTrace,
-        );
-      });
+      _fetchAllData()
+          .then((data) {
+            if (_isDisposed) return;
+            // Only update if timer is still stopped (no new timer started during refetch)
+            if (_runningEntry == null) {
+              state = AsyncData(data);
+            }
+          })
+          .catchError((Object e, StackTrace stackTrace) {
+            if (_isDisposed) return;
+            getIt<LoggingService>().captureException(
+              e,
+              domain: 'unified_daily_os_data_controller',
+              subDomain: '_updateWithRunningTimer',
+              stackTrace: stackTrace,
+            );
+          });
       return;
     }
 
@@ -202,8 +204,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       }).toList();
 
       // Check if the running entry is new (not in contributingEntries)
-      final hasRunningEntry = budget.contributingEntries
-          .any((e) => e.meta.id == runningEntry.meta.id);
+      final hasRunningEntry = budget.contributingEntries.any(
+        (e) => e.meta.id == runningEntry.meta.id,
+      );
       if (!hasRunningEntry) {
         updatedEntries.add(runningEntry);
       }
@@ -259,8 +262,10 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     // This prevents sync conflicts when multiple devices open the same date.
     // The plan is created on first user interaction (e.g., adding a block).
     final dayPlanFuture = _dayPlanRepository.getDayPlan(_date);
-    final entriesFuture =
-        db.sortedCalendarEntries(rangeStart: dayStart, rangeEnd: dayEnd);
+    final entriesFuture = db.sortedCalendarEntries(
+      rangeStart: dayStart,
+      rangeEnd: dayEnd,
+    );
     final dueTasksFuture = isFutureDate
         ? db.getTasksDueOn(_date)
         : db.getTasksDueOnOrBefore(_date);
@@ -486,8 +491,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         entryIdToLinkedFromIds: entryIdToLinkedFromIds,
         linkedFromMap: linkedFromMap,
       );
-      final trackedTaskIds =
-          trackedTaskItems.map((i) => i.task.meta.id).toSet();
+      final trackedTaskIds = trackedTaskItems
+          .map((i) => i.task.meta.id)
+          .toSet();
 
       // DEDUPLICATION: Update tracked tasks that are also due
       final mergedTaskItems = trackedTaskItems.map((item) {
@@ -557,8 +563,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         entryIdToLinkedFromIds: entryIdToLinkedFromIds,
         linkedFromMap: linkedFromMap,
       );
-      final trackedTaskIds =
-          trackedTaskItems.map((i) => i.task.meta.id).toSet();
+      final trackedTaskIds = trackedTaskItems
+          .map((i) => i.task.meta.id)
+          .toSet();
       final categoryDueTaskIds = categoryDueTasks.map((t) => t.meta.id).toSet();
 
       // Merge tracked tasks with due status if applicable
@@ -758,16 +765,18 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
     // Find max end time across all planned slots
     for (final slot in planned) {
       // If entry ends on the next day (crosses midnight), treat as hour 24
-      final endHour =
-          !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
+      final endHour = !slot.endTime.isBefore(nextDay)
+          ? 24
+          : slot.endTime.hour + 1;
       if (endHour > latest) latest = endHour;
     }
 
     // Find max end time across all actual slots
     for (final slot in actual) {
       // If entry ends on the next day (crosses midnight), treat as hour 24
-      final endHour =
-          !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
+      final endHour = !slot.endTime.isBefore(nextDay)
+          ? 24
+          : slot.endTime.hour + 1;
       if (endHour > latest) latest = endHour;
     }
 
@@ -915,8 +924,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
   Future<void> removePlannedBlock(String blockId) async {
     await _mutateDayPlan(
       (data) => data.copyWith(
-        plannedBlocks:
-            data.plannedBlocks.where((b) => b.id != blockId).toList(),
+        plannedBlocks: data.plannedBlocks
+            .where((b) => b.id != blockId)
+            .toList(),
       ),
       reviewReason: DayPlanReviewReason.blockModified,
     );

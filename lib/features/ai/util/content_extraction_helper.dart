@@ -4,7 +4,8 @@ import 'package:openai_dart/openai_dart.dart';
 class ContentExtractionHelper {
   /// Extracts text from ChatCompletionUserMessageContent
   static String extractTextFromUserContent(
-      ChatCompletionUserMessageContent content) {
+    ChatCompletionUserMessageContent content,
+  ) {
     final value = content.value;
 
     if (value is String) {

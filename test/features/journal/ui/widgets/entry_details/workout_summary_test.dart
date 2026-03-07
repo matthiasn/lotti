@@ -25,8 +25,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('summary with workout chart for running distance is rendered',
-        (tester) async {
+    testWidgets('summary with workout chart for running distance is rendered', (
+      tester,
+    ) async {
       when(
         () => mockJournalDb.getWorkouts(
           rangeEnd: any(named: 'rangeEnd'),
@@ -34,8 +35,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testWorkoutRunning]);
 
-      when(mockHealthImport.getWorkoutsHealthDataDelta)
-          .thenAnswer((_) async {});
+      when(
+        mockHealthImport.getWorkoutsHealthDataDelta,
+      ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

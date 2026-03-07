@@ -20,8 +20,9 @@ OutboxCompanion _buildOutbox({
     createdAt: Value(createdAt),
     updatedAt: Value(createdAt),
     retries: Value(retries),
-    filePath:
-        filePath == null ? const Value.absent() : Value<String?>(filePath),
+    filePath: filePath == null
+        ? const Value.absent()
+        : Value<String?>(filePath),
   );
 }
 
@@ -236,12 +237,14 @@ void main() {
         ),
       );
 
-      final results = await database.watchOutboxItems(
-        statuses: [
-          OutboxStatus.pending,
-          OutboxStatus.error,
-        ],
-      ).first;
+      final results = await database
+          .watchOutboxItems(
+            statuses: [
+              OutboxStatus.pending,
+              OutboxStatus.error,
+            ],
+          )
+          .first;
 
       expect(results, hasLength(2));
       expect(
@@ -250,38 +253,40 @@ void main() {
       );
     });
 
-    test('oldestOutboxItems returns pending items in ascending order',
-        () async {
-      final database = db!;
-      await database.addOutboxItem(
-        _buildOutbox(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 3, 10),
-        ),
-      );
-      await database.addOutboxItem(
-        _buildOutbox(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 3, 8),
-        ),
-      );
-      await database.addOutboxItem(
-        _buildOutbox(
-          status: OutboxStatus.pending,
-          createdAt: DateTime(2024, 3, 9),
-        ),
-      );
+    test(
+      'oldestOutboxItems returns pending items in ascending order',
+      () async {
+        final database = db!;
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 3, 10),
+          ),
+        );
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 3, 8),
+          ),
+        );
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            createdAt: DateTime(2024, 3, 9),
+          ),
+        );
 
-      final results = await database.oldestOutboxItems(3);
-      expect(
-        results.map((item) => item.createdAt),
-        [
-          DateTime(2024, 3, 8),
-          DateTime(2024, 3, 9),
-          DateTime(2024, 3, 10),
-        ],
-      );
-    });
+        final results = await database.oldestOutboxItems(3);
+        expect(
+          results.map((item) => item.createdAt),
+          [
+            DateTime(2024, 3, 8),
+            DateTime(2024, 3, 9),
+            DateTime(2024, 3, 10),
+          ],
+        );
+      },
+    );
 
     test('oldestOutboxItems respects requested limit', () async {
       final database = db!;
@@ -336,40 +341,42 @@ void main() {
       expect(refreshed?.updatedAt.isAfter(DateTime(2024, 1, 1)), isTrue);
     });
 
-    test('claimNextOutboxItem skips in-flight rows with active leases',
-        () async {
-      final now = DateTime(2024, 1, 2, 12);
-      final database = db!;
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.sending.index),
-          subject: const Value('inFlight'),
-          message: const Value('{"id":"inFlight"}'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          retries: const Value(0),
-        ),
-      );
-      await database.addOutboxItem(
-        _buildOutbox(
-          status: OutboxStatus.pending,
-          subject: 'pending',
-          message: '{"id":"pending"}',
-          createdAt: DateTime(2024, 1, 2),
-        ),
-      );
+    test(
+      'claimNextOutboxItem skips in-flight rows with active leases',
+      () async {
+        final now = DateTime(2024, 1, 2, 12);
+        final database = db!;
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sending.index),
+            subject: const Value('inFlight'),
+            message: const Value('{"id":"inFlight"}'),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            retries: const Value(0),
+          ),
+        );
+        await database.addOutboxItem(
+          _buildOutbox(
+            status: OutboxStatus.pending,
+            subject: 'pending',
+            message: '{"id":"pending"}',
+            createdAt: DateTime(2024, 1, 2),
+          ),
+        );
 
-      final claimed = await database.claimNextOutboxItem(
-        leaseDuration: const Duration(minutes: 5),
-        now: now,
-      );
+        final claimed = await database.claimNextOutboxItem(
+          leaseDuration: const Duration(minutes: 5),
+          now: now,
+        );
 
-      expect(claimed, isNotNull);
-      expect(claimed?.id, 2);
-      expect(claimed?.status, OutboxStatus.sending.index);
-      final first = await database.getOutboxItemById(1);
-      expect(first?.status, OutboxStatus.sending.index);
-    });
+        expect(claimed, isNotNull);
+        expect(claimed?.id, 2);
+        expect(claimed?.status, OutboxStatus.sending.index);
+        final first = await database.getOutboxItemById(1);
+        expect(first?.status, OutboxStatus.sending.index);
+      },
+    );
 
     test('claimNextOutboxItem reclaims stale in-flight rows', () async {
       final now = DateTime(2024, 1, 1, 12);
@@ -420,8 +427,9 @@ void main() {
         ),
       );
 
-      final errorItems =
-          await database.watchOutboxItems(statuses: [OutboxStatus.error]).first;
+      final errorItems = await database
+          .watchOutboxItems(statuses: [OutboxStatus.error])
+          .first;
       expect(errorItems.single.status, OutboxStatus.error.index);
       expect(await database.watchOutboxCount().first, 0);
     });
@@ -533,8 +541,9 @@ void main() {
 
     test('watchOutboxItems emits when new item is added', () async {
       final database = db!;
-      final updates =
-          database.watchOutboxItems(statuses: [OutboxStatus.pending]);
+      final updates = database.watchOutboxItems(
+        statuses: [OutboxStatus.pending],
+      );
       final expectation = expectLater(
         updates,
         emitsThrough(
@@ -2124,32 +2133,34 @@ void main() {
       expect(entries, isEmpty);
     });
 
-    test('returns pending entries matching payloadType and payloadId',
-        () async {
-      final database = db!;
-      const entryId = 'test-entry';
-      final now = DateTime(2024, 1, 1);
+    test(
+      'returns pending entries matching payloadType and payloadId',
+      () async {
+        final database = db!;
+        const entryId = 'test-entry';
+        final now = DateTime(2024, 1, 1);
 
-      // Add pending entry with matching payload
-      await database.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value('host-1'),
-          counter: const Value(1),
-          entryId: const Value(entryId),
-          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-          status: Value(SyncSequenceStatus.requested.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
+        // Add pending entry with matching payload
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(1),
+            entryId: const Value(entryId),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+          ),
+        );
 
-      final entries = await database.getPendingEntriesByPayloadId(
-        payloadType: SyncSequencePayloadType.journalEntity,
-        payloadId: entryId,
-      );
-      expect(entries, hasLength(1));
-      expect(entries.first.entryId, entryId);
-    });
+        final entries = await database.getPendingEntriesByPayloadId(
+          payloadType: SyncSequencePayloadType.journalEntity,
+          payloadId: entryId,
+        );
+        expect(entries, hasLength(1));
+        expect(entries.first.entryId, entryId);
+      },
+    );
 
     test('filters by payloadType - journalEntity vs entryLink', () async {
       final database = db!;
@@ -2362,60 +2373,64 @@ void main() {
       expect(result, isNull);
     });
 
-    test('findPendingByEntryId returns null when entry is not pending',
-        () async {
-      final database = db!;
-      final now = DateTime(2024, 1, 1);
+    test(
+      'findPendingByEntryId returns null when entry is not pending',
+      () async {
+        final database = db!;
+        final now = DateTime(2024, 1, 1);
 
-      // Add a sent (non-pending) item with entryId
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.sent.index),
-          message: const Value('{"test": true}'),
-          subject: const Value('test-subject'),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-          outboxEntryId: const Value('entry-123'),
-        ),
-      );
+        // Add a sent (non-pending) item with entryId
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.sent.index),
+            message: const Value('{"test": true}'),
+            subject: const Value('test-subject'),
+            createdAt: Value(now),
+            updatedAt: Value(now),
+            outboxEntryId: const Value('entry-123'),
+          ),
+        );
 
-      final result = await database.findPendingByEntryId('entry-123');
-      expect(result, isNull);
-    });
+        final result = await database.findPendingByEntryId('entry-123');
+        expect(result, isNull);
+      },
+    );
 
-    test('findPendingByEntryId returns most recent when multiple exist',
-        () async {
-      final database = db!;
+    test(
+      'findPendingByEntryId returns most recent when multiple exist',
+      () async {
+        final database = db!;
 
-      // Add older item
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          message: const Value('{"version": 1}'),
-          subject: const Value('test-subject-old'),
-          createdAt: Value(DateTime(2024, 1, 1)),
-          updatedAt: Value(DateTime(2024, 1, 1)),
-          outboxEntryId: const Value('entry-123'),
-        ),
-      );
+        // Add older item
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            message: const Value('{"version": 1}'),
+            subject: const Value('test-subject-old'),
+            createdAt: Value(DateTime(2024, 1, 1)),
+            updatedAt: Value(DateTime(2024, 1, 1)),
+            outboxEntryId: const Value('entry-123'),
+          ),
+        );
 
-      // Add newer item
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          message: const Value('{"version": 2}'),
-          subject: const Value('test-subject-new'),
-          createdAt: Value(DateTime(2024, 1, 2)),
-          updatedAt: Value(DateTime(2024, 1, 2)),
-          outboxEntryId: const Value('entry-123'),
-        ),
-      );
+        // Add newer item
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            message: const Value('{"version": 2}'),
+            subject: const Value('test-subject-new'),
+            createdAt: Value(DateTime(2024, 1, 2)),
+            updatedAt: Value(DateTime(2024, 1, 2)),
+            outboxEntryId: const Value('entry-123'),
+          ),
+        );
 
-      final result = await database.findPendingByEntryId('entry-123');
-      expect(result, isNotNull);
-      expect(result!.message, '{"version": 2}');
-      expect(result.subject, 'test-subject-new');
-    });
+        final result = await database.findPendingByEntryId('entry-123');
+        expect(result, isNotNull);
+        expect(result!.message, '{"version": 2}');
+        expect(result.subject, 'test-subject-new');
+      },
+    );
 
     test('updateOutboxMessage updates message and subject', () async {
       final database = db!;
@@ -2662,8 +2677,10 @@ void main() {
       expect(volumes.first.totalBytes, 2000);
 
       // With larger window, both should appear
-      final allVolumes =
-          await database.getDailyOutboxVolume(days: 30, now: now);
+      final allVolumes = await database.getDailyOutboxVolume(
+        days: 30,
+        now: now,
+      );
       expect(allVolumes, hasLength(2));
     });
 
@@ -2778,53 +2795,54 @@ void main() {
     });
 
     test(
-        'oldestOutboxItems returns high-priority before low even if low is older',
-        () async {
-      // Insert low-priority item first (older)
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('low-old'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 10)),
-          updatedAt: Value(DateTime(2024, 1, 1, 10)),
-          priority: Value(OutboxPriority.low.index),
-        ),
-      );
+      'oldestOutboxItems returns high-priority before low even if low is older',
+      () async {
+        // Insert low-priority item first (older)
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('low-old'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 10)),
+            updatedAt: Value(DateTime(2024, 1, 1, 10)),
+            priority: Value(OutboxPriority.low.index),
+          ),
+        );
 
-      // Insert high-priority item second (newer)
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('high-new'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 12)),
-          updatedAt: Value(DateTime(2024, 1, 1, 12)),
-          priority: Value(OutboxPriority.high.index),
-        ),
-      );
+        // Insert high-priority item second (newer)
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('high-new'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 12)),
+            updatedAt: Value(DateTime(2024, 1, 1, 12)),
+            priority: Value(OutboxPriority.high.index),
+          ),
+        );
 
-      // Insert normal-priority item (middle time)
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('normal-mid'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 11)),
-          updatedAt: Value(DateTime(2024, 1, 1, 11)),
-          priority: Value(OutboxPriority.normal.index),
-        ),
-      );
+        // Insert normal-priority item (middle time)
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('normal-mid'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 11)),
+            updatedAt: Value(DateTime(2024, 1, 1, 11)),
+            priority: Value(OutboxPriority.normal.index),
+          ),
+        );
 
-      final items = await database.oldestOutboxItems(10);
-      expect(items, hasLength(3));
-      expect(items[0].subject, 'high-new');
-      expect(items[0].priority, OutboxPriority.high.index);
-      expect(items[1].subject, 'normal-mid');
-      expect(items[1].priority, OutboxPriority.normal.index);
-      expect(items[2].subject, 'low-old');
-      expect(items[2].priority, OutboxPriority.low.index);
-    });
+        final items = await database.oldestOutboxItems(10);
+        expect(items, hasLength(3));
+        expect(items[0].subject, 'high-new');
+        expect(items[0].priority, OutboxPriority.high.index);
+        expect(items[1].subject, 'normal-mid');
+        expect(items[1].priority, OutboxPriority.normal.index);
+        expect(items[2].subject, 'low-old');
+        expect(items[2].priority, OutboxPriority.low.index);
+      },
+    );
 
     test('claimNextOutboxItem claims highest-priority item first', () async {
       // Insert low-priority item first (older)
@@ -2905,47 +2923,49 @@ void main() {
       expect(items.first.priority, OutboxPriority.low.index);
     });
 
-    test('watchOutboxItems sorts by priority then newest within priority',
-        () async {
-      // Add items in mixed order
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('low-1'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 10)),
-          updatedAt: Value(DateTime(2024, 1, 1, 10)),
-          priority: Value(OutboxPriority.low.index),
-        ),
-      );
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('high-1'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 11)),
-          updatedAt: Value(DateTime(2024, 1, 1, 11)),
-          priority: Value(OutboxPriority.high.index),
-        ),
-      );
-      await database.addOutboxItem(
-        OutboxCompanion(
-          status: Value(OutboxStatus.pending.index),
-          subject: const Value('high-2'),
-          message: const Value('{}'),
-          createdAt: Value(DateTime(2024, 1, 1, 12)),
-          updatedAt: Value(DateTime(2024, 1, 1, 12)),
-          priority: Value(OutboxPriority.high.index),
-        ),
-      );
+    test(
+      'watchOutboxItems sorts by priority then newest within priority',
+      () async {
+        // Add items in mixed order
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('low-1'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 10)),
+            updatedAt: Value(DateTime(2024, 1, 1, 10)),
+            priority: Value(OutboxPriority.low.index),
+          ),
+        );
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('high-1'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 11)),
+            updatedAt: Value(DateTime(2024, 1, 1, 11)),
+            priority: Value(OutboxPriority.high.index),
+          ),
+        );
+        await database.addOutboxItem(
+          OutboxCompanion(
+            status: Value(OutboxStatus.pending.index),
+            subject: const Value('high-2'),
+            message: const Value('{}'),
+            createdAt: Value(DateTime(2024, 1, 1, 12)),
+            updatedAt: Value(DateTime(2024, 1, 1, 12)),
+            priority: Value(OutboxPriority.high.index),
+          ),
+        );
 
-      final items = await database.watchOutboxItems().first;
-      expect(items, hasLength(3));
-      // High priority first, newest within priority (DESC)
-      expect(items[0].subject, 'high-2');
-      expect(items[1].subject, 'high-1');
-      expect(items[2].subject, 'low-1');
-    });
+        final items = await database.watchOutboxItems().first;
+        expect(items, hasLength(3));
+        // High priority first, newest within priority (DESC)
+        expect(items[0].subject, 'high-2');
+        expect(items[1].subject, 'high-1');
+        expect(items[2].subject, 'low-1');
+      },
+    );
 
     test('health query helpers return correct counts', () async {
       // Add sequence log entries with various statuses

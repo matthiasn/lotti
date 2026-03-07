@@ -43,7 +43,8 @@ class ChatSessionController extends _$ChatSessionController {
       if (sessionId != null) {
         final existingSession = await chatRepository.getSession(sessionId);
         if (!ref.mounted) return;
-        session = existingSession ??
+        session =
+            existingSession ??
             await chatRepository.createSession(categoryId: categoryId);
         if (!ref.mounted) return;
       } else {
@@ -246,8 +247,9 @@ class ChatSessionController extends _$ChatSessionController {
     if (_currentStreamingMessageId == null) return;
 
     // Safely find the streaming message; if missing, just clear the ID.
-    final existing = state.messages
-        .firstWhereOrNull((m) => m.id == _currentStreamingMessageId);
+    final existing = state.messages.firstWhereOrNull(
+      (m) => m.id == _currentStreamingMessageId,
+    );
     if (existing == null) {
       _currentStreamingMessageId = null;
       return;
@@ -322,8 +324,9 @@ class ChatSessionController extends _$ChatSessionController {
     if (!ref.mounted) return;
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
-      final newSession =
-          await chatRepository.createSession(categoryId: categoryId);
+      final newSession = await chatRepository.createSession(
+        categoryId: categoryId,
+      );
       if (!ref.mounted) return;
       state = ChatSessionUiModel.fromDomain(newSession);
     } catch (e, stackTrace) {
@@ -382,8 +385,11 @@ class ChatSessionController extends _$ChatSessionController {
     if (lastUserMessage != null) {
       // Remove the last AI message if it exists and retry
       final messagesWithoutLastAI = messages
-          .where((m) => !(m.role == ChatMessageRole.assistant &&
-              m.timestamp.isAfter(lastUserMessage.timestamp)))
+          .where(
+            (m) =>
+                !(m.role == ChatMessageRole.assistant &&
+                    m.timestamp.isAfter(lastUserMessage.timestamp)),
+          )
           .toList();
 
       state = state.copyWith(messages: messagesWithoutLastAI);

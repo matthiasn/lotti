@@ -50,17 +50,19 @@ void main() {
       expect(result, healthRule);
     });
 
-    test('replaceAtRecursive with measurable rule at root replaces the rule',
-        () {
-      final result = replaceAtRecursive(
-        rule: measurableRule,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
+    test(
+      'replaceAtRecursive with measurable rule at root replaces the rule',
+      () {
+        final result = replaceAtRecursive(
+          rule: measurableRule,
+          replaceWith: healthRule,
+          currentPath: [0],
+          replaceAtPath: [0],
+        );
 
-      expect(result, healthRule);
-    });
+        expect(result, healthRule);
+      },
+    );
 
     test('replaceAtRecursive with habit rule at root replaces the rule', () {
       final result = replaceAtRecursive(
@@ -380,9 +382,13 @@ void main() {
               title: 'Daily body weight exercises',
               rules: [
                 AutoCompleteRule.measurable(
-                    dataTypeId: 'push-ups', minimum: 25),
+                  dataTypeId: 'push-ups',
+                  minimum: 25,
+                ),
                 AutoCompleteRule.measurable(
-                    dataTypeId: 'pull-ups', minimum: 10),
+                  dataTypeId: 'pull-ups',
+                  minimum: 10,
+                ),
                 AutoCompleteRule.measurable(dataTypeId: 'sit-ups', minimum: 70),
                 AutoCompleteRule.measurable(dataTypeId: 'lunges', minimum: 30),
                 AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
@@ -400,12 +406,18 @@ void main() {
           title: 'Daily Cardio',
           rules: [
             AutoCompleteRule.health(
-                dataType: 'cumulative_step_count', minimum: 10000),
+              dataType: 'cumulative_step_count',
+              minimum: 10000,
+            ),
             AutoCompleteRule.workout(dataType: 'walking.duration', minimum: 60),
             AutoCompleteRule.workout(
-                dataType: 'swimming.duration', minimum: 20),
+              dataType: 'swimming.duration',
+              minimum: 20,
+            ),
             AutoCompleteRule.workout(
-                dataType: 'cycling.duration', minimum: 120),
+              dataType: 'cycling.duration',
+              minimum: 120,
+            ),
           ],
         ),
         AutoCompleteRule.measurable(
@@ -432,16 +444,26 @@ void main() {
                 title: 'Daily body weight exercises',
                 rules: [
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'push-ups', minimum: 25),
+                    dataTypeId: 'push-ups',
+                    minimum: 25,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'pull-ups', minimum: 10),
+                    dataTypeId: 'pull-ups',
+                    minimum: 10,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'sit-ups', minimum: 70),
+                    dataTypeId: 'sit-ups',
+                    minimum: 70,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'lunges', minimum: 30),
+                    dataTypeId: 'lunges',
+                    minimum: 30,
+                  ),
                   AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'squats', minimum: 10),
+                    dataTypeId: 'squats',
+                    minimum: 10,
+                  ),
                 ],
               ),
               AutoCompleteRule.workout(
@@ -455,13 +477,21 @@ void main() {
             title: 'Daily Cardio',
             rules: [
               AutoCompleteRule.health(
-                  dataType: 'cumulative_step_count', minimum: 10000),
+                dataType: 'cumulative_step_count',
+                minimum: 10000,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'walking.duration', minimum: 60),
+                dataType: 'walking.duration',
+                minimum: 60,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'swimming.duration', minimum: 20),
+                dataType: 'swimming.duration',
+                minimum: 20,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'cycling.duration', minimum: 120),
+                dataType: 'cycling.duration',
+                minimum: 120,
+              ),
             ],
           ),
         ],
@@ -481,14 +511,22 @@ void main() {
                 title: 'Daily body weight exercises',
                 rules: [
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'push-ups', minimum: 25),
+                    dataTypeId: 'push-ups',
+                    minimum: 25,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'sit-ups', minimum: 70),
+                    dataTypeId: 'sit-ups',
+                    minimum: 70,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'lunges', minimum: 30),
+                    dataTypeId: 'lunges',
+                    minimum: 30,
+                  ),
                   AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'squats', minimum: 10),
+                    dataTypeId: 'squats',
+                    minimum: 10,
+                  ),
                 ],
               ),
               AutoCompleteRule.workout(
@@ -502,13 +540,21 @@ void main() {
             title: 'Daily Cardio',
             rules: [
               AutoCompleteRule.health(
-                  dataType: 'cumulative_step_count', minimum: 10000),
+                dataType: 'cumulative_step_count',
+                minimum: 10000,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'walking.duration', minimum: 60),
+                dataType: 'walking.duration',
+                minimum: 60,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'swimming.duration', minimum: 20),
+                dataType: 'swimming.duration',
+                minimum: 20,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'cycling.duration', minimum: 120),
+                dataType: 'cycling.duration',
+                minimum: 120,
+              ),
             ],
           ),
           AutoCompleteRule.measurable(
@@ -533,16 +579,26 @@ void main() {
                 title: 'Daily body weight exercises',
                 rules: [
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'push-ups', minimum: 25),
+                    dataTypeId: 'push-ups',
+                    minimum: 25,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'pull-ups', minimum: 18),
+                    dataTypeId: 'pull-ups',
+                    minimum: 18,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'sit-ups', minimum: 70),
+                    dataTypeId: 'sit-ups',
+                    minimum: 70,
+                  ),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'lunges', minimum: 30),
+                    dataTypeId: 'lunges',
+                    minimum: 30,
+                  ),
                   AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
                   AutoCompleteRule.measurable(
-                      dataTypeId: 'squats', minimum: 10),
+                    dataTypeId: 'squats',
+                    minimum: 10,
+                  ),
                 ],
               ),
               AutoCompleteRule.workout(
@@ -556,13 +612,21 @@ void main() {
             title: 'Daily Cardio',
             rules: [
               AutoCompleteRule.health(
-                  dataType: 'cumulative_step_count', minimum: 10000),
+                dataType: 'cumulative_step_count',
+                minimum: 10000,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'walking.duration', minimum: 60),
+                dataType: 'walking.duration',
+                minimum: 60,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'swimming.duration', minimum: 20),
+                dataType: 'swimming.duration',
+                minimum: 20,
+              ),
               AutoCompleteRule.workout(
-                  dataType: 'cycling.duration', minimum: 120),
+                dataType: 'cycling.duration',
+                minimum: 120,
+              ),
             ],
           ),
           AutoCompleteRule.measurable(

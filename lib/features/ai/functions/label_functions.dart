@@ -62,11 +62,11 @@ class LabelFunctions {
             // Accept either `labels` or legacy `labelIds`.
             'oneOf': [
               {
-                'required': ['labels']
+                'required': ['labels'],
               },
               {
-                'required': ['labelIds']
-              }
+                'required': ['labelIds'],
+              },
             ],
           },
         ),

@@ -13,10 +13,10 @@ class SyncActorHost {
     required SendPort commandPort,
     required ReceivePort eventPort,
     required StreamController<Map<String, Object?>> eventController,
-  })  : _isolate = isolate,
-        _commandPort = commandPort,
-        _eventPort = eventPort,
-        _eventController = eventController;
+  }) : _isolate = isolate,
+       _commandPort = commandPort,
+       _eventPort = eventPort,
+       _eventController = eventController;
 
   final Isolate _isolate;
   final SendPort _commandPort;

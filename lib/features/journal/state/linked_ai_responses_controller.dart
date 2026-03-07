@@ -14,8 +14,8 @@ import 'package:lotti/services/db_notification.dart';
 /// showing generated prompts and other AI responses directly where they are relevant.
 final linkedAiResponsesControllerProvider = AsyncNotifierProvider.autoDispose
     .family<LinkedAiResponsesController, List<AiResponseEntry>, String>(
-  LinkedAiResponsesController.new,
-);
+      LinkedAiResponsesController.new,
+    );
 
 class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
   LinkedAiResponsesController(this.entryId);
@@ -36,8 +36,9 @@ class LinkedAiResponsesController extends AsyncNotifier<List<AiResponseEntry>> {
   }
 
   void _listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(entryId) ||
           affectedIds.intersection(_watchedIds).isNotEmpty) {
         try {

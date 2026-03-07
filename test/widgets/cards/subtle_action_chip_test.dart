@@ -79,8 +79,9 @@ void main() {
       expect(icon.color?.b, customColor.b);
     });
 
-    testWidgets('renders without icon when only label provided',
-        (tester) async {
+    testWidgets('renders without icon when only label provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const WidgetTestBench(
           child: SubtleActionChip(label: 'Label Only'),

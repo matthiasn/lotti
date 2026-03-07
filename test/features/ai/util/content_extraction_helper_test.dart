@@ -7,8 +7,9 @@ void main() {
     group('extractTextFromUserContent', () {
       test('should extract text from string content', () {
         const content = ChatCompletionUserMessageContent.string('Hello world');
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Hello world');
       });
 
@@ -16,11 +17,13 @@ void main() {
         const content = ChatCompletionUserMessageContent.parts([
           ChatCompletionMessageContentPart.text(text: 'Hello'),
           ChatCompletionMessageContentPart.text(
-              text: ' '), // This will be skipped as it's only whitespace
+            text: ' ',
+          ), // This will be skipped as it's only whitespace
           ChatCompletionMessageContentPart.text(text: 'world'),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Helloworld');
       });
 
@@ -31,20 +34,24 @@ void main() {
           ChatCompletionMessageContentPart.text(text: '   '), // Only whitespace
           ChatCompletionMessageContentPart.text(text: 'world'),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Helloworld');
       });
 
       test('should preserve spacing in non-empty text parts', () {
         const content = ChatCompletionUserMessageContent.parts([
           ChatCompletionMessageContentPart.text(
-              text: 'Hello '), // Trailing space preserved
+            text: 'Hello ',
+          ), // Trailing space preserved
           ChatCompletionMessageContentPart.text(
-              text: ' world'), // Leading space preserved
+            text: ' world',
+          ), // Leading space preserved
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Hello  world');
       });
 
@@ -54,15 +61,17 @@ void main() {
           ChatCompletionMessageContentPart.text(text: ' jumps over '),
           ChatCompletionMessageContentPart.text(text: 'the lazy dog'),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'The quick brown fox jumps over the lazy dog');
       });
 
       test('should handle empty parts list', () {
         const content = ChatCompletionUserMessageContent.parts([]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, '');
       });
 
@@ -77,8 +86,9 @@ void main() {
           ),
           ChatCompletionMessageContentPart.text(text: ' Please be detailed.'),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Describe this image: Please be detailed.');
       });
 
@@ -90,8 +100,9 @@ void main() {
             ),
           ),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, '');
       });
 
@@ -101,8 +112,9 @@ void main() {
           ChatCompletionMessageContentPart.text(text: 'Line 2\t'),
           ChatCompletionMessageContentPart.text(text: r'Special: @#$%'),
         ]);
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Line 1\nLine 2\tSpecial: @#\$%');
       });
 
@@ -110,18 +122,21 @@ void main() {
         // This is a edge case test for the fallback behavior
         // In practice, the value should always be String or List
         // but we test the fallback just in case
-        const content =
-            ChatCompletionUserMessageContent.string('Test fallback');
-        final result =
-            ContentExtractionHelper.extractTextFromUserContent(content);
+        const content = ChatCompletionUserMessageContent.string(
+          'Test fallback',
+        );
+        final result = ContentExtractionHelper.extractTextFromUserContent(
+          content,
+        );
         expect(result, 'Test fallback');
       });
 
       test('ChatCompletionMessageContentPart JSON schema stability', () {
         // This test ensures that the toJson() output of ChatCompletionMessageContentPart
         // maintains a stable schema that our code relies on
-        const textPart =
-            ChatCompletionMessageContentPart.text(text: 'Hello world');
+        const textPart = ChatCompletionMessageContentPart.text(
+          text: 'Hello world',
+        );
         final json = textPart.toJson();
 
         // Assert the JSON structure matches our expectations
@@ -138,7 +153,8 @@ void main() {
 
         // Test with special characters
         const specialTextPart = ChatCompletionMessageContentPart.text(
-            text: 'Line 1\nLine 2\t@#\$%');
+          text: 'Line 1\nLine 2\t@#\$%',
+        );
         final specialJson = specialTextPart.toJson();
         expect(specialJson['type'], 'text');
         expect(specialJson['text'], 'Line 1\nLine 2\t@#\$%');

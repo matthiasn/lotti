@@ -25,8 +25,9 @@ class _TaskCategoryFilterState extends ConsumerState<TaskCategoryFilter> {
 
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final filteredCategories = _showAll
         ? categories
@@ -52,8 +53,9 @@ class _TaskCategoryFilterState extends ConsumerState<TaskCategoryFilter> {
           runSpacing: 8,
           children: [
             ...filteredCategories.map((category) {
-              final isSelected =
-                  state.selectedCategoryIds.contains(category.id);
+              final isSelected = state.selectedCategoryIds.contains(
+                category.id,
+              );
               final color = colorFromCssHex(category.color);
               return FilterChoiceChip(
                 isSelected: isSelected,

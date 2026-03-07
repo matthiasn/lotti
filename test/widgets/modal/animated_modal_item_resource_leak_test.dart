@@ -7,8 +7,9 @@ import 'package:lotti/widgets/modal/modern_modal_entry_type_item.dart';
 
 void main() {
   group('AnimatedModalItem Resource Management Tests', () {
-    testWidgets('AnimatedModalItem handles property updates correctly',
-        (tester) async {
+    testWidgets('AnimatedModalItem handles property updates correctly', (
+      tester,
+    ) async {
       var tapCount = 0;
 
       // Initial widget with default values
@@ -54,76 +55,79 @@ void main() {
       expect(find.text('Test Item'), findsOneWidget);
     });
 
-    testWidgets('AnimatedModalItemWithIcon handles property updates correctly',
-        (tester) async {
-      var tapCount = 0;
-      var iconBuilderCallCount = 0;
+    testWidgets(
+      'AnimatedModalItemWithIcon handles property updates correctly',
+      (tester) async {
+        var tapCount = 0;
+        var iconBuilderCallCount = 0;
 
-      // Initial widget with default values
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AnimatedModalItemWithIcon(
-              onTap: () => tapCount++,
-              iconBuilder: (context, animation, {required isPressed}) {
-                iconBuilderCallCount++;
-                return Icon(
-                  Icons.add,
-                  size: 24 * animation.value,
-                );
-              },
-              child: const Text('Test Item'),
+        // Initial widget with default values
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: AnimatedModalItemWithIcon(
+                onTap: () => tapCount++,
+                iconBuilder: (context, animation, {required isPressed}) {
+                  iconBuilderCallCount++;
+                  return Icon(
+                    Icons.add,
+                    size: 24 * animation.value,
+                  );
+                },
+                child: const Text('Test Item'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Verify initial state works
-      await tester.tap(find.text('Test Item'));
-      await tester.pump();
-      expect(tapCount, 1);
-      expect(iconBuilderCallCount, greaterThan(0));
+        // Verify initial state works
+        await tester.tap(find.text('Test Item'));
+        await tester.pump();
+        expect(tapCount, 1);
+        expect(iconBuilderCallCount, greaterThan(0));
 
-      final initialBuilderCount = iconBuilderCallCount;
+        final initialBuilderCount = iconBuilderCallCount;
 
-      // Update widget with new animation values
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: AnimatedModalItemWithIcon(
-              onTap: () => tapCount++,
-              hoverScale: 0.95,
-              tapScale: 0.90,
-              iconScaleOnTap: 0.8,
-              iconBuilder: (context, animation, {required isPressed}) {
-                iconBuilderCallCount++;
-                return Icon(
-                  Icons.add,
-                  size: 24 * animation.value,
-                );
-              },
-              child: const Text('Test Item'),
+        // Update widget with new animation values
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: AnimatedModalItemWithIcon(
+                onTap: () => tapCount++,
+                hoverScale: 0.95,
+                tapScale: 0.90,
+                iconScaleOnTap: 0.8,
+                iconBuilder: (context, animation, {required isPressed}) {
+                  iconBuilderCallCount++;
+                  return Icon(
+                    Icons.add,
+                    size: 24 * animation.value,
+                  );
+                },
+                child: const Text('Test Item'),
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      // Icon builder should be called again after update
-      expect(iconBuilderCallCount, greaterThan(initialBuilderCount));
+        // Icon builder should be called again after update
+        expect(iconBuilderCallCount, greaterThan(initialBuilderCount));
 
-      // Verify widget still works after update
-      await tester.tap(find.text('Test Item'));
-      await tester.pump();
-      expect(tapCount, 2);
+        // Verify widget still works after update
+        await tester.tap(find.text('Test Item'));
+        await tester.pump();
+        expect(tapCount, 2);
 
-      // Widget should still be present and functional
-      expect(find.byType(AnimatedModalItemWithIcon), findsOneWidget);
-      expect(find.text('Test Item'), findsOneWidget);
-      expect(find.byIcon(Icons.add), findsOneWidget);
-    });
+        // Widget should still be present and functional
+        expect(find.byType(AnimatedModalItemWithIcon), findsOneWidget);
+        expect(find.text('Test Item'), findsOneWidget);
+        expect(find.byIcon(Icons.add), findsOneWidget);
+      },
+    );
 
-    testWidgets('AnimatedModalItem properly disposes controllers',
-        (tester) async {
+    testWidgets('AnimatedModalItem properly disposes controllers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -149,8 +153,9 @@ void main() {
       expect(find.byType(AnimatedModalItem), findsNothing);
     });
 
-    testWidgets('AnimatedModalItem handles controller switching correctly',
-        (tester) async {
+    testWidgets('AnimatedModalItem handles controller switching correctly', (
+      tester,
+    ) async {
       var tapCount = 0;
       final externalController = AnimatedModalItemController(
         vsync: const TestVSync(),
@@ -211,8 +216,9 @@ void main() {
       externalController.dispose();
     });
 
-    testWidgets('AnimatedModalItemWithIcon properly disposes controllers',
-        (tester) async {
+    testWidgets('AnimatedModalItemWithIcon properly disposes controllers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -240,8 +246,9 @@ void main() {
       expect(find.byType(AnimatedModalItemWithIcon), findsNothing);
     });
 
-    testWidgets('ModernModalEntryTypeItem handles property updates correctly',
-        (tester) async {
+    testWidgets('ModernModalEntryTypeItem handles property updates correctly', (
+      tester,
+    ) async {
       var tapCount = 0;
 
       // Initial widget with default values
@@ -305,8 +312,9 @@ void main() {
       expect(find.byIcon(Icons.event), findsOneWidget);
     });
 
-    testWidgets('ModernModalEntryTypeItem properly disposes controllers',
-        (tester) async {
+    testWidgets('ModernModalEntryTypeItem properly disposes controllers', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

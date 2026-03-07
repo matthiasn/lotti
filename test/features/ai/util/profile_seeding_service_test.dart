@@ -87,8 +87,9 @@ void main() {
 
     test('local profile is marked as desktopOnly', () async {
       final capturedConfigs = <AiConfig>[];
-      when(() => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())))
-          .thenAnswer((invocation) async {
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
         capturedConfigs.add(
           invocation.positionalArguments.first as AiConfig,
         );
@@ -108,8 +109,9 @@ void main() {
 
     test('all default profiles are marked as isDefault', () async {
       final capturedConfigs = <AiConfig>[];
-      when(() => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())))
-          .thenAnswer((invocation) async {
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
         capturedConfigs.add(
           invocation.positionalArguments.first as AiConfig,
         );

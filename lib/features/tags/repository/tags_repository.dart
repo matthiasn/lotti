@@ -85,8 +85,9 @@ class TagsRepository {
     required String tagId,
   }) async {
     try {
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       if (journalEntity == null) {
         return false;

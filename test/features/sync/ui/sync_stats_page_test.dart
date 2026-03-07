@@ -30,23 +30,27 @@ void main() {
     setUp(() {
       mockJournalDb = MockJournalDb();
       // Gate enabled
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<UserActivityService>(UserActivityService());
       mockMatrixService = MockMatrixService();
-      when(() => mockMatrixService.getSyncMetrics())
-          .thenAnswer((_) async => null);
-      when(() => mockMatrixService.getSyncDiagnosticsText())
-          .thenAnswer((_) async => 'ok');
+      when(
+        () => mockMatrixService.getSyncMetrics(),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockMatrixService.getSyncDiagnosticsText(),
+      ).thenAnswer((_) async => 'ok');
     });
 
     tearDown(getIt.reset);
 
     testWidgets('gates page when feature disabled', (tester) async {
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(false));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SyncStatsPage(),
@@ -60,14 +64,16 @@ void main() {
       expect(find.text('Matrix Stats'), findsNothing);
     });
 
-    testWidgets('renders title and stats card when data available',
-        (tester) async {
+    testWidgets('renders title and stats card when data available', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SyncStatsPage(),
           overrides: [
-            matrixStatsControllerProvider
-                .overrideWith(_ImmediateMatrixStatsController.new),
+            matrixStatsControllerProvider.overrideWith(
+              _ImmediateMatrixStatsController.new,
+            ),
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
         ),

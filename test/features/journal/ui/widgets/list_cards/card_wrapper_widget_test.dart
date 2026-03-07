@@ -221,8 +221,12 @@ void main() {
     ).createSync(recursive: true);
 
     // Create mock image file
-    final filePath =
-        p.join(mockDirectory.path, 'images', '2023-01-01', 'test-image.jpg');
+    final filePath = p.join(
+      mockDirectory.path,
+      'images',
+      '2023-01-01',
+      'test-image.jpg',
+    );
     File(filePath).createSync();
 
     // Ensure ThemingController dependencies are registered
@@ -240,8 +244,9 @@ void main() {
   });
 
   group('CardWrapperWidget', () {
-    testWidgets('renders ModernJournalImageCard for JournalImage entity',
-        (WidgetTester tester) async {
+    testWidgets('renders ModernJournalImageCard for JournalImage entity', (
+      WidgetTester tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -256,8 +261,9 @@ void main() {
       expect(find.byType(AnimatedModernTaskCard), findsNothing);
     });
 
-    testWidgets('renders AnimatedModernTaskCard for Task entity',
-        (WidgetTester tester) async {
+    testWidgets('renders AnimatedModernTaskCard for Task entity', (
+      WidgetTester tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -272,8 +278,9 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders ModernJournalCard for JournalEntry entity',
-        (WidgetTester tester) async {
+    testWidgets('renders ModernJournalCard for JournalEntry entity', (
+      WidgetTester tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -288,8 +295,9 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('renders ModernJournalCard for JournalEvent entity',
-        (WidgetTester tester) async {
+    testWidgets('renders ModernJournalCard for JournalEvent entity', (
+      WidgetTester tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -304,8 +312,9 @@ void main() {
       expect(find.byType(ModernJournalImageCard), findsNothing);
     });
 
-    testWidgets('passes showCreationDate to AnimatedModernTaskCard',
-        (WidgetTester tester) async {
+    testWidgets('passes showCreationDate to AnimatedModernTaskCard', (
+      WidgetTester tester,
+    ) async {
       // Arrange - with showCreationDate: true
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -324,8 +333,9 @@ void main() {
       expect(animatedCard.showCreationDate, isTrue);
     });
 
-    testWidgets('showCreationDate defaults to false',
-        (WidgetTester tester) async {
+    testWidgets('showCreationDate defaults to false', (
+      WidgetTester tester,
+    ) async {
       // Arrange - without showCreationDate parameter
       await tester.pumpWidget(
         RiverpodWidgetTestBench(

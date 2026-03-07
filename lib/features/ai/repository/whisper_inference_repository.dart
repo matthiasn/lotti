@@ -39,23 +39,23 @@ class WhisperInferenceRepository extends TranscriptionRepository {
       sendRequest: (requestTimeout, timeoutErrorMessage) async {
         return httpClient
             .post(
-          Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'model': model,
-            'audio': audioBase64,
-          }),
-        )
+              Uri.parse(baseUrl).resolve('/v1/audio/transcriptions'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                'model': model,
+                'audio': audioBase64,
+              }),
+            )
             .timeout(
-          requestTimeout,
-          onTimeout: () {
-            throw TranscriptionException(
-              timeoutErrorMessage,
-              provider: _providerName,
-              statusCode: httpStatusRequestTimeout,
+              requestTimeout,
+              onTimeout: () {
+                throw TranscriptionException(
+                  timeoutErrorMessage,
+                  provider: _providerName,
+                  statusCode: httpStatusRequestTimeout,
+                );
+              },
             );
-          },
-        );
       },
     );
   }

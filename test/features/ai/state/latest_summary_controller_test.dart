@@ -71,8 +71,9 @@ void main() {
 
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     getIt
       ..reset()
@@ -113,8 +114,9 @@ void main() {
       ),
     );
 
-    when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .thenAnswer((_) async => [testEntry]);
+    when(
+      () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+    ).thenAnswer((_) async => [testEntry]);
 
     // Act
     container.listen(
@@ -137,8 +139,9 @@ void main() {
         .future;
 
     // Assert
-    verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .called(1);
+    verify(
+      () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+    ).called(1);
     verify(() => listener.call(any(), any())).called(2);
 
     final state = container.read(
@@ -150,113 +153,118 @@ void main() {
     expect(state.value, equals(testEntry));
   });
 
-  test('updates state when relevant update notifications are received',
-      () async {
-    // Arrange
-    final initialEntry = AiResponseEntry(
-      meta: Metadata(
-        id: testId,
-        dateFrom: testDateTime,
-        dateTo: testDateTime,
-        createdAt: testDateTime,
-        updatedAt: testDateTime,
-      ),
-      data: const AiResponseData(
-        model: 'test-model',
-        temperature: 0.5,
-        systemMessage: 'test-system-message',
-        prompt: 'test-prompt',
-        thoughts: 'test-thoughts',
-        response: 'test-response',
-        type: testAiResponseType,
-      ),
-    );
+  test(
+    'updates state when relevant update notifications are received',
+    () async {
+      // Arrange
+      final initialEntry = AiResponseEntry(
+        meta: Metadata(
+          id: testId,
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'test-model',
+          temperature: 0.5,
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'test-thoughts',
+          response: 'test-response',
+          type: testAiResponseType,
+        ),
+      );
 
-    final updatedEntry = AiResponseEntry(
-      meta: Metadata(
-        id: testId,
-        dateFrom: testDateTime,
-        dateTo: testDateTime,
-        createdAt: testDateTime,
-        updatedAt: testDateTime,
-      ),
-      data: const AiResponseData(
-        model: 'test-model',
-        temperature: 0.5,
-        systemMessage: 'test-system-message',
-        prompt: 'test-prompt',
-        thoughts: 'updated-thoughts',
-        response: 'updated-response',
-        type: testAiResponseType,
-      ),
-    );
+      final updatedEntry = AiResponseEntry(
+        meta: Metadata(
+          id: testId,
+          dateFrom: testDateTime,
+          dateTo: testDateTime,
+          createdAt: testDateTime,
+          updatedAt: testDateTime,
+        ),
+        data: const AiResponseData(
+          model: 'test-model',
+          temperature: 0.5,
+          systemMessage: 'test-system-message',
+          prompt: 'test-prompt',
+          thoughts: 'updated-thoughts',
+          response: 'updated-response',
+          type: testAiResponseType,
+        ),
+      );
 
-    when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .thenAnswer((_) async => [initialEntry]);
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [initialEntry]);
 
-    // Act
-    container.listen(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )),
-      listener.call,
-      fireImmediately: true,
-    );
+      // Act
+      container.listen(
+        latestSummaryControllerProvider((
+          id: testId,
+          aiResponseType: testAiResponseType,
+        )),
+        listener.call,
+        fireImmediately: true,
+      );
 
-    // Wait for initial state
-    await container
-        .read(
-          latestSummaryControllerProvider((
-            id: testId,
-            aiResponseType: testAiResponseType,
-          )).notifier,
-        )
-        .future;
+      // Wait for initial state
+      await container
+          .read(
+            latestSummaryControllerProvider((
+              id: testId,
+              aiResponseType: testAiResponseType,
+            )).notifier,
+          )
+          .future;
 
-    // Update mock to return new entry
-    when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .thenAnswer((_) async => [updatedEntry]);
+      // Update mock to return new entry
+      when(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).thenAnswer((_) async => [updatedEntry]);
 
-    // Trigger update notification
-    updateStreamController.add({testId});
+      // Trigger update notification
+      updateStreamController.add({testId});
 
-    // Wait deterministically for the provider to reflect the updated entry
-    final updatedCompleter = Completer<void>();
-    final sub = container.listen(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )),
-      (_, next) {
-        if (!updatedCompleter.isCompleted &&
-            next.value?.data.thoughts == 'updated-thoughts') {
-          updatedCompleter.complete();
-        }
-      },
-    );
+      // Wait deterministically for the provider to reflect the updated entry
+      final updatedCompleter = Completer<void>();
+      final sub = container.listen(
+        latestSummaryControllerProvider((
+          id: testId,
+          aiResponseType: testAiResponseType,
+        )),
+        (_, next) {
+          if (!updatedCompleter.isCompleted &&
+              next.value?.data.thoughts == 'updated-thoughts') {
+            updatedCompleter.complete();
+          }
+        },
+      );
 
-    try {
-      await updatedCompleter.future.timeout(const Duration(seconds: 2));
-    } on TimeoutException {
-      fail('Timed out waiting for provider update');
-    } finally {
-      sub.close();
-    }
+      try {
+        await updatedCompleter.future.timeout(const Duration(seconds: 2));
+      } on TimeoutException {
+        fail('Timed out waiting for provider update');
+      } finally {
+        sub.close();
+      }
 
-    // Assert
-    verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .called(2);
-    verify(() => listener.call(any(), any())).called(3);
+      // Assert
+      verify(
+        () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+      ).called(2);
+      verify(() => listener.call(any(), any())).called(3);
 
-    final state = container.read(
-      latestSummaryControllerProvider((
-        id: testId,
-        aiResponseType: testAiResponseType,
-      )),
-    );
-    expect(state.value, equals(updatedEntry));
-  });
+      final state = container.read(
+        latestSummaryControllerProvider((
+          id: testId,
+          aiResponseType: testAiResponseType,
+        )),
+      );
+      expect(state.value, equals(updatedEntry));
+    },
+  );
 
   test('disposes subscriptions when disposed', () async {
     // Arrange
@@ -279,8 +287,9 @@ void main() {
       ),
     );
 
-    when(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .thenAnswer((_) async => [testEntry]);
+    when(
+      () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+    ).thenAnswer((_) async => [testEntry]);
 
     // Act
     container.listen(
@@ -312,8 +321,9 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     // Assert
-    verify(() => mockJournalRepository.getLinkedEntities(linkedTo: testId))
-        .called(1);
+    verify(
+      () => mockJournalRepository.getLinkedEntities(linkedTo: testId),
+    ).called(1);
     verify(() => listener.call(any(), any())).called(2);
   });
 }

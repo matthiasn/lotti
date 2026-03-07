@@ -36,18 +36,19 @@ void main() {
 
       expect(items, hasLength(9));
       expect(
-          items.map((i) => i.name),
-          containsAll([
-            'EvolutionProposal',
-            'EvolutionNoteConfirmation',
-            'MetricsSummary',
-            'VersionComparison',
-            'FeedbackClassification',
-            'FeedbackCategoryBreakdown',
-            'SessionProgress',
-            'CategoryRatings',
-            'HighPriorityFeedback',
-          ]));
+        items.map((i) => i.name),
+        containsAll([
+          'EvolutionProposal',
+          'EvolutionNoteConfirmation',
+          'MetricsSummary',
+          'VersionComparison',
+          'FeedbackClassification',
+          'FeedbackCategoryBreakdown',
+          'SessionProgress',
+          'CategoryRatings',
+          'HighPriorityFeedback',
+        ]),
+      );
     });
 
     test('has the correct catalog ID', () {
@@ -57,8 +58,9 @@ void main() {
   });
 
   group('EvolutionProposal', () {
-    testWidgets('renders proposal with directives and rationale',
-        (tester) async {
+    testWidgets('renders proposal with directives and rationale', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
@@ -74,8 +76,9 @@ void main() {
       expect(find.text('Users prefer brevity.'), findsOneWidget);
     });
 
-    testWidgets('renders only general directive when report is empty',
-        (tester) async {
+    testWidgets('renders only general directive when report is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
@@ -118,8 +121,9 @@ void main() {
       );
     });
 
-    testWidgets('renders current general and report directives when provided',
-        (tester) async {
+    testWidgets('renders current general and report directives when provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
@@ -152,8 +156,9 @@ void main() {
       expect(find.text('New report format.'), findsOneWidget);
     });
 
-    testWidgets('renders only current report directive when general is empty',
-        (tester) async {
+    testWidgets('renders only current report directive when general is empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(evolutionProposalItem, {
@@ -174,31 +179,33 @@ void main() {
       );
     });
 
-    testWidgets('renders only report proposed directive when general is empty',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _buildCatalogWidget(evolutionProposalItem, {
-            'generalDirective': '',
-            'reportDirective': 'New report directive only.',
-            'rationale': 'Report-focused rationale.',
-          }),
-        ),
-      );
+    testWidgets(
+      'renders only report proposed directive when general is empty',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            _buildCatalogWidget(evolutionProposalItem, {
+              'generalDirective': '',
+              'reportDirective': 'New report directive only.',
+              'rationale': 'Report-focused rationale.',
+            }),
+          ),
+        );
 
-      expect(find.text('New report directive only.'), findsOneWidget);
-      expect(find.text('Report-focused rationale.'), findsOneWidget);
-      // General directive section should be absent.
-      expect(
-        find.textContaining('General Directive'),
-        findsNothing,
-      );
-      // Proposed Report Directive section should be present.
-      expect(
-        find.textContaining('Proposed Directives'),
-        findsOneWidget,
-      );
-    });
+        expect(find.text('New report directive only.'), findsOneWidget);
+        expect(find.text('Report-focused rationale.'), findsOneWidget);
+        // General directive section should be absent.
+        expect(
+          find.textContaining('General Directive'),
+          findsNothing,
+        );
+        // Proposed Report Directive section should be present.
+        expect(
+          find.textContaining('Proposed Directives'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('dispatches proposal_approved on approve tap', (tester) async {
       final events = <UiEvent>[];
@@ -351,7 +358,8 @@ void main() {
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {
             'kind': 'reflection',
-            'content': 'A long note that spans multiple lines to test '
+            'content':
+                'A long note that spans multiple lines to test '
                 'the expand/collapse behavior of the card widget.',
           }),
         ),
@@ -361,7 +369,9 @@ void main() {
       expect(find.byIcon(Icons.expand_less), findsNothing);
 
       // The collapsed text should have maxLines: 2
-      final collapsedText = tester.widgetList<Text>(find.byType(Text)).where(
+      final collapsedText = tester
+          .widgetList<Text>(find.byType(Text))
+          .where(
             (t) => t.maxLines == 2,
           );
       expect(collapsedText, isNotEmpty);
@@ -372,7 +382,8 @@ void main() {
         makeTestableWidget(
           _buildCatalogWidget(evolutionNoteConfirmationItem, {
             'kind': 'reflection',
-            'content': 'A long note that spans multiple lines to test '
+            'content':
+                'A long note that spans multiple lines to test '
                 'the expand/collapse behavior of the card widget.',
           }),
         ),
@@ -670,8 +681,9 @@ void main() {
       expect(find.text('5'), findsOneWidget);
     });
 
-    testWidgets('renders proportion bars for multiple categories',
-        (tester) async {
+    testWidgets('renders proportion bars for multiple categories', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(feedbackCategoryBreakdownItem, {
@@ -701,21 +713,23 @@ void main() {
       expect(find.byIcon(Icons.category_outlined), findsOneWidget);
     });
 
-    testWidgets('renders categories without optional positive/negative counts',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
-            'categories': <Map<String, Object?>>[
-              {'name': 'tooling', 'count': 3},
-            ],
-          }),
-        ),
-      );
+    testWidgets(
+      'renders categories without optional positive/negative counts',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+              'categories': <Map<String, Object?>>[
+                {'name': 'tooling', 'count': 3},
+              ],
+            }),
+          ),
+        );
 
-      expect(find.text('tooling'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
-    });
+        expect(find.text('tooling'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+      },
+    );
   });
 
   group('SessionProgress', () {
@@ -736,8 +750,9 @@ void main() {
       expect(find.text('7'), findsOneWidget);
     });
 
-    testWidgets('renders positive and negative metric chips when non-zero',
-        (tester) async {
+    testWidgets('renders positive and negative metric chips when non-zero', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(sessionProgressItem, {
@@ -805,8 +820,9 @@ void main() {
   });
 
   group('CategoryRatings', () {
-    testWidgets('returns shrink widget when categories are empty',
-        (tester) async {
+    testWidgets('returns shrink widget when categories are empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(categoryRatingsItem, {
@@ -819,86 +835,95 @@ void main() {
       expect(find.text('Approve & Save'), findsNothing);
     });
 
-    testWidgets('submits selected category ratings as ratings_submitted event',
-        (tester) async {
-      final events = <UiEvent>[];
+    testWidgets(
+      'submits selected category ratings as ratings_submitted event',
+      (tester) async {
+        final events = <UiEvent>[];
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'categories': <Map<String, Object?>>[
-                    {'name': 'accuracy', 'label': 'Accuracy'},
-                    {'name': 'communication', 'label': 'Communication'},
-                  ],
-                },
-                id: 'ratings-component',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(DataModel(), '/'),
-                getComponent: (_) => null,
-                surfaceId: 'ratings-surface',
-              );
-              return categoryRatingsItem.widgetBuilder(itemContext);
-            },
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (context) {
+                final itemContext = CatalogItemContext(
+                  data: <String, Object?>{
+                    'categories': <Map<String, Object?>>[
+                      {'name': 'accuracy', 'label': 'Accuracy'},
+                      {'name': 'communication', 'label': 'Communication'},
+                    ],
+                  },
+                  id: 'ratings-component',
+                  buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+                  dispatchEvent: events.add,
+                  buildContext: context,
+                  dataContext: DataContext(DataModel(), '/'),
+                  getComponent: (_) => null,
+                  surfaceId: 'ratings-surface',
+                );
+                return categoryRatingsItem.widgetBuilder(itemContext);
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.text('Accuracy'), findsOneWidget);
-      expect(find.text('Communication'), findsOneWidget);
+        expect(find.text('Accuracy'), findsOneWidget);
+        expect(find.text('Communication'), findsOneWidget);
 
-      final firstRow = find
-          .ancestor(
-            of: find.text('Accuracy'),
-            matching: find.byType(Row),
-          )
-          .first;
-      final secondRow = find
-          .ancestor(
-            of: find.text('Communication'),
-            matching: find.byType(Row),
-          )
-          .first;
+        final firstRow = find
+            .ancestor(
+              of: find.text('Accuracy'),
+              matching: find.byType(Row),
+            )
+            .first;
+        final secondRow = find
+            .ancestor(
+              of: find.text('Communication'),
+              matching: find.byType(Row),
+            )
+            .first;
 
-      await tester.tap(
-        find
-            .descendant(of: firstRow, matching: find.byType(GestureDetector))
-            .at(3),
-      );
-      await tester.pump();
-      await tester.tap(
-        find
-            .descendant(of: secondRow, matching: find.byType(GestureDetector))
-            .at(1),
-      );
-      await tester.pump();
+        await tester.tap(
+          find
+              .descendant(of: firstRow, matching: find.byType(GestureDetector))
+              .at(3),
+        );
+        await tester.pump();
+        await tester.tap(
+          find
+              .descendant(of: secondRow, matching: find.byType(GestureDetector))
+              .at(1),
+        );
+        await tester.pump();
 
-      final context = tester.element(find.text('Accuracy'));
-      await tester.tap(find.text(context.messages.agentTemplateEvolveApprove));
-      await tester.pumpAndSettle();
+        final context = tester.element(find.text('Accuracy'));
+        await tester.tap(
+          find.text(context.messages.agentTemplateEvolveApprove),
+        );
+        await tester.pumpAndSettle();
 
-      expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
-      expect(event.name, 'ratings_submitted');
-      expect(event.surfaceId, 'ratings-surface');
+        expect(events, hasLength(1));
+        final event = events.first as UserActionEvent;
+        expect(event.name, 'ratings_submitted');
+        expect(event.surfaceId, 'ratings-surface');
 
-      final ratings =
-          jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
-      expect(ratings, {'accuracy': 4, 'communication': 2});
+        final ratings =
+            jsonDecode(event.sourceComponentId) as Map<String, dynamic>;
+        expect(ratings, {'accuracy': 4, 'communication': 2});
 
-      // After submit, the approve button is replaced by confirmation text.
-      expect(
-          find.text(context.messages.agentTemplateEvolveApprove), findsNothing);
-      expect(find.text(context.messages.agentCategoryRatingsSubmit),
-          findsOneWidget);
-    });
+        // After submit, the approve button is replaced by confirmation text.
+        expect(
+          find.text(context.messages.agentTemplateEvolveApprove),
+          findsNothing,
+        );
+        expect(
+          find.text(context.messages.agentCategoryRatingsSubmit),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('disambiguates duplicate and empty category names on submit',
-        (tester) async {
+    testWidgets('disambiguates duplicate and empty category names on submit', (
+      tester,
+    ) async {
       final events = <UiEvent>[];
 
       await tester.pumpWidget(
@@ -1064,8 +1089,9 @@ void main() {
       expect(find.text('Excellence item'), findsOneWidget);
     });
 
-    testWidgets('returns shrink widget when both lists are empty',
-        (tester) async {
+    testWidgets('returns shrink widget when both lists are empty', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           _buildCatalogWidget(highPriorityFeedbackItem, {

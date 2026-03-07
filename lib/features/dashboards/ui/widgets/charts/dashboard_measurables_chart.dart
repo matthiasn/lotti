@@ -41,7 +41,8 @@ class MeasurablesBarChart extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final chartAggregationType = ref
+    final chartAggregationType =
+        ref
             .watch(
               aggregationTypeControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,
@@ -51,7 +52,8 @@ class MeasurablesBarChart extends ConsumerWidget {
             .value ??
         AggregationType.none;
 
-    final data = ref
+    final data =
+        ref
             .watch(
               measurableObservationsControllerProvider((
                 measurableDataTypeId: measurableDataTypeId,

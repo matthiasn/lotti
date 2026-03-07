@@ -21,10 +21,12 @@ void main() {
       );
     });
 
-    testWidgets('should display icon when category has an icon',
-        (tester) async {
-      final categoryWithIcon =
-          testCategory.copyWith(icon: CategoryIcon.fitness);
+    testWidgets('should display icon when category has an icon', (
+      tester,
+    ) async {
+      final categoryWithIcon = testCategory.copyWith(
+        icon: CategoryIcon.fitness,
+      );
 
       await tester.pumpWidget(
         MaterialApp(
@@ -40,8 +42,9 @@ void main() {
       expect(find.text(CategoryIconStrings.fallbackCharacter), findsNothing);
     });
 
-    testWidgets('should display first letter when category has no icon',
-        (tester) async {
+    testWidgets('should display first letter when category has no icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -56,8 +59,9 @@ void main() {
       expect(find.byType(Icon), findsNothing);
     });
 
-    testWidgets('should display fallback character for empty category name',
-        (tester) async {
+    testWidgets('should display fallback character for empty category name', (
+      tester,
+    ) async {
       final emptyNameCategory = testCategory.copyWith(name: '');
 
       await tester.pumpWidget(
@@ -122,8 +126,9 @@ void main() {
       expect(decoration.border, isNull);
     });
 
-    testWidgets('should use category color for border and text/icon',
-        (tester) async {
+    testWidgets('should use category color for border and text/icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -169,8 +174,9 @@ void main() {
 
     testWidgets('should use correct icon size ratio', (tester) async {
       const customSize = 100.0;
-      final categoryWithIcon =
-          testCategory.copyWith(icon: CategoryIcon.fitness);
+      final categoryWithIcon = testCategory.copyWith(
+        icon: CategoryIcon.fitness,
+      );
 
       await tester.pumpWidget(
         MaterialApp(

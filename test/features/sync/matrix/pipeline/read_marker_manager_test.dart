@@ -48,22 +48,26 @@ void main() {
         logging: log,
       );
 
-      when(() => log.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => log.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
 
       mgr.schedule(room, 'e');
       async.elapse(const Duration(milliseconds: 15));
 
-      verify(() => log.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'flushReadMarker',
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => log.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'flushReadMarker',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 

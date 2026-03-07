@@ -14,8 +14,8 @@ class SyncReadMarkerService {
   SyncReadMarkerService({
     required SettingsDb settingsDb,
     required LoggingService loggingService,
-  })  : _settingsDb = settingsDb,
-        _loggingService = loggingService;
+  }) : _settingsDb = settingsDb,
+       _loggingService = loggingService;
 
   final SettingsDb _settingsDb;
   final LoggingService _loggingService;

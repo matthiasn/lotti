@@ -43,8 +43,9 @@ void main() {
     );
   });
 
-  testWidgets('tapping button shows dialog with diagnostic JSON',
-      (tester) async {
+  testWidgets('tapping button shows dialog with diagnostic JSON', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const DiagnosticInfoButton(),

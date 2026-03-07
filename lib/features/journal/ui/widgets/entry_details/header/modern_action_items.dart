@@ -426,8 +426,10 @@ class ModernCopyEntryTextItem extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
     final entryState = ref.watch(provider).value;
 
-    final hasText =
-        notifier.controller.document.toPlainText().trim().isNotEmpty;
+    final hasText = notifier.controller.document
+        .toPlainText()
+        .trim()
+        .isNotEmpty;
     final entry = entryState?.entry;
     if (!hasText || entry == null) {
       return const SizedBox.shrink();
@@ -671,11 +673,12 @@ class ModernRateSessionItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableRatingsAsync =
-        ref.watch(configFlagProvider(enableSessionRatingsFlag));
+    final enableRatingsAsync = ref.watch(
+      configFlagProvider(enableSessionRatingsFlag),
+    );
     final enableRatings =
         enableRatingsAsync.unwrapPrevious().whenData((value) => value).value ??
-            false;
+        false;
 
     if (!enableRatings) {
       return const SizedBox.shrink();

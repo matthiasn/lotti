@@ -63,7 +63,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
+          IOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -71,7 +72,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
-            MacOSFlutterLocalNotificationsPlugin>()
+          MacOSFlutterLocalNotificationsPlugin
+        >()
         ?.requestPermissions(
           alert: true,
           badge: true,
@@ -95,8 +97,9 @@ class NotificationService {
       badgeCount = count;
     }
 
-    await flutterLocalNotificationsPlugin
-        .cancel(NotificationConstants.badgeNotificationId);
+    await flutterLocalNotificationsPlugin.cancel(
+      NotificationConstants.badgeNotificationId,
+    );
 
     if (badgeCount == 0) {
       await flutterLocalNotificationsPlugin.show(

@@ -52,23 +52,24 @@ class OutboxService {
     SyncSequenceLogService? sequenceLogService,
     Duration postDrainSettle = _defaultPostDrainSettle,
     DomainLogger? domainLogger,
-  })  : _postDrainSettle = postDrainSettle,
-        _syncDatabase = syncDatabase,
-        _loggingService = loggingService,
-        _vectorClockService = vectorClockService,
-        _journalDb = journalDb,
-        _documentsDirectory = documentsDirectory,
-        _saveJson = saveJsonHandler ?? saveJson,
-        _activityGate = activityGate ??
-            UserActivityGate(
-              activityService: userActivityService,
-              idleThreshold: SyncTuning.outboxIdleThreshold,
-            ),
-        _ownsActivityGate = ownsActivityGate ?? activityGate == null,
-        _matrixService = matrixService,
-        _connectivityStream = connectivityStream,
-        _sequenceLogService = sequenceLogService,
-        _domainLogger = domainLogger {
+  }) : _postDrainSettle = postDrainSettle,
+       _syncDatabase = syncDatabase,
+       _loggingService = loggingService,
+       _vectorClockService = vectorClockService,
+       _journalDb = journalDb,
+       _documentsDirectory = documentsDirectory,
+       _saveJson = saveJsonHandler ?? saveJson,
+       _activityGate =
+           activityGate ??
+           UserActivityGate(
+             activityService: userActivityService,
+             idleThreshold: SyncTuning.outboxIdleThreshold,
+           ),
+       _ownsActivityGate = ownsActivityGate ?? activityGate == null,
+       _matrixService = matrixService,
+       _connectivityStream = connectivityStream,
+       _sequenceLogService = sequenceLogService,
+       _domainLogger = domainLogger {
     // Runtime validation that works in release builds
     if (messageSender == null && matrixService == null) {
       throw ArgumentError(
@@ -76,13 +77,15 @@ class OutboxService {
       );
     }
 
-    _repository = repository ??
+    _repository =
+        repository ??
         DatabaseOutboxRepository(
           syncDatabase,
           maxRetries: maxRetries,
         );
     _messageSender = messageSender ?? MatrixOutboxMessageSender(matrixService!);
-    _processor = processor ??
+    _processor =
+        processor ??
         OutboxProcessor(
           repository: _repository,
           messageSender: _messageSender,
@@ -98,31 +101,36 @@ class OutboxService {
     // rely on the login-state subscription to trigger a send once login
     // completes.
     _connectivitySubscription =
-        (_connectivityStream ?? Connectivity().onConnectivityChanged)
-            .listen((List<ConnectivityResult> result) {
-      final regained = {
-        ConnectivityResult.wifi,
-        ConnectivityResult.mobile,
-        ConnectivityResult.ethernet,
-      }.intersection(result.toSet()).isNotEmpty;
-      if (regained) {
-        _loggingService.captureEvent(
-          'connectivity.regained → enqueue',
-          domain: 'OUTBOX',
-          subDomain: 'connectivity',
-        );
-        if (!_isDisposed) {
-          unawaited(enqueueNextSendRequest(delay: Duration.zero));
-        }
-        // If not logged in yet, add bounded extra nudges.
-        final notLoggedIn =
-            _matrixService != null && !_matrixService!.isLoggedIn();
-        if (notLoggedIn) {
-          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 1)));
-          unawaited(enqueueNextSendRequest(delay: const Duration(seconds: 5)));
-        }
-      }
-    });
+        (_connectivityStream ?? Connectivity().onConnectivityChanged).listen((
+          List<ConnectivityResult> result,
+        ) {
+          final regained = {
+            ConnectivityResult.wifi,
+            ConnectivityResult.mobile,
+            ConnectivityResult.ethernet,
+          }.intersection(result.toSet()).isNotEmpty;
+          if (regained) {
+            _loggingService.captureEvent(
+              'connectivity.regained → enqueue',
+              domain: 'OUTBOX',
+              subDomain: 'connectivity',
+            );
+            if (!_isDisposed) {
+              unawaited(enqueueNextSendRequest(delay: Duration.zero));
+            }
+            // If not logged in yet, add bounded extra nudges.
+            final notLoggedIn =
+                _matrixService != null && !_matrixService.isLoggedIn();
+            if (notLoggedIn) {
+              unawaited(
+                enqueueNextSendRequest(delay: const Duration(seconds: 1)),
+              );
+              unawaited(
+                enqueueNextSendRequest(delay: const Duration(seconds: 5)),
+              );
+            }
+          }
+        });
 
     // Post-login nudge: if connectivity regain fired too early, ensure a
     // deterministic enqueue once the Matrix client reports logged in.
@@ -215,8 +223,9 @@ class OutboxService {
     // queued work), periodically nudge the runner. This recovers from missed
     // signals or platform-specific timer quirks after reconnects/resumes.
     _watchdogTimer?.cancel();
-    _watchdogTimer =
-        Timer.periodic(SyncTuning.outboxWatchdogInterval, (Timer _) async {
+    _watchdogTimer = Timer.periodic(SyncTuning.outboxWatchdogInterval, (
+      Timer _,
+    ) async {
       if (_isDisposed) return;
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? true;
@@ -228,8 +237,9 @@ class OutboxService {
           );
           return;
         }
-        final hasPending =
-            (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final hasPending = (await _repository.fetchPending(
+          limit: 1,
+        )).isNotEmpty;
         final idleQueue = _clientRunner.queueSize == 0;
         if (hasPending && loggedIn && idleQueue) {
           _loggingService.captureEvent(
@@ -273,56 +283,56 @@ class OutboxService {
       // Dispatch by message type using pattern matching
       final merged = await switch (messageToEnqueue) {
         final SyncJournalEntity msg => _enqueueJournalEntity(
-            msg: msg,
-            commonFields: commonFields,
-            host: host,
-            hostHash: hostHash,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+          host: host,
+          hostHash: hostHash,
+        ),
         final SyncEntryLink msg => _enqueueEntryLink(
-            msg: msg,
-            commonFields: commonFields,
-            host: host,
-            hostHash: hostHash,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+          host: host,
+          hostHash: hostHash,
+        ),
         final SyncEntityDefinition msg => _enqueueEntityDefinition(
-            msg: msg,
-            commonFields: commonFields,
-            host: host,
-            hostHash: hostHash,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+          host: host,
+          hostHash: hostHash,
+        ),
         final SyncAiConfig msg => _enqueueAiConfig(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncAiConfigDelete msg => _enqueueAiConfigDelete(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncTagEntity msg => _enqueueTagEntity(
-            msg: msg,
-            commonFields: commonFields,
-            hostHash: hostHash,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+          hostHash: hostHash,
+        ),
         final SyncThemingSelection msg => _enqueueThemingSelection(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncBackfillRequest msg => _enqueueBackfillRequest(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncBackfillResponse msg => _enqueueBackfillResponse(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncAgentEntity msg => _enqueueAgentEntity(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
         final SyncAgentLink msg => _enqueueAgentLink(
-            msg: msg,
-            commonFields: commonFields,
-          ),
+          msg: msg,
+          commonFields: commonFields,
+        ),
       };
 
       _syncLog(
@@ -435,8 +445,9 @@ class OutboxService {
     // We attempt to check for pending items for observability, but schedule the
     // follow-up regardless as a safety net.
     try {
-      final stillPending =
-          (await _repository.fetchPending(limit: 1)).isNotEmpty;
+      final stillPending = (await _repository.fetchPending(
+        limit: 1,
+      )).isNotEmpty;
       _loggingService.captureEvent(
         'drain.passCap stillPending=$stillPending → enqueueImmediate',
         domain: 'OUTBOX',
@@ -463,8 +474,9 @@ class OutboxService {
       try {
         final loggedIn = _matrixService?.isLoggedIn() ?? false;
         final canProc = _activityGate.canProcess;
-        final hasPending =
-            (await _repository.fetchPending(limit: 1)).isNotEmpty;
+        final hasPending = (await _repository.fetchPending(
+          limit: 1,
+        )).isNotEmpty;
         _loggingService.captureEvent(
           'sendNext.state loggedIn=$loggedIn canProcess=$canProc pending=$hasPending',
           domain: 'OUTBOX',
@@ -477,7 +489,7 @@ class OutboxService {
       // Pause processing while not logged in. Do not schedule immediate retries
       // from here to avoid spin while logged out. Normal triggers (enqueue,
       // connectivity regain, UI actions) will re-nudge the outbox after login.
-      if (_matrixService != null && !_matrixService!.isLoggedIn()) {
+      if (_matrixService != null && !_matrixService.isLoggedIn()) {
         _loggingService.captureEvent(
           'sendNext.loginGate.notLoggedIn',
           domain: 'OUTBOX',
@@ -489,8 +501,9 @@ class OutboxService {
         final withinGrace =
             DateTime.now().difference(_createdAt) < _loginGateStartupGrace;
         if (!withinGrace && !_loginGateEventsController.isClosed) {
-          final hasPending =
-              (await _repository.fetchPending(limit: 1)).isNotEmpty;
+          final hasPending = (await _repository.fetchPending(
+            limit: 1,
+          )).isNotEmpty;
           if (hasPending) {
             _loginGateEventsController.add(null);
           }
@@ -570,13 +583,16 @@ class OutboxService {
 
     // Attach entry links if available
     try {
-      final links =
-          await _journalDb.linksForEntryIdsBidirectional({journalMsg.id});
+      final links = await _journalDb.linksForEntryIdsBidirectional({
+        journalMsg.id,
+      });
       if (links.isNotEmpty) {
-        final fromCount =
-            links.where((link) => link.fromId == journalMsg.id).length;
-        final toCount =
-            links.where((link) => link.toId == journalMsg.id).length;
+        final fromCount = links
+            .where((link) => link.fromId == journalMsg.id)
+            .length;
+        final toCount = links
+            .where((link) => link.toId == journalMsg.id)
+            .length;
         _loggingService.captureEvent(
           'enqueueMessage.attachedLinks id=${journalMsg.id} '
           'count=${links.length} from=$fromCount to=$toCount',
@@ -615,7 +631,9 @@ class OutboxService {
   /// Prepares a SyncEntryLink by adding originatingHostId and merging covered
   /// vector clocks.
   Future<SyncEntryLink> _prepareEntryLink(
-      SyncEntryLink msg, String? host) async {
+    SyncEntryLink msg,
+    String? host,
+  ) async {
     var linkMsg = msg;
     if (linkMsg.originatingHostId == null && host != null) {
       linkMsg = linkMsg.copyWith(originatingHostId: host);
@@ -720,8 +738,9 @@ class OutboxService {
     journalEntity.maybeMap(
       journalAudio: (JournalAudio journalAudio) {
         if (msg.status == SyncEntryStatus.initial) {
-          attachment =
-              File(AudioUtils.getAudioPath(journalAudio, _documentsDirectory));
+          attachment = File(
+            AudioUtils.getAudioPath(journalAudio, _documentsDirectory),
+          );
         }
       },
       journalImage: (JournalImage journalImage) {
@@ -792,8 +811,9 @@ class OutboxService {
           );
 
           // Log covered clocks for debugging
-          final coveredVcStrings =
-              coveredClocks?.map((vc) => vc.vclock).toList();
+          final coveredVcStrings = coveredClocks
+              ?.map((vc) => vc.vclock)
+              .toList();
           _loggingService.captureEvent(
             'enqueue MERGED type=SyncJournalEntity id=${msg.id} '
             'coveredClocks=${coveredClocks?.length ?? 0} covered=$coveredVcStrings '
@@ -806,7 +826,7 @@ class OutboxService {
           if (_sequenceLogService != null &&
               journalEntity.meta.vectorClock != null) {
             try {
-              await _sequenceLogService!.recordSentEntry(
+              await _sequenceLogService.recordSentEntry(
                 entryId: journalEntity.meta.id,
                 vectorClock: journalEntity.meta.vectorClock!,
               );
@@ -857,7 +877,7 @@ class OutboxService {
     // Record in sequence log for backfill support (self-healing sync)
     if (_sequenceLogService != null && journalEntity.meta.vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntry(
+        await _sequenceLogService.recordSentEntry(
           entryId: journalEntity.meta.id,
           vectorClock: journalEntity.meta.vectorClock!,
         );
@@ -910,8 +930,9 @@ class OutboxService {
           // Note: Unlike journal entities, entry links don't refresh from DB,
           // so each enqueue's VC is captured correctly when oldMessage.VC
           // is added to coveredClocks in subsequent merges.
-          final mergedMessage =
-              msg.copyWith(coveredVectorClocks: coveredClocks);
+          final mergedMessage = msg.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
 
           final mergedJson = json.encode(mergedMessage.toJson());
           await _syncDatabase.updateOutboxMessage(
@@ -926,8 +947,9 @@ class OutboxService {
           );
 
           // Log covered clocks for debugging
-          final coveredVcStrings =
-              coveredClocks?.map((vc) => vc.vclock).toList();
+          final coveredVcStrings = coveredClocks
+              ?.map((vc) => vc.vclock)
+              .toList();
           final latestVcStr = msg.entryLink.vectorClock?.vclock;
           _loggingService.captureEvent(
             'enqueue MERGED type=SyncEntryLink id=$linkId '
@@ -941,7 +963,7 @@ class OutboxService {
           if (_sequenceLogService != null &&
               msg.entryLink.vectorClock != null) {
             try {
-              await _sequenceLogService!.recordSentEntryLink(
+              await _sequenceLogService.recordSentEntryLink(
                 linkId: linkId,
                 vectorClock: msg.entryLink.vectorClock!,
               );
@@ -986,7 +1008,7 @@ class OutboxService {
     // Record in sequence log for backfill support (self-healing sync)
     if (_sequenceLogService != null && msg.entryLink.vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntryLink(
+        await _sequenceLogService.recordSentEntryLink(
           linkId: linkId,
           vectorClock: msg.entryLink.vectorClock!,
         );
@@ -1032,7 +1054,8 @@ class OutboxService {
     return _enqueueSimple(
       commonFields: commonFields,
       subject: subject,
-      logMessage: 'enqueue type=SyncEntityDefinition '
+      logMessage:
+          'enqueue type=SyncEntityDefinition '
           'subject=$subject id=${msg.entityDefinition.id}',
     );
   }
@@ -1040,71 +1063,70 @@ class OutboxService {
   Future<bool> _enqueueAiConfig({
     required SyncAiConfig msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'aiConfig',
-        logMessage: 'enqueue type=SyncAiConfig subject=aiConfig '
-            'id=${msg.aiConfig.id}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'aiConfig',
+    logMessage:
+        'enqueue type=SyncAiConfig subject=aiConfig '
+        'id=${msg.aiConfig.id}',
+  );
 
   Future<bool> _enqueueAiConfigDelete({
     required SyncAiConfigDelete msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'aiConfigDelete',
-        logMessage: 'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
-            'id=${msg.id}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'aiConfigDelete',
+    logMessage:
+        'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
+        'id=${msg.id}',
+  );
 
   Future<bool> _enqueueTagEntity({
     required SyncTagEntity msg,
     required OutboxCompanion commonFields,
     required String? hostHash,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: '$hostHash:tag',
-        logMessage: 'enqueue type=SyncTagEntity subject=$hostHash:tag '
-            'id=${msg.tagEntity.id}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: '$hostHash:tag',
+    logMessage:
+        'enqueue type=SyncTagEntity subject=$hostHash:tag '
+        'id=${msg.tagEntity.id}',
+  );
 
   Future<bool> _enqueueThemingSelection({
     required SyncThemingSelection msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'themingSelection',
-        logMessage:
-            'enqueue type=SyncThemingSelection subject=themingSelection '
-            'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
-            'mode=${msg.themeMode}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'themingSelection',
+    logMessage:
+        'enqueue type=SyncThemingSelection subject=themingSelection '
+        'light=${msg.lightThemeName} dark=${msg.darkThemeName} '
+        'mode=${msg.themeMode}',
+  );
 
   Future<bool> _enqueueBackfillRequest({
     required SyncBackfillRequest msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'backfillRequest:batch:${msg.entries.length}',
-        logMessage: 'enqueue type=SyncBackfillRequest '
-            'entries=${msg.entries.length}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'backfillRequest:batch:${msg.entries.length}',
+    logMessage:
+        'enqueue type=SyncBackfillRequest '
+        'entries=${msg.entries.length}',
+  );
 
   Future<bool> _enqueueBackfillResponse({
     required SyncBackfillResponse msg,
     required OutboxCompanion commonFields,
-  }) =>
-      _enqueueSimple(
-        commonFields: commonFields,
-        subject: 'backfillResponse:${msg.hostId}:${msg.counter}',
-        logMessage: 'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
-            'counter=${msg.counter} deleted=${msg.deleted}',
-      );
+  }) => _enqueueSimple(
+    commonFields: commonFields,
+    subject: 'backfillResponse:${msg.hostId}:${msg.counter}',
+    logMessage:
+        'enqueue type=SyncBackfillResponse hostId=${msg.hostId} '
+        'counter=${msg.counter} deleted=${msg.deleted}',
+  );
 
   Future<bool> _enqueueAgentEntity({
     required SyncAgentEntity msg,
@@ -1123,8 +1145,9 @@ class OutboxService {
       id: entity.id,
       payloadJson: json.encode(entity.toJson()),
       relativePath: relativeAgentEntityPath(entity.id),
-      enrichedMessage:
-          msg.copyWith(jsonPath: relativeAgentEntityPath(entity.id)),
+      enrichedMessage: msg.copyWith(
+        jsonPath: relativeAgentEntityPath(entity.id),
+      ),
       subjectPrefix: 'agentEntity',
       typeName: 'SyncAgentEntity',
       commonFields: commonFields,
@@ -1276,7 +1299,7 @@ class OutboxService {
   }) async {
     if (_sequenceLogService != null && vectorClock != null) {
       try {
-        await _sequenceLogService!.recordSentEntry(
+        await _sequenceLogService.recordSentEntry(
           entryId: entryId,
           vectorClock: vectorClock,
           payloadType: payloadType,

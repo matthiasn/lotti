@@ -8,8 +8,9 @@ import '../../../test_data/test_data.dart';
 
 void main() {
   group('LabelChip Linear-style design', () {
-    testWidgets('always renders colored dot regardless of showDot parameter',
-        (tester) async {
+    testWidgets('always renders colored dot regardless of showDot parameter', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -56,8 +57,9 @@ void main() {
       expect(dotFinder, findsOneWidget);
     });
 
-    testWidgets('renders label name with theme-based text color',
-        (tester) async {
+    testWidgets('renders label name with theme-based text color', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -79,8 +81,9 @@ void main() {
       expect(text.style?.letterSpacing, equals(0.1));
     });
 
-    testWidgets('uses neutral background and border in light theme',
-        (tester) async {
+    testWidgets('uses neutral background and border in light theme', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.light(),
@@ -117,8 +120,9 @@ void main() {
       expect(border.top.width, equals(1.0));
     });
 
-    testWidgets('uses neutral background and border in dark theme',
-        (tester) async {
+    testWidgets('uses neutral background and border in dark theme', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: ThemeData.dark(),
@@ -210,8 +214,9 @@ void main() {
       );
     });
 
-    testWidgets('tooltip shows label name when description is empty',
-        (tester) async {
+    testWidgets('tooltip shows label name when description is empty', (
+      tester,
+    ) async {
       // testLabelDefinition2 has no description
       await tester.pumpWidget(
         MaterialApp(

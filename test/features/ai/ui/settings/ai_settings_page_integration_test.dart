@@ -33,16 +33,19 @@ void main() {
     }
 
     Widget createAppWithTestData() {
-      return createApp(AiTestSetup.createControllerOverrides(
-        providers: getConfigsByType(AiConfigType.inferenceProvider),
-        models: getConfigsByType(AiConfigType.model),
-        prompts: getConfigsByType(AiConfigType.prompt),
-      ));
+      return createApp(
+        AiTestSetup.createControllerOverrides(
+          providers: getConfigsByType(AiConfigType.inferenceProvider),
+          models: getConfigsByType(AiConfigType.model),
+          prompts: getConfigsByType(AiConfigType.prompt),
+        ),
+      );
     }
 
     group('initial page load', () {
-      testWidgets('displays page title and navigation',
-          (WidgetTester tester) async {
+      testWidgets('displays page title and navigation', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createAppWithTestData());
         await tester.pumpAndSettle();
 
@@ -51,20 +54,34 @@ void main() {
         expect(find.byIcon(Icons.chevron_left), findsOneWidget);
       });
 
-      testWidgets('displays search bar and tab bar',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('displays search bar and tab bar', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         await tester.pumpAndSettle();
 
@@ -74,20 +91,34 @@ void main() {
         expect(find.text('Prompts'), findsOneWidget);
       });
 
-      testWidgets('starts with providers tab selected',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('starts with providers tab selected', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         await tester.pumpAndSettle();
 
@@ -97,20 +128,34 @@ void main() {
     });
 
     group('tab navigation', () {
-      testWidgets('switches to models tab and shows model filters',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('switches to models tab and shows model filters', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         await tester.pumpAndSettle();
 
@@ -124,20 +169,34 @@ void main() {
         expect(find.text('Reasoning'), findsOneWidget);
       });
 
-      testWidgets('switches to prompts tab and hides model filters',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('switches to prompts tab and hides model filters', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         await tester.pumpAndSettle();
 
@@ -158,20 +217,34 @@ void main() {
     });
 
     group('search functionality', () {
-      testWidgets('filters configurations by search query',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('filters configurations by search query', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         await tester.pumpAndSettle();
 
@@ -183,20 +256,34 @@ void main() {
         expect(find.byType(TextField), findsOneWidget);
       });
 
-      testWidgets('clears search when clear button is tapped',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createApp([
-          aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.inferenceProvider))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.model)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.model))),
-          aiConfigByTypeControllerProvider(configType: AiConfigType.prompt)
-              .overrideWith(() => MockAiConfigByTypeController(
-                  getConfigsByType(AiConfigType.prompt))),
-        ]));
+      testWidgets('clears search when clear button is tapped', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createApp([
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.inferenceProvider,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.inferenceProvider),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.model,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.model),
+              ),
+            ),
+            aiConfigByTypeControllerProvider(
+              configType: AiConfigType.prompt,
+            ).overrideWith(
+              () => MockAiConfigByTypeController(
+                getConfigsByType(AiConfigType.prompt),
+              ),
+            ),
+          ]),
+        );
 
         // Enter search text
         await tester.enterText(find.byType(TextField), 'test');

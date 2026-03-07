@@ -123,13 +123,15 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo.transcribeAudio(
-          model: testModel,
-          audioBase64: testAudioBase64,
-          baseUrl: testBaseUrl,
-          apiKey: testApiKey,
-          contextBias: ['macOS', 'Flutter', 'Kirkjubæjarklaustur'],
-        ).toList();
+        await repo
+            .transcribeAudio(
+              model: testModel,
+              audioBase64: testAudioBase64,
+              baseUrl: testBaseUrl,
+              apiKey: testApiKey,
+              contextBias: ['macOS', 'Flutter', 'Kirkjubæjarklaustur'],
+            )
+            .toList();
 
         expect(capturedRequest, isA<http.MultipartRequest>());
         final multipart = capturedRequest! as http.MultipartRequest;
@@ -160,13 +162,15 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo.transcribeAudio(
-          model: testModel,
-          audioBase64: testAudioBase64,
-          baseUrl: testBaseUrl,
-          apiKey: testApiKey,
-          contextBias: ['Claude Code', 'macOS', 'Nano Banana Pro'],
-        ).toList();
+        await repo
+            .transcribeAudio(
+              model: testModel,
+              audioBase64: testAudioBase64,
+              baseUrl: testBaseUrl,
+              apiKey: testApiKey,
+              contextBias: ['Claude Code', 'macOS', 'Nano Banana Pro'],
+            )
+            .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
         final terms = multipart.fields['context_bias']!.split(',');
@@ -195,13 +199,15 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo.transcribeAudio(
-          model: testModel,
-          audioBase64: testAudioBase64,
-          baseUrl: testBaseUrl,
-          apiKey: testApiKey,
-          contextBias: ['Gemini Pro', 'Gemini Flash'],
-        ).toList();
+        await repo
+            .transcribeAudio(
+              model: testModel,
+              audioBase64: testAudioBase64,
+              baseUrl: testBaseUrl,
+              apiKey: testApiKey,
+              contextBias: ['Gemini Pro', 'Gemini Flash'],
+            )
+            .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
         final terms = multipart.fields['context_bias']!.split(',');
@@ -260,13 +266,15 @@ void main() {
 
         final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo.transcribeAudio(
-          model: testModel,
-          audioBase64: testAudioBase64,
-          baseUrl: testBaseUrl,
-          apiKey: testApiKey,
-          contextBias: [],
-        ).toList();
+        await repo
+            .transcribeAudio(
+              model: testModel,
+              audioBase64: testAudioBase64,
+              baseUrl: testBaseUrl,
+              apiKey: testApiKey,
+              contextBias: [],
+            )
+            .toList();
 
         final multipart = capturedRequest! as http.MultipartRequest;
         expect(multipart.fields.containsKey('context_bias'), isFalse);
@@ -420,71 +428,75 @@ void main() {
         );
       });
 
-      test('constructs correct URL from base URL without trailing slash',
-          () async {
-        http.BaseRequest? capturedRequest;
+      test(
+        'constructs correct URL from base URL without trailing slash',
+        () async {
+          http.BaseRequest? capturedRequest;
 
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'ok'})),
-              ),
-              200,
-            );
-          },
-        );
+          final mockClient = MockClient.streaming(
+            (request, _) async {
+              capturedRequest = request;
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(jsonEncode({'text': 'ok'})),
+                ),
+                200,
+              );
+            },
+          );
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo
-            .transcribeAudio(
-              model: testModel,
-              audioBase64: testAudioBase64,
-              baseUrl: 'https://api.mistral.ai/v1',
-              apiKey: testApiKey,
-            )
-            .toList();
+          await repo
+              .transcribeAudio(
+                model: testModel,
+                audioBase64: testAudioBase64,
+                baseUrl: 'https://api.mistral.ai/v1',
+                apiKey: testApiKey,
+              )
+              .toList();
 
-        expect(
-          capturedRequest!.url.toString(),
-          equals('https://api.mistral.ai/v1/audio/transcriptions'),
-        );
-      });
+          expect(
+            capturedRequest!.url.toString(),
+            equals('https://api.mistral.ai/v1/audio/transcriptions'),
+          );
+        },
+      );
 
-      test('constructs correct URL from base URL with trailing slash',
-          () async {
-        http.BaseRequest? capturedRequest;
+      test(
+        'constructs correct URL from base URL with trailing slash',
+        () async {
+          http.BaseRequest? capturedRequest;
 
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'ok'})),
-              ),
-              200,
-            );
-          },
-        );
+          final mockClient = MockClient.streaming(
+            (request, _) async {
+              capturedRequest = request;
+              return http.StreamedResponse(
+                Stream.value(
+                  utf8.encode(jsonEncode({'text': 'ok'})),
+                ),
+                200,
+              );
+            },
+          );
 
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+          final repo = MistralTranscriptionRepository(httpClient: mockClient);
 
-        await repo
-            .transcribeAudio(
-              model: testModel,
-              audioBase64: testAudioBase64,
-              baseUrl: 'https://api.mistral.ai/v1/',
-              apiKey: testApiKey,
-            )
-            .toList();
+          await repo
+              .transcribeAudio(
+                model: testModel,
+                audioBase64: testAudioBase64,
+                baseUrl: 'https://api.mistral.ai/v1/',
+                apiKey: testApiKey,
+              )
+              .toList();
 
-        expect(
-          capturedRequest!.url.toString(),
-          equals('https://api.mistral.ai/v1/audio/transcriptions'),
-        );
-      });
+          expect(
+            capturedRequest!.url.toString(),
+            equals('https://api.mistral.ai/v1/audio/transcriptions'),
+          );
+        },
+      );
 
       test('wraps unexpected exceptions in TranscriptionException', () async {
         final mockClient = MockClient((request) async {

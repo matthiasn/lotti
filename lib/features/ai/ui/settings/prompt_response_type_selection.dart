@@ -90,8 +90,9 @@ class _ResponseTypeSelectionModalState
               icon: _getTypeIcon(type),
               isSelected: isSelected,
               onTap: () => _selectType(type),
-              selectionIndicator:
-                  RadioSelectionIndicator(isSelected: isSelected),
+              selectionIndicator: RadioSelectionIndicator(
+                isSelected: isSelected,
+              ),
             );
           },
         ),

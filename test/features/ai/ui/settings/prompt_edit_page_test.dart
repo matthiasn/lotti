@@ -82,16 +82,20 @@ void main() {
 
     // Default mock responses
     when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
-    when(() => mockRepository.getConfigById('test-prompt-id'))
-        .thenAnswer((_) async => testPrompt);
-    when(() => mockRepository.getConfigsByType(AiConfigType.model))
-        .thenAnswer((_) async => testModels);
+    when(
+      () => mockRepository.getConfigById('test-prompt-id'),
+    ).thenAnswer((_) async => testPrompt);
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => testModels);
 
     // Mock model config fetches for validation
-    when(() => mockRepository.getConfigById('model-1'))
-        .thenAnswer((_) async => testModels[0]);
-    when(() => mockRepository.getConfigById('model-2'))
-        .thenAnswer((_) async => testModels[1]);
+    when(
+      () => mockRepository.getConfigById('model-1'),
+    ).thenAnswer((_) async => testModels[0]);
+    when(
+      () => mockRepository.getConfigById('model-2'),
+    ).thenAnswer((_) async => testModels[1]);
   });
 
   Widget buildTestWidget({String? configId}) {
@@ -125,8 +129,9 @@ void main() {
   }
 
   group('PromptEditPage', () {
-    testWidgets('displays correct title for new prompt',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for new prompt', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -135,8 +140,9 @@ void main() {
       expect(find.text('Add Prompt'), findsOneWidget);
     });
 
-    testWidgets('displays correct title for existing prompt',
-        (WidgetTester tester) async {
+    testWidgets('displays correct title for existing prompt', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -149,8 +155,9 @@ void main() {
       expect(find.text('Edit Prompt'), findsOneWidget);
     });
 
-    testWidgets('loads and displays existing prompt data',
-        (WidgetTester tester) async {
+    testWidgets('loads and displays existing prompt data', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -166,8 +173,9 @@ void main() {
       expect(find.text('Please help me with: {{input}}'), findsOneWidget);
     });
 
-    testWidgets('shows form sections with proper labels',
-        (WidgetTester tester) async {
+    testWidgets('shows form sections with proper labels', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -186,8 +194,9 @@ void main() {
       expect(find.text('AI Response Type'), findsOneWidget);
     });
 
-    testWidgets('shows save button and form fields',
-        (WidgetTester tester) async {
+    testWidgets('shows save button and form fields', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -198,12 +207,18 @@ void main() {
       expect(saveButton, findsOneWidget);
 
       // Verify form fields exist
-      expect(find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Enter the system prompt...'),
-          findsOneWidget);
-      expect(find.widgetWithText(TextFormField, 'Enter the user prompt...'),
-          findsOneWidget);
+      expect(
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('toggles reasoning mode switch', (WidgetTester tester) async {
@@ -246,14 +261,16 @@ void main() {
       expect(find.text('Save'), findsOneWidget);
     });
 
-    testWidgets('shows error state when loading fails',
-        (WidgetTester tester) async {
+    testWidgets('shows error state when loading fails', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       // Setup repository to throw error
-      when(() => mockRepository.getConfigById('error-id'))
-          .thenThrow(Exception('Failed to load'));
+      when(
+        () => mockRepository.getConfigById('error-id'),
+      ).thenThrow(Exception('Failed to load'));
 
       await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
       await tester.pumpAndSettle();
@@ -264,8 +281,9 @@ void main() {
       expect(find.text('Go Back'), findsOneWidget);
     });
 
-    testWidgets('validates form fields with valid and invalid data',
-        (WidgetTester tester) async {
+    testWidgets('validates form fields with valid and invalid data', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -274,20 +292,25 @@ void main() {
 
       // Test name validation - too short
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'), 'AB');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'AB',
+      );
       await tester.pump();
 
       // The form validates on change - validation errors may appear
       // Enter valid data to verify form works
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'Valid Prompt Name');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'Valid Prompt Name',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the system prompt...'),
-          'You are a helpful assistant');
+        find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+        'You are a helpful assistant',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the user prompt...'),
-          'Please help with: {{input}}');
+        find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+        'Please help with: {{input}}',
+      );
       await tester.pump();
     });
 
@@ -325,14 +348,17 @@ void main() {
 
       // Fill form to make it valid
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'Test Prompt');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'Test Prompt',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the system prompt...'),
-          'System message');
+        find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+        'System message',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the user prompt...'),
-          'User message');
+        find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+        'User message',
+      );
       await tester.pump();
 
       // Verify CallbackShortcuts widget exists
@@ -351,13 +377,15 @@ void main() {
 
       // This should accept text input
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Describe this prompt'),
-          'This prompt helps with various tasks');
+        find.widgetWithText(TextFormField, 'Describe this prompt'),
+        'This prompt helps with various tasks',
+      );
       await tester.pump();
     });
 
-    testWidgets('displays Configuration Options section with required fields',
-        (WidgetTester tester) async {
+    testWidgets('displays Configuration Options section with required fields', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -382,23 +410,31 @@ void main() {
       expect(find.byIcon(Icons.output_rounded), findsOneWidget);
     });
 
-    testWidgets('shows existing values for Configuration Options when editing',
-        (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1400));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+    testWidgets(
+      'shows existing values for Configuration Options when editing',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
+        await tester.pumpAndSettle();
 
-      // Check that existing values are displayed
-      // The test prompt has InputDataType.task and AiResponseType.taskSummary
-      expect(find.text('Task'), findsOneWidget); // Input data type display name
-      expect(find.text('Task Summary'),
-          findsOneWidget); // Response type display name
-    });
+        // Check that existing values are displayed
+        // The test prompt has InputDataType.task and AiResponseType.taskSummary
+        expect(
+          find.text('Task'),
+          findsOneWidget,
+        ); // Input data type display name
+        expect(
+          find.text('Task Summary'),
+          findsOneWidget,
+        ); // Response type display name
+      },
+    );
 
-    testWidgets('can open input data type selection modal',
-        (WidgetTester tester) async {
+    testWidgets('can open input data type selection modal', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -418,8 +454,9 @@ void main() {
       expect(find.text('Required Input Data Types'), findsOneWidget);
     });
 
-    testWidgets('can open AI response type selection modal',
-        (WidgetTester tester) async {
+    testWidgets('can open AI response type selection modal', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -428,8 +465,10 @@ void main() {
 
       // Find and tap the AI Response Type selection card
       // Look for the InkWell that contains the "Select response type" text
-      final responseTypeCard =
-          find.widgetWithText(InkWell, 'Select response type');
+      final responseTypeCard = find.widgetWithText(
+        InkWell,
+        'Select response type',
+      );
       expect(responseTypeCard, findsOneWidget);
 
       // Scroll to make the card visible (form may have validation errors taking space)
@@ -443,8 +482,9 @@ void main() {
       expect(find.text('Select AI Response Type'), findsOneWidget);
     });
 
-    testWidgets('save button is disabled when required fields are missing',
-        (WidgetTester tester) async {
+    testWidgets('save button is disabled when required fields are missing', (
+      WidgetTester tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 1400));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -453,14 +493,17 @@ void main() {
 
       // Fill in basic fields but leave Configuration Options empty
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter a friendly name'),
-          'Test Prompt');
+        find.widgetWithText(TextFormField, 'Enter a friendly name'),
+        'Test Prompt',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the system prompt...'),
-          'System message');
+        find.widgetWithText(TextFormField, 'Enter the system prompt...'),
+        'System message',
+      );
       await tester.enterText(
-          find.widgetWithText(TextFormField, 'Enter the user prompt...'),
-          'User message');
+        find.widgetWithText(TextFormField, 'Enter the user prompt...'),
+        'User message',
+      );
       await tester.pump();
 
       // Find save button - scroll to bottom first
@@ -472,8 +515,9 @@ void main() {
     });
 
     group('Tracking functionality', () {
-      testWidgets('shows tracking toggle when preconfigured prompt ID exists',
-          (WidgetTester tester) async {
+      testWidgets('shows tracking toggle when preconfigured prompt ID exists', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -493,8 +537,9 @@ void main() {
           preconfiguredPromptId: 'checklist_updates',
         );
 
-        when(() => mockRepository.getConfigById('tracked-prompt-id'))
-            .thenAnswer((_) async => trackedPrompt);
+        when(
+          () => mockRepository.getConfigById('tracked-prompt-id'),
+        ).thenAnswer((_) async => trackedPrompt);
 
         await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
         await tester.pumpAndSettle();
@@ -502,27 +547,36 @@ void main() {
         // Should show tracking toggle
         expect(find.text('Track Preconfigured Prompt'), findsOneWidget);
         expect(
-            find.text(
-                'Keep this prompt synchronized with updates to the template'),
-            findsOneWidget);
+          find.text(
+            'Keep this prompt synchronized with updates to the template',
+          ),
+          findsOneWidget,
+        );
 
         // Find the switch that's specifically for tracking (not the reasoning mode switch)
         final trackingSwitch = find.descendant(
-          of: find.byWidgetPredicate((widget) =>
-              widget is Container &&
-              widget.child is Row &&
-              (widget.child as Row?)!.children.any((child) =>
-                  child is Expanded &&
-                  child.child is Column &&
-                  (child.child as Column).children.any((c) =>
-                      c is Text && c.data == 'Track Preconfigured Prompt'))),
+          of: find.byWidgetPredicate(
+            (widget) =>
+                widget is Container &&
+                widget.child is Row &&
+                (widget.child as Row?)!.children.any(
+                  (child) =>
+                      child is Expanded &&
+                      child.child is Column &&
+                      (child.child as Column).children.any(
+                        (c) =>
+                            c is Text && c.data == 'Track Preconfigured Prompt',
+                      ),
+                ),
+          ),
           matching: find.byType(Switch),
         );
         expect(trackingSwitch, findsOneWidget);
       });
 
-      testWidgets('does not show tracking toggle for new prompts initially',
-          (WidgetTester tester) async {
+      testWidgets('does not show tracking toggle for new prompts initially', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -532,13 +586,16 @@ void main() {
         // Should not show tracking toggle
         expect(find.text('Track Preconfigured Prompt'), findsNothing);
         expect(
-            find.text(
-                'Keep this prompt synchronized with updates to the template'),
-            findsNothing);
+          find.text(
+            'Keep this prompt synchronized with updates to the template',
+          ),
+          findsNothing,
+        );
       });
 
-      testWidgets('text fields are read-only when tracking is enabled',
-          (WidgetTester tester) async {
+      testWidgets('text fields are read-only when tracking is enabled', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -558,8 +615,9 @@ void main() {
           preconfiguredPromptId: 'checklist_updates',
         );
 
-        when(() => mockRepository.getConfigById('tracked-prompt-id'))
-            .thenAnswer((_) async => trackedPrompt);
+        when(
+          () => mockRepository.getConfigById('tracked-prompt-id'),
+        ).thenAnswer((_) async => trackedPrompt);
 
         await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
         await tester.pumpAndSettle();
@@ -585,20 +643,25 @@ void main() {
         // Get initial text (should be the preconfigured prompt's system message)
         final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
         final textField = tester.widget<TextFormField>(systemPromptField);
-        expect(textField.controller?.text,
-            equals(preconfiguredPrompt.systemMessage));
+        expect(
+          textField.controller?.text,
+          equals(preconfiguredPrompt.systemMessage),
+        );
 
         // Try to enter text
         await tester.enterText(systemPromptField, 'New system message');
         await tester.pump();
 
         // The text should remain unchanged because readOnly is true
-        expect(textField.controller?.text,
-            equals(preconfiguredPrompt.systemMessage));
+        expect(
+          textField.controller?.text,
+          equals(preconfiguredPrompt.systemMessage),
+        );
       });
 
-      testWidgets('can toggle tracking on and off',
-          (WidgetTester tester) async {
+      testWidgets('can toggle tracking on and off', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -618,22 +681,29 @@ void main() {
           preconfiguredPromptId: 'checklist_updates',
         );
 
-        when(() => mockRepository.getConfigById('tracked-prompt-id'))
-            .thenAnswer((_) async => trackedPrompt);
+        when(
+          () => mockRepository.getConfigById('tracked-prompt-id'),
+        ).thenAnswer((_) async => trackedPrompt);
 
         await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
         await tester.pumpAndSettle();
 
         // Find the tracking toggle specifically
         final trackingSwitch = find.descendant(
-          of: find.byWidgetPredicate((widget) =>
-              widget is Container &&
-              widget.child is Row &&
-              (widget.child as Row?)!.children.any((child) =>
-                  child is Expanded &&
-                  child.child is Column &&
-                  (child.child as Column).children.any((c) =>
-                      c is Text && c.data == 'Track Preconfigured Prompt'))),
+          of: find.byWidgetPredicate(
+            (widget) =>
+                widget is Container &&
+                widget.child is Row &&
+                (widget.child as Row?)!.children.any(
+                  (child) =>
+                      child is Expanded &&
+                      child.child is Column &&
+                      (child.child as Column).children.any(
+                        (c) =>
+                            c is Text && c.data == 'Track Preconfigured Prompt',
+                      ),
+                ),
+          ),
           matching: find.byType(Switch),
         );
         expect(trackingSwitch, findsOneWidget);
@@ -677,8 +747,9 @@ void main() {
         expect(textField.controller?.text, equals('New system message'));
       });
 
-      testWidgets('saves tracking state when updating prompt',
-          (WidgetTester tester) async {
+      testWidgets('saves tracking state when updating prompt', (
+        WidgetTester tester,
+      ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -699,8 +770,9 @@ void main() {
           description: 'Test description',
         );
 
-        when(() => mockRepository.getConfigById('tracked-prompt-id'))
-            .thenAnswer((_) async => trackedPrompt);
+        when(
+          () => mockRepository.getConfigById('tracked-prompt-id'),
+        ).thenAnswer((_) async => trackedPrompt);
 
         await tester.pumpWidget(buildTestWidget(configId: 'tracked-prompt-id'));
         await tester.pumpAndSettle();
@@ -718,9 +790,11 @@ void main() {
         await tester.pump();
 
         // Verify save was called and check the saved config
-        final captured = verify(() => mockRepository.saveConfig(captureAny()))
-            .captured
-            .single as AiConfig;
+        final captured =
+            verify(
+                  () => mockRepository.saveConfig(captureAny()),
+                ).captured.single
+                as AiConfig;
 
         expect(captured, isA<AiConfigPrompt>());
         final savedPrompt = captured as AiConfigPrompt;
@@ -730,34 +804,36 @@ void main() {
       });
 
       testWidgets(
-          'shows Quick Start section with preconfigured prompt button for new prompts',
-          (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1400));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'shows Quick Start section with preconfigured prompt button for new prompts',
+        (WidgetTester tester) async {
+          await tester.binding.setSurfaceSize(const Size(1024, 1400));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
 
-        // Should show Quick Start section
-        expect(find.text('Quick Start'), findsOneWidget);
-        // Check for PreconfiguredPromptButton widget
-        expect(find.byType(PreconfiguredPromptButton), findsOneWidget);
-      });
+          // Should show Quick Start section
+          expect(find.text('Quick Start'), findsOneWidget);
+          // Check for PreconfiguredPromptButton widget
+          expect(find.byType(PreconfiguredPromptButton), findsOneWidget);
+        },
+      );
 
       testWidgets(
-          'does not show Quick Start section when editing existing prompt',
-          (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1400));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        'does not show Quick Start section when editing existing prompt',
+        (WidgetTester tester) async {
+          await tester.binding.setSurfaceSize(const Size(1024, 1400));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(buildTestWidget(configId: 'test-prompt-id'));
+          await tester.pumpAndSettle();
 
-        // Should not show Quick Start section
-        expect(find.text('Quick Start'), findsNothing);
-        expect(find.text('Start with a pre-built template'), findsNothing);
-        expect(find.text('Use Template'), findsNothing);
-      });
+          // Should not show Quick Start section
+          expect(find.text('Quick Start'), findsNothing);
+          expect(find.text('Start with a pre-built template'), findsNothing);
+          expect(find.text('Use Template'), findsNothing);
+        },
+      );
     });
   });
 }

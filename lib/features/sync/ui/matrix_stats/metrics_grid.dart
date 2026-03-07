@@ -18,8 +18,8 @@ class MetricsGrid extends StatelessWidget {
         final crossAxisCount = width < 380
             ? 2
             : width < 560
-                ? 3
-                : 4;
+            ? 3
+            : 4;
         final tileWidth = (width - (crossAxisCount - 1) * 8) / crossAxisCount;
 
         return Wrap(

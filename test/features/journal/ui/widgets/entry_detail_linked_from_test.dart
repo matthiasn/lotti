@@ -80,8 +80,9 @@ class TestLinkedFromWidget extends StatelessWidget {
       children: [
         Text(
           context.messages.journalLinkedFromLabel,
-          style: context.textTheme.titleSmall
-              ?.copyWith(color: context.colorScheme.outline),
+          style: context.textTheme.titleSmall?.copyWith(
+            color: context.colorScheme.outline,
+          ),
         ),
         if (hasImageEntries)
           Padding(
@@ -240,8 +241,9 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
       when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
@@ -275,16 +277,18 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
 
     void mockLinkedFromEntries(List<JournalEntity> entries) {
       final dbEntries = entries.map(_journalDbEntity).toList();
-      when(() => mockJournalDb.linkedToJournalEntities(any()))
-          .thenReturn(MockSelectable<JournalDbEntity>(dbEntries));
+      when(
+        () => mockJournalDb.linkedToJournalEntities(any()),
+      ).thenReturn(MockSelectable<JournalDbEntity>(dbEntries));
     }
 
     testWidgets('shows label when entries exist', (tester) async {
@@ -313,8 +317,9 @@ void main() {
       expect(find.text('Linked from:'), findsNothing);
     });
 
-    testWidgets('filters task entries when hideTaskEntries is true',
-        (tester) async {
+    testWidgets('filters task entries when hideTaskEntries is true', (
+      tester,
+    ) async {
       // Only provide task entries - should render empty
       mockLinkedFromEntries([testTask]);
 

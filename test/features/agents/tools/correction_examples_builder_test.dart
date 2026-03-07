@@ -35,8 +35,9 @@ void main() {
       });
 
       test('returns empty string when category not found', () async {
-        when(() => mockDb.getCategoryById('cat-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockDb.getCategoryById('cat-1'),
+        ).thenAnswer((_) async => null);
 
         final result = await CorrectionExamplesBuilder.buildContext(
           task: task,
@@ -63,8 +64,9 @@ void main() {
       });
 
       test('returns empty string when getCategoryById throws', () async {
-        when(() => mockDb.getCategoryById('cat-1'))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockDb.getCategoryById('cat-1'),
+        ).thenThrow(Exception('DB error'));
 
         final result = await CorrectionExamplesBuilder.buildContext(
           task: task,

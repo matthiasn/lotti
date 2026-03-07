@@ -56,7 +56,8 @@ void main() {
     List<Override> additionalOverrides = const [],
   }) {
     final date = selectedDate ?? testDate;
-    final effectiveStats = stats ??
+    final effectiveStats =
+        stats ??
         const DayBudgetStats(
           totalPlanned: Duration.zero,
           totalRecorded: Duration.zero,
@@ -152,8 +153,11 @@ void main() {
     testWidgets('shows Today button when not on current day', (tester) async {
       // Use a date that is definitely not today (yesterday)
       final yesterday = DateTime.now().subtract(const Duration(days: 1));
-      final yesterdayMidnight =
-          DateTime(yesterday.year, yesterday.month, yesterday.day);
+      final yesterdayMidnight = DateTime(
+        yesterday.year,
+        yesterday.month,
+        yesterday.day,
+      );
 
       await tester.pumpWidget(
         createTestWidget(

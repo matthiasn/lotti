@@ -23,8 +23,9 @@ void main() {
       ]);
 
       final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)

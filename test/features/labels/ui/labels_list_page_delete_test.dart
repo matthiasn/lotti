@@ -42,8 +42,9 @@ Widget _buildPage({
   return ProviderScope(
     overrides: [
       labelsStreamProvider.overrideWith((ref) => Stream.value(labels)),
-      labelUsageStatsProvider
-          .overrideWith((ref) => Stream.value(const <String, int>{})),
+      labelUsageStatsProvider.overrideWith(
+        (ref) => Stream.value(const <String, int>{}),
+      ),
       labelsListControllerProvider.overrideWith(controllerFactory),
     ],
     child: makeTestableWidgetWithScaffold(const LabelsListPage()),
@@ -58,8 +59,9 @@ void main() {
     ensureThemingServicesRegistered();
 
     if (!getIt.isRegistered<EntitiesCacheService>()) {
-      getIt
-          .registerSingleton<EntitiesCacheService>(_MockEntitiesCacheService());
+      getIt.registerSingleton<EntitiesCacheService>(
+        _MockEntitiesCacheService(),
+      );
     }
   });
 
@@ -69,10 +71,12 @@ void main() {
     }
   });
   testWidgets('list shows no actions menu; chevron present', (tester) async {
-    await tester.pumpWidget(_buildPage(
-      labels: [testLabelDefinition1],
-      controllerFactory: _NoopLabelsListController.new,
-    ));
+    await tester.pumpWidget(
+      _buildPage(
+        labels: [testLabelDefinition1],
+        controllerFactory: _NoopLabelsListController.new,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(PopupMenuButton<String>), findsNothing);
@@ -80,10 +84,12 @@ void main() {
   });
 
   testWidgets('list does not trigger delete dialog', (tester) async {
-    await tester.pumpWidget(_buildPage(
-      labels: [testLabelDefinition1],
-      controllerFactory: _ThrowingLabelsListController.new,
-    ));
+    await tester.pumpWidget(
+      _buildPage(
+        labels: [testLabelDefinition1],
+        controllerFactory: _ThrowingLabelsListController.new,
+      ),
+    );
     await tester.pumpAndSettle();
 
     // There is no delete affordance on the list anymore; ensure no dialog is shown.

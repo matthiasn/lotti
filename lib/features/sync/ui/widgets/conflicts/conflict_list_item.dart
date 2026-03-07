@@ -32,8 +32,9 @@ class ConflictListItem extends StatelessWidget {
             iconColor: viewModel.statusColor,
           ),
           title: viewModel.timestampLabel,
-          trailing:
-              onTap == null ? null : const Icon(Icons.chevron_right_rounded),
+          trailing: onTap == null
+              ? null
+              : const Icon(Icons.chevron_right_rounded),
           subtitleWidget: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -46,26 +47,22 @@ class ConflictListItem extends StatelessWidget {
               Text(
                 '${context.messages.conflictEntityLabel}: ${viewModel.entityLabel}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: AppTheme.spacingSmall),
               Text(
                 '${context.messages.conflictIdLabel}: ${viewModel.conflictIdValue}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: AppTheme.alphaSurfaceVariant),
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant
+                      .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                ),
               ),
               const SizedBox(height: AppTheme.spacingSmall),
               Text(
                 viewModel.vectorClockLabel,
                 style: monoTabularStyle(fontSize: fontSizeSmall).copyWith(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .onSurfaceVariant
+                  color: Theme.of(context).colorScheme.onSurfaceVariant
                       .withValues(alpha: AppTheme.alphaSurfaceVariant),
                 ),
                 maxLines: 2,

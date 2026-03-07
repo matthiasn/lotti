@@ -67,14 +67,16 @@ void main() {
       mockRepository = MockCloudInferenceRepository();
 
       // Create a test Ollama provider
-      testOllamaProvider = AiConfig.inferenceProvider(
-        id: 'test-ollama-provider',
-        name: 'Test Ollama',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.ollama,
-      ) as AiConfigInferenceProvider;
+      testOllamaProvider =
+          AiConfig.inferenceProvider(
+                id: 'test-ollama-provider',
+                name: 'Test Ollama',
+                baseUrl: 'http://localhost:11434',
+                apiKey: '',
+                createdAt: DateTime.now(),
+                inferenceProviderType: InferenceProviderType.ollama,
+              )
+              as AiConfigInferenceProvider;
     });
 
     group('OllamaModelInstallDialog', () {
@@ -90,13 +92,19 @@ void main() {
 
         // Assert
         expect(find.text('Model Not Installed'), findsOneWidget);
-        expect(find.text('The model "$testModelName" is not installed.'),
-            findsOneWidget);
-        expect(find.text('To install it, run this command in your terminal:'),
-            findsOneWidget);
+        expect(
+          find.text('The model "$testModelName" is not installed.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('To install it, run this command in your terminal:'),
+          findsOneWidget,
+        );
         expect(find.text('ollama pull $testModelName'), findsOneWidget);
-        expect(find.text('Would you like to install it now from Lotti?'),
-            findsOneWidget);
+        expect(
+          find.text('Would you like to install it now from Lotti?'),
+          findsOneWidget,
+        );
         expect(find.text('Cancel'), findsOneWidget);
         expect(find.text('Install'), findsOneWidget);
       });
@@ -119,15 +127,17 @@ void main() {
         expect(find.byType(SelectableText), findsOneWidget);
       });
 
-      testWidgets('shows installation UI when install button is pressed',
-          (tester) async {
+      testWidgets('shows installation UI when install button is pressed', (
+        tester,
+      ) async {
         // Arrange
         final progressStream = Stream<OllamaPullProgress>.fromIterable([
           const OllamaPullProgress(status: 'pulling manifest', progress: 0),
         ]);
 
-        when(() => mockRepository.installModel(testModelName, any()))
-            .thenAnswer((_) => progressStream);
+        when(
+          () => mockRepository.installModel(testModelName, any()),
+        ).thenAnswer((_) => progressStream);
 
         await tester.pumpWidget(
           TestOllamaDialogWrapper(
@@ -148,8 +158,9 @@ void main() {
 
       testWidgets('shows error state when installation fails', (tester) async {
         // Arrange
-        when(() => mockRepository.installModel(testModelName, any()))
-            .thenThrow(Exception('Installation failed'));
+        when(
+          () => mockRepository.installModel(testModelName, any()),
+        ).thenThrow(Exception('Installation failed'));
 
         await tester.pumpWidget(
           TestOllamaDialogWrapper(
@@ -165,27 +176,32 @@ void main() {
 
         // Assert - Should show error state (the dialog sets _isInstalling = false on error)
         expect(find.text('Model Not Installed'), findsOneWidget);
-        expect(find.text('Install'),
-            findsOneWidget); // Button should still be there
+        expect(
+          find.text('Install'),
+          findsOneWidget,
+        ); // Button should still be there
       });
 
       testWidgets('handles missing Ollama provider gracefully', (tester) async {
         // Arrange
-        when(() =>
-            mockRepository.installModel(
-                testModelName, any())).thenThrow(Exception(
-            'Ollama provider not found. Please configure Ollama in settings.'));
+        when(() => mockRepository.installModel(testModelName, any())).thenThrow(
+          Exception(
+            'Ollama provider not found. Please configure Ollama in settings.',
+          ),
+        );
 
         // Create a test wrapper without Ollama provider
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              cloudInferenceRepositoryProvider
-                  .overrideWithValue(mockRepository),
+              cloudInferenceRepositoryProvider.overrideWithValue(
+                mockRepository,
+              ),
               aiConfigByTypeControllerProvider(
                 configType: AiConfigType.inferenceProvider,
               ).overrideWith(
-                  () => MockAiConfigByTypeController([])), // No providers
+                () => MockAiConfigByTypeController([]),
+              ), // No providers
             ],
             child: const MaterialApp(
               localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -203,8 +219,10 @@ void main() {
 
         // Assert - Should show initial state again after error
         expect(find.text('Model Not Installed'), findsOneWidget);
-        expect(find.text('Install'),
-            findsOneWidget); // Button should still be there
+        expect(
+          find.text('Install'),
+          findsOneWidget,
+        ); // Button should still be there
       });
 
       testWidgets('has correct dialog structure', (tester) async {
@@ -223,15 +241,17 @@ void main() {
         expect(find.byType(ElevatedButton), findsOneWidget); // Install button
       });
 
-      testWidgets('shows progress indicator during installation',
-          (tester) async {
+      testWidgets('shows progress indicator during installation', (
+        tester,
+      ) async {
         // Arrange
         final progressStream = Stream<OllamaPullProgress>.fromIterable([
           const OllamaPullProgress(status: 'downloading', progress: 0.5),
         ]);
 
-        when(() => mockRepository.installModel(testModelName, any()))
-            .thenAnswer((_) => progressStream);
+        when(
+          () => mockRepository.installModel(testModelName, any()),
+        ).thenAnswer((_) => progressStream);
 
         await tester.pumpWidget(
           TestOllamaDialogWrapper(

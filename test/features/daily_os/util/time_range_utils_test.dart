@@ -326,7 +326,9 @@ void main() {
       // Without union: 2h + 2h = 4h
       // With union: 10:00 - 13:00 = 3h
       expect(
-          calculateUnionDuration([range1, range2]), const Duration(hours: 3));
+        calculateUnionDuration([range1, range2]),
+        const Duration(hours: 3),
+      );
     });
 
     test('sums non-overlapping ranges', () {
@@ -340,7 +342,9 @@ void main() {
       );
 
       expect(
-          calculateUnionDuration([range1, range2]), const Duration(hours: 2));
+        calculateUnionDuration([range1, range2]),
+        const Duration(hours: 2),
+      );
     });
 
     test('gym trip scenario: prevents double counting', () {

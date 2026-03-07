@@ -89,8 +89,9 @@ class OutboxListItemViewModel {
         ? trimmedAttachment
         : _titleCase(messages.outboxMonitorNoAttachment, locale);
 
-    final attachmentIcon =
-        hasAttachment ? Icons.attachment_rounded : Icons.block_outlined;
+    final attachmentIcon = hasAttachment
+        ? Icons.attachment_rounded
+        : Icons.block_outlined;
 
     final semanticsLabel =
         '$statusLabel, $timestamp, ${payloadKind.toLowerCase()}';

@@ -26,16 +26,16 @@ void main() {
 
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.flutter.io/path_provider'),
-      (MethodCall methodCall) async {
-        if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-            methodCall.method == 'getApplicationSupportDirectory' ||
-            methodCall.method == 'getTemporaryDirectory') {
-          return testDirectory!.path;
-        }
-        return null;
-      },
-    );
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory' ||
+                methodCall.method == 'getTemporaryDirectory') {
+              return testDirectory!.path;
+            }
+            return null;
+          },
+        );
 
     getIt.registerSingleton<Directory>(testDirectory!);
   });
@@ -97,8 +97,9 @@ void main() {
       expect(version.first.read<int>('user_version'), db.schemaVersion);
 
       // Columns exist
-      final tableInfo =
-          await db.customSelect('PRAGMA table_info(journal)').get();
+      final tableInfo = await db
+          .customSelect('PRAGMA table_info(journal)')
+          .get();
       final cols = tableInfo.map((r) => r.read<String>('name')).toSet();
       expect(cols.contains('task_priority'), isTrue);
       expect(cols.contains('task_priority_rank'), isTrue);
@@ -106,7 +107,8 @@ void main() {
       // Backfill applied for legacy task rows: default P2 / rank 2
       final row = await db
           .customSelect(
-              "SELECT task_priority, task_priority_rank FROM journal WHERE id = 'legacy-task'")
+            "SELECT task_priority, task_priority_rank FROM journal WHERE id = 'legacy-task'",
+          )
           .get();
       expect(row, hasLength(1));
       expect(row.first.read<String>('task_priority'), equals('P2'));
@@ -115,7 +117,8 @@ void main() {
       // Index exists and references task_priority_rank
       final idx = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_journal_tasks'")
+            "SELECT sql FROM sqlite_master WHERE type='index' AND name='idx_journal_tasks'",
+          )
           .get();
       expect(idx, hasLength(1));
       expect(idx.first.read<String>('sql'), contains('task_priority_rank'));

@@ -72,8 +72,9 @@ void main() {
         expect(find.text('Select Provider Type'), findsOneWidget);
       });
 
-      testWidgets('displays all provider types with modern styling',
-          (tester) async {
+      testWidgets('displays all provider types with modern styling', (
+        tester,
+      ) async {
         // Act
         await tester.pumpWidget(createTestWidget());
         await openModal(tester);
@@ -82,10 +83,12 @@ void main() {
         expect(find.byType(InkWell), findsAtLeastNWidgets(6));
 
         // Check for styled containers
-        final styledContainers = find.byWidgetPredicate((widget) =>
-            widget is Container &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration as BoxDecoration?)?.borderRadius != null);
+        final styledContainers = find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration?)?.borderRadius != null,
+        );
         expect(styledContainers, findsAtLeastNWidgets(3));
       });
 
@@ -102,8 +105,9 @@ void main() {
     });
 
     group('Visual Design Quality', () {
-      testWidgets('applies Series A quality styling with proper contrast',
-          (tester) async {
+      testWidgets('applies Series A quality styling with proper contrast', (
+        tester,
+      ) async {
         // Act
         await tester.pumpWidget(createTestWidget());
         await openModal(tester);
@@ -112,10 +116,12 @@ void main() {
         expect(find.byType(ColoredBox), findsAtLeastNWidgets(1));
 
         // Check for proper shadows and modern styling
-        final shadowedContainers = find.byWidgetPredicate((widget) =>
-            widget is Container &&
-            widget.decoration is BoxDecoration &&
-            (widget.decoration as BoxDecoration?)?.boxShadow != null);
+        final shadowedContainers = find.byWidgetPredicate(
+          (widget) =>
+              widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration?)?.boxShadow != null,
+        );
         expect(shadowedContainers, findsAtLeastNWidgets(1));
       });
 
@@ -132,8 +138,9 @@ void main() {
         expect(find.byType(Column), findsAtLeastNWidgets(1));
       });
 
-      testWidgets('uses consistent visual hierarchy with modern typography',
-          (tester) async {
+      testWidgets('uses consistent visual hierarchy with modern typography', (
+        tester,
+      ) async {
         // Act
         await tester.pumpWidget(createTestWidget());
         await openModal(tester);
@@ -145,8 +152,9 @@ void main() {
         expect(find.byType(Text), findsAtLeastNWidgets(10));
       });
 
-      testWidgets('has proper touch targets and interaction feedback',
-          (tester) async {
+      testWidgets('has proper touch targets and interaction feedback', (
+        tester,
+      ) async {
         // Act
         await tester.pumpWidget(createTestWidget());
         await openModal(tester);
@@ -165,8 +173,10 @@ void main() {
           expect(inkWell.onTap, isNotNull);
         }
         // At least half should have border radius (provider cards)
-        expect(inkWellsWithBorderRadius,
-            greaterThan(inkWells.evaluate().length ~/ 2));
+        expect(
+          inkWellsWithBorderRadius,
+          greaterThan(inkWells.evaluate().length ~/ 2),
+        );
       });
     });
 
@@ -209,7 +219,9 @@ void main() {
         // Assert - should handle interactions without crashing (modal may or may not be closed)
         // The important thing is that we don't crash
         expect(
-            find.byType(ProviderTypeSelectionModal), findsAtLeastNWidgets(0));
+          find.byType(ProviderTypeSelectionModal),
+          findsAtLeastNWidgets(0),
+        );
       });
     });
 

@@ -107,8 +107,9 @@ class EntryDetailsWidget extends ConsumerWidget {
     final card = ModernBaseCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      padding:
-          const EdgeInsets.symmetric(horizontal: AppTheme.cardPaddingCompact),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTheme.cardPaddingCompact,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -149,11 +150,13 @@ class EntryDetailsWidget extends ConsumerWidget {
     if (isHighlighted) {
       // Use the category color for the entry to match calendar tint
       final categoryId = item.meta.categoryId;
-      final category =
-          getIt<EntitiesCacheService>().getCategoryById(categoryId);
+      final category = getIt<EntitiesCacheService>().getCategoryById(
+        categoryId,
+      );
       const fallback = Colors.pink;
-      final categoryColor =
-          category != null ? colorFromCssHex(category.color) : fallback;
+      final categoryColor = category != null
+          ? colorFromCssHex(category.color)
+          : fallback;
       return Stack(
         children: [
           card,
@@ -276,12 +279,16 @@ class _PulsingBorderState extends State<_PulsingBorder>
       final items = <TweenSequenceItem<double>>[];
       for (var i = 0; i < n; i++) {
         final isLast = i == n - 1;
-        final upTween = Tween<double>(begin: low, end: high)
-            .chain(CurveTween(curve: Curves.easeInOutSine));
+        final upTween = Tween<double>(
+          begin: low,
+          end: high,
+        ).chain(CurveTween(curve: Curves.easeInOutSine));
         final downCurve = isLast ? Curves.easeOutCubic : Curves.easeInOutSine;
         final downEnd = isLast ? 0.0 : low;
-        final downTween = Tween<double>(begin: high, end: downEnd)
-            .chain(CurveTween(curve: downCurve));
+        final downTween = Tween<double>(
+          begin: high,
+          end: downEnd,
+        ).chain(CurveTween(curve: downCurve));
 
         items
           ..add(TweenSequenceItem(tween: upTween, weight: 50))
@@ -300,8 +307,10 @@ class _PulsingBorderState extends State<_PulsingBorder>
     return TweenSequence<double>([
       // Rise
       TweenSequenceItem(
-        tween: Tween<double>(begin: low, end: high)
-            .chain(CurveTween(curve: Curves.easeInSine)),
+        tween: Tween<double>(
+          begin: low,
+          end: high,
+        ).chain(CurveTween(curve: Curves.easeInSine)),
         weight: 25,
       ),
       // Brief plateau at peak to reduce perceived abruptness
@@ -311,8 +320,10 @@ class _PulsingBorderState extends State<_PulsingBorder>
       ),
       // Long fade with slow tail for softness
       TweenSequenceItem(
-        tween: Tween<double>(begin: high, end: low)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: high,
+          end: low,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 65,
       ),
     ]).animate(_controller);
@@ -343,7 +354,8 @@ class _PulsingBorderState extends State<_PulsingBorder>
 
   @override
   Widget build(BuildContext context) {
-    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ??
+    final dpr =
+        MediaQuery.maybeOf(context)?.devicePixelRatio ??
         View.of(context).devicePixelRatio;
     // Derive a slight tint shift based on current opacity to increase visibility
     const low = 0.4;
@@ -396,7 +408,8 @@ class EntryDetailsContent extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final isCollapsible = linkedFrom != null &&
+    final isCollapsible =
+        linkedFrom != null &&
         (item is JournalImage || item is JournalAudio || item is JournalEntry);
     final isCollapsed = isCollapsible && (link?.collapsed ?? false);
 
@@ -407,8 +420,7 @@ class EntryDetailsContent extends ConsumerWidget {
       Checklist() ||
       ChecklistItem() ||
       AiResponseEntry() ||
-      RatingEntry() =>
-        true,
+      RatingEntry() => true,
       _ => false,
     };
 
@@ -420,26 +432,26 @@ class EntryDetailsContent extends ConsumerWidget {
       MeasurementEntry() => MeasurementSummary(item),
       JournalEvent() => EventForm(item),
       HabitCompletionEntry() => HabitSummary(
-          item,
-          paddingLeft: 10,
-          paddingBottom: 5,
-          showIcon: true,
-          showText: false,
-        ),
+        item,
+        paddingLeft: 10,
+        paddingBottom: 5,
+        showIcon: true,
+        showText: false,
+      ),
       AiResponseEntry() => AiResponseSummary(
-          item,
-          linkedFromId: linkedFrom?.id,
-          fadeOut: true,
-        ),
+        item,
+        linkedFromId: linkedFrom?.id,
+        fadeOut: true,
+      ),
       Checklist() => ChecklistWrapper(
-          entryId: item.meta.id,
-          taskId: item.data.linkedTasks.first,
-        ),
+        entryId: item.meta.id,
+        taskId: item.data.linkedTasks.first,
+      ),
       ChecklistItem() => ChecklistItemWrapper(
-          item.id,
-          checklistId: '',
-          taskId: '',
-        ),
+        item.id,
+        checklistId: '',
+        taskId: '',
+      ),
       RatingEntry() => RatingSummary(item),
       _ => null,
     };
@@ -459,7 +471,9 @@ class EntryDetailsContent extends ConsumerWidget {
           ? () async {
               final isExpanding = currentLink.collapsed ?? false;
               try {
-                await ref.read(journalRepositoryProvider).updateLink(
+                await ref
+                    .read(journalRepositoryProvider)
+                    .updateLink(
                       currentLink.copyWith(
                         collapsed: !(currentLink.collapsed ?? false),
                       ),
@@ -511,7 +525,7 @@ class EntryDetailsContent extends ConsumerWidget {
           if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
           if (item is JournalImage) EntryImageWidget(item),
           if (!shouldHideEditor) EditorWidget(entryId: itemId),
-          if (detailSection != null) detailSection,
+          ?detailSection,
           if (item is JournalAudio)
             NestedAiResponsesWidget(
               parentEntryId: itemId,

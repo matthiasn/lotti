@@ -148,8 +148,9 @@ void main() {
       expect(find.byTooltip('Edit labels'), findsOneWidget);
     });
 
-    testWidgets('shows "No labels assigned" when event has no labels',
-        (tester) async {
+    testWidgets('shows "No labels assigned" when event has no labels', (
+      tester,
+    ) async {
       final event = createTestEvent(labelIds: []);
 
       await tester.pumpWidget(buildWrapper(event));
@@ -207,8 +208,9 @@ void main() {
   });
 
   group('EventForm labels private filtering', () {
-    testWidgets('hides private labels when showPrivate is false',
-        (tester) async {
+    testWidgets('hides private labels when showPrivate is false', (
+      tester,
+    ) async {
       final privateLabel = testLabelDefinition1.copyWith(
         id: 'label-private',
         name: 'Private Label',
@@ -216,8 +218,9 @@ void main() {
       );
 
       when(() => cacheService.showPrivateEntries).thenReturn(false);
-      when(() => cacheService.getLabelById('label-private'))
-          .thenReturn(privateLabel);
+      when(
+        () => cacheService.getLabelById('label-private'),
+      ).thenReturn(privateLabel);
 
       final event = createTestEvent(labelIds: ['label-a', 'label-private']);
 

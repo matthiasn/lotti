@@ -20,8 +20,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(state.showTasks),
-          journalPageControllerProvider(state.showTasks)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            state.showTasks,
+          ).overrideWith(() => fakeController),
         ],
         child: const CustomScrollView(
           slivers: [JournalSliverAppBar()],
@@ -31,14 +32,17 @@ void main() {
   }
 
   group('JournalSliverAppBar search mode toggle', () {
-    testWidgets('toggle is hidden when enableVectorSearch is false',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          showTasks: true,
-          enableVectorSearch: false,
+    testWidgets('toggle is hidden when enableVectorSearch is false', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            showTasks: true,
+            enableVectorSearch: false,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -47,13 +51,16 @@ void main() {
       );
     });
 
-    testWidgets('toggle is visible on journal tab when flag is enabled',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          enableVectorSearch: true,
+    testWidgets('toggle is visible on journal tab when flag is enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            enableVectorSearch: true,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -62,14 +69,17 @@ void main() {
       );
     });
 
-    testWidgets('toggle is visible on tasks tab when flag is enabled',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          showTasks: true,
-          enableVectorSearch: true,
+    testWidgets('toggle is visible on tasks tab when flag is enabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            showTasks: true,
+            enableVectorSearch: true,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(
@@ -82,13 +92,15 @@ void main() {
     });
 
     testWidgets('tapping vector segment calls setSearchMode', (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          showTasks: true,
-          enableVectorSearch: true,
-          searchMode: SearchMode.fullText,
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            showTasks: true,
+            enableVectorSearch: true,
+            searchMode: SearchMode.fullText,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       // Tap the vector segment
@@ -98,32 +110,38 @@ void main() {
       expect(fakeController.searchModeCalls, contains(SearchMode.vector));
     });
 
-    testWidgets('shows loading indicator when vector search is in-flight',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          showTasks: true,
-          enableVectorSearch: true,
-          searchMode: SearchMode.vector,
-          vectorSearchInFlight: true,
+    testWidgets('shows loading indicator when vector search is in-flight', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            showTasks: true,
+            enableVectorSearch: true,
+            searchMode: SearchMode.vector,
+            vectorSearchInFlight: true,
+          ),
         ),
-      ));
+      );
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows timing info after vector search completes',
-        (tester) async {
-      await tester.pumpWidget(buildSubject(
-        const JournalPageState(
-          showTasks: true,
-          enableVectorSearch: true,
-          searchMode: SearchMode.vector,
-          vectorSearchElapsed: Duration(milliseconds: 324),
-          vectorSearchResultCount: 8,
+    testWidgets('shows timing info after vector search completes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          const JournalPageState(
+            showTasks: true,
+            enableVectorSearch: true,
+            searchMode: SearchMode.vector,
+            vectorSearchElapsed: Duration(milliseconds: 324),
+            vectorSearchResultCount: 8,
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
 
       expect(find.textContaining('324'), findsOneWidget);

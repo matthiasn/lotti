@@ -33,22 +33,25 @@ class ActionMenuListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     // Determine colors based on state
     final baseColor = isDisabled
-        ? context.colorScheme.onSurface
-            .withValues(alpha: AppTheme.alphaDisabled)
+        ? context.colorScheme.onSurface.withValues(
+            alpha: AppTheme.alphaDisabled,
+          )
         : isDestructive
-            ? context.colorScheme.error
-            : context.colorScheme.onSurface;
+        ? context.colorScheme.error
+        : context.colorScheme.onSurface;
 
     final effectiveIconColor = isDisabled
-        ? context.colorScheme.onSurface
-            .withValues(alpha: AppTheme.alphaDisabled)
+        ? context.colorScheme.onSurface.withValues(
+            alpha: AppTheme.alphaDisabled,
+          )
         : isDestructive
-            ? context.colorScheme.error
-            : iconColor ?? context.colorScheme.onSurface;
+        ? context.colorScheme.error
+        : iconColor ?? context.colorScheme.onSurface;
 
     final subtitleColor = isDisabled
-        ? context.colorScheme.onSurface
-            .withValues(alpha: AppTheme.alphaDisabled)
+        ? context.colorScheme.onSurface.withValues(
+            alpha: AppTheme.alphaDisabled,
+          )
         : context.colorScheme.onSurfaceVariant;
 
     return Material(

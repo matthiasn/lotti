@@ -22,13 +22,15 @@ final kAgentTestDate = DateTime(2024, 3, 15, 10, 30);
 const kTestAgentId = 'agent-001';
 
 /// Default task metadata snapshot for redundancy-filter tests.
-const kTestTaskMetadataSnapshot = (
-  title: 'Fix login bug',
-  status: 'IN PROGRESS',
-  priority: 'P1',
-  estimateMinutes: 120,
-  dueDate: '2026-03-15',
-) as TaskMetadataSnapshot;
+const kTestTaskMetadataSnapshot =
+    (
+          title: 'Fix login bug',
+          status: 'IN PROGRESS',
+          priority: 'P1',
+          estimateMinutes: 120,
+          dueDate: '2026-03-15',
+        )
+        as TaskMetadataSnapshot;
 
 // ── Entity factories ──────────────────────────────────────────────────────────
 
@@ -47,19 +49,20 @@ AgentIdentityEntity makeTestIdentity({
   VectorClock? vectorClock,
 }) {
   return AgentDomainEntity.agent(
-    id: id,
-    agentId: agentId,
-    kind: kind,
-    displayName: displayName,
-    lifecycle: lifecycle,
-    mode: mode,
-    allowedCategoryIds: allowedCategoryIds,
-    currentStateId: currentStateId,
-    config: config,
-    createdAt: createdAt ?? kAgentTestDate,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-  ) as AgentIdentityEntity;
+        id: id,
+        agentId: agentId,
+        kind: kind,
+        displayName: displayName,
+        lifecycle: lifecycle,
+        mode: mode,
+        allowedCategoryIds: allowedCategoryIds,
+        currentStateId: currentStateId,
+        config: config,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AgentIdentityEntity;
 }
 
 AgentStateEntity makeTestState({
@@ -77,19 +80,20 @@ AgentStateEntity makeTestState({
   DateTime? scheduledWakeAt,
 }) {
   return AgentDomainEntity.agentState(
-    id: id,
-    agentId: agentId,
-    revision: revision,
-    slots: slots,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    wakeCounter: wakeCounter,
-    consecutiveFailureCount: consecutiveFailureCount,
-    lastWakeAt: lastWakeAt,
-    nextWakeAt: nextWakeAt,
-    sleepUntil: sleepUntil,
-    scheduledWakeAt: scheduledWakeAt,
-  ) as AgentStateEntity;
+        id: id,
+        agentId: agentId,
+        revision: revision,
+        slots: slots,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        wakeCounter: wakeCounter,
+        consecutiveFailureCount: consecutiveFailureCount,
+        lastWakeAt: lastWakeAt,
+        nextWakeAt: nextWakeAt,
+        sleepUntil: sleepUntil,
+        scheduledWakeAt: scheduledWakeAt,
+      )
+      as AgentStateEntity;
 }
 
 AgentMessageEntity makeTestMessage({
@@ -107,20 +111,22 @@ AgentMessageEntity makeTestMessage({
   String? runKey,
 }) {
   return AgentDomainEntity.agentMessage(
-    id: id,
-    agentId: agentId,
-    threadId: threadId,
-    kind: kind,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    metadata: metadata ??
-        AgentMessageMetadata(
-          toolName: toolName,
-          errorMessage: errorMessage,
-          runKey: runKey,
-        ),
-    contentEntryId: contentEntryId,
-  ) as AgentMessageEntity;
+        id: id,
+        agentId: agentId,
+        threadId: threadId,
+        kind: kind,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        metadata:
+            metadata ??
+            AgentMessageMetadata(
+              toolName: toolName,
+              errorMessage: errorMessage,
+              runKey: runKey,
+            ),
+        contentEntryId: contentEntryId,
+      )
+      as AgentMessageEntity;
 }
 
 AgentMessagePayloadEntity makeTestMessagePayload({
@@ -131,12 +137,13 @@ AgentMessagePayloadEntity makeTestMessagePayload({
   Map<String, Object?> content = const {'text': 'Payload content'},
 }) {
   return AgentDomainEntity.agentMessagePayload(
-    id: id,
-    agentId: agentId,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    content: content,
-  ) as AgentMessagePayloadEntity;
+        id: id,
+        agentId: agentId,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        content: content,
+      )
+      as AgentMessagePayloadEntity;
 }
 
 AgentReportEntity makeTestReport({
@@ -150,15 +157,16 @@ AgentReportEntity makeTestReport({
   double? confidence,
 }) {
   return AgentDomainEntity.agentReport(
-    id: id,
-    agentId: agentId,
-    scope: scope,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    content: content,
-    tldr: tldr,
-    confidence: confidence,
-  ) as AgentReportEntity;
+        id: id,
+        agentId: agentId,
+        scope: scope,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        content: content,
+        tldr: tldr,
+        confidence: confidence,
+      )
+      as AgentReportEntity;
 }
 
 AgentReportHeadEntity makeTestReportHead({
@@ -170,13 +178,14 @@ AgentReportHeadEntity makeTestReportHead({
   VectorClock? vectorClock,
 }) {
   return AgentDomainEntity.agentReportHead(
-    id: id,
-    agentId: agentId,
-    scope: scope,
-    reportId: reportId,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-  ) as AgentReportHeadEntity;
+        id: id,
+        agentId: agentId,
+        scope: scope,
+        reportId: reportId,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AgentReportHeadEntity;
 }
 
 // ── Template entity factories ────────────────────────────────────────────────
@@ -194,17 +203,18 @@ AgentTemplateEntity makeTestTemplate({
   VectorClock? vectorClock,
 }) {
   return AgentDomainEntity.agentTemplate(
-    id: id,
-    agentId: agentId,
-    displayName: displayName,
-    kind: kind,
-    modelId: modelId,
-    categoryIds: categoryIds,
-    profileId: profileId,
-    createdAt: createdAt ?? kAgentTestDate,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-  ) as AgentTemplateEntity;
+        id: id,
+        agentId: agentId,
+        displayName: displayName,
+        kind: kind,
+        modelId: modelId,
+        categoryIds: categoryIds,
+        profileId: profileId,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AgentTemplateEntity;
 }
 
 AgentTemplateVersionEntity makeTestTemplateVersion({
@@ -222,19 +232,20 @@ AgentTemplateVersionEntity makeTestTemplateVersion({
   VectorClock? vectorClock,
 }) {
   return AgentDomainEntity.agentTemplateVersion(
-    id: id,
-    agentId: agentId,
-    version: version,
-    status: status,
-    directives: directives,
-    generalDirective: generalDirective,
-    reportDirective: reportDirective,
-    authoredBy: authoredBy,
-    modelId: modelId,
-    profileId: profileId,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-  ) as AgentTemplateVersionEntity;
+        id: id,
+        agentId: agentId,
+        version: version,
+        status: status,
+        directives: directives,
+        generalDirective: generalDirective,
+        reportDirective: reportDirective,
+        authoredBy: authoredBy,
+        modelId: modelId,
+        profileId: profileId,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AgentTemplateVersionEntity;
 }
 
 AgentTemplateHeadEntity makeTestTemplateHead({
@@ -245,12 +256,13 @@ AgentTemplateHeadEntity makeTestTemplateHead({
   VectorClock? vectorClock,
 }) {
   return AgentDomainEntity.agentTemplateHead(
-    id: id,
-    agentId: agentId,
-    versionId: versionId,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-  ) as AgentTemplateHeadEntity;
+        id: id,
+        agentId: agentId,
+        versionId: versionId,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as AgentTemplateHeadEntity;
 }
 
 // ── Template link factory ────────────────────────────────────────────────────
@@ -410,19 +422,20 @@ EvolutionSessionEntity makeTestEvolutionSession({
   DateTime? completedAt,
 }) {
   return AgentDomainEntity.evolutionSession(
-    id: id,
-    agentId: agentId,
-    templateId: templateId,
-    sessionNumber: sessionNumber,
-    status: status,
-    createdAt: createdAt ?? kAgentTestDate,
-    updatedAt: updatedAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    proposedVersionId: proposedVersionId,
-    feedbackSummary: feedbackSummary,
-    userRating: userRating,
-    completedAt: completedAt,
-  ) as EvolutionSessionEntity;
+        id: id,
+        agentId: agentId,
+        templateId: templateId,
+        sessionNumber: sessionNumber,
+        status: status,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        proposedVersionId: proposedVersionId,
+        feedbackSummary: feedbackSummary,
+        userRating: userRating,
+        completedAt: completedAt,
+      )
+      as EvolutionSessionEntity;
 }
 
 EvolutionNoteEntity makeTestEvolutionNote({
@@ -435,14 +448,15 @@ EvolutionNoteEntity makeTestEvolutionNote({
   String content = 'Test evolution note.',
 }) {
   return AgentDomainEntity.evolutionNote(
-    id: id,
-    agentId: agentId,
-    sessionId: sessionId,
-    kind: kind,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    content: content,
-  ) as EvolutionNoteEntity;
+        id: id,
+        agentId: agentId,
+        sessionId: sessionId,
+        kind: kind,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        content: content,
+      )
+      as EvolutionNoteEntity;
 }
 
 // ── Change set entity factories ──────────────────────────────────────────────
@@ -460,24 +474,26 @@ ChangeSetEntity makeTestChangeSet({
   DateTime? resolvedAt,
 }) {
   return AgentDomainEntity.changeSet(
-    id: id,
-    agentId: agentId,
-    taskId: taskId,
-    threadId: threadId,
-    runKey: runKey,
-    status: status,
-    items: items ??
-        const [
-          ChangeItem(
-            toolName: 'update_task_estimate',
-            args: {'minutes': 120},
-            humanSummary: 'Set estimate to 2 hours',
-          ),
-        ],
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    resolvedAt: resolvedAt,
-  ) as ChangeSetEntity;
+        id: id,
+        agentId: agentId,
+        taskId: taskId,
+        threadId: threadId,
+        runKey: runKey,
+        status: status,
+        items:
+            items ??
+            const [
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 120},
+                humanSummary: 'Set estimate to 2 hours',
+              ),
+            ],
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        resolvedAt: resolvedAt,
+      )
+      as ChangeSetEntity;
 }
 
 ChangeDecisionEntity makeTestChangeDecision({
@@ -495,19 +511,20 @@ ChangeDecisionEntity makeTestChangeDecision({
   Map<String, dynamic>? args,
 }) {
   return AgentDomainEntity.changeDecision(
-    id: id,
-    agentId: agentId,
-    changeSetId: changeSetId,
-    itemIndex: itemIndex,
-    toolName: toolName,
-    verdict: verdict,
-    createdAt: createdAt ?? kAgentTestDate,
-    vectorClock: vectorClock,
-    taskId: taskId,
-    rejectionReason: rejectionReason,
-    humanSummary: humanSummary,
-    args: args,
-  ) as ChangeDecisionEntity;
+        id: id,
+        agentId: agentId,
+        changeSetId: changeSetId,
+        itemIndex: itemIndex,
+        toolName: toolName,
+        verdict: verdict,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        taskId: taskId,
+        rejectionReason: rejectionReason,
+        humanSummary: humanSummary,
+        args: args,
+      )
+      as ChangeDecisionEntity;
 }
 
 // ── AI config factories (for inference provider resolution tests) ────────────
@@ -519,13 +536,14 @@ AiConfigInferenceProvider testInferenceProvider({
   String apiKey = 'test-key',
 }) {
   return AiConfig.inferenceProvider(
-    id: id,
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    name: 'Gemini',
-    inferenceProviderType: InferenceProviderType.gemini,
-    apiKey: apiKey,
-    createdAt: DateTime(2024),
-  ) as AiConfigInferenceProvider;
+        id: id,
+        baseUrl: 'https://generativelanguage.googleapis.com',
+        name: 'Gemini',
+        inferenceProviderType: InferenceProviderType.gemini,
+        apiKey: apiKey,
+        createdAt: DateTime(2024),
+      )
+      as AiConfigInferenceProvider;
 }
 
 /// Creates a test [AiConfigInferenceProvider] for a local provider (no API key
@@ -535,13 +553,14 @@ AiConfigInferenceProvider testLocalInferenceProvider({
   String apiKey = '',
 }) {
   return AiConfig.inferenceProvider(
-    id: id,
-    baseUrl: 'http://localhost:11434',
-    name: 'Ollama',
-    inferenceProviderType: InferenceProviderType.ollama,
-    apiKey: apiKey,
-    createdAt: DateTime(2024),
-  ) as AiConfigInferenceProvider;
+        id: id,
+        baseUrl: 'http://localhost:11434',
+        name: 'Ollama',
+        inferenceProviderType: InferenceProviderType.ollama,
+        apiKey: apiKey,
+        createdAt: DateTime(2024),
+      )
+      as AiConfigInferenceProvider;
 }
 
 /// Creates a test [AiConfigInferenceProfile].
@@ -556,16 +575,17 @@ AiConfigInferenceProfile testInferenceProfile({
   bool desktopOnly = false,
 }) {
   return AiConfig.inferenceProfile(
-    id: id,
-    name: name,
-    thinkingModelId: thinkingModelId,
-    imageRecognitionModelId: imageRecognitionModelId,
-    transcriptionModelId: transcriptionModelId,
-    imageGenerationModelId: imageGenerationModelId,
-    isDefault: isDefault,
-    desktopOnly: desktopOnly,
-    createdAt: DateTime(2024),
-  ) as AiConfigInferenceProfile;
+        id: id,
+        name: name,
+        thinkingModelId: thinkingModelId,
+        imageRecognitionModelId: imageRecognitionModelId,
+        transcriptionModelId: transcriptionModelId,
+        imageGenerationModelId: imageGenerationModelId,
+        isDefault: isDefault,
+        desktopOnly: desktopOnly,
+        createdAt: DateTime(2024),
+      )
+      as AiConfigInferenceProfile;
 }
 
 /// Creates a test [AiConfigModel] for use in provider resolution tests.
@@ -575,15 +595,16 @@ AiConfigModel testAiModel({
   String inferenceProviderId = 'provider-1',
 }) {
   return AiConfig.model(
-    id: id,
-    name: 'Test Model',
-    providerModelId: providerModelId,
-    inferenceProviderId: inferenceProviderId,
-    createdAt: DateTime(2024),
-    inputModalities: const [Modality.text],
-    outputModalities: const [Modality.text],
-    isReasoningModel: false,
-  ) as AiConfigModel;
+        id: id,
+        name: 'Test Model',
+        providerModelId: providerModelId,
+        inferenceProviderId: inferenceProviderId,
+        createdAt: DateTime(2024),
+        inputModalities: const [Modality.text],
+        outputModalities: const [Modality.text],
+        isReasoningModel: false,
+      )
+      as AiConfigModel;
 }
 
 // ── Feedback entity factories ──────────────────────────────────────────────

@@ -89,8 +89,9 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 
-  testWidgets('shows HH:MM text on desktop when isDesktop=true',
-      (tester) async {
+  testWidgets('shows HH:MM text on desktop when isDesktop=true', (
+    tester,
+  ) async {
     const taskId = 'task-2';
     platform.isDesktop = true;
     platform.isMobile = false;
@@ -132,42 +133,43 @@ void main() {
   });
 
   testWidgets(
-      'shows time text on mobile when showTimeText is true (header context)',
-      (tester) async {
-    const taskId = 'task-3b';
-    platform.isDesktop = false;
-    platform.isMobile = true;
+    'shows time text on mobile when showTimeText is true (header context)',
+    (tester) async {
+      const taskId = 'task-3b';
+      platform.isDesktop = false;
+      platform.isMobile = true;
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          taskProgressControllerProvider(id: taskId).overrideWith(
-            () => _FixedProgressController(
-              progress: const Duration(minutes: 45),
-              estimate: const Duration(hours: 1),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskProgressControllerProvider(id: taskId).overrideWith(
+              () => _FixedProgressController(
+                progress: const Duration(minutes: 45),
+                estimate: const Duration(hours: 1),
+              ),
             ),
-          ),
-        ],
-        child: const MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: CompactTaskProgress(
-                taskId: taskId,
-                showTimeText: true,
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: CompactTaskProgress(
+                  taskId: taskId,
+                  showTimeText: true,
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    final textFinder = find.descendant(
-      of: find.byType(CompactTaskProgress),
-      matching: find.byType(Text),
-    );
-    expect(textFinder, findsOneWidget);
-  });
+      final textFinder = find.descendant(
+        of: find.byType(CompactTaskProgress),
+        matching: find.byType(Text),
+      );
+      expect(textFinder, findsOneWidget);
+    },
+  );
 
   testWidgets('progress percentage is 50% for half duration', (tester) async {
     const taskId = 'task-4a';
@@ -188,8 +190,9 @@ void main() {
     expect(indicator.value, closeTo(0.5, 0.001));
   });
 
-  testWidgets('progress percentage is 100% at or above estimate',
-      (tester) async {
+  testWidgets('progress percentage is 100% at or above estimate', (
+    tester,
+  ) async {
     const taskId = 'task-4b';
     platform.isDesktop = false;
     platform.isMobile = true;
@@ -208,8 +211,9 @@ void main() {
     expect(indicator.value, closeTo(1.0, 0.001));
   });
 
-  testWidgets('progress percentage clamps at 100% when over estimate',
-      (tester) async {
+  testWidgets('progress percentage clamps at 100% when over estimate', (
+    tester,
+  ) async {
     const taskId = 'task-4c';
     platform.isDesktop = false;
     platform.isMobile = true;
@@ -267,8 +271,9 @@ void main() {
     expect(features.any((f) => f.feature == 'tnum'), isTrue);
   });
 
-  testWidgets('falls back to monoTabularStyle when titleSmall is null',
-      (tester) async {
+  testWidgets('falls back to monoTabularStyle when titleSmall is null', (
+    tester,
+  ) async {
     const taskId = 'task-7';
     platform.isDesktop = true;
     platform.isMobile = false;

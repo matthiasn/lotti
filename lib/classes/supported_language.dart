@@ -43,7 +43,8 @@ enum SupportedLanguage {
   uk('uk', 'Ukrainian'),
   vi('vi', 'Vietnamese'),
   pcm('pcm', 'Nigerian Pidgin'),
-  yo('yo', 'Yoruba');
+  yo('yo', 'Yoruba')
+  ;
 
   const SupportedLanguage(this.code, this.name);
   final String code;

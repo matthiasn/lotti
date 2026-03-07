@@ -21,8 +21,8 @@ typedef ChecklistItemParams = ({String id, String? taskId});
 
 final checklistItemControllerProvider = AsyncNotifierProvider.autoDispose
     .family<ChecklistItemController, ChecklistItem?, ChecklistItemParams>(
-  ChecklistItemController.new,
-);
+      ChecklistItemController.new,
+    );
 
 class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   ChecklistItemController(this.params);
@@ -46,8 +46,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   }
 
   void _listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(id)) {
         final latest = await _fetch();
         if (latest != state.value) {
@@ -67,8 +68,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   }
 
   Future<bool> delete() async {
-    final res =
-        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .deleteJournalEntity(id);
     state = const AsyncData(null);
     return res;
   }
@@ -84,7 +86,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
       final updated = current.copyWith(
         data: data.copyWith(isArchived: isArchived),
       );
-      ref.read(checklistRepositoryProvider).updateChecklistItem(
+      ref
+          .read(checklistRepositoryProvider)
+          .updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
             taskId: taskId,
@@ -104,7 +108,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
           checkedAt: ref.read(clockProvider)(),
         ),
       );
-      ref.read(checklistRepositoryProvider).updateChecklistItem(
+      ref
+          .read(checklistRepositoryProvider)
+          .updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
             taskId: taskId,
@@ -123,7 +129,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
 
       // Fire-and-forget capture. The service will handle notifications.
       unawaited(
-        ref.read(correctionCaptureServiceProvider).captureCorrection(
+        ref
+            .read(correctionCaptureServiceProvider)
+            .captureCorrection(
               categoryId: categoryId,
               beforeText: oldTitle,
               afterText: title,
@@ -135,7 +143,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
         data: data.copyWith(title: title),
       );
 
-      ref.read(checklistRepositoryProvider).updateChecklistItem(
+      ref
+          .read(checklistRepositoryProvider)
+          .updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
             taskId: taskId,
@@ -163,7 +173,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
         ),
       );
 
-      await ref.read(checklistRepositoryProvider).updateChecklistItem(
+      await ref
+          .read(checklistRepositoryProvider)
+          .updateChecklistItem(
             checklistItemId: id,
             data: updated.data,
             taskId: taskId,

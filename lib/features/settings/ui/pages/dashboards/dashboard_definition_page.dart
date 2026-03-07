@@ -155,394 +155,449 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
         notificationKeys: {habitsNotification, privateToggleNotification},
         fetcher: getIt<JournalDb>().getAllHabitDefinitions,
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<HabitDefinition>> snapshot,
-      ) {
-        final habitSelectItems = [
-          ...?snapshot.data?.map(
-            (item) => MultiSelectItem<HabitDefinition>(
-              item,
-              item.name,
-            ),
-          ),
-        ];
-
-        return StreamBuilder<List<MeasurableDataType>>(
-          stream: notificationDrivenStream(
-            notifications: getIt<UpdateNotifications>(),
-            notificationKeys: {
-              measurablesNotification,
-              privateToggleNotification,
-            },
-            fetcher: _db.getAllMeasurableDataTypes,
-          ),
-          builder: (
+      builder:
+          (
             BuildContext context,
-            AsyncSnapshot<List<MeasurableDataType>> snapshot,
+            AsyncSnapshot<List<HabitDefinition>> snapshot,
           ) {
-            final measurableDataTypes = snapshot.data ?? [];
-
-            final measurableSelectItems = [
-              ...measurableDataTypes.map(
-                (item) => MultiSelectItem<MeasurableDataType>(
+            final habitSelectItems = [
+              ...?snapshot.data?.map(
+                (item) => MultiSelectItem<HabitDefinition>(
                   item,
-                  item.displayName,
+                  item.name,
                 ),
               ),
             ];
 
-            final healthSelectItems = healthTypes.keys.map((String typeName) {
-              final item = healthTypes[typeName];
-              return MultiSelectItem<HealthTypeConfig>(
-                item!,
-                item.displayName,
-              );
-            }).toList();
+            return StreamBuilder<List<MeasurableDataType>>(
+              stream: notificationDrivenStream(
+                notifications: getIt<UpdateNotifications>(),
+                notificationKeys: {
+                  measurablesNotification,
+                  privateToggleNotification,
+                },
+                fetcher: _db.getAllMeasurableDataTypes,
+              ),
+              builder:
+                  (
+                    BuildContext context,
+                    AsyncSnapshot<List<MeasurableDataType>> snapshot,
+                  ) {
+                    final measurableDataTypes = snapshot.data ?? [];
 
-            final surveySelectItems = surveyTypes.keys.map((String typeName) {
-              final item = surveyTypes[typeName];
-              return MultiSelectItem<DashboardSurveyItem>(
-                item!,
-                item.surveyName,
-              );
-            }).toList();
-
-            final workoutSelectItems = workoutTypes.keys.map((String typeName) {
-              final item = workoutTypes[typeName];
-              return MultiSelectItem<DashboardWorkoutItem>(
-                item!,
-                item.displayName,
-              );
-            }).toList();
-
-            void setCategory(String? newCategoryId) {
-              DevLogger.log(
-                name: 'DashboardDefinitionPage',
-                message: 'setCategory $newCategoryId',
-              );
-              categoryId = newCategoryId;
-              setState(() {
-                dirty = true;
-              });
-            }
-
-            Future<DashboardDefinition> saveDashboard() async {
-              formKey.currentState!.save();
-              if (formKey.currentState!.validate()) {
-                final formData = formKey.currentState?.value;
-
-                final private = formData?['private'] as bool? ?? false;
-                final active = formData?['active'] as bool? ?? false;
-
-                final dashboard = widget.dashboard.copyWith(
-                  name: '${formData!['name']}'.trim(),
-                  description: '${formData['description']}'.trim(),
-                  private: private,
-                  active: active,
-                  reviewAt: formData['review_at'] as DateTime?,
-                  categoryId: categoryId,
-                  updatedAt: DateTime.now(),
-                  items: dashboardItems,
-                );
-
-                await persistenceLogic.upsertDashboardDefinition(dashboard);
-                return dashboard;
-              }
-              return widget.dashboard;
-            }
-
-            Future<void> saveDashboardPress() async {
-              await saveDashboard();
-              setState(() {
-                dirty = false;
-              });
-              maybePop();
-            }
-
-            Future<void> copyDashboard() async {
-              final dashboard = await saveDashboard();
-              final entityDefinitions = <EntityDefinition>[dashboard];
-
-              for (final item in dashboard.items) {
-                switch (item) {
-                  case DashboardMeasurementItem(:final id):
-                    final dataType = await _db.getMeasurableDataTypeById(id);
-                    if (dataType != null) {
-                      entityDefinitions.add(dataType);
-                    }
-                  case DashboardHealthItem():
-                  case DashboardWorkoutItem():
-                  case DashboardSurveyItem():
-                  case DashboardStoryTimeItem():
-                  case DashboardHabitItem():
-                  case WildcardStoryTimeItem():
-                    // No additional entities to collect
-                    break;
-                }
-              }
-              await Clipboard.setData(
-                ClipboardData(
-                  text: json.encode(
-                    entityDefinitions,
-                  ),
-                ),
-              );
-            }
-
-            return Scaffold(
-              body: CustomScrollView(
-                slivers: <Widget>[
-                  SliverAppBar(
-                    title: Text(
-                      context.messages.settingsDashboardDetailsLabel,
-                      style: appBarTextStyleNewLarge.copyWith(
-                        color: Theme.of(context).primaryColor,
-                      ),
-                    ),
-                    pinned: true,
-                    actions: [
-                      if (dirty)
-                        LottiTertiaryButton(
-                          key: const Key(
-                            'dashboard_save',
-                          ),
-                          label: context.messages.settingsDashboardSaveLabel,
-                          onPressed: saveDashboardPress,
+                    final measurableSelectItems = [
+                      ...measurableDataTypes.map(
+                        (item) => MultiSelectItem<MeasurableDataType>(
+                          item,
+                          item.displayName,
                         ),
-                    ],
-                  ),
-                  SliverToBoxAdapter(
-                    child: EntityDetailCard(
-                      child: Column(
-                        children: [
-                          FormBuilder(
-                            key: formKey,
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
-                            onChanged: () {
-                              formKey.currentState?.save();
-                              setState(() {
-                                dirty = true;
-                              });
-                            },
-                            child: Column(
-                              children: <Widget>[
-                                FormTextField(
-                                  initialValue: widget.dashboard.name,
-                                  labelText:
-                                      context.messages.dashboardNameLabel,
-                                  name: 'name',
-                                  semanticsLabel: 'Dashboard - name field',
-                                  key: const Key('dashboard_name_field'),
-                                  large: true,
-                                ),
-                                inputSpacer,
-                                FormTextField(
-                                  initialValue: widget.dashboard.description,
-                                  labelText: context
-                                      .messages.dashboardDescriptionLabel,
-                                  name: 'description',
-                                  semanticsLabel:
-                                      'Dashboard - description field',
-                                  fieldRequired: false,
-                                  key: const Key(
-                                    'dashboard_description_field',
-                                  ),
-                                ),
-                                inputSpacer,
-                                FormSwitch(
-                                  name: 'private',
-                                  initialValue: widget.dashboard.private,
-                                  title: context.messages.dashboardPrivateLabel,
-                                  activeColor: context.colorScheme.error,
-                                ),
-                                FormSwitch(
-                                  name: 'active',
-                                  initialValue: widget.dashboard.active,
-                                  title: context.messages.dashboardActiveLabel,
-                                  activeColor: starredGold,
-                                ),
-                                SelectDashboardCategoryWidget(
-                                  setCategory: setCategory,
-                                  categoryId: categoryId,
-                                ),
-                              ],
-                            ),
+                      ),
+                    ];
+
+                    final healthSelectItems = healthTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = healthTypes[typeName];
+                      return MultiSelectItem<HealthTypeConfig>(
+                        item!,
+                        item.displayName,
+                      );
+                    }).toList();
+
+                    final surveySelectItems = surveyTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = surveyTypes[typeName];
+                      return MultiSelectItem<DashboardSurveyItem>(
+                        item!,
+                        item.surveyName,
+                      );
+                    }).toList();
+
+                    final workoutSelectItems = workoutTypes.keys.map((
+                      String typeName,
+                    ) {
+                      final item = workoutTypes[typeName];
+                      return MultiSelectItem<DashboardWorkoutItem>(
+                        item!,
+                        item.displayName,
+                      );
+                    }).toList();
+
+                    void setCategory(String? newCategoryId) {
+                      DevLogger.log(
+                        name: 'DashboardDefinitionPage',
+                        message: 'setCategory $newCategoryId',
+                      );
+                      categoryId = newCategoryId;
+                      setState(() {
+                        dirty = true;
+                      });
+                    }
+
+                    Future<DashboardDefinition> saveDashboard() async {
+                      formKey.currentState!.save();
+                      if (formKey.currentState!.validate()) {
+                        final formData = formKey.currentState?.value;
+
+                        final private = formData?['private'] as bool? ?? false;
+                        final active = formData?['active'] as bool? ?? false;
+
+                        final dashboard = widget.dashboard.copyWith(
+                          name: '${formData!['name']}'.trim(),
+                          description: '${formData['description']}'.trim(),
+                          private: private,
+                          active: active,
+                          reviewAt: formData['review_at'] as DateTime?,
+                          categoryId: categoryId,
+                          updatedAt: DateTime.now(),
+                          items: dashboardItems,
+                        );
+
+                        await persistenceLogic.upsertDashboardDefinition(
+                          dashboard,
+                        );
+                        return dashboard;
+                      }
+                      return widget.dashboard;
+                    }
+
+                    Future<void> saveDashboardPress() async {
+                      await saveDashboard();
+                      setState(() {
+                        dirty = false;
+                      });
+                      maybePop();
+                    }
+
+                    Future<void> copyDashboard() async {
+                      final dashboard = await saveDashboard();
+                      final entityDefinitions = <EntityDefinition>[dashboard];
+
+                      for (final item in dashboard.items) {
+                        switch (item) {
+                          case DashboardMeasurementItem(:final id):
+                            final dataType = await _db
+                                .getMeasurableDataTypeById(id);
+                            if (dataType != null) {
+                              entityDefinitions.add(dataType);
+                            }
+                          case DashboardHealthItem():
+                          case DashboardWorkoutItem():
+                          case DashboardSurveyItem():
+                          case DashboardStoryTimeItem():
+                          case DashboardHabitItem():
+                          case WildcardStoryTimeItem():
+                            // No additional entities to collect
+                            break;
+                        }
+                      }
+                      await Clipboard.setData(
+                        ClipboardData(
+                          text: json.encode(
+                            entityDefinitions,
                           ),
-                          const SizedBox(height: 24),
-                          Theme(
-                            data: Theme.of(context).copyWith(
-                              cardTheme: Theme.of(context).cardTheme.copyWith(
-                                    color: Theme.of(context).primaryColorLight,
-                                  ),
-                            ),
-                            child: ReorderableListView(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              onReorder: (int oldIndex, int newIndex) {
-                                setState(() {
-                                  dirty = true;
+                        ),
+                      );
+                    }
 
-                                  final movedItem = dashboardItems.removeAt(
-                                    oldIndex,
-                                  );
-                                  final insertionIndex = newIndex > oldIndex
-                                      ? newIndex - 1
-                                      : newIndex;
-                                  dashboardItems.insert(
-                                    insertionIndex,
-                                    movedItem,
-                                  );
-                                });
-                              },
-                              children: List.generate(
-                                dashboardItems.length,
-                                (int index) {
-                                  final items = dashboardItems;
-                                  final item = items.elementAt(
-                                    index,
-                                  );
-
-                                  return Dismissible(
-                                    onDismissed: (_) {
-                                      dismissItem(index);
-                                    },
-                                    key: Key(
-                                      'dashboard-item-${item.hashCode}-$index',
-                                    ),
-                                    child: DashboardItemCard(
-                                      item: item,
-                                      index: index,
-                                      updateItemFn: updateItem,
-                                    ),
-                                  );
-                                },
+                    return Scaffold(
+                      body: CustomScrollView(
+                        slivers: <Widget>[
+                          SliverAppBar(
+                            title: Text(
+                              context.messages.settingsDashboardDetailsLabel,
+                              style: appBarTextStyleNewLarge.copyWith(
+                                color: Theme.of(context).primaryColor,
                               ),
                             ),
-                          ),
-                          Text(
-                            context.messages.dashboardAddChartsTitle,
-                          ),
-                          if (habitSelectItems.isNotEmpty)
-                            ChartMultiSelect<HabitDefinition>(
-                              multiSelectItems: habitSelectItems,
-                              onConfirm: onConfirmAddHabit,
-                              title: context.messages.dashboardAddHabitTitle,
-                              buttonText:
-                                  context.messages.dashboardAddHabitButton,
-                              semanticsLabel: 'Add Habit Chart',
-                              iconData: Icons.insights,
-                            ),
-                          if (measurableSelectItems.isNotEmpty)
-                            ChartMultiSelect<MeasurableDataType>(
-                              multiSelectItems: measurableSelectItems,
-                              onConfirm: onConfirmAddMeasurement,
-                              title:
-                                  context.messages.dashboardAddMeasurementTitle,
-                              buttonText: context
-                                  .messages.dashboardAddMeasurementButton,
-                              semanticsLabel: 'Add Measurable Data Chart',
-                              iconData: Icons.insights,
-                            ),
-                          ChartMultiSelect<HealthTypeConfig>(
-                            multiSelectItems: healthSelectItems,
-                            onConfirm: onConfirmAddHealthType,
-                            title: context.messages.dashboardAddHealthTitle,
-                            buttonText:
-                                context.messages.dashboardAddHealthButton,
-                            semanticsLabel: 'Add Health Chart',
-                            iconData: MdiIcons.stethoscope,
-                          ),
-                          ChartMultiSelect<DashboardSurveyItem>(
-                            multiSelectItems: surveySelectItems,
-                            onConfirm: onConfirmAddSurveyType,
-                            title: context.messages.dashboardAddSurveyTitle,
-                            buttonText:
-                                context.messages.dashboardAddSurveyButton,
-                            semanticsLabel: 'Add Survey Chart',
-                            iconData: MdiIcons.clipboardOutline,
-                          ),
-                          ChartMultiSelect<DashboardWorkoutItem>(
-                            multiSelectItems: workoutSelectItems,
-                            onConfirm: onConfirmAddWorkoutType,
-                            title: context.messages.dashboardAddWorkoutTitle,
-                            buttonText:
-                                context.messages.dashboardAddWorkoutButton,
-                            semanticsLabel: 'Add Workout Chart',
-                            iconData: Icons.sports_gymnastics,
-                          ),
-                          const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              top: 16,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Spacer(),
-                                const SizedBox(
-                                  width: 8,
+                            pinned: true,
+                            actions: [
+                              if (dirty)
+                                LottiTertiaryButton(
+                                  key: const Key(
+                                    'dashboard_save',
+                                  ),
+                                  label: context
+                                      .messages
+                                      .settingsDashboardSaveLabel,
+                                  onPressed: saveDashboardPress,
                                 ),
-                                Row(
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.copy),
-                                      iconSize: settingsIconSize,
-                                      tooltip:
-                                          context.messages.dashboardCopyHint,
-                                      onPressed: copyDashboard,
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        MdiIcons.trashCanOutline,
-                                      ),
-                                      iconSize: settingsIconSize,
-                                      tooltip:
-                                          context.messages.dashboardDeleteHint,
-                                      color: context.colorScheme.outline,
-                                      onPressed: () async {
-                                        const deleteKey = 'deleteKey';
-                                        final result =
-                                            await showModalActionSheet<String>(
-                                          context: context,
+                            ],
+                          ),
+                          SliverToBoxAdapter(
+                            child: EntityDetailCard(
+                              child: Column(
+                                children: [
+                                  FormBuilder(
+                                    key: formKey,
+                                    autovalidateMode:
+                                        AutovalidateMode.onUserInteraction,
+                                    onChanged: () {
+                                      formKey.currentState?.save();
+                                      setState(() {
+                                        dirty = true;
+                                      });
+                                    },
+                                    child: Column(
+                                      children: <Widget>[
+                                        FormTextField(
+                                          initialValue: widget.dashboard.name,
+                                          labelText: context
+                                              .messages
+                                              .dashboardNameLabel,
+                                          name: 'name',
+                                          semanticsLabel:
+                                              'Dashboard - name field',
+                                          key: const Key(
+                                            'dashboard_name_field',
+                                          ),
+                                          large: true,
+                                        ),
+                                        inputSpacer,
+                                        FormTextField(
+                                          initialValue:
+                                              widget.dashboard.description,
+                                          labelText: context
+                                              .messages
+                                              .dashboardDescriptionLabel,
+                                          name: 'description',
+                                          semanticsLabel:
+                                              'Dashboard - description field',
+                                          fieldRequired: false,
+                                          key: const Key(
+                                            'dashboard_description_field',
+                                          ),
+                                        ),
+                                        inputSpacer,
+                                        FormSwitch(
+                                          name: 'private',
+                                          initialValue:
+                                              widget.dashboard.private,
                                           title: context
-                                              .messages.dashboardDeleteQuestion,
-                                          actions: [
-                                            ModalSheetAction(
-                                              icon: Icons.warning,
-                                              label: context.messages
-                                                  .dashboardDeleteConfirm,
-                                              key: deleteKey,
-                                              isDestructiveAction: true,
+                                              .messages
+                                              .dashboardPrivateLabel,
+                                          activeColor:
+                                              context.colorScheme.error,
+                                        ),
+                                        FormSwitch(
+                                          name: 'active',
+                                          initialValue: widget.dashboard.active,
+                                          title: context
+                                              .messages
+                                              .dashboardActiveLabel,
+                                          activeColor: starredGold,
+                                        ),
+                                        SelectDashboardCategoryWidget(
+                                          setCategory: setCategory,
+                                          categoryId: categoryId,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  Theme(
+                                    data: Theme.of(context).copyWith(
+                                      cardTheme: Theme.of(context).cardTheme
+                                          .copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).primaryColorLight,
+                                          ),
+                                    ),
+                                    child: ReorderableListView(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      onReorder: (int oldIndex, int newIndex) {
+                                        setState(() {
+                                          dirty = true;
+
+                                          final movedItem = dashboardItems
+                                              .removeAt(
+                                                oldIndex,
+                                              );
+                                          final insertionIndex =
+                                              newIndex > oldIndex
+                                              ? newIndex - 1
+                                              : newIndex;
+                                          dashboardItems.insert(
+                                            insertionIndex,
+                                            movedItem,
+                                          );
+                                        });
+                                      },
+                                      children: List.generate(
+                                        dashboardItems.length,
+                                        (int index) {
+                                          final items = dashboardItems;
+                                          final item = items.elementAt(
+                                            index,
+                                          );
+
+                                          return Dismissible(
+                                            onDismissed: (_) {
+                                              dismissItem(index);
+                                            },
+                                            key: Key(
+                                              'dashboard-item-${item.hashCode}-$index',
+                                            ),
+                                            child: DashboardItemCard(
+                                              item: item,
+                                              index: index,
+                                              updateItemFn: updateItem,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    context.messages.dashboardAddChartsTitle,
+                                  ),
+                                  if (habitSelectItems.isNotEmpty)
+                                    ChartMultiSelect<HabitDefinition>(
+                                      multiSelectItems: habitSelectItems,
+                                      onConfirm: onConfirmAddHabit,
+                                      title: context
+                                          .messages
+                                          .dashboardAddHabitTitle,
+                                      buttonText: context
+                                          .messages
+                                          .dashboardAddHabitButton,
+                                      semanticsLabel: 'Add Habit Chart',
+                                      iconData: Icons.insights,
+                                    ),
+                                  if (measurableSelectItems.isNotEmpty)
+                                    ChartMultiSelect<MeasurableDataType>(
+                                      multiSelectItems: measurableSelectItems,
+                                      onConfirm: onConfirmAddMeasurement,
+                                      title: context
+                                          .messages
+                                          .dashboardAddMeasurementTitle,
+                                      buttonText: context
+                                          .messages
+                                          .dashboardAddMeasurementButton,
+                                      semanticsLabel:
+                                          'Add Measurable Data Chart',
+                                      iconData: Icons.insights,
+                                    ),
+                                  ChartMultiSelect<HealthTypeConfig>(
+                                    multiSelectItems: healthSelectItems,
+                                    onConfirm: onConfirmAddHealthType,
+                                    title: context
+                                        .messages
+                                        .dashboardAddHealthTitle,
+                                    buttonText: context
+                                        .messages
+                                        .dashboardAddHealthButton,
+                                    semanticsLabel: 'Add Health Chart',
+                                    iconData: MdiIcons.stethoscope,
+                                  ),
+                                  ChartMultiSelect<DashboardSurveyItem>(
+                                    multiSelectItems: surveySelectItems,
+                                    onConfirm: onConfirmAddSurveyType,
+                                    title: context
+                                        .messages
+                                        .dashboardAddSurveyTitle,
+                                    buttonText: context
+                                        .messages
+                                        .dashboardAddSurveyButton,
+                                    semanticsLabel: 'Add Survey Chart',
+                                    iconData: MdiIcons.clipboardOutline,
+                                  ),
+                                  ChartMultiSelect<DashboardWorkoutItem>(
+                                    multiSelectItems: workoutSelectItems,
+                                    onConfirm: onConfirmAddWorkoutType,
+                                    title: context
+                                        .messages
+                                        .dashboardAddWorkoutTitle,
+                                    buttonText: context
+                                        .messages
+                                        .dashboardAddWorkoutButton,
+                                    semanticsLabel: 'Add Workout Chart',
+                                    iconData: Icons.sports_gymnastics,
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                      top: 16,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Spacer(),
+                                        const SizedBox(
+                                          width: 8,
+                                        ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                              icon: const Icon(Icons.copy),
+                                              iconSize: settingsIconSize,
+                                              tooltip: context
+                                                  .messages
+                                                  .dashboardCopyHint,
+                                              onPressed: copyDashboard,
+                                            ),
+                                            IconButton(
+                                              icon: Icon(
+                                                MdiIcons.trashCanOutline,
+                                              ),
+                                              iconSize: settingsIconSize,
+                                              tooltip: context
+                                                  .messages
+                                                  .dashboardDeleteHint,
+                                              color:
+                                                  context.colorScheme.outline,
+                                              onPressed: () async {
+                                                const deleteKey = 'deleteKey';
+                                                final result =
+                                                    await showModalActionSheet<
+                                                      String
+                                                    >(
+                                                      context: context,
+                                                      title: context
+                                                          .messages
+                                                          .dashboardDeleteQuestion,
+                                                      actions: [
+                                                        ModalSheetAction(
+                                                          icon: Icons.warning,
+                                                          label: context
+                                                              .messages
+                                                              .dashboardDeleteConfirm,
+                                                          key: deleteKey,
+                                                          isDestructiveAction:
+                                                              true,
+                                                        ),
+                                                      ],
+                                                    );
+
+                                                if (result == deleteKey) {
+                                                  await persistenceLogic
+                                                      .deleteDashboardDefinition(
+                                                        widget.dashboard,
+                                                      );
+                                                  maybePop();
+                                                }
+                                              },
                                             ),
                                           ],
-                                        );
-
-                                        if (result == deleteKey) {
-                                          await persistenceLogic
-                                              .deleteDashboardDefinition(
-                                            widget.dashboard,
-                                          );
-                                          maybePop();
-                                        }
-                                      },
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                ],
-              ),
+                    );
+                  },
             );
           },
-        );
-      },
     );
   }
 }
@@ -564,18 +619,19 @@ class EditDashboardPage extends StatelessWidget {
         notificationKeys: {dashboardsNotification, privateToggleNotification},
         fetcher: () => _db.getDashboardById(dashboardId),
       ),
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<DashboardDefinition?> snapshot,
-      ) {
-        final dashboard = snapshot.data;
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<DashboardDefinition?> snapshot,
+          ) {
+            final dashboard = snapshot.data;
 
-        if (dashboard == null) {
-          return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
-        }
+            if (dashboard == null) {
+              return EmptyScaffoldWithTitle(context.messages.dashboardNotFound);
+            }
 
-        return DashboardDefinitionPage(dashboard: dashboard);
-      },
+            return DashboardDefinitionPage(dashboard: dashboard);
+          },
     );
   }
 }

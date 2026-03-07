@@ -111,11 +111,14 @@ void main() {
     DragActiveChangedCallback? onDragActiveChanged,
     List<Override> additionalOverrides = const [],
   }) {
-    final effectiveFoldingState = foldingState ??
+    final effectiveFoldingState =
+        foldingState ??
         TimelineFoldingState(
           visibleClusters: [
             VisibleCluster(
-                startHour: sectionStartHour, endHour: sectionEndHour),
+              startHour: sectionStartHour,
+              endHour: sectionEndHour,
+            ),
           ],
           compressedRegions: const [],
         );
@@ -143,8 +146,9 @@ void main() {
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
         ),
-        highlightedCategoryIdProvider
-            .overrideWith((ref) => highlightedCategoryId),
+        highlightedCategoryIdProvider.overrideWith(
+          (ref) => highlightedCategoryId,
+        ),
         runningTimerCategoryIdProvider.overrideWithValue(null),
         ...additionalOverrides,
       ],
@@ -171,8 +175,9 @@ void main() {
   setUp(() {
     mockCacheService = MockEntitiesCacheService();
     // Use thenAnswer to handle different category IDs
-    when(() => mockCacheService.getCategoryById(any()))
-        .thenAnswer((invocation) {
+    when(() => mockCacheService.getCategoryById(any())).thenAnswer((
+      invocation,
+    ) {
       final categoryId = invocation.positionalArguments[0] as String?;
       if (categoryId == 'cat-1') {
         return testCategory;
@@ -265,8 +270,9 @@ void main() {
       expect(handleFinder, findsNWidgets(2));
     });
 
-    testWidgets('hides resize handles for small blocks (move-only mode)',
-        (tester) async {
+    testWidgets('hides resize handles for small blocks (move-only mode)', (
+      tester,
+    ) async {
       // 30 min block = 20px < 48px threshold
       final slot = createTestSlot(
         startHour: 9,
@@ -296,8 +302,9 @@ void main() {
       expect(handleFinder, findsNothing);
     });
 
-    testWidgets('applies highlighted style when category is highlighted',
-        (tester) async {
+    testWidgets('applies highlighted style when category is highlighted', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         startHour: 9,
         startMinute: 0,
@@ -381,8 +388,9 @@ void main() {
       expect(find.byType(DraggablePlannedBlock), findsOneWidget);
     });
 
-    testWidgets('long press initiates drag and calls onDragActiveChanged',
-        (tester) async {
+    testWidgets('long press initiates drag and calls onDragActiveChanged', (
+      tester,
+    ) async {
       var dragActive = false;
 
       final slot = createTestSlot(
@@ -600,8 +608,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('tapping bottom edge detects resize bottom mode',
-        (tester) async {
+    testWidgets('tapping bottom edge detects resize bottom mode', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         startHour: 9,
         startMinute: 0,
@@ -639,8 +648,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('tapping block center detects move mode and shows duration',
-        (tester) async {
+    testWidgets('tapping block center detects move mode and shows duration', (
+      tester,
+    ) async {
       final slot = createTestSlot(
         startHour: 9,
         startMinute: 0,
@@ -672,45 +682,47 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('small block always uses move mode regardless of tap position',
-        (tester) async {
-      // Small block (30 min = 20px < 48px threshold)
-      final slot = createTestSlot(
-        startHour: 9,
-        startMinute: 0,
-        endHour: 9,
-        endMinute: 30,
-      );
+    testWidgets(
+      'small block always uses move mode regardless of tap position',
+      (tester) async {
+        // Small block (30 min = 20px < 48px threshold)
+        final slot = createTestSlot(
+          startHour: 9,
+          startMinute: 0,
+          endHour: 9,
+          endMinute: 30,
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          slot: slot,
-          sectionStartHour: 8,
-          sectionEndHour: 18,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          createTestWidget(
+            slot: slot,
+            sectionStartHour: 8,
+            sectionEndHour: 18,
+          ),
+        );
+        await tester.pump();
 
-      // Get the block bounds
-      final blockFinder = find.byType(DraggablePlannedBlock);
-      final blockBox = tester.getRect(blockFinder);
+        // Get the block bounds
+        final blockFinder = find.byType(DraggablePlannedBlock);
+        final blockBox = tester.getRect(blockFinder);
 
-      // Long press near top edge (would be resize on large block)
-      final topEdge = Offset(blockBox.center.dx, blockBox.top + 2);
-      final gesture = await tester.startGesture(topEdge);
-      await tester.pump(const Duration(milliseconds: 600));
+        // Long press near top edge (would be resize on large block)
+        final topEdge = Offset(blockBox.center.dx, blockBox.top + 2);
+        final gesture = await tester.startGesture(topEdge);
+        await tester.pump(const Duration(milliseconds: 600));
 
-      // Drag down
-      await gesture.moveBy(const Offset(0, 40)); // 1 hour
-      await tester.pump();
+        // Drag down
+        await gesture.moveBy(const Offset(0, 40)); // 1 hour
+        await tester.pump();
 
-      // Both times should shift (move mode, not resize)
-      expect(find.text('10:00'), findsOneWidget); // New start
-      expect(find.text('10:30'), findsOneWidget); // New end
+        // Both times should shift (move mode, not resize)
+        expect(find.text('10:00'), findsOneWidget); // New start
+        expect(find.text('10:30'), findsOneWidget); // New end
 
-      await gesture.up();
-      await tester.pumpAndSettle();
-    });
+        await gesture.up();
+        await tester.pumpAndSettle();
+      },
+    );
   });
 
   group('DraggablePlannedBlock haptic feedback', () {

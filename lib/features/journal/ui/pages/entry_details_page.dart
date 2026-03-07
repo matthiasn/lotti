@@ -47,7 +47,9 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     _scrollController
       ..addListener(listener)
       ..addListener(
-        () => ref.read(provider.notifier).updateOffset(
+        () => ref
+            .read(provider.notifier)
+            .updateOffset(
               _scrollController.offset,
             ),
       );
@@ -85,7 +87,9 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     }
 
     ref.listen<JournalFocusIntent?>(
-        focusProvider, (_, next) => handleFocus(next));
+      focusProvider,
+      (_, next) => handleFocus(next),
+    );
 
     final provider = entryControllerProvider(id: widget.itemId);
     final asyncItem = ref.watch(provider);
@@ -135,25 +139,26 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                       left: 5,
                       right: 5,
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        EntryDetailsWidget(
-                          itemId: widget.itemId,
-                          showTaskDetails: true,
-                          showAiEntry: true,
-                        ),
-                        LinkedEntriesWithTimer(
-                          item: item,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: highlightedEntryId,
-                        ),
-                        LinkedFromEntriesWidget(item),
-                        if (item is ChecklistItem)
-                          LinkedFromChecklistWidget(item),
-                        if (item is Checklist) LinkedFromTaskWidget(item),
-                      ],
-                    ).animate().fadeIn(
+                    child:
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            EntryDetailsWidget(
+                              itemId: widget.itemId,
+                              showTaskDetails: true,
+                              showAiEntry: true,
+                            ),
+                            LinkedEntriesWithTimer(
+                              item: item,
+                              entryKeyBuilder: _getEntryKey,
+                              highlightedEntryId: highlightedEntryId,
+                            ),
+                            LinkedFromEntriesWidget(item),
+                            if (item is ChecklistItem)
+                              LinkedFromChecklistWidget(item),
+                            if (item is Checklist) LinkedFromTaskWidget(item),
+                          ],
+                        ).animate().fadeIn(
                           duration: const Duration(
                             milliseconds: 100,
                           ),

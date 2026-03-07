@@ -42,29 +42,35 @@ void main() {
     });
 
     group('build', () {
-      test('returns initial ChatStateUiModel and loads recent sessions',
-          () async {
-        when(() => mockChatRepository.getSessions(
+      test(
+        'returns initial ChatStateUiModel and loads recent sessions',
+        () async {
+          when(
+            () => mockChatRepository.getSessions(
               categoryId: 'test-category',
               limit: 10,
-            )).thenAnswer((_) async => []);
+            ),
+          ).thenAnswer((_) async => []);
 
-        final state = container.read(
-          chatSessionsControllerProvider('test-category'),
-        );
+          final state = container.read(
+            chatSessionsControllerProvider('test-category'),
+          );
 
-        expect(state.currentSession?.id ?? '', isEmpty);
-        expect(state.recentSessions, isEmpty);
-        expect(state.error, isNull);
+          expect(state.currentSession?.id ?? '', isEmpty);
+          expect(state.recentSessions, isEmpty);
+          expect(state.error, isNull);
 
-        // Wait for async loading to complete
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+          // Wait for async loading to complete
+          await Future<void>.delayed(const Duration(milliseconds: 10));
 
-        verify(() => mockChatRepository.getSessions(
+          verify(
+            () => mockChatRepository.getSessions(
               categoryId: 'test-category',
               limit: 10,
-            )).called(1);
-      });
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('createNewSession', () {
@@ -77,13 +83,15 @@ void main() {
           messages: [],
         );
 
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenAnswer((_) async => newSession);
-        when(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 10,
-            )).thenAnswer((_) async => [newSession]);
+        when(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).thenAnswer((_) async => newSession);
+        when(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 10,
+          ),
+        ).thenAnswer((_) async => [newSession]);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -100,15 +108,15 @@ void main() {
 
         expect(state.currentSession?.id, equals('new-session-id'));
 
-        verify(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .called(1);
+        verify(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).called(1);
       });
 
       test('handles error and sets error state', () async {
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenThrow(Exception('Failed to create session'));
+        when(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).thenThrow(Exception('Failed to create session'));
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -131,8 +139,9 @@ void main() {
           messages: [ChatMessage.user('Hello')],
         );
 
-        when(() => mockChatRepository.getSession('existing-session-id'))
-            .thenAnswer((_) async => existingSession);
+        when(
+          () => mockChatRepository.getSession('existing-session-id'),
+        ).thenAnswer((_) async => existingSession);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -148,13 +157,15 @@ void main() {
         expect(state.currentSession?.title, equals('Existing Chat'));
         expect(state.currentSession?.messages.length, equals(1));
 
-        verify(() => mockChatRepository.getSession('existing-session-id'))
-            .called(1);
+        verify(
+          () => mockChatRepository.getSession('existing-session-id'),
+        ).called(1);
       });
 
       test('handles session not found error', () async {
-        when(() => mockChatRepository.getSession('non-existent-id'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockChatRepository.getSession('non-existent-id'),
+        ).thenAnswer((_) async => null);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -180,32 +191,35 @@ void main() {
           messages: [],
         );
 
-        when(() => mockChatRepository.deleteSession('session-to-delete'))
-            .thenAnswer((_) async {});
-        when(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .thenAnswer((_) async => newSession);
-        when(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 10,
-            )).thenAnswer((_) async => []);
+        when(
+          () => mockChatRepository.deleteSession('session-to-delete'),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).thenAnswer((_) async => newSession);
+        when(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 10,
+          ),
+        ).thenAnswer((_) async => []);
 
-        final controller = container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )
-
-          // Set current session
-          ..updateCurrentSession(
-            ChatSessionUiModel.fromDomain(
-              ChatSession(
-                id: 'session-to-delete',
-                title: 'To Delete',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ),
-            ),
-          );
+        final controller =
+            container.read(
+                chatSessionsControllerProvider('test-category').notifier,
+              )
+              // Set current session
+              ..updateCurrentSession(
+                ChatSessionUiModel.fromDomain(
+                  ChatSession(
+                    id: 'session-to-delete',
+                    title: 'To Delete',
+                    createdAt: DateTime(2024),
+                    lastMessageAt: DateTime(2024),
+                    messages: [],
+                  ),
+                ),
+              );
 
         await controller.deleteSession('session-to-delete');
 
@@ -215,37 +229,41 @@ void main() {
 
         expect(state.currentSession?.id, equals('new-session-id'));
 
-        verify(() => mockChatRepository.deleteSession('session-to-delete'))
-            .called(1);
-        verify(() =>
-                mockChatRepository.createSession(categoryId: 'test-category'))
-            .called(1);
+        verify(
+          () => mockChatRepository.deleteSession('session-to-delete'),
+        ).called(1);
+        verify(
+          () => mockChatRepository.createSession(categoryId: 'test-category'),
+        ).called(1);
       });
 
       test('deletes session without creating new one if not current', () async {
-        when(() => mockChatRepository.deleteSession('other-session'))
-            .thenAnswer((_) async {});
-        when(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 10,
-            )).thenAnswer((_) async => []);
+        when(
+          () => mockChatRepository.deleteSession('other-session'),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 10,
+          ),
+        ).thenAnswer((_) async => []);
 
-        final controller = container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )
-
-          // Set different current session
-          ..updateCurrentSession(
-            ChatSessionUiModel.fromDomain(
-              ChatSession(
-                id: 'current-session',
-                title: 'Current',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ),
-            ),
-          );
+        final controller =
+            container.read(
+                chatSessionsControllerProvider('test-category').notifier,
+              )
+              // Set different current session
+              ..updateCurrentSession(
+                ChatSessionUiModel.fromDomain(
+                  ChatSession(
+                    id: 'current-session',
+                    title: 'Current',
+                    createdAt: DateTime(2024),
+                    lastMessageAt: DateTime(2024),
+                    messages: [],
+                  ),
+                ),
+              );
 
         await controller.deleteSession('other-session');
 
@@ -255,10 +273,14 @@ void main() {
 
         expect(state.currentSession?.id, equals('current-session'));
 
-        verify(() => mockChatRepository.deleteSession('other-session'))
-            .called(1);
-        verifyNever(() => mockChatRepository.createSession(
-            categoryId: any(named: 'categoryId')));
+        verify(
+          () => mockChatRepository.deleteSession('other-session'),
+        ).called(1);
+        verifyNever(
+          () => mockChatRepository.createSession(
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
       });
     });
 
@@ -291,9 +313,8 @@ void main() {
     group('clearError', () {
       test('clears error from state', () {
         container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )
-
+            chatSessionsControllerProvider('test-category').notifier,
+          )
           // Set error state
           ..updateState(
             (state) => state.copyWith(error: 'Test error'),
@@ -320,10 +341,12 @@ void main() {
           ),
         ];
 
-        when(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 10,
-            )).thenAnswer((_) async => sessions);
+        when(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 10,
+          ),
+        ).thenAnswer((_) async => sessions);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -331,10 +354,12 @@ void main() {
 
         await controller.refresh();
 
-        verify(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 10,
-            )).called(2); // Called once in build() and once in refresh()
+        verify(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 10,
+          ),
+        ).called(2); // Called once in build() and once in refresh()
       });
     });
 
@@ -352,11 +377,12 @@ void main() {
           ),
         ];
 
-        final controller = container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )..updateState(
-            (state) => state.copyWith(recentSessions: recentSessions),
-          );
+        final controller =
+            container.read(
+              chatSessionsControllerProvider('test-category').notifier,
+            )..updateState(
+              (state) => state.copyWith(recentSessions: recentSessions),
+            );
 
         final result = await controller.searchSessions('');
         expect(result, equals(recentSessions));
@@ -392,16 +418,21 @@ void main() {
 
         // Mock the expected filtered results for 'flutter' search
         final expectedSessions = sessions
-            .where((session) =>
-                session.title.toLowerCase().contains('flutter') ||
-                session.messages.any(
-                    (msg) => msg.content.toLowerCase().contains('flutter')))
+            .where(
+              (session) =>
+                  session.title.toLowerCase().contains('flutter') ||
+                  session.messages.any(
+                    (msg) => msg.content.toLowerCase().contains('flutter'),
+                  ),
+            )
             .toList();
 
-        when(() => mockChatRepository.searchSessions(
-              query: 'flutter',
-              categoryId: 'test-category',
-            )).thenAnswer((_) async => expectedSessions);
+        when(
+          () => mockChatRepository.searchSessions(
+            query: 'flutter',
+            categoryId: 'test-category',
+          ),
+        ).thenAnswer((_) async => expectedSessions);
 
         final controller = container.read(
           chatSessionsControllerProvider('test-category').notifier,
@@ -413,10 +444,12 @@ void main() {
         expect(result[0].id, equals('session-1')); // Title match
         expect(result[1].id, equals('session-2')); // Content match
 
-        verify(() => mockChatRepository.searchSessions(
-              query: 'flutter',
-              categoryId: 'test-category',
-            )).called(1);
+        verify(
+          () => mockChatRepository.searchSessions(
+            query: 'flutter',
+            categoryId: 'test-category',
+          ),
+        ).called(1);
       });
 
       test('returns recent sessions on search error', () async {
@@ -432,16 +465,19 @@ void main() {
           ),
         ];
 
-        when(() => mockChatRepository.getSessions(
-              categoryId: 'test-category',
-              limit: 50,
-            )).thenThrow(Exception('Search failed'));
+        when(
+          () => mockChatRepository.getSessions(
+            categoryId: 'test-category',
+            limit: 50,
+          ),
+        ).thenThrow(Exception('Search failed'));
 
-        final controller = container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )..updateState(
-            (state) => state.copyWith(recentSessions: recentSessions),
-          );
+        final controller =
+            container.read(
+              chatSessionsControllerProvider('test-category').notifier,
+            )..updateState(
+              (state) => state.copyWith(recentSessions: recentSessions),
+            );
 
         final result = await controller.searchSessions('test');
 
@@ -488,20 +524,25 @@ void main() {
           ),
         ];
 
-        final controller = container.read(
-          chatSessionsControllerProvider('test-category').notifier,
-        )..updateState(
-            (state) => state.copyWith(recentSessions: sessions),
-          );
+        final controller =
+            container.read(
+              chatSessionsControllerProvider('test-category').notifier,
+            )..updateState(
+              (state) => state.copyWith(recentSessions: sessions),
+            );
 
         final stats = controller.getSessionStats();
 
         expect(stats['totalSessions'], equals(3));
         expect(stats['totalMessages'], equals(5)); // 2 + 3 + 0
         expect(
-            stats['activeSessionsCount'], equals(2)); // Sessions with messages
-        expect(stats['averageMessagesPerSession'],
-            equals(1)); // 5 / 3 = 1 (integer division)
+          stats['activeSessionsCount'],
+          equals(2),
+        ); // Sessions with messages
+        expect(
+          stats['averageMessagesPerSession'],
+          equals(1),
+        ); // 5 / 3 = 1 (integer division)
       });
 
       test('handles empty sessions list', () {

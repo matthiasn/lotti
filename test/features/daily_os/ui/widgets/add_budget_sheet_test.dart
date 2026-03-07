@@ -47,8 +47,9 @@ void main() {
 
   setUp(() {
     mockCacheService = MockEntitiesCacheService();
-    when(() => mockCacheService.getCategoryById('cat-1'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('cat-1'),
+    ).thenReturn(testCategory);
     when(() => mockCacheService.sortedCategories).thenReturn([testCategory]);
 
     if (getIt.isRegistered<EntitiesCacheService>()) {
@@ -136,8 +137,9 @@ void main() {
       expect(find.text('Select Category'), findsOneWidget);
     });
 
-    testWidgets('shows category placeholder when none selected',
-        (tester) async {
+    testWidgets('shows category placeholder when none selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 
@@ -175,8 +177,9 @@ void main() {
       expect(find.text('Add Block'), findsNWidgets(2));
     });
 
-    testWidgets('Add Block button is disabled without category',
-        (tester) async {
+    testWidgets('Add Block button is disabled without category', (
+      tester,
+    ) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
 

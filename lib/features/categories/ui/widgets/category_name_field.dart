@@ -28,7 +28,8 @@ class CategoryNameField extends StatelessWidget {
       hintText: context.messages.enterCategoryName,
       prefixIcon: Icons.category_outlined,
       onChanged: isCreateMode ? null : onChanged,
-      validator: validator ??
+      validator:
+          validator ??
           (value) {
             if (value == null || value.trim().isEmpty) {
               return context.messages.categoryNameRequired;

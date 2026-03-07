@@ -10,8 +10,9 @@ void main() {
   late Directory testDirectory;
 
   setUp(() {
-    testDirectory =
-        Directory.systemTemp.createTempSync('lotti_agent_migration_test_');
+    testDirectory = Directory.systemTemp.createTempSync(
+      'lotti_agent_migration_test_',
+    );
   });
 
   tearDown(() {
@@ -21,14 +22,15 @@ void main() {
   });
 
   group('AgentDatabase migration', () {
-    test('v1 to v2 adds user_rating and rated_at columns to wake_run_log',
-        () async {
-      // Create a v1 database with the original schema (no rating columns)
-      final dbFile = path.join(testDirectory.path, agentDbFileName);
-      final rawDb = sqlite3.open(dbFile);
+    test(
+      'v1 to v2 adds user_rating and rated_at columns to wake_run_log',
+      () async {
+        // Create a v1 database with the original schema (no rating columns)
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
 
-      // Create v1 schema tables (minimal — only wake_run_log needed)
-      rawDb.execute('''
+        // Create v1 schema tables (minimal — only wake_run_log needed)
+        rawDb.execute('''
         CREATE TABLE agent_entities (
           id TEXT NOT NULL PRIMARY KEY,
           agent_id TEXT NOT NULL,
@@ -42,7 +44,7 @@ void main() {
           schema_version INTEGER NOT NULL DEFAULT 1
         )
       ''');
-      rawDb.execute('''
+        rawDb.execute('''
         CREATE TABLE agent_links (
           id TEXT NOT NULL PRIMARY KEY,
           from_id TEXT NOT NULL,
@@ -56,7 +58,7 @@ void main() {
           UNIQUE(from_id, to_id, type)
         )
       ''');
-      rawDb.execute('''
+        rawDb.execute('''
         CREATE TABLE wake_run_log (
           run_key TEXT NOT NULL PRIMARY KEY,
           agent_id TEXT NOT NULL,
@@ -73,7 +75,7 @@ void main() {
           template_version_id TEXT
         )
       ''');
-      rawDb.execute('''
+        rawDb.execute('''
         CREATE TABLE saga_log (
           operation_id TEXT NOT NULL PRIMARY KEY,
           agent_id TEXT NOT NULL,
@@ -87,8 +89,8 @@ void main() {
         )
       ''');
 
-      // Insert a test row to verify data survives migration
-      rawDb.execute('''
+        // Insert a test row to verify data survives migration
+        rawDb.execute('''
         INSERT INTO wake_run_log
           (run_key, agent_id, reason, thread_id, status, created_at)
         VALUES
@@ -96,56 +98,58 @@ void main() {
            '2026-02-20 10:00:00')
       ''');
 
-      // Set schema version to 1
-      rawDb.execute('PRAGMA user_version = 1');
-      rawDb.dispose();
+        // Set schema version to 1
+        rawDb.execute('PRAGMA user_version = 1');
+        rawDb.dispose();
 
-      // Open with AgentDatabase to trigger v1→v2 migration
-      final db = AgentDatabase(
-        background: false,
-        documentsDirectoryProvider: () async => testDirectory,
-        tempDirectoryProvider: () async => testDirectory,
-      );
+        // Open with AgentDatabase to trigger v1→v2 migration
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
 
-      // Verify schema version is now 3 (latest).
-      final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(
-        versionResult.first.read<int>('user_version'),
-        3,
-      );
+        // Verify schema version is now 3 (latest).
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          3,
+        );
 
-      // Verify the new columns exist by querying them
-      final rows = await db
-          .customSelect(
-            'SELECT run_key, user_rating, rated_at FROM wake_run_log',
-          )
-          .get();
-      expect(rows, hasLength(1));
-      expect(rows.first.read<String>('run_key'), 'run-1');
-      expect(rows.first.readNullable<double>('user_rating'), isNull);
-      expect(rows.first.readNullable<DateTime>('rated_at'), isNull);
+        // Verify the new columns exist by querying them
+        final rows = await db
+            .customSelect(
+              'SELECT run_key, user_rating, rated_at FROM wake_run_log',
+            )
+            .get();
+        expect(rows, hasLength(1));
+        expect(rows.first.read<String>('run_key'), 'run-1');
+        expect(rows.first.readNullable<double>('user_rating'), isNull);
+        expect(rows.first.readNullable<DateTime>('rated_at'), isNull);
 
-      // Verify new columns are writable
-      await db.customStatement('''
+        // Verify new columns are writable
+        await db.customStatement('''
         UPDATE wake_run_log SET user_rating = 0.85,
         rated_at = '2026-02-20 15:30:00'
         WHERE run_key = 'run-1'
       ''');
 
-      final updated = await db
-          .customSelect(
-            'SELECT user_rating, rated_at FROM wake_run_log '
-            "WHERE run_key = 'run-1'",
-          )
-          .get();
-      expect(updated.first.read<double>('user_rating'), 0.85);
-      expect(updated.first.readNullable<String>('rated_at'), isNotNull);
+        final updated = await db
+            .customSelect(
+              'SELECT user_rating, rated_at FROM wake_run_log '
+              "WHERE run_key = 'run-1'",
+            )
+            .get();
+        expect(updated.first.read<double>('user_rating'), 0.85);
+        expect(updated.first.readNullable<String>('rated_at'), isNotNull);
 
-      await db.close();
-    });
+        await db.close();
+      },
+    );
 
-    test(
-        'v2 to v3 adds unique partial index '
+    test('v2 to v3 adds unique partial index '
         'idx_unique_improver_per_template', () async {
       // Create a v2 database with rating columns already present.
       final dbFile = path.join(testDirectory.path, agentDbFileName);
@@ -442,30 +446,33 @@ void main() {
       ''');
     }
 
-    test('streamAgentEntitiesWithVectorClock yields entities with VCs',
-        () async {
-      await insertAgentEntity(
-        id: 'e-1',
-        serialized: '{"vectorClock":{"host-a":1,"host-b":2}}',
-      );
-      await insertAgentEntity(
-        id: 'e-2',
-        serialized: '{"vectorClock":{"host-a":3}}',
-      );
+    test(
+      'streamAgentEntitiesWithVectorClock yields entities with VCs',
+      () async {
+        await insertAgentEntity(
+          id: 'e-1',
+          serialized: '{"vectorClock":{"host-a":1,"host-b":2}}',
+        );
+        await insertAgentEntity(
+          id: 'e-2',
+          serialized: '{"vectorClock":{"host-a":3}}',
+        );
 
-      final batches =
-          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+        final batches = await db
+            .streamAgentEntitiesWithVectorClock(batchSize: 10)
+            .toList();
 
-      expect(batches, hasLength(1));
-      final records = batches.first;
-      expect(records, hasLength(2));
+        expect(batches, hasLength(1));
+        final records = batches.first;
+        expect(records, hasLength(2));
 
-      final e1 = records.firstWhere((r) => r.id == 'e-1');
-      expect(e1.vectorClock, {'host-a': 1, 'host-b': 2});
+        final e1 = records.firstWhere((r) => r.id == 'e-1');
+        expect(e1.vectorClock, {'host-a': 1, 'host-b': 2});
 
-      final e2 = records.firstWhere((r) => r.id == 'e-2');
-      expect(e2.vectorClock, {'host-a': 3});
-    });
+        final e2 = records.firstWhere((r) => r.id == 'e-2');
+        expect(e2.vectorClock, {'host-a': 3});
+      },
+    );
 
     test('streamAgentEntitiesWithVectorClock handles null VC', () async {
       await insertAgentEntity(
@@ -473,8 +480,9 @@ void main() {
         serialized: '{"type":"agentMessage"}',
       );
 
-      final batches =
-          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+      final batches = await db
+          .streamAgentEntitiesWithVectorClock(batchSize: 10)
+          .toList();
 
       expect(batches, hasLength(1));
       expect(batches.first.first.vectorClock, isNull);
@@ -488,8 +496,9 @@ void main() {
         );
       }
 
-      final batches =
-          await db.streamAgentEntitiesWithVectorClock(batchSize: 2).toList();
+      final batches = await db
+          .streamAgentEntitiesWithVectorClock(batchSize: 2)
+          .toList();
 
       // 5 entities / batchSize 2 = 3 batches (2, 2, 1)
       expect(batches, hasLength(3));
@@ -508,8 +517,9 @@ void main() {
         serialized: '{"vectorClock":{"host-c":5}}',
       );
 
-      final batches =
-          await db.streamAgentLinksWithVectorClock(batchSize: 10).toList();
+      final batches = await db
+          .streamAgentLinksWithVectorClock(batchSize: 10)
+          .toList();
 
       expect(batches, hasLength(1));
       final records = batches.first;
@@ -528,8 +538,9 @@ void main() {
         serialized: '{"type":"some_type"}',
       );
 
-      final batches =
-          await db.streamAgentLinksWithVectorClock(batchSize: 10).toList();
+      final batches = await db
+          .streamAgentLinksWithVectorClock(batchSize: 10)
+          .toList();
 
       expect(batches, hasLength(1));
       expect(batches.first.first.vectorClock, isNull);
@@ -571,8 +582,9 @@ void main() {
         serialized: 'not-json',
       );
 
-      final batches =
-          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+      final batches = await db
+          .streamAgentEntitiesWithVectorClock(batchSize: 10)
+          .toList();
 
       expect(batches, hasLength(1));
       expect(batches.first.first.vectorClock, isNull);
@@ -584,8 +596,9 @@ void main() {
         serialized: '{"vectorClock":{"host-a":"not-a-number"}}',
       );
 
-      final batches =
-          await db.streamAgentEntitiesWithVectorClock(batchSize: 10).toList();
+      final batches = await db
+          .streamAgentEntitiesWithVectorClock(batchSize: 10)
+          .toList();
 
       expect(batches, hasLength(1));
       expect(batches.first.first.vectorClock, isNull);

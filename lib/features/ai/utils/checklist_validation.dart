@@ -9,7 +9,8 @@ class ChecklistValidation {
   /// Validates and sanitizes a list of raw checklist items
   /// Returns a list of validated items with title and isChecked status
   static List<({String title, bool isChecked})> validateItems(
-      List<dynamic> raw) {
+    List<dynamic> raw,
+  ) {
     final sanitized = <({String title, bool isChecked})>[];
 
     for (final entry in raw) {

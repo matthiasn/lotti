@@ -52,8 +52,9 @@ void main() {
       );
     }
 
-    testWidgets('renders basic checklist item without suggestion',
-        (WidgetTester tester) async {
+    testWidgets('renders basic checklist item without suggestion', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Should show the title and checkbox
@@ -61,8 +62,9 @@ void main() {
       expect(find.byType(Checkbox), findsOneWidget);
     });
 
-    testWidgets('shows suggestion indicator when suggestion exists',
-        (WidgetTester tester) async {
+    testWidgets('shows suggestion indicator when suggestion exists', (
+      WidgetTester tester,
+    ) async {
       const suggestion = ChecklistCompletionSuggestion(
         checklistItemId: itemId,
         reason: 'User said "I completed this task"',
@@ -77,10 +79,10 @@ void main() {
       expect(find.textContaining(title), findsAtLeastNWidgets(1));
 
       // Find the ChecklistItemWithSuggestionWidget
-      final checklistItemWithSuggestion =
-          tester.widget<ChecklistItemWithSuggestionWidget>(
-        find.byType(ChecklistItemWithSuggestionWidget),
-      );
+      final checklistItemWithSuggestion = tester
+          .widget<ChecklistItemWithSuggestionWidget>(
+            find.byType(ChecklistItemWithSuggestionWidget),
+          );
       expect(checklistItemWithSuggestion.itemId, equals(itemId));
 
       // Verify that the widget builds with a suggestion without crashing
@@ -90,12 +92,14 @@ void main() {
     testWidgets('checkbox toggles correctly', (WidgetTester tester) async {
       var isChecked = false;
 
-      await tester.pumpWidget(createWidget(
-        isChecked: isChecked,
-        onChanged: (value) {
-          isChecked = value ?? false;
-        },
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          isChecked: isChecked,
+          onChanged: (value) {
+            isChecked = value ?? false;
+          },
+        ),
+      );
 
       // Initially unchecked
       final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
@@ -112,15 +116,18 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('title can be edited when edit icon is tapped',
-        (WidgetTester tester) async {
+    testWidgets('title can be edited when edit icon is tapped', (
+      WidgetTester tester,
+    ) async {
       String? newTitle;
 
-      await tester.pumpWidget(createWidget(
-        onTitleChange: (value) {
-          newTitle = value;
-        },
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          onTitleChange: (value) {
+            newTitle = value;
+          },
+        ),
+      );
 
       // Should show edit icon
       expect(find.byIcon(Icons.edit), findsOneWidget);
@@ -139,19 +146,23 @@ void main() {
       expect(newTitle, equals('New title'));
     });
 
-    testWidgets('does not show edit icon when readOnly',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        readOnly: true,
-        showEditIcon: false,
-      ));
+    testWidgets('does not show edit icon when readOnly', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          readOnly: true,
+          showEditIcon: false,
+        ),
+      );
 
       // Should not show edit icon
       expect(find.byIcon(Icons.edit), findsNothing);
     });
 
-    testWidgets('clears suggestion when checkbox is manually toggled',
-        (WidgetTester tester) async {
+    testWidgets('clears suggestion when checkbox is manually toggled', (
+      WidgetTester tester,
+    ) async {
       const suggestion = ChecklistCompletionSuggestion(
         checklistItemId: itemId,
         reason: 'Completed',
@@ -225,8 +236,9 @@ void main() {
       // In error state, the widget should still render without crashing
     });
 
-    testWidgets('handles loading state gracefully',
-        (WidgetTester tester) async {
+    testWidgets('handles loading state gracefully', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -252,8 +264,9 @@ void main() {
       // In loading state, the widget should still render without crashing
     });
 
-    testWidgets('renders positioned suggestion indicator overlay',
-        (WidgetTester tester) async {
+    testWidgets('renders positioned suggestion indicator overlay', (
+      WidgetTester tester,
+    ) async {
       const suggestion = ChecklistCompletionSuggestion(
         checklistItemId: itemId,
         reason: 'Looks complete',
@@ -272,58 +285,60 @@ void main() {
     });
 
     testWidgets(
-        'hides immediately when hideCompleted becomes true for an already completed item',
-        (WidgetTester tester) async {
-      // Start in \"All\" mode: completed item but hideCompleted == false.
-      await tester.pumpWidget(
-        createWidget(
-          isChecked: true,
-        ),
-      );
-      await tester.pump();
+      'hides immediately when hideCompleted becomes true for an already completed item',
+      (WidgetTester tester) async {
+        // Start in \"All\" mode: completed item but hideCompleted == false.
+        await tester.pumpWidget(
+          createWidget(
+            isChecked: true,
+          ),
+        );
+        await tester.pump();
 
-      // Row is visible.
-      expect(find.textContaining(title), findsAtLeastNWidgets(1));
+        // Row is visible.
+        expect(find.textContaining(title), findsAtLeastNWidgets(1));
 
-      // Toggle to \"Open only\" semantics: hideCompleted == true while still checked.
-      await tester.pumpWidget(
-        createWidget(
-          isChecked: true,
-          hideCompleted: true,
-        ),
-      );
-      await tester.pump(checklistCompletionFadeDuration);
+        // Toggle to \"Open only\" semantics: hideCompleted == true while still checked.
+        await tester.pumpWidget(
+          createWidget(
+            isChecked: true,
+            hideCompleted: true,
+          ),
+        );
+        await tester.pump(checklistCompletionFadeDuration);
 
-      // Row should now be effectively hidden (collapsed/faded). We don't
-      // assert on text presence here because AnimatedCrossFade keeps both
-      // children in the tree during the transition; instead, rely on higher
-      // level checklist tests to verify visibility semantics.
-    });
+        // Row should now be effectively hidden (collapsed/faded). We don't
+        // assert on text presence here because AnimatedCrossFade keeps both
+        // children in the tree during the transition; instead, rely on higher
+        // level checklist tests to verify visibility semantics.
+      },
+    );
 
     testWidgets(
-        'shows again when hideCompleted becomes false for a completed item',
-        (WidgetTester tester) async {
-      // Start in \"Open only\" semantics: completed and hidden.
-      await tester.pumpWidget(
-        createWidget(
-          isChecked: true,
-          hideCompleted: true,
-        ),
-      );
-      await tester.pump();
+      'shows again when hideCompleted becomes false for a completed item',
+      (WidgetTester tester) async {
+        // Start in \"Open only\" semantics: completed and hidden.
+        await tester.pumpWidget(
+          createWidget(
+            isChecked: true,
+            hideCompleted: true,
+          ),
+        );
+        await tester.pump();
 
-      // Toggle back to \"All\": hideCompleted == false while still checked.
-      await tester.pumpWidget(
-        createWidget(
-          isChecked: true,
-        ),
-      );
-      await tester.pump();
+        // Toggle back to \"All\": hideCompleted == false while still checked.
+        await tester.pumpWidget(
+          createWidget(
+            isChecked: true,
+          ),
+        );
+        await tester.pump();
 
-      // Row should become visible again without throwing; detailed visibility
-      // semantics (text, hit-testing) are covered in higher-level checklist
-      // widget tests.
-    });
+        // Row should become visible again without throwing; detailed visibility
+        // semantics (text, hit-testing) are covered in higher-level checklist
+        // widget tests.
+      },
+    );
   });
 }
 

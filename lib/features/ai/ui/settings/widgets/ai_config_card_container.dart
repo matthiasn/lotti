@@ -44,10 +44,12 @@ class AiConfigCardContainer extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isLight
-                ? context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowLight)
-                : context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowDark),
+                ? context.colorScheme.shadow.withValues(
+                    alpha: AppTheme.alphaShadowLight,
+                  )
+                : context.colorScheme.shadow.withValues(
+                    alpha: AppTheme.alphaShadowDark,
+                  ),
             blurRadius: isLight
                 ? AppTheme.cardElevationLight
                 : AppTheme.cardElevationDark,
@@ -63,10 +65,12 @@ class AiConfigCardContainer extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-            splashColor: context.colorScheme.primary
-                .withValues(alpha: AppTheme.alphaPrimary),
-            highlightColor: context.colorScheme.primary
-                .withValues(alpha: AppTheme.alphaPrimaryHighlight),
+            splashColor: context.colorScheme.primary.withValues(
+              alpha: AppTheme.alphaPrimary,
+            ),
+            highlightColor: context.colorScheme.primary.withValues(
+              alpha: AppTheme.alphaPrimaryHighlight,
+            ),
             child: Padding(
               padding: const EdgeInsets.all(AppTheme.cardPadding),
               child: child,
@@ -112,7 +116,8 @@ class AiConfigCardContainer extends StatelessWidget {
     }
     return isLight
         ? context.colorScheme.outline.withValues(alpha: AppTheme.alphaOutline)
-        : context.colorScheme.primaryContainer
-            .withValues(alpha: AppTheme.alphaPrimaryContainer);
+        : context.colorScheme.primaryContainer.withValues(
+            alpha: AppTheme.alphaPrimaryContainer,
+          );
   }
 }

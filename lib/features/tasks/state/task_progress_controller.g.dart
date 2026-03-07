@@ -14,16 +14,16 @@ final taskProgressControllerProvider = TaskProgressControllerFamily._();
 
 final class TaskProgressControllerProvider
     extends $AsyncNotifierProvider<TaskProgressController, TaskProgressState?> {
-  TaskProgressControllerProvider._(
-      {required TaskProgressControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'taskProgressControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  TaskProgressControllerProvider._({
+    required TaskProgressControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'taskProgressControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$taskProgressControllerHash();
@@ -57,23 +57,22 @@ String _$taskProgressControllerHash() =>
 final class TaskProgressControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            TaskProgressController,
-            AsyncValue<TaskProgressState?>,
-            TaskProgressState?,
-            FutureOr<TaskProgressState?>,
-            String> {
+          TaskProgressController,
+          AsyncValue<TaskProgressState?>,
+          TaskProgressState?,
+          FutureOr<TaskProgressState?>,
+          String
+        > {
   TaskProgressControllerFamily._()
-      : super(
-          retry: null,
-          name: r'taskProgressControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'taskProgressControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  TaskProgressControllerProvider call({
-    required String id,
-  }) =>
+  TaskProgressControllerProvider call({required String id}) =>
       TaskProgressControllerProvider._(argument: id, from: this);
 
   @override
@@ -85,23 +84,20 @@ abstract class _$TaskProgressController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<TaskProgressState?> build({
-    required String id,
-  });
+  FutureOr<TaskProgressState?> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<TaskProgressState?>, TaskProgressState?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<TaskProgressState?>, TaskProgressState?>,
-        AsyncValue<TaskProgressState?>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<TaskProgressState?>, TaskProgressState?>,
+              AsyncValue<TaskProgressState?>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

@@ -20,7 +20,9 @@ void main() {
     const taskId = 'task-ld-1';
 
     TaskProgressController makeController(
-        Duration progress, Duration estimate) {
+      Duration progress,
+      Duration estimate,
+    ) {
       return _FixedProgressController(progress: progress, estimate: estimate);
     }
 

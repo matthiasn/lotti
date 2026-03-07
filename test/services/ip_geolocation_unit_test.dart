@@ -24,11 +24,13 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Stub captureException to prevent errors in tests
-    when(() => mockLoggingService.captureException(
-          any<Exception>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<Exception>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(getIt.reset);
@@ -102,11 +104,13 @@ void main() {
         expect(getIt<LoggingService>(), equals(mockLoggingService));
 
         // When errors occur, they should be logged with proper domain
-        when(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: any<String>(named: 'domain'),
-              subDomain: any<String>(named: 'subDomain'),
-            )).thenReturn(null);
+        when(
+          () => mockLoggingService.captureException(
+            any<Exception>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
       });
     });
 

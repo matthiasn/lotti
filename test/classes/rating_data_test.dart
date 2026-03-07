@@ -59,7 +59,8 @@ void main() {
         key: 'productivity',
         value: 0.8,
         question: 'How productive was this session?',
-        description: 'Measures subjective productivity. '
+        description:
+            'Measures subjective productivity. '
             '0.0 = completely unproductive, 1.0 = peak productivity.',
         inputType: 'tapBar',
       );
@@ -75,7 +76,8 @@ void main() {
         key: 'challenge_skill',
         value: 0.5,
         question: 'This work felt...',
-        description: 'Challenge-skill balance. '
+        description:
+            'Challenge-skill balance. '
             '0.0 = too easy, 0.5 = just right, 1.0 = too challenging.',
         inputType: 'segmented',
         optionLabels: ['Too easy', 'Just right', 'Too challenging'],
@@ -341,8 +343,9 @@ void main() {
       );
 
       final jsonString = jsonEncode(data.toJson());
-      final decoded =
-          RatingData.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
+      final decoded = RatingData.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
 
       expect(decoded.targetId, equals('entry-abc'));
       expect(decoded.dimensions.length, equals(4));

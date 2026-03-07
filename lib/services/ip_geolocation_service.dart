@@ -6,8 +6,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/geohash.dart';
 
-typedef IpGeolocationProvider = Future<Geolocation?> Function(
-    {http.Client? httpClient});
+typedef IpGeolocationProvider =
+    Future<Geolocation?> Function({http.Client? httpClient});
 
 IpGeolocationProvider get defaultIpGeolocationProvider =>
     IpGeolocationService.getLocationFromIp;
@@ -19,14 +19,17 @@ class IpGeolocationService {
   static const double _ipLocationAccuracy =
       50000; // ~50km accuracy for IP geolocation
 
-  static Future<Geolocation?> getLocationFromIp(
-      {http.Client? httpClient}) async {
+  static Future<Geolocation?> getLocationFromIp({
+    http.Client? httpClient,
+  }) async {
     final client = httpClient ?? http.Client();
     try {
-      final response = await client.get(
-        Uri.parse(_ipApiUrl),
-        headers: {'Accept': 'application/json'},
-      ).timeout(_timeout);
+      final response = await client
+          .get(
+            Uri.parse(_ipApiUrl),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -89,13 +92,16 @@ class IpGeolocationService {
   }
 
   // Alternative fallback using ip-api.com
-  static Future<Geolocation?> _getLocationFromIpApiFallback(
-      {required http.Client httpClient}) async {
+  static Future<Geolocation?> _getLocationFromIpApiFallback({
+    required http.Client httpClient,
+  }) async {
     try {
-      final response = await httpClient.get(
-        Uri.parse(_ipApiFallbackUrl),
-        headers: {'Accept': 'application/json'},
-      ).timeout(_timeout);
+      final response = await httpClient
+          .get(
+            Uri.parse(_ipApiFallbackUrl),
+            headers: {'Accept': 'application/json'},
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

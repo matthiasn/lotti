@@ -44,20 +44,24 @@ void main() {
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
 
       // One sync payload on timeline
       final ev = MockEvent();
       when(() => ev.eventId).thenReturn('EE');
-      when(() => ev.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
+      when(
+        () => ev.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(1));
       when(() => ev.senderId).thenReturn('@other:server');
       when(() => ev.attachmentMimetype).thenReturn('');
-      when(() => ev.content)
-          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(
+        () => ev.content,
+      ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       when(() => ev.roomId).thenReturn('!room:server');
       when(() => liveTimeline.events).thenReturn(<Event>[ev]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
@@ -70,16 +74,20 @@ void main() {
           onUpdate: any(named: 'onUpdate'),
         ),
       ).thenAnswer((_) async => liveTimeline);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
 
-      when(() => processor.process(event: ev, journalDb: journalDb))
-          .thenAnswer((_) async {});
-      when(() => readMarker.updateReadMarker(
-            client: any<Client>(named: 'client'),
-            room: any<Room>(named: 'room'),
-            eventId: any<String>(named: 'eventId'),
-          )).thenAnswer((_) async {});
+      when(
+        () => processor.process(event: ev, journalDb: journalDb),
+      ).thenAnswer((_) async {});
+      when(
+        () => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+        ),
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -141,13 +149,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       // Capture callbacks registered on the timeline
       void Function()? onNewEvent;
@@ -163,8 +173,9 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -212,13 +223,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
       void Function(dynamic)? onInsert;
@@ -237,8 +250,9 @@ void main() {
         onUpdate = inv.namedArguments[#onUpdate] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -281,9 +295,99 @@ void main() {
     });
   });
 
-  test('timeline scheduling errors trigger forceRescan and log once per signal',
-      () {
-    fakeAsync((async) {
+  test(
+    'timeline scheduling errors trigger forceRescan and log once per signal',
+    () {
+      fakeAsync((async) {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final liveTimeline = MockTimeline();
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(
+          () => session.timelineEvents,
+        ).thenAnswer((_) => const Stream<Event>.empty());
+        when(roomManager.initialize).thenAnswer((_) => Future.value());
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(
+          () => settingsDb.itemByKey(lastReadMatrixEventId),
+        ).thenAnswer((_) async => null);
+
+        void Function()? onNewEvent;
+        when(
+          () => room.getTimeline(
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          ),
+        ).thenAnswer((inv) async {
+          onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
+          return liveTimeline;
+        });
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => liveTimeline);
+        when(() => liveTimeline.events).thenReturn(<Event>[]);
+        when(liveTimeline.cancelSubscriptions).thenReturn(null);
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          collectMetrics: true,
+          sentEventRegistry: SentEventRegistry(),
+        );
+        consumer.initialize();
+        async.flushMicrotasks();
+        consumer.start();
+        async.flushMicrotasks();
+        addTearDown(() async {
+          await consumer.dispose();
+        });
+
+        // Force schedule errors
+        consumer.scheduleLiveScanTestHook = () => throw StateError('schedule');
+
+        // Trigger multiple timeline signals
+        onNewEvent?.call();
+
+        // Allow async schedule/fallbacks
+        async.elapse(const Duration(milliseconds: 10));
+        async.flushMicrotasks();
+
+        // Logged once per signal
+        verify(
+          () => logger.captureException(
+            any<dynamic>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'signal.schedule',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      });
+    },
+  );
+
+  test(
+    'connectivity increments signalConnectivity counter (consumer level)',
+    () {
+      // No need to start the consumer; this counter is synchronous.
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
       final logger = MockLoggingService();
@@ -292,36 +396,12 @@ void main() {
       final processor = MockSyncEventProcessor();
       final readMarker = MockSyncReadMarkerService();
       final client = MockClient();
-      final room = MockRoom();
-      final liveTimeline = MockTimeline();
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
-      when(roomManager.initialize).thenAnswer((_) => Future.value());
-      when(() => roomManager.currentRoom).thenReturn(room);
-      when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
-
-      void Function()? onNewEvent;
       when(
-        () => room.getTimeline(
-          onNewEvent: any(named: 'onNewEvent'),
-          onInsert: any(named: 'onInsert'),
-          onChange: any(named: 'onChange'),
-          onRemove: any(named: 'onRemove'),
-          onUpdate: any(named: 'onUpdate'),
-        ),
-      ).thenAnswer((inv) async {
-        onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
-        return liveTimeline;
-      });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
-      when(() => liveTimeline.events).thenReturn(<Event>[]);
-      when(liveTimeline.cancelSubscriptions).thenReturn(null);
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -335,74 +415,15 @@ void main() {
         collectMetrics: true,
         sentEventRegistry: SentEventRegistry(),
       );
-      consumer.initialize();
-      async.flushMicrotasks();
-      consumer.start();
-      async.flushMicrotasks();
-      addTearDown(() async {
-        await consumer.dispose();
-      });
 
-      // Force schedule errors
-      consumer.scheduleLiveScanTestHook = () => throw StateError('schedule');
+      final before = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;
+      consumer.recordConnectivitySignal();
+      final after = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;
+      expect(after, before + 1);
+    },
+  );
 
-      // Trigger multiple timeline signals
-      onNewEvent?.call();
-
-      // Allow async schedule/fallbacks
-      async.elapse(const Duration(milliseconds: 10));
-      async.flushMicrotasks();
-
-      // Logged once per signal
-      verify(
-        () => logger.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'signal.schedule',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(greaterThanOrEqualTo(1));
-    });
-  });
-
-  test('connectivity increments signalConnectivity counter (consumer level)',
-      () {
-    // No need to start the consumer; this counter is synchronous.
-    final session = MockMatrixSessionManager();
-    final roomManager = MockSyncRoomManager();
-    final logger = MockLoggingService();
-    final journalDb = MockJournalDb();
-    final settingsDb = MockSettingsDb();
-    final processor = MockSyncEventProcessor();
-    final readMarker = MockSyncReadMarkerService();
-    final client = MockClient();
-
-    when(() => session.client).thenReturn(client);
-    when(() => client.userID).thenReturn('@me:server');
-    when(() => session.timelineEvents)
-        .thenAnswer((_) => const Stream<Event>.empty());
-
-    final consumer = MatrixStreamConsumer(
-      skipSyncWait: true,
-      sessionManager: session,
-      roomManager: roomManager,
-      loggingService: logger,
-      journalDb: journalDb,
-      settingsDb: settingsDb,
-      eventProcessor: processor,
-      readMarkerService: readMarker,
-      collectMetrics: true,
-      sentEventRegistry: SentEventRegistry(),
-    );
-
-    final before = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;
-    consumer.recordConnectivitySignal();
-    final after = consumer.metricsSnapshot()['signalConnectivity'] ?? 0;
-    expect(after, before + 1);
-  });
-
-  test('multiple hook errors (client + timeline) do not cascade and recover',
-      () {
+  test('multiple hook errors (client + timeline) do not cascade and recover', () {
     fakeAsync((async) {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -424,17 +445,21 @@ void main() {
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
-      when(() => room.getTimeline(
-            onNewEvent: any(named: 'onNewEvent'),
-            onInsert: any(named: 'onInsert'),
-            onChange: any(named: 'onChange'),
-            onRemove: any(named: 'onRemove'),
-            onUpdate: any(named: 'onUpdate'),
-          )).thenAnswer((_) async => liveTimeline);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -478,16 +503,19 @@ void main() {
       // Prepare a timeline event so the recovery path produces a liveScan log
       final scanEv = MockEvent();
       when(() => scanEv.eventId).thenReturn('SCAN');
-      when(() => scanEv.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
+      when(
+        () => scanEv.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2));
       when(() => scanEv.senderId).thenReturn('@other:server');
       when(() => scanEv.attachmentMimetype).thenReturn('');
-      when(() => scanEv.content)
-          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(
+        () => scanEv.content,
+      ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       when(() => scanEv.roomId).thenReturn('!room:server');
       when(() => liveTimeline.events).thenReturn(<Event>[scanEv]);
-      when(() => processor.process(event: scanEv, journalDb: journalDb))
-          .thenAnswer((_) async {});
+      when(
+        () => processor.process(event: scanEv, journalDb: journalDb),
+      ).thenAnswer((_) async {});
 
       // Recover: clear hook and ensure a live scan can proceed
       consumer.scheduleLiveScanTestHook = null;
@@ -525,8 +553,9 @@ void main() {
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(null);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -567,8 +596,7 @@ void main() {
     });
   });
 
-  test('scheduling while scan in-flight defers and yields one trailing scan',
-      () {
+  test('scheduling while scan in-flight defers and yields one trailing scan', () {
     fakeAsync((async) {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -583,13 +611,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) => Future.value());
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
       when(
@@ -604,28 +634,36 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
 
       // Provide one sync payload event so the scan does some work
       final scanEv = MockEvent();
       when(() => scanEv.eventId).thenReturn('S1');
-      when(() => scanEv.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
+      when(
+        () => scanEv.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3));
       when(() => scanEv.senderId).thenReturn('@other:server');
       when(() => scanEv.attachmentMimetype).thenReturn('');
-      when(() => scanEv.content)
-          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(
+        () => scanEv.content,
+      ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       when(() => scanEv.roomId).thenReturn('!room:server');
       when(() => liveTimeline.events).thenReturn(<Event>[scanEv]);
-      when(() => processor.process(event: scanEv, journalDb: journalDb))
-          .thenAnswer((_) async {});
+      when(
+        () => processor.process(event: scanEv, journalDb: journalDb),
+      ).thenAnswer((_) async {});
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final logs = <String>[];
-      when(() => logger.captureEvent(captureAny<Object>(),
+      when(
+        () => logger.captureEvent(
+          captureAny<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
 
@@ -670,15 +708,17 @@ void main() {
       async.flushMicrotasks();
 
       // While in-flight schedules should be coalesced into a single deferral.
-      final deferredLogs =
-          logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
+      final deferredLogs = logs
+          .where((l) => l.contains('signal.liveScan.deferred set'))
+          .length;
       expect(deferredLogs <= 1, isTrue);
 
       // Let scan complete and trailing schedule occur (min gap is 1s)
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
-      final trailing =
-          logs.where((l) => l.contains('trailing.liveScan.scheduled')).length;
+      final trailing = logs
+          .where((l) => l.contains('trailing.liveScan.scheduled'))
+          .length;
       expect(trailing, 1);
     });
   });
@@ -698,13 +738,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) => Future.value());
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
       when(
@@ -719,26 +761,34 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       final scanEv = MockEvent();
       when(() => scanEv.eventId).thenReturn('S2');
-      when(() => scanEv.originServerTs)
-          .thenReturn(DateTime.fromMillisecondsSinceEpoch(4));
+      when(
+        () => scanEv.originServerTs,
+      ).thenReturn(DateTime.fromMillisecondsSinceEpoch(4));
       when(() => scanEv.senderId).thenReturn('@other:server');
       when(() => scanEv.attachmentMimetype).thenReturn('');
-      when(() => scanEv.content)
-          .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+      when(
+        () => scanEv.content,
+      ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       when(() => scanEv.roomId).thenReturn('!room:server');
       when(() => liveTimeline.events).thenReturn(<Event>[scanEv]);
-      when(() => processor.process(event: scanEv, journalDb: journalDb))
-          .thenAnswer((_) async {});
+      when(
+        () => processor.process(event: scanEv, journalDb: journalDb),
+      ).thenAnswer((_) async {});
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       final logs = <String>[];
-      when(() => logger.captureEvent(captureAny<Object>(),
+      when(
+        () => logger.captureEvent(
+          captureAny<Object>(),
           domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'))).thenAnswer((inv) {
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
 
@@ -776,15 +826,17 @@ void main() {
       onNewEvent?.call();
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
-      final deferred =
-          logs.where((l) => l.contains('signal.liveScan.deferred set')).length;
+      final deferred = logs
+          .where((l) => l.contains('signal.liveScan.deferred set'))
+          .length;
       expect(deferred, 1);
 
       // Let scan complete and any trailing follow-up schedule occur
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
-      final trailing =
-          logs.where((l) => l.contains('trailing.liveScan.scheduled')).length;
+      final trailing = logs
+          .where((l) => l.contains('trailing.liveScan.scheduled'))
+          .length;
       expect(trailing, 1);
     });
   });
@@ -803,21 +855,26 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) => Future.value());
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
       final logs = <String>[];
-      when(() => logger.captureEvent(
-            captureAny<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          )).thenAnswer((inv) {
+      when(
+        () => logger.captureEvent(
+          captureAny<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
 
@@ -834,8 +891,9 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -906,13 +964,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
       when(
@@ -927,18 +987,21 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
 
       Event mk(String id, int ts) {
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn(id);
-        when(() => ev.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(
+          () => ev.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
         when(() => ev.senderId).thenReturn('@peer:server');
         when(() => ev.attachmentMimetype).thenReturn('');
-        when(() => ev.content)
-            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(
+          () => ev.content,
+        ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
         when(() => ev.roomId).thenReturn('!room:server');
         return ev;
       }
@@ -949,10 +1012,14 @@ void main() {
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
       // Slow down processing just a bit to ensure we can flag a deferred scan
-      when(() =>
-          processor.process(
-              event: any(named: 'event'), journalDb: journalDb)).thenAnswer(
-          (_) async => Future<void>.delayed(const Duration(milliseconds: 200)));
+      when(
+        () => processor.process(
+          event: any(named: 'event'),
+          journalDb: journalDb,
+        ),
+      ).thenAnswer(
+        (_) async => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -1049,16 +1116,20 @@ void main() {
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
-      when(() => settingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
       final logs = <String>[];
-      when(() => logger.captureEvent(
-            captureAny<Object>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-          )).thenAnswer((inv) {
+      when(
+        () => logger.captureEvent(
+          captureAny<Object>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((inv) {
         logs.add(inv.positionalArguments.first.toString());
       });
       when(
@@ -1070,8 +1141,9 @@ void main() {
           onUpdate: any(named: 'onUpdate'),
         ),
       ).thenAnswer((_) async => liveTimeline);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
@@ -1100,21 +1172,26 @@ void main() {
       Event mkPayload(String id, int ts) {
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn(id);
-        when(() => ev.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(
+          () => ev.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
         when(() => ev.senderId).thenReturn('@peer:server');
         when(() => ev.attachmentMimetype).thenReturn('');
-        when(() => ev.content)
-            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(
+          () => ev.content,
+        ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
         when(() => ev.roomId).thenReturn('!room:server');
         return ev;
       }
 
       final payload1 = mkPayload('P1', 1);
       final payload2 = mkPayload('P2', 2);
-      when(() => processor.process(
+      when(
+        () => processor.process(
           event: any(named: 'event'),
-          journalDb: journalDb)).thenAnswer((_) async {});
+          journalDb: journalDb,
+        ),
+      ).thenAnswer((_) async {});
       when(() => liveTimeline.events).thenReturn(<Event>[payload1]);
 
       Event evInRoom() {
@@ -1188,13 +1265,15 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@other:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
       when(
@@ -1209,19 +1288,22 @@ void main() {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         return liveTimeline;
       });
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => liveTimeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => liveTimeline);
 
       // Provide a couple of sync payloads to keep the scan busy for a bit.
       Event mk(String id, int ts) {
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn(id);
-        when(() => ev.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(
+          () => ev.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
         when(() => ev.senderId).thenReturn('@peer:server');
         when(() => ev.attachmentMimetype).thenReturn('');
-        when(() => ev.content)
-            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(
+          () => ev.content,
+        ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
         when(() => ev.roomId).thenReturn('!room:server');
         return ev;
       }
@@ -1231,10 +1313,14 @@ void main() {
       when(() => liveTimeline.events).thenReturn(<Event>[]);
       when(liveTimeline.cancelSubscriptions).thenReturn(null);
 
-      when(() =>
-          processor.process(
-              event: any(named: 'event'), journalDb: journalDb)).thenAnswer(
-          (_) async => Future<void>.delayed(const Duration(milliseconds: 250)));
+      when(
+        () => processor.process(
+          event: any(named: 'event'),
+          journalDb: journalDb,
+        ),
+      ).thenAnswer(
+        (_) async => Future<void>.delayed(const Duration(milliseconds: 250)),
+      );
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,

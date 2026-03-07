@@ -63,33 +63,30 @@ Stream<List<T>> notificationDrivenStream<T>({
   required UpdateNotifications notifications,
   required Set<String> notificationKeys,
   required Future<List<T>> Function() fetcher,
-}) =>
-    _notificationDrivenStream<List<T>>(
-      notifications: notifications,
-      notificationKeys: notificationKeys,
-      fetcher: fetcher,
-    );
+}) => _notificationDrivenStream<List<T>>(
+  notifications: notifications,
+  notificationKeys: notificationKeys,
+  fetcher: fetcher,
+);
 
 /// Single-item variant. Same broadcast/serialization semantics.
 Stream<T?> notificationDrivenItemStream<T>({
   required UpdateNotifications notifications,
   required Set<String> notificationKeys,
   required Future<T?> Function() fetcher,
-}) =>
-    _notificationDrivenStream<T?>(
-      notifications: notifications,
-      notificationKeys: notificationKeys,
-      fetcher: fetcher,
-    );
+}) => _notificationDrivenStream<T?>(
+  notifications: notifications,
+  notificationKeys: notificationKeys,
+  fetcher: fetcher,
+);
 
 /// Map variant for non-list data (e.g., label usage counts).
 Stream<Map<K, V>> notificationDrivenMapStream<K, V>({
   required UpdateNotifications notifications,
   required Set<String> notificationKeys,
   required Future<Map<K, V>> Function() fetcher,
-}) =>
-    _notificationDrivenStream<Map<K, V>>(
-      notifications: notifications,
-      notificationKeys: notificationKeys,
-      fetcher: fetcher,
-    );
+}) => _notificationDrivenStream<Map<K, V>>(
+  notifications: notifications,
+  notificationKeys: notificationKeys,
+  fetcher: fetcher,
+);

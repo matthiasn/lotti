@@ -74,8 +74,9 @@ void main() {
       expect(tabBar.tabs.length, AiSettingsTab.values.length);
     });
 
-    testWidgets('search functionality works correctly',
-        (WidgetTester tester) async {
+    testWidgets('search functionality works correctly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Find the text field
@@ -116,8 +117,9 @@ void main() {
       expect(tabChangedTo, AiSettingsTab.prompts);
     });
 
-    testWidgets('search functionality updates filter state',
-        (WidgetTester tester) async {
+    testWidgets('search functionality updates filter state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Enter search text
@@ -127,51 +129,64 @@ void main() {
       expect(searchController.text, 'test query');
     });
 
-    testWidgets('displays filter section on models and prompts tabs',
-        (WidgetTester tester) async {
+    testWidgets('displays filter section on models and prompts tabs', (
+      WidgetTester tester,
+    ) async {
       // Start on providers tab (default)
-      await tester.pumpWidget(createWidget(
-        filterState: AiSettingsFilterState.initial(),
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          filterState: AiSettingsFilterState.initial(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Should not show AiSettingsFilterChips on providers tab
       expect(find.byType(AiSettingsFilterChips), findsNothing);
 
       // Test with models tab active
-      await tester.pumpWidget(createWidget(
-        filterState:
-            const AiSettingsFilterState(activeTab: AiSettingsTab.models),
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          filterState: const AiSettingsFilterState(
+            activeTab: AiSettingsTab.models,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Filter chips widget should be visible on Models tab
       expect(find.byType(AiSettingsFilterChips), findsOneWidget);
 
       // Test with prompts tab active
-      await tester.pumpWidget(createWidget(
-        filterState:
-            const AiSettingsFilterState(activeTab: AiSettingsTab.prompts),
-      ));
+      await tester.pumpWidget(
+        createWidget(
+          filterState: const AiSettingsFilterState(
+            activeTab: AiSettingsTab.prompts,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Filter chips widget should also be visible on Prompts tab
       expect(find.byType(AiSettingsFilterChips), findsOneWidget);
     });
 
-    testWidgets('hides filter section on providers tab',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        filterState: const AiSettingsFilterState(),
-      ));
+    testWidgets('hides filter section on providers tab', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          filterState: const AiSettingsFilterState(),
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Should NOT show AiSettingsFilterChips on providers tab
       expect(find.byType(AiSettingsFilterChips), findsNothing);
     });
 
-    testWidgets('has proper spacing between sections',
-        (WidgetTester tester) async {
+    testWidgets('has proper spacing between sections', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Check for SizedBox widgets used for spacing
@@ -182,8 +197,9 @@ void main() {
       expect(spacingBoxes.evaluate().length, greaterThan(0));
     });
 
-    testWidgets('search bar has proper decoration',
-        (WidgetTester tester) async {
+    testWidgets('search bar has proper decoration', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -191,8 +207,10 @@ void main() {
 
       expect(decoration.hintText, isNotNull);
       expect(decoration.prefixIcon, isNotNull);
-      expect(decoration.filled,
-          isNotNull); // Can be true or false depending on theme
+      expect(
+        decoration.filled,
+        isNotNull,
+      ); // Can be true or false depending on theme
       // Border might be OutlineInputBorder or another type depending on theme
       expect(decoration.border, isNotNull);
     });
@@ -216,8 +234,9 @@ void main() {
       expect(searchController.text, 'test query');
     });
 
-    testWidgets('has proper structure and padding',
-        (WidgetTester tester) async {
+    testWidgets('has proper structure and padding', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Check that search bar exists and has ancestors with padding

@@ -143,10 +143,10 @@ List<Event> buildLiveScanSlice({
   final slice = idx >= 0
       ? events.sublist(idx + 1)
       : (events.isEmpty
-          ? events
-          : events.sublist(
-              (events.length - tailLimit).clamp(0, events.length),
-            ));
+            ? events
+            : events.sublist(
+                (events.length - tailLimit).clamp(0, events.length),
+              ));
   // No timestamp gating.
   return tu.dedupEventsByIdPreserveOrder(slice);
 }

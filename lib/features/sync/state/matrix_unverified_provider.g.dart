@@ -13,18 +13,19 @@ part of 'matrix_unverified_provider.dart';
 final matrixUnverifiedControllerProvider =
     MatrixUnverifiedControllerProvider._();
 
-final class MatrixUnverifiedControllerProvider extends $AsyncNotifierProvider<
-    MatrixUnverifiedController, List<DeviceKeys>> {
+final class MatrixUnverifiedControllerProvider
+    extends
+        $AsyncNotifierProvider<MatrixUnverifiedController, List<DeviceKeys>> {
   MatrixUnverifiedControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'matrixUnverifiedControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'matrixUnverifiedControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$matrixUnverifiedControllerHash();
@@ -45,11 +46,14 @@ abstract class _$MatrixUnverifiedController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<DeviceKeys>>, List<DeviceKeys>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<DeviceKeys>>, List<DeviceKeys>>,
-        AsyncValue<List<DeviceKeys>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<DeviceKeys>>, List<DeviceKeys>>,
+              AsyncValue<List<DeviceKeys>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

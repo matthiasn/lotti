@@ -224,8 +224,9 @@ class _DateRangeSelectionPage extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: context.colorScheme.errorContainer
-                          .withValues(alpha: 0.2),
+                      color: context.colorScheme.errorContainer.withValues(
+                        alpha: 0.2,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: context.colorScheme.error.withValues(alpha: 0.3),
@@ -278,16 +279,17 @@ class _TappableDateTimeField extends StatelessWidget {
     final style = context.textTheme.titleMedium;
 
     return TextField(
-      decoration: createDialogInputDecoration(
-        labelText: labelText,
-        style: style,
-        themeData: Theme.of(context),
-      ).copyWith(
-        suffixIcon: Icon(
-          Icons.edit_calendar_rounded,
-          color: context.colorScheme.primary,
-        ),
-      ),
+      decoration:
+          createDialogInputDecoration(
+            labelText: labelText,
+            style: style,
+            themeData: Theme.of(context),
+          ).copyWith(
+            suffixIcon: Icon(
+              Icons.edit_calendar_rounded,
+              color: context.colorScheme.primary,
+            ),
+          ),
       style: style,
       readOnly: true,
       controller: TextEditingController(
@@ -383,7 +385,9 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
                   onPressed: valid && changed
                       ? () async {
                           try {
-                            await ref.read(provider.notifier).updateFromTo(
+                            await ref
+                                .read(provider.notifier)
+                                .updateFromTo(
                                   dateFrom: dateFrom,
                                   dateTo: dateTo,
                                 );

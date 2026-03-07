@@ -33,13 +33,14 @@ void main() {
     test('getImage passes headers to CachedNetworkImageProvider', () {
       final headers = {
         'User-Agent': 'com.example.app',
-        'Custom-Header': 'test'
+        'Custom-Header': 'test',
       };
       provider = CachedTileProvider(headers: headers);
       const coordinates = TileCoordinates(0, 0, 1);
 
-      final imageProvider = provider.getImage(coordinates, tileLayer)
-          as CachedNetworkImageProvider;
+      final imageProvider =
+          provider.getImage(coordinates, tileLayer)
+              as CachedNetworkImageProvider;
 
       // CachedNetworkImageProvider stores headers internally
       // We can't directly access them, but we can verify the provider was created
@@ -51,8 +52,9 @@ void main() {
       provider = CachedTileProvider();
       const coordinates = TileCoordinates(0, 0, 1);
 
-      final imageProvider = provider.getImage(coordinates, tileLayer)
-          as CachedNetworkImageProvider;
+      final imageProvider =
+          provider.getImage(coordinates, tileLayer)
+              as CachedNetworkImageProvider;
 
       expect(imageProvider, isNotNull);
     });
@@ -89,9 +91,9 @@ void main() {
 
       // The URL should contain one of the subdomains
       expect(
-          url,
-          matches(
-              RegExp(r'https://[abc]\.tile\.openstreetmap\.org/1/0/0\.png')));
+        url,
+        matches(RegExp(r'https://[abc]\.tile\.openstreetmap\.org/1/0/0\.png')),
+      );
     });
 
     test('multiple instances with different headers', () {

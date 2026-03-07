@@ -7,18 +7,15 @@ part of 'sync_message.dart';
 // **************************************************************************
 
 _BackfillRequestEntry _$BackfillRequestEntryFromJson(
-        Map<String, dynamic> json) =>
-    _BackfillRequestEntry(
-      hostId: json['hostId'] as String,
-      counter: (json['counter'] as num).toInt(),
-    );
+  Map<String, dynamic> json,
+) => _BackfillRequestEntry(
+  hostId: json['hostId'] as String,
+  counter: (json['counter'] as num).toInt(),
+);
 
 Map<String, dynamic> _$BackfillRequestEntryToJson(
-        _BackfillRequestEntry instance) =>
-    <String, dynamic>{
-      'hostId': instance.hostId,
-      'counter': instance.counter,
-    };
+  _BackfillRequestEntry instance,
+) => <String, dynamic>{'hostId': instance.hostId, 'counter': instance.counter};
 
 SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
     SyncJournalEntity(
@@ -56,21 +53,22 @@ const _$SyncEntryStatusEnumMap = {
 };
 
 SyncEntityDefinition _$SyncEntityDefinitionFromJson(
-        Map<String, dynamic> json) =>
-    SyncEntityDefinition(
-      entityDefinition: EntityDefinition.fromJson(
-          json['entityDefinition'] as Map<String, dynamic>),
-      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => SyncEntityDefinition(
+  entityDefinition: EntityDefinition.fromJson(
+    json['entityDefinition'] as Map<String, dynamic>,
+  ),
+  status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$SyncEntityDefinitionToJson(
-        SyncEntityDefinition instance) =>
-    <String, dynamic>{
-      'entityDefinition': instance.entityDefinition,
-      'status': _$SyncEntryStatusEnumMap[instance.status]!,
-      'runtimeType': instance.$type,
-    };
+  SyncEntityDefinition instance,
+) => <String, dynamic>{
+  'entityDefinition': instance.entityDefinition,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'runtimeType': instance.$type,
+};
 
 SyncTagEntity _$SyncTagEntityFromJson(Map<String, dynamic> json) =>
     SyncTagEntity(
@@ -107,10 +105,10 @@ Map<String, dynamic> _$SyncEntryLinkToJson(SyncEntryLink instance) =>
     };
 
 SyncAiConfig _$SyncAiConfigFromJson(Map<String, dynamic> json) => SyncAiConfig(
-      aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
-      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
-      $type: json['runtimeType'] as String?,
-    );
+  aiConfig: AiConfig.fromJson(json['aiConfig'] as Map<String, dynamic>),
+  status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$SyncAiConfigToJson(SyncAiConfig instance) =>
     <String, dynamic>{
@@ -126,32 +124,29 @@ SyncAiConfigDelete _$SyncAiConfigDeleteFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$SyncAiConfigDeleteToJson(SyncAiConfigDelete instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'runtimeType': instance.$type,
-    };
+    <String, dynamic>{'id': instance.id, 'runtimeType': instance.$type};
 
 SyncThemingSelection _$SyncThemingSelectionFromJson(
-        Map<String, dynamic> json) =>
-    SyncThemingSelection(
-      lightThemeName: json['lightThemeName'] as String,
-      darkThemeName: json['darkThemeName'] as String,
-      themeMode: json['themeMode'] as String,
-      updatedAt: (json['updatedAt'] as num).toInt(),
-      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => SyncThemingSelection(
+  lightThemeName: json['lightThemeName'] as String,
+  darkThemeName: json['darkThemeName'] as String,
+  themeMode: json['themeMode'] as String,
+  updatedAt: (json['updatedAt'] as num).toInt(),
+  status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$SyncThemingSelectionToJson(
-        SyncThemingSelection instance) =>
-    <String, dynamic>{
-      'lightThemeName': instance.lightThemeName,
-      'darkThemeName': instance.darkThemeName,
-      'themeMode': instance.themeMode,
-      'updatedAt': instance.updatedAt,
-      'status': _$SyncEntryStatusEnumMap[instance.status]!,
-      'runtimeType': instance.$type,
-    };
+  SyncThemingSelection instance,
+) => <String, dynamic>{
+  'lightThemeName': instance.lightThemeName,
+  'darkThemeName': instance.darkThemeName,
+  'themeMode': instance.themeMode,
+  'updatedAt': instance.updatedAt,
+  'status': _$SyncEntryStatusEnumMap[instance.status]!,
+  'runtimeType': instance.$type,
+};
 
 SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>
     SyncBackfillRequest(
@@ -163,39 +158,41 @@ SyncBackfillRequest _$SyncBackfillRequestFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$SyncBackfillRequestToJson(
-        SyncBackfillRequest instance) =>
-    <String, dynamic>{
-      'entries': instance.entries,
-      'requesterId': instance.requesterId,
-      'runtimeType': instance.$type,
-    };
+  SyncBackfillRequest instance,
+) => <String, dynamic>{
+  'entries': instance.entries,
+  'requesterId': instance.requesterId,
+  'runtimeType': instance.$type,
+};
 
 SyncBackfillResponse _$SyncBackfillResponseFromJson(
-        Map<String, dynamic> json) =>
-    SyncBackfillResponse(
-      hostId: json['hostId'] as String,
-      counter: (json['counter'] as num).toInt(),
-      deleted: json['deleted'] as bool,
-      unresolvable: json['unresolvable'] as bool?,
-      entryId: json['entryId'] as String?,
-      payloadType: $enumDecodeNullable(
-          _$SyncSequencePayloadTypeEnumMap, json['payloadType']),
-      payloadId: json['payloadId'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => SyncBackfillResponse(
+  hostId: json['hostId'] as String,
+  counter: (json['counter'] as num).toInt(),
+  deleted: json['deleted'] as bool,
+  unresolvable: json['unresolvable'] as bool?,
+  entryId: json['entryId'] as String?,
+  payloadType: $enumDecodeNullable(
+    _$SyncSequencePayloadTypeEnumMap,
+    json['payloadType'],
+  ),
+  payloadId: json['payloadId'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$SyncBackfillResponseToJson(
-        SyncBackfillResponse instance) =>
-    <String, dynamic>{
-      'hostId': instance.hostId,
-      'counter': instance.counter,
-      'deleted': instance.deleted,
-      'unresolvable': instance.unresolvable,
-      'entryId': instance.entryId,
-      'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType],
-      'payloadId': instance.payloadId,
-      'runtimeType': instance.$type,
-    };
+  SyncBackfillResponse instance,
+) => <String, dynamic>{
+  'hostId': instance.hostId,
+  'counter': instance.counter,
+  'deleted': instance.deleted,
+  'unresolvable': instance.unresolvable,
+  'entryId': instance.entryId,
+  'payloadType': _$SyncSequencePayloadTypeEnumMap[instance.payloadType],
+  'payloadId': instance.payloadId,
+  'runtimeType': instance.$type,
+};
 
 const _$SyncSequencePayloadTypeEnumMap = {
   SyncSequencePayloadType.journalEntity: 'journalEntity',
@@ -210,7 +207,8 @@ SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
       agentEntity: json['agentEntity'] == null
           ? null
           : AgentDomainEntity.fromJson(
-              json['agentEntity'] as Map<String, dynamic>),
+              json['agentEntity'] as Map<String, dynamic>,
+            ),
       jsonPath: json['jsonPath'] as String?,
       originatingHostId: json['originatingHostId'] as String?,
       coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)

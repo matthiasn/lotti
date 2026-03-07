@@ -37,16 +37,16 @@ class OutboxProcessor {
     int? maxRetriesOverride,
     Duration? sendTimeoutOverride,
     DomainLogger? domainLogger,
-  })  : _repository = repository,
-        _messageSender = messageSender,
-        _loggingService = loggingService,
-        _domainLogger = domainLogger,
-        batchSize = batchSizeOverride ?? 10,
-        retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
-        errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
-        maxRetriesForDiagnostics =
-            maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
-        sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
+  }) : _repository = repository,
+       _messageSender = messageSender,
+       _loggingService = loggingService,
+       _domainLogger = domainLogger,
+       batchSize = batchSizeOverride ?? 10,
+       retryDelay = retryDelayOverride ?? SyncTuning.outboxRetryDelay,
+       errorDelay = errorDelayOverride ?? SyncTuning.outboxErrorDelay,
+       maxRetriesForDiagnostics =
+           maxRetriesOverride ?? SyncTuning.outboxMaxRetriesDiagnostics,
+       sendTimeout = sendTimeoutOverride ?? SyncTuning.outboxSendTimeout;
 
   final OutboxRepository _repository;
   final OutboxMessageSender _messageSender;
@@ -127,10 +127,13 @@ class OutboxProcessor {
       var timedOut = false;
       final success = await _messageSender
           .send(syncMessage)
-          .timeout(sendTimeout, onTimeout: () {
-        timedOut = true;
-        return false;
-      });
+          .timeout(
+            sendTimeout,
+            onTimeout: () {
+              timedOut = true;
+              return false;
+            },
+          );
 
       if (!success) {
         final nextAttempts = refreshedItem.retries + 1;
@@ -168,8 +171,10 @@ class OutboxProcessor {
       }
 
       await _repository.markSent(refreshedItem);
-      _syncLog('sent subject=${refreshedItem.subject}',
-          subDomain: 'outbox.send');
+      _syncLog(
+        'sent subject=${refreshedItem.subject}',
+        subDomain: 'outbox.send',
+      );
       _loggingService.captureEvent(
         '${refreshedItem.subject} done',
         domain: 'OUTBOX',

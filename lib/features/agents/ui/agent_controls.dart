@@ -54,38 +54,37 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
               onPressed: _busy
                   ? null
                   : () => _confirmAction(
-                        context: context,
-                        title: context.messages.agentControlsDeleteDialogTitle,
-                        content:
-                            context.messages.agentControlsDeleteDialogContent,
-                        confirmLabel:
-                            context.messages.agentControlsDeleteButton,
-                        onConfirmed: () async {
-                          // Look up the task link before deletion so we
-                          // can invalidate the cached task-agent provider.
-                          final repo = ref.read(agentRepositoryProvider);
-                          final links = await repo.getLinksFrom(
-                            widget.agentId,
-                            type: AgentLinkTypes.agentTask,
-                          );
+                      context: context,
+                      title: context.messages.agentControlsDeleteDialogTitle,
+                      content:
+                          context.messages.agentControlsDeleteDialogContent,
+                      confirmLabel: context.messages.agentControlsDeleteButton,
+                      onConfirmed: () async {
+                        // Look up the task link before deletion so we
+                        // can invalidate the cached task-agent provider.
+                        final repo = ref.read(agentRepositoryProvider);
+                        final links = await repo.getLinksFrom(
+                          widget.agentId,
+                          type: AgentLinkTypes.agentTask,
+                        );
 
-                          await ref
-                              .read(agentServiceProvider)
-                              .deleteAgent(widget.agentId);
+                        await ref
+                            .read(agentServiceProvider)
+                            .deleteAgent(widget.agentId);
 
-                          // Invalidate the task-level lookup so the chip
-                          // switches from "Agent" back to "Create Agent".
-                          for (final link in links) {
-                            ref.invalidate(taskAgentProvider(link.toId));
-                          }
+                        // Invalidate the task-level lookup so the chip
+                        // switches from "Agent" back to "Create Agent".
+                        for (final link in links) {
+                          ref.invalidate(taskAgentProvider(link.toId));
+                        }
 
-                          // Pop the detail page — the agent no longer
-                          // exists, so there is nothing left to display.
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
-                          }
-                        },
-                      ),
+                        // Pop the detail page — the agent no longer
+                        // exists, so there is nothing left to display.
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
               icon: Icon(
                 Icons.delete_forever_rounded,
                 color: context.colorScheme.error,
@@ -132,19 +131,18 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
               onPressed: _busy
                   ? null
                   : () => _confirmAction(
-                        context: context,
-                        title: context.messages.agentControlsDestroyDialogTitle,
-                        content:
-                            context.messages.agentControlsDestroyDialogContent,
-                        confirmLabel:
-                            context.messages.agentControlsDestroyButton,
-                        onConfirmed: () async {
-                          await ref
-                              .read(agentServiceProvider)
-                              .destroyAgent(widget.agentId);
-                          ref.invalidate(agentIdentityProvider(widget.agentId));
-                        },
-                      ),
+                      context: context,
+                      title: context.messages.agentControlsDestroyDialogTitle,
+                      content:
+                          context.messages.agentControlsDestroyDialogContent,
+                      confirmLabel: context.messages.agentControlsDestroyButton,
+                      onConfirmed: () async {
+                        await ref
+                            .read(agentServiceProvider)
+                            .destroyAgent(widget.agentId);
+                        ref.invalidate(agentIdentityProvider(widget.agentId));
+                      },
+                    ),
               icon: Icon(
                 Icons.delete_forever_rounded,
                 color: context.colorScheme.error,
@@ -199,8 +197,8 @@ class _AgentControlsState extends ConsumerState<AgentControls> {
   }
 
   Future<void> _triggerReanalysis() => _runAction(() async {
-        ref.read(taskAgentServiceProvider).triggerReanalysis(widget.agentId);
-      });
+    ref.read(taskAgentServiceProvider).triggerReanalysis(widget.agentId);
+  });
 
   /// Shows a confirmation dialog, then runs [onConfirmed] with busy-state
   /// guard and error handling.

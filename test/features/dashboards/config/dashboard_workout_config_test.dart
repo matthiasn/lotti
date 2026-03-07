@@ -25,8 +25,9 @@ void main() {
     });
 
     test('running entries have correct workoutType', () {
-      for (final key
-          in workoutTypes.keys.where((k) => k.startsWith('running.'))) {
+      for (final key in workoutTypes.keys.where(
+        (k) => k.startsWith('running.'),
+      )) {
         expect(workoutTypes[key]!.workoutType, 'running');
       }
     });

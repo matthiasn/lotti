@@ -21,10 +21,10 @@ class SyncEngine {
     required SyncRoomManager roomManager,
     required SyncLifecycleCoordinator lifecycleCoordinator,
     required LoggingService loggingService,
-  })  : _sessionManager = sessionManager,
-        _roomManager = roomManager,
-        _lifecycleCoordinator = lifecycleCoordinator,
-        _loggingService = loggingService;
+  }) : _sessionManager = sessionManager,
+       _roomManager = roomManager,
+       _lifecycleCoordinator = lifecycleCoordinator,
+       _loggingService = loggingService;
 
   final MatrixSessionManager _sessionManager;
   final SyncRoomManager _roomManager;

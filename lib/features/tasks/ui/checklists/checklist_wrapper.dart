@@ -60,14 +60,17 @@ class ChecklistWrapper extends ConsumerWidget {
     WidgetRef ref,
     Checklist checklist,
   ) {
-    final futures =
-        checklist.data.linkedChecklistItems.map<Future<ChecklistItem?>>(
-      (id) => ref
-          .read(
-            checklistItemControllerProvider((id: id, taskId: taskId)).future,
-          )
-          .catchError((Object _, StackTrace __) => null),
-    );
+    final futures = checklist.data.linkedChecklistItems
+        .map<Future<ChecklistItem?>>(
+          (id) => ref
+              .read(
+                checklistItemControllerProvider((
+                  id: id,
+                  taskId: taskId,
+                )).future,
+              )
+              .catchError((Object _, StackTrace _) => null),
+        );
     return Future.wait<ChecklistItem?>(futures);
   }
 
@@ -209,9 +212,11 @@ class ChecklistWrapper extends ConsumerWidget {
                 await prefs.setBool(key: _shareHintSeenKey, value: true);
               }
             } catch (_) {
-              messenger.showSnackBar(SnackBar(
-                content: Text(exportFailedMsg),
-              ));
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(exportFailedMsg),
+                ),
+              );
             }
           },
           onShareMarkdown: () async {
@@ -222,8 +227,10 @@ class ChecklistWrapper extends ConsumerWidget {
               if (shareText.isEmpty) {
                 return; // nothing to share
               }
-              await ShareService.instance
-                  .shareText(text: shareText, subject: checklist.data.title);
+              await ShareService.instance.shareText(
+                text: shareText,
+                subject: checklist.data.title,
+              );
             } catch (_) {
               // Silently ignore share errors to avoid disrupting UX.
             }

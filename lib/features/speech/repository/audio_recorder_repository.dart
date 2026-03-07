@@ -63,7 +63,7 @@ class AudioRecorderConstants {
 /// All methods include error handling to ensure graceful degradation.
 class AudioRecorderRepository {
   AudioRecorderRepository([AudioRecorder? audioRecorder])
-      : _audioRecorder = audioRecorder ?? AudioRecorder();
+    : _audioRecorder = audioRecorder ?? AudioRecorder();
 
   final AudioRecorder _audioRecorder;
   final LoggingService _loggingService = getIt<LoggingService>();
@@ -71,8 +71,8 @@ class AudioRecorderRepository {
   /// Stream of amplitude updates for VU meter visualization.
   /// Emits amplitude values every 20ms while recording.
   Stream<Amplitude> get amplitudeStream => _audioRecorder.onAmplitudeChanged(
-        const Duration(milliseconds: intervalMs),
-      );
+    const Duration(milliseconds: intervalMs),
+  );
 
   /// Checks if the app has microphone permission.
   /// In Flatpak environments, relies on PulseAudio socket permissions.

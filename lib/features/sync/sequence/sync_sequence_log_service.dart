@@ -13,9 +13,9 @@ class SyncSequenceLogService {
     required SyncDatabase syncDatabase,
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
-  })  : _syncDatabase = syncDatabase,
-        _vectorClockService = vectorClockService,
-        _loggingService = loggingService;
+  }) : _syncDatabase = syncDatabase,
+       _vectorClockService = vectorClockService,
+       _loggingService = loggingService;
 
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
@@ -105,8 +105,10 @@ class SyncSequenceLogService {
     // This prevents false positives: covered counters are pre-emptively marked
     // as received, so gap detection (which checks `existing == null`) will
     // skip them instead of incorrectly marking them as missing.
-    final filteredCovered =
-        _filterCoveredVectorClocks(coveredVectorClocks, vectorClock);
+    final filteredCovered = _filterCoveredVectorClocks(
+      coveredVectorClocks,
+      vectorClock,
+    );
     if (filteredCovered.isNotEmpty && myHost != null) {
       await _markCoveredCountersAsReceived(
         coveredVectorClocks: filteredCovered,
@@ -173,8 +175,10 @@ class SyncSequenceLogService {
           gaps.add((hostId: hostId, counter: i));
 
           // Check if we already have this entry
-          final existing =
-              await _syncDatabase.getEntryByHostAndCounter(hostId, i);
+          final existing = await _syncDatabase.getEntryByHostAndCounter(
+            hostId,
+            i,
+          );
           if (existing == null) {
             await _syncDatabase.recordSequenceEntry(
               SyncSequenceLogCompanion(
@@ -198,8 +202,10 @@ class SyncSequenceLogService {
 
       // For the originator, record the actual entry with entryId
       if (hostId == originatingHostId) {
-        final existing =
-            await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+        final existing = await _syncDatabase.getEntryByHostAndCounter(
+          hostId,
+          counter,
+        );
 
         // Determine the new status:
         // - If already received/backfilled → keep existing status (don't downgrade)
@@ -254,8 +260,10 @@ class SyncSequenceLogService {
         // 1. It allows us to respond to backfill requests for any counter in the VC
         // 2. It updates missing/requested entries when we receive a newer version
         //    of an entry that includes this (host, counter) in its VC
-        final existing =
-            await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+        final existing = await _syncDatabase.getEntryByHostAndCounter(
+          hostId,
+          counter,
+        );
 
         // Determine the new status (same logic as for originator)
         final SyncSequenceStatus status;
@@ -387,8 +395,10 @@ class SyncSequenceLogService {
         if (hostId == myHost) continue;
 
         // Check if this counter already exists in the sequence log
-        final existing =
-            await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+        final existing = await _syncDatabase.getEntryByHostAndCounter(
+          hostId,
+          counter,
+        );
 
         // Insert or update record for covered counter:
         // - If doesn't exist: insert as received (pre-empt gap detection)
@@ -522,8 +532,10 @@ class SyncSequenceLogService {
 
     // Non-deleted response: store the entryId hint without changing status.
     // The actual backfill confirmation happens when we verify the entry exists.
-    final existing =
-        await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+    final existing = await _syncDatabase.getEntryByHostAndCounter(
+      hostId,
+      counter,
+    );
 
     if (existing == null) {
       // Entry doesn't exist in our log - insert with entryId hint and mark
@@ -608,8 +620,10 @@ class SyncSequenceLogService {
     }
 
     // Look up the sequence log entry
-    final existing =
-        await _syncDatabase.getEntryByHostAndCounter(hostId, counter);
+    final existing = await _syncDatabase.getEntryByHostAndCounter(
+      hostId,
+      counter,
+    );
 
     if (existing == null ||
         (existing.status != SyncSequenceStatus.missing.index &&
@@ -732,7 +746,7 @@ class SyncSequenceLogService {
   /// Returns the number of sequence log entries populated.
   Future<int> populateFromJournal({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
-        entryStream,
+    entryStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
   }) {
@@ -749,7 +763,7 @@ class SyncSequenceLogService {
   /// Returns the number of sequence log entries populated.
   Future<int> populateFromEntryLinks({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
-        linkStream,
+    linkStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
   }) {
@@ -766,7 +780,7 @@ class SyncSequenceLogService {
   /// Returns the number of sequence log entries populated.
   Future<int> populateFromAgentEntities({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
-        entityStream,
+    entityStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
   }) {
@@ -783,7 +797,7 @@ class SyncSequenceLogService {
   /// Returns the number of sequence log entries populated.
   Future<int> populateFromAgentLinks({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
-        linkStream,
+    linkStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
   }) {
@@ -800,7 +814,7 @@ class SyncSequenceLogService {
   /// stream of records with vector clocks. Used by all four populate methods.
   Future<int> _populateFromStream({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
-        dataStream,
+    dataStream,
     required Future<int> Function() getTotalCount,
     required SyncSequencePayloadType payloadType,
     required String label,
@@ -843,8 +857,9 @@ class SyncSequenceLogService {
 
           // Lazily load existing counters for this host
           if (!existingByHost.containsKey(hostId)) {
-            existingByHost[hostId] =
-                await _syncDatabase.getCountersForHost(hostId);
+            existingByHost[hostId] = await _syncDatabase.getCountersForHost(
+              hostId,
+            );
           }
 
           final existing = existingByHost[hostId]!;

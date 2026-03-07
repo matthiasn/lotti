@@ -64,20 +64,24 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+      ).thenAnswer((_) async => true);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.getHabitById(any())).thenReturn(null);
-      when(() => mockEntitiesCacheService.getDataTypeById(any()))
-          .thenReturn(null);
-      when(() => mockEntitiesCacheService.getDashboardById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDashboardById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
       when(
@@ -93,8 +97,9 @@ void main() {
 
     group('default header (non-collapsible)', () {
       testWidgets('shows menu but no collapse arrow', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -111,10 +116,12 @@ void main() {
     });
 
     group('collapsible header - expanded state', () {
-      testWidgets('shows collapse arrow, menu, and no preview icons',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('shows collapse arrow, menu, and no preview icons', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -137,35 +144,39 @@ void main() {
 
     group('collapsible header - collapsed state', () {
       testWidgets(
-          'shows mic icon, duration, collapse arrow, but hides menu for audio',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        'shows mic icon, duration, collapse arrow, but hides menu for audio',
+        (tester) async {
+          when(
+            () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+          ).thenAnswer((_) async => testAudioEntry);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            EntryDetailHeader(
-              entryId: testAudioEntry.meta.id,
-              inLinkedEntries: true,
-              isCollapsible: true,
-              isCollapsed: true,
-              onToggleCollapse: () {},
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              EntryDetailHeader(
+                entryId: testAudioEntry.meta.id,
+                inLinkedEntries: true,
+                isCollapsible: true,
+                isCollapsed: true,
+                onToggleCollapse: () {},
+              ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
-        // testAudioEntry has duration of 1 hour -> h:mm:ss format
-        expect(find.text('1:00:00'), findsOneWidget);
-        expect(find.byIcon(Icons.expand_more), findsOneWidget);
-        expect(find.byIcon(Icons.more_horiz), findsNothing);
-      });
+          expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+          // testAudioEntry has duration of 1 hour -> h:mm:ss format
+          expect(find.text('1:00:00'), findsOneWidget);
+          expect(find.byIcon(Icons.expand_more), findsOneWidget);
+          expect(find.byIcon(Icons.more_horiz), findsNothing);
+        },
+      );
 
-      testWidgets('does NOT show mic icon when audio entry is expanded',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('does NOT show mic icon when audio entry is expanded', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -184,10 +195,12 @@ void main() {
     });
 
     group('collapsible header - collapsed text entry', () {
-      testWidgets('shows text icon, collapse arrow, and date but hides menu',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets('shows text icon, collapse arrow, and date but hides menu', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -208,10 +221,12 @@ void main() {
         expect(find.byIcon(Icons.more_horiz), findsNothing);
       });
 
-      testWidgets('does NOT show text icon when text entry is expanded',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets('does NOT show text icon when text entry is expanded', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -232,12 +247,14 @@ void main() {
     });
 
     group('collapse toggle callback', () {
-      testWidgets('calls onToggleCollapse when collapse arrow is tapped',
-          (tester) async {
+      testWidgets('calls onToggleCollapse when collapse arrow is tapped', (
+        tester,
+      ) async {
         var toggled = false;
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -263,8 +280,9 @@ void main() {
 
     group('animated chevron rotation', () {
       testWidgets('chevron is not rotated when expanded', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -278,15 +296,17 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedRotation =
-            tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+        final animatedRotation = tester.widget<AnimatedRotation>(
+          find.byType(AnimatedRotation),
+        );
         expect(animatedRotation.turns, equals(0.0));
       });
 
       testWidgets('chevron is rotated when collapsed', (tester) async {
         // Use audio entry to avoid image thumbnail needing Directory in GetIt
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -301,8 +321,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final animatedRotation =
-            tester.widget<AnimatedRotation>(find.byType(AnimatedRotation));
+        final animatedRotation = tester.widget<AnimatedRotation>(
+          find.byType(AnimatedRotation),
+        );
         expect(animatedRotation.turns, equals(-0.25));
       });
     });
@@ -320,8 +341,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(shortAudio.meta.id))
-            .thenAnswer((_) async => shortAudio);
+        when(
+          () => mockJournalDb.journalEntityById(shortAudio.meta.id),
+        ).thenAnswer((_) async => shortAudio);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -341,8 +363,9 @@ void main() {
 
       testWidgets('formats hour-long duration correctly', (tester) async {
         // testAudioEntry already has 1 hour duration
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -372,8 +395,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(borderAudio.meta.id))
-            .thenAnswer((_) async => borderAudio);
+        when(
+          () => mockJournalDb.journalEntityById(borderAudio.meta.id),
+        ).thenAnswer((_) async => borderAudio);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -403,8 +427,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(exactlyOneHour.meta.id))
-            .thenAnswer((_) async => exactlyOneHour);
+        when(
+          () => mockJournalDb.journalEntityById(exactlyOneHour.meta.id),
+        ).thenAnswer((_) async => exactlyOneHour);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -433,8 +458,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(zeroAudio.meta.id))
-            .thenAnswer((_) async => zeroAudio);
+        when(
+          () => mockJournalDb.journalEntityById(zeroAudio.meta.id),
+        ).thenAnswer((_) async => zeroAudio);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -463,8 +489,9 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(longAudio.meta.id))
-            .thenAnswer((_) async => longAudio);
+        when(
+          () => mockJournalDb.journalEntityById(longAudio.meta.id),
+        ).thenAnswer((_) async => longAudio);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -484,11 +511,13 @@ void main() {
     });
 
     group('default header AI popup condition', () {
-      testWidgets('shows menu for audio and image entries in default header',
-          (tester) async {
+      testWidgets('shows menu for audio and image entries in default header', (
+        tester,
+      ) async {
         for (final entry in [testAudioEntry, testImageEntry]) {
-          when(() => mockJournalDb.journalEntityById(entry.meta.id))
-              .thenAnswer((_) async => entry);
+          when(
+            () => mockJournalDb.journalEntityById(entry.meta.id),
+          ).thenAnswer((_) async => entry);
 
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(
@@ -505,10 +534,12 @@ void main() {
     });
 
     group('expanded state shows action buttons', () {
-      testWidgets('shows menu, arrow, date, but no preview icons',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('shows menu, arrow, date, but no preview icons', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -530,10 +561,12 @@ void main() {
     });
 
     group('collapsed state shows only preview and arrow', () {
-      testWidgets('shows date but hides menu, flag, and AI actions',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('shows date but hides menu, flag, and AI actions', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -562,8 +595,9 @@ void main() {
           meta: testImageEntry.meta.copyWith(flag: EntryFlag.import),
         );
 
-        when(() => mockJournalDb.journalEntityById(flaggedImage.meta.id))
-            .thenAnswer((_) async => flaggedImage);
+        when(
+          () => mockJournalDb.journalEntityById(flaggedImage.meta.id),
+        ).thenAnswer((_) async => flaggedImage);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -627,20 +661,24 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+      ).thenAnswer((_) async => true);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.getHabitById(any())).thenReturn(null);
-      when(() => mockEntitiesCacheService.getDataTypeById(any()))
-          .thenReturn(null);
-      when(() => mockEntitiesCacheService.getDashboardById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(any()),
+      ).thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getDashboardById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
       when(
@@ -654,10 +692,12 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('shows thumbnail, ClipRRect, and date for collapsed image',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-          .thenAnswer((_) async => testImageEntry);
+    testWidgets('shows thumbnail, ClipRRect, and date for collapsed image', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+      ).thenAnswer((_) async => testImageEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

@@ -40,8 +40,9 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('displays score key and value from calculatedScores',
-        (tester) async {
+    testWidgets('displays score key and value from calculatedScores', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(SurveySummary(testSurveyEntry)),
       );
@@ -52,8 +53,9 @@ void main() {
       expect(find.text(' 11'), findsOneWidget);
     });
 
-    testWidgets('shows DashboardSurveyChart when showChart is true (default)',
-        (tester) async {
+    testWidgets('shows DashboardSurveyChart when showChart is true (default)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(SurveySummary(testSurveyEntry)),
       );
@@ -62,8 +64,9 @@ void main() {
       expect(find.byType(DashboardSurveyChart), findsOneWidget);
     });
 
-    testWidgets('hides DashboardSurveyChart when showChart is false',
-        (tester) async {
+    testWidgets('hides DashboardSurveyChart when showChart is false', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           SurveySummary(testSurveyEntry, showChart: false),

@@ -48,8 +48,9 @@ void main() {
       expect(icon.color, GameyColors.primaryGreen);
     });
 
-    testWidgets('shows circular progress indicator when progress is set',
-        (tester) async {
+    testWidgets('shows circular progress indicator when progress is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(progress: 0.75));
       await tester.pumpAndSettle();
 
@@ -60,8 +61,9 @@ void main() {
       expect(indicator.value, 0.75);
     });
 
-    testWidgets('hides circular progress when progress is null',
-        (tester) async {
+    testWidgets('hides circular progress when progress is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 

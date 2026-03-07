@@ -34,8 +34,9 @@ void main() {
       expect(find.text('Test Subtitle'), findsOneWidget);
     });
 
-    testWidgets('renders trailing widget when provided',
-        (WidgetTester tester) async {
+    testWidgets('renders trailing widget when provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const AnimatedModernSettingsCardWithIcon(
@@ -62,8 +63,9 @@ void main() {
       expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
     });
 
-    testWidgets('hides chevron when showChevron is false',
-        (WidgetTester tester) async {
+    testWidgets('hides chevron when showChevron is false', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const AnimatedModernSettingsCardWithIcon(

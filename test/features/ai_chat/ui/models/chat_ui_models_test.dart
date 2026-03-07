@@ -291,8 +291,10 @@ void main() {
         expect(streamingModel.canSendMessage, isFalse);
 
         // Model with selectedModelId but both loading and streaming cannot send messages
-        final busyModel =
-            readyModel.copyWith(isLoading: true, isStreaming: true);
+        final busyModel = readyModel.copyWith(
+          isLoading: true,
+          isStreaming: true,
+        );
         expect(busyModel.canSendMessage, isFalse);
       });
 
@@ -373,8 +375,9 @@ void main() {
 
     group('getter properties', () {
       test('isAnySessionLoading detects loading in current session', () {
-        final loadingCurrentSession =
-            ChatSessionUiModel.empty().copyWith(isLoading: true);
+        final loadingCurrentSession = ChatSessionUiModel.empty().copyWith(
+          isLoading: true,
+        );
         final model = ChatStateUiModel(
           currentSession: loadingCurrentSession,
           recentSessions: [],
@@ -384,8 +387,9 @@ void main() {
       });
 
       test('isAnySessionLoading detects loading in recent sessions', () {
-        final loadingRecentSession =
-            ChatSessionUiModel.empty().copyWith(isLoading: true);
+        final loadingRecentSession = ChatSessionUiModel.empty().copyWith(
+          isLoading: true,
+        );
         final model = ChatStateUiModel(
           currentSession: ChatSessionUiModel.empty(),
           recentSessions: [loadingRecentSession],
@@ -394,15 +398,17 @@ void main() {
         expect(model.isAnySessionLoading, isTrue);
       });
 
-      test('isAnySessionLoading returns false when no sessions are loading',
-          () {
-        final model = ChatStateUiModel(
-          currentSession: ChatSessionUiModel.empty(),
-          recentSessions: [ChatSessionUiModel.empty()],
-        );
+      test(
+        'isAnySessionLoading returns false when no sessions are loading',
+        () {
+          final model = ChatStateUiModel(
+            currentSession: ChatSessionUiModel.empty(),
+            recentSessions: [ChatSessionUiModel.empty()],
+          );
 
-        expect(model.isAnySessionLoading, isFalse);
-      });
+          expect(model.isAnySessionLoading, isFalse);
+        },
+      );
     });
   });
 }

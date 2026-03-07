@@ -50,12 +50,14 @@ void main() {
         waitForLifecycle: any(named: 'waitForLifecycle'),
       ),
     ).thenAnswer((_) async => true);
-    when(() => mockMatrixService.joinRoom(any()))
-        .thenAnswer((_) async => testBundle.roomId);
+    when(
+      () => mockMatrixService.joinRoom(any()),
+    ).thenAnswer((_) async => testBundle.roomId);
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
-    when(() => mockMatrixService.getRoom())
-        .thenAnswer((_) async => testBundle.roomId);
+    when(
+      () => mockMatrixService.getRoom(),
+    ).thenAnswer((_) async => testBundle.roomId);
     when(() => mockMatrixService.isLoggedIn()).thenReturn(false);
     when(() => mockMatrixService.logout()).thenAnswer((_) async {});
     when(() => mockMatrixService.deleteConfig()).thenAnswer((_) async {});
@@ -106,7 +108,9 @@ void main() {
         expect(bundle.password, 'secret123');
         expect(bundle.roomId, '!room123:example.com');
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected bundleDecoded'),
               bundleDecoded: (b) {
                 expect(b.user, '@alice:example.com');
@@ -215,28 +219,30 @@ void main() {
         );
       });
 
-      test('throws FormatException for http:// homeserver (requires https)',
-          () {
-        final httpServer = encodeBundle({
-          'v': 1,
-          'homeServer': 'http://matrix.example.com',
-          'user': '@alice:example.com',
-          'password': 'secret',
-          'roomId': '!room:example.com',
-        });
-        expect(
-          () => container
-              .read(provisioningControllerProvider.notifier)
-              .decodeBundle(httpServer),
-          throwsA(
-            isA<FormatException>().having(
-              (e) => e.message,
-              'message',
-              contains('https://'),
+      test(
+        'throws FormatException for http:// homeserver (requires https)',
+        () {
+          final httpServer = encodeBundle({
+            'v': 1,
+            'homeServer': 'http://matrix.example.com',
+            'user': '@alice:example.com',
+            'password': 'secret',
+            'roomId': '!room:example.com',
+          });
+          expect(
+            () => container
+                .read(provisioningControllerProvider.notifier)
+                .decodeBundle(httpServer),
+            throwsA(
+              isA<FormatException>().having(
+                (e) => e.message,
+                'message',
+                contains('https://'),
+              ),
             ),
-          ),
-        );
-      });
+          );
+        },
+      );
 
       test('throws FormatException for malformed scheme like httpx://', () {
         final httpxServer = encodeBundle({
@@ -290,9 +296,9 @@ void main() {
 
     group('configureFromBundle - desktop (rotatePassword: true)', () {
       test('progresses through all states to ready', () async {
-        final controller = container
-            .read(provisioningControllerProvider.notifier)
-          ..decodeBundle(validBase64);
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        )..decodeBundle(validBase64);
 
         final states = <ProvisioningState>[];
         container.listen(
@@ -324,7 +330,9 @@ void main() {
         ).called(1);
 
         // Final state should be ready with a handover base64 string
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected ready'),
               bundleDecoded: (_) => fail('Expected ready'),
               loggingIn: () => fail('Expected ready'),
@@ -332,12 +340,14 @@ void main() {
               rotatingPassword: () => fail('Expected ready'),
               ready: (handover) {
                 // Verify the handover can be decoded
-                final decoded = utf8.decode(base64Decode(
-                  handover.padRight(
-                    handover.length + (4 - handover.length % 4) % 4,
-                    '=',
+                final decoded = utf8.decode(
+                  base64Decode(
+                    handover.padRight(
+                      handover.length + (4 - handover.length % 4) % 4,
+                      '=',
+                    ),
                   ),
-                ));
+                );
                 final json = jsonDecode(decoded) as Map<String, dynamic>;
                 final handoverBundle = SyncProvisioningBundle.fromJson(json);
                 expect(handoverBundle.homeServer, testBundle.homeServer);
@@ -363,7 +373,9 @@ void main() {
             .read(provisioningControllerProvider.notifier)
             .configureFromBundle(testBundle);
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected error'),
               bundleDecoded: (_) => fail('Expected error'),
               loggingIn: () => fail('Expected error'),
@@ -378,14 +390,17 @@ void main() {
       });
 
       test('sets error state when joinRoom throws', () async {
-        when(() => mockMatrixService.joinRoom(any()))
-            .thenThrow(Exception('Room not found'));
+        when(
+          () => mockMatrixService.joinRoom(any()),
+        ).thenThrow(Exception('Room not found'));
 
         await container
             .read(provisioningControllerProvider.notifier)
             .configureFromBundle(testBundle);
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected error'),
               bundleDecoded: (_) => fail('Expected error'),
               loggingIn: () => fail('Expected error'),
@@ -411,7 +426,9 @@ void main() {
             .read(provisioningControllerProvider.notifier)
             .configureFromBundle(testBundle);
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected error'),
               bundleDecoded: (_) => fail('Expected error'),
               loggingIn: () => fail('Expected error'),
@@ -459,7 +476,9 @@ void main() {
           ),
         );
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected done'),
               bundleDecoded: (_) => fail('Expected done'),
               loggingIn: () => fail('Expected done'),
@@ -474,12 +493,14 @@ void main() {
 
     group('reset', () {
       test('resets to initial state', () {
-        final controller = container
-            .read(provisioningControllerProvider.notifier)
-          ..decodeBundle(validBase64);
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        )..decodeBundle(validBase64);
 
         // Verify we're in bundleDecoded state
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected bundleDecoded'),
               bundleDecoded: (_) {}, // expected
               loggingIn: () => fail('Expected bundleDecoded'),
@@ -492,7 +513,9 @@ void main() {
 
         controller.reset();
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () {}, // expected
               bundleDecoded: (_) => fail('Expected initial'),
               loggingIn: () => fail('Expected initial'),
@@ -511,12 +534,15 @@ void main() {
           () => mockMatrixService.login(waitForLifecycle: false),
         ).thenAnswer((_) async => false);
 
-        final controller =
-            container.read(provisioningControllerProvider.notifier);
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        );
         await controller.configureFromBundle(testBundle);
 
         // Should be in error state
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected error'),
               bundleDecoded: (_) => fail('Expected error'),
               loggingIn: () => fail('Expected error'),
@@ -537,7 +563,9 @@ void main() {
         await controller.retry();
 
         // Should have progressed past login
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () => fail('Expected ready'),
               bundleDecoded: (_) => fail('Expected ready'),
               loggingIn: () => fail('Expected ready'),
@@ -550,12 +578,15 @@ void main() {
       });
 
       test('does nothing when no bundle was configured', () async {
-        final controller =
-            container.read(provisioningControllerProvider.notifier);
+        final controller = container.read(
+          provisioningControllerProvider.notifier,
+        );
 
         await controller.retry();
 
-        container.read(provisioningControllerProvider).when(
+        container
+            .read(provisioningControllerProvider)
+            .when(
               initial: () {}, // expected - no change
               bundleDecoded: (_) => fail('Expected initial'),
               loggingIn: () => fail('Expected initial'),
@@ -577,8 +608,9 @@ void main() {
             password: 'rotated-password',
           ),
         );
-        when(() => mockMatrixService.syncRoomId)
-            .thenReturn('!room123:example.com');
+        when(
+          () => mockMatrixService.syncRoomId,
+        ).thenReturn('!room123:example.com');
 
         final result = await container
             .read(provisioningControllerProvider.notifier)
@@ -587,9 +619,11 @@ void main() {
         expect(result, isNotNull);
 
         // Decode and verify the handover bundle
-        final decoded = utf8.decode(base64Decode(
-          result!.padRight(result.length + (4 - result.length % 4) % 4, '='),
-        ));
+        final decoded = utf8.decode(
+          base64Decode(
+            result!.padRight(result.length + (4 - result.length % 4) % 4, '='),
+          ),
+        );
         final json = jsonDecode(decoded) as Map<String, dynamic>;
         final bundle = SyncProvisioningBundle.fromJson(json);
         expect(bundle.v, 1);
@@ -600,10 +634,12 @@ void main() {
       });
 
       test('returns null when config is null', () async {
-        when(() => mockMatrixService.loadConfig())
-            .thenAnswer((_) async => null);
-        when(() => mockMatrixService.syncRoomId)
-            .thenReturn('!room123:example.com');
+        when(
+          () => mockMatrixService.loadConfig(),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockMatrixService.syncRoomId,
+        ).thenReturn('!room123:example.com');
 
         final result = await container
             .read(provisioningControllerProvider.notifier)

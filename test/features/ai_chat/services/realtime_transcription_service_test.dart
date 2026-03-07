@@ -186,7 +186,7 @@ class _TestBench {
     final fakeChannel = _FakeWebSocketChannel();
 
     final repo = MistralRealtimeTranscriptionRepository(
-      channelFactory: (_, __) {
+      channelFactory: (_, _) {
         // Simulate the session.created handshake after a microtask
         Future<void>.delayed(Duration.zero).then((_) {
           fakeChannel.simulateServerMessage({
@@ -783,20 +783,22 @@ void main() {
   });
 
   group('_saveAudio error handling', () {
-    test('returns temp WAV path when conversion throws but WAV exists',
-        () async {
-      final bench = await _TestBench.create();
-      addTearDown(bench.dispose);
+    test(
+      'returns temp WAV path when conversion throws but WAV exists',
+      () async {
+        final bench = await _TestBench.create();
+        addTearDown(bench.dispose);
 
-      await bench.startTranscription();
-      await bench.sendPcm(_pcmSilence(3200));
+        await bench.startTranscription();
+        await bench.sendPcm(_pcmSilence(3200));
 
-      bench.scheduleDone('save error test');
-      final result = await bench.stop();
+        bench.scheduleDone('save error test');
+        final result = await bench.stop();
 
-      expect(result.transcript, 'save error test');
-      // The audio file should still be present (WAV fallback on test env)
-      expect(result.audioFilePath, isNotNull);
-    });
+        expect(result.transcript, 'save error test');
+        // The audio file should still be present (WAV fallback on test env)
+        expect(result.audioFilePath, isNotNull);
+      },
+    );
   });
 }

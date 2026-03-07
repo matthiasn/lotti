@@ -47,8 +47,8 @@ class CategoryIconCompact extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Theme.of(context).colorScheme.outline.withAlpha(
-              CategoryIconConstants.fallbackIconAlpha.toInt(),
-            ),
+          CategoryIconConstants.fallbackIconAlpha.toInt(),
+        ),
       ),
       child: Icon(
         Icons.category_outlined,
@@ -138,7 +138,8 @@ class _CategoryIconRenderer extends StatelessWidget {
               ? categoryName.substring(0, 1).toUpperCase()
               : CategoryIconStrings.fallbackCharacter,
           style: TextStyle(
-            color: categoryColor.computeLuminance() >
+            color:
+                categoryColor.computeLuminance() >
                     CategoryIconConstants.luminanceThreshold
                 ? Colors.black
                 : Colors.white,

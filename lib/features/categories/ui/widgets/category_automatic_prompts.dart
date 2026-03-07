@@ -21,10 +21,11 @@ class AutomaticPromptConfig {
 }
 
 /// Callback type for automatic prompt selection changes
-typedef AutomaticPromptChanged = void Function(
-  AiResponseType responseType,
-  List<String> selectedPromptIds,
-);
+typedef AutomaticPromptChanged =
+    void Function(
+      AiResponseType responseType,
+      List<String> selectedPromptIds,
+    );
 
 /// A widget for configuring automatic prompts for different response types.
 ///
@@ -74,12 +75,14 @@ class CategoryAutomaticPrompts extends StatelessWidget {
 
     return Column(
       children: configs
-          .map((config) => Padding(
-                padding: EdgeInsets.only(
-                  bottom: config != configs.last ? 16.0 : 0,
-                ),
-                child: _buildPromptSection(context, config),
-              ))
+          .map(
+            (config) => Padding(
+              padding: EdgeInsets.only(
+                bottom: config != configs.last ? 16.0 : 0,
+              ),
+              child: _buildPromptSection(context, config),
+            ),
+          )
           .toList(),
     );
   }
@@ -112,8 +115,8 @@ class CategoryAutomaticPrompts extends StatelessWidget {
             Text(
               context.messages.noPromptsForType,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).disabledColor,
-                  ),
+                color: Theme.of(context).disabledColor,
+              ),
             )
           else
             Wrap(

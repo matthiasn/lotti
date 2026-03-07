@@ -223,9 +223,10 @@ class AiErrorUtils {
 
     if (errorString.contains('400') || errorString.contains('Bad Request')) {
       return InferenceError(
-        message: extractDetailedErrorMessage(error,
-            defaultMessage:
-                'Invalid request. Please check your configuration.'),
+        message: extractDetailedErrorMessage(
+          error,
+          defaultMessage: 'Invalid request. Please check your configuration.',
+        ),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
         stackTrace: stackTrace,
@@ -297,8 +298,10 @@ class AiErrorUtils {
         );
       }
       return InferenceError(
-        message: extractDetailedErrorMessage(error,
-            defaultMessage: 'The requested resource was not found.'),
+        message: extractDetailedErrorMessage(
+          error,
+          defaultMessage: 'The requested resource was not found.',
+        ),
         type: InferenceErrorType.invalidRequest,
         originalError: error,
         stackTrace: stackTrace,

@@ -182,8 +182,9 @@ void main() {
       when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );
-      when(() => mockJournalDb.countAllJournalEntries())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockJournalDb.countAllJournalEntries(),
+      ).thenAnswer((_) async => 0);
       when(() => mockJournalDb.streamEntryLinksWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );
@@ -191,8 +192,9 @@ void main() {
       when(() => mockAgentDb.streamAgentEntitiesWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );
-      when(() => mockAgentDb.countAllAgentEntities())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockAgentDb.countAllAgentEntities(),
+      ).thenAnswer((_) async => 0);
       when(() => mockAgentDb.streamAgentLinksWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );
@@ -285,8 +287,9 @@ void main() {
         },
       );
 
-      final controller =
-          container.read(sequenceLogPopulateControllerProvider.notifier);
+      final controller = container.read(
+        sequenceLogPopulateControllerProvider.notifier,
+      );
       await controller.populateSequenceLog();
 
       final finalState = container.read(sequenceLogPopulateControllerProvider);
@@ -318,8 +321,9 @@ void main() {
 
       stubAllPopulateMethods();
 
-      final controller =
-          container.read(sequenceLogPopulateControllerProvider.notifier);
+      final controller = container.read(
+        sequenceLogPopulateControllerProvider.notifier,
+      );
       await controller.populateSequenceLog();
 
       verify(
@@ -361,8 +365,9 @@ void main() {
       when(() => mockJournalDb.streamEntriesWithVectorClock()).thenAnswer(
         (_) => Stream.fromIterable([]),
       );
-      when(() => mockJournalDb.countAllJournalEntries())
-          .thenAnswer((_) async => 0);
+      when(
+        () => mockJournalDb.countAllJournalEntries(),
+      ).thenAnswer((_) async => 0);
 
       when(
         () => mockSequenceLogService.populateFromJournal(
@@ -372,8 +377,9 @@ void main() {
         ),
       ).thenThrow(Exception('Database error'));
 
-      final controller =
-          container.read(sequenceLogPopulateControllerProvider.notifier);
+      final controller = container.read(
+        sequenceLogPopulateControllerProvider.notifier,
+      );
       await controller.populateSequenceLog();
 
       final state = container.read(sequenceLogPopulateControllerProvider);

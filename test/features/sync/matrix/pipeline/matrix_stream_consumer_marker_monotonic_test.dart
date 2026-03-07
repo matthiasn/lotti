@@ -52,36 +52,44 @@ void main() {
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
-      when(() => session.timelineEvents)
-          .thenAnswer((_) => const Stream<Event>.empty());
+      when(
+        () => session.timelineEvents,
+      ).thenAnswer((_) => const Stream<Event>.empty());
       // Seed last processed marker to E1@100
-      when(() => settingsDb.itemByKey(lastReadMatrixEventId))
-          .thenAnswer((_) async => 'E1');
-      when(() => settingsDb.itemByKey(lastReadMatrixEventTs))
-          .thenAnswer((_) async => '100');
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => 'E1');
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventTs),
+      ).thenAnswer((_) async => '100');
       when(() => roomManager.initialize()).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenReturn(room);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenAnswer((_) async => timeline);
-      when(() => room.getTimeline(
-            onNewEvent: any(named: 'onNewEvent'),
-            onInsert: any(named: 'onInsert'),
-            onChange: any(named: 'onChange'),
-            onRemove: any(named: 'onRemove'),
-            onUpdate: any(named: 'onUpdate'),
-          )).thenAnswer((_) async => timeline);
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => timeline);
+      when(
+        () => room.getTimeline(
+          onNewEvent: any(named: 'onNewEvent'),
+          onInsert: any(named: 'onInsert'),
+          onChange: any(named: 'onChange'),
+          onRemove: any(named: 'onRemove'),
+          onUpdate: any(named: 'onUpdate'),
+        ),
+      ).thenAnswer((_) async => timeline);
 
       // Provide only equal/older payloads
       Event mk(String id, int ts) {
         final e = MockEvent();
         when(() => e.eventId).thenReturn(id);
-        when(() => e.originServerTs)
-            .thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
         when(() => e.senderId).thenReturn('@other:server');
         when(() => e.attachmentMimetype).thenReturn('');
-        when(() => e.content)
-            .thenReturn(<String, dynamic>{'msgtype': syncMessageType});
+        when(
+          () => e.content,
+        ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
         when(() => e.roomId).thenReturn('!room:server');
         return e;
       }
@@ -90,9 +98,12 @@ void main() {
       final eOlder = mk('E9', 90);
       when(() => timeline.events).thenReturn(<Event>[eEqualLowerId, eOlder]);
 
-      when(() => processor.process(
+      when(
+        () => processor.process(
           event: any(named: 'event'),
-          journalDb: journalDb)).thenAnswer((_) async {});
+          journalDb: journalDb,
+        ),
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         sessionManager: session,
@@ -117,17 +128,21 @@ void main() {
       async.flushMicrotasks();
 
       // No local/remote marker advancement should be scheduled
-      verifyNever(() => logger.captureEvent(
-            any<String>(that: contains('marker.local id=')),
-            domain: syncLoggingDomain,
-            subDomain: 'marker.local',
-          ));
-      verifyNever(() => readMarker.updateReadMarker(
-            client: any<Client>(named: 'client'),
-            room: any<Room>(named: 'room'),
-            eventId: any<String>(named: 'eventId'),
-            timeline: any<Timeline>(named: 'timeline'),
-          ));
+      verifyNever(
+        () => logger.captureEvent(
+          any<String>(that: contains('marker.local id=')),
+          domain: syncLoggingDomain,
+          subDomain: 'marker.local',
+        ),
+      );
+      verifyNever(
+        () => readMarker.updateReadMarker(
+          client: any<Client>(named: 'client'),
+          room: any<Room>(named: 'room'),
+          eventId: any<String>(named: 'eventId'),
+          timeline: any<Timeline>(named: 'timeline'),
+        ),
+      );
     });
   });
 }

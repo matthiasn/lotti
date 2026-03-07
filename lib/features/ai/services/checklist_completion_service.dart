@@ -42,7 +42,8 @@ class ChecklistCompletionService extends _$ChecklistCompletionService {
   /// Get suggestion for a specific checklist item
   ChecklistCompletionSuggestion? getSuggestionForItem(String checklistItemId) {
     final suggestions = state.value ?? [];
-    return suggestions
-        .firstWhereOrNull((s) => s.checklistItemId == checklistItemId);
+    return suggestions.firstWhereOrNull(
+      (s) => s.checklistItemId == checklistItemId,
+    );
   }
 }

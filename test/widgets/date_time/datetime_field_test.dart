@@ -26,8 +26,9 @@ void main() {
       mockClear = MockVoidCallback();
     });
 
-    testWidgets('displays formatted date when dateTime is provided',
-        (WidgetTester tester) async {
+    testWidgets('displays formatted date when dateTime is provided', (
+      WidgetTester tester,
+    ) async {
       final testDate = DateTime(2024, 1, 15, 14, 30);
 
       await tester.pumpWidget(
@@ -45,8 +46,9 @@ void main() {
       expect(find.text('Select Date'), findsOneWidget);
     });
 
-    testWidgets('displays empty field when dateTime is null',
-        (WidgetTester tester) async {
+    testWidgets('displays empty field when dateTime is null', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
@@ -62,8 +64,9 @@ void main() {
       expect(find.text('Select Date'), findsOneWidget);
     });
 
-    testWidgets('shows clear button when clear callback is provided',
-        (WidgetTester tester) async {
+    testWidgets('shows clear button when clear callback is provided', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
@@ -85,8 +88,9 @@ void main() {
       verify(mockClear.call).called(1);
     });
 
-    testWidgets('opens modal when field is tapped',
-        (WidgetTester tester) async {
+    testWidgets('opens modal when field is tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
@@ -106,8 +110,9 @@ void main() {
       expect(find.byType(DateTimeStickyActionBar), findsOneWidget);
     });
 
-    testWidgets('displays date only format for date mode',
-        (WidgetTester tester) async {
+    testWidgets('displays date only format for date mode', (
+      WidgetTester tester,
+    ) async {
       final testDate = DateTime(2024, 1, 15, 14, 30);
 
       await tester.pumpWidget(
@@ -125,8 +130,9 @@ void main() {
       expect(find.text('2024-01-15'), findsOneWidget);
     });
 
-    testWidgets('displays time only format for time mode',
-        (WidgetTester tester) async {
+    testWidgets('displays time only format for time mode', (
+      WidgetTester tester,
+    ) async {
       final testDate = DateTime(2024, 1, 15, 14, 30);
 
       await tester.pumpWidget(
@@ -156,8 +162,9 @@ void main() {
       mockOnDone = MockVoidCallback();
     });
 
-    testWidgets('displays all three buttons with correct labels',
-        (WidgetTester tester) async {
+    testWidgets('displays all three buttons with correct labels', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeStickyActionBar(
@@ -179,8 +186,9 @@ void main() {
       expect(find.byType(FilledButton), findsOneWidget);
     });
 
-    testWidgets('calls correct callbacks when buttons are tapped',
-        (WidgetTester tester) async {
+    testWidgets('calls correct callbacks when buttons are tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeStickyActionBar(
@@ -209,8 +217,9 @@ void main() {
   });
 
   group('DateTimeBottomSheet Widget Tests', () {
-    testWidgets('displays CupertinoDatePicker with initial date',
-        (WidgetTester tester) async {
+    testWidgets('displays CupertinoDatePicker with initial date', (
+      WidgetTester tester,
+    ) async {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
       DateTime? selectedDate;
 
@@ -291,8 +300,9 @@ void main() {
       mockSetDateTime = MockCallback();
     });
 
-    testWidgets('complete flow: open modal, select date, tap done',
-        (WidgetTester tester) async {
+    testWidgets('complete flow: open modal, select date, tap done', (
+      WidgetTester tester,
+    ) async {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
 
       await tester.pumpWidget(
@@ -324,8 +334,9 @@ void main() {
       expect(find.byType(DateTimeBottomSheet), findsNothing);
     });
 
-    testWidgets('complete flow: open modal, tap now button',
-        (WidgetTester tester) async {
+    testWidgets('complete flow: open modal, tap now button', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
@@ -345,9 +356,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify callback was called with a recent date
-      final capturedDate = verify(() => mockSetDateTime(captureAny()))
-          .captured
-          .single as DateTime;
+      final capturedDate =
+          verify(() => mockSetDateTime(captureAny())).captured.single
+              as DateTime;
       expect(
         DateTime.now().difference(capturedDate).inSeconds,
         lessThan(2),
@@ -357,8 +368,9 @@ void main() {
       expect(find.byType(DateTimeBottomSheet), findsNothing);
     });
 
-    testWidgets('complete flow: open modal, tap cancel',
-        (WidgetTester tester) async {
+    testWidgets('complete flow: open modal, tap cancel', (
+      WidgetTester tester,
+    ) async {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
 
       await tester.pumpWidget(

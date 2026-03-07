@@ -24,18 +24,21 @@ void main() {
     });
 
     test(
-        'holds whitespace soft break then uses single newline before paragraph',
-        () {
-      final p = ChatStreamParser();
-      // ignore: cascade_invocations
-      p.processChunk('Intro');
-      expect(p.processChunk(' \n'), isEmpty);
-      final e3 = p.processChunk('paragraph');
-      expect(e3.single, isA<VisibleAppend>());
-      expect(
-          (e3.single as VisibleAppend).text.startsWith('\nparagraph'), isTrue);
-      expect((e3.single as VisibleAppend).text.startsWith('\n\n'), isFalse);
-    });
+      'holds whitespace soft break then uses single newline before paragraph',
+      () {
+        final p = ChatStreamParser();
+        // ignore: cascade_invocations
+        p.processChunk('Intro');
+        expect(p.processChunk(' \n'), isEmpty);
+        final e3 = p.processChunk('paragraph');
+        expect(e3.single, isA<VisibleAppend>());
+        expect(
+          (e3.single as VisibleAppend).text.startsWith('\nparagraph'),
+          isTrue,
+        );
+        expect((e3.single as VisibleAppend).text.startsWith('\n\n'), isFalse);
+      },
+    );
 
     test('parses and finalizes HTML thinking block', () {
       final p = ChatStreamParser();
@@ -90,17 +93,19 @@ void main() {
       expect((flushed.single as ThinkingFinal).text, 'abc<thin');
     });
 
-    test('finish emits pending open-tag tail as visible when not in thinking',
-        () {
-      final p = ChatStreamParser();
-      final e1 = p.processChunk('before<thin');
-      // Visible 'before' should emit immediately; '<thin' is carried
-      expect(e1.single, isA<VisibleAppend>());
-      expect((e1.single as VisibleAppend).text, 'before');
-      final flushed = p.finish();
-      expect(flushed.single, isA<VisibleAppend>());
-      expect((flushed.single as VisibleAppend).text, '<thin');
-    });
+    test(
+      'finish emits pending open-tag tail as visible when not in thinking',
+      () {
+        final p = ChatStreamParser();
+        final e1 = p.processChunk('before<thin');
+        // Visible 'before' should emit immediately; '<thin' is carried
+        expect(e1.single, isA<VisibleAppend>());
+        expect((e1.single as VisibleAppend).text, 'before');
+        final flushed = p.finish();
+        expect(flushed.single, isA<VisibleAppend>());
+        expect((flushed.single as VisibleAppend).text, '<thin');
+      },
+    );
 
     test('finish resets parser state for reuse', () {
       final p = ChatStreamParser();
@@ -146,17 +151,20 @@ void main() {
       expect((e.single as ThinkingFinal).text, 'Y');
     });
 
-    test('nested thinking emits first closed block content (non-nested parser)',
-        () {
-      final p = ChatStreamParser();
-      final e = p.processChunk(
-          '<thinking>outer <thinking>inner</thinking> end</thinking>');
-      expect(e.isNotEmpty, isTrue);
-      final tf = e.whereType<ThinkingFinal>().first;
-      final text = tf.text;
-      expect(text.contains('outer'), isTrue);
-      expect(text.contains('inner'), isTrue);
-      // Parser is not nested-aware; it may not include trailing 'end'.
-    });
+    test(
+      'nested thinking emits first closed block content (non-nested parser)',
+      () {
+        final p = ChatStreamParser();
+        final e = p.processChunk(
+          '<thinking>outer <thinking>inner</thinking> end</thinking>',
+        );
+        expect(e.isNotEmpty, isTrue);
+        final tf = e.whereType<ThinkingFinal>().first;
+        final text = tf.text;
+        expect(text.contains('outer'), isTrue);
+        expect(text.contains('inner'), isTrue);
+        // Parser is not nested-aware; it may not include trailing 'end'.
+      },
+    );
   });
 }

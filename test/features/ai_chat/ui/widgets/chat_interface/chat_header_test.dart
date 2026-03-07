@@ -9,8 +9,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 
 void main() {
-  testWidgets('ChatHeader displays title + sessionTitle and opens settings',
-      (tester) async {
+  testWidgets('ChatHeader displays title + sessionTitle and opens settings', (
+    tester,
+  ) async {
     // Minimal logging service stub so ChatSessionController can construct
     if (!getIt.isRegistered<LoggingService>()) {
       getIt.registerSingleton<LoggingService>(LoggingService());
@@ -32,8 +33,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          eligibleChatModelsForCategoryProvider('cat')
-              .overrideWith((ref) async => [testModel]),
+          eligibleChatModelsForCategoryProvider(
+            'cat',
+          ).overrideWith((ref) async => [testModel]),
         ],
         child: MaterialApp(
           home: Scaffold(

@@ -10,8 +10,9 @@ void main() {
   tearDown(tearDownTestGetIt);
 
   /// Creates a set of fake template IDs with the given size.
-  Set<String> templateIds(int count) =>
-      {for (var i = 0; i < count; i++) 'template-$i'};
+  Set<String> templateIds(int count) => {
+    for (var i = 0; i < count; i++) 'template-$i',
+  };
 
   Widget buildSubject({
     required int count,
@@ -20,8 +21,9 @@ void main() {
     return makeTestableWidgetWithScaffold(
       RitualPendingBadge(child: child),
       overrides: [
-        templatesPendingReviewProvider
-            .overrideWith((ref) async => templateIds(count)),
+        templatesPendingReviewProvider.overrideWith(
+          (ref) async => templateIds(count),
+        ),
       ],
     );
   }
@@ -65,8 +67,9 @@ void main() {
       expect(find.text('1'), findsOneWidget);
     });
 
-    testWidgets('Badge label text does not appear when count is 0',
-        (tester) async {
+    testWidgets('Badge label text does not appear when count is 0', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(count: 0));
       await tester.pumpAndSettle();
 

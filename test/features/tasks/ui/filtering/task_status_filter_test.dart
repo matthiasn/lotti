@@ -65,10 +65,11 @@ void main() {
     // Register a mock for the HapticFeedback service
     // tester. binding. defaultBinaryMessenger.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform,
-            (MethodCall methodCall) async {
-      return null;
-    });
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
 
     mockPagingController = MockPagingController();
     mockState = JournalPageState(
@@ -94,8 +95,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const TaskStatusFilter(),
       ),
@@ -109,8 +111,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: child,
       ),
@@ -175,13 +178,15 @@ void main() {
       expect(find.byType(FilterChoiceChip), findsOneWidget);
 
       // Verify the chip is selected
-      final chipWidget =
-          tester.widget<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chipWidget = tester.widget<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
       expect(chipWidget.isSelected, isTrue);
     });
 
-    testWidgets('renders correctly when status is not selected',
-        (tester) async {
+    testWidgets('renders correctly when status is not selected', (
+      tester,
+    ) async {
       // Set up a non-selected status
       const nonSelectedStatus = 'GROOMED';
 
@@ -200,31 +205,33 @@ void main() {
       expect(find.byType(FilterChoiceChip), findsOneWidget);
 
       // Verify the chip is not selected
-      final chipWidget =
-          tester.widget<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chipWidget = tester.widget<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
       expect(chipWidget.isSelected, isFalse);
     });
 
     testWidgets(
-        'does not render when onlySelected is true and status is not selected',
-        (tester) async {
-      // Set up a non-selected status
-      const nonSelectedStatus = 'GROOMED';
+      'does not render when onlySelected is true and status is not selected',
+      (tester) async {
+        // Set up a non-selected status
+        const nonSelectedStatus = 'GROOMED';
 
-      await tester.pumpWidget(
-        buildChipWithState(
-          mockState,
-          const TaskStatusChip(
-            nonSelectedStatus,
-            onlySelected: true,
+        await tester.pumpWidget(
+          buildChipWithState(
+            mockState,
+            const TaskStatusChip(
+              nonSelectedStatus,
+              onlySelected: true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      // Verify the chip is not rendered
-      expect(find.byType(FilterChoiceChip), findsNothing);
-    });
+        // Verify the chip is not rendered
+        expect(find.byType(FilterChoiceChip), findsNothing);
+      },
+    );
 
     testWidgets('calls toggleSelectedTaskStatus when tapped', (tester) async {
       // Set up a status
@@ -249,8 +256,9 @@ void main() {
       expect(fakeController.toggledStatuses, contains(status));
     });
 
-    testWidgets('calls selectSingleTaskStatus when long pressed',
-        (tester) async {
+    testWidgets('calls selectSingleTaskStatus when long pressed', (
+      tester,
+    ) async {
       // Set up a status
       const status = 'GROOMED';
 
@@ -275,8 +283,9 @@ void main() {
   });
 
   group('TaskStatusAllChip', () {
-    testWidgets('renders correctly when all statuses are selected',
-        (tester) async {
+    testWidgets('renders correctly when all statuses are selected', (
+      tester,
+    ) async {
       // Set all statuses to be selected
       final allSelectedState = JournalPageState(
         match: '',
@@ -302,13 +311,15 @@ void main() {
       expect(find.byType(FilterChoiceChip), findsOneWidget);
 
       // Verify the chip is selected
-      final chipWidget =
-          tester.widget<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chipWidget = tester.widget<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
       expect(chipWidget.isSelected, isTrue);
     });
 
-    testWidgets('renders correctly when not all statuses are selected',
-        (tester) async {
+    testWidgets('renders correctly when not all statuses are selected', (
+      tester,
+    ) async {
       // Only some statuses are selected (default in setUp)
 
       await tester.pumpWidget(
@@ -320,59 +331,62 @@ void main() {
       expect(find.byType(FilterChoiceChip), findsOneWidget);
 
       // Verify the chip is not selected
-      final chipWidget =
-          tester.widget<FilterChoiceChip>(find.byType(FilterChoiceChip));
+      final chipWidget = tester.widget<FilterChoiceChip>(
+        find.byType(FilterChoiceChip),
+      );
       expect(chipWidget.isSelected, isFalse);
     });
 
     testWidgets(
-        'calls clearSelectedTaskStatuses when tapped and all are selected',
-        (tester) async {
-      // Set all statuses to be selected
-      final allSelectedState = JournalPageState(
-        match: '',
-        tagIds: <String>{},
-        filters: {},
-        showPrivateEntries: false,
-        selectedEntryTypes: const [],
-        fullTextMatches: {},
-        showTasks: true,
-        pagingController: mockPagingController,
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN', 'GROOMED', 'IN PROGRESS'},
-        selectedCategoryIds: {},
-        selectedLabelIds: const {},
-      );
+      'calls clearSelectedTaskStatuses when tapped and all are selected',
+      (tester) async {
+        // Set all statuses to be selected
+        final allSelectedState = JournalPageState(
+          match: '',
+          tagIds: <String>{},
+          filters: {},
+          showPrivateEntries: false,
+          selectedEntryTypes: const [],
+          fullTextMatches: {},
+          showTasks: true,
+          pagingController: mockPagingController,
+          taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
+          selectedTaskStatuses: {'OPEN', 'GROOMED', 'IN PROGRESS'},
+          selectedCategoryIds: {},
+          selectedLabelIds: const {},
+        );
 
-      await tester.pumpWidget(
-        buildChipWithState(allSelectedState, const TaskStatusAllChip()),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildChipWithState(allSelectedState, const TaskStatusAllChip()),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap on the chip
-      await tester.tap(find.byType(FilterChoiceChip));
-      await tester.pump();
+        // Tap on the chip
+        await tester.tap(find.byType(FilterChoiceChip));
+        await tester.pump();
 
-      // Verify that clearSelectedTaskStatuses was called
-      expect(fakeController.clearSelectedTaskStatusesCalled, 1);
-    });
+        // Verify that clearSelectedTaskStatuses was called
+        expect(fakeController.clearSelectedTaskStatusesCalled, 1);
+      },
+    );
 
     testWidgets(
-        'calls selectAllTaskStatuses when tapped and not all are selected',
-        (tester) async {
-      // Only some statuses are selected (default in setUp)
+      'calls selectAllTaskStatuses when tapped and not all are selected',
+      (tester) async {
+        // Only some statuses are selected (default in setUp)
 
-      await tester.pumpWidget(
-        buildChipWithState(mockState, const TaskStatusAllChip()),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildChipWithState(mockState, const TaskStatusAllChip()),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap on the chip
-      await tester.tap(find.byType(FilterChoiceChip));
-      await tester.pump();
+        // Tap on the chip
+        await tester.tap(find.byType(FilterChoiceChip));
+        await tester.pump();
 
-      // Verify that selectAllTaskStatuses was called
-      expect(fakeController.selectAllTaskStatusesCalled, 1);
-    });
+        // Verify that selectAllTaskStatuses was called
+        expect(fakeController.selectAllTaskStatusesCalled, 1);
+      },
+    );
   });
 }

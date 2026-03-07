@@ -12,7 +12,9 @@ class RatingController extends _$RatingController {
     required String targetId,
     String catalogId = 'session',
   }) async {
-    return ref.read(ratingRepositoryProvider).getRatingForTargetEntry(
+    return ref
+        .read(ratingRepositoryProvider)
+        .getRatingForTargetEntry(
           targetId,
           catalogId: catalogId,
         );
@@ -23,13 +25,14 @@ class RatingController extends _$RatingController {
     List<RatingDimension> dimensions, {
     String? note,
   }) async {
-    final result =
-        await ref.read(ratingRepositoryProvider).createOrUpdateRating(
-              targetId: targetId,
-              dimensions: dimensions,
-              catalogId: catalogId,
-              note: note,
-            );
+    final result = await ref
+        .read(ratingRepositoryProvider)
+        .createOrUpdateRating(
+          targetId: targetId,
+          dimensions: dimensions,
+          catalogId: catalogId,
+          note: note,
+        );
     state = AsyncData(result);
     return result;
   }

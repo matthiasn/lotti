@@ -49,8 +49,9 @@ void main() {
       getIt.registerSingleton<OutboxService>(mockOutboxService);
 
       // Set up default behavior
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       db = AiConfigDb(inMemoryDatabase: true);
       repository = AiConfigRepository(db);
@@ -120,8 +121,9 @@ void main() {
       );
 
       // Retrieve and check prompt template config
-      final retrievedPromptConfig =
-          await repository.getConfigById('summarize-prompt');
+      final retrievedPromptConfig = await repository.getConfigById(
+        'summarize-prompt',
+      );
       expect(retrievedPromptConfig, isNotNull);
 
       // Use maybeMap to check the type and fields

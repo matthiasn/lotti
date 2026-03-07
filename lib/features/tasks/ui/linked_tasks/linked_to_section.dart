@@ -61,8 +61,9 @@ class LinkedToSection extends ConsumerWidget {
             child: LinkedTaskCard(
               task: task,
               showUnlinkButton: manageMode,
-              onUnlink:
-                  manageMode ? () => _unlinkTask(context, ref, task.id) : null,
+              onUnlink: manageMode
+                  ? () => _unlinkTask(context, ref, task.id)
+                  : null,
             ),
           ),
         ),

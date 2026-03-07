@@ -192,19 +192,20 @@ class SelectTheme extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: InputDecorator(
-        decoration: inputDecoration(
-          labelText: labelText,
-          semanticsLabel: semanticsLabel,
-          themeData: themeData,
-        ).copyWith(
-          border: InputBorder.none,
-          suffixIcon: isGamey
-              ? Icon(
-                  Icons.auto_awesome,
-                  color: colorScheme.primary,
-                )
-              : null,
-        ),
+        decoration:
+            inputDecoration(
+              labelText: labelText,
+              semanticsLabel: semanticsLabel,
+              themeData: themeData,
+            ).copyWith(
+              border: InputBorder.none,
+              suffixIcon: isGamey
+                  ? Icon(
+                      Icons.auto_awesome,
+                      color: colorScheme.primary,
+                    )
+                  : null,
+            ),
         child: Text(
           selectedThemeName,
           style: themeData.textTheme.titleMedium,

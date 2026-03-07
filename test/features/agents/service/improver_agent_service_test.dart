@@ -84,8 +84,9 @@ void main() {
     // Stub syncService write methods.
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(() => mockSyncService.upsertLink(any())).thenAnswer((_) async {});
-    when(() => mockSyncService.insertLinkExclusive(any()))
-        .thenAnswer((_) async {});
+    when(
+      () => mockSyncService.insertLinkExclusive(any()),
+    ).thenAnswer((_) async {});
 
     service = ImproverAgentService(
       agentService: mockAgentService,
@@ -98,16 +99,16 @@ void main() {
 
   group('ImproverAgentService', () {
     group('createImproverAgent', () {
-      test(
-          'creates agent identity, updates state slots, '
+      test('creates agent identity, updates state slots, '
           'and creates both links', () async {
         await withClock(Clock.fixed(testDate), () async {
           final identity = makeIdentity();
           final state = makeState();
 
           // Target template exists.
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
 
           // No existing improver for this template.
           when(
@@ -118,8 +119,9 @@ void main() {
           ).thenAnswer((_) async => []);
 
           // Improver template exists.
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
 
           // Agent creation.
           when(
@@ -131,8 +133,9 @@ void main() {
           ).thenAnswer((_) async => identity);
 
           // State retrieval after creation.
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           final result = await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -146,8 +149,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final updatedState =
-              capturedEntities.whereType<AgentStateEntity>().first;
+          final updatedState = capturedEntities
+              .whereType<AgentStateEntity>()
+              .first;
           expect(
             updatedState.slots.activeTemplateId,
             targetTemplateId,
@@ -166,8 +170,9 @@ void main() {
           ).captured;
           expect(capturedExclusive, hasLength(1));
 
-          final improverTargetLink =
-              capturedExclusive.whereType<ImproverTargetLink>().first;
+          final improverTargetLink = capturedExclusive
+              .whereType<ImproverTargetLink>()
+              .first;
           expect(improverTargetLink.fromId, identity.agentId);
           expect(improverTargetLink.toId, targetTemplateId);
 
@@ -177,8 +182,9 @@ void main() {
           ).captured;
           expect(capturedLinks, hasLength(1));
 
-          final templateAssignmentLink =
-              capturedLinks.whereType<TemplateAssignmentLink>().first;
+          final templateAssignmentLink = capturedLinks
+              .whereType<TemplateAssignmentLink>()
+              .first;
           expect(templateAssignmentLink.fromId, improverTemplateId);
           expect(templateAssignmentLink.toId, identity.agentId);
         });
@@ -189,16 +195,18 @@ void main() {
           final identity = makeIdentity();
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           when(
             () => mockRepository.getLinksTo(
               targetTemplateId,
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: any(named: 'kind'),
@@ -206,8 +214,9 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -217,8 +226,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final updatedState =
-              capturedEntities.whereType<AgentStateEntity>().first;
+          final updatedState = capturedEntities
+              .whereType<AgentStateEntity>()
+              .first;
 
           final expectedWake = testDate.add(
             const Duration(
@@ -246,8 +256,9 @@ void main() {
       });
 
       test('throws StateError when target template not found', () async {
-        when(() => mockTemplateService.getTemplate(targetTemplateId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockTemplateService.getTemplate(targetTemplateId),
+        ).thenAnswer((_) async => null);
 
         expect(
           () => service.createImproverAgent(
@@ -263,13 +274,13 @@ void main() {
         );
       });
 
-      test(
-          'throws StateError when improver already exists '
+      test('throws StateError when improver already exists '
           'for target template', () async {
         final existingIdentity = makeIdentity(agentId: 'existing-improver');
 
-        when(() => mockTemplateService.getTemplate(targetTemplateId))
-            .thenAnswer((_) async => makeTargetTemplate());
+        when(
+          () => mockTemplateService.getTemplate(targetTemplateId),
+        ).thenAnswer((_) async => makeTargetTemplate());
 
         // An improver link already exists.
         when(
@@ -290,8 +301,9 @@ void main() {
           ],
         );
 
-        when(() => mockAgentService.getAgent(existingIdentity.agentId))
-            .thenAnswer((_) async => existingIdentity);
+        when(
+          () => mockAgentService.getAgent(existingIdentity.agentId),
+        ).thenAnswer((_) async => existingIdentity);
 
         expect(
           () => service.createImproverAgent(
@@ -307,15 +319,15 @@ void main() {
         );
       });
 
-      test(
-          'throws StateError on concurrent creation '
+      test('throws StateError on concurrent creation '
           '(DB unique constraint)', () async {
         await withClock(Clock.fixed(testDate), () async {
           final identity = makeIdentity();
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           // No improver found in initial check (TOCTOU gap).
           when(
             () => mockRepository.getLinksTo(
@@ -323,8 +335,9 @@ void main() {
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: AgentKinds.templateImprover,
@@ -332,8 +345,9 @@ void main() {
               config: const AgentConfig(),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           // Simulate concurrent creation: insertLinkExclusive throws.
           when(() => mockSyncService.insertLinkExclusive(any())).thenThrow(
@@ -359,16 +373,18 @@ void main() {
       });
 
       test('throws StateError when improver template not found', () async {
-        when(() => mockTemplateService.getTemplate(targetTemplateId))
-            .thenAnswer((_) async => makeTargetTemplate());
+        when(
+          () => mockTemplateService.getTemplate(targetTemplateId),
+        ).thenAnswer((_) async => makeTargetTemplate());
         when(
           () => mockRepository.getLinksTo(
             targetTemplateId,
             type: AgentLinkTypes.improverTarget,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockTemplateService.getTemplate(improverTemplateId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockTemplateService.getTemplate(improverTemplateId),
+        ).thenAnswer((_) async => null);
 
         expect(
           () => service.createImproverAgent(
@@ -389,16 +405,18 @@ void main() {
           final identity = makeIdentity(displayName: 'My Custom Improver');
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           when(
             () => mockRepository.getLinksTo(
               targetTemplateId,
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: AgentKinds.templateImprover,
@@ -406,8 +424,9 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -445,16 +464,18 @@ void main() {
           final identity = makeIdentity();
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           when(
             () => mockRepository.getLinksTo(
               targetTemplateId,
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: any(named: 'kind'),
@@ -462,8 +483,9 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -474,8 +496,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final updatedState =
-              capturedEntities.whereType<AgentStateEntity>().first;
+          final updatedState = capturedEntities
+              .whereType<AgentStateEntity>()
+              .first;
           expect(
             updatedState.slots.feedbackWindowDays,
             ImproverSlotDefaults.defaultMetaFeedbackWindowDays,
@@ -496,16 +519,18 @@ void main() {
           final identity = makeIdentity();
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           when(
             () => mockRepository.getLinksTo(
               targetTemplateId,
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: any(named: 'kind'),
@@ -513,8 +538,9 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -524,8 +550,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final updatedState =
-              capturedEntities.whereType<AgentStateEntity>().first;
+          final updatedState = capturedEntities
+              .whereType<AgentStateEntity>()
+              .first;
           expect(
             updatedState.slots.feedbackWindowDays,
             ImproverSlotDefaults.defaultFeedbackWindowDays,
@@ -538,16 +565,18 @@ void main() {
           final identity = makeIdentity();
           final state = makeState();
 
-          when(() => mockTemplateService.getTemplate(targetTemplateId))
-              .thenAnswer((_) async => makeTargetTemplate());
+          when(
+            () => mockTemplateService.getTemplate(targetTemplateId),
+          ).thenAnswer((_) async => makeTargetTemplate());
           when(
             () => mockRepository.getLinksTo(
               targetTemplateId,
               type: AgentLinkTypes.improverTarget,
             ),
           ).thenAnswer((_) async => []);
-          when(() => mockTemplateService.getTemplate(improverTemplateId))
-              .thenAnswer((_) async => makeImproverTemplate());
+          when(
+            () => mockTemplateService.getTemplate(improverTemplateId),
+          ).thenAnswer((_) async => makeImproverTemplate());
           when(
             () => mockAgentService.createAgent(
               kind: any(named: 'kind'),
@@ -555,8 +584,9 @@ void main() {
               config: any(named: 'config'),
             ),
           ).thenAnswer((_) async => identity);
-          when(() => mockRepository.getAgentState(identity.agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(identity.agentId),
+          ).thenAnswer((_) async => state);
 
           await service.createImproverAgent(
             targetTemplateId: targetTemplateId,
@@ -567,8 +597,9 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
 
-          final updatedState =
-              capturedEntities.whereType<AgentStateEntity>().first;
+          final updatedState = capturedEntities
+              .whereType<AgentStateEntity>()
+              .first;
           expect(updatedState.slots.recursionDepth, 1);
         });
       });
@@ -596,8 +627,9 @@ void main() {
           ],
         );
 
-        when(() => mockAgentService.getAgent(identity.agentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockAgentService.getAgent(identity.agentId),
+        ).thenAnswer((_) async => identity);
 
         final result = await service.getImproverForTemplate(targetTemplateId);
 
@@ -634,10 +666,12 @@ void main() {
           ],
         );
 
-        when(() => mockAgentService.getAgent('missing-agent'))
-            .thenAnswer((_) async => null);
-        when(() => mockAgentService.getAgent(identity.agentId))
-            .thenAnswer((_) async => identity);
+        when(
+          () => mockAgentService.getAgent('missing-agent'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAgentService.getAgent(identity.agentId),
+        ).thenAnswer((_) async => identity);
 
         final result = await service.getImproverForTemplate(targetTemplateId);
 
@@ -660,8 +694,7 @@ void main() {
     });
 
     group('scheduleNextRitual', () {
-      test(
-          'updates scheduledWakeAt, lastOneOnOneAt, '
+      test('updates scheduledWakeAt, lastOneOnOneAt, '
           'and increments totalSessionsCompleted', () async {
         await withClock(Clock.fixed(testDate), () async {
           const agentId = 'improver-agent-1';
@@ -674,8 +707,9 @@ void main() {
             ),
           );
 
-          when(() => mockRepository.getAgentState(agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => state);
 
           await service.scheduleNextRitual(agentId);
 
@@ -704,8 +738,9 @@ void main() {
             ),
           );
 
-          when(() => mockRepository.getAgentState(agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => state);
 
           await service.scheduleNextRitual(agentId);
 
@@ -736,8 +771,9 @@ void main() {
             ),
           );
 
-          when(() => mockRepository.getAgentState(agentId))
-              .thenAnswer((_) async => state);
+          when(
+            () => mockRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => state);
 
           await service.scheduleNextRitual(agentId);
 
@@ -757,42 +793,46 @@ void main() {
         });
       });
 
-      test('falls back to default when feedbackWindowDays is negative',
-          () async {
-        await withClock(Clock.fixed(testDate), () async {
-          const agentId = 'improver-agent-1';
-          final state = makeState(
-            slots: const AgentSlots(
-              activeTemplateId: 'target-template-001',
-              feedbackWindowDays: -5,
-              totalSessionsCompleted: 0,
-            ),
-          );
-
-          when(() => mockRepository.getAgentState(agentId))
-              .thenAnswer((_) async => state);
-
-          await service.scheduleNextRitual(agentId);
-
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-
-          final updatedState = captured.first as AgentStateEntity;
-          expect(
-            updatedState.scheduledWakeAt,
-            testDate.add(
-              const Duration(
-                days: ImproverSlotDefaults.defaultFeedbackWindowDays,
+      test(
+        'falls back to default when feedbackWindowDays is negative',
+        () async {
+          await withClock(Clock.fixed(testDate), () async {
+            const agentId = 'improver-agent-1';
+            final state = makeState(
+              slots: const AgentSlots(
+                activeTemplateId: 'target-template-001',
+                feedbackWindowDays: -5,
+                totalSessionsCompleted: 0,
               ),
-            ),
-          );
-        });
-      });
+            );
+
+            when(
+              () => mockRepository.getAgentState(agentId),
+            ).thenAnswer((_) async => state);
+
+            await service.scheduleNextRitual(agentId);
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            final updatedState = captured.first as AgentStateEntity;
+            expect(
+              updatedState.scheduledWakeAt,
+              testDate.add(
+                const Duration(
+                  days: ImproverSlotDefaults.defaultFeedbackWindowDays,
+                ),
+              ),
+            );
+          });
+        },
+      );
 
       test('throws StateError when agent state not found', () async {
-        when(() => mockRepository.getAgentState('missing-agent'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getAgentState('missing-agent'),
+        ).thenAnswer((_) async => null);
 
         expect(
           () => service.scheduleNextRitual('missing-agent'),
@@ -806,34 +846,37 @@ void main() {
         );
       });
 
-      test('increments from zero when totalSessionsCompleted is null',
-          () async {
-        await withClock(Clock.fixed(testDate), () async {
-          const agentId = 'improver-agent-1';
-          final state = makeState(
-            slots: const AgentSlots(
-              activeTemplateId: 'target-template-001',
-              feedbackWindowDays: 14,
-            ),
-          );
+      test(
+        'increments from zero when totalSessionsCompleted is null',
+        () async {
+          await withClock(Clock.fixed(testDate), () async {
+            const agentId = 'improver-agent-1';
+            final state = makeState(
+              slots: const AgentSlots(
+                activeTemplateId: 'target-template-001',
+                feedbackWindowDays: 14,
+              ),
+            );
 
-          when(() => mockRepository.getAgentState(agentId))
-              .thenAnswer((_) async => state);
+            when(
+              () => mockRepository.getAgentState(agentId),
+            ).thenAnswer((_) async => state);
 
-          await service.scheduleNextRitual(agentId);
+            await service.scheduleNextRitual(agentId);
 
-          final captured = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
 
-          final updatedState = captured.first as AgentStateEntity;
-          expect(updatedState.slots.totalSessionsCompleted, 1);
-          expect(
-            updatedState.scheduledWakeAt,
-            testDate.add(const Duration(days: 14)),
-          );
-        });
-      });
+            final updatedState = captured.first as AgentStateEntity;
+            expect(updatedState.slots.totalSessionsCompleted, 1);
+            expect(
+              updatedState.scheduledWakeAt,
+              testDate.add(const Duration(days: 14)),
+            );
+          });
+        },
+      );
     });
   });
 }

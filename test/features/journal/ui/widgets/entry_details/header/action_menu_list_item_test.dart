@@ -224,8 +224,9 @@ void main() {
       expect(icon.color, customColor);
     });
 
-    testWidgets('uses Material widget for InkWell ripple effect',
-        (tester) async {
+    testWidgets('uses Material widget for InkWell ripple effect', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(
@@ -407,8 +408,9 @@ void main() {
       expect(row.children.length, 3);
     });
 
-    testWidgets('title uses Expanded widget to fill available space',
-        (tester) async {
+    testWidgets('title uses Expanded widget to fill available space', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ActionMenuListItem(

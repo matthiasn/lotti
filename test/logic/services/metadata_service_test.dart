@@ -20,13 +20,17 @@ void main() {
       mockVectorClockService = MockVectorClockService();
 
       // Setup default mock behavior
-      when(() => mockVectorClockService.getNextVectorClock(
-              previous: any(named: 'previous')))
-          .thenAnswer((_) async => const VectorClock({'test-host': 1}));
-      when(() => mockVectorClockService.getNextVectorClock())
-          .thenAnswer((_) async => const VectorClock({'test-host': 1}));
-      when(() => mockVectorClockService.getHost())
-          .thenAnswer((_) async => 'test-host');
+      when(
+        () => mockVectorClockService.getNextVectorClock(
+          previous: any(named: 'previous'),
+        ),
+      ).thenAnswer((_) async => const VectorClock({'test-host': 1}));
+      when(
+        () => mockVectorClockService.getNextVectorClock(),
+      ).thenAnswer((_) async => const VectorClock({'test-host': 1}));
+      when(
+        () => mockVectorClockService.getHost(),
+      ).thenAnswer((_) async => 'test-host');
 
       metadataService = MetadataService(
         vectorClockService: mockVectorClockService,
@@ -93,8 +97,9 @@ void main() {
     group('createMetadata', () {
       test('creates metadata with vector clock from service', () async {
         const expectedVectorClock = VectorClock({'test-host': 42});
-        when(() => mockVectorClockService.getNextVectorClock())
-            .thenAnswer((_) async => expectedVectorClock);
+        when(
+          () => mockVectorClockService.getNextVectorClock(),
+        ).thenAnswer((_) async => expectedVectorClock);
 
         final metadata = await metadataService.createMetadata();
 
@@ -135,50 +140,56 @@ void main() {
         expect(metadata.dateTo, equals(dateTo));
       });
 
-      test('creates metadata with dateFrom only (dateTo defaults to now)',
-          () async {
-        final dateFrom = DateTime(2024, 1, 15, 10, 30);
-        final beforeCreate = DateTime.now();
+      test(
+        'creates metadata with dateFrom only (dateTo defaults to now)',
+        () async {
+          final dateFrom = DateTime(2024, 1, 15, 10, 30);
+          final beforeCreate = DateTime.now();
 
-        final metadata = await metadataService.createMetadata(
-          dateFrom: dateFrom,
-        );
-        final afterCreate = DateTime.now();
+          final metadata = await metadataService.createMetadata(
+            dateFrom: dateFrom,
+          );
+          final afterCreate = DateTime.now();
 
-        expect(metadata.dateFrom, equals(dateFrom));
-        // dateTo should be bounded by beforeCreate and afterCreate
-        expect(
-          metadata.dateTo.isAfter(beforeCreate) ||
-              metadata.dateTo.isAtSameMomentAs(beforeCreate),
-          isTrue,
-          reason: 'dateTo should not be before beforeCreate',
-        );
-        expect(
-          metadata.dateTo.isBefore(afterCreate) ||
-              metadata.dateTo.isAtSameMomentAs(afterCreate),
-          isTrue,
-          reason: 'dateTo should not be after afterCreate',
-        );
-      });
+          expect(metadata.dateFrom, equals(dateFrom));
+          // dateTo should be bounded by beforeCreate and afterCreate
+          expect(
+            metadata.dateTo.isAfter(beforeCreate) ||
+                metadata.dateTo.isAtSameMomentAs(beforeCreate),
+            isTrue,
+            reason: 'dateTo should not be before beforeCreate',
+          );
+          expect(
+            metadata.dateTo.isBefore(afterCreate) ||
+                metadata.dateTo.isAtSameMomentAs(afterCreate),
+            isTrue,
+            reason: 'dateTo should not be after afterCreate',
+          );
+        },
+      );
 
       test('creates metadata with UUID v5 when uuidV5Input provided', () async {
         const input = 'health-data-unique-id';
 
-        final metadata1 =
-            await metadataService.createMetadata(uuidV5Input: input);
-        final metadata2 =
-            await metadataService.createMetadata(uuidV5Input: input);
+        final metadata1 = await metadataService.createMetadata(
+          uuidV5Input: input,
+        );
+        final metadata2 = await metadataService.createMetadata(
+          uuidV5Input: input,
+        );
 
         expect(metadata1.id, equals(metadata2.id));
       });
 
-      test('creates metadata with UUID v1 when uuidV5Input not provided',
-          () async {
-        final metadata1 = await metadataService.createMetadata();
-        final metadata2 = await metadataService.createMetadata();
+      test(
+        'creates metadata with UUID v1 when uuidV5Input not provided',
+        () async {
+          final metadata1 = await metadataService.createMetadata();
+          final metadata2 = await metadataService.createMetadata();
 
-        expect(metadata1.id, isNot(metadata2.id));
-      });
+          expect(metadata1.id, isNot(metadata2.id));
+        },
+      );
 
       test('creates metadata with all optional parameters', () async {
         final dateFrom = DateTime(2024, 6, 1, 9);
@@ -214,22 +225,26 @@ void main() {
 
         expect(metadata.timezone, isNotNull);
         expect(metadata.utcOffset, isNotNull);
-        expect(metadata.utcOffset,
-            equals(DateTime.now().timeZoneOffset.inMinutes));
+        expect(
+          metadata.utcOffset,
+          equals(DateTime.now().timeZoneOffset.inMinutes),
+        );
       });
 
-      test('creates metadata with null optional parameters by default',
-          () async {
-        final metadata = await metadataService.createMetadata();
+      test(
+        'creates metadata with null optional parameters by default',
+        () async {
+          final metadata = await metadataService.createMetadata();
 
-        expect(metadata.private, isNull);
-        expect(metadata.tagIds, isNull);
-        expect(metadata.labelIds, isNull);
-        expect(metadata.categoryId, isNull);
-        expect(metadata.starred, isNull);
-        expect(metadata.flag, isNull);
-        expect(metadata.deletedAt, isNull);
-      });
+          expect(metadata.private, isNull);
+          expect(metadata.tagIds, isNull);
+          expect(metadata.labelIds, isNull);
+          expect(metadata.categoryId, isNull);
+          expect(metadata.starred, isNull);
+          expect(metadata.flag, isNull);
+          expect(metadata.deletedAt, isNull);
+        },
+      );
 
       test('creates metadata with starred=false explicitly', () async {
         final metadata = await metadataService.createMetadata(starred: false);
@@ -416,8 +431,9 @@ void main() {
           deletedAt: DateTime(2024, 2, 15),
         );
 
-        final updated =
-            await metadataService.updateMetadata(metadataWithDeletedAt);
+        final updated = await metadataService.updateMetadata(
+          metadataWithDeletedAt,
+        );
 
         expect(updated.deletedAt, equals(metadataWithDeletedAt.deletedAt));
       });

@@ -16,14 +16,14 @@ class AgentDatabase extends _$AgentDatabase {
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
-          openDbConnection(
-            agentDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-            background: background,
-            documentsDirectoryProvider: documentsDirectoryProvider,
-            tempDirectoryProvider: tempDirectoryProvider,
-          ),
-        );
+         openDbConnection(
+           agentDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           background: background,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   final bool inMemoryDatabase;
 
@@ -76,7 +76,7 @@ class AgentDatabase extends _$AgentDatabase {
   /// clock map. Uses lightweight SQL + JSON extraction to avoid full
   /// deserialization.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
-      streamAgentEntitiesWithVectorClock({int batchSize = 1000}) async* {
+  streamAgentEntitiesWithVectorClock({int batchSize = 1000}) async* {
     var offset = 0;
 
     while (true) {
@@ -104,7 +104,7 @@ class AgentDatabase extends _$AgentDatabase {
   /// sequence log. Yields batches of records with link ID and vector
   /// clock map.
   Stream<List<({String id, Map<String, int>? vectorClock})>>
-      streamAgentLinksWithVectorClock({int batchSize = 1000}) async* {
+  streamAgentLinksWithVectorClock({int batchSize = 1000}) async* {
     var offset = 0;
 
     while (true) {

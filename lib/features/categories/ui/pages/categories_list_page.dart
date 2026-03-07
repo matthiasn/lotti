@@ -70,11 +70,13 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
     BuildContext context,
     List<CategoryDefinition> categories,
   ) {
-    final sortedCategories = categories.where((category) {
-      if (_searchQuery.isEmpty) return true;
-      return category.name.toLowerCase().contains(_searchQuery);
-    }).toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final sortedCategories =
+        categories.where((category) {
+          if (_searchQuery.isEmpty) return true;
+          return category.name.toLowerCase().contains(_searchQuery);
+        }).toList()..sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        );
 
     return [
       SliverToBoxAdapter(
@@ -106,20 +108,24 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search_off,
-                      size: 64, color: Theme.of(context).disabledColor),
+                  Icon(
+                    Icons.search_off,
+                    size: 64,
+                    color: Theme.of(context).disabledColor,
+                  ),
                   const SizedBox(height: 16),
-                  Text('No categories found',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(color: Theme.of(context).disabledColor)),
+                  Text(
+                    'No categories found',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).disabledColor,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'Try adjusting your search',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).disabledColor,
-                        ),
+                      color: Theme.of(context).disabledColor,
+                    ),
                   ),
                 ],
               ),
@@ -162,15 +168,15 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
           Text(
             context.messages.settingsCategoriesEmptyState,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
+              color: Theme.of(context).disabledColor,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             context.messages.settingsCategoriesEmptyStateHint,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
+              color: Theme.of(context).disabledColor,
+            ),
             textAlign: TextAlign.center,
           ),
         ],

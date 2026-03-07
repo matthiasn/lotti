@@ -55,10 +55,10 @@ class TimeSeriesBarChart extends ConsumerWidget {
     final gridInterval = rangeInDays > 182
         ? 30
         : rangeInDays > 92
-            ? 14
-            : rangeInDays > 30
-                ? 7
-                : 1;
+        ? 14
+        : rangeInDays > 30
+        ? 7
+        : 1;
 
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barsWidth =
@@ -71,21 +71,22 @@ class TimeSeriesBarChart extends ConsumerWidget {
     final barGroups = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
         .map((observation) {
-      return BarChartGroupData(
-        x: observation.dateTime.millisecondsSinceEpoch,
-        barRods: [
-          BarChartRodData(
-            toY: observation.value.toDouble(),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(2),
-              topRight: Radius.circular(2),
-            ),
-            color: colorByValue(observation),
-            width: max(barsWidth, 1) * scale,
-          ),
-        ],
-      );
-    }).toList();
+          return BarChartGroupData(
+            x: observation.dateTime.millisecondsSinceEpoch,
+            barRods: [
+              BarChartRodData(
+                toY: observation.value.toDouble(),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(2),
+                  topRight: Radius.circular(2),
+                ),
+                color: colorByValue(observation),
+                width: max(barsWidth, 1) * scale,
+              ),
+            ],
+          );
+        })
+        .toList();
 
     Widget bottomTitleWidgets(
       double value,

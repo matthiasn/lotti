@@ -10,61 +10,65 @@ void main() {
   group('CategoryAutomaticPrompts', () {
     final testPrompts = <AiConfigPrompt>[
       AiConfig.prompt(
-        id: 'audio-prompt-1',
-        name: 'Audio Summary',
-        description: 'Generate summary from audio',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model1',
-        modelIds: const ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: const [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt,
+            id: 'audio-prompt-1',
+            name: 'Audio Summary',
+            description: 'Generate summary from audio',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model1',
+            modelIds: const ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'audio-prompt-2',
-        name: 'Audio Action Items',
-        description: 'Extract action items from audio',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model1',
-        modelIds: const ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: const [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
-      ) as AiConfigPrompt,
+            id: 'audio-prompt-2',
+            name: 'Audio Action Items',
+            description: 'Extract action items from audio',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model1',
+            modelIds: const ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'image-prompt-1',
-        name: 'Image Analysis',
-        description: 'Analyze image content',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model1',
-        modelIds: const ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: const [InputDataType.images],
-        aiResponseType: AiResponseType.imageAnalysis,
-      ) as AiConfigPrompt,
+            id: 'image-prompt-1',
+            name: 'Image Analysis',
+            description: 'Analyze image content',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model1',
+            modelIds: const ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'task-prompt-1',
-        name: 'Task Summary',
-        description: 'Generate task summary',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model1',
-        modelIds: const ['model1'],
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024, 1, 2),
-        useReasoning: false,
-        requiredInputData: const [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt,
+            id: 'task-prompt-1',
+            name: 'Task Summary',
+            description: 'Generate task summary',
+            systemMessage: 'System',
+            userMessage: 'User',
+            defaultModelId: 'model1',
+            modelIds: const ['model1'],
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2),
+            useReasoning: false,
+            requiredInputData: const [InputDataType.task],
+            aiResponseType: AiResponseType.taskSummary,
+          )
+          as AiConfigPrompt,
     ];
 
     final testConfigs = [
@@ -96,7 +100,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: true,
           ),
         ),
@@ -113,7 +117,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
             error: errorMessage,
           ),
@@ -133,7 +137,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -163,7 +167,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -246,8 +250,9 @@ void main() {
       expect(callHistory.last.$2, ['audio-prompt-2']);
     });
 
-    testWidgets('displays empty state for response type without prompts',
-        (tester) async {
+    testWidgets('displays empty state for response type without prompts', (
+      tester,
+    ) async {
       final emptyConfig = [
         const AutomaticPromptConfig(
           responseType: AiResponseType.imageAnalysis,
@@ -262,7 +267,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: emptyConfig,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -277,7 +282,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -312,7 +317,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -351,7 +356,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: testConfigs,
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),
@@ -375,7 +380,7 @@ void main() {
           home: WidgetTestBench(
             child: CategoryAutomaticPrompts(
               configs: testConfigs,
-              onPromptChanged: (_, __) {},
+              onPromptChanged: (_, _) {},
               isLoading: false,
             ),
           ),
@@ -408,7 +413,7 @@ void main() {
         WidgetTestBench(
           child: CategoryAutomaticPrompts(
             configs: const [],
-            onPromptChanged: (_, __) {},
+            onPromptChanged: (_, _) {},
             isLoading: false,
           ),
         ),

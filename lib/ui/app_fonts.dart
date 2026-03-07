@@ -35,4 +35,5 @@ class AppFonts {
     );
   }
 }
+
 // End of file

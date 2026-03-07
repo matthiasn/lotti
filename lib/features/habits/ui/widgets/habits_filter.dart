@@ -24,8 +24,9 @@ class HabitsFilter extends ConsumerWidget {
     }
 
     final colorList = dataMap.keys.map((categoryId) {
-      final category =
-          getIt<EntitiesCacheService>().getCategoryById(categoryId);
+      final category = getIt<EntitiesCacheService>().getCategoryById(
+        categoryId,
+      );
 
       return category != null ? colorFromCssHex(category.color) : Colors.grey;
     }).toList();
@@ -59,8 +60,9 @@ class HabitsFilter extends ConsumerWidget {
             return Consumer(
               builder: (context, ref, child) {
                 final modalState = ref.watch(habitsControllerProvider);
-                final modalController =
-                    ref.read(habitsControllerProvider.notifier);
+                final modalController = ref.read(
+                  habitsControllerProvider.notifier,
+                );
 
                 return Container(
                   padding: const EdgeInsets.symmetric(
@@ -75,20 +77,23 @@ class HabitsFilter extends ConsumerWidget {
                         final color = colorFromCssHex(category.color);
 
                         return Opacity(
-                          opacity: modalState.selectedCategoryIds
-                                  .contains(category.id)
+                          opacity:
+                              modalState.selectedCategoryIds.contains(
+                                category.id,
+                              )
                               ? 1
                               : 0.4,
                           child: ActionChip(
                             onPressed: () =>
                                 modalController.toggleSelectedCategoryIds(
-                              category.id,
-                            ),
+                                  category.id,
+                                ),
                             label: Text(
                               category.name,
                               style: TextStyle(
-                                color:
-                                    color.isLight ? Colors.black : Colors.white,
+                                color: color.isLight
+                                    ? Colors.black
+                                    : Colors.white,
                               ),
                             ),
                             backgroundColor: color,

@@ -31,10 +31,13 @@ final pendingRitualReviewProvider = PendingRitualReviewFamily._();
 ///
 /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
-final class PendingRitualReviewProvider extends $FunctionalProvider<
-        AsyncValue<AgentDomainEntity?>,
-        AgentDomainEntity?,
-        FutureOr<AgentDomainEntity?>>
+final class PendingRitualReviewProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<AgentDomainEntity?>,
+          AgentDomainEntity?,
+          FutureOr<AgentDomainEntity?>
+        >
     with
         $FutureModifier<AgentDomainEntity?>,
         $FutureProvider<AgentDomainEntity?> {
@@ -47,16 +50,16 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
   /// in `TemplateEvolutionWorkflow` during startSession/approveProposal.
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
-  PendingRitualReviewProvider._(
-      {required PendingRitualReviewFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'pendingRitualReviewProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  PendingRitualReviewProvider._({
+    required PendingRitualReviewFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'pendingRitualReviewProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$pendingRitualReviewHash();
@@ -71,16 +74,13 @@ final class PendingRitualReviewProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<AgentDomainEntity?> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<AgentDomainEntity?> create(Ref ref) {
     final argument = this.argument as String;
-    return pendingRitualReview(
-      ref,
-      argument,
-    );
+    return pendingRitualReview(ref, argument);
   }
 
   @override
@@ -110,13 +110,13 @@ String _$pendingRitualReviewHash() =>
 final class PendingRitualReviewFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<AgentDomainEntity?>, String> {
   PendingRitualReviewFamily._()
-      : super(
-          retry: null,
-          name: r'pendingRitualReviewProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'pendingRitualReviewProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Returns the most recent active [EvolutionSessionEntity] for a template,
   /// or `null` if there is no active session pending review.
@@ -128,9 +128,7 @@ final class PendingRitualReviewFamily extends $Family
   ///
   /// Reuses the cached [evolutionSessionsProvider] to avoid extra DB queries.
 
-  PendingRitualReviewProvider call(
-    String templateId,
-  ) =>
+  PendingRitualReviewProvider call(String templateId) =>
       PendingRitualReviewProvider._(argument: templateId, from: this);
 
   @override
@@ -148,26 +146,29 @@ final ritualFeedbackProvider = RitualFeedbackFamily._();
 ///
 /// Uses the feedback extraction service to scan the default 7-day window.
 
-final class RitualFeedbackProvider extends $FunctionalProvider<
-        AsyncValue<ClassifiedFeedback?>,
-        ClassifiedFeedback?,
-        FutureOr<ClassifiedFeedback?>>
+final class RitualFeedbackProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<ClassifiedFeedback?>,
+          ClassifiedFeedback?,
+          FutureOr<ClassifiedFeedback?>
+        >
     with
         $FutureModifier<ClassifiedFeedback?>,
         $FutureProvider<ClassifiedFeedback?> {
   /// Extracts classified feedback for a template's review window.
   ///
   /// Uses the feedback extraction service to scan the default 7-day window.
-  RitualFeedbackProvider._(
-      {required RitualFeedbackFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'ritualFeedbackProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  RitualFeedbackProvider._({
+    required RitualFeedbackFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'ritualFeedbackProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$ritualFeedbackHash();
@@ -182,16 +183,13 @@ final class RitualFeedbackProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<ClassifiedFeedback?> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<ClassifiedFeedback?> create(Ref ref) {
     final argument = this.argument as String;
-    return ritualFeedback(
-      ref,
-      argument,
-    );
+    return ritualFeedback(ref, argument);
   }
 
   @override
@@ -214,21 +212,19 @@ String _$ritualFeedbackHash() => r'd3e42e53d99d0f7d6534e2b8f620bfc37122ed69';
 final class RitualFeedbackFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<ClassifiedFeedback?>, String> {
   RitualFeedbackFamily._()
-      : super(
-          retry: null,
-          name: r'ritualFeedbackProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'ritualFeedbackProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Extracts classified feedback for a template's review window.
   ///
   /// Uses the feedback extraction service to scan the default 7-day window.
 
-  RitualFeedbackProvider call(
-    String templateId,
-  ) =>
+  RitualFeedbackProvider call(String templateId) =>
       RitualFeedbackProvider._(argument: templateId, from: this);
 
   @override
@@ -242,20 +238,25 @@ final templatesPendingReviewProvider = TemplatesPendingReviewProvider._();
 
 /// Set of template IDs with pending rituals.
 
-final class TemplatesPendingReviewProvider extends $FunctionalProvider<
-        AsyncValue<Set<String>>, Set<String>, FutureOr<Set<String>>>
+final class TemplatesPendingReviewProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Set<String>>,
+          Set<String>,
+          FutureOr<Set<String>>
+        >
     with $FutureModifier<Set<String>>, $FutureProvider<Set<String>> {
   /// Set of template IDs with pending rituals.
   TemplatesPendingReviewProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'templatesPendingReviewProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'templatesPendingReviewProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$templatesPendingReviewHash();
@@ -263,8 +264,8 @@ final class TemplatesPendingReviewProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<Set<String>> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<Set<String>> create(Ref ref) {
@@ -282,24 +283,27 @@ final evolutionSessionStatsProvider = EvolutionSessionStatsFamily._();
 
 /// Aggregate stats for evolution sessions of a template.
 
-final class EvolutionSessionStatsProvider extends $FunctionalProvider<
-        AsyncValue<EvolutionSessionStats>,
-        EvolutionSessionStats,
-        FutureOr<EvolutionSessionStats>>
+final class EvolutionSessionStatsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<EvolutionSessionStats>,
+          EvolutionSessionStats,
+          FutureOr<EvolutionSessionStats>
+        >
     with
         $FutureModifier<EvolutionSessionStats>,
         $FutureProvider<EvolutionSessionStats> {
   /// Aggregate stats for evolution sessions of a template.
-  EvolutionSessionStatsProvider._(
-      {required EvolutionSessionStatsFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'evolutionSessionStatsProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  EvolutionSessionStatsProvider._({
+    required EvolutionSessionStatsFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'evolutionSessionStatsProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$evolutionSessionStatsHash();
@@ -314,16 +318,13 @@ final class EvolutionSessionStatsProvider extends $FunctionalProvider<
   @$internal
   @override
   $FutureProviderElement<EvolutionSessionStats> $createElement(
-          $ProviderPointer pointer) =>
-      $FutureProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
 
   @override
   FutureOr<EvolutionSessionStats> create(Ref ref) {
     final argument = this.argument as String;
-    return evolutionSessionStats(
-      ref,
-      argument,
-    );
+    return evolutionSessionStats(ref, argument);
   }
 
   @override
@@ -345,19 +346,17 @@ String _$evolutionSessionStatsHash() =>
 final class EvolutionSessionStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<EvolutionSessionStats>, String> {
   EvolutionSessionStatsFamily._()
-      : super(
-          retry: null,
-          name: r'evolutionSessionStatsProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'evolutionSessionStatsProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Aggregate stats for evolution sessions of a template.
 
-  EvolutionSessionStatsProvider call(
-    String templateId,
-  ) =>
+  EvolutionSessionStatsProvider call(String templateId) =>
       EvolutionSessionStatsProvider._(argument: templateId, from: this);
 
   @override

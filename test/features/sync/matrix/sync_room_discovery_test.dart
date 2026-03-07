@@ -27,17 +27,21 @@ void main() {
   setUp(() {
     loggingService = MockLoggingService();
 
-    when(() => loggingService.captureEvent(
-          any<String>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-        )).thenReturn(null);
-    when(() => loggingService.captureException(
-          any<dynamic>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String?>(named: 'subDomain'),
-          stackTrace: any<dynamic>(named: 'stackTrace'),
-        )).thenReturn(null);
+    when(
+      () => loggingService.captureEvent(
+        any<String>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => loggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String?>(named: 'subDomain'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
 
     service = SyncRoomDiscoveryService(loggingService: loggingService);
   });
@@ -107,11 +111,13 @@ void main() {
       final results = await service.discoverSyncRooms(client);
 
       expect(results, isEmpty);
-      verify(() => loggingService.captureEvent(
-            contains('Discovered 0'),
-            domain: 'SYNC_ROOM_DISCOVERY',
-            subDomain: 'discover',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('Discovered 0'),
+          domain: 'SYNC_ROOM_DISCOVERY',
+          subDomain: 'discover',
+        ),
+      ).called(1);
     });
 
     test('filters out unencrypted rooms', () async {
@@ -331,33 +337,39 @@ void main() {
 
       when(() => room.id).thenReturn('!room:server');
       when(() => room.client).thenReturn(client);
-      when(() => client.setRoomStateWithKey(
-            any<String>(),
-            any<String>(),
-            any<String>(),
-            any<Map<String, dynamic>>(),
-          )).thenAnswer((_) async => 'event_id');
+      when(
+        () => client.setRoomStateWithKey(
+          any<String>(),
+          any<String>(),
+          any<String>(),
+          any<Map<String, dynamic>>(),
+        ),
+      ).thenAnswer((_) async => 'event_id');
 
       await service.markRoomAsLottiSync(room);
 
-      verify(() => client.setRoomStateWithKey(
-            '!room:server',
-            lottiSyncRoomStateType,
-            '',
-            any<Map<String, dynamic>>(
-              that: predicate<Map<String, dynamic>>((content) {
-                return content['version'] == 1 &&
-                    content['created_by'] == 'lotti' &&
-                    content['marked_at'] is String;
-              }),
-            ),
-          )).called(1);
+      verify(
+        () => client.setRoomStateWithKey(
+          '!room:server',
+          lottiSyncRoomStateType,
+          '',
+          any<Map<String, dynamic>>(
+            that: predicate<Map<String, dynamic>>((content) {
+              return content['version'] == 1 &&
+                  content['created_by'] == 'lotti' &&
+                  content['marked_at'] is String;
+            }),
+          ),
+        ),
+      ).called(1);
 
-      verify(() => loggingService.captureEvent(
-            contains('Marked room'),
-            domain: 'SYNC_ROOM_DISCOVERY',
-            subDomain: 'markRoom',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('Marked room'),
+          domain: 'SYNC_ROOM_DISCOVERY',
+          subDomain: 'markRoom',
+        ),
+      ).called(1);
     });
 
     test('logs exception when marking fails', () async {
@@ -366,21 +378,25 @@ void main() {
 
       when(() => room.id).thenReturn('!room:server');
       when(() => room.client).thenReturn(client);
-      when(() => client.setRoomStateWithKey(
-            any<String>(),
-            any<String>(),
-            any<String>(),
-            any<Map<String, dynamic>>(),
-          )).thenThrow(Exception('Failed to set state'));
+      when(
+        () => client.setRoomStateWithKey(
+          any<String>(),
+          any<String>(),
+          any<String>(),
+          any<Map<String, dynamic>>(),
+        ),
+      ).thenThrow(Exception('Failed to set state'));
 
       await service.markRoomAsLottiSync(room);
 
-      verify(() => loggingService.captureException(
-            any<dynamic>(),
-            domain: 'SYNC_ROOM_DISCOVERY',
-            subDomain: 'markRoom',
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).called(1);
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: 'SYNC_ROOM_DISCOVERY',
+          subDomain: 'markRoom',
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 
@@ -409,8 +425,9 @@ void main() {
     test('detects room with base64 encoded sync payload', () async {
       final client = MockClient();
       final syncPayload = {'runtimeType': 'journalEntity', 'id': 'test-id'};
-      final base64Payload =
-          base64.encode(utf8.encode(json.encode(syncPayload)));
+      final base64Payload = base64.encode(
+        utf8.encode(json.encode(syncPayload)),
+      );
 
       final room = _createMockRoomWithEvents(
         id: '!base64:server',
@@ -462,8 +479,9 @@ void main() {
       when(() => room.encrypted).thenReturn(true);
       when(() => room.joinRules).thenReturn(JoinRules.invite);
       when(() => room.getState(lottiSyncRoomStateType)).thenReturn(null);
-      when(() => room.getTimeline(limit: any(named: 'limit')))
-          .thenThrow(Exception('Timeline error'));
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenThrow(Exception('Timeline error'));
       when(() => room.name).thenReturn('Error Room');
       when(() => room.summary).thenReturn(summary);
       when(() => summary.mJoinedMemberCount).thenReturn(1);
@@ -475,11 +493,13 @@ void main() {
 
       // Should not crash, just log and skip
       expect(results, isEmpty);
-      verify(() => loggingService.captureEvent(
-            contains('Error checking room'),
-            domain: 'SYNC_ROOM_DISCOVERY',
-            subDomain: 'hasLottiSyncContent',
-          )).called(1);
+      verify(
+        () => loggingService.captureEvent(
+          contains('Error checking room'),
+          domain: 'SYNC_ROOM_DISCOVERY',
+          subDomain: 'hasLottiSyncContent',
+        ),
+      ).called(1);
     });
   });
 
@@ -657,8 +677,9 @@ MockRoom _createMockRoom({
     when(() => timeline.events).thenReturn([]);
   }
 
-  when(() => room.getTimeline(limit: any(named: 'limit')))
-      .thenAnswer((_) async => timeline);
+  when(
+    () => room.getTimeline(limit: any(named: 'limit')),
+  ).thenAnswer((_) async => timeline);
 
   return room;
 }
@@ -683,8 +704,9 @@ MockRoom _createMockRoomWithEvents({
   when(() => room.getState(lottiSyncRoomStateType)).thenReturn(null);
   when(() => room.getState('m.room.create')).thenReturn(null);
   when(() => timeline.events).thenReturn(events);
-  when(() => room.getTimeline(limit: any(named: 'limit')))
-      .thenAnswer((_) async => timeline);
+  when(
+    () => room.getTimeline(limit: any(named: 'limit')),
+  ).thenAnswer((_) async => timeline);
 
   return room;
 }

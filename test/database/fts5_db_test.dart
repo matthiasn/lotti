@@ -74,12 +74,15 @@ void main() {
           }
         });
 
-        when(mockPathProvider.getApplicationDocumentsPath)
-            .thenAnswer((_) async => tempDir.path);
-        when(mockPathProvider.getApplicationSupportPath)
-            .thenAnswer((_) async => tempDir.path);
-        when(mockPathProvider.getTemporaryPath)
-            .thenAnswer((_) async => tempDir.path);
+        when(
+          mockPathProvider.getApplicationDocumentsPath,
+        ).thenAnswer((_) async => tempDir.path);
+        when(
+          mockPathProvider.getApplicationSupportPath,
+        ).thenAnswer((_) async => tempDir.path);
+        when(
+          mockPathProvider.getTemporaryPath,
+        ).thenAnswer((_) async => tempDir.path);
 
         final db = Fts5Db();
         addTearDown(() async => db.close());
@@ -109,8 +112,9 @@ void main() {
         entitiesCacheService = MockEntitiesCacheService();
 
         when(() => tagsService.getTagById(any())).thenReturn(null);
-        when(() => entitiesCacheService.getDataTypeById(any()))
-            .thenReturn(null);
+        when(
+          () => entitiesCacheService.getDataTypeById(any()),
+        ).thenReturn(null);
 
         getIt
           ..registerSingleton<TagsService>(tagsService)
@@ -143,45 +147,53 @@ void main() {
         expect(matches, contains(testTask.meta.id));
       });
 
-      test('insertText with survey entry indexes identifier and scores',
-          () async {
-        final surveyEntry = SurveyEntry(
-          meta: _buildMetadata('survey-id'),
-          data: SurveyData(
-            taskResult: RPTaskResult(identifier: 'panasSurveyTask'),
-            scoreDefinitions: {
-              'Positive Affect': {'q1', 'q2'},
-              'Negative Affect': {'q3'},
-            },
-            calculatedScores: const {
-              'Positive Affect': 10,
-              'Negative Affect': 2,
-            },
-          ),
-        );
+      test(
+        'insertText with survey entry indexes identifier and scores',
+        () async {
+          final surveyEntry = SurveyEntry(
+            meta: _buildMetadata('survey-id'),
+            data: SurveyData(
+              taskResult: RPTaskResult(identifier: 'panasSurveyTask'),
+              scoreDefinitions: {
+                'Positive Affect': {'q1', 'q2'},
+                'Negative Affect': {'q3'},
+              },
+              calculatedScores: const {
+                'Positive Affect': 10,
+                'Negative Affect': 2,
+              },
+            ),
+          );
 
-        await db.insertText(surveyEntry);
+          await db.insertText(surveyEntry);
 
-        final identifierMatches =
-            await db.watchFullTextMatches('panasSurveyTask').first;
-        expect(identifierMatches, contains('survey-id'));
+          final identifierMatches = await db
+              .watchFullTextMatches('panasSurveyTask')
+              .first;
+          expect(identifierMatches, contains('survey-id'));
 
-        final scoreMatches =
-            await db.watchFullTextMatches('"Positive Affect: 10"').first;
-        expect(scoreMatches, contains('survey-id'));
-      });
+          final scoreMatches = await db
+              .watchFullTextMatches('"Positive Affect: 10"')
+              .first;
+          expect(scoreMatches, contains('survey-id'));
+        },
+      );
 
-      test('insertText with measurement entry indexes measurement summary',
-          () async {
-        when(() => entitiesCacheService.getDataTypeById(measurableChocolate.id))
-            .thenReturn(measurableChocolate);
+      test(
+        'insertText with measurement entry indexes measurement summary',
+        () async {
+          when(
+            () => entitiesCacheService.getDataTypeById(measurableChocolate.id),
+          ).thenReturn(measurableChocolate);
 
-        await db.insertText(testMeasurementChocolateEntry);
+          await db.insertText(testMeasurementChocolateEntry);
 
-        final matches =
-            await db.watchFullTextMatches('"Chocolate 100 g"').first;
-        expect(matches, contains(testMeasurementChocolateEntry.meta.id));
-      });
+          final matches = await db
+              .watchFullTextMatches('"Chocolate 100 g"')
+              .first;
+          expect(matches, contains(testMeasurementChocolateEntry.meta.id));
+        },
+      );
 
       test('insertText with quantitative entry indexes health data', () async {
         await db.insertText(testWeightEntry);
@@ -189,16 +201,19 @@ void main() {
         final weightMatches = await db.watchFullTextMatches('Weight').first;
         expect(weightMatches, contains(testWeightEntry.meta.id));
 
-        final valueMatches =
-            await db.watchFullTextMatches('"94.49400329589844"').first;
+        final valueMatches = await db
+            .watchFullTextMatches('"94.49400329589844"')
+            .first;
         expect(valueMatches, contains(testWeightEntry.meta.id));
       });
 
       test('insertText with tags indexes tag names for search', () async {
-        when(() => tagsService.getTagById(testStoryTag1.id))
-            .thenReturn(testStoryTag1);
-        when(() => tagsService.getTagById(testPersonTag1.id))
-            .thenReturn(testPersonTag1);
+        when(
+          () => tagsService.getTagById(testStoryTag1.id),
+        ).thenReturn(testStoryTag1);
+        when(
+          () => tagsService.getTagById(testPersonTag1.id),
+        ).thenReturn(testPersonTag1);
 
         await db.insertText(testTextEntryWithTags);
 
@@ -209,50 +224,61 @@ void main() {
         expect(personMatches, contains(testTextEntryWithTags.meta.id));
       });
 
-      test('insertText removes previous entry when removePrevious is true',
-          () async {
-        await db.insertText(testTextEntry);
+      test(
+        'insertText removes previous entry when removePrevious is true',
+        () async {
+          await db.insertText(testTextEntry);
 
-        final updatedEntry = testTextEntry.copyWith(
-          entryText: const EntryText(plainText: 'updated content'),
-        );
+          final updatedEntry = testTextEntry.copyWith(
+            entryText: const EntryText(plainText: 'updated content'),
+          );
 
-        await db.insertText(updatedEntry, removePrevious: true);
+          await db.insertText(updatedEntry, removePrevious: true);
 
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, hasLength(1));
+          final rows = await db.select(db.journalFts).get();
+          expect(rows, hasLength(1));
 
-        final newMatches =
-            await db.watchFullTextMatches('updated content').first;
-        expect(newMatches, contains(testTextEntry.meta.id));
+          final newMatches = await db
+              .watchFullTextMatches('updated content')
+              .first;
+          expect(newMatches, contains(testTextEntry.meta.id));
 
-        final oldMatches =
-            await db.watchFullTextMatches('test entry text').first;
-        expect(oldMatches, isEmpty);
-      });
+          final oldMatches = await db
+              .watchFullTextMatches('test entry text')
+              .first;
+          expect(oldMatches, isEmpty);
+        },
+      );
 
-      test('insertText keeps previous entry when removePrevious is false',
-          () async {
-        await db.insertText(testTextEntry);
+      test(
+        'insertText keeps previous entry when removePrevious is false',
+        () async {
+          await db.insertText(testTextEntry);
 
-        final duplicateEntry = testTextEntry.copyWith(
-          entryText: const EntryText(plainText: 'duplicate content'),
-        );
+          final duplicateEntry = testTextEntry.copyWith(
+            entryText: const EntryText(plainText: 'duplicate content'),
+          );
 
-        await db.insertText(duplicateEntry);
+          await db.insertText(duplicateEntry);
 
-        final rows = await db.select(db.journalFts).get();
-        expect(rows, hasLength(2));
-        expect(rows.every((row) => row.uuid == testTextEntry.meta.id), isTrue);
+          final rows = await db.select(db.journalFts).get();
+          expect(rows, hasLength(2));
+          expect(
+            rows.every((row) => row.uuid == testTextEntry.meta.id),
+            isTrue,
+          );
 
-        final originalMatches =
-            await db.watchFullTextMatches('test entry text').first;
-        expect(originalMatches, isNotEmpty);
+          final originalMatches = await db
+              .watchFullTextMatches('test entry text')
+              .first;
+          expect(originalMatches, isNotEmpty);
 
-        final duplicateMatches =
-            await db.watchFullTextMatches('duplicate content').first;
-        expect(duplicateMatches, isNotEmpty);
-      });
+          final duplicateMatches = await db
+              .watchFullTextMatches('duplicate content')
+              .first;
+          expect(duplicateMatches, isNotEmpty);
+        },
+      );
 
       test('insertText skips empty entries', () async {
         final emptyEntry = JournalEntry(
@@ -314,8 +340,9 @@ void main() {
         entitiesCacheService = MockEntitiesCacheService();
 
         when(() => tagsService.getTagById(any())).thenReturn(null);
-        when(() => entitiesCacheService.getDataTypeById(any()))
-            .thenReturn(null);
+        when(
+          () => entitiesCacheService.getDataTypeById(any()),
+        ).thenReturn(null);
 
         getIt
           ..registerSingleton<TagsService>(tagsService)

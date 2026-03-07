@@ -37,8 +37,9 @@ void main() {
   setUp(() {
     mockJournalDb = MockJournalDb();
 
-    when(() => mockJournalDb.watchConfigFlag(any()))
-        .thenAnswer((_) => Stream.value(true));
+    when(
+      () => mockJournalDb.watchConfigFlag(any()),
+    ).thenAnswer((_) => Stream.value(true));
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -62,11 +63,11 @@ void main() {
 
   /// Default overrides: all flags enabled.
   List<Override> allEnabledOverrides() => flagOverrides({
-        enableLoggingFlag: true,
-        logAgentRuntimeFlag: true,
-        logAgentWorkflowFlag: true,
-        logSyncFlag: true,
-      });
+    enableLoggingFlag: true,
+    logAgentRuntimeFlag: true,
+    logAgentWorkflowFlag: true,
+    logSyncFlag: true,
+  });
 
   Future<void> pumpPage(
     WidgetTester tester, {
@@ -143,8 +144,9 @@ void main() {
       expect(findSwitches(), findsNWidgets(4));
     });
 
-    testWidgets('domain switches are disabled when global logging is off',
-        (tester) async {
+    testWidgets('domain switches are disabled when global logging is off', (
+      tester,
+    ) async {
       final overrides = flagOverrides({
         enableLoggingFlag: false,
         logAgentRuntimeFlag: true,
@@ -173,8 +175,9 @@ void main() {
     });
 
     testWidgets('tapping global toggle calls toggleConfigFlag', (tester) async {
-      when(() => mockJournalDb.toggleConfigFlag(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockJournalDb.toggleConfigFlag(any()),
+      ).thenAnswer((_) async {});
 
       await pumpPage(tester, overrides: allEnabledOverrides());
 
@@ -184,24 +187,28 @@ void main() {
       verify(() => mockJournalDb.toggleConfigFlag(enableLoggingFlag)).called(1);
     });
 
-    testWidgets('tapping domain toggles calls correct toggleConfigFlag',
-        (tester) async {
-      when(() => mockJournalDb.toggleConfigFlag(any()))
-          .thenAnswer((_) async {});
+    testWidgets('tapping domain toggles calls correct toggleConfigFlag', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.toggleConfigFlag(any()),
+      ).thenAnswer((_) async {});
 
       await pumpPage(tester, overrides: allEnabledOverrides());
 
       // Tap agent runtime toggle (index 1).
       await tester.tap(findSwitches().at(1));
       await tester.pump();
-      verify(() => mockJournalDb.toggleConfigFlag(logAgentRuntimeFlag))
-          .called(1);
+      verify(
+        () => mockJournalDb.toggleConfigFlag(logAgentRuntimeFlag),
+      ).called(1);
 
       // Tap agent workflow toggle (index 2).
       await tester.tap(findSwitches().at(2));
       await tester.pump();
-      verify(() => mockJournalDb.toggleConfigFlag(logAgentWorkflowFlag))
-          .called(1);
+      verify(
+        () => mockJournalDb.toggleConfigFlag(logAgentWorkflowFlag),
+      ).called(1);
 
       // Tap sync toggle (index 3).
       await tester.tap(findSwitches().at(3));
@@ -219,8 +226,10 @@ void main() {
 
       await pumpPage(tester, overrides: overrides);
 
-      final states =
-          tester.widgetList(findSwitches()).map(switchState).toList();
+      final states = tester
+          .widgetList(findSwitches())
+          .map(switchState)
+          .toList();
       expect(states, hasLength(4));
 
       expect(states[0].value, isTrue, reason: 'Global should be on');

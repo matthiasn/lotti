@@ -55,29 +55,32 @@ void main() {
     });
 
     group('PromptFormState', () {
-      test('Initial state is pure and valid by default for optional fields',
-          () {
-        final formState = PromptFormState();
-        expect(formState.name.isPure, isTrue);
-        expect(formState.userMessage.isPure, isTrue);
-        expect(formState.systemMessage.isPure, isTrue);
-        expect(formState.comment.isPure, isTrue);
-        expect(formState.description.isPure, isTrue);
-        expect(formState.category.isPure, isTrue);
-        expect(formState.aiResponseType.isPure, isTrue);
-        expect(
-          formState.isValid,
-          isFalse,
-        ); // name, userMessage, systemMessage, aiResponseType are required
-      });
+      test(
+        'Initial state is pure and valid by default for optional fields',
+        () {
+          final formState = PromptFormState();
+          expect(formState.name.isPure, isTrue);
+          expect(formState.userMessage.isPure, isTrue);
+          expect(formState.systemMessage.isPure, isTrue);
+          expect(formState.comment.isPure, isTrue);
+          expect(formState.description.isPure, isTrue);
+          expect(formState.category.isPure, isTrue);
+          expect(formState.aiResponseType.isPure, isTrue);
+          expect(
+            formState.isValid,
+            isFalse,
+          ); // name, userMessage, systemMessage, aiResponseType are required
+        },
+      );
 
       test('Form is valid when required fields are valid', () {
         final formState = PromptFormState(
           name: const PromptName.dirty('Test Name'),
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
-          aiResponseType:
-              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
+          aiResponseType: const PromptAiResponseType.dirty(
+            AiResponseType.taskSummary,
+          ),
         );
         expect(formState.isValid, isTrue);
       });
@@ -87,8 +90,9 @@ void main() {
           name: const PromptName.dirty(), // Invalid
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
-          aiResponseType:
-              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
+          aiResponseType: const PromptAiResponseType.dirty(
+            AiResponseType.taskSummary,
+          ),
         );
         expect(formState.isValid, isFalse);
       });
@@ -126,12 +130,14 @@ void main() {
           useReasoning: true,
           requiredInputData: [InputDataType.task],
           comment: const PromptComment.dirty('This is a test comment.'),
-          description:
-              const PromptDescription.dirty('Detailed description here.'),
+          description: const PromptDescription.dirty(
+            'Detailed description here.',
+          ),
           category: const PromptCategory.dirty('Testing'),
           defaultVariables: {'input': 'default_value'},
-          aiResponseType:
-              const PromptAiResponseType.dirty(AiResponseType.taskSummary),
+          aiResponseType: const PromptAiResponseType.dirty(
+            AiResponseType.taskSummary,
+          ),
         );
 
         final aiConfig = formState.toAiConfig() as AiConfigPrompt;
@@ -158,8 +164,9 @@ void main() {
           systemMessage: const PromptSystemMessage.dirty('System instructions'),
           userMessage: const PromptUserMessage.dirty('User query'),
           defaultModelId: 'model-123',
-          aiResponseType:
-              const PromptAiResponseType.dirty(AiResponseType.imageAnalysis),
+          aiResponseType: const PromptAiResponseType.dirty(
+            AiResponseType.imageAnalysis,
+          ),
         );
 
         final aiConfig = formState.toAiConfig() as AiConfigPrompt;

@@ -36,7 +36,7 @@ class EvolutionHistoryDashboard extends ConsumerWidget {
         statsAsync.when(
           data: (stats) => _StatsRow(stats: stats),
           loading: () => const SizedBox(height: 48),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (_, _) => const SizedBox.shrink(),
         ),
         const SizedBox(height: 12),
         // Charts

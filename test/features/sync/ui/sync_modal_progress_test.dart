@@ -60,8 +60,9 @@ class _PendingSyncController extends SyncMaintenanceController {
 }
 
 void main() {
-  testWidgets('SyncModal shows progress and checkmark (direct widget)',
-      (tester) async {
+  testWidgets('SyncModal shows progress and checkmark (direct widget)', (
+    tester,
+  ) async {
     // Initial state: syncing, 50% progress, current step: measurables
     final testController = TestSyncController(
       const SyncState(
@@ -92,8 +93,9 @@ void main() {
     expect(find.byIcon(Icons.check_circle_outline), findsNothing);
   });
 
-  testWidgets('SyncModal progress view reflects controller updates',
-      (tester) async {
+  testWidgets('SyncModal progress view reflects controller updates', (
+    tester,
+  ) async {
     final messages = AppLocalizationsEn();
 
     const pendingState = SyncState(
@@ -141,10 +143,13 @@ void main() {
     await tester.tap(find.text('Open sync modal'));
     await tester.pumpAndSettle();
 
-    final confirmButtonFinder =
-        find.widgetWithText(LottiPrimaryButton, messages.syncEntitiesConfirm);
-    final confirmButton =
-        tester.widget<LottiPrimaryButton>(confirmButtonFinder);
+    final confirmButtonFinder = find.widgetWithText(
+      LottiPrimaryButton,
+      messages.syncEntitiesConfirm,
+    );
+    final confirmButton = tester.widget<LottiPrimaryButton>(
+      confirmButtonFinder,
+    );
     confirmButton.onPressed?.call();
     await tester.pump();
 

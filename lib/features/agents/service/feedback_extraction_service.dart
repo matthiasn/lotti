@@ -63,8 +63,9 @@ class FeedbackExtractionService {
       templateId,
       since: since,
     );
-    final windowDecisions =
-        allDecisions.where((d) => inWindow(d.createdAt)).toList();
+    final windowDecisions = allDecisions
+        .where((d) => inWindow(d.createdAt))
+        .toList();
     final totalDecisionsScanned = windowDecisions.length;
 
     // Bulk-fetch change sets for decisions missing humanSummary.
@@ -74,8 +75,9 @@ class FeedbackExtractionService {
         .toSet();
     var changeSetMap = <String, ChangeSetEntity>{};
     try {
-      final changeSetEntities =
-          await Future.wait(missingIds.map(agentRepository.getEntity));
+      final changeSetEntities = await Future.wait(
+        missingIds.map(agentRepository.getEntity),
+      );
       changeSetMap = {
         for (final entity in changeSetEntities.whereType<ChangeSetEntity>())
           entity.id: entity,
@@ -106,8 +108,9 @@ class FeedbackExtractionService {
     final wakeRuns = results[2] as List<WakeRunLogData>;
 
     // 2. Classify observations (heuristic), enriched with payload text.
-    final windowObservations =
-        observations.where((o) => inWindow(o.createdAt)).toList();
+    final windowObservations = observations
+        .where((o) => inWindow(o.createdAt))
+        .toList();
 
     // Bulk-fetch observation payloads for richer detail text.
     // Per-ID error handling so one failure doesn't abort the whole run.
@@ -134,8 +137,9 @@ class FeedbackExtractionService {
       }),
     );
     final payloadMap = <String, AgentMessagePayloadEntity>{
-      for (final entry in payloadEntries
-          .whereType<MapEntry<String, AgentMessagePayloadEntity>>())
+      for (final entry
+          in payloadEntries
+              .whereType<MapEntry<String, AgentMessagePayloadEntity>>())
         entry.key: entry.value,
     };
 
@@ -436,8 +440,8 @@ class FeedbackExtractionService {
     final sentiment = confidence > 0.7
         ? FeedbackSentiment.positive
         : confidence < 0.3
-            ? FeedbackSentiment.negative
-            : FeedbackSentiment.neutral;
+        ? FeedbackSentiment.negative
+        : FeedbackSentiment.neutral;
 
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
@@ -456,8 +460,8 @@ class FeedbackExtractionService {
   static FeedbackSentiment _sentimentFromRating(double rating) => rating >= 4.0
       ? FeedbackSentiment.positive
       : rating <= 2.0
-          ? FeedbackSentiment.negative
-          : FeedbackSentiment.neutral;
+      ? FeedbackSentiment.negative
+      : FeedbackSentiment.neutral;
 
   /// Classify wake run user ratings.
   ClassifiedFeedbackItem? _classifyWakeRunRating(WakeRunLogData wakeRun) {
@@ -539,7 +543,8 @@ class FeedbackExtractionService {
             sentiment: FeedbackSentiment.negative,
             category: FeedbackCategory.general,
             source: FeedbackSources.directiveChurn,
-            detail: 'Excessive directive churn: $versionCount versions '
+            detail:
+                'Excessive directive churn: $versionCount versions '
                 'created for template ${result.targetId} in feedback window '
                 '(threshold: '
                 '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
@@ -565,7 +570,8 @@ class FeedbackExtractionService {
         sentiment: FeedbackSentiment.negative,
         category: FeedbackCategory.general,
         source: FeedbackSources.evolutionSession,
-        detail: 'Evolution session #${session.sessionNumber} for '
+        detail:
+            'Evolution session #${session.sessionNumber} for '
             'template $targetTemplateId was abandoned',
         agentId: session.agentId,
         sourceEntityId: session.id,
@@ -580,7 +586,8 @@ class FeedbackExtractionService {
         sentiment: sentiment,
         category: FeedbackCategory.general,
         source: FeedbackSources.evolutionSession,
-        detail: 'Evolution session #${session.sessionNumber} for '
+        detail:
+            'Evolution session #${session.sessionNumber} for '
             'template $targetTemplateId completed with rating '
             '${rating.toStringAsFixed(1)}',
         agentId: session.agentId,
@@ -594,7 +601,8 @@ class FeedbackExtractionService {
       sentiment: FeedbackSentiment.neutral,
       category: FeedbackCategory.general,
       source: FeedbackSources.evolutionSession,
-      detail: 'Evolution session #${session.sessionNumber} for '
+      detail:
+          'Evolution session #${session.sessionNumber} for '
           'template $targetTemplateId: ${session.status.name}',
       agentId: session.agentId,
       sourceEntityId: session.id,

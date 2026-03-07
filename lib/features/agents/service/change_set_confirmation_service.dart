@@ -24,8 +24,8 @@ class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required AgentSyncService syncService,
     required TaskToolDispatcher toolDispatcher,
-  })  : _syncService = syncService,
-        _toolDispatcher = toolDispatcher;
+  }) : _syncService = syncService,
+       _toolDispatcher = toolDispatcher;
 
   final AgentSyncService _syncService;
   final TaskToolDispatcher _toolDispatcher;
@@ -263,8 +263,8 @@ class ChangeSetConfirmationService {
     final newSetStatus = allResolved
         ? ChangeSetStatus.resolved
         : anyResolved
-            ? ChangeSetStatus.partiallyResolved
-            : ChangeSetStatus.pending;
+        ? ChangeSetStatus.partiallyResolved
+        : ChangeSetStatus.pending;
 
     final updatedChangeSet = current.copyWith(
       items: updatedItems,

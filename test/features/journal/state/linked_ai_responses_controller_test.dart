@@ -127,8 +127,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     getIt.allowReassignment = true;
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
@@ -165,20 +166,29 @@ void main() {
 
   group('LinkedAiResponsesController', () {
     test('loads AI responses linked to an entry on initialization', () async {
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => testLinks);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry2.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry2);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testDeletedAiResponseEntry.meta.id,
-          )).thenAnswer((_) async => testDeletedAiResponseEntry);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testNonAiEntry.meta.id,
-          )).thenAnswer((_) async => testNonAiEntry);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => testLinks);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry2.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry2);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testDeletedAiResponseEntry.meta.id,
+        ),
+      ).thenAnswer((_) async => testDeletedAiResponseEntry);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testNonAiEntry.meta.id,
+        ),
+      ).thenAnswer((_) async => testNonAiEntry);
 
       final container = ProviderContainer(
         overrides: [
@@ -197,8 +207,9 @@ void main() {
       expect(result[0].meta.id, equals(testAiResponseEntry2.meta.id));
       expect(result[1].meta.id, equals(testAiResponseEntry1.meta.id));
 
-      verify(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .called(1);
+      verify(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).called(1);
 
       container.dispose();
     });
@@ -215,11 +226,14 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => linksWithDeleted);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testDeletedAiResponseEntry.meta.id,
-          )).thenAnswer((_) async => testDeletedAiResponseEntry);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => linksWithDeleted);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testDeletedAiResponseEntry.meta.id,
+        ),
+      ).thenAnswer((_) async => testDeletedAiResponseEntry);
 
       final container = ProviderContainer(
         overrides: [
@@ -250,11 +264,14 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => linksWithNonAi);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testNonAiEntry.meta.id,
-          )).thenAnswer((_) async => testNonAiEntry);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => linksWithNonAi);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testNonAiEntry.meta.id,
+        ),
+      ).thenAnswer((_) async => testNonAiEntry);
 
       final container = ProviderContainer(
         overrides: [
@@ -274,8 +291,9 @@ void main() {
     });
 
     test('returns empty list when no links exist', () async {
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
@@ -314,14 +332,19 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry2.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry2);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => links);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry2.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry2);
 
       final container = ProviderContainer(
         overrides: [
@@ -375,17 +398,22 @@ void main() {
       ];
 
       var callCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async {
         callCount++;
         return callCount == 1 ? initialLinks : updatedLinks;
       });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry2.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry2);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry2.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry2);
 
       final container = ProviderContainer(
         overrides: [
@@ -426,10 +454,12 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById('non-existent-id'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => links);
+      when(
+        () => mockJournalRepository.getJournalEntityById('non-existent-id'),
+      ).thenAnswer((_) async => null);
 
       final container = ProviderContainer(
         overrides: [
@@ -479,11 +509,14 @@ void main() {
       );
 
       var fetchCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => links);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async {
         fetchCount++;
         return fetchCount == 1 ? testAiResponseEntry1 : updatedEntry;
       });
@@ -517,7 +550,9 @@ void main() {
       );
 
       expect(
-          updatedResult[0].meta.updatedAt, equals(updatedEntry.meta.updatedAt));
+        updatedResult[0].meta.updatedAt,
+        equals(updatedEntry.meta.updatedAt),
+      );
 
       container.dispose();
     });
@@ -535,14 +570,17 @@ void main() {
       ];
 
       var fetchCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async {
         fetchCount++;
         return links;
       });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
 
       final container = ProviderContainer(
         overrides: [
@@ -627,12 +665,17 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-          sameTimeEntry1.meta.id)).thenAnswer((_) async => sameTimeEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-          sameTimeEntry2.meta.id)).thenAnswer((_) async => sameTimeEntry2);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => links);
+      when(
+        () =>
+            mockJournalRepository.getJournalEntityById(sameTimeEntry1.meta.id),
+      ).thenAnswer((_) async => sameTimeEntry1);
+      when(
+        () =>
+            mockJournalRepository.getJournalEntityById(sameTimeEntry2.meta.id),
+      ).thenAnswer((_) async => sameTimeEntry2);
 
       final container = ProviderContainer(
         overrides: [
@@ -652,8 +695,9 @@ void main() {
     });
 
     test('cleans up subscription on dispose', () async {
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => []);
 
       final container = ProviderContainer(
         overrides: [
@@ -691,14 +735,17 @@ void main() {
       final updatedLinks = <EntryLink>[]; // Empty list - different length
 
       var callCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async {
         callCount++;
         return callCount == 1 ? initialLinks : updatedLinks;
       });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
 
       final container = ProviderContainer(
         overrides: [
@@ -747,17 +794,22 @@ void main() {
       );
 
       var callCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async {
         callCount++;
         return callCount == 1 ? [entry1Link] : [entry2Link];
       });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry2.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry2);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry2.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry2);
 
       final container = ProviderContainer(
         overrides: [
@@ -800,14 +852,17 @@ void main() {
       ];
 
       var callCount = 0;
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async {
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async {
         callCount++;
         return callCount == 1 ? [] : links;
       });
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
 
       final container = ProviderContainer(
         overrides: [
@@ -848,11 +903,14 @@ void main() {
         ),
       ];
 
-      when(() => mockJournalRepository.getLinksFromId(testAudioEntryId))
-          .thenAnswer((_) async => links);
-      when(() => mockJournalRepository.getJournalEntityById(
-            testAiResponseEntry1.meta.id,
-          )).thenAnswer((_) async => testAiResponseEntry1);
+      when(
+        () => mockJournalRepository.getLinksFromId(testAudioEntryId),
+      ).thenAnswer((_) async => links);
+      when(
+        () => mockJournalRepository.getJournalEntityById(
+          testAiResponseEntry1.meta.id,
+        ),
+      ).thenAnswer((_) async => testAiResponseEntry1);
 
       final container = ProviderContainer(
         overrides: [

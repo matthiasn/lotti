@@ -248,11 +248,12 @@ void main() {
       );
 
       expect(
-          container.margin,
-          const EdgeInsets.symmetric(
-            horizontal: AppTheme.cardPadding,
-            vertical: AppTheme.cardSpacing / 2,
-          ));
+        container.margin,
+        const EdgeInsets.symmetric(
+          horizontal: AppTheme.cardPadding,
+          vertical: AppTheme.cardSpacing / 2,
+        ),
+      );
     });
 
     testWidgets('animates shadow on hover', (tester) async {

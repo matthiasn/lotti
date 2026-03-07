@@ -109,8 +109,9 @@ class _TextViewerWidgetNonScrollableState
                       ...FlutterQuillEmbeds.defaultEditorBuilders(),
                     ],
                     unknownEmbedBuilder: const UnknownEmbedBuilder(),
-                    customStyles:
-                        customEditorStyles(themeData: Theme.of(context)),
+                    customStyles: customEditorStyles(
+                      themeData: Theme.of(context),
+                    ),
                   ),
                 ),
               );

@@ -106,11 +106,11 @@ class InferenceModelFormState with FormzMixin {
 
   @override
   List<FormzInput<String, dynamic>> get inputs => [
-        name,
-        providerModelId,
-        description,
-        maxCompletionTokens,
-      ];
+    name,
+    providerModelId,
+    description,
+    maxCompletionTokens,
+  ];
 
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {

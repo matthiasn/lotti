@@ -27,21 +27,23 @@ void main() {
     }
 
     // Create a test directory and mock path_provider to return it
-    testDirectory =
-        Directory.systemTemp.createTempSync('lotti_migration_test_');
+    testDirectory = Directory.systemTemp.createTempSync(
+      'lotti_migration_test_',
+    );
 
     // Mock path_provider to return our test directory
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-            const MethodChannel('plugins.flutter.io/path_provider'),
-            (MethodCall methodCall) async {
-      if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-          methodCall.method == 'getApplicationSupportDirectory' ||
-          methodCall.method == 'getTemporaryDirectory') {
-        return testDirectory!.path;
-      }
-      return null;
-    });
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory' ||
+                methodCall.method == 'getTemporaryDirectory') {
+              return testDirectory!.path;
+            }
+            return null;
+          },
+        );
 
     getIt.registerSingleton<Directory>(testDirectory!);
   });
@@ -57,8 +59,7 @@ void main() {
   });
 
   group('Labels Migration Tests', () {
-    test('v26 migration creates label_definitions and labeled tables',
-        () async {
+    test('v26 migration creates label_definitions and labeled tables', () async {
       // Create a mock db at v25 to test v26 migration
       final dbFile = File(path.join(testDirectory!.path, 'test_v26.db'));
       final sqlite = sqlite3.open(dbFile.path);
@@ -127,16 +128,20 @@ void main() {
       // Verify label_definitions table exists and has correct schema
       final labelDefResult = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'",
+          )
           .get();
       expect(labelDefResult, hasLength(1));
-      expect(labelDefResult.first.read<String>('sql'),
-          contains('label_definitions'));
+      expect(
+        labelDefResult.first.read<String>('sql'),
+        contains('label_definitions'),
+      );
 
       // Verify labeled table exists
       final labeledResult = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'",
+          )
           .get();
       expect(labeledResult, hasLength(1));
       expect(labeledResult.first.read<String>('sql'), contains('labeled'));
@@ -144,20 +149,22 @@ void main() {
       // Verify indices were created
       final indicesResult = await db
           .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_label%'")
+            "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_label%'",
+          )
           .get();
       expect(indicesResult.length, greaterThanOrEqualTo(4));
 
       await db.close();
     });
 
-    test('v27 migration ensures label tables exist for legacy v26 installs',
-        () async {
-      // Create a mock db at v26 without label tables (simulating incomplete v26 migration)
-      final dbFile = File(path.join(testDirectory!.path, 'test_v27.db'));
-      final sqlite = sqlite3.open(dbFile.path);
+    test(
+      'v27 migration ensures label tables exist for legacy v26 installs',
+      () async {
+        // Create a mock db at v26 without label tables (simulating incomplete v26 migration)
+        final dbFile = File(path.join(testDirectory!.path, 'test_v27.db'));
+        final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
+        sqlite.execute('''
         CREATE TABLE IF NOT EXISTS journal (
           id TEXT PRIMARY KEY,
           serialized TEXT NOT NULL,
@@ -178,31 +185,34 @@ void main() {
         )
       ''');
 
-      createLinkedEntriesTableWithBuggyIndex(sqlite);
+        createLinkedEntriesTableWithBuggyIndex(sqlite);
 
-      // Set schema version to 26 without creating label tables
-      sqlite.execute('PRAGMA user_version = 26');
-      sqlite.dispose();
+        // Set schema version to 26 without creating label tables
+        sqlite.execute('PRAGMA user_version = 26');
+        sqlite.dispose();
 
-      // Open with JournalDb to trigger migration
-      final db = JournalDb(overriddenFilename: 'test_v27.db');
+        // Open with JournalDb to trigger migration
+        final db = JournalDb(overriddenFilename: 'test_v27.db');
 
-      // Verify the migration occurred
-      final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
+        // Verify the migration occurred
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
-      // Verify both tables were created
-      final tablesResult = await db
-          .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('label_definitions', 'labeled')")
-          .get();
-      expect(tablesResult, hasLength(2));
+        // Verify both tables were created
+        final tablesResult = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('label_definitions', 'labeled')",
+            )
+            .get();
+        expect(tablesResult, hasLength(2));
 
-      await db.close();
-    });
+        await db.close();
+      },
+    );
 
-    test('v28 migration rebuilds labeled table with ON DELETE CASCADE',
-        () async {
+    test('v28 migration rebuilds labeled table with ON DELETE CASCADE', () async {
       // Create a mock db at v27 with old labeled table schema
       final dbFile = File(path.join(testDirectory!.path, 'test_v28.db'));
       final sqlite = sqlite3.open(dbFile.path);
@@ -303,11 +313,14 @@ void main() {
       // Verify labeled table has CASCADE constraint
       final tableInfo = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'",
+          )
           .get();
       expect(tableInfo, hasLength(1));
       expect(
-          tableInfo.first.read<String>('sql'), contains('ON DELETE CASCADE'));
+        tableInfo.first.read<String>('sql'),
+        contains('ON DELETE CASCADE'),
+      );
 
       // Verify orphaned links were removed during migration
       final labeledRows = await db.customSelect('SELECT * FROM labeled').get();
@@ -352,7 +365,8 @@ void main() {
       // Verify tables were created
       final firstMigrationLabelDef = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'",
+          )
           .get();
       expect(firstMigrationLabelDef, hasLength(1));
 
@@ -364,19 +378,25 @@ void main() {
       // Verify tables still exist and structure unchanged
       final labelDefResult = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='label_definitions'",
+          )
           .get();
       expect(labelDefResult, hasLength(1));
-      expect(labelDefResult.first.read<String>('sql'),
-          firstMigrationLabelDef.first.read<String>('sql'));
+      expect(
+        labelDefResult.first.read<String>('sql'),
+        firstMigrationLabelDef.first.read<String>('sql'),
+      );
 
       final labeledResult = await db
           .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'")
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='labeled'",
+          )
           .get();
       expect(labeledResult, hasLength(1));
-      expect(labeledResult.first.read<String>('sql'),
-          contains('ON DELETE CASCADE'));
+      expect(
+        labeledResult.first.read<String>('sql'),
+        contains('ON DELETE CASCADE'),
+      );
 
       await db.close();
     });
@@ -573,7 +593,8 @@ void main() {
       // Verify tables exist
       final tables = await db
           .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('label_definitions', 'labeled')")
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('label_definitions', 'labeled')",
+          )
           .get();
       expect(tables, hasLength(2));
 

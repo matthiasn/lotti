@@ -53,8 +53,9 @@ class JournalRepository {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       if (journalEntity == null) {
         return false;
@@ -86,8 +87,9 @@ class JournalRepository {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       if (journalEntity == null) {
         return false;
@@ -151,8 +153,9 @@ class JournalRepository {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       if (journalEntity == null) {
         return false;
@@ -312,8 +315,9 @@ class JournalRepository {
   Future<List<JournalEntity>> getLinkedToEntities({
     required String linkedTo,
   }) async {
-    final items =
-        await getIt<JournalDb>().linkedToJournalEntities(linkedTo).get();
+    final items = await getIt<JournalDb>()
+        .linkedToJournalEntities(linkedTo)
+        .get();
     return items.map(fromDbEntity).toList();
   }
 

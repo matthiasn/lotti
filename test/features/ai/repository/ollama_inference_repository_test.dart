@@ -47,46 +47,53 @@ void main() {
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
-      test('should use /api/chat endpoint even when no tools provided',
-          () async {
-        // Arrange
-        const prompt = 'Test prompt';
-        const model = 'llama2';
-        const temperature = 0.7;
-        const systemMessage = 'System message';
+      test(
+        'should use /api/chat endpoint even when no tools provided',
+        () async {
+          // Arrange
+          const prompt = 'Test prompt';
+          const model = 'llama2';
+          const temperature = 0.7;
+          const systemMessage = 'System message';
 
-        final mockResponse = MockStreamedResponse();
-        when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          final mockResponse = MockStreamedResponse();
+          when(() => mockResponse.statusCode).thenReturn(200);
+          when(() => mockResponse.stream).thenAnswer(
+            (_) => http.ByteStream(
               Stream.value(
                 utf8.encode(
-                    '{"message":{"content":"Test response"},"done":true}\n'),
+                  '{"message":{"content":"Test response"},"done":true}\n',
+                ),
               ),
-            ));
+            ),
+          );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => mockResponse);
 
-        // Act
-        final stream = repository.generateText(
-          prompt: prompt,
-          model: model,
-          temperature: temperature,
-          systemMessage: systemMessage,
-          provider: provider,
-        );
+          // Act
+          final stream = repository.generateText(
+            prompt: prompt,
+            model: model,
+            temperature: temperature,
+            systemMessage: systemMessage,
+            provider: provider,
+          );
 
-        final result = await stream.first;
+          final result = await stream.first;
 
-        // Assert
-        expect(result.choices?.first.delta?.content, equals('Test response'));
+          // Assert
+          expect(result.choices?.first.delta?.content, equals('Test response'));
 
-        // Verify the correct endpoint was called
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
-        final request = captured[0] as http.Request;
-        expect(request.url.toString(), contains('/api/chat'));
-      });
+          // Verify the correct endpoint was called
+          final captured = verify(
+            () => mockHttpClient.send(captureAny()),
+          ).captured;
+          final request = captured[0] as http.Request;
+          expect(request.url.toString(), contains('/api/chat'));
+        },
+      );
 
       test('should use /api/chat endpoint when tools are provided', () async {
         // Arrange
@@ -106,15 +113,19 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"Test response"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"Test response"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateText(
@@ -130,12 +141,15 @@ void main() {
 
         // Assert
         expect(results, isNotEmpty);
-        expect(results.first.choices?.first.delta?.content,
-            equals('Test response'));
+        expect(
+          results.first.choices?.first.delta?.content,
+          equals('Test response'),
+        );
 
         // Verify the correct endpoint was called
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured[0] as http.Request;
         expect(request.url.toString(), contains('/api/chat'));
       });
@@ -158,27 +172,32 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode('${jsonEncode({
-                      'message': {
-                        'tool_calls': [
-                          {
-                            'id': 'call_123',
-                            'function': {
-                              'name': 'get_weather',
-                              'arguments': {'city': 'Tokyo'},
-                            },
-                          },
-                        ],
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'id': 'call_123',
+                        'function': {
+                          'name': 'get_weather',
+                          'arguments': {'city': 'Tokyo'},
+                        },
                       },
-                      'done': false,
-                    })}\n${jsonEncode({'done': true})}\n'),
+                    ],
+                  },
+                  'done': false,
+                })}\n${jsonEncode({'done': true})}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateText(
@@ -212,12 +231,15 @@ void main() {
           }
           final mockResponse = MockStreamedResponse();
           when(() => mockResponse.statusCode).thenReturn(200);
-          when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-                Stream.value(
-                  utf8.encode(
-                      '{"message":{"content":"Success after retry"},"done":true}\n'),
+          when(() => mockResponse.stream).thenAnswer(
+            (_) => http.ByteStream(
+              Stream.value(
+                utf8.encode(
+                  '{"message":{"content":"Success after retry"},"done":true}\n',
                 ),
-              ));
+              ),
+            ),
+          );
           return mockResponse;
         });
 
@@ -233,44 +255,50 @@ void main() {
         final result = await stream.first;
 
         // Assert
-        expect(result.choices?.first.delta?.content,
-            equals('Success after retry'));
+        expect(
+          result.choices?.first.delta?.content,
+          equals('Success after retry'),
+        );
         expect(attempts, equals(3));
       });
 
       test(
-          'should throw ModelNotInstalledException for 404 with model not found',
-          () async {
-        // Arrange
-        const prompt = 'Test prompt';
-        const model = 'nonexistent-model';
-        const temperature = 0.7;
+        'should throw ModelNotInstalledException for 404 with model not found',
+        () async {
+          // Arrange
+          const prompt = 'Test prompt';
+          const model = 'nonexistent-model';
+          const temperature = 0.7;
 
-        final mockResponse = MockStreamedResponse();
-        when(() => mockResponse.statusCode).thenReturn(404);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
+          final mockResponse = MockStreamedResponse();
+          when(() => mockResponse.statusCode).thenReturn(404);
+          when(() => mockResponse.stream).thenAnswer(
+            (_) => http.ByteStream(
               Stream.value(
                 utf8.encode('model "nonexistent-model" not found\n'),
               ),
-            ));
+            ),
+          );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+          when(
+            () => mockHttpClient.send(any()),
+          ).thenAnswer((_) async => mockResponse);
 
-        // Act & Assert
-        expect(
-          () => repository
-              .generateText(
-                prompt: prompt,
-                model: model,
-                temperature: temperature,
-                systemMessage: null,
-                provider: provider,
-              )
-              .first,
-          throwsA(isA<ModelNotInstalledException>()),
-        );
-      });
+          // Act & Assert
+          expect(
+            () => repository
+                .generateText(
+                  prompt: prompt,
+                  model: model,
+                  temperature: temperature,
+                  systemMessage: null,
+                  provider: provider,
+                )
+                .first,
+            throwsA(isA<ModelNotInstalledException>()),
+          );
+        },
+      );
 
       test('should validate request parameters', () {
         // Test empty prompt
@@ -329,27 +357,35 @@ void main() {
         final images = ['base64encodedimage'];
 
         // Mock warmUpModel
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              '{"response": "Hello"}',
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"response": "Hello"}',
+            200,
+          ),
+        );
 
         // Mock generateWithImages stream response
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode(
-                    '{"message":{"content":"This is an image description"},"done":true}\n'),
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode(
+                '{"message":{"content":"This is an image description"},"done":true}\n',
               ),
-            ));
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final stream = repository.generateWithImages(
@@ -363,19 +399,24 @@ void main() {
         final result = await stream.first;
 
         // Assert
-        expect(result.choices?.first.delta?.content,
-            equals('This is an image description'));
+        expect(
+          result.choices?.first.delta?.content,
+          equals('This is an image description'),
+        );
 
         // Verify warmUpModel was called
-        verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).called(1);
+        verify(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
 
         // Verify streaming request was made for generateWithImages
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         expect(captured.length, 1);
 
         final request = captured[0] as http.Request;
@@ -410,16 +451,22 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream)
-            .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
-                  '{"status":"pulling manifest","total":0,"completed":0}\n',
-                  '{"status":"downloading","total":1000,"completed":500}\n',
-                  '{"status":"downloading","total":1000,"completed":1000}\n',
-                  '{"status":"success","total":1000,"completed":1000}\n',
-                ].map((s) => utf8.encode(s)))));
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable(
+              [
+                '{"status":"pulling manifest","total":0,"completed":0}\n',
+                '{"status":"downloading","total":1000,"completed":500}\n',
+                '{"status":"downloading","total":1000,"completed":1000}\n',
+                '{"status":"success","total":1000,"completed":1000}\n',
+              ].map((s) => utf8.encode(s)),
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act
         final progressStream = repository.installModel(modelName, baseUrl);
@@ -440,14 +487,17 @@ void main() {
 
         final mockResponse = MockStreamedResponse();
         when(() => mockResponse.statusCode).thenReturn(200);
-        when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-              Stream.value(
-                utf8.encode('{"error":"model not found"}\n'),
-              ),
-            ));
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(
+              utf8.encode('{"error":"model not found"}\n'),
+            ),
+          ),
+        );
 
-        when(() => mockHttpClient.send(any()))
-            .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
         // Act & Assert
         expect(
@@ -463,23 +513,25 @@ void main() {
         const modelName = 'llama2';
         const baseUrl = 'http://localhost:11434';
 
-        when(() => mockHttpClient.post(
-                  any(),
-                  headers: any(named: 'headers'),
-                  body: any(named: 'body'),
-                ))
-            .thenAnswer(
-                (_) async => http.Response('{"response":"Hello"}', 200));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) async => http.Response('{"response":"Hello"}', 200));
 
         // Act
         await repository.warmUpModel(modelName, baseUrl);
 
         // Assert
-        verify(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).called(1);
+        verify(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).called(1);
       });
 
       test('should not throw on warm-up failure', () async {
@@ -487,11 +539,13 @@ void main() {
         const modelName = 'llama2';
         const baseUrl = 'http://localhost:11434';
 
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenThrow(Exception('Network error'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('Network error'));
 
         // Act & Assert (should not throw)
         await repository.warmUpModel(modelName, baseUrl);
@@ -532,11 +586,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -569,18 +627,23 @@ void main() {
     test('should handle string content directly', () async {
       final messages = [
         const ChatCompletionMessage.user(
-          content:
-              ChatCompletionUserMessageContent.string('Direct string content'),
+          content: ChatCompletionUserMessageContent.string(
+            'Direct string content',
+          ),
         ),
       ];
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -625,11 +688,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.fromIterable(chunks.map((c) => utf8.encode('$c\n')))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable(chunks.map((c) => utf8.encode('$c\n'))),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -651,15 +718,21 @@ void main() {
 
       // Should have received content but not thinking
       expect(
-          events.any((CreateChatCompletionStreamResponse e) =>
+        events.any(
+          (CreateChatCompletionStreamResponse e) =>
               e.choices?.first.delta?.content?.contains('Actual response') ??
-              false),
-          true);
+              false,
+        ),
+        true,
+      );
       expect(
-          events.any((CreateChatCompletionStreamResponse e) =>
+        events.any(
+          (CreateChatCompletionStreamResponse e) =>
               e.choices?.first.delta?.content?.contains('Internal thoughts') ??
-              false),
-          false);
+              false,
+        ),
+        false,
+      );
     });
 
     test('should handle tool messages correctly', () async {
@@ -672,11 +745,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -725,11 +802,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -769,11 +850,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -813,11 +898,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -853,7 +942,8 @@ void main() {
           content: ChatCompletionUserMessageContent.parts([
             ChatCompletionMessageContentPart.text(text: ''),
             ChatCompletionMessageContentPart.text(
-                text: '  '), // Only whitespace
+              text: '  ',
+            ), // Only whitespace
             ChatCompletionMessageContentPart.text(text: 'Valid text'),
           ]),
         ),
@@ -861,11 +951,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -915,11 +1009,15 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('invalid json\n{"done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('invalid json\n{"done": true}')),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -946,8 +1044,11 @@ void main() {
       var attemptCount = 0;
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer((_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(utf8.encode('{"response": "test", "done": true}')),
+        ),
+      );
 
       when(() => mockHttpClient.send(any())).thenAnswer((_) async {
         attemptCount++;
@@ -1055,13 +1156,19 @@ void main() {
       final mockResponse = MockStreamedResponse();
       // Model not found should return 404
       when(() => mockResponse.statusCode).thenReturn(404);
-      when(() =>
-          mockResponse
-              .stream).thenAnswer((_) => http.ByteStream(Stream.value(utf8.encode(
-          '{"error": "model \'missing-model\' not found, try pulling it first"}'))));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.value(
+            utf8.encode(
+              '{"error": "model \'missing-model\' not found, try pulling it first"}',
+            ),
+          ),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1108,11 +1215,13 @@ void main() {
 
       // Stream that sends tool call in multiple chunks
       final streamController = StreamController<List<int>>();
-      when(() => mockResponse.stream)
-          .thenAnswer((_) => http.ByteStream(streamController.stream));
+      when(
+        () => mockResponse.stream,
+      ).thenAnswer((_) => http.ByteStream(streamController.stream));
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1143,7 +1252,9 @@ void main() {
 
       // Send tool call response
       streamController
-        ..add(utf8.encode('${jsonEncode({
+        ..add(
+          utf8.encode(
+            '${jsonEncode({
               'message': {
                 'tool_calls': [
                   {
@@ -1156,12 +1267,17 @@ void main() {
                 ],
               },
               'done': false,
-            })}\n'))
-
+            })}\n',
+          ),
+        )
         // Send completion
-        ..add(utf8.encode('${jsonEncode({
+        ..add(
+          utf8.encode(
+            '${jsonEncode({
               'done': true,
-            })}\n'));
+            })}\n',
+          ),
+        );
 
       await streamController.close();
 
@@ -1181,7 +1297,10 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
       when(() => mockResponse.stream).thenAnswer(
-          (_) => http.ByteStream(Stream.value(utf8.encode(jsonEncode({
+        (_) => http.ByteStream(
+          Stream.value(
+            utf8.encode(
+              jsonEncode({
                 'message': {
                   'tool_calls': [
                     {
@@ -1195,10 +1314,15 @@ void main() {
                   ],
                 },
                 'done': true,
-              })))));
+              }),
+            ),
+          ),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1241,7 +1365,10 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
       when(() => mockResponse.stream).thenAnswer(
-          (_) => http.ByteStream(Stream.value(utf8.encode(jsonEncode({
+        (_) => http.ByteStream(
+          Stream.value(
+            utf8.encode(
+              jsonEncode({
                 'message': {
                   'tool_calls': [
                     {
@@ -1254,10 +1381,15 @@ void main() {
                   ],
                 },
                 'done': true,
-              })))));
+              }),
+            ),
+          ),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1290,44 +1422,55 @@ void main() {
       expect(toolCall?.id, startsWith('tool-'));
     });
 
-    test('should throw exception on non-200 status with generic error',
-        () async {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
-      ];
+    test(
+      'should throw exception on non-200 status with generic error',
+      () async {
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Hello'),
+          ),
+        ];
 
-      final mockResponse = MockStreamedResponse();
-      when(() => mockResponse.statusCode).thenReturn(500);
-      when(() => mockResponse.stream).thenAnswer((_) =>
-          http.ByteStream(Stream.value(utf8.encode('Internal server error'))));
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(500);
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(utf8.encode('Internal server error')),
+          ),
+        );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'test-provider',
-        name: 'Test',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime.now(),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
 
-      final stream = repository.generateTextWithMessages(
-        messages: messages,
-        model: 'test-model',
-        temperature: 0.7,
-        provider: provider,
-      );
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: 'test-model',
+          temperature: 0.7,
+          provider: provider,
+        );
 
-      expect(
-        stream.toList(),
-        throwsA(predicate((e) =>
-            e is Exception && e.toString().contains('failed with status 500'))),
-      );
-    });
+        expect(
+          stream.toList(),
+          throwsA(
+            predicate(
+              (e) =>
+                  e is Exception &&
+                  e.toString().contains('failed with status 500'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('should handle malformed JSON in stream gracefully', () async {
       final messages = [
@@ -1339,14 +1482,18 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
       // Return malformed JSON followed by valid JSON
-      when(() => mockResponse.stream)
-          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
-                utf8.encode('not valid json\n'),
-                utf8.encode('{"message":{"content":"test"},"done":true}\n'),
-              ])));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('not valid json\n'),
+            utf8.encode('{"message":{"content":"test"},"done":true}\n'),
+          ]),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1379,15 +1526,19 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
       // Return empty lines mixed with valid JSON
-      when(() => mockResponse.stream)
-          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
-                utf8.encode('\n'),
-                utf8.encode('   \n'),
-                utf8.encode('{"message":{"content":"test"},"done":true}\n'),
-              ])));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('\n'),
+            utf8.encode('   \n'),
+            utf8.encode('{"message":{"content":"test"},"done":true}\n'),
+          ]),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1418,17 +1569,23 @@ void main() {
 
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream)
-          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
-                // Thinking content should be skipped
-                utf8.encode(
-                    '{"message":{"thinking":"processing..."},"done":false}\n'),
-                utf8.encode(
-                    '{"message":{"content":"final response"},"done":true}\n'),
-              ])));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            // Thinking content should be skipped
+            utf8.encode(
+              '{"message":{"thinking":"processing..."},"done":false}\n',
+            ),
+            utf8.encode(
+              '{"message":{"content":"final response"},"done":true}\n',
+            ),
+          ]),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final provider = AiConfigInferenceProvider(
         id: 'test-provider',
@@ -1456,14 +1613,18 @@ void main() {
     test('should handle malformed progress JSON during install', () async {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream)
-          .thenAnswer((_) => http.ByteStream(Stream.fromIterable([
-                utf8.encode('not valid json\n'),
-                utf8.encode('{"status":"success"}\n'),
-              ])));
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode('not valid json\n'),
+            utf8.encode('{"status":"success"}\n'),
+          ]),
+        ),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       final progressList = <OllamaPullProgress>[];
 
@@ -1479,10 +1640,12 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(500);
       when(() => mockResponse.stream).thenAnswer(
-          (_) => http.ByteStream(Stream.value(utf8.encode('Server error'))));
+        (_) => http.ByteStream(Stream.value(utf8.encode('Server error'))),
+      );
 
-      when(() => mockHttpClient.send(any()))
-          .thenAnswer((_) async => mockResponse);
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
 
       expect(
         () => repository

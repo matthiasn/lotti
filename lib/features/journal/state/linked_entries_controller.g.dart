@@ -14,16 +14,16 @@ final linkedEntriesControllerProvider = LinkedEntriesControllerFamily._();
 
 final class LinkedEntriesControllerProvider
     extends $AsyncNotifierProvider<LinkedEntriesController, List<EntryLink>> {
-  LinkedEntriesControllerProvider._(
-      {required LinkedEntriesControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'linkedEntriesControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  LinkedEntriesControllerProvider._({
+    required LinkedEntriesControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'linkedEntriesControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$linkedEntriesControllerHash();
@@ -57,23 +57,22 @@ String _$linkedEntriesControllerHash() =>
 final class LinkedEntriesControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            LinkedEntriesController,
-            AsyncValue<List<EntryLink>>,
-            List<EntryLink>,
-            FutureOr<List<EntryLink>>,
-            String> {
+          LinkedEntriesController,
+          AsyncValue<List<EntryLink>>,
+          List<EntryLink>,
+          FutureOr<List<EntryLink>>,
+          String
+        > {
   LinkedEntriesControllerFamily._()
-      : super(
-          retry: null,
-          name: r'linkedEntriesControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'linkedEntriesControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  LinkedEntriesControllerProvider call({
-    required String id,
-  }) =>
+  LinkedEntriesControllerProvider call({required String id}) =>
       LinkedEntriesControllerProvider._(argument: id, from: this);
 
   @override
@@ -85,23 +84,20 @@ abstract class _$LinkedEntriesController
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  FutureOr<List<EntryLink>> build({
-    required String id,
-  });
+  FutureOr<List<EntryLink>> build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<List<EntryLink>>, List<EntryLink>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<EntryLink>>, List<EntryLink>>,
-        AsyncValue<List<EntryLink>>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<EntryLink>>, List<EntryLink>>,
+              AsyncValue<List<EntryLink>>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -110,16 +106,16 @@ final includeHiddenControllerProvider = IncludeHiddenControllerFamily._();
 
 final class IncludeHiddenControllerProvider
     extends $NotifierProvider<IncludeHiddenController, bool> {
-  IncludeHiddenControllerProvider._(
-      {required IncludeHiddenControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'includeHiddenControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  IncludeHiddenControllerProvider._({
+    required IncludeHiddenControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'includeHiddenControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$includeHiddenControllerHash();
@@ -160,20 +156,23 @@ String _$includeHiddenControllerHash() =>
 
 final class IncludeHiddenControllerFamily extends $Family
     with
-        $ClassFamilyOverride<IncludeHiddenController, bool, bool, bool,
-            String> {
+        $ClassFamilyOverride<
+          IncludeHiddenController,
+          bool,
+          bool,
+          bool,
+          String
+        > {
   IncludeHiddenControllerFamily._()
-      : super(
-          retry: null,
-          name: r'includeHiddenControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'includeHiddenControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  IncludeHiddenControllerProvider call({
-    required String id,
-  }) =>
+  IncludeHiddenControllerProvider call({required String id}) =>
       IncludeHiddenControllerProvider._(argument: id, from: this);
 
   @override
@@ -184,20 +183,20 @@ abstract class _$IncludeHiddenController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  bool build({
-    required String id,
-  });
+  bool build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<bool, bool>, bool, Object?, Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -206,16 +205,16 @@ final includeAiEntriesControllerProvider = IncludeAiEntriesControllerFamily._();
 
 final class IncludeAiEntriesControllerProvider
     extends $NotifierProvider<IncludeAiEntriesController, bool> {
-  IncludeAiEntriesControllerProvider._(
-      {required IncludeAiEntriesControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'includeAiEntriesControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  IncludeAiEntriesControllerProvider._({
+    required IncludeAiEntriesControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'includeAiEntriesControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$includeAiEntriesControllerHash();
@@ -256,20 +255,23 @@ String _$includeAiEntriesControllerHash() =>
 
 final class IncludeAiEntriesControllerFamily extends $Family
     with
-        $ClassFamilyOverride<IncludeAiEntriesController, bool, bool, bool,
-            String> {
+        $ClassFamilyOverride<
+          IncludeAiEntriesController,
+          bool,
+          bool,
+          bool,
+          String
+        > {
   IncludeAiEntriesControllerFamily._()
-      : super(
-          retry: null,
-          name: r'includeAiEntriesControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'includeAiEntriesControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  IncludeAiEntriesControllerProvider call({
-    required String id,
-  }) =>
+  IncludeAiEntriesControllerProvider call({required String id}) =>
       IncludeAiEntriesControllerProvider._(argument: id, from: this);
 
   @override
@@ -280,20 +282,20 @@ abstract class _$IncludeAiEntriesController extends $Notifier<bool> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  bool build({
-    required String id,
-  });
+  bool build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<bool, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<bool, bool>, bool, Object?, Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -302,16 +304,16 @@ final newestLinkedIdControllerProvider = NewestLinkedIdControllerFamily._();
 
 final class NewestLinkedIdControllerProvider
     extends $AsyncNotifierProvider<NewestLinkedIdController, String?> {
-  NewestLinkedIdControllerProvider._(
-      {required NewestLinkedIdControllerFamily super.from,
-      required String? super.argument})
-      : super(
-          retry: null,
-          name: r'newestLinkedIdControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  NewestLinkedIdControllerProvider._({
+    required NewestLinkedIdControllerFamily super.from,
+    required String? super.argument,
+  }) : super(
+         retry: null,
+         name: r'newestLinkedIdControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$newestLinkedIdControllerHash();
@@ -344,20 +346,23 @@ String _$newestLinkedIdControllerHash() =>
 
 final class NewestLinkedIdControllerFamily extends $Family
     with
-        $ClassFamilyOverride<NewestLinkedIdController, AsyncValue<String?>,
-            String?, FutureOr<String?>, String?> {
+        $ClassFamilyOverride<
+          NewestLinkedIdController,
+          AsyncValue<String?>,
+          String?,
+          FutureOr<String?>,
+          String?
+        > {
   NewestLinkedIdControllerFamily._()
-      : super(
-          retry: null,
-          name: r'newestLinkedIdControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'newestLinkedIdControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  NewestLinkedIdControllerProvider call({
-    required String? id,
-  }) =>
+  NewestLinkedIdControllerProvider call({required String? id}) =>
       NewestLinkedIdControllerProvider._(argument: id, from: this);
 
   @override
@@ -368,23 +373,20 @@ abstract class _$NewestLinkedIdController extends $AsyncNotifier<String?> {
   late final _$args = ref.$arg as String?;
   String? get id => _$args;
 
-  FutureOr<String?> build({
-    required String? id,
-  });
+  FutureOr<String?> build({required String? id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<String?>, String?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<String?>, String?>,
-        AsyncValue<String?>,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<String?>, String?>,
+              AsyncValue<String?>,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }
 
@@ -404,25 +406,29 @@ final resolvedOutgoingLinkedEntriesProvider =
 /// filter/process the resolved entities without needing to watch individual
 /// entryControllerProviders in loops.
 
-final class ResolvedOutgoingLinkedEntriesProvider extends $FunctionalProvider<
-    List<JournalEntity>,
-    List<JournalEntity>,
-    List<JournalEntity>> with $Provider<List<JournalEntity>> {
+final class ResolvedOutgoingLinkedEntriesProvider
+    extends
+        $FunctionalProvider<
+          List<JournalEntity>,
+          List<JournalEntity>,
+          List<JournalEntity>
+        >
+    with $Provider<List<JournalEntity>> {
   /// Provider that resolves outgoing entry links to their actual JournalEntity objects.
   ///
   /// This centralizes the resolution logic so that downstream providers can
   /// filter/process the resolved entities without needing to watch individual
   /// entryControllerProviders in loops.
-  ResolvedOutgoingLinkedEntriesProvider._(
-      {required ResolvedOutgoingLinkedEntriesFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'resolvedOutgoingLinkedEntriesProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ResolvedOutgoingLinkedEntriesProvider._({
+    required ResolvedOutgoingLinkedEntriesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'resolvedOutgoingLinkedEntriesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$resolvedOutgoingLinkedEntriesHash();
@@ -437,16 +443,13 @@ final class ResolvedOutgoingLinkedEntriesProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<List<JournalEntity>> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   List<JournalEntity> create(Ref ref) {
     final argument = this.argument as String;
-    return resolvedOutgoingLinkedEntries(
-      ref,
-      argument,
-    );
+    return resolvedOutgoingLinkedEntries(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -481,13 +484,13 @@ String _$resolvedOutgoingLinkedEntriesHash() =>
 final class ResolvedOutgoingLinkedEntriesFamily extends $Family
     with $FunctionalFamilyOverride<List<JournalEntity>, String> {
   ResolvedOutgoingLinkedEntriesFamily._()
-      : super(
-          retry: null,
-          name: r'resolvedOutgoingLinkedEntriesProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'resolvedOutgoingLinkedEntriesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provider that resolves outgoing entry links to their actual JournalEntity objects.
   ///
@@ -495,9 +498,7 @@ final class ResolvedOutgoingLinkedEntriesFamily extends $Family
   /// filter/process the resolved entities without needing to watch individual
   /// entryControllerProviders in loops.
 
-  ResolvedOutgoingLinkedEntriesProvider call(
-    String id,
-  ) =>
+  ResolvedOutgoingLinkedEntriesProvider call(String id) =>
       ResolvedOutgoingLinkedEntriesProvider._(argument: id, from: this);
 
   @override
@@ -518,21 +519,22 @@ final hasNonTaskLinkedEntriesProvider = HasNonTaskLinkedEntriesFamily._();
 /// section when hideTaskEntries is true.
 
 final class HasNonTaskLinkedEntriesProvider
-    extends $FunctionalProvider<bool, bool, bool> with $Provider<bool> {
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
   /// Provider that checks if there are any non-Task entries in the linked entries.
   ///
   /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
   /// section when hideTaskEntries is true.
-  HasNonTaskLinkedEntriesProvider._(
-      {required HasNonTaskLinkedEntriesFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'hasNonTaskLinkedEntriesProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  HasNonTaskLinkedEntriesProvider._({
+    required HasNonTaskLinkedEntriesFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'hasNonTaskLinkedEntriesProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$hasNonTaskLinkedEntriesHash();
@@ -552,10 +554,7 @@ final class HasNonTaskLinkedEntriesProvider
   @override
   bool create(Ref ref) {
     final argument = this.argument as String;
-    return hasNonTaskLinkedEntries(
-      ref,
-      argument,
-    );
+    return hasNonTaskLinkedEntries(ref, argument);
   }
 
   /// {@macro riverpod.override_with_value}
@@ -589,22 +588,20 @@ String _$hasNonTaskLinkedEntriesHash() =>
 final class HasNonTaskLinkedEntriesFamily extends $Family
     with $FunctionalFamilyOverride<bool, String> {
   HasNonTaskLinkedEntriesFamily._()
-      : super(
-          retry: null,
-          name: r'hasNonTaskLinkedEntriesProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'hasNonTaskLinkedEntriesProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provider that checks if there are any non-Task entries in the linked entries.
   ///
   /// Used by LinkedEntriesWidget to determine whether to show the "Linked Entries"
   /// section when hideTaskEntries is true.
 
-  HasNonTaskLinkedEntriesProvider call(
-    String id,
-  ) =>
+  HasNonTaskLinkedEntriesProvider call(String id) =>
       HasNonTaskLinkedEntriesProvider._(argument: id, from: this);
 
   @override

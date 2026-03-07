@@ -53,8 +53,9 @@ void main() {
 
             // Geohash should only contain valid base32 characters
             expect(
-              RegExp(r'^[0-9bcdefghjkmnpqrstuvwxyz]+$')
-                  .hasMatch(result.geohashString),
+              RegExp(
+                r'^[0-9bcdefghjkmnpqrstuvwxyz]+$',
+              ).hasMatch(result.geohashString),
               isTrue,
             );
           }

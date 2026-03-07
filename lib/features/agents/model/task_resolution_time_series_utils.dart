@@ -56,8 +56,9 @@ DailyResolutionBucket _bucketFromEntries(
 ) {
   var totalMs = 0;
   for (final entry in entries) {
-    totalMs +=
-        entry.resolvedAt!.difference(entry.agentCreatedAt).inMilliseconds;
+    totalMs += entry.resolvedAt!
+        .difference(entry.agentCreatedAt)
+        .inMilliseconds;
   }
   final avgMttr = Duration(milliseconds: totalMs ~/ entries.length);
 

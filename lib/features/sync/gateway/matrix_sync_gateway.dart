@@ -16,8 +16,10 @@ abstract class MatrixSyncGateway {
   Future<void> connect(MatrixConfig config);
 
   /// Performs an interactive login using the provided configuration.
-  Future<LoginResponse?> login(MatrixConfig config,
-      {String? deviceDisplayName});
+  Future<LoginResponse?> login(
+    MatrixConfig config, {
+    String? deviceDisplayName,
+  });
 
   /// Logs the current session out of the homeserver.
   Future<void> logout();
@@ -26,8 +28,10 @@ abstract class MatrixSyncGateway {
   Stream<LoginState> get loginStateChanges;
 
   /// Creates a new encrypted private room.
-  Future<String> createRoom(
-      {required String name, List<String>? inviteUserIds});
+  Future<String> createRoom({
+    required String name,
+    List<String>? inviteUserIds,
+  });
 
   /// Joins the room with the given ID.
   Future<void> joinRoom(String roomId);

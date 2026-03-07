@@ -107,8 +107,10 @@ class WhatsNewController extends _$WhatsNewController {
   /// Compares semantic version strings like "0.9.804" vs "0.9.802".
   bool _isNewerVersion(String releaseVersion, String installedVersion) {
     final releaseParts = releaseVersion.split('.').map(int.tryParse).toList();
-    final installedParts =
-        installedVersion.split('.').map(int.tryParse).toList();
+    final installedParts = installedVersion
+        .split('.')
+        .map(int.tryParse)
+        .toList();
 
     // Compare each part of the version
     for (var i = 0; i < releaseParts.length && i < installedParts.length; i++) {

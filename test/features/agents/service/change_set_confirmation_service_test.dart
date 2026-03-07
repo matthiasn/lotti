@@ -43,7 +43,8 @@ void main() {
     List<ChangeItem>? items,
   }) {
     return makeTestChangeSet(
-      items: items ??
+      items:
+          items ??
           const [
             ChangeItem(
               toolName: 'update_task_estimate',
@@ -297,8 +298,11 @@ void main() {
         ).thenAnswer((_) async {});
 
         await withClock(testClock, () async {
-          final applied =
-              await service.rejectItem(changeSet, 0, reason: 'Not needed');
+          final applied = await service.rejectItem(
+            changeSet,
+            0,
+            reason: 'Not needed',
+          );
 
           expect(applied, isTrue);
 

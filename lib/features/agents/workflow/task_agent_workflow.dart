@@ -183,8 +183,9 @@ class TaskAgentWorkflow {
     );
 
     // 2. Build task context from journal domain.
-    final taskDetailsJson =
-        await aiInputRepository.buildTaskDetailsJson(id: taskId);
+    final taskDetailsJson = await aiInputRepository.buildTaskDetailsJson(
+      id: taskId,
+    );
     final linkedTasksJson = await _buildLinkedTasksContextJson(taskId);
 
     if (taskDetailsJson == null) {
@@ -425,7 +426,8 @@ class TaskAgentWorkflow {
         String reportContent,
         String taskId,
         String? previousReportId,
-      })? reportToEmbed;
+      })?
+      reportToEmbed;
 
       await syncService.runInTransaction(() async {
         // 8. Persist the final assistant response as a thought message.
@@ -1237,8 +1239,8 @@ and never shown to the user. They persist as your memory across wakes.''';
 
         row['taskAgentId'] = linkedReport.agentId;
         row['latestTaskAgentReport'] = linkedReport.content;
-        row['latestTaskAgentReportCreatedAt'] =
-            linkedReport.createdAt.toIso8601String();
+        row['latestTaskAgentReportCreatedAt'] = linkedReport.createdAt
+            .toIso8601String();
       }
 
       return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
@@ -1307,8 +1309,10 @@ and never shown to the user. They persist as your memory across wakes.''';
   Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
     List<AgentMessageEntity> observations,
   ) async {
-    final payloadIds =
-        observations.map((o) => o.contentEntryId).whereType<String>().toSet();
+    final payloadIds = observations
+        .map((o) => o.contentEntryId)
+        .whereType<String>()
+        .toSet();
 
     final entries = await Future.wait(
       payloadIds.map((id) async {
@@ -1350,8 +1354,9 @@ and never shown to the user. They persist as your memory across wakes.''';
     final excellence = <(DateTime, String)>[];
 
     for (final obs in observations) {
-      final payload =
-          obs.contentEntryId != null ? payloads[obs.contentEntryId] : null;
+      final payload = obs.contentEntryId != null
+          ? payloads[obs.contentEntryId]
+          : null;
       if (payload == null) continue;
 
       final rawPriority = payload.content['priority'];
@@ -1424,10 +1429,9 @@ and never shown to the user. They persist as your memory across wakes.''';
     // Walk backwards through messages to find the last assistant message
     // with text content (not a tool-call-only message).
     for (final message in manager.messages.reversed) {
-      if (message
-          case ChatCompletionMessage(
-            role: ChatCompletionMessageRole.assistant
-          )) {
+      if (message case ChatCompletionMessage(
+        role: ChatCompletionMessageRole.assistant,
+      )) {
         final content = message.mapOrNull(
           assistant: (m) => m.content,
         );

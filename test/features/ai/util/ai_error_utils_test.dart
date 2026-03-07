@@ -78,8 +78,10 @@ void main() {
     test('test helpers expose dynamic fields', () {
       final errorWithMessage = TestErrorWithMessage(message: 'message');
       final errorWithBody = TestErrorWithBody(body: {'key': 'value'});
-      final errorWithBodyAndMessage =
-          TestErrorWithBodyAndMessage(body: 'body', message: 'message');
+      final errorWithBodyAndMessage = TestErrorWithBodyAndMessage(
+        body: 'body',
+        message: 'message',
+      );
 
       expect(errorWithMessage.message, 'message');
       expect(errorWithBody.body, {'key': 'value'});
@@ -102,7 +104,9 @@ void main() {
 
         expect(result.type, InferenceErrorType.networkConnection);
         expect(
-            result.message, contains('Unable to resolve the server address'));
+          result.message,
+          contains('Unable to resolve the server address'),
+        );
       });
 
       test('categorizes "Connection refused" as network connection error', () {
@@ -151,7 +155,9 @@ void main() {
 
         expect(result.type, InferenceErrorType.serverError);
         expect(
-            result.message, contains('The AI service is experiencing issues'));
+          result.message,
+          contains('The AI service is experiencing issues'),
+        );
       });
 
       test('categorizes 502 errors as server errors', () {
@@ -160,7 +166,9 @@ void main() {
 
         expect(result.type, InferenceErrorType.serverError);
         expect(
-            result.message, contains('The AI service is experiencing issues'));
+          result.message,
+          contains('The AI service is experiencing issues'),
+        );
       });
 
       test('categorizes 503 errors as server errors', () {
@@ -169,7 +177,9 @@ void main() {
 
         expect(result.type, InferenceErrorType.serverError);
         expect(
-            result.message, contains('The AI service is experiencing issues'));
+          result.message,
+          contains('The AI service is experiencing issues'),
+        );
       });
 
       test('categorizes unknown errors correctly', () {
@@ -199,8 +209,10 @@ void main() {
       test('preserves stack trace when provided', () {
         const error = 'Test error';
         final stackTrace = StackTrace.current;
-        final result =
-            AiErrorUtils.categorizeError(error, stackTrace: stackTrace);
+        final result = AiErrorUtils.categorizeError(
+          error,
+          stackTrace: stackTrace,
+        );
 
         expect(result.stackTrace, stackTrace);
       });
@@ -266,13 +278,17 @@ OpenAIClientException({
         final result2 = AiErrorUtils.categorizeError(noAddressError);
         expect(result2.type, InferenceErrorType.networkConnection);
         expect(
-            result2.message, contains('Unable to resolve the server address'));
+          result2.message,
+          contains('Unable to resolve the server address'),
+        );
 
         const genericNetworkError = 'SocketException: Network error';
         final result3 = AiErrorUtils.categorizeError(genericNetworkError);
         expect(result3.type, InferenceErrorType.networkConnection);
         expect(
-            result3.message, contains('Unable to connect to the AI service'));
+          result3.message,
+          contains('Unable to connect to the AI service'),
+        );
       });
 
       test('handles OpenAI API errors with different runtime types', () {
@@ -282,8 +298,10 @@ OpenAIClientException({
         expect(result1.type, InferenceErrorType.authentication);
 
         // Mock error with RequestException runtime type
-        final requestError =
-            _MockRequestException('429', 'Rate limit exceeded');
+        final requestError = _MockRequestException(
+          '429',
+          'Rate limit exceeded',
+        );
         final result2 = AiErrorUtils.categorizeError(requestError);
         expect(result2.type, InferenceErrorType.rateLimit);
       });
@@ -316,7 +334,7 @@ OpenAIClientException({
         final testCases = [
           (
             const SocketException('Network error'),
-            InferenceErrorType.networkConnection
+            InferenceErrorType.networkConnection,
           ),
           ('TimeoutException', InferenceErrorType.timeout),
           ('401 Unauthorized', InferenceErrorType.authentication),
@@ -338,9 +356,9 @@ OpenAIClientException({
         final notFoundError = _MockOpenAIError('404', 'Not Found');
         final result1 = AiErrorUtils.categorizeError(notFoundError);
         expect(
-            result1.type,
-            InferenceErrorType
-                .invalidRequest); // 404 errors are categorized as invalidRequest
+          result1.type,
+          InferenceErrorType.invalidRequest,
+        ); // 404 errors are categorized as invalidRequest
         expect(result1.message, contains('Not Found'));
 
         // Test 500 server error through API error handler
@@ -402,8 +420,9 @@ OpenAIClientException({
 
     group('extractDetailedErrorMessage', () {
       test('extracts detail from error.body.detail where body is a Map', () {
-        final error =
-            TestErrorWithBody(body: {'detail': 'Detailed error from map body'});
+        final error = TestErrorWithBody(
+          body: {'detail': 'Detailed error from map body'},
+        );
         expect(
           AiErrorUtils.extractDetailedErrorMessage(error),
           equals('Detailed error from map body'),
@@ -411,14 +430,15 @@ OpenAIClientException({
       });
 
       test(
-          'extracts detail from error.body.detail where detail is not a string',
-          () {
-        final error = TestErrorWithBody(body: {'detail': 12345});
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(error),
-          equals('12345'), // Should be stringified
-        );
-      });
+        'extracts detail from error.body.detail where detail is not a string',
+        () {
+          final error = TestErrorWithBody(body: {'detail': 12345});
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(error),
+            equals('12345'), // Should be stringified
+          );
+        },
+      );
 
       test('extracts detail from error.body where body is a JSON string', () {
         final error = TestErrorWithBody(
@@ -456,14 +476,16 @@ OpenAIClientException({
         );
       });
 
-      test('extracts message from error.message if body.detail is not present',
-          () {
-        final error = TestErrorWithMessage(message: 'Error message property');
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(error),
-          equals('Error message property'),
-        );
-      });
+      test(
+        'extracts message from error.message if body.detail is not present',
+        () {
+          final error = TestErrorWithMessage(message: 'Error message property');
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(error),
+            equals('Error message property'),
+          );
+        },
+      );
 
       test('uses error.toString() if no body.detail or message is present', () {
         final error = CustomError('Custom info for toString');
@@ -474,68 +496,74 @@ OpenAIClientException({
       });
 
       test(
-          'uses defaultMessage if provided and no specific field is found on error, but error.toString() is still preferred if error is not null',
-          () {
-        final error = CustomError('Custom info for toString');
-        // If the error object itself is not null, its toString() representation will be used
-        // if no .body.detail or .message is found. The defaultMessage is a fallback for when error is null
-        // or when the extracted message ends up being empty or literally "null".
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            error,
-            defaultMessage: 'Provided default',
-          ),
-          equals(
-            'CustomError: Custom info for toString',
-          ), // error.toString() is preferred over defaultMessage here
-        );
+        'uses defaultMessage if provided and no specific field is found on error, but error.toString() is still preferred if error is not null',
+        () {
+          final error = CustomError('Custom info for toString');
+          // If the error object itself is not null, its toString() representation will be used
+          // if no .body.detail or .message is found. The defaultMessage is a fallback for when error is null
+          // or when the extracted message ends up being empty or literally "null".
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              error,
+              defaultMessage: 'Provided default',
+            ),
+            equals(
+              'CustomError: Custom info for toString',
+            ), // error.toString() is preferred over defaultMessage here
+          );
 
-        // Test case where defaultMessage IS used because error itself might be problematic to stringify (e.g. null)
-        // This is covered by the 'handles null input for error gracefully using defaultMessage' test.
-        // Adding another scenario: if extracted detail/message is empty.
-        final errorWithEmptyDetail = TestErrorWithBody(body: {'detail': ''});
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorWithEmptyDetail,
-            defaultMessage: 'Used Default Because Extracted Was Empty',
-          ),
-          equals('Used Default Because Extracted Was Empty'),
-        );
-      });
-
-      test(
-          'handles error.body being a Map without a "detail" key (falls back to message or toString)',
-          () {
-        final error = TestErrorWithBody(body: {'other_key': 'some value'});
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(error),
-          equals(
-            'TestErrorWithBody: {other_key: some value}',
-          ), // Falls back to toString of error
-        );
-      });
+          // Test case where defaultMessage IS used because error itself might be problematic to stringify (e.g. null)
+          // This is covered by the 'handles null input for error gracefully using defaultMessage' test.
+          // Adding another scenario: if extracted detail/message is empty.
+          final errorWithEmptyDetail = TestErrorWithBody(body: {'detail': ''});
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorWithEmptyDetail,
+              defaultMessage: 'Used Default Because Extracted Was Empty',
+            ),
+            equals('Used Default Because Extracted Was Empty'),
+          );
+        },
+      );
 
       test(
-          'handles error.body being an unparsable JSON string (falls back to message or toString)',
-          () {
-        final error = TestErrorWithBody(body: 'not a json string');
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(error),
-          equals(
-            'TestErrorWithBody: not a json string',
-          ), // Falls back to toString of error
-        );
-      });
+        'handles error.body being a Map without a "detail" key (falls back to message or toString)',
+        () {
+          final error = TestErrorWithBody(body: {'other_key': 'some value'});
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(error),
+            equals(
+              'TestErrorWithBody: {other_key: some value}',
+            ), // Falls back to toString of error
+          );
+        },
+      );
 
-      test('handles error.body being null (falls back to message or toString)',
-          () {
-        final error = TestErrorWithBody();
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(error),
-          equals(
-              'TestErrorWithBody: No body'), // Falls back to toString of error
-        );
-      });
+      test(
+        'handles error.body being an unparsable JSON string (falls back to message or toString)',
+        () {
+          final error = TestErrorWithBody(body: 'not a json string');
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(error),
+            equals(
+              'TestErrorWithBody: not a json string',
+            ), // Falls back to toString of error
+          );
+        },
+      );
+
+      test(
+        'handles error.body being null (falls back to message or toString)',
+        () {
+          final error = TestErrorWithBody();
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(error),
+            equals(
+              'TestErrorWithBody: No body',
+            ), // Falls back to toString of error
+          );
+        },
+      );
 
       test('handles error.message being null (falls back to toString)', () {
         final error = TestErrorWithMessage();
@@ -548,31 +576,33 @@ OpenAIClientException({
       });
 
       test(
-          'handles empty string in body.detail, falls back to message or toString if logic allows (current is empty string)',
-          () {
-        final error = TestErrorWithBody(body: {'detail': ''});
-        // Current implementation will return empty string if detail is empty. Then trim check makes it use default/toString()
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            error,
-            defaultMessage: 'Fallback',
-          ),
-          equals('Fallback'),
-        );
-      });
+        'handles empty string in body.detail, falls back to message or toString if logic allows (current is empty string)',
+        () {
+          final error = TestErrorWithBody(body: {'detail': ''});
+          // Current implementation will return empty string if detail is empty. Then trim check makes it use default/toString()
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              error,
+              defaultMessage: 'Fallback',
+            ),
+            equals('Fallback'),
+          );
+        },
+      );
 
       test(
-          'handles empty string in error.message, falls back to toString if logic allows (current is empty string)',
-          () {
-        final error = TestErrorWithMessage(message: '');
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            error,
-            defaultMessage: 'Fallback',
-          ),
-          equals('Fallback'),
-        );
-      });
+        'handles empty string in error.message, falls back to toString if logic allows (current is empty string)',
+        () {
+          final error = TestErrorWithMessage(message: '');
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              error,
+              defaultMessage: 'Fallback',
+            ),
+            equals('Fallback'),
+          );
+        },
+      );
 
       test('handles input error being a simple string', () {
         const errorString = 'This is a simple string error';
@@ -599,8 +629,7 @@ OpenAIClientException({
         );
       });
 
-      test('prioritizes message over toString if body.detail is not present',
-          () {
+      test('prioritizes message over toString if body.detail is not present', () {
         final error = TestErrorWithMessage(message: 'Use this message');
         // toString() for TestErrorWithMessage would be 'TestErrorWithMessage: Use this message'
         expect(
@@ -619,8 +648,7 @@ OpenAIClientException({
         );
       });
 
-      test('handles null input for error gracefully when no defaultMessage',
-          () {
+      test('handles null input for error gracefully when no defaultMessage', () {
         // Expect the specific string returned by the utility for a null error without a default.
         expect(
           AiErrorUtils.extractDetailedErrorMessage(
@@ -631,94 +659,96 @@ OpenAIClientException({
       });
 
       test(
-          "if extracted message is literally 'null' or empty, uses defaultMessage or error.toString()",
-          () {
-        final errorWithNullDetail = TestErrorWithBody(
-          body: {'detail': null},
-        ); // detail field exists but is null
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorWithNullDetail,
-            defaultMessage: 'Fallback for null detail',
-          ),
-          equals(
-            'Fallback for null detail',
-          ), // 'detail' was accessed, was null, so extractedMessage became "null", then fallback
-        );
+        "if extracted message is literally 'null' or empty, uses defaultMessage or error.toString()",
+        () {
+          final errorWithNullDetail = TestErrorWithBody(
+            body: {'detail': null},
+          ); // detail field exists but is null
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorWithNullDetail,
+              defaultMessage: 'Fallback for null detail',
+            ),
+            equals(
+              'Fallback for null detail',
+            ), // 'detail' was accessed, was null, so extractedMessage became "null", then fallback
+          );
 
-        final errorWithEmptyDetailString =
-            TestErrorWithBody(body: {'detail': '  '}); // Whitespace only
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorWithEmptyDetailString,
-            defaultMessage: 'Fallback for empty detail',
-          ),
-          equals(
-            'Fallback for empty detail',
-          ), // 'detail' was accessed, was empty, then fallback
-        );
+          final errorWithEmptyDetailString = TestErrorWithBody(
+            body: {'detail': '  '},
+          ); // Whitespace only
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorWithEmptyDetailString,
+              defaultMessage: 'Fallback for empty detail',
+            ),
+            equals(
+              'Fallback for empty detail',
+            ), // 'detail' was accessed, was empty, then fallback
+          );
 
-        final errorWithMessageAsNull =
-            TestErrorWithMessage(); // message field exists but is effectively null by default
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorWithMessageAsNull,
-            defaultMessage: 'Fallback for null message',
-          ),
-          equals(
-            'Fallback for null message',
-          ), // 'message' was accessed, was null, so extractedMessage became "null", then fallback
-        );
+          final errorWithMessageAsNull =
+              TestErrorWithMessage(); // message field exists but is effectively null by default
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorWithMessageAsNull,
+              defaultMessage: 'Fallback for null message',
+            ),
+            equals(
+              'Fallback for null message',
+            ), // 'message' was accessed, was null, so extractedMessage became "null", then fallback
+          );
 
-        final errorWithEmptyMessageString = TestErrorWithMessage(
-          message: '  ',
-        ); // message field exists, is whitespace
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorWithEmptyMessageString,
-            defaultMessage: 'Fallback for empty message',
-          ),
-          equals(
-            'Fallback for empty message',
-          ), // 'message' was accessed, was empty, then fallback
-        );
+          final errorWithEmptyMessageString = TestErrorWithMessage(
+            message: '  ',
+          ); // message field exists, is whitespace
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorWithEmptyMessageString,
+              defaultMessage: 'Fallback for empty message',
+            ),
+            equals(
+              'Fallback for empty message',
+            ), // 'message' was accessed, was empty, then fallback
+          );
 
-        // Case: No specific field, error.toString() itself results in "null"
-        // This test simulates if error.toString() was literally the string "null"
-        final errorToStringIsNullLiteral =
-            TestErrorToStringReturnsLiteralNull();
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorToStringIsNullLiteral,
-            defaultMessage: 'Fallback for toString as literal null',
-          ),
-          equals('Fallback for toString as literal null'),
-        );
+          // Case: No specific field, error.toString() itself results in "null"
+          // This test simulates if error.toString() was literally the string "null"
+          final errorToStringIsNullLiteral =
+              TestErrorToStringReturnsLiteralNull();
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorToStringIsNullLiteral,
+              defaultMessage: 'Fallback for toString as literal null',
+            ),
+            equals('Fallback for toString as literal null'),
+          );
 
-        // Case: No specific field, error.toString() itself results in an empty string
-        final errorToStringIsEmptyLiteral = TestErrorToStringReturnsEmpty();
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorToStringIsEmptyLiteral,
-            defaultMessage: 'Fallback for toString as empty literal',
-          ),
-          equals('Fallback for toString as empty literal'),
-        );
+          // Case: No specific field, error.toString() itself results in an empty string
+          final errorToStringIsEmptyLiteral = TestErrorToStringReturnsEmpty();
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorToStringIsEmptyLiteral,
+              defaultMessage: 'Fallback for toString as empty literal',
+            ),
+            equals('Fallback for toString as empty literal'),
+          );
 
-        // Case: No specific field, error.toString() is a non-empty, non-"null" string that happens to contain "null"
-        final errorToStringContainsNull = CustomError(
-          'null',
-        ); // Simulates error.toString() returning "CustomError: null"
-        expect(
-          AiErrorUtils.extractDetailedErrorMessage(
-            errorToStringContainsNull,
-            defaultMessage: 'This default should not be used',
-          ),
-          equals(
-            'CustomError: null',
-          ), // Utility should return the actual toString() if it's not literally "null" or empty
-        );
-      });
+          // Case: No specific field, error.toString() is a non-empty, non-"null" string that happens to contain "null"
+          final errorToStringContainsNull = CustomError(
+            'null',
+          ); // Simulates error.toString() returning "CustomError: null"
+          expect(
+            AiErrorUtils.extractDetailedErrorMessage(
+              errorToStringContainsNull,
+              defaultMessage: 'This default should not be used',
+            ),
+            equals(
+              'CustomError: null',
+            ), // Utility should return the actual toString() if it's not literally "null" or empty
+          );
+        },
+      );
 
       test('handles error.body.message when detail is not present', () {
         final error = TestErrorWithBody(body: {'message': 'Message from body'});
@@ -822,18 +852,22 @@ OpenAIClientException({
         );
 
         // Detail is a list
-        final listDetail = TestErrorWithBody(body: {
-          'detail': ['error1', 'error2']
-        });
+        final listDetail = TestErrorWithBody(
+          body: {
+            'detail': ['error1', 'error2'],
+          },
+        );
         expect(
           AiErrorUtils.extractDetailedErrorMessage(listDetail),
           equals('[error1, error2]'),
         );
 
         // Detail is a nested map
-        final mapDetail = TestErrorWithBody(body: {
-          'detail': {'code': 'E123', 'msg': 'Error'}
-        });
+        final mapDetail = TestErrorWithBody(
+          body: {
+            'detail': {'code': 'E123', 'msg': 'Error'},
+          },
+        );
         expect(
           AiErrorUtils.extractDetailedErrorMessage(mapDetail),
           equals('{code: E123, msg: Error}'),

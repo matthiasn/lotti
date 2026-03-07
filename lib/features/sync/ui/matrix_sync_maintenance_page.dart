@@ -31,8 +31,9 @@ class MatrixSyncMaintenancePage extends StatelessWidget {
               onTap: () async {
                 final confirmed = await showConfirmationModal(
                   context: context,
-                  message: context.messages
-                      .maintenanceDeleteDatabaseQuestion('Sync'),
+                  message: context.messages.maintenanceDeleteDatabaseQuestion(
+                    'Sync',
+                  ),
                   confirmLabel:
                       context.messages.maintenanceDeleteDatabaseConfirm,
                 );

@@ -25,13 +25,14 @@ void main() {
 
     registerFallbackValue(
       AiConfig.inferenceProvider(
-        id: 'p-fallback',
-        baseUrl: 'http://localhost',
-        apiKey: 'k',
-        name: 'fallback',
-        createdAt: DateTime.now(),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ) as AiConfigInferenceProvider,
+            id: 'p-fallback',
+            baseUrl: 'http://localhost',
+            apiKey: 'k',
+            name: 'fallback',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.gemini,
+          )
+          as AiConfigInferenceProvider,
     );
   });
 
@@ -677,8 +678,9 @@ void main() {
             choices: [
               ChatCompletionStreamResponseChoice(
                 index: 0,
-                delta:
-                    ChatCompletionStreamResponseDelta(content: 'mistral batch'),
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'mistral batch',
+                ),
               ),
             ],
           ),

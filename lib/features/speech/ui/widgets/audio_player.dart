@@ -130,8 +130,10 @@ class _PlayerBody extends StatelessWidget {
     final progress = isActive ? state.progress : Duration.zero;
     final buffered = isActive ? state.buffered : Duration.zero;
     final progressRatio = totalDuration.inMilliseconds > 0
-        ? (progress.inMilliseconds / totalDuration.inMilliseconds)
-            .clamp(0.0, 1.0)
+        ? (progress.inMilliseconds / totalDuration.inMilliseconds).clamp(
+            0.0,
+            1.0,
+          )
         : 0.0;
     final isPlaying = isActive && state.status == AudioPlayerStatus.playing;
 
@@ -280,7 +282,7 @@ class _WaveformArea extends ConsumerWidget {
             );
           },
           loading: () => progressBar,
-          error: (_, __) => progressBar,
+          error: (_, _) => progressBar,
         );
       },
     );
@@ -374,8 +376,9 @@ class _PlayButton extends StatelessWidget {
               painter: _PlayButtonRingPainter(
                 progress: isActive ? value : 0,
                 color: scheme.primary,
-                backgroundColor:
-                    scheme.surfaceContainerHighest.withValues(alpha: 0.28),
+                backgroundColor: scheme.surfaceContainerHighest.withValues(
+                  alpha: 0.28,
+                ),
                 glowColor: isDark
                     ? Colors.transparent
                     : scheme.primary.withValues(alpha: 0.28),
@@ -431,9 +434,9 @@ class _SpeedButton extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: currentSpeed != 1 ? scheme.error : scheme.onSurfaceVariant,
-            ),
+          fontWeight: FontWeight.w600,
+          color: currentSpeed != 1 ? scheme.error : scheme.onSurfaceVariant,
+        ),
       ),
     );
 

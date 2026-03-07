@@ -41,12 +41,11 @@ class JournalUpdateResult {
 
   factory JournalUpdateResult.skipped({
     required JournalUpdateSkipReason reason,
-  }) =>
-      JournalUpdateResult._(
-        applied: false,
-        skipReason: reason,
-        rowsWritten: 0,
-      );
+  }) => JournalUpdateResult._(
+    applied: false,
+    skipReason: reason,
+    rowsWritten: 0,
+  );
 
   /// True when the incoming entity was applied (insert or update).
   final bool applied;

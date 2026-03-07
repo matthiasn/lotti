@@ -88,9 +88,12 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
       return const SizedBox.shrink();
     }
 
-    final completedToday = results.isNotEmpty &&
-        {HabitCompletionType.success, HabitCompletionType.skip}
-            .contains(results.last.completionType);
+    final completedToday =
+        results.isNotEmpty &&
+        {
+          HabitCompletionType.success,
+          HabitCompletionType.skip,
+        }.contains(results.last.completionType);
 
     final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
 
@@ -143,8 +146,8 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                             width: days < 20
                                 ? 6
                                 : days < 40
-                                    ? 4
-                                    : 1,
+                                ? 4
+                                : 1,
                           )
                         : const SizedBox.shrink(),
                     results.map((res) {

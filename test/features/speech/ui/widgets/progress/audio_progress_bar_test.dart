@@ -132,22 +132,24 @@ void main() {
       );
     });
 
-    test('dark mode with near-black primary is lifted for thumb visibility',
-        () {
-      const darkPrimary = Color(0xFF050505);
-      final theme = ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: darkPrimary,
-          secondary: Colors.amber,
-        ),
-      );
+    test(
+      'dark mode with near-black primary is lifted for thumb visibility',
+      () {
+        const darkPrimary = Color(0xFF050505);
+        final theme = ThemeData(
+          colorScheme: const ColorScheme.dark(
+            primary: darkPrimary,
+            secondary: Colors.amber,
+          ),
+        );
 
-      final colors = resolveAudioProgressColors(theme);
+        final colors = resolveAudioProgressColors(theme);
 
-      expect(colors.progress, darkPrimary);
-      expect(colors.thumb, isNot(equals(darkPrimary)));
-      expect(colors.thumb.computeLuminance(), greaterThan(0.15));
-    });
+        expect(colors.progress, darkPrimary);
+        expect(colors.thumb, isNot(equals(darkPrimary)));
+        expect(colors.thumb.computeLuminance(), greaterThan(0.15));
+      },
+    );
   });
 
   group('AudioProgressBar widget', () {
@@ -222,8 +224,9 @@ void main() {
       expect(sizedBox.height, 36);
     });
 
-    testWidgets('displays correct progress and buffered values',
-        (WidgetTester tester) async {
+    testWidgets('displays correct progress and buffered values', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         progress: const Duration(seconds: 30),
@@ -250,8 +253,9 @@ void main() {
       expect(seekCalls.first.inSeconds, closeTo(50, 5));
     });
 
-    testWidgets('tapping at start seeks to beginning',
-        (WidgetTester tester) async {
+    testWidgets('tapping at start seeks to beginning', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         total: const Duration(seconds: 100),
@@ -267,8 +271,9 @@ void main() {
       expect(seekCalls.first.inSeconds, lessThan(5));
     });
 
-    testWidgets('tapping at end seeks to near total',
-        (WidgetTester tester) async {
+    testWidgets('tapping at end seeks to near total', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         total: const Duration(seconds: 100),
@@ -302,8 +307,9 @@ void main() {
       expect(seekCalls.length, 0);
     });
 
-    testWidgets('does not seek when total is zero',
-        (WidgetTester tester) async {
+    testWidgets('does not seek when total is zero', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         total: Duration.zero,
@@ -393,8 +399,9 @@ void main() {
       );
     });
 
-    testWidgets('clamps progress ratio between 0 and 1',
-        (WidgetTester tester) async {
+    testWidgets('clamps progress ratio between 0 and 1', (
+      WidgetTester tester,
+    ) async {
       // Progress exceeds total
       await pumpProgressBar(
         tester,
@@ -406,8 +413,9 @@ void main() {
       expect(find.byType(AudioProgressBar), findsOneWidget);
     });
 
-    testWidgets('clamps buffered ratio between 0 and 1',
-        (WidgetTester tester) async {
+    testWidgets('clamps buffered ratio between 0 and 1', (
+      WidgetTester tester,
+    ) async {
       // Buffered exceeds total
       await pumpProgressBar(
         tester,
@@ -448,8 +456,9 @@ void main() {
       }
     });
 
-    testWidgets('gesture detector not present when disabled',
-        (WidgetTester tester) async {
+    testWidgets('gesture detector not present when disabled', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         enabled: false,
@@ -463,8 +472,9 @@ void main() {
       expect(gestures, findsNothing);
     });
 
-    testWidgets('gesture detector not present when total is zero',
-        (WidgetTester tester) async {
+    testWidgets('gesture detector not present when total is zero', (
+      WidgetTester tester,
+    ) async {
       await pumpProgressBar(
         tester,
         total: Duration.zero,

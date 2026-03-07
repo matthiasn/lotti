@@ -135,8 +135,9 @@ class _UnifiedHeader extends StatelessWidget {
           onTap: isExpanded ? null : onToggleExpand,
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.cardPadding,
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 44),
               child: Row(
@@ -152,13 +153,13 @@ class _UnifiedHeader extends StatelessWidget {
                             ),
                           )
                         : isExpanded && isEditingTitle
-                            ? TitleTextField(
-                                initialValue: title,
-                                onSave: onTitleSave,
-                                resetToInitialValue: true,
-                                onCancel: onTitleCancel,
-                              )
-                            : _TitleText(title: title),
+                        ? TitleTextField(
+                            initialValue: title,
+                            onSave: onTitleSave,
+                            resetToInitialValue: true,
+                            onCancel: onTitleCancel,
+                          )
+                        : _TitleText(title: title),
                   ),
                   // Progress (visible in collapsed mode, hidden in expanded unless total > 0)
                   if (!isExpanded || totalCount == 0)

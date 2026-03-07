@@ -61,60 +61,62 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   Widget build(BuildContext context) {
     return StreamBuilder<List<T>>(
       stream: widget.stream,
-      builder: (
-        BuildContext context,
-        AsyncSnapshot<List<T>> snapshot,
-      ) {
-        final items = snapshot.data ?? [];
-        final filtered = items
-            .where(
-              (T item) => widget.getName(item).toLowerCase().contains(match),
-            )
-            .sortedBy(widget.getName)
-            .toList();
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<List<T>> snapshot,
+          ) {
+            final items = snapshot.data ?? [];
+            final filtered = items
+                .where(
+                  (T item) =>
+                      widget.getName(item).toLowerCase().contains(match),
+                )
+                .sortedBy(widget.getName)
+                .toList();
 
-        return Scaffold(
-          floatingActionButton: widget.floatingActionButton,
-          body: CustomScrollView(
-            slivers: <Widget>[
-              SettingsPageHeader(
-                title: widget.title,
-                showBackButton: true,
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 10,
+            return Scaffold(
+              floatingActionButton: widget.floatingActionButton,
+              body: CustomScrollView(
+                slivers: <Widget>[
+                  SettingsPageHeader(
+                    title: widget.title,
+                    showBackButton: true,
                   ),
-                  child: LottiSearchBar(
-                    controller: _searchController,
-                    hintText: context.messages.searchHint,
-                    onChanged: onQueryChanged,
-                    onClear: () => onQueryChanged(''),
-                  ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                  child: Column(
-                    children: List.generate(
-                      filtered.length,
-                      (int index) {
-                        return widget.definitionCard(
-                          index,
-                          filtered.elementAt(index),
-                        );
-                      },
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
+                      child: LottiSearchBar(
+                        controller: _searchController,
+                        hintText: context.messages.searchHint,
+                        onChanged: onQueryChanged,
+                        onClear: () => onQueryChanged(''),
+                      ),
                     ),
                   ),
-                ),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 5),
+                      child: Column(
+                        children: List.generate(
+                          filtered.length,
+                          (int index) {
+                            return widget.definitionCard(
+                              index,
+                              filtered.elementAt(index),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            );
+          },
     );
   }
 }

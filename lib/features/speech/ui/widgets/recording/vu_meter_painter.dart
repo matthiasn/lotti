@@ -50,8 +50,10 @@ class VuMeterPainter extends CustomPainter {
     _drawVuText(canvas, internalSize);
 
     // Needle pivot at bottom center of meter face - moved down slightly
-    const needlePivot =
-        Offset(internalWidth / 2, internalHeight * _needlePositionVertical);
+    const needlePivot = Offset(
+      internalWidth / 2,
+      internalHeight * _needlePositionVertical,
+    );
 
     // Draw peak indicator line
     if (peakValue > 0) {
@@ -77,8 +79,9 @@ class VuMeterPainter extends CustomPainter {
     final radius = size.width * 0.275; // Medium size arc
 
     // Get theme colors with better contrast
-    final mainColor =
-        isDarkMode ? colorScheme.primaryFixedDim : colorScheme.onSurface;
+    final mainColor = isDarkMode
+        ? colorScheme.primaryFixedDim
+        : colorScheme.onSurface;
     const redColor = Colors.red;
 
     // Scale positions and labels matching real VU meter
@@ -217,8 +220,9 @@ class VuMeterPainter extends CustomPainter {
             Paint()
               ..style = PaintingStyle.stroke
               ..strokeWidth = 1.5
-              ..color =
-                  (isInRedZone ? redColor : mainColor).withValues(alpha: 0.5),
+              ..color = (isInRedZone ? redColor : mainColor).withValues(
+                alpha: 0.5,
+              ),
           );
         }
       }
@@ -232,8 +236,9 @@ class VuMeterPainter extends CustomPainter {
         style: AppFonts.inconsolata(
           fontSize: 24,
           fontWeight: FontWeight.w300,
-          color:
-              isDarkMode ? colorScheme.primaryFixedDim : colorScheme.onSurface,
+          color: isDarkMode
+              ? colorScheme.primaryFixedDim
+              : colorScheme.onSurface,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -360,7 +365,6 @@ class VuMeterPainter extends CustomPainter {
             ..color = Colors.red.withValues(alpha: 0.2 * clipValue)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
         )
-
         // Medium glow
         ..drawCircle(
           ledCenter,
@@ -370,7 +374,6 @@ class VuMeterPainter extends CustomPainter {
             ..color = Colors.redAccent.withValues(alpha: 0.4 * clipValue)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
         )
-
         // LED itself lit up - very bright
         ..drawCircle(
           ledCenter,
@@ -388,7 +391,6 @@ class VuMeterPainter extends CustomPainter {
               [0.0, 0.3, 1.0],
             ),
         )
-
         // Bright white center
         ..drawCircle(
           Offset(ledCenter.dx - 1, ledCenter.dy - 1),
@@ -429,7 +431,9 @@ class VuMeterPainter extends CustomPainter {
     textPainter.paint(
       canvas,
       Offset(
-          ledCenter.dx - textPainter.width / 2, ledCenter.dy + ledRadius + 3),
+        ledCenter.dx - textPainter.width / 2,
+        ledCenter.dy + ledRadius + 3,
+      ),
     );
   }
 

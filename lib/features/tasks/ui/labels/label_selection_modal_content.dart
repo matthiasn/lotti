@@ -154,8 +154,10 @@ class _LabelSelectionSliverContentState
                 backgroundColor: color,
                 radius: 12,
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 2,
+              ),
               onChanged: (checked) {
                 setState(() {
                   if (checked ?? false) {
@@ -171,10 +173,9 @@ class _LabelSelectionSliverContentState
               Divider(
                 height: 1,
                 thickness: 1,
-                color: Theme.of(context)
-                    .colorScheme
-                    .outline
-                    .withValues(alpha: 0.12),
+                color: Theme.of(
+                  context,
+                ).colorScheme.outline.withValues(alpha: 0.12),
               ),
           ],
         );
@@ -215,13 +216,14 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final querySnippet =
-        searchQuery != null && searchQuery!.isNotEmpty ? '"$searchQuery"' : '';
+    final querySnippet = searchQuery != null && searchQuery!.isNotEmpty
+        ? '"$searchQuery"'
+        : '';
     final message = isSearching && querySnippet.isNotEmpty
         ? 'No labels match $querySnippet.'
         : isSearching
-            ? 'No labels match your search.'
-            : 'No labels available yet.';
+        ? 'No labels match your search.'
+        : 'No labels available yet.';
     final buttonLabel = searchQuery != null && searchQuery!.isNotEmpty
         ? 'Create $querySnippet label'
         : 'Create label';
@@ -402,11 +404,12 @@ class _LabelSelectionModalContentState
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: filtered.length,
-          separatorBuilder: (context, __) => Divider(
+          separatorBuilder: (context, _) => Divider(
             height: 1,
             thickness: 1,
-            color:
-                Theme.of(context).colorScheme.outline.withValues(alpha: 0.12),
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.12),
           ),
           itemBuilder: (context, index) {
             final label = filtered[index];
@@ -428,8 +431,10 @@ class _LabelSelectionModalContentState
                 backgroundColor: color,
                 radius: 12,
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 2,
+              ),
               onChanged: (checked) {
                 setState(() {
                   if (checked ?? false) {

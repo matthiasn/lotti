@@ -98,8 +98,9 @@ class ChatSessionUiModel {
       id: id,
       title: title,
       createdAt: messages.isEmpty ? DateTime.now() : messages.first.timestamp,
-      lastMessageAt:
-          messages.isEmpty ? DateTime.now() : messages.last.timestamp,
+      lastMessageAt: messages.isEmpty
+          ? DateTime.now()
+          : messages.last.timestamp,
       messages: messages,
       metadata: updatedMetadata,
     );

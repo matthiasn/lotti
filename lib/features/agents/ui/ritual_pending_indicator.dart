@@ -51,8 +51,9 @@ class _RitualPendingIndicatorState extends ConsumerState<RitualPendingIndicator>
   @override
   Widget build(BuildContext context) {
     final count = ref.watch(
-      templatesPendingReviewProvider
-          .select((async) => async.value?.length ?? 0),
+      templatesPendingReviewProvider.select(
+        (async) => async.value?.length ?? 0,
+      ),
     );
 
     if (count == 0) {

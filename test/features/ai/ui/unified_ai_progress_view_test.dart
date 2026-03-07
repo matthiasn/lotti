@@ -66,19 +66,21 @@ void main() {
 
   setUp(() {
     final now = DateTime.now();
-    testPromptConfig = AiConfig.prompt(
-      id: 'test-prompt-1',
-      name: 'Test Prompt',
-      systemMessage: 'System message',
-      userMessage: 'Test prompt text',
-      defaultModelId: 'model-1',
-      modelIds: ['model-1'],
-      createdAt: now,
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-      description: 'A test prompt for testing purposes',
-    ) as AiConfigPrompt;
+    testPromptConfig =
+        AiConfig.prompt(
+              id: 'test-prompt-1',
+              name: 'Test Prompt',
+              systemMessage: 'System message',
+              userMessage: 'Test prompt text',
+              defaultModelId: 'model-1',
+              modelIds: ['model-1'],
+              createdAt: now,
+              useReasoning: false,
+              requiredInputData: [InputDataType.task],
+              aiResponseType: AiResponseType.taskSummary,
+              description: 'A test prompt for testing purposes',
+            )
+            as AiConfigPrompt;
 
     mockRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
@@ -110,13 +112,16 @@ void main() {
     ).thenReturn(null);
 
     // Mock repository getActivePromptsForContext
-    when(() => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        )).thenAnswer((_) async => [testPromptConfig]);
+    when(
+      () => mockRepository.getActivePromptsForContext(
+        entity: any(named: 'entity'),
+      ),
+    ).thenAnswer((_) async => [testPromptConfig]);
 
     // Mock category repository
-    when(() => mockCategoryRepository.watchCategory(any()))
-        .thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockCategoryRepository.watchCategory(any()),
+    ).thenAnswer((_) => Stream.value(null));
   });
 
   tearDown(() {
@@ -155,8 +160,9 @@ void main() {
     const testEntityId = 'test-entity-1';
     const testPromptId = 'test-prompt-1';
 
-    testWidgets('shows loading indicator when prompt config is loading',
-        (tester) async {
+    testWidgets('shows loading indicator when prompt config is loading', (
+      tester,
+    ) async {
       final completer = Completer<AiConfig?>();
 
       await tester.pumpWidget(
@@ -201,8 +207,9 @@ void main() {
       expect(find.textContaining('Error loading prompt'), findsOneWidget);
     });
 
-    testWidgets('shows invalid config message when config is null',
-        (tester) async {
+    testWidgets('shows invalid config message when config is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -222,8 +229,9 @@ void main() {
       expect(find.text('Invalid prompt configuration'), findsOneWidget);
     });
 
-    testWidgets('shows invalid config message when config is wrong type',
-        (tester) async {
+    testWidgets('shows invalid config message when config is wrong type', (
+      tester,
+    ) async {
       final invalidConfig = AiConfig.model(
         id: 'model-1',
         name: 'Test Model',
@@ -259,8 +267,9 @@ void main() {
     const testEntityId = 'test-entity-1';
     const testPromptId = 'test-prompt-1';
 
-    testWidgets('does NOT trigger inference when showExisting is true',
-        (tester) async {
+    testWidgets('does NOT trigger inference when showExisting is true', (
+      tester,
+    ) async {
       var inferenceTriggered = false;
 
       when(
@@ -299,20 +308,23 @@ void main() {
   });
 
   group('UnifiedAiProgressContent - showExisting and activeInference', () {
-    testWidgets('subscribes to existing inference when showExisting is true',
-        (tester) async {
+    testWidgets('subscribes to existing inference when showExisting is true', (
+      tester,
+    ) async {
       // This test ensures the _subscribeToExistingInference method is called
       // when showExisting is true
       await tester.runAsync(() async {
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('test-prompt-1').overrideWith(
               (ref) async => testPromptConfig,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -349,13 +361,15 @@ void main() {
       await tester.runAsync(() async {
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('test-prompt-1').overrideWith(
               (ref) async => testPromptConfig,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -406,13 +420,15 @@ void main() {
       await tester.runAsync(() async {
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('test-prompt-1').overrideWith(
               (ref) async => testPromptConfig,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -449,13 +465,15 @@ void main() {
       await tester.runAsync(() async {
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('test-prompt-1').overrideWith(
               (ref) async => testPromptConfig,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -500,13 +518,15 @@ void main() {
       await tester.runAsync(() async {
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider('test-prompt-1').overrideWith(
               (ref) async => testPromptConfig,
             ),
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -553,8 +573,9 @@ void main() {
     const entityId = 'dialog-entity';
     const promptId = 'dialog-prompt';
 
-    testWidgets('shows Ollama install dialog for model not installed error',
-        (tester) async {
+    testWidgets('shows Ollama install dialog for model not installed error', (
+      tester,
+    ) async {
       final ollamaProvider = AiTestDataFactory.createTestProvider(
         id: 'ollama-provider',
         name: 'Ollama Provider',
@@ -600,8 +621,9 @@ void main() {
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
 
-    testWidgets('uses string fallback to show Ollama install dialog',
-        (tester) async {
+    testWidgets('uses string fallback to show Ollama install dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -639,8 +661,9 @@ void main() {
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
 
-    testWidgets('shows running animation when inference is in progress',
-        (tester) async {
+    testWidgets('shows running animation when inference is in progress', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           const UnifiedAiProgressContent(
@@ -694,8 +717,10 @@ void main() {
       expect(find.text('Model Not Installed'), findsOneWidget);
 
       // Verify model name is displayed
-      expect(find.textContaining('The model "llama2" is not installed'),
-          findsOneWidget);
+      expect(
+        find.textContaining('The model "llama2" is not installed'),
+        findsOneWidget,
+      );
 
       // Verify command is displayed
       expect(find.text('ollama pull llama2'), findsOneWidget);
@@ -731,19 +756,21 @@ void main() {
 
   group('UnifiedAiProgressUtils', () {
     testWidgets('progressPage creates valid modal page', (tester) async {
-      final prompt = AiConfig.prompt(
-        id: 'test-prompt',
-        name: 'Test Prompt Title',
-        systemMessage: 'System message',
-        userMessage: 'Test prompt text',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.taskSummary,
-        description: 'Test description',
-      ) as AiConfigPrompt;
+      final prompt =
+          AiConfig.prompt(
+                id: 'test-prompt',
+                name: 'Test Prompt Title',
+                systemMessage: 'System message',
+                userMessage: 'Test prompt text',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: [InputDataType.task],
+                aiResponseType: AiResponseType.taskSummary,
+                description: 'Test description',
+              )
+              as AiConfigPrompt;
 
       // Build the widget and test the page creation
       await tester.pumpWidget(
@@ -775,21 +802,24 @@ void main() {
     const entityId = 'image-prompt-entity';
     const promptId = 'image-prompt-id';
 
-    testWidgets('shows copy button for image prompt generation with result',
-        (tester) async {
-      final imagePromptConfig = AiConfig.prompt(
-        id: promptId,
-        name: 'Image Prompt',
-        systemMessage: 'System message',
-        userMessage: 'Generate image prompt',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.imagePromptGeneration,
-        description: 'Generate image prompts',
-      ) as AiConfigPrompt;
+    testWidgets('shows copy button for image prompt generation with result', (
+      tester,
+    ) async {
+      final imagePromptConfig =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Image Prompt',
+                systemMessage: 'System message',
+                userMessage: 'Generate image prompt',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: [InputDataType.task],
+                aiResponseType: AiResponseType.imagePromptGeneration,
+                description: 'Generate image prompts',
+              )
+              as AiConfigPrompt;
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -833,21 +863,24 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
     });
 
-    testWidgets('shows copy button for regular prompt generation with result',
-        (tester) async {
-      final promptGenConfig = AiConfig.prompt(
-        id: promptId,
-        name: 'Coding Prompt',
-        systemMessage: 'System message',
-        userMessage: 'Generate coding prompt',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.promptGeneration,
-        description: 'Generate coding prompts',
-      ) as AiConfigPrompt;
+    testWidgets('shows copy button for regular prompt generation with result', (
+      tester,
+    ) async {
+      final promptGenConfig =
+          AiConfig.prompt(
+                id: promptId,
+                name: 'Coding Prompt',
+                systemMessage: 'System message',
+                userMessage: 'Generate coding prompt',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: [InputDataType.task],
+                aiResponseType: AiResponseType.promptGeneration,
+                description: 'Generate coding prompts',
+              )
+              as AiConfigPrompt;
 
       await tester.pumpWidget(
         buildTestWidget(

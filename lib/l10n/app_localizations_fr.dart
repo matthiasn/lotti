@@ -143,7 +143,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String agentConversationThreadSummary(
-      int messageCount, int toolCallCount, String shortId) {
+    int messageCount,
+    int toolCallCount,
+    String shortId,
+  ) {
     return '$messageCount messages, $toolCallCount appels d\'outils · $shortId';
   }
 
@@ -2947,7 +2950,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String maintenanceGenerateEmbeddingsProgress(
-      int processed, int total, int embedded) {
+    int processed,
+    int total,
+    int embedded,
+  ) {
     String _temp0 = intl.Intl.pluralLogic(
       embedded,
       locale: localeName,
@@ -2970,6 +2976,22 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Traitement des entités d\'agents...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks =>
+      'Traitement des liens d\'agents...';
+
+  @override
+  String get maintenancePopulatePhaseJournal =>
+      'Traitement des entrées du journal...';
+
+  @override
+  String get maintenancePopulatePhaseLinks =>
+      'Traitement des liens d\'entrées...';
+
+  @override
   String get maintenancePopulateSequenceLog =>
       'Remplir le journal de séquence de synchronisation';
 
@@ -2988,22 +3010,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'Cela analysera toutes les entrées du journal et les ajoutera au journal de séquence de synchronisation. Cela permet les réponses de rattrapage pour les entrées créées avant l\'ajout de cette fonctionnalité.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Traitement des entités d\'agents...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks =>
-      'Traitement des liens d\'agents...';
-
-  @override
-  String get maintenancePopulatePhaseJournal =>
-      'Traitement des entrées du journal...';
-
-  @override
-  String get maintenancePopulatePhaseLinks =>
-      'Traitement des liens d\'entrées...';
 
   @override
   String get maintenancePurgeDeleted => 'Purger les éléments supprimés';
@@ -4065,7 +4071,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'Tu as vérifié avec succès $deviceName ($deviceID)';
   }
 

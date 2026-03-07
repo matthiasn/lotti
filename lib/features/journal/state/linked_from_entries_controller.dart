@@ -16,8 +16,9 @@ class LinkedFromEntriesController extends _$LinkedFromEntriesController {
   final watchedIds = <String>{};
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) {
       if (affectedIds.intersection(watchedIds).isNotEmpty) {
         _fetch().then((latest) {
           if (latest != state.value) {
@@ -43,7 +44,9 @@ class LinkedFromEntriesController extends _$LinkedFromEntriesController {
   }
 
   Future<List<JournalEntity>> _fetch() async {
-    final res = await ref.read(journalRepositoryProvider).getLinkedToEntities(
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .getLinkedToEntities(
           linkedTo: id,
         );
     watchedIds.addAll(res.map((item) => item.id));

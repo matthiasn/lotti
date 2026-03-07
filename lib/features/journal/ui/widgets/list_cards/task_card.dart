@@ -73,7 +73,8 @@ class ModernTaskCard extends StatelessWidget {
           padding: const EdgeInsets.only(top: AppTheme.cardPadding * 1.25),
           child: ClipRRect(
             borderRadius: const BorderRadius.all(
-                Radius.circular(AppTheme.cardBorderRadius / 2)),
+              Radius.circular(AppTheme.cardBorderRadius / 2),
+            ),
             child: CoverArtThumbnail(
               imageId: coverArtId,
               size: _thumbnailSize,
@@ -97,8 +98,10 @@ class ModernTaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStandardContent(BuildContext context,
-      {bool hasCoverArt = false}) {
+  Widget _buildStandardContent(
+    BuildContext context, {
+    bool hasCoverArt = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -106,8 +109,10 @@ class ModernTaskCard extends StatelessWidget {
         ModernCardContent(
           title: task.data.title,
           maxTitleLines: 3,
-          subtitleWidget:
-              _buildSubtitleWidget(context, hasCoverArt: hasCoverArt),
+          subtitleWidget: _buildSubtitleWidget(
+            context,
+            hasCoverArt: hasCoverArt,
+          ),
           trailing: TimeRecordingIcon(
             taskId: task.meta.id,
           ),
@@ -141,16 +146,18 @@ class ModernTaskCard extends StatelessWidget {
                 Icon(
                   Icons.calendar_today_rounded,
                   size: AppTheme.statusIndicatorFontSize,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.7),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.7,
+                  ),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   DateFormat.yMMMd().format(task.meta.dateFrom),
                   style: context.textTheme.bodySmall?.copyWith(
                     fontSize: AppTheme.statusIndicatorFontSize,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.7),
+                    color: context.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.7,
+                    ),
                   ),
                 ),
               ],
@@ -169,8 +176,10 @@ class ModernTaskCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSubtitleWidget(BuildContext context,
-      {bool hasCoverArt = false}) {
+  Widget _buildSubtitleWidget(
+    BuildContext context, {
+    bool hasCoverArt = false,
+  }) {
     final brightness = Theme.of(context).brightness;
 
     // When there's cover art, put progress on its own row to avoid overflow

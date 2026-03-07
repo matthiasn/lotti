@@ -74,12 +74,14 @@ void main() {
       );
 
       // Set up repository mock to return the test provider when requested
-      when(() => mockRepository.getConfigById('test-provider-id'))
-          .thenAnswer((_) async => testProvider as AiConfigInferenceProvider);
+      when(
+        () => mockRepository.getConfigById('test-provider-id'),
+      ).thenAnswer((_) async => testProvider as AiConfigInferenceProvider);
 
       // Set up repository mock to return the test model when requested
-      when(() => mockRepository.getConfigById('test-model-id'))
-          .thenAnswer((_) async => testModel as AiConfigModel);
+      when(
+        () => mockRepository.getConfigById('test-model-id'),
+      ).thenAnswer((_) async => testModel as AiConfigModel);
     });
 
     Widget createTestWidget(AiConfig config, {bool showCapabilities = false}) {
@@ -107,45 +109,55 @@ void main() {
     }
 
     group('Provider configuration', () {
-      testWidgets('displays provider name and icon',
-          (WidgetTester tester) async {
+      testWidgets('displays provider name and icon', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testProvider));
 
         expect(find.text(testProvider.name), findsOneWidget);
         expect(
-            find.byIcon(Icons.auto_awesome), findsOneWidget); // Anthropic icon
+          find.byIcon(Icons.auto_awesome),
+          findsOneWidget,
+        ); // Anthropic icon
       });
 
-      testWidgets('displays provider description when available',
-          (WidgetTester tester) async {
+      testWidgets('displays provider description when available', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testProvider));
         expect(find.text(testProvider.description!), findsOneWidget);
       });
     });
 
     group('Model configuration', () {
-      testWidgets('displays model name and description',
-          (WidgetTester tester) async {
+      testWidgets('displays model name and description', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testModel));
 
         expect(find.text(testModel.name), findsOneWidget);
         expect(find.text(testModel.description!), findsOneWidget);
       });
 
-      testWidgets('displays capabilities when showCapabilities is true',
-          (WidgetTester tester) async {
-        await tester
-            .pumpWidget(createTestWidget(testModel, showCapabilities: true));
+      testWidgets('displays capabilities when showCapabilities is true', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(testModel, showCapabilities: true),
+        );
 
         // Should show capability indicators
         expect(
-            find.byIcon(Icons.text_fields), findsOneWidget); // Text capability
+          find.byIcon(Icons.text_fields),
+          findsOneWidget,
+        ); // Text capability
       });
     });
 
     group('Prompt configuration', () {
-      testWidgets('displays prompt name and description',
-          (WidgetTester tester) async {
+      testWidgets('displays prompt name and description', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testPrompt));
 
         expect(find.text(testPrompt.name), findsOneWidget);
@@ -154,8 +166,9 @@ void main() {
     });
 
     group('Prompt provider badge', () {
-      testWidgets('displays provider name via default model lookup',
-          (WidgetTester tester) async {
+      testWidgets('displays provider name via default model lookup', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testPrompt));
         await tester.pumpAndSettle();
 
@@ -163,13 +176,15 @@ void main() {
         expect(find.text('Test Anthropic Provider'), findsOneWidget);
       });
 
-      testWidgets('shows loading state while model loads',
-          (WidgetTester tester) async {
+      testWidgets('shows loading state while model loads', (
+        WidgetTester tester,
+      ) async {
         // Use a completer to control when the model lookup completes
         final modelCompleter = Completer<AiConfigModel?>();
 
-        when(() => mockRepository.getConfigById('test-model-id'))
-            .thenAnswer((_) => modelCompleter.future);
+        when(
+          () => mockRepository.getConfigById('test-model-id'),
+        ).thenAnswer((_) => modelCompleter.future);
 
         await tester.pumpWidget(createTestWidget(testPrompt));
         await tester.pump();
@@ -182,10 +197,12 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      testWidgets('shows nothing when model lookup fails',
-          (WidgetTester tester) async {
-        when(() => mockRepository.getConfigById('test-model-id'))
-            .thenThrow(Exception('Failed to load model'));
+      testWidgets('shows nothing when model lookup fails', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.getConfigById('test-model-id'),
+        ).thenThrow(Exception('Failed to load model'));
 
         await tester.pumpWidget(createTestWidget(testPrompt));
         await tester.pumpAndSettle();
@@ -194,10 +211,12 @@ void main() {
         expect(find.text('Test Anthropic Provider'), findsNothing);
       });
 
-      testWidgets('shows nothing when model is not found',
-          (WidgetTester tester) async {
-        when(() => mockRepository.getConfigById('test-model-id'))
-            .thenAnswer((_) async => null);
+      testWidgets('shows nothing when model is not found', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.getConfigById('test-model-id'),
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(createTestWidget(testPrompt));
         await tester.pumpAndSettle();
@@ -206,8 +225,9 @@ void main() {
         expect(find.text('Test Anthropic Provider'), findsNothing);
       });
 
-      testWidgets('shows provider badge with correct styling',
-          (WidgetTester tester) async {
+      testWidgets('shows provider badge with correct styling', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createTestWidget(testPrompt));
         await tester.pumpAndSettle();
 
@@ -231,14 +251,18 @@ void main() {
           }
           return false;
         });
-        expect(hasGradientDecoration, isTrue,
-            reason: 'Provider badge should have a LinearGradient decoration');
+        expect(
+          hasGradientDecoration,
+          isTrue,
+          reason: 'Provider badge should have a LinearGradient decoration',
+        );
       });
     });
 
     group('Interaction', () {
-      testWidgets('calls onTap when card is tapped',
-          (WidgetTester tester) async {
+      testWidgets('calls onTap when card is tapped', (
+        WidgetTester tester,
+      ) async {
         var tapped = false;
 
         final widget = MaterialApp(
@@ -300,29 +324,36 @@ void main() {
       }
 
       testWidgets('shows chevron in normal mode', (WidgetTester tester) async {
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-        ));
+        await tester.pumpWidget(
+          createCompactWidget(
+            config: testProvider,
+          ),
+        );
 
         expect(find.byIcon(Icons.chevron_right), findsOneWidget);
       });
 
       testWidgets('hides chevron in compact mode', (WidgetTester tester) async {
-        await tester.pumpWidget(createCompactWidget(
-          config: testProvider,
-          compact: true,
-        ));
+        await tester.pumpWidget(
+          createCompactWidget(
+            config: testProvider,
+            compact: true,
+          ),
+        );
 
         expect(find.byIcon(Icons.chevron_right), findsNothing);
       });
 
-      testWidgets('shows name, description, and icon in both modes',
-          (WidgetTester tester) async {
+      testWidgets('shows name, description, and icon in both modes', (
+        WidgetTester tester,
+      ) async {
         for (final compact in [false, true]) {
-          await tester.pumpWidget(createCompactWidget(
-            config: testProvider,
-            compact: compact,
-          ));
+          await tester.pumpWidget(
+            createCompactWidget(
+              config: testProvider,
+              compact: compact,
+            ),
+          );
           expect(find.text(testProvider.name), findsOneWidget);
           expect(find.text(testProvider.description!), findsOneWidget);
           expect(find.byIcon(Icons.auto_awesome), findsOneWidget);
@@ -330,21 +361,23 @@ void main() {
       });
 
       testWidgets(
-          'uses AnimatedContainer in normal mode but not in compact mode',
-          (WidgetTester tester) async {
-        // Normal mode has AnimatedContainer
-        await tester.pumpWidget(createCompactWidget(config: testProvider));
-        expect(find.byType(AnimatedContainer), findsOneWidget);
+        'uses AnimatedContainer in normal mode but not in compact mode',
+        (WidgetTester tester) async {
+          // Normal mode has AnimatedContainer
+          await tester.pumpWidget(createCompactWidget(config: testProvider));
+          expect(find.byType(AnimatedContainer), findsOneWidget);
 
-        // Compact mode does not
-        await tester.pumpWidget(
-          createCompactWidget(config: testProvider, compact: true),
-        );
-        expect(find.byType(AnimatedContainer), findsNothing);
-      });
+          // Compact mode does not
+          await tester.pumpWidget(
+            createCompactWidget(config: testProvider, compact: true),
+          );
+          expect(find.byType(AnimatedContainer), findsNothing);
+        },
+      );
 
-      testWidgets('onTap still works in compact mode',
-          (WidgetTester tester) async {
+      testWidgets('onTap still works in compact mode', (
+        WidgetTester tester,
+      ) async {
         var cardTapped = false;
 
         final widget = MaterialApp(
@@ -378,8 +411,9 @@ void main() {
         expect(find.text(testProvider.name), findsOneWidget);
       });
 
-      testWidgets('capabilities still show in compact mode when enabled',
-          (WidgetTester tester) async {
+      testWidgets('capabilities still show in compact mode when enabled', (
+        WidgetTester tester,
+      ) async {
         final widget = MaterialApp(
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -411,8 +445,9 @@ void main() {
     });
 
     group('Provider type icons', () {
-      testWidgets('displays correct icon for each provider type',
-          (WidgetTester tester) async {
+      testWidgets('displays correct icon for each provider type', (
+        WidgetTester tester,
+      ) async {
         final providerTypes = {
           InferenceProviderType.alibaba: Icons.cloud_queue,
           InferenceProviderType.anthropic: Icons.auto_awesome,
@@ -442,39 +477,42 @@ void main() {
     });
 
     group('Model family detection', () {
-      testWidgets('correctly identifies model families from provider model ID',
-          (WidgetTester tester) async {
-        final modelTests = [
-          ('gpt-4', Icons.psychology),
-          ('claude-3-opus', Icons.auto_awesome), // matches 'claude' first
-          ('claude-3-sonnet', Icons.auto_awesome), // matches 'claude' first
-          ('claude-3-haiku', Icons.auto_awesome), // matches 'claude' first
-          ('opus-model', Icons.workspace_premium), // only 'opus' pattern
-          ('sonnet-only', Icons.edit_note), // only 'sonnet' pattern
-          ('haiku-pure', Icons.flash_on), // only 'haiku' pattern
-          ('gemini-pro', Icons.diamond),
-          ('llama-2', Icons.smart_toy), // generic
-        ];
+      testWidgets(
+        'correctly identifies model families from provider model ID',
+        (WidgetTester tester) async {
+          final modelTests = [
+            ('gpt-4', Icons.psychology),
+            ('claude-3-opus', Icons.auto_awesome), // matches 'claude' first
+            ('claude-3-sonnet', Icons.auto_awesome), // matches 'claude' first
+            ('claude-3-haiku', Icons.auto_awesome), // matches 'claude' first
+            ('opus-model', Icons.workspace_premium), // only 'opus' pattern
+            ('sonnet-only', Icons.edit_note), // only 'sonnet' pattern
+            ('haiku-pure', Icons.flash_on), // only 'haiku' pattern
+            ('gemini-pro', Icons.diamond),
+            ('llama-2', Icons.smart_toy), // generic
+          ];
 
-        for (final test in modelTests) {
-          final model = AiConfig.model(
-            id: 'test-model-${test.$1}',
-            name: 'Test Model',
-            providerModelId: test.$1,
-            inferenceProviderId: 'test-provider-id',
-            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
-            inputModalities: [Modality.text],
-            outputModalities: [Modality.text],
-            isReasoningModel: false,
-          );
+          for (final test in modelTests) {
+            final model = AiConfig.model(
+              id: 'test-model-${test.$1}',
+              name: 'Test Model',
+              providerModelId: test.$1,
+              inferenceProviderId: 'test-provider-id',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              inputModalities: [Modality.text],
+              outputModalities: [Modality.text],
+              isReasoningModel: false,
+            );
 
-          await tester.pumpWidget(createTestWidget(model));
-          expect(find.byIcon(test.$2), findsOneWidget);
-        }
-      });
+            await tester.pumpWidget(createTestWidget(model));
+            expect(find.byIcon(test.$2), findsOneWidget);
+          }
+        },
+      );
 
-      testWidgets('correctly identifies model families from display name',
-          (WidgetTester tester) async {
+      testWidgets('correctly identifies model families from display name', (
+        WidgetTester tester,
+      ) async {
         final model = AiConfig.model(
           id: 'test-model',
           name: 'Claude Pro Model', // Family in name, not in provider ID
@@ -492,8 +530,9 @@ void main() {
     });
 
     group('Prompt type icons', () {
-      testWidgets('displays correct icon based on input data type',
-          (WidgetTester tester) async {
+      testWidgets('displays correct icon based on input data type', (
+        WidgetTester tester,
+      ) async {
         final promptTests = <(List<InputDataType>, IconData)>[
           ([InputDataType.images], Icons.image),
           ([InputDataType.audioFiles], Icons.audiotrack),
@@ -522,8 +561,9 @@ void main() {
     });
 
     group('Capability indicators', () {
-      testWidgets('shows all capability icons for multimodal model',
-          (WidgetTester tester) async {
+      testWidgets('shows all capability icons for multimodal model', (
+        WidgetTester tester,
+      ) async {
         final multimodalModel = AiConfig.model(
           id: 'multimodal-model',
           name: 'Multimodal Model',
@@ -536,7 +576,8 @@ void main() {
         );
 
         await tester.pumpWidget(
-            createTestWidget(multimodalModel, showCapabilities: true));
+          createTestWidget(multimodalModel, showCapabilities: true),
+        );
 
         // Check that all capability icons exist
         // Note: There will be other icons (main icon, chevron) so we just check existence
@@ -546,8 +587,9 @@ void main() {
         expect(find.byIcon(Icons.psychology), findsOneWidget); // reasoning
       });
 
-      testWidgets('shows greyed out icons for unsupported capabilities',
-          (WidgetTester tester) async {
+      testWidgets('shows greyed out icons for unsupported capabilities', (
+        WidgetTester tester,
+      ) async {
         final textOnlyModel = AiConfig.model(
           id: 'text-only-model',
           name: 'Text Only Model',
@@ -560,7 +602,8 @@ void main() {
         );
 
         await tester.pumpWidget(
-            createTestWidget(textOnlyModel, showCapabilities: true));
+          createTestWidget(textOnlyModel, showCapabilities: true),
+        );
 
         // Should show all capability icons but some are disabled
         expect(find.byIcon(Icons.text_fields), findsOneWidget);
@@ -570,14 +613,16 @@ void main() {
     });
 
     group('Provider name display', () {
-      testWidgets('shows loading state while provider loads',
-          (WidgetTester tester) async {
+      testWidgets('shows loading state while provider loads', (
+        WidgetTester tester,
+      ) async {
         // Use a completer to control when the future completes
         final completer = Completer<AiConfigInferenceProvider?>();
 
         // Mock repository to return the completer's future
-        when(() => mockRepository.getConfigById('test-provider-id'))
-            .thenAnswer((_) => completer.future);
+        when(
+          () => mockRepository.getConfigById('test-provider-id'),
+        ).thenAnswer((_) => completer.future);
 
         await tester.pumpWidget(createTestWidget(testModel));
         await tester.pump();
@@ -589,11 +634,13 @@ void main() {
         await tester.pumpAndSettle();
       });
 
-      testWidgets('shows error state when provider fails to load',
-          (WidgetTester tester) async {
+      testWidgets('shows error state when provider fails to load', (
+        WidgetTester tester,
+      ) async {
         // Mock repository to throw error
-        when(() => mockRepository.getConfigById('test-provider-id'))
-            .thenThrow(Exception('Failed to load'));
+        when(
+          () => mockRepository.getConfigById('test-provider-id'),
+        ).thenThrow(Exception('Failed to load'));
 
         await tester.pumpWidget(createTestWidget(testModel));
         await tester.pumpAndSettle();
@@ -601,11 +648,13 @@ void main() {
         expect(find.text('Error'), findsOneWidget);
       });
 
-      testWidgets('shows Unknown when provider is null',
-          (WidgetTester tester) async {
+      testWidgets('shows Unknown when provider is null', (
+        WidgetTester tester,
+      ) async {
         // Mock repository to return null
-        when(() => mockRepository.getConfigById('test-provider-id'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepository.getConfigById('test-provider-id'),
+        ).thenAnswer((_) async => null);
 
         await tester.pumpWidget(createTestWidget(testModel));
         await tester.pumpAndSettle();
@@ -615,8 +664,9 @@ void main() {
     });
 
     group('Theme variations', () {
-      testWidgets('renders correctly in both light and dark themes',
-          (WidgetTester tester) async {
+      testWidgets('renders correctly in both light and dark themes', (
+        WidgetTester tester,
+      ) async {
         for (final theme in [ThemeData.light(), ThemeData.dark()]) {
           await tester.pumpWidget(
             MaterialApp(
@@ -631,8 +681,9 @@ void main() {
               home: Scaffold(
                 body: ProviderScope(
                   overrides: [
-                    aiConfigRepositoryProvider
-                        .overrideWithValue(mockRepository),
+                    aiConfigRepositoryProvider.overrideWithValue(
+                      mockRepository,
+                    ),
                   ],
                   child: AiConfigCard(
                     config: testProvider,
@@ -648,8 +699,9 @@ void main() {
     });
 
     group('Edge cases', () {
-      testWidgets('handles configs with no description and long text',
-          (WidgetTester tester) async {
+      testWidgets('handles configs with no description and long text', (
+        WidgetTester tester,
+      ) async {
         // No description
         final configNoDesc = AiConfig.inferenceProvider(
           id: 'no-desc',

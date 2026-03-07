@@ -96,7 +96,9 @@ void main() {
 
       test('has correct total count', () {
         expect(
-            allThemeNames.length, equals(specialThemes.length + themes.length));
+          allThemeNames.length,
+          equals(specialThemes.length + themes.length),
+        );
       });
     });
 

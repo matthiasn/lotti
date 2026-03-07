@@ -52,17 +52,17 @@ class PlannedBlockDragState {
 
   /// Converts current start minutes to DateTime for persistence.
   DateTime get startDateTime => DateTime(
-        date.year,
-        date.month,
-        date.day,
-      ).add(Duration(minutes: currentStartMinutes));
+    date.year,
+    date.month,
+    date.day,
+  ).add(Duration(minutes: currentStartMinutes));
 
   /// Converts current end minutes to DateTime for persistence.
   DateTime get endDateTime => DateTime(
-        date.year,
-        date.month,
-        date.day,
-      ).add(Duration(minutes: currentEndMinutes));
+    date.year,
+    date.month,
+    date.day,
+  ).add(Duration(minutes: currentEndMinutes));
 
   /// Whether the drag state has changed from the original.
   bool get hasChanged =>
@@ -79,14 +79,13 @@ class PlannedBlockDragState {
     PlannedBlockDragMode? mode,
     int? currentStartMinutes,
     int? currentEndMinutes,
-  }) =>
-      PlannedBlockDragState(
-        mode: mode ?? this.mode,
-        originalBlock: originalBlock,
-        currentStartMinutes: currentStartMinutes ?? this.currentStartMinutes,
-        currentEndMinutes: currentEndMinutes ?? this.currentEndMinutes,
-        date: date,
-      );
+  }) => PlannedBlockDragState(
+    mode: mode ?? this.mode,
+    originalBlock: originalBlock,
+    currentStartMinutes: currentStartMinutes ?? this.currentStartMinutes,
+    currentEndMinutes: currentEndMinutes ?? this.currentEndMinutes,
+    date: date,
+  );
 
   @override
   bool operator ==(Object other) =>

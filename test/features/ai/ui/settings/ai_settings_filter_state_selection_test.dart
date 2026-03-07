@@ -23,7 +23,8 @@ void main() {
 
       test('returns false after clearing selection', () {
         final state = initialState
-            .copyWith(selectedPromptIds: {'prompt-1'}).clearSelection();
+            .copyWith(selectedPromptIds: {'prompt-1'})
+            .clearSelection();
         expect(state.hasSelectedPrompts, isFalse);
       });
     });
@@ -56,26 +57,26 @@ void main() {
       });
 
       test('removes prompt when already selected', () {
-        final state = initialState.copyWith(
-            selectedPromptIds: {'prompt-1'}).togglePromptSelection('prompt-1');
+        final state = initialState
+            .copyWith(selectedPromptIds: {'prompt-1'})
+            .togglePromptSelection('prompt-1');
         expect(state.selectedPromptIds, isNot(contains('prompt-1')));
         expect(state.selectedPromptCount, 0);
       });
 
       test('adds to existing selection', () {
-        final state = initialState.copyWith(
-            selectedPromptIds: {'prompt-1'}).togglePromptSelection('prompt-2');
+        final state = initialState
+            .copyWith(selectedPromptIds: {'prompt-1'})
+            .togglePromptSelection('prompt-2');
         expect(state.selectedPromptIds, contains('prompt-1'));
         expect(state.selectedPromptIds, contains('prompt-2'));
         expect(state.selectedPromptCount, 2);
       });
 
       test('removes from existing selection without affecting others', () {
-        final state = initialState.copyWith(selectedPromptIds: {
-          'prompt-1',
-          'prompt-2',
-          'prompt-3'
-        }).togglePromptSelection('prompt-2');
+        final state = initialState
+            .copyWith(selectedPromptIds: {'prompt-1', 'prompt-2', 'prompt-3'})
+            .togglePromptSelection('prompt-2');
         expect(state.selectedPromptIds, contains('prompt-1'));
         expect(state.selectedPromptIds, isNot(contains('prompt-2')));
         expect(state.selectedPromptIds, contains('prompt-3'));
@@ -102,22 +103,27 @@ void main() {
           'prompt-3',
         ]);
         expect(state.selectedPromptCount, 3);
-        expect(state.selectedPromptIds,
-            containsAll(['prompt-1', 'prompt-2', 'prompt-3']));
+        expect(
+          state.selectedPromptIds,
+          containsAll(['prompt-1', 'prompt-2', 'prompt-3']),
+        );
       });
 
       test('replaces existing selection', () {
-        final state = initialState.copyWith(selectedPromptIds: {
-          'old-prompt'
-        }).selectAllPrompts(['new-prompt-1', 'new-prompt-2']);
+        final state = initialState
+            .copyWith(selectedPromptIds: {'old-prompt'})
+            .selectAllPrompts(['new-prompt-1', 'new-prompt-2']);
         expect(state.selectedPromptIds, isNot(contains('old-prompt')));
-        expect(state.selectedPromptIds,
-            containsAll(['new-prompt-1', 'new-prompt-2']));
+        expect(
+          state.selectedPromptIds,
+          containsAll(['new-prompt-1', 'new-prompt-2']),
+        );
       });
 
       test('handles empty list', () {
         final state = initialState
-            .copyWith(selectedPromptIds: {'prompt-1'}).selectAllPrompts([]);
+            .copyWith(selectedPromptIds: {'prompt-1'})
+            .selectAllPrompts([]);
         expect(state.hasSelectedPrompts, isFalse);
       });
 
@@ -133,17 +139,20 @@ void main() {
 
     group('clearSelection', () {
       test('clears all selected prompts', () {
-        final state = initialState.copyWith(
-            selectedPromptIds: {'prompt-1', 'prompt-2'}).clearSelection();
+        final state = initialState
+            .copyWith(selectedPromptIds: {'prompt-1', 'prompt-2'})
+            .clearSelection();
         expect(state.hasSelectedPrompts, isFalse);
         expect(state.selectedPromptCount, 0);
       });
 
       test('does not affect selectionMode', () {
-        final state = initialState.copyWith(
-          selectionMode: true,
-          selectedPromptIds: {'prompt-1'},
-        ).clearSelection();
+        final state = initialState
+            .copyWith(
+              selectionMode: true,
+              selectedPromptIds: {'prompt-1'},
+            )
+            .clearSelection();
         expect(state.selectionMode, isTrue);
         expect(state.hasSelectedPrompts, isFalse);
       });
@@ -156,10 +165,12 @@ void main() {
 
     group('exitSelectionMode', () {
       test('clears selectionMode and selectedPromptIds', () {
-        final state = initialState.copyWith(
-          selectionMode: true,
-          selectedPromptIds: {'prompt-1', 'prompt-2'},
-        ).exitSelectionMode();
+        final state = initialState
+            .copyWith(
+              selectionMode: true,
+              selectedPromptIds: {'prompt-1', 'prompt-2'},
+            )
+            .exitSelectionMode();
         expect(state.selectionMode, isFalse);
         expect(state.hasSelectedPrompts, isFalse);
       });
@@ -211,7 +222,8 @@ void main() {
       test('select all then clear workflow', () {
         final state = initialState
             .copyWith(selectionMode: true)
-            .selectAllPrompts(['p1', 'p2', 'p3', 'p4', 'p5']).clearSelection();
+            .selectAllPrompts(['p1', 'p2', 'p3', 'p4', 'p5'])
+            .clearSelection();
         expect(state.selectionMode, isTrue); // Mode remains
         expect(state.hasSelectedPrompts, isFalse); // Selection cleared
       });

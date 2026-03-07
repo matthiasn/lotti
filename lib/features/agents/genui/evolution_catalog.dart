@@ -16,33 +16,37 @@ const evolutionCatalogId = 'com.lotti.evolution_catalog';
 /// Builds the GenUI [Catalog] for the evolution chat, containing custom
 /// widget types the LLM can instantiate via the `render_surface` tool.
 Catalog buildEvolutionCatalog() => Catalog(
-      [
-        evolutionProposalItem,
-        evolutionNoteConfirmationItem,
-        metricsSummaryItem,
-        versionComparisonItem,
-        feedbackClassificationItem,
-        feedbackCategoryBreakdownItem,
-        sessionProgressItem,
-        categoryRatingsItem,
-        highPriorityFeedbackItem,
-      ],
-      catalogId: evolutionCatalogId,
-    );
+  [
+    evolutionProposalItem,
+    evolutionNoteConfirmationItem,
+    metricsSummaryItem,
+    versionComparisonItem,
+    feedbackClassificationItem,
+    feedbackCategoryBreakdownItem,
+    sessionProgressItem,
+    categoryRatingsItem,
+    highPriorityFeedbackItem,
+  ],
+  catalogId: evolutionCatalogId,
+);
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
 
 final _proposalSchema = S.object(
   properties: {
-    'generalDirective':
-        S.string(description: 'The proposed general directive text'),
-    'reportDirective':
-        S.string(description: 'The proposed report directive text'),
+    'generalDirective': S.string(
+      description: 'The proposed general directive text',
+    ),
+    'reportDirective': S.string(
+      description: 'The proposed report directive text',
+    ),
     'rationale': S.string(description: 'Brief rationale for the changes'),
-    'currentGeneralDirective':
-        S.string(description: 'The current general directive for comparison'),
-    'currentReportDirective':
-        S.string(description: 'The current report directive for comparison'),
+    'currentGeneralDirective': S.string(
+      description: 'The current general directive for comparison',
+    ),
+    'currentReportDirective': S.string(
+      description: 'The current report directive for comparison',
+    ),
   },
   required: ['generalDirective', 'reportDirective', 'rationale'],
 );
@@ -63,10 +67,12 @@ final _metricsSummarySchema = S.object(
     'totalWakes': S.integer(description: 'Total number of wakes'),
     'successRate': S.number(description: 'Success rate 0.0–1.0'),
     'failureCount': S.integer(description: 'Number of failures'),
-    'averageDurationSeconds':
-        S.number(description: 'Average wake duration in seconds'),
-    'activeInstances':
-        S.integer(description: 'Number of active agent instances'),
+    'averageDurationSeconds': S.number(
+      description: 'Average wake duration in seconds',
+    ),
+    'activeInstances': S.integer(
+      description: 'Number of active agent instances',
+    ),
   },
   required: ['totalWakes', 'successRate', 'failureCount'],
 );
@@ -128,10 +134,12 @@ final _feedbackCategoryBreakdownSchema = S.object(
         properties: {
           'name': S.string(description: 'Category name'),
           'count': S.integer(description: 'Total items in this category'),
-          'positiveCount':
-              S.integer(description: 'Positive items in this category'),
-          'negativeCount':
-              S.integer(description: 'Negative items in this category'),
+          'positiveCount': S.integer(
+            description: 'Positive items in this category',
+          ),
+          'negativeCount': S.integer(
+            description: 'Negative items in this category',
+          ),
         },
         required: ['name', 'count'],
       ),
@@ -211,8 +219,7 @@ double _readDouble(
   Map<String, Object?> json,
   String key, [
   double fallback = 0.0,
-]) =>
-    (json[key] is num) ? (json[key]! as num).toDouble() : fallback;
+]) => (json[key] is num) ? (json[key]! as num).toDouble() : fallback;
 
 /// Reads an optional num from a dynamic JSON map.
 num? _readNumOrNull(Map<String, Object?> json, String key) =>
@@ -224,8 +231,7 @@ String _readString(
   Map<String, Object?> json,
   String key, [
   String fallback = '',
-]) =>
-    json[key] is String ? json[key]! as String : fallback;
+]) => json[key] is String ? json[key]! as String : fallback;
 
 /// Reads an optional string from a dynamic JSON map.
 String? _readStringOrNull(Map<String, Object?> json, String key) =>
@@ -235,10 +241,9 @@ String? _readStringOrNull(Map<String, Object?> json, String key) =>
 List<Map<String, Object?>> _readMapList(
   Map<String, Object?> json,
   String key,
-) =>
-    (json[key] is List)
-        ? (json[key]! as List).whereType<Map<String, Object?>>().toList()
-        : <Map<String, Object?>>[];
+) => (json[key] is List)
+    ? (json[key]! as List).whereType<Map<String, Object?>>().toList()
+    : <Map<String, Object?>>[];
 
 // ── Catalog Items ───────────────────────────────────────────────────────────
 
@@ -252,15 +257,19 @@ final evolutionProposalItem = CatalogItem(
     final generalDirective = _readString(json, 'generalDirective').trim();
     final reportDirective = _readString(json, 'reportDirective').trim();
     final rationale = _readString(json, 'rationale').trim();
-    final currentGeneral =
-        _readStringOrNull(json, 'currentGeneralDirective')?.trim();
-    final currentReport =
-        _readStringOrNull(json, 'currentReportDirective')?.trim();
+    final currentGeneral = _readStringOrNull(
+      json,
+      'currentGeneralDirective',
+    )?.trim();
+    final currentReport = _readStringOrNull(
+      json,
+      'currentReportDirective',
+    )?.trim();
     final context = itemContext.buildContext;
 
     final hasCurrentDirectives =
         (currentGeneral != null && currentGeneral.isNotEmpty) ||
-            (currentReport != null && currentReport.isNotEmpty);
+        (currentReport != null && currentReport.isNotEmpty);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -324,8 +333,9 @@ final evolutionProposalItem = CatalogItem(
               const SizedBox(height: 6),
               _directiveBox(
                 text: generalDirective,
-                backgroundColor:
-                    GameyColors.primaryPurple.withValues(alpha: 0.1),
+                backgroundColor: GameyColors.primaryPurple.withValues(
+                  alpha: 0.1,
+                ),
                 borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
               ),
             ],
@@ -339,8 +349,9 @@ final evolutionProposalItem = CatalogItem(
               const SizedBox(height: 6),
               _directiveBox(
                 text: reportDirective,
-                backgroundColor:
-                    GameyColors.primaryPurple.withValues(alpha: 0.1),
+                backgroundColor: GameyColors.primaryPurple.withValues(
+                  alpha: 0.1,
+                ),
                 borderColor: GameyColors.primaryPurple.withValues(alpha: 0.3),
               ),
             ],
@@ -708,7 +719,9 @@ final feedbackClassificationItem = CatalogItem(
             ),
             if (items.isNotEmpty) ...[
               const SizedBox(height: 10),
-              ...items.take(5).map(
+              ...items
+                  .take(5)
+                  .map(
                     (item) => _feedbackLine(
                       detail: _readString(item, 'detail'),
                       sentiment: _readString(item, 'sentiment', 'neutral'),
@@ -900,12 +913,14 @@ final highPriorityFeedbackItem = CatalogItem(
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
-    final grievances = _readMapList(json, 'grievances')
-        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
-        .toList();
-    final excellenceNotes = _readMapList(json, 'excellenceNotes')
-        .where((item) => _readString(item, 'detail').trim().isNotEmpty)
-        .toList();
+    final grievances = _readMapList(
+      json,
+      'grievances',
+    ).where((item) => _readString(item, 'detail').trim().isNotEmpty).toList();
+    final excellenceNotes = _readMapList(
+      json,
+      'excellenceNotes',
+    ).where((item) => _readString(item, 'detail').trim().isNotEmpty).toList();
     if (grievances.isEmpty && excellenceNotes.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -1089,8 +1104,8 @@ class _CategoryRatingsCardState extends State<_CategoryRatingsCard> {
                         onTap: _submitted
                             ? null
                             : () => setState(
-                                  () => _ratings[name] = starIndex,
-                                ),
+                                () => _ratings[name] = starIndex,
+                              ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 2),
                           child: Icon(

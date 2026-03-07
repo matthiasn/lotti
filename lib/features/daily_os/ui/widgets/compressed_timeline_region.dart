@@ -38,7 +38,8 @@ class CompressedTimelineRegion extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Semantics(
-        label: 'Compressed time region from ${region.startHour}:00 to '
+        label:
+            'Compressed time region from ${region.startHour}:00 to '
             '${region.endHour}:00. Tap to expand.',
         button: true,
         child: SizedBox(
@@ -56,8 +57,9 @@ class CompressedTimelineRegion extends StatelessWidget {
                       top: 0,
                       bottom: 0,
                       child: ZigzagFoldIndicator(
-                        color: context.colorScheme.outlineVariant
-                            .withValues(alpha: 0.5),
+                        color: context.colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ],
@@ -84,8 +86,9 @@ class CompressedTimelineRegion extends StatelessWidget {
                         right: 0,
                         child: Container(
                           height: 1,
-                          color: context.colorScheme.outlineVariant
-                              .withValues(alpha: 0.15),
+                          color: context.colorScheme.outlineVariant.withValues(
+                            alpha: 0.15,
+                          ),
                         ),
                       );
                     }),
@@ -120,7 +123,7 @@ class CompressedTimelineRegion extends StatelessWidget {
                               style: context.textTheme.labelSmall?.copyWith(
                                 color: context.colorScheme.onSurfaceVariant,
                                 fontFeatures: const [
-                                  FontFeature.tabularFigures()
+                                  FontFeature.tabularFigures(),
                                 ],
                               ),
                             ),
@@ -189,13 +192,16 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
       vsync: this,
     );
 
-    _heightAnimation = Tween<double>(
-      begin: _collapsedHeight,
-      end: _expandedHeight,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    _heightAnimation =
+        Tween<double>(
+          begin: _collapsedHeight,
+          end: _expandedHeight,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     // Set initial state without animation
     if (widget.isExpanded) {
@@ -212,13 +218,16 @@ class _AnimatedTimelineRegionState extends State<AnimatedTimelineRegion>
         oldWidget.normalHourHeight != widget.normalHourHeight) {
       _collapsedHeight = widget.region.hourCount * kCompressedHourHeight;
       _expandedHeight = widget.region.hourCount * widget.normalHourHeight;
-      _heightAnimation = Tween<double>(
-        begin: _collapsedHeight,
-        end: _expandedHeight,
-      ).animate(CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ));
+      _heightAnimation =
+          Tween<double>(
+            begin: _collapsedHeight,
+            end: _expandedHeight,
+          ).animate(
+            CurvedAnimation(
+              parent: _controller,
+              curve: Curves.easeOutCubic,
+            ),
+          );
     }
 
     // Animate when isExpanded changes

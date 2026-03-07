@@ -188,8 +188,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       builder: (context) => AlertDialog(
         title: Text(context.messages.aiSettingsDeleteSelectedConfirmTitle),
         content: Text(
-          context.messages
-              .aiSettingsDeleteSelectedConfirmMessage(selectedCount),
+          context.messages.aiSettingsDeleteSelectedConfirmMessage(
+            selectedCount,
+          ),
         ),
         actions: [
           TextButton(
@@ -302,10 +303,13 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
 
     return providersAsync.when(
       data: (configs) {
-        final providers =
-            configs.whereType<AiConfigInferenceProvider>().toList();
-        final filteredProviders =
-            _filterService.filterProviders(providers, _filterState);
+        final providers = configs
+            .whereType<AiConfigInferenceProvider>()
+            .toList();
+        final filteredProviders = _filterService.filterProviders(
+          providers,
+          _filterState,
+        );
 
         return AiSettingsConfigSliver<AiConfigInferenceProvider>(
           configsAsync: providersAsync,
@@ -348,8 +352,10 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
     return modelsAsync.when(
       data: (configs) {
         final models = configs.whereType<AiConfigModel>().toList();
-        final filteredModels =
-            _filterService.filterModels(models, _filterState);
+        final filteredModels = _filterService.filterModels(
+          models,
+          _filterState,
+        );
 
         return AiSettingsConfigSliver<AiConfigModel>(
           configsAsync: modelsAsync,
@@ -459,8 +465,8 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         final filteredProfiles = query.isEmpty
             ? profiles
             : profiles
-                .where((p) => p.name.toLowerCase().contains(query))
-                .toList();
+                  .where((p) => p.name.toLowerCase().contains(query))
+                  .toList();
 
         if (filteredProfiles.isEmpty) {
           final emptyMessage = query.isNotEmpty
@@ -475,8 +481,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
                   Icon(
                     Icons.tune,
                     size: 48,
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: 0.5),
+                    color: context.colorScheme.onSurfaceVariant.withValues(
+                      alpha: 0.5,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -495,7 +502,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           padding: const EdgeInsets.symmetric(horizontal: 16),
           sliver: SliverList.separated(
             itemCount: filteredProfiles.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final profile = filteredProfiles[index];
               return ProfileCard(

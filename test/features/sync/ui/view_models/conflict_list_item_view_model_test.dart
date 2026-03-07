@@ -13,8 +13,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ConflictListItemViewModel', () {
-    testWidgets('formats resolved conflicts with localized labels',
-        (tester) async {
+    testWidgets('formats resolved conflicts with localized labels', (
+      tester,
+    ) async {
       late ConflictListItemViewModel viewModel;
       late BuildContext capturedContext;
 
@@ -59,8 +60,9 @@ void main() {
       );
     });
 
-    testWidgets('falls back to original casing when title case is null',
-        (tester) async {
+    testWidgets('falls back to original casing when title case is null', (
+      tester,
+    ) async {
       late ConflictListItemViewModel viewModel;
 
       final conflict = Conflict(

@@ -101,8 +101,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -163,8 +164,9 @@ void main() {
   }
 
   group('TaskAgentReportSection - config flag', () {
-    testWidgets('renders nothing when enableAgents flag is disabled',
-        (tester) async {
+    testWidgets('renders nothing when enableAgents flag is disabled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           taskId: 'task-1',
@@ -255,8 +257,9 @@ void main() {
       expect(find.byIcon(Icons.add), findsNothing);
     });
 
-    testWidgets('renders nothing when entity is not agent type',
-        (tester) async {
+    testWidgets('renders nothing when entity is not agent type', (
+      tester,
+    ) async {
       final nonAgentEntity = makeTestState();
       await tester.pumpWidget(
         _buildSubject(
@@ -285,8 +288,9 @@ void main() {
       final mockTemplateService = MockAgentTemplateService();
       final identity = makeTestIdentity();
 
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [makeTestTemplate()]);
+      when(
+        mockTemplateService.listTemplates,
+      ).thenAnswer((_) async => [makeTestTemplate()]);
       when(
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
@@ -339,14 +343,16 @@ void main() {
       ).called(1);
     });
 
-    testWidgets('shows error snackbar when createTaskAgent throws',
-        (tester) async {
+    testWidgets('shows error snackbar when createTaskAgent throws', (
+      tester,
+    ) async {
       final task = testTask;
       final mockService = MockTaskAgentService();
       final mockTemplateService = MockAgentTemplateService();
 
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [makeTestTemplate()]);
+      when(
+        mockTemplateService.listTemplates,
+      ).thenAnswer((_) async => [makeTestTemplate()]);
       when(
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
@@ -392,8 +398,9 @@ void main() {
       expect(find.textContaining('creation failed'), findsOneWidget);
     });
 
-    testWidgets('create agent does nothing when entry state is null',
-        (tester) async {
+    testWidgets('create agent does nothing when entry state is null', (
+      tester,
+    ) async {
       final task = testTask;
       final mockService = MockTaskAgentService();
 
@@ -401,8 +408,9 @@ void main() {
         _buildSubject(
           taskId: task.meta.id,
           overrides: [
-            entryControllerProvider(id: task.meta.id)
-                .overrideWith(_NullEntryController.new),
+            entryControllerProvider(
+              id: task.meta.id,
+            ).overrideWith(_NullEntryController.new),
             configFlagProvider.overrideWith(
               (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
             ),
@@ -431,8 +439,9 @@ void main() {
       );
     });
 
-    testWidgets('create agent passes categoryId in allowedCategoryIds',
-        (tester) async {
+    testWidgets('create agent passes categoryId in allowedCategoryIds', (
+      tester,
+    ) async {
       const categoryId = 'cat-123';
       final taskWithCategory = Task(
         data: TaskData(
@@ -464,8 +473,9 @@ void main() {
       when(
         () => mockTemplateService.listTemplatesForCategory(categoryId),
       ).thenAnswer((_) async => [makeTestTemplate()]);
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [makeTestTemplate()]);
+      when(
+        mockTemplateService.listTemplates,
+      ).thenAnswer((_) async => [makeTestTemplate()]);
       when(
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
@@ -557,8 +567,9 @@ void main() {
       );
     });
 
-    testWidgets('shows template selection modal for multiple templates',
-        (tester) async {
+    testWidgets('shows template selection modal for multiple templates', (
+      tester,
+    ) async {
       final task = testTask;
       final mockService = MockTaskAgentService();
       final mockTemplateService = MockAgentTemplateService();
@@ -575,8 +586,9 @@ void main() {
         displayName: 'Tom',
       );
 
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [laura, tom]);
+      when(
+        mockTemplateService.listTemplates,
+      ).thenAnswer((_) async => [laura, tom]);
       when(
         () => mockService.createTaskAgent(
           taskId: any(named: 'taskId'),
@@ -643,8 +655,9 @@ void main() {
   });
 
   group('TaskAgentReportSection - agent header controls', () {
-    testWidgets('shows agent icon and report title when agent exists',
-        (tester) async {
+    testWidgets('shows agent icon and report title when agent exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           taskId: 'task-1',
@@ -699,8 +712,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.refresh_rounded));
       await tester.pumpAndSettle();
 
-      verify(() => mockService.triggerReanalysis(agentEntity.agentId))
-          .called(1);
+      verify(
+        () => mockService.triggerReanalysis(agentEntity.agentId),
+      ).called(1);
     });
 
     testWidgets('hides refresh button when agent is running', (tester) async {
@@ -717,8 +731,9 @@ void main() {
       expect(find.byIcon(Icons.refresh_rounded), findsNothing);
     });
 
-    testWidgets('shows countdown when nextWakeAt is in the future',
-        (tester) async {
+    testWidgets('shows countdown when nextWakeAt is in the future', (
+      tester,
+    ) async {
       final now = DateTime(2024, 3, 15, 12);
       await withClock(Clock.fixed(now), () async {
         final agentEntity = makeTestIdentity();
@@ -736,8 +751,9 @@ void main() {
                 agent: agentEntity,
                 agentState: stateEntity,
               ),
-              taskAgentServiceProvider
-                  .overrideWithValue(MockTaskAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
             ],
           ),
         );
@@ -748,8 +764,9 @@ void main() {
       });
     });
 
-    testWidgets('does not show countdown when nextWakeAt is in the past',
-        (tester) async {
+    testWidgets('does not show countdown when nextWakeAt is in the past', (
+      tester,
+    ) async {
       final now = DateTime(2024, 3, 15, 12);
       await withClock(Clock.fixed(now), () async {
         final agentEntity = makeTestIdentity();
@@ -767,8 +784,9 @@ void main() {
                 agent: agentEntity,
                 agentState: stateEntity,
               ),
-              taskAgentServiceProvider
-                  .overrideWithValue(MockTaskAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
             ],
           ),
         );
@@ -781,8 +799,9 @@ void main() {
       });
     });
 
-    testWidgets('during countdown shows play-now, pill, cancel; hides refresh',
-        (tester) async {
+    testWidgets('during countdown shows play-now, pill, cancel; hides refresh', (
+      tester,
+    ) async {
       final now = DateTime(2024, 3, 15, 12);
       await withClock(Clock.fixed(now), () async {
         final agentEntity = makeTestIdentity();
@@ -819,88 +838,92 @@ void main() {
         await tester.tap(find.byIcon(Icons.close));
         await tester.pump();
 
-        verify(() => mockService.cancelScheduledWake(agentEntity.agentId))
-            .called(1);
+        verify(
+          () => mockService.cancelScheduledWake(agentEntity.agentId),
+        ).called(1);
       });
     });
 
     testWidgets(
-        'cancel prevents countdown re-seed until provider clears nextWakeAt',
-        (tester) async {
-      final now = DateTime(2024, 3, 15, 12);
-      await withClock(Clock.fixed(now), () async {
-        final agentEntity = makeTestIdentity();
-        final nextWakeAt = now.add(const Duration(seconds: 90));
-        final stateEntity = makeTestState(
-          agentId: agentEntity.agentId,
-          nextWakeAt: nextWakeAt,
-        );
-        final mockService = MockTaskAgentService();
+      'cancel prevents countdown re-seed until provider clears nextWakeAt',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 12);
+        await withClock(Clock.fixed(now), () async {
+          final agentEntity = makeTestIdentity();
+          final nextWakeAt = now.add(const Duration(seconds: 90));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
+          final mockService = MockTaskAgentService();
 
-        await tester.pumpWidget(
-          _buildSubject(
-            taskId: 'task-1',
-            overrides: [
-              ...agentExistsOverrides(
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: [
+                ...agentExistsOverrides(
+                  agent: agentEntity,
+                  agentState: stateEntity,
+                ),
+                taskAgentServiceProvider.overrideWithValue(mockService),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Countdown visible before cancel.
+          expect(find.text('1:30'), findsOneWidget);
+
+          // Cancel the countdown.
+          when(() => mockService.cancelScheduledWake(any())).thenReturn(null);
+          await tester.tap(find.byIcon(Icons.close));
+          await tester.pump();
+
+          // Countdown gone, refresh button should appear instead.
+          expect(find.byIcon(Icons.close), findsNothing);
+          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+        });
+      },
+    );
+
+    testWidgets(
+      'spinner shown and countdown hidden when agent transitions to running',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 12);
+        await withClock(Clock.fixed(now), () async {
+          final agentEntity = makeTestIdentity();
+          final nextWakeAt = now.add(const Duration(seconds: 90));
+          final stateEntity = makeTestState(
+            agentId: agentEntity.agentId,
+            nextWakeAt: nextWakeAt,
+          );
+
+          await tester.pumpWidget(
+            _buildSubject(
+              taskId: 'task-1',
+              overrides: agentExistsOverrides(
                 agent: agentEntity,
                 agentState: stateEntity,
+                isRunning: true,
               ),
-              taskAgentServiceProvider.overrideWithValue(mockService),
-            ],
-          ),
-        );
-        await tester.pumpAndSettle();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Countdown visible before cancel.
-        expect(find.text('1:30'), findsOneWidget);
-
-        // Cancel the countdown.
-        when(() => mockService.cancelScheduledWake(any())).thenReturn(null);
-        await tester.tap(find.byIcon(Icons.close));
-        await tester.pump();
-
-        // Countdown gone, refresh button should appear instead.
-        expect(find.byIcon(Icons.close), findsNothing);
-        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
-      });
-    });
-
-    testWidgets(
-        'spinner shown and countdown hidden when agent transitions to running',
-        (tester) async {
-      final now = DateTime(2024, 3, 15, 12);
-      await withClock(Clock.fixed(now), () async {
-        final agentEntity = makeTestIdentity();
-        final nextWakeAt = now.add(const Duration(seconds: 90));
-        final stateEntity = makeTestState(
-          agentId: agentEntity.agentId,
-          nextWakeAt: nextWakeAt,
-        );
-
-        await tester.pumpWidget(
-          _buildSubject(
-            taskId: 'task-1',
-            overrides: agentExistsOverrides(
-              agent: agentEntity,
-              agentState: stateEntity,
-              isRunning: true,
             ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump();
-        await tester.pump();
+          );
+          await tester.pump();
+          await tester.pump();
+          await tester.pump();
 
-        // Running spinner should be shown, countdown buttons hidden.
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
-        expect(find.byIcon(Icons.close), findsNothing);
-      });
-    });
+          // Running spinner should be shown, countdown buttons hidden.
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+          expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+          expect(find.byIcon(Icons.close), findsNothing);
+        });
+      },
+    );
 
-    testWidgets('play-now button during countdown triggers reanalysis',
-        (tester) async {
+    testWidgets('play-now button during countdown triggers reanalysis', (
+      tester,
+    ) async {
       final now = DateTime(2024, 3, 15, 12);
       await withClock(Clock.fixed(now), () async {
         final agentEntity = makeTestIdentity();
@@ -933,8 +956,9 @@ void main() {
         await tester.tap(find.byIcon(Icons.play_arrow_rounded));
         await tester.pump();
 
-        verify(() => mockService.triggerReanalysis(agentEntity.agentId))
-            .called(1);
+        verify(
+          () => mockService.triggerReanalysis(agentEntity.agentId),
+        ).called(1);
       });
     });
   });
@@ -942,7 +966,8 @@ void main() {
   group('TaskAgentReportSection - report content', () {
     testWidgets('renders report content when agent has report', (tester) async {
       final report = makeTestReport(
-        content: '## 📋 TLDR\nGood progress on task.\n\n'
+        content:
+            '## 📋 TLDR\nGood progress on task.\n\n'
             '## ✅ Achieved\n- Item A\n',
       );
 
@@ -954,15 +979,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final markdowns =
-          tester.widgetList<GptMarkdown>(find.byType(GptMarkdown)).toList();
+      final markdowns = tester
+          .widgetList<GptMarkdown>(find.byType(GptMarkdown))
+          .toList();
       expect(markdowns, isNotEmpty);
       expect(markdowns.first.data, contains('TLDR'));
       expect(markdowns.first.data, contains('Good progress'));
     });
 
-    testWidgets('renders no report content when report is empty',
-        (tester) async {
+    testWidgets('renders no report content when report is empty', (
+      tester,
+    ) async {
       final report = makeTestReport(
         content: '',
       );
@@ -978,8 +1005,9 @@ void main() {
       expect(find.byType(GptMarkdown), findsNothing);
     });
 
-    testWidgets('renders no report content when report is null',
-        (tester) async {
+    testWidgets('renders no report content when report is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         _buildSubject(
           taskId: 'task-1',
@@ -993,8 +1021,9 @@ void main() {
   });
 
   group('TaskAgentReportSection - template header', () {
-    testWidgets('header shows template name when template exists',
-        (tester) async {
+    testWidgets('header shows template name when template exists', (
+      tester,
+    ) async {
       final template = makeTestTemplate(
         id: 'tpl-1',
         agentId: 'tpl-1',
@@ -1068,210 +1097,222 @@ void main() {
     });
 
     testWidgets(
-        'tapping agent icon navigates to AgentDetailPage when no template',
-        (tester) async {
-      final agentEntity = makeTestIdentity();
-      await tester.pumpWidget(
-        _buildSubject(
-          taskId: 'task-1',
-          overrides: [
-            ...agentExistsOverrides(agent: agentEntity),
-            // Overrides needed by AgentDetailPage
-            agentIdentityProvider.overrideWith(
-              (ref, agentId) async => agentEntity,
-            ),
-            agentRecentMessagesProvider.overrideWith(
-              (ref, agentId) async => <AgentDomainEntity>[],
-            ),
-            agentReportHistoryProvider.overrideWith(
-              (ref, agentId) async => <AgentDomainEntity>[],
-            ),
-            agentObservationMessagesProvider.overrideWith(
-              (ref, agentId) async => <AgentDomainEntity>[],
-            ),
-            agentMessagesByThreadProvider.overrideWith(
-              (ref, agentId) async => <String, List<AgentDomainEntity>>{},
-            ),
-            agentTokenUsageRecordsProvider.overrideWith(
-              (ref, agentId) async => <AgentDomainEntity>[],
-            ),
-            agentTokenUsageSummariesProvider.overrideWith(
-              (ref, agentId) async => <AgentTokenUsageSummary>[],
-            ),
-            agentServiceProvider.overrideWithValue(MockAgentService()),
-            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+      'tapping agent icon navigates to AgentDetailPage when no template',
+      (tester) async {
+        final agentEntity = makeTestIdentity();
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: 'task-1',
+            overrides: [
+              ...agentExistsOverrides(agent: agentEntity),
+              // Overrides needed by AgentDetailPage
+              agentIdentityProvider.overrideWith(
+                (ref, agentId) async => agentEntity,
+              ),
+              agentRecentMessagesProvider.overrideWith(
+                (ref, agentId) async => <AgentDomainEntity>[],
+              ),
+              agentReportHistoryProvider.overrideWith(
+                (ref, agentId) async => <AgentDomainEntity>[],
+              ),
+              agentObservationMessagesProvider.overrideWith(
+                (ref, agentId) async => <AgentDomainEntity>[],
+              ),
+              agentMessagesByThreadProvider.overrideWith(
+                (ref, agentId) async => <String, List<AgentDomainEntity>>{},
+              ),
+              agentTokenUsageRecordsProvider.overrideWith(
+                (ref, agentId) async => <AgentDomainEntity>[],
+              ),
+              agentTokenUsageSummariesProvider.overrideWith(
+                (ref, agentId) async => <AgentTokenUsageSummary>[],
+              ),
+              agentServiceProvider.overrideWithValue(MockAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.smart_toy_outlined));
-      await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.smart_toy_outlined));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(AgentDetailPage), findsOneWidget);
-    });
+        expect(find.byType(AgentDetailPage), findsOneWidget);
+      },
+    );
   });
 
   group('TaskAgentReportSection - template selection edge cases', () {
     testWidgets(
-        'dismissing bottom sheet without selecting does not create agent',
-        (tester) async {
-      final task = testTask;
-      final mockService = MockTaskAgentService();
-      final mockTemplateService = MockAgentTemplateService();
+      'dismissing bottom sheet without selecting does not create agent',
+      (tester) async {
+        final task = testTask;
+        final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
 
-      final laura = makeTestTemplate(
-        id: 'tpl-laura',
-        agentId: 'tpl-laura',
-        displayName: 'Laura',
-      );
-      final tom = makeTestTemplate(
-        id: 'tpl-tom',
-        agentId: 'tpl-tom',
-        displayName: 'Tom',
-      );
+        final laura = makeTestTemplate(
+          id: 'tpl-laura',
+          agentId: 'tpl-laura',
+          displayName: 'Laura',
+        );
+        final tom = makeTestTemplate(
+          id: 'tpl-tom',
+          agentId: 'tpl-tom',
+          displayName: 'Tom',
+        );
 
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [laura, tom]);
+        when(
+          mockTemplateService.listTemplates,
+        ).thenAnswer((_) async => [laura, tom]);
 
-      await tester.pumpWidget(
-        _buildSubject(
-          taskId: task.meta.id,
-          overrides: [
-            entryControllerProvider(id: task.meta.id).overrideWith(
-              () => _TestEntryController(task),
-            ),
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
-            ),
-            taskAgentProvider.overrideWith(
-              (ref, taskId) async => null,
-            ),
-            taskAgentServiceProvider.overrideWithValue(mockService),
-            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final context = tester.element(find.byType(TaskAgentReportSection));
-      await tester.tap(
-        find.text(context.messages.taskAgentCreateChipLabel),
-      );
-      await tester.pumpAndSettle();
-
-      // Bottom sheet is shown
-      expect(find.text('Laura'), findsOneWidget);
-
-      // Dismiss the bottom sheet by tapping above it on the barrier
-      await tester.tapAt(const Offset(400, 10));
-      await tester.pumpAndSettle();
-
-      // createTaskAgent must NOT be called
-      verifyNever(
-        () => mockService.createTaskAgent(
-          taskId: any(named: 'taskId'),
-          templateId: any(named: 'templateId'),
-          profileId: any(named: 'profileId'),
-          allowedCategoryIds: any(named: 'allowedCategoryIds'),
-        ),
-      );
-    });
-
-    testWidgets('falls back to listTemplates when category templates are empty',
-        (tester) async {
-      const categoryId = 'cat-123';
-      final taskWithCategory = Task(
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status_id',
-            createdAt: DateTime(2022, 7, 7, 11),
-            utcOffset: 60,
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: task.meta.id,
+            overrides: [
+              entryControllerProvider(id: task.meta.id).overrideWith(
+                () => _TestEntryController(task),
+              ),
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
+              ),
+              taskAgentProvider.overrideWith(
+                (ref, taskId) async => null,
+              ),
+              taskAgentServiceProvider.overrideWithValue(mockService),
+              agentTemplateServiceProvider.overrideWithValue(
+                mockTemplateService,
+              ),
+            ],
           ),
-          title: 'Task with category',
-          statusHistory: [],
-          dateTo: DateTime(2022, 7, 7, 9),
-          dateFrom: DateTime(2022, 7, 7, 9),
-        ),
-        meta: Metadata(
-          id: testTask.meta.id,
-          createdAt: DateTime(2022, 7, 7, 9),
-          dateFrom: DateTime(2022, 7, 7, 9),
-          dateTo: DateTime(2022, 7, 7, 11),
-          updatedAt: DateTime(2022, 7, 7, 11),
-          categoryId: categoryId,
-        ),
-        entryText: const EntryText(plainText: 'task text'),
-      );
+        );
+        await tester.pumpAndSettle();
 
-      final mockService = MockTaskAgentService();
-      final mockTemplateService = MockAgentTemplateService();
-      final identity = makeTestIdentity();
+        final context = tester.element(find.byType(TaskAgentReportSection));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
 
-      // Category-specific returns empty → falls back to listTemplates
-      when(
-        () => mockTemplateService.listTemplatesForCategory(categoryId),
-      ).thenAnswer((_) async => []);
-      when(mockTemplateService.listTemplates)
-          .thenAnswer((_) async => [makeTestTemplate()]);
-      when(
-        () => mockService.createTaskAgent(
-          taskId: any(named: 'taskId'),
-          templateId: any(named: 'templateId'),
-          profileId: any(named: 'profileId'),
-          allowedCategoryIds: any(named: 'allowedCategoryIds'),
-        ),
-      ).thenAnswer((_) async => identity);
+        // Bottom sheet is shown
+        expect(find.text('Laura'), findsOneWidget);
 
-      await tester.pumpWidget(
-        _buildSubject(
-          taskId: testTask.meta.id,
-          overrides: [
-            entryControllerProvider(id: testTask.meta.id).overrideWith(
-              () => _TestEntryController(taskWithCategory),
+        // Dismiss the bottom sheet by tapping above it on the barrier
+        await tester.tapAt(const Offset(400, 10));
+        await tester.pumpAndSettle();
+
+        // createTaskAgent must NOT be called
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'falls back to listTemplates when category templates are empty',
+      (tester) async {
+        const categoryId = 'cat-123';
+        final taskWithCategory = Task(
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status_id',
+              createdAt: DateTime(2022, 7, 7, 11),
+              utcOffset: 60,
             ),
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
-            ),
-            taskAgentProvider.overrideWith(
-              (ref, taskId) async => null,
-            ),
-            taskAgentServiceProvider.overrideWithValue(mockService),
-            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
-            inferenceProfileControllerProvider.overrideWith(
-              () => _FakeInferenceProfileController([_testProfile]),
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
+            title: 'Task with category',
+            statusHistory: [],
+            dateTo: DateTime(2022, 7, 7, 9),
+            dateFrom: DateTime(2022, 7, 7, 9),
+          ),
+          meta: Metadata(
+            id: testTask.meta.id,
+            createdAt: DateTime(2022, 7, 7, 9),
+            dateFrom: DateTime(2022, 7, 7, 9),
+            dateTo: DateTime(2022, 7, 7, 11),
+            updatedAt: DateTime(2022, 7, 7, 11),
+            categoryId: categoryId,
+          ),
+          entryText: const EntryText(plainText: 'task text'),
+        );
 
-      final context = tester.element(find.byType(TaskAgentReportSection));
-      await tester.tap(
-        find.text(context.messages.taskAgentCreateChipLabel),
-      );
-      await tester.pumpAndSettle();
+        final mockService = MockTaskAgentService();
+        final mockTemplateService = MockAgentTemplateService();
+        final identity = makeTestIdentity();
 
-      // listTemplatesForCategory was called first
-      verify(
-        () => mockTemplateService.listTemplatesForCategory(categoryId),
-      ).called(1);
-      // Fell back to listTemplates
-      verify(mockTemplateService.listTemplates).called(1);
+        // Category-specific returns empty → falls back to listTemplates
+        when(
+          () => mockTemplateService.listTemplatesForCategory(categoryId),
+        ).thenAnswer((_) async => []);
+        when(
+          mockTemplateService.listTemplates,
+        ).thenAnswer((_) async => [makeTestTemplate()]);
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => identity);
 
-      // Select profile to complete the modal flow.
-      await tester.tap(find.text(_testProfile.name));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          _buildSubject(
+            taskId: testTask.meta.id,
+            overrides: [
+              entryControllerProvider(id: testTask.meta.id).overrideWith(
+                () => _TestEntryController(taskWithCategory),
+              ),
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(flagName == enableAgentsFlag),
+              ),
+              taskAgentProvider.overrideWith(
+                (ref, taskId) async => null,
+              ),
+              taskAgentServiceProvider.overrideWithValue(mockService),
+              agentTemplateServiceProvider.overrideWithValue(
+                mockTemplateService,
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                () => _FakeInferenceProfileController([_testProfile]),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Created agent with the fallback template
-      verify(
-        () => mockService.createTaskAgent(
-          taskId: testTask.meta.id,
-          templateId: any(named: 'templateId'),
-          profileId: _testProfile.id,
-          allowedCategoryIds: {categoryId},
-        ),
-      ).called(1);
-    });
+        final context = tester.element(find.byType(TaskAgentReportSection));
+        await tester.tap(
+          find.text(context.messages.taskAgentCreateChipLabel),
+        );
+        await tester.pumpAndSettle();
+
+        // listTemplatesForCategory was called first
+        verify(
+          () => mockTemplateService.listTemplatesForCategory(categoryId),
+        ).called(1);
+        // Fell back to listTemplates
+        verify(mockTemplateService.listTemplates).called(1);
+
+        // Select profile to complete the modal flow.
+        await tester.tap(find.text(_testProfile.name));
+        await tester.pumpAndSettle();
+
+        // Created agent with the fallback template
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: testTask.meta.id,
+            templateId: any(named: 'templateId'),
+            profileId: _testProfile.id,
+            allowedCategoryIds: {categoryId},
+          ),
+        ).called(1);
+      },
+    );
   });
 }

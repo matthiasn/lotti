@@ -7,8 +7,8 @@ class HabitsLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
-        '/habits',
-      ];
+    '/habits',
+  ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {

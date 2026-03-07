@@ -12,20 +12,24 @@ part of 'cloud_inference_repository.dart';
 @ProviderFor(cloudInferenceRepository)
 final cloudInferenceRepositoryProvider = CloudInferenceRepositoryProvider._();
 
-final class CloudInferenceRepositoryProvider extends $FunctionalProvider<
-    CloudInferenceRepository,
-    CloudInferenceRepository,
-    CloudInferenceRepository> with $Provider<CloudInferenceRepository> {
+final class CloudInferenceRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CloudInferenceRepository,
+          CloudInferenceRepository,
+          CloudInferenceRepository
+        >
+    with $Provider<CloudInferenceRepository> {
   CloudInferenceRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'cloudInferenceRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cloudInferenceRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$cloudInferenceRepositoryHash();
@@ -33,8 +37,8 @@ final class CloudInferenceRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<CloudInferenceRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   CloudInferenceRepository create(Ref ref) {

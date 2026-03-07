@@ -43,41 +43,44 @@ void main() {
       }
     });
 
-    test('all tools have object-type parameter schemas with required fields',
-        () {
-      for (final tool in AgentToolRegistry.taskAgentTools) {
-        expect(
-          tool.parameters['type'],
-          equals('object'),
-          reason: '${tool.name} parameters must be type=object',
-        );
-        expect(
-          tool.parameters['properties'],
-          isA<Map<String, dynamic>>(),
-          reason: '${tool.name} must have properties',
-        );
-        expect(
-          tool.parameters['required'],
-          isA<List<dynamic>>(),
-          reason: '${tool.name} must have required list',
-        );
-        final required = tool.parameters['required'] as List;
-        expect(
-          required,
-          isNotEmpty,
-          reason: '${tool.name} must require at least one parameter',
-        );
-        expect(
-          tool.parameters['additionalProperties'],
-          isFalse,
-          reason: '${tool.name} must disallow additional properties',
-        );
-      }
-    });
+    test(
+      'all tools have object-type parameter schemas with required fields',
+      () {
+        for (final tool in AgentToolRegistry.taskAgentTools) {
+          expect(
+            tool.parameters['type'],
+            equals('object'),
+            reason: '${tool.name} parameters must be type=object',
+          );
+          expect(
+            tool.parameters['properties'],
+            isA<Map<String, dynamic>>(),
+            reason: '${tool.name} must have properties',
+          );
+          expect(
+            tool.parameters['required'],
+            isA<List<dynamic>>(),
+            reason: '${tool.name} must have required list',
+          );
+          final required = tool.parameters['required'] as List;
+          expect(
+            required,
+            isNotEmpty,
+            reason: '${tool.name} must require at least one parameter',
+          );
+          expect(
+            tool.parameters['additionalProperties'],
+            isFalse,
+            reason: '${tool.name} must disallow additional properties',
+          );
+        }
+      },
+    );
 
     test('tool names are unique', () {
-      final names =
-          AgentToolRegistry.taskAgentTools.map((t) => t.name).toList();
+      final names = AgentToolRegistry.taskAgentTools
+          .map((t) => t.name)
+          .toList();
       expect(names.toSet().length, equals(names.length));
     });
 
@@ -85,8 +88,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'set_task_title');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'set_task_title',
+        );
       });
 
       test('has correct name and description', () {
@@ -107,8 +111,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'update_task_estimate');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'update_task_estimate',
+        );
       });
 
       test('has correct name', () {
@@ -127,8 +132,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'update_task_due_date');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'update_task_due_date',
+        );
       });
 
       test('has correct name', () {
@@ -151,8 +157,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'update_task_priority');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'update_task_priority',
+        );
       });
 
       test('has correct name', () {
@@ -171,8 +178,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'add_multiple_checklist_items');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'add_multiple_checklist_items',
+        );
       });
 
       test('has correct name', () {
@@ -198,8 +206,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'update_checklist_items');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'update_checklist_items',
+        );
       });
 
       test('has correct name', () {
@@ -226,8 +235,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'update_report');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'update_report',
+        );
       });
 
       test('has correct name and description', () {
@@ -251,8 +261,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'record_observations');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'record_observations',
+        );
       });
 
       test('has correct name and description', () {
@@ -295,8 +306,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'assign_task_labels');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'assign_task_labels',
+        );
       });
 
       test('has correct name and description', () {
@@ -330,8 +342,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'set_task_language');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'set_task_language',
+        );
       });
 
       test('has correct name and description', () {
@@ -355,8 +368,9 @@ void main() {
       late AgentToolDefinition tool;
 
       setUp(() {
-        tool = AgentToolRegistry.taskAgentTools
-            .firstWhere((t) => t.name == 'set_task_status');
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'set_task_status',
+        );
       });
 
       test('has correct name and description', () {

@@ -8,7 +8,8 @@ void _expectAllChunksWithinTokenLimit(List<String> chunks, int limit) {
     expect(
       tokens,
       lessThanOrEqualTo(limit),
-      reason: 'Chunk $i has $tokens estimated tokens, '
+      reason:
+          'Chunk $i has $tokens estimated tokens, '
           'which exceeds target of $limit',
     );
   }
@@ -40,14 +41,16 @@ void main() {
         expect(TextChunker.estimateTokens('a  b  c'), 4); // ceil(3 * 1.3)
       });
 
-      test('estimates long whitespace-free non-CJK token by character count',
-          () {
-        // A 2000-character URL-like string (no whitespace, no CJK)
-        final longUrl = 'https://example.com/${'a' * 1980}';
-        final tokens = TextChunker.estimateTokens(longUrl);
-        // Should use ~4 chars/token → 2000/4 = 500, not 1 word × 1.3 = 2
-        expect(tokens, 500);
-      });
+      test(
+        'estimates long whitespace-free non-CJK token by character count',
+        () {
+          // A 2000-character URL-like string (no whitespace, no CJK)
+          final longUrl = 'https://example.com/${'a' * 1980}';
+          final tokens = TextChunker.estimateTokens(longUrl);
+          // Should use ~4 chars/token → 2000/4 = 500, not 1 word × 1.3 = 2
+          expect(tokens, 500);
+        },
+      );
     });
 
     group('chunk', () {
@@ -107,8 +110,11 @@ void main() {
         final text = sentences.join(' ');
         final chunks = TextChunker.chunk(text);
 
-        expect(chunks.length, greaterThan(1),
-            reason: 'Need multiple chunks to test overlap');
+        expect(
+          chunks.length,
+          greaterThan(1),
+          reason: 'Need multiple chunks to test overlap',
+        );
 
         // Check that consecutive chunks share some words
         for (var i = 0; i < chunks.length - 1; i++) {
@@ -132,7 +138,8 @@ void main() {
           expect(
             overlap,
             isNotEmpty,
-            reason: 'Chunks $i and ${i + 1} should overlap. '
+            reason:
+                'Chunks $i and ${i + 1} should overlap. '
                 'End of chunk $i: "${currentEnd.take(10).join(' ')}..." '
                 'Start of chunk ${i + 1}: "${nextStart.take(10).join(' ')}..."',
           );
@@ -149,25 +156,27 @@ void main() {
         _expectAllChunksWithinTokenLimit(chunks, kChunkTargetTokens);
       });
 
-      test('handles single very long sentence by splitting on word boundaries',
-          () {
-        // One sentence with 500 words (no sentence boundaries to split on)
-        final longSentence = List.generate(500, (i) => 'word$i').join(' ');
-        final chunks = TextChunker.chunk(longSentence);
-        // Should produce multiple chunks via word-boundary fallback
-        expect(chunks.length, greaterThan(1));
-        // Every word should appear in at least one chunk (use word-boundary
-        // matching to avoid false positives like 'word1' matching 'word10').
-        for (var i = 0; i < 500; i++) {
-          final marker = 'word$i';
-          final pattern = RegExp('(^|\\s)${RegExp.escape(marker)}(\\s|\$)');
-          expect(
-            chunks.any(pattern.hasMatch),
-            isTrue,
-            reason: 'Word "$marker" not found in any chunk',
-          );
-        }
-      });
+      test(
+        'handles single very long sentence by splitting on word boundaries',
+        () {
+          // One sentence with 500 words (no sentence boundaries to split on)
+          final longSentence = List.generate(500, (i) => 'word$i').join(' ');
+          final chunks = TextChunker.chunk(longSentence);
+          // Should produce multiple chunks via word-boundary fallback
+          expect(chunks.length, greaterThan(1));
+          // Every word should appear in at least one chunk (use word-boundary
+          // matching to avoid false positives like 'word1' matching 'word10').
+          for (var i = 0; i < 500; i++) {
+            final marker = 'word$i';
+            final pattern = RegExp('(^|\\s)${RegExp.escape(marker)}(\\s|\$)');
+            expect(
+              chunks.any(pattern.hasMatch),
+              isTrue,
+              reason: 'Word "$marker" not found in any chunk',
+            );
+          }
+        },
+      );
 
       test('splits oversized sentence within multi-sentence text', () {
         const normalSentence = 'This is a normal sentence.';
@@ -183,7 +192,8 @@ void main() {
       test('handles paragraph breaks as sentence boundaries', () {
         final paragraphs = List.generate(
           20,
-          (i) => 'Paragraph $i has multiple words discussing topic $i '
+          (i) =>
+              'Paragraph $i has multiple words discussing topic $i '
               'with enough content to be meaningful and substantial.',
         );
         final text = paragraphs.join('\n\n');
@@ -237,8 +247,11 @@ void main() {
         // 1 token per character.
         final cjkText = List.generate(500, (i) => '字').join();
         final chunks = TextChunker.chunk(cjkText);
-        expect(chunks.length, greaterThan(1),
-            reason: 'CJK text should be chunked by character count');
+        expect(
+          chunks.length,
+          greaterThan(1),
+          reason: 'CJK text should be chunked by character count',
+        );
 
         // All characters should be covered
         final rejoined = chunks.join();
@@ -304,8 +317,11 @@ void main() {
         final chunks = TextChunker.chunk(longUrl);
 
         // Should produce multiple chunks
-        expect(chunks.length, greaterThan(1),
-            reason: 'A 3000-char URL must be split into multiple chunks');
+        expect(
+          chunks.length,
+          greaterThan(1),
+          reason: 'A 3000-char URL must be split into multiple chunks',
+        );
 
         // No chunk should exceed the character-based limit
         for (var i = 0; i < chunks.length; i++) {

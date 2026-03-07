@@ -45,7 +45,8 @@ class GameyStreakBadge extends StatefulWidget {
 enum GameyStreakBadgeSize {
   small(height: 28, fontSize: 12, emojiSize: 14, padding: 8),
   medium(height: 36, fontSize: 16, emojiSize: 18, padding: 12),
-  large(height: 48, fontSize: 20, emojiSize: 24, padding: 16);
+  large(height: 48, fontSize: 20, emojiSize: 24, padding: 16)
+  ;
 
   const GameyStreakBadgeSize({
     required this.height,
@@ -73,15 +74,16 @@ class _GameyStreakBadgeState extends State<GameyStreakBadge>
       duration: GameyAnimations.pulse,
     );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1,
-      end: 1.05,
-    ).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _pulseAnimation =
+        Tween<double>(
+          begin: 1,
+          end: 1.05,
+        ).animate(
+          CurvedAnimation(
+            parent: _pulseController,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
 
     if (widget.isPulsing && widget.streakCount > 0) {
       _pulseController.repeat(reverse: true);
@@ -250,7 +252,8 @@ class GameyLevelBadge extends StatelessWidget {
 enum GameyLevelBadgeSize {
   small(size: 32, innerSize: 20, fontSize: 12),
   medium(size: 48, innerSize: 30, fontSize: 16),
-  large(size: 64, innerSize: 40, fontSize: 22);
+  large(size: 64, innerSize: 40, fontSize: 22)
+  ;
 
   const GameyLevelBadgeSize({
     required this.size,

@@ -67,8 +67,10 @@ void main() {
       expect(find.text('French'), findsOneWidget);
 
       expect(find.byType(CountryFlag), findsWidgets);
-      expect(find.byType(CountryFlag).evaluate().length,
-          equals(SupportedLanguage.values.length));
+      expect(
+        find.byType(CountryFlag).evaluate().length,
+        equals(SupportedLanguage.values.length),
+      );
     });
 
     testWidgets('filters languages by search query', (tester) async {
@@ -131,8 +133,9 @@ void main() {
       expect(find.text('Currently selected'), findsOneWidget);
     });
 
-    testWidgets('displays clear option when language is selected',
-        (tester) async {
+    testWidgets('displays clear option when language is selected', (
+      tester,
+    ) async {
       await pumpHarness(
         tester,
         initialLanguageCode: 'de',
@@ -172,12 +175,14 @@ void main() {
       expect(textField.decoration?.hintText, isEmpty);
     });
 
-    testWidgets('lists languages alphabetically by display name',
-        (tester) async {
+    testWidgets('lists languages alphabetically by display name', (
+      tester,
+    ) async {
       await pumpHarness(tester);
 
-      final cards =
-          tester.widgetList<SettingsCard>(find.byType(SettingsCard)).toList();
+      final cards = tester
+          .widgetList<SettingsCard>(find.byType(SettingsCard))
+          .toList();
 
       final titles = cards.map((card) => card.title).toList();
       final sorted = List.of(titles)
@@ -186,8 +191,9 @@ void main() {
       expect(titles, equals(sorted));
     });
 
-    testWidgets('shows Nigeria flag for Nigerian language codes',
-        (tester) async {
+    testWidgets('shows Nigeria flag for Nigerian language codes', (
+      tester,
+    ) async {
       await pumpHarness(tester);
 
       for (final code in ['ig', 'pcm', 'yo']) {

@@ -133,8 +133,9 @@ void main() {
       expect(find.text('Re-sync messages'), findsNothing);
     });
 
-    testWidgets('delete logging database button shows confirmation dialog',
-        (tester) async {
+    testWidgets('delete logging database button shows confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
@@ -152,24 +153,26 @@ void main() {
     });
 
     testWidgets(
-        'delete logging database button deletes database when confirmed',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(_constrainedMaintenancePage()),
-      );
-      await tester.pumpAndSettle();
+      'delete logging database button deletes database when confirmed',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Delete Logging Database'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete Logging Database'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('YES, DELETE DATABASE'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('YES, DELETE DATABASE'));
+        await tester.pumpAndSettle();
 
-      verify(() => getIt<Maintenance>().deleteLoggingDb()).called(1);
-    });
+        verify(() => getIt<Maintenance>().deleteLoggingDb()).called(1);
+      },
+    );
 
-    testWidgets('delete editor database button shows confirmation dialog',
-        (tester) async {
+    testWidgets('delete editor database button shows confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
@@ -186,24 +189,27 @@ void main() {
       expect(find.text('CANCEL'), findsOneWidget);
     });
 
-    testWidgets('delete editor database button deletes database when confirmed',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(_constrainedMaintenancePage()),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'delete editor database button deletes database when confirmed',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Delete Editor Database'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Delete Editor Database'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('YES, DELETE DATABASE'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('YES, DELETE DATABASE'));
+        await tester.pumpAndSettle();
 
-      verify(() => getIt<Maintenance>().deleteEditorDb()).called(1);
-    });
+        verify(() => getIt<Maintenance>().deleteEditorDb()).called(1);
+      },
+    );
 
-    testWidgets('delete agents database button shows confirmation dialog',
-        (tester) async {
+    testWidgets('delete agents database button shows confirmation dialog', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
@@ -220,8 +226,9 @@ void main() {
       expect(find.text('CANCEL'), findsOneWidget);
     });
 
-    testWidgets('purge deleted entries button opens purge modal',
-        (tester) async {
+    testWidgets('purge deleted entries button opens purge modal', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
@@ -236,8 +243,9 @@ void main() {
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('recreate fts5 button opens fts5 recreate modal',
-        (tester) async {
+    testWidgets('recreate fts5 button opens fts5 recreate modal', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
@@ -252,32 +260,36 @@ void main() {
       expect(find.text('YES, RECREATE INDEX'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('generate embeddings card hidden when pipeline not registered',
-        (tester) async {
-      // EmbeddingsDb is NOT registered in this test group's setUp
-      await tester.pumpWidget(
-        makeTestableWidget(_constrainedMaintenancePage()),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'generate embeddings card hidden when pipeline not registered',
+      (tester) async {
+        // EmbeddingsDb is NOT registered in this test group's setUp
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Generate Embeddings'), findsNothing);
-    });
+        expect(find.text('Generate Embeddings'), findsNothing);
+      },
+    );
 
-    testWidgets('generate embeddings card visible when pipeline is registered',
-        (tester) async {
-      getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
+    testWidgets(
+      'generate embeddings card visible when pipeline is registered',
+      (tester) async {
+        getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
 
-      await tester.pumpWidget(
-        makeTestableWidget(_constrainedMaintenancePage()),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          makeTestableWidget(_constrainedMaintenancePage()),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Generate Embeddings'), findsOneWidget);
-      expect(
-        find.text('Generate embeddings for entries in selected categories'),
-        findsOneWidget,
-      );
-    });
+        expect(find.text('Generate Embeddings'), findsOneWidget);
+        expect(
+          find.text('Generate embeddings for entries in selected categories'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('re-index all embeddings card is not shown', (tester) async {
       getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());

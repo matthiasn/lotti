@@ -31,32 +31,42 @@ void main() {
       );
       final deleted = scoped.copyWith(id: 'deleted', deletedAt: now);
 
-      when(() => db.getLabelDefinitionById('global'))
-          .thenAnswer((_) async => global);
-      when(() => db.getLabelDefinitionById('scoped'))
-          .thenAnswer((_) async => scoped);
-      when(() => db.getLabelDefinitionById('deleted'))
-          .thenAnswer((_) async => deleted);
-      when(() => db.getLabelDefinitionById('unknown'))
-          .thenAnswer((_) async => null);
+      when(
+        () => db.getLabelDefinitionById('global'),
+      ).thenAnswer((_) async => global);
+      when(
+        () => db.getLabelDefinitionById('scoped'),
+      ).thenAnswer((_) async => scoped);
+      when(
+        () => db.getLabelDefinitionById('deleted'),
+      ).thenAnswer((_) async => deleted);
+      when(
+        () => db.getLabelDefinitionById('unknown'),
+      ).thenAnswer((_) async => null);
 
       final validator = LabelValidator(db: db);
 
       // Category cat1 accepts global + scoped
-      final resCat1 = await validator
-          .validateForCategory(['global', 'scoped'], categoryId: 'cat1');
+      final resCat1 = await validator.validateForCategory([
+        'global',
+        'scoped',
+      ], categoryId: 'cat1');
       expect(resCat1.valid, ['global', 'scoped']);
       expect(resCat1.invalid, isEmpty);
 
       // Category cat2 accepts only global; scoped becomes invalid (out of scope)
-      final resCat2 = await validator
-          .validateForCategory(['global', 'scoped'], categoryId: 'cat2');
+      final resCat2 = await validator.validateForCategory([
+        'global',
+        'scoped',
+      ], categoryId: 'cat2');
       expect(resCat2.valid, ['global']);
       expect(resCat2.invalid, ['scoped']);
 
       // Deleted and unknown become invalid
-      final resDeleted = await validator
-          .validateForCategory(['deleted', 'unknown'], categoryId: 'cat1');
+      final resDeleted = await validator.validateForCategory([
+        'deleted',
+        'unknown',
+      ], categoryId: 'cat1');
       expect(resDeleted.valid, isEmpty);
       expect(resDeleted.invalid, ['deleted', 'unknown']);
     });

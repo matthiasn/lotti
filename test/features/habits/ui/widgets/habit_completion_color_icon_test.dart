@@ -21,8 +21,9 @@ void main() {
     getIt.unregister<EntitiesCacheService>();
   });
 
-  testWidgets('displays CategoryColorIcon with correct categoryId',
-      (tester) async {
+  testWidgets('displays CategoryColorIcon with correct categoryId', (
+    tester,
+  ) async {
     const habitId = 'test-habit-id';
     const categoryId = 'test-category-id';
 

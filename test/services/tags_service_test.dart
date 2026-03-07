@@ -28,17 +28,21 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       notificationsController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => notificationsController.stream);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => notificationsController.stream);
 
-      when(() => mockJournalDb.getAllTags())
-          .thenAnswer((_) async => <TagEntity>[]);
+      when(
+        () => mockJournalDb.getAllTags(),
+      ).thenAnswer((_) async => <TagEntity>[]);
 
-      when(() => mockJournalDb.getMatchingTags(
-            any(),
-            limit: any(named: 'limit'),
-            inactive: any(named: 'inactive'),
-          )).thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getMatchingTags(
+          any(),
+          limit: any(named: 'limit'),
+          inactive: any(named: 'inactive'),
+        ),
+      ).thenAnswer((_) async => []);
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -52,8 +56,9 @@ void main() {
 
     test('constructor initializes and populates tagsById from stream', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -67,8 +72,9 @@ void main() {
 
     test('getTagById returns correct tag', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1, testPersonTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1, testPersonTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -80,8 +86,9 @@ void main() {
 
     test('getTagById returns null for non-existing id', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -94,8 +101,9 @@ void main() {
     test('tagsById updates when notification triggers re-fetch', () {
       fakeAsync((async) {
         // Initial data
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -104,8 +112,9 @@ void main() {
         expect(tagsService.tagsById[testStoryTag1.id], testStoryTag1);
 
         // Update data and trigger re-fetch via notification
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testPersonTag1, testTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testPersonTag1, testTag1]);
         notificationsController.add({tagsNotification});
         async.flushMicrotasks();
 
@@ -119,8 +128,9 @@ void main() {
 
     test('getFilteredStoryTagIds returns only story tags', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1, testPersonTag1, testTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -170,7 +180,8 @@ void main() {
         );
 
         when(() => mockJournalDb.getAllTags()).thenAnswer(
-            (_) async => [testStoryTag1, testStoryTag2, testPersonTag1]);
+          (_) async => [testStoryTag1, testStoryTag2, testPersonTag1],
+        );
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -189,8 +200,9 @@ void main() {
 
     test('getFilteredStoryTagIds handles non-existent tag IDs', () {
       fakeAsync((async) {
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testStoryTag1]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testStoryTag1]);
 
         tagsService = TagsService();
         async.flushMicrotasks();
@@ -227,8 +239,9 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(clipboardEntryId))
-          .thenAnswer((_) async => entryWithTags);
+      when(
+        () => mockJournalDb.journalEntityById(clipboardEntryId),
+      ).thenAnswer((_) async => entryWithTags);
 
       tagsService.setClipboard(clipboardEntryId);
       final result = await tagsService.getClipboard();
@@ -246,20 +259,23 @@ void main() {
       expect(result, isEmpty);
     });
 
-    test('getClipboard returns empty list when clipboard entry not found',
-        () async {
-      tagsService = TagsService();
-      await Future<void>.delayed(Duration.zero);
+    test(
+      'getClipboard returns empty list when clipboard entry not found',
+      () async {
+        tagsService = TagsService();
+        await Future<void>.delayed(Duration.zero);
 
-      const clipboardEntryId = 'non-existent-entry-id';
-      when(() => mockJournalDb.journalEntityById(clipboardEntryId))
-          .thenAnswer((_) async => null);
+        const clipboardEntryId = 'non-existent-entry-id';
+        when(
+          () => mockJournalDb.journalEntityById(clipboardEntryId),
+        ).thenAnswer((_) async => null);
 
-      tagsService.setClipboard(clipboardEntryId);
-      final result = await tagsService.getClipboard();
+        tagsService.setClipboard(clipboardEntryId);
+        final result = await tagsService.getClipboard();
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
 
     test('getClipboard handles entry without tags', () async {
       tagsService = TagsService();
@@ -270,8 +286,9 @@ void main() {
         meta: testTextEntry.meta.copyWith(tagIds: null),
       );
 
-      when(() => mockJournalDb.journalEntityById(clipboardEntryId))
-          .thenAnswer((_) async => entryWithoutTags);
+      when(
+        () => mockJournalDb.journalEntityById(clipboardEntryId),
+      ).thenAnswer((_) async => entryWithoutTags);
 
       tagsService.setClipboard(clipboardEntryId);
       final result = await tagsService.getClipboard();
@@ -285,10 +302,12 @@ void main() {
 
       final matchingTags = [testStoryTag1, testTag1];
 
-      when(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 100,
-          )).thenAnswer((_) async => matchingTags);
+      when(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 100,
+        ),
+      ).thenAnswer((_) async => matchingTags);
 
       final result = await tagsService.getMatchingTags(
         'test',
@@ -296,53 +315,64 @@ void main() {
       );
 
       expect(result, matchingTags);
-      verify(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 100,
-          )).called(1);
+      verify(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 100,
+        ),
+      ).called(1);
     });
 
     test('getMatchingTags uses default limit', () async {
       tagsService = TagsService();
       await Future<void>.delayed(Duration.zero);
 
-      when(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 1000,
-          )).thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 1000,
+        ),
+      ).thenAnswer((_) async => []);
 
       await tagsService.getMatchingTags('test');
 
-      verify(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 1000,
-          )).called(1);
+      verify(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 1000,
+        ),
+      ).called(1);
     });
 
     test('getMatchingTags with inactive flag', () async {
       tagsService = TagsService();
       await Future<void>.delayed(Duration.zero);
 
-      when(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 50,
-            inactive: true,
-          )).thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 50,
+          inactive: true,
+        ),
+      ).thenAnswer((_) async => []);
 
       await tagsService.getMatchingTags('test', limit: 50, inactive: true);
 
-      verify(() => mockJournalDb.getMatchingTags(
-            'test',
-            limit: 50,
-            inactive: true,
-          )).called(1);
+      verify(
+        () => mockJournalDb.getMatchingTags(
+          'test',
+          limit: 50,
+          inactive: true,
+        ),
+      ).called(1);
     });
 
     test('watchTags emits cached tags for late subscribers', () {
       fakeAsync((async) {
         final testTag = testStoryTag1;
-        when(() => mockJournalDb.getAllTags())
-            .thenAnswer((_) async => [testTag]);
+        when(
+          () => mockJournalDb.getAllTags(),
+        ).thenAnswer((_) async => [testTag]);
 
         tagsService = TagsService();
         async.flushMicrotasks();

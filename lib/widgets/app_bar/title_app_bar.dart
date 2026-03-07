@@ -63,10 +63,10 @@ class TitleWidgetAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       leading: showBackButton
           ? const BackWidget().animate().fadeIn(
-                duration: const Duration(
-                  seconds: 1,
-                ),
-              )
+              duration: const Duration(
+                seconds: 1,
+              ),
+            )
           : Container(),
       centerTitle: true,
     );

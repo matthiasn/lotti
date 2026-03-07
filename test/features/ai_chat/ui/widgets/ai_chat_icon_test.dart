@@ -84,8 +84,9 @@ void main() {
       expect(find.byTooltip('AI Chat Assistant'), findsOneWidget);
     });
 
-    testWidgets('opens modal bottom sheet with ChatModalPage on tap',
-        (tester) async {
+    testWidgets('opens modal bottom sheet with ChatModalPage on tap', (
+      tester,
+    ) async {
       await _pumpAiChatIcon(tester, controller: fakeController);
 
       await tester.tap(find.byIcon(Icons.psychology_outlined));
@@ -94,8 +95,9 @@ void main() {
       expect(find.byType(ChatModalPage), findsOneWidget);
       expect(find.text('Please select a single category'), findsOneWidget);
 
-      final barrierFinder =
-          find.byWidgetPredicate((w) => w is ModalBarrier && w.color != null);
+      final barrierFinder = find.byWidgetPredicate(
+        (w) => w is ModalBarrier && w.color != null,
+      );
       expect(barrierFinder, findsWidgets);
       final barrier = tester.widget<ModalBarrier>(barrierFinder.first);
       final color = barrier.color;
@@ -106,8 +108,9 @@ void main() {
       expect(color.a, closeTo(0.8, 0.01));
     });
 
-    testWidgets('shows ChatInterface when single category is selected',
-        (tester) async {
+    testWidgets('shows ChatInterface when single category is selected', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() => tester.view.reset());
@@ -119,17 +122,21 @@ void main() {
         selectedTaskStatuses: {'OPEN'},
         selectedCategoryIds: {categoryId},
       );
-      final controllerWithCategory =
-          FakeJournalPageController(stateWithCategory);
+      final controllerWithCategory = FakeJournalPageController(
+        stateWithCategory,
+      );
 
-      when(() => mockChatRepository.createSession(categoryId: categoryId))
-          .thenAnswer((_) async => ChatSession(
-                id: 'test-session',
-                title: 'New Chat',
-                createdAt: DateTime(2024),
-                lastMessageAt: DateTime(2024),
-                messages: [],
-              ));
+      when(
+        () => mockChatRepository.createSession(categoryId: categoryId),
+      ).thenAnswer(
+        (_) async => ChatSession(
+          id: 'test-session',
+          title: 'New Chat',
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: [],
+        ),
+      );
 
       await _pumpAiChatIcon(
         tester,
@@ -146,8 +153,7 @@ void main() {
       expect(find.text('Please select a single category'), findsNothing);
     });
 
-    testWidgets(
-        'modal shares controller state with parent (via '
+    testWidgets('modal shares controller state with parent (via '
         'UncontrolledProviderScope)', (tester) async {
       await _pumpAiChatIcon(tester, controller: fakeController);
 

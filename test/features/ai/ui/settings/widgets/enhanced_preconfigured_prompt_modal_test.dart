@@ -66,12 +66,18 @@ void main() {
         await showModal(tester);
 
         // Each prompt type should have its icon (we have duplicates now)
-        expect(find.byIcon(Icons.checklist_rtl_outlined),
-            findsOneWidget); // 1 checklist prompt
-        expect(find.byIcon(Icons.image_outlined),
-            findsNWidgets(2)); // 2 image prompts
-        expect(find.byIcon(Icons.mic_outlined),
-            findsNWidgets(2)); // 2 audio prompts
+        expect(
+          find.byIcon(Icons.checklist_rtl_outlined),
+          findsOneWidget,
+        ); // 1 checklist prompt
+        expect(
+          find.byIcon(Icons.image_outlined),
+          findsNWidgets(2),
+        ); // 2 image prompts
+        expect(
+          find.byIcon(Icons.mic_outlined),
+          findsNWidgets(2),
+        ); // 2 audio prompts
       });
 
       testWidgets('shows input and output type chips', (tester) async {
@@ -82,8 +88,9 @@ void main() {
         expect(find.byIcon(Icons.output_rounded), findsWidgets);
       });
 
-      testWidgets('shows reasoning chip for applicable prompts',
-          (tester) async {
+      testWidgets('shows reasoning chip for applicable prompts', (
+        tester,
+      ) async {
         await showModal(tester);
 
         // Should have reasoning chips for prompts that use reasoning
@@ -213,8 +220,9 @@ void main() {
     });
 
     group('Data Validation', () {
-      testWidgets('displays correct input types for each prompt',
-          (tester) async {
+      testWidgets('displays correct input types for each prompt', (
+        tester,
+      ) async {
         await showModal(tester);
 
         // Verify each prompt shows its required input types
@@ -226,8 +234,9 @@ void main() {
         }
       });
 
-      testWidgets('displays correct output types for each prompt',
-          (tester) async {
+      testWidgets('displays correct output types for each prompt', (
+        tester,
+      ) async {
         await showModal(tester);
 
         // Count how many prompts have each response type

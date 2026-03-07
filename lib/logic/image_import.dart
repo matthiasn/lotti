@@ -36,12 +36,12 @@ void Function(JournalEntity)? createAnalysisCallback(
 ) {
   if (analysisTrigger == null) return null;
   return (entity) => unawaited(
-        analysisTrigger.triggerAutomaticImageAnalysis(
-          imageEntryId: entity.id,
-          categoryId: categoryId,
-          linkedTaskId: linkedId,
-        ),
-      );
+    analysisTrigger.triggerAutomaticImageAnalysis(
+      imageEntryId: entity.id,
+      categoryId: categoryId,
+      linkedTaskId: linkedId,
+    ),
+  );
 }
 
 /// Constants for image import operations.
@@ -127,8 +127,9 @@ Future<void> importImageAssets(
               'PNG',
               'JPG',
             );
-        final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-            .format(createdAt);
+        final day = DateFormat(
+          AudioRecorderConstants.directoryDateFormat,
+        ).format(createdAt);
         final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
         final directory = await createAssetDirectory(relativePath);
         final targetFilePath = p.join(directory, imageFileName);
@@ -147,8 +148,11 @@ Future<void> importImageAssets(
           imageData,
           linkedId: linkedId,
           categoryId: categoryId,
-          onCreated:
-              createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+          onCreated: createAnalysisCallback(
+            analysisTrigger,
+            categoryId,
+            linkedId,
+          ),
         );
       }
     }
@@ -192,8 +196,9 @@ Future<void> importDroppedImages({
         continue;
       }
 
-      final day = DateFormat(AudioRecorderConstants.directoryDateFormat)
-          .format(lastModified);
+      final day = DateFormat(
+        AudioRecorderConstants.directoryDateFormat,
+      ).format(lastModified);
       final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
       final directory = await createAssetDirectory(relativePath);
       final targetFileName = '$id.$fileExtension';
@@ -212,8 +217,11 @@ Future<void> importDroppedImages({
         imageData,
         linkedId: linkedId,
         categoryId: categoryId,
-        onCreated:
-            createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+        onCreated: createAnalysisCallback(
+          analysisTrigger,
+          categoryId,
+          linkedId,
+        ),
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -328,8 +336,9 @@ Future<void> importPastedImages({
   final geolocation = await extractGpsCoordinates(data, capturedAt);
   final id = uuid.v1();
 
-  final day =
-      DateFormat(AudioRecorderConstants.directoryDateFormat).format(capturedAt);
+  final day = DateFormat(
+    AudioRecorderConstants.directoryDateFormat,
+  ).format(capturedAt);
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';
@@ -385,8 +394,9 @@ Future<String?> importGeneratedImageBytes({
   final capturedAt = DateTime.now();
   final id = uuid.v1();
 
-  final day =
-      DateFormat(AudioRecorderConstants.directoryDateFormat).format(capturedAt);
+  final day = DateFormat(
+    AudioRecorderConstants.directoryDateFormat,
+  ).format(capturedAt);
   final relativePath = '${ImageImportConstants.directoryPrefix}$day/';
   final directory = await createAssetDirectory(relativePath);
   final targetFileName = '$id.$fileExtension';

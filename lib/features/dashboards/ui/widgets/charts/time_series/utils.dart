@@ -30,8 +30,9 @@ class ChartLabel extends StatelessWidget {
 }
 
 Widget leftTitleWidgets(double value, TitleMeta meta) {
-  final formattedValue =
-      NumberFormat(value > 100 ? '####' : '####.#').format(value);
+  final formattedValue = NumberFormat(
+    value > 100 ? '####' : '####.#',
+  ).format(value);
   return ChartLabel(formattedValue);
 }
 

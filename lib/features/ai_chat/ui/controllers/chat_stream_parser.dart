@@ -40,9 +40,9 @@ class ChatStreamParser {
     var index = 0;
     while (index < chunk.length) {
       if (_inThinkingStream) {
-        final closeMatch =
-            ChatStreamUtils.closeRegexFromOpenToken(_activeCloseToken)
-                .firstMatch(chunk.substring(index));
+        final closeMatch = ChatStreamUtils.closeRegexFromOpenToken(
+          _activeCloseToken,
+        ).firstMatch(chunk.substring(index));
         if (closeMatch == null) {
           _thinkingBuffer.write(chunk.substring(index));
           index = chunk.length;

@@ -91,8 +91,9 @@ class JournalPageController extends _$JournalPageController {
 
     // Initialize category selection for tasks tab
     if (showTasks) {
-      final allCategoryIds =
-          _entitiesCacheService.sortedCategories.map((e) => e.id).toSet();
+      final allCategoryIds = _entitiesCacheService.sortedCategories
+          .map((e) => e.id)
+          .toSet();
 
       // If no categories exist, default to showing unassigned tasks
       if (allCategoryIds.isEmpty) {
@@ -246,31 +247,31 @@ class JournalPageController extends _$JournalPageController {
 
     _updatesSub = _updateNotifications.updateStream
         .throttleTime(
-      const Duration(milliseconds: 500),
-      leading: false,
-      trailing: true,
-    )
+          const Duration(milliseconds: 500),
+          leading: false,
+          trailing: true,
+        )
         .listen((affectedIds) async {
-      if (_isVisible) {
-        final displayedIds =
-            state.pagingController?.value.items?.map(idMapper).toSet() ??
+          if (_isVisible) {
+            final displayedIds =
+                state.pagingController?.value.items?.map(idMapper).toSet() ??
                 <String>{};
 
-        if (showTasks) {
-          final newIds = (await _runQuery(0)).map(idMapper).toSet();
-          if (!setEquals(_lastIds, newIds)) {
-            _lastIds = newIds;
-            await refreshQuery();
-          } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
-            await refreshQuery();
+            if (showTasks) {
+              final newIds = (await _runQuery(0)).map(idMapper).toSet();
+              if (!setEquals(_lastIds, newIds)) {
+                _lastIds = newIds;
+                await refreshQuery();
+              } else if (displayedIds.intersection(affectedIds).isNotEmpty) {
+                await refreshQuery();
+              }
+            } else {
+              if (displayedIds.intersection(affectedIds).isNotEmpty) {
+                await refreshQuery();
+              }
+            }
           }
-        } else {
-          if (displayedIds.intersection(affectedIds).isNotEmpty) {
-            await refreshQuery();
-          }
-        }
-      }
-    });
+        });
   }
 
   void _registerHotkeys() {
@@ -329,8 +330,9 @@ class JournalPageController extends _$JournalPageController {
 
   Future<void> toggleSelectedTaskStatus(String status) async {
     if (_selectedTaskStatuses.contains(status)) {
-      _selectedTaskStatuses =
-          _selectedTaskStatuses.difference(<String>{status});
+      _selectedTaskStatuses = _selectedTaskStatuses.difference(<String>{
+        status,
+      });
     } else {
       _selectedTaskStatuses = _selectedTaskStatuses.union({status});
     }
@@ -631,16 +633,20 @@ class JournalPageController extends _$JournalPageController {
     final fullTextMatches = _fullTextMatches.toList();
     final ids = _query.isNotEmpty ? fullTextMatches : null;
 
-    final starredEntriesOnly =
-        _filters.contains(DisplayFilter.starredEntriesOnly);
-    final privateEntriesOnly =
-        _filters.contains(DisplayFilter.privateEntriesOnly);
-    final flaggedEntriesOnly =
-        _filters.contains(DisplayFilter.flaggedEntriesOnly);
+    final starredEntriesOnly = _filters.contains(
+      DisplayFilter.starredEntriesOnly,
+    );
+    final privateEntriesOnly = _filters.contains(
+      DisplayFilter.privateEntriesOnly,
+    );
+    final flaggedEntriesOnly = _filters.contains(
+      DisplayFilter.flaggedEntriesOnly,
+    );
 
     if (_showTasks) {
-      final allCategoryIds =
-          _entitiesCacheService.sortedCategories.map((e) => e.id).toSet();
+      final allCategoryIds = _entitiesCacheService.sortedCategories
+          .map((e) => e.id)
+          .toSet();
 
       Set<String> categoryIds;
       if (_selectedCategoryIds.isEmpty) {
@@ -657,7 +663,8 @@ class JournalPageController extends _$JournalPageController {
       // For due date sorting, we need to fetch and sort in memory since
       // due dates are stored in serialized JSON, not a database column.
       // Use date ordering as a fallback base query.
-      final sortByDateInDb = _sortOption == TaskSortOption.byDate ||
+      final sortByDateInDb =
+          _sortOption == TaskSortOption.byDate ||
           _sortOption == TaskSortOption.byDueDate;
 
       final res = await _db.getTasks(
@@ -685,8 +692,9 @@ class JournalPageController extends _$JournalPageController {
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
         privateStatuses: privateEntriesOnly ? [true] : [true, false],
         flaggedStatuses: flaggedEntriesOnly ? [1] : [1, 0],
-        categoryIds:
-            _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null,
+        categoryIds: _selectedCategoryIds.isNotEmpty
+            ? _selectedCategoryIds
+            : null,
         limit: pageSize,
         offset: pageKey,
       );
@@ -700,7 +708,8 @@ class JournalPageController extends _$JournalPageController {
     if (!getIt.isRegistered<VectorSearchRepository>()) {
       DevLogger.warning(
         name: 'JournalPageController',
-        message: 'VectorSearchRepository not registered — '
+        message:
+            'VectorSearchRepository not registered — '
             'is the embedding pipeline available?',
       );
       state = state.copyWith(
@@ -719,8 +728,9 @@ class JournalPageController extends _$JournalPageController {
 
     try {
       final repo = getIt<VectorSearchRepository>();
-      final categoryIds =
-          _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds : null;
+      final categoryIds = _selectedCategoryIds.isNotEmpty
+          ? _selectedCategoryIds
+          : null;
 
       final result = _showTasks
           ? await repo.searchRelatedTasks(
@@ -760,26 +770,25 @@ class JournalPageController extends _$JournalPageController {
   /// stored in serialized JSON, not as an indexed column, so global cross-page
   /// ordering is not guaranteed. Tasks are correctly sorted within each page.
   List<JournalEntity> _sortByDueDate(List<JournalEntity> entities) {
-    return List<JournalEntity>.from(entities)
-      ..sort((a, b) {
-        final dueA = a is Task ? a.data.due : null;
-        final dueB = b is Task ? b.data.due : null;
+    return List<JournalEntity>.from(entities)..sort((a, b) {
+      final dueA = a is Task ? a.data.due : null;
+      final dueB = b is Task ? b.data.due : null;
 
-        final aHasDue = dueA != null;
-        final bHasDue = dueB != null;
+      final aHasDue = dueA != null;
+      final bHasDue = dueB != null;
 
-        if (aHasDue && bHasDue) {
-          final comparison = dueA.compareTo(dueB);
-          if (comparison != 0) return comparison;
-        } else if (aHasDue) {
-          return -1; // a has due date, b doesn't -> a comes first
-        } else if (bHasDue) {
-          return 1; // b has due date, a doesn't -> b comes first
-        }
+      if (aHasDue && bHasDue) {
+        final comparison = dueA.compareTo(dueB);
+        if (comparison != 0) return comparison;
+      } else if (aHasDue) {
+        return -1; // a has due date, b doesn't -> a comes first
+      } else if (bHasDue) {
+        return 1; // b has due date, a doesn't -> b comes first
+      }
 
-        // Fallback: same due date or both null -> newest creation date first
-        return b.meta.dateFrom.compareTo(a.meta.dateFrom);
-      });
+      // Fallback: same due date or both null -> newest creation date first
+      return b.meta.dateFrom.compareTo(a.meta.dateFrom);
+    });
   }
 
   // Getters for testing

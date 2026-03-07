@@ -162,8 +162,9 @@ class _ReferenceImageSelectionWidgetState
               itemCount: state.availableImages.length,
               itemBuilder: (context, index) {
                 final image = state.availableImages[index];
-                final isSelected =
-                    state.selectedImageIds.contains(image.meta.id);
+                final isSelected = state.selectedImageIds.contains(
+                  image.meta.id,
+                );
                 final canSelect = state.canSelectMore || isSelected;
 
                 return _ImageGridTile(
@@ -182,8 +183,9 @@ class _ReferenceImageSelectionWidgetState
             padding: const EdgeInsets.all(16),
             child: LottiPrimaryButton(
               label: state.selectionCount > 0
-                  ? context.messages
-                      .referenceImageContinueWithCount(state.selectionCount)
+                  ? context.messages.referenceImageContinueWithCount(
+                      state.selectionCount,
+                    )
                   : context.messages.referenceImageContinue,
               icon: Icons.arrow_forward_rounded,
               onPressed: state.isProcessing

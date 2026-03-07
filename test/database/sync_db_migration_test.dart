@@ -23,21 +23,23 @@ void main() {
     }
 
     // Create a test directory and mock path_provider to return it
-    testDirectory =
-        Directory.systemTemp.createTempSync('lotti_sync_migration_test_');
+    testDirectory = Directory.systemTemp.createTempSync(
+      'lotti_sync_migration_test_',
+    );
 
     // Mock path_provider to return our test directory
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-            const MethodChannel('plugins.flutter.io/path_provider'),
-            (MethodCall methodCall) async {
-      if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-          methodCall.method == 'getApplicationSupportDirectory' ||
-          methodCall.method == 'getTemporaryDirectory') {
-        return testDirectory!.path;
-      }
-      return null;
-    });
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (MethodCall methodCall) async {
+            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
+                methodCall.method == 'getApplicationSupportDirectory' ||
+                methodCall.method == 'getTemporaryDirectory') {
+              return testDirectory!.path;
+            }
+            return null;
+          },
+        );
 
     getIt.registerSingleton<Directory>(testDirectory!);
   });
@@ -53,14 +55,15 @@ void main() {
   });
 
   group('SyncDatabase Migration Tests', () {
-    test('v2 migration creates sync_sequence_log and host_activity tables',
-        () async {
-      // Create a v1 database with only the outbox table
-      final dbFile = File(path.join(testDirectory!.path, 'test_sync_v2.db'));
-      final sqlite = sqlite3.open(dbFile.path);
+    test(
+      'v2 migration creates sync_sequence_log and host_activity tables',
+      () async {
+        // Create a v1 database with only the outbox table
+        final dbFile = File(path.join(testDirectory!.path, 'test_sync_v2.db'));
+        final sqlite = sqlite3.open(dbFile.path);
 
-      // Create the v1 schema (only outbox table)
-      sqlite.execute('''
+        // Create the v1 schema (only outbox table)
+        sqlite.execute('''
         CREATE TABLE IF NOT EXISTS outbox (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           created_at INTEGER NOT NULL,
@@ -73,60 +76,65 @@ void main() {
         )
       ''');
 
-      // Insert some test data to verify it survives migration
-      sqlite.execute('''
+        // Insert some test data to verify it survives migration
+        sqlite.execute('''
         INSERT INTO outbox (created_at, updated_at, status, retries, message, subject)
         VALUES (1704067200000, 1704067200000, 0, 0, '{"test": true}', 'test-subject')
       ''');
 
-      // Set schema version to 1
-      sqlite.execute('PRAGMA user_version = 1');
+        // Set schema version to 1
+        sqlite.execute('PRAGMA user_version = 1');
 
-      // Close raw connection
-      sqlite.dispose();
+        // Close raw connection
+        sqlite.dispose();
 
-      // Open with SyncDatabase to trigger migration
-      final db = SyncDatabase(overriddenFilename: 'test_sync_v2.db');
+        // Open with SyncDatabase to trigger migration
+        final db = SyncDatabase(overriddenFilename: 'test_sync_v2.db');
 
-      // Verify the migration occurred by checking schema version
-      final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 6);
+        // Verify the migration occurred by checking schema version
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
+        expect(db.schemaVersion, 6);
 
-      // Verify sync_sequence_log table exists and has correct schema
-      final seqLogResult = await db
-          .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='sync_sequence_log'")
-          .get();
-      expect(seqLogResult, hasLength(1));
-      final seqLogSql = seqLogResult.first.read<String>('sql');
-      expect(seqLogSql, contains('sync_sequence_log'));
-      expect(seqLogSql, contains('host_id'));
-      expect(seqLogSql, contains('counter'));
-      expect(seqLogSql, contains('entry_id'));
-      expect(seqLogSql, contains('status'));
-      expect(seqLogSql, contains('request_count'));
-      expect(seqLogSql, contains('payload_type')); // Added in v3
+        // Verify sync_sequence_log table exists and has correct schema
+        final seqLogResult = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='table' AND name='sync_sequence_log'",
+            )
+            .get();
+        expect(seqLogResult, hasLength(1));
+        final seqLogSql = seqLogResult.first.read<String>('sql');
+        expect(seqLogSql, contains('sync_sequence_log'));
+        expect(seqLogSql, contains('host_id'));
+        expect(seqLogSql, contains('counter'));
+        expect(seqLogSql, contains('entry_id'));
+        expect(seqLogSql, contains('status'));
+        expect(seqLogSql, contains('request_count'));
+        expect(seqLogSql, contains('payload_type')); // Added in v3
 
-      // Verify host_activity table exists
-      final hostActivityResult = await db
-          .customSelect(
-              "SELECT sql FROM sqlite_master WHERE type='table' AND name='host_activity'")
-          .get();
-      expect(hostActivityResult, hasLength(1));
-      final hostActivitySql = hostActivityResult.first.read<String>('sql');
-      expect(hostActivitySql, contains('host_activity'));
-      expect(hostActivitySql, contains('host_id'));
-      expect(hostActivitySql, contains('last_seen_at'));
+        // Verify host_activity table exists
+        final hostActivityResult = await db
+            .customSelect(
+              "SELECT sql FROM sqlite_master WHERE type='table' AND name='host_activity'",
+            )
+            .get();
+        expect(hostActivityResult, hasLength(1));
+        final hostActivitySql = hostActivityResult.first.read<String>('sql');
+        expect(hostActivitySql, contains('host_activity'));
+        expect(hostActivitySql, contains('host_id'));
+        expect(hostActivitySql, contains('last_seen_at'));
 
-      // Verify existing outbox data survived the migration
-      final outboxItems = await db.oldestOutboxItems(10);
-      expect(outboxItems, hasLength(1));
-      expect(outboxItems.first.subject, 'test-subject');
-      expect(outboxItems.first.message, '{"test": true}');
+        // Verify existing outbox data survived the migration
+        final outboxItems = await db.oldestOutboxItems(10);
+        expect(outboxItems, hasLength(1));
+        expect(outboxItems.first.subject, 'test-subject');
+        expect(outboxItems.first.message, '{"test": true}');
 
-      await db.close();
-    });
+        await db.close();
+      },
+    );
 
     test('fresh install creates all tables correctly', () async {
       // Just open a new database - this should use onCreate
@@ -139,12 +147,14 @@ void main() {
       // Verify all tables exist
       final tablesResult = await db
           .customSelect(
-              "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('outbox', 'sync_sequence_log', 'host_activity')")
+            "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('outbox', 'sync_sequence_log', 'host_activity')",
+          )
           .get();
       expect(tablesResult, hasLength(3));
 
-      final tableNames =
-          tablesResult.map((r) => r.read<String>('name')).toSet();
+      final tableNames = tablesResult
+          .map((r) => r.read<String>('name'))
+          .toSet();
       expect(tableNames, contains('outbox'));
       expect(tableNames, contains('sync_sequence_log'));
       expect(tableNames, contains('host_activity'));

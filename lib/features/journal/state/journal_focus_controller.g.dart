@@ -14,16 +14,16 @@ final journalFocusControllerProvider = JournalFocusControllerFamily._();
 
 final class JournalFocusControllerProvider
     extends $NotifierProvider<JournalFocusController, JournalFocusIntent?> {
-  JournalFocusControllerProvider._(
-      {required JournalFocusControllerFamily super.from,
-      required String super.argument})
-      : super(
-          retry: null,
-          name: r'journalFocusControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  JournalFocusControllerProvider._({
+    required JournalFocusControllerFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'journalFocusControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$journalFocusControllerHash();
@@ -64,20 +64,23 @@ String _$journalFocusControllerHash() =>
 
 final class JournalFocusControllerFamily extends $Family
     with
-        $ClassFamilyOverride<JournalFocusController, JournalFocusIntent?,
-            JournalFocusIntent?, JournalFocusIntent?, String> {
+        $ClassFamilyOverride<
+          JournalFocusController,
+          JournalFocusIntent?,
+          JournalFocusIntent?,
+          JournalFocusIntent?,
+          String
+        > {
   JournalFocusControllerFamily._()
-      : super(
-          retry: null,
-          name: r'journalFocusControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'journalFocusControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
-  JournalFocusControllerProvider call({
-    required String id,
-  }) =>
+  JournalFocusControllerProvider call({required String id}) =>
       JournalFocusControllerProvider._(argument: id, from: this);
 
   @override
@@ -88,22 +91,19 @@ abstract class _$JournalFocusController extends $Notifier<JournalFocusIntent?> {
   late final _$args = ref.$arg as String;
   String get id => _$args;
 
-  JournalFocusIntent? build({
-    required String id,
-  });
+  JournalFocusIntent? build({required String id});
   @$mustCallSuper
   @override
   void runBuild() {
     final ref = this.ref as $Ref<JournalFocusIntent?, JournalFocusIntent?>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<JournalFocusIntent?, JournalFocusIntent?>,
-        JournalFocusIntent?,
-        Object?,
-        Object?>;
-    element.handleCreate(
-        ref,
-        () => build(
-              id: _$args,
-            ));
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<JournalFocusIntent?, JournalFocusIntent?>,
+              JournalFocusIntent?,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, () => build(id: _$args));
   }
 }

@@ -58,26 +58,27 @@ class MatrixStreamConsumer implements SyncPipeline {
       required int pageSize,
       required int maxPages,
       required LoggingService logging,
-    })? backfill,
+    })?
+    backfill,
     Directory? documentsDirectory,
-  })  : _skipSyncWait = skipSyncWait,
-        _sessionManager = sessionManager,
-        _roomManager = roomManager,
-        _loggingService = loggingService,
-        _journalDb = journalDb,
-        _settingsDb = settingsDb,
-        _eventProcessor = eventProcessor,
-        _readMarkerService = readMarkerService,
-        _attachmentIndex = attachmentIndex,
-        _collectMetrics = collectMetrics,
-        _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
-        _markerDebounce = markerDebounce,
-        _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
-        _circuitCooldown = circuitCooldown,
-        _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
-        _sentEventRegistry = sentEventRegistry,
-        _backfill = backfill,
-        _documentsDirectory = documentsDirectory {
+  }) : _skipSyncWait = skipSyncWait,
+       _sessionManager = sessionManager,
+       _roomManager = roomManager,
+       _loggingService = loggingService,
+       _journalDb = journalDb,
+       _settingsDb = settingsDb,
+       _eventProcessor = eventProcessor,
+       _readMarkerService = readMarkerService,
+       _attachmentIndex = attachmentIndex,
+       _collectMetrics = collectMetrics,
+       _metrics = metricsCounters ?? MetricsCounters(collect: collectMetrics),
+       _markerDebounce = markerDebounce,
+       _maxRetriesPerEvent = maxRetriesPerEvent ?? 5,
+       _circuitCooldown = circuitCooldown,
+       _dropOldPayloadsInLiveScan = dropOldPayloadsInLiveScan,
+       _sentEventRegistry = sentEventRegistry,
+       _backfill = backfill,
+       _documentsDirectory = documentsDirectory {
     _processor = MatrixStreamProcessor(
       roomManager: _roomManager,
       loggingService: _loggingService,
@@ -166,7 +167,8 @@ class MatrixStreamConsumer implements SyncPipeline {
     required int pageSize,
     required int maxPages,
     required LoggingService logging,
-  })? _backfill;
+  })?
+  _backfill;
   final Directory? _documentsDirectory;
 
   late final MatrixStreamProcessor _processor;
@@ -238,8 +240,10 @@ class MatrixStreamConsumer implements SyncPipeline {
           await Future<void>.delayed(const Duration(milliseconds: 200));
         }
       }
-      final hydrateElapsed =
-          clock.now().difference(hydrateStart).inMilliseconds;
+      final hydrateElapsed = clock
+          .now()
+          .difference(hydrateStart)
+          .inMilliseconds;
       _loggingService.captureEvent(
         _withInstance(
           'start.hydrateRoom.ready=${_roomManager.currentRoom != null} '

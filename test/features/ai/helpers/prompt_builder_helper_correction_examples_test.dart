@@ -118,10 +118,12 @@ void main() {
 
     // Default stubs
     when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(() => mockLabelsRepository.getLabelUsageCounts())
-        .thenAnswer((_) async => {});
-    when(() => mockLabelsRepository.buildLabelTuples(any()))
-        .thenAnswer((_) async => []);
+    when(
+      () => mockLabelsRepository.getLabelUsageCounts(),
+    ).thenAnswer((_) async => {});
+    when(
+      () => mockLabelsRepository.buildLabelTuples(any()),
+    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -144,73 +146,82 @@ void main() {
 
   group('PromptBuilderHelper - Correction Examples', () {
     group('buildPromptWithData - correction_examples placeholder', () {
-      test('injects correction examples for checklistUpdates response type',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategoryWithExamples);
+      test(
+        'injects correction examples for checklistUpdates response type',
+        () async {
+          when(
+            () => mockEntitiesCacheService.getCategoryById('category-1'),
+          ).thenReturn(testCategoryWithExamples);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist Updates',
-          systemMessage: 'System message',
-          userMessage:
-              '{{correction_examples}}\n\nUpdate the checklist based on this.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Checklist Updates',
+            systemMessage: 'System message',
+            userMessage:
+                '{{correction_examples}}\n\nUpdate the checklist based on this.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.checklistUpdates,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testTask,
+          );
 
-        expect(result, isNotNull);
-        expect(result, contains('USER-PROVIDED CORRECTION EXAMPLES'));
-        expect(result, contains('manually corrected these checklist item'));
-        expect(result, contains('"test flight" → "TestFlight"'));
-        expect(result, contains('"mac os" → "macOS"'));
-        expect(result, contains('"i phone" → "iPhone"'));
-        expect(result, contains('Update the checklist based on this.'));
-      });
+          expect(result, isNotNull);
+          expect(result, contains('USER-PROVIDED CORRECTION EXAMPLES'));
+          expect(result, contains('manually corrected these checklist item'));
+          expect(result, contains('"test flight" → "TestFlight"'));
+          expect(result, contains('"mac os" → "macOS"'));
+          expect(result, contains('"i phone" → "iPhone"'));
+          expect(result, contains('Update the checklist based on this.'));
+        },
+      );
 
-      test('injects correction examples for audioTranscription response type',
-          () async {
-        when(() => mockJournalRepository.getLinkedEntities(
+      test(
+        'injects correction examples for audioTranscription response type',
+        () async {
+          when(
+            () => mockJournalRepository.getLinkedEntities(
               linkedTo: 'audio-1',
-            )).thenAnswer((_) async => [testTask]);
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategoryWithExamples);
+            ),
+          ).thenAnswer((_) async => [testTask]);
+          when(
+            () => mockEntitiesCacheService.getCategoryById('category-1'),
+          ).thenReturn(testCategoryWithExamples);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Audio Transcription',
-          systemMessage: 'System message',
-          userMessage: '{{correction_examples}}\n\nTranscribe this audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Audio Transcription',
+            systemMessage: 'System message',
+            userMessage: '{{correction_examples}}\n\nTranscribe this audio.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testAudio,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testAudio,
+          );
 
-        expect(result, isNotNull);
-        expect(result, contains('USER-PROVIDED CORRECTION EXAMPLES'));
-        expect(result, contains('"test flight" → "TestFlight"'));
-      });
+          expect(result, isNotNull);
+          expect(result, contains('USER-PROVIDED CORRECTION EXAMPLES'));
+          expect(result, contains('"test flight" → "TestFlight"'));
+        },
+      );
 
       test('does not inject for non-checklist/audio response types', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategoryWithExamples);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(testCategoryWithExamples);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -240,8 +251,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-2'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-2'))
-            .thenReturn(testCategoryNoExamples);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-2'),
+        ).thenReturn(testCategoryNoExamples);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -266,8 +278,9 @@ void main() {
       });
 
       test('replaces with empty when category not found', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenReturn(null);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -324,8 +337,9 @@ void main() {
       });
 
       test('handles exception in category lookup gracefully', () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenThrow(Exception('Cache error'));
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-1'),
+        ).thenThrow(Exception('Cache error'));
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -349,38 +363,41 @@ void main() {
         expect(result, equals('\n\nUpdate.'));
       });
 
-      test('sorts examples by capturedAt descending (most recent first)',
-          () async {
-        when(() => mockEntitiesCacheService.getCategoryById('category-1'))
-            .thenReturn(testCategoryWithExamples);
+      test(
+        'sorts examples by capturedAt descending (most recent first)',
+        () async {
+          when(
+            () => mockEntitiesCacheService.getCategoryById('category-1'),
+          ).thenReturn(testCategoryWithExamples);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist Updates',
-          systemMessage: 'System message',
-          userMessage: '{{correction_examples}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Checklist Updates',
+            systemMessage: 'System message',
+            userMessage: '{{correction_examples}}',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.checklistUpdates,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testTask,
+          );
 
-        // Examples should appear in order: test flight (Jan 3), mac os (Jan 2), i phone (Jan 1)
-        expect(result, isNotNull);
-        final testFlightIndex = result!.indexOf('test flight');
-        final macOsIndex = result.indexOf('mac os');
-        final iPhoneIndex = result.indexOf('i phone');
+          // Examples should appear in order: test flight (Jan 3), mac os (Jan 2), i phone (Jan 1)
+          expect(result, isNotNull);
+          final testFlightIndex = result!.indexOf('test flight');
+          final macOsIndex = result.indexOf('mac os');
+          final iPhoneIndex = result.indexOf('i phone');
 
-        expect(testFlightIndex, lessThan(macOsIndex));
-        expect(macOsIndex, lessThan(iPhoneIndex));
-      });
+          expect(testFlightIndex, lessThan(macOsIndex));
+          expect(macOsIndex, lessThan(iPhoneIndex));
+        },
+      );
 
       test('escapes quotes in before/after text', () async {
         final categoryWithQuotes = CategoryDefinition(
@@ -406,8 +423,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-quotes'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-quotes'))
-            .thenReturn(categoryWithQuotes);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-quotes'),
+        ).thenReturn(categoryWithQuotes);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -460,9 +478,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-null-dates'),
         );
 
-        when(() =>
-                mockEntitiesCacheService.getCategoryById('category-null-dates'))
-            .thenReturn(categoryNullDates);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-null-dates'),
+        ).thenReturn(categoryNullDates);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -505,8 +523,9 @@ void main() {
           meta: testTask.meta.copyWith(categoryId: 'category-empty'),
         );
 
-        when(() => mockEntitiesCacheService.getCategoryById('category-empty'))
-            .thenReturn(categoryEmptyList);
+        when(
+          () => mockEntitiesCacheService.getCategoryById('category-empty'),
+        ).thenReturn(categoryEmptyList);
 
         final config = AiConfigPrompt(
           id: 'prompt',
@@ -531,34 +550,36 @@ void main() {
     });
 
     group('EntitiesCacheService not registered', () {
-      test('replaces with empty string when cache service not registered',
-          () async {
-        // Unregister the cache service
-        if (getIt.isRegistered<EntitiesCacheService>()) {
-          getIt.unregister<EntitiesCacheService>();
-        }
+      test(
+        'replaces with empty string when cache service not registered',
+        () async {
+          // Unregister the cache service
+          if (getIt.isRegistered<EntitiesCacheService>()) {
+            getIt.unregister<EntitiesCacheService>();
+          }
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist Updates',
-          systemMessage: 'System message',
-          userMessage: '{{correction_examples}}\n\nUpdate.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
+          final config = AiConfigPrompt(
+            id: 'prompt',
+            name: 'Checklist Updates',
+            systemMessage: 'System message',
+            userMessage: '{{correction_examples}}\n\nUpdate.',
+            defaultModelId: 'model-1',
+            modelIds: const ['model-1'],
+            createdAt: DateTime(2025),
+            useReasoning: false,
+            requiredInputData: const [],
+            aiResponseType: AiResponseType.checklistUpdates,
+          );
 
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: testTask,
-        );
+          final result = await promptBuilder.buildPromptWithData(
+            promptConfig: config,
+            entity: testTask,
+          );
 
-        // When cache service is not registered, placeholder is replaced with empty
-        expect(result, equals('\n\nUpdate.'));
-      });
+          // When cache service is not registered, placeholder is replaced with empty
+          expect(result, equals('\n\nUpdate.'));
+        },
+      );
     });
   });
 }

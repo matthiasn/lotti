@@ -15,15 +15,15 @@ final tasksCountControllerProvider = TasksCountControllerProvider._();
 final class TasksCountControllerProvider
     extends $AsyncNotifierProvider<TasksCountController, int> {
   TasksCountControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'tasksCountControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'tasksCountControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$tasksCountControllerHash();
@@ -42,8 +42,14 @@ abstract class _$TasksCountController extends $AsyncNotifier<int> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<int>, int>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<int>, int>, AsyncValue<int>, Object?, Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<int>, int>,
+              AsyncValue<int>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

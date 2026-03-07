@@ -24,8 +24,9 @@ class SyncModal extends ConsumerWidget {
       SyncStep.agentEntities,
       SyncStep.agentLinks,
     ];
-    final selectedStepsNotifier =
-        ValueNotifier<Set<SyncStep>>(orderedSteps.toSet());
+    final selectedStepsNotifier = ValueNotifier<Set<SyncStep>>(
+      orderedSteps.toSet(),
+    );
 
     bool hasSelection() => selectedStepsNotifier.value.isNotEmpty;
 
@@ -48,8 +49,9 @@ class SyncModal extends ConsumerWidget {
                   controlAffinity: ListTileControlAffinity.trailing,
                   title: Text(_getStepName(context, step)),
                   onChanged: (value) {
-                    final updated =
-                        Set<SyncStep>.from(selectedStepsNotifier.value);
+                    final updated = Set<SyncStep>.from(
+                      selectedStepsNotifier.value,
+                    );
                     if (value ?? false) {
                       updated.add(step);
                     } else {
@@ -80,8 +82,9 @@ class SyncModal extends ConsumerWidget {
             final selectedSteps = syncState.selectedSteps.isEmpty
                 ? selectedStepsNotifier.value
                 : syncState.selectedSteps;
-            final stepsToShow =
-                orderedSteps.where(selectedSteps.contains).toList();
+            final stepsToShow = orderedSteps
+                .where(selectedSteps.contains)
+                .toList();
 
             return Column(
               mainAxisSize: MainAxisSize.min,
@@ -96,17 +99,17 @@ class SyncModal extends ConsumerWidget {
                   Text(
                     context.messages.syncEntitiesSuccessTitle,
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                          fontWeight: FontWeight.w700,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w700,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     context.messages.syncEntitiesSuccessDescription,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -134,9 +137,9 @@ class SyncModal extends ConsumerWidget {
                           child: LinearProgressIndicator(
                             value: progress / 100,
                             borderRadius: BorderRadius.circular(8),
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).colorScheme.primary,
                             ),
@@ -203,10 +206,12 @@ class SyncModal extends ConsumerWidget {
     final processed = stepProgress?.processed ?? 0;
     final total = stepProgress?.total ?? 0;
     final countText = '$processed / $total';
-    final labelColor =
-        isCompleted ? colorScheme.primary : colorScheme.onSurface;
-    final countColor =
-        isCompleted ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final labelColor = isCompleted
+        ? colorScheme.primary
+        : colorScheme.onSurface;
+    final countColor = isCompleted
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),

@@ -71,8 +71,9 @@ class ChecklistCardBody extends StatelessWidget {
           )
         else
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: AppTheme.cardPadding),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.cardPadding,
+            ),
             child: itemIds.isEmpty
                 ? const ChecklistEmptyState()
                 : const ChecklistAllDoneState(),

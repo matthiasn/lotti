@@ -106,18 +106,17 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       taskNotification,
     };
 
-    _updateSubscription = getIt<UpdateNotifications>()
-        .updateStream
+    _updateSubscription = getIt<UpdateNotifications>().updateStream
         .throttleTime(
           const Duration(seconds: 5),
           leading: false,
           trailing: true,
         )
         .listen((affectedIds) async {
-      if (affectedIds.intersection(subscribedIds).isNotEmpty) {
-        await _refresh();
-      }
-    });
+          if (affectedIds.intersection(subscribedIds).isNotEmpty) {
+            await _refresh();
+          }
+        });
   }
 
   Future<void> _refresh() async {
@@ -158,10 +157,16 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     final today = clock.now().dayAtMidnight;
     // Use calendar arithmetic (day +/- n) instead of Duration subtraction
     // to avoid DST artifacts when crossing daylight saving transitions.
-    final startDate =
-        DateTime(today.year, today.month, today.day - (_initialPastDays - 1));
-    final endDate =
-        DateTime(today.year, today.month, today.day + _initialFutureDays);
+    final startDate = DateTime(
+      today.year,
+      today.month,
+      today.day - (_initialPastDays - 1),
+    );
+    final endDate = DateTime(
+      today.year,
+      today.month,
+      today.day + _initialFutureDays,
+    );
     return _fetchDataForRange(startDate, endDate);
   }
 
@@ -194,8 +199,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       // Merge: append older days to end of list (list is newest-to-oldest)
       final mergedDays = [...current.days, ...additionalData.days];
 
-      final newEarliestDay =
-          mergedDays.isNotEmpty ? mergedDays.last.day : current.earliestDay;
+      final newEarliestDay = mergedDays.isNotEmpty
+          ? mergedDays.last.day
+          : current.earliestDay;
 
       // Update maxDailyTotal incrementally; only recompute all heights if scale
       // changes (new max is higher).
@@ -219,8 +225,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
         current.copyWith(
           days: mergedDays,
           earliestDay: newEarliestDay,
-          latestDay:
-              mergedDays.isNotEmpty ? mergedDays.first.day : current.latestDay,
+          latestDay: mergedDays.isNotEmpty
+              ? mergedDays.first.day
+              : current.latestDay,
           maxDailyTotal: newMax,
           isLoadingMore: false,
           canLoadMore: true,
@@ -259,8 +266,9 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       );
       if (ref.mounted) {
         // Restore previous state on error to avoid stuck loading
-        state =
-            previousState.hasValue ? previousState : AsyncError(e, stackTrace);
+        state = previousState.hasValue
+            ? previousState
+            : AsyncError(e, stackTrace);
       }
     }
   }
@@ -343,15 +351,13 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   Future<List<EntryLink>> _batchedLinksForEntryIds(
     JournalDb db,
     Set<String> ids,
-  ) =>
-      _runBatchedQuery(ids, db.linksForEntryIds);
+  ) => _runBatchedQuery(ids, db.linksForEntryIds);
 
   /// Batch fetch entities to avoid SQLite variable limits.
   Future<List<JournalEntity>> _batchedGetEntitiesForIds(
     JournalDb db,
     Set<String> ids,
-  ) =>
-      _runBatchedQuery(ids, db.getJournalEntitiesForIds);
+  ) => _runBatchedQuery(ids, db.getJournalEntitiesForIds);
 
   TimeHistoryData _aggregateEntries(
     List<JournalEntity> entries,
@@ -372,8 +378,12 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     // This is the proven pattern from time_by_category_controller.dart:getDaysAtNoon()
     final endNoon = end.dayAtNoon;
     for (var i = 0; i < dayCount; i++) {
-      final dayNoon =
-          DateTime(endNoon.year, endNoon.month, endNoon.day - i, 12);
+      final dayNoon = DateTime(
+        endNoon.year,
+        endNoon.month,
+        endNoon.day - i,
+        12,
+      );
       data[dayNoon] = <String?, Duration>{};
     }
 
@@ -395,8 +405,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
               .map((id) => linkedEntriesMap[id])
               .nonNulls;
 
-      final categoryId =
-          linkedTo.map((item) => item.meta.categoryId).nonNulls.firstOrNull;
+      final categoryId = linkedTo
+          .map((item) => item.meta.categoryId)
+          .nonNulls
+          .firstOrNull;
 
       final noon = journalEntity.meta.dateFrom.dayAtNoon;
       final dataByDay = data[noon];
@@ -437,8 +449,11 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     days.sort((a, b) => b.day.compareTo(a.day));
 
     // Compute stacked heights
-    final stackedHeights =
-        _computeStackedHeights(days, categoryOrder, maxTotal);
+    final stackedHeights = _computeStackedHeights(
+      days,
+      categoryOrder,
+      maxTotal,
+    );
 
     return TimeHistoryData(
       days: days,

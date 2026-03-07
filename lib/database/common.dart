@@ -48,11 +48,12 @@ Future<File> getDatabaseFile(String dbFileName) async {
 Future<void> createDbBackup(String fileName) async {
   final file = await getDatabaseFile(fileName);
   final ts = DateFormat(_backupTimestampFormat).format(DateTime.now());
-  final backupDir =
-      await Directory(p.join(file.parent.path, _backupDirectoryName))
-          .create(recursive: true);
+  final backupDir = await Directory(
+    p.join(file.parent.path, _backupDirectoryName),
+  ).create(recursive: true);
   await file.copy(
-      p.join(backupDir.path, '$_backupFilePrefix$ts$_backupFileExtension'));
+    p.join(backupDir.path, '$_backupFilePrefix$ts$_backupFileExtension'),
+  );
 }
 
 /// Configures WAL mode and recommended pragmas on a freshly opened database.

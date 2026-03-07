@@ -22,7 +22,7 @@ class PromptFormController extends _$PromptFormController {
   Future<PromptFormState?> build({required String? configId}) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
-            as AiConfigPrompt?)
+              as AiConfigPrompt?)
         : null;
 
     nameController.text = _config?.name ?? '';
@@ -57,8 +57,9 @@ class PromptFormController extends _$PromptFormController {
       final validModelIds = <String>[];
       for (final modelId in _config!.modelIds) {
         try {
-          final modelConfig =
-              await ref.read(aiConfigRepositoryProvider).getConfigById(modelId);
+          final modelConfig = await ref
+              .read(aiConfigRepositoryProvider)
+              .getConfigById(modelId);
           if (modelConfig != null && modelConfig is AiConfigModel) {
             validModelIds.add(modelId);
           }
@@ -70,8 +71,9 @@ class PromptFormController extends _$PromptFormController {
       // Update default model ID if it's no longer valid
       var validDefaultModelId = _config!.defaultModelId;
       if (!validModelIds.contains(validDefaultModelId)) {
-        validDefaultModelId =
-            validModelIds.isNotEmpty ? validModelIds.first : '';
+        validDefaultModelId = validModelIds.isNotEmpty
+            ? validModelIds.first
+            : '';
       }
 
       return PromptFormState(
@@ -118,12 +120,12 @@ class PromptFormController extends _$PromptFormController {
     // Check if any non-FormzInput field is being changed
     final isNonFormzFieldChanging =
         (defaultModelId != null && defaultModelId != prev.defaultModelId) ||
-            (modelIds != null && !listEquals(modelIds, prev.modelIds)) ||
-            (useReasoning != null && useReasoning != prev.useReasoning) ||
-            (requiredInputData != null &&
-                !listEquals(requiredInputData, prev.requiredInputData)) ||
-            (defaultVariables != null &&
-                !mapEquals(defaultVariables, prev.defaultVariables));
+        (modelIds != null && !listEquals(modelIds, prev.modelIds)) ||
+        (useReasoning != null && useReasoning != prev.useReasoning) ||
+        (requiredInputData != null &&
+            !listEquals(requiredInputData, prev.requiredInputData)) ||
+        (defaultVariables != null &&
+            !mapEquals(defaultVariables, prev.defaultVariables));
 
     state = AsyncData(
       prev.copyWith(
@@ -142,10 +144,11 @@ class PromptFormController extends _$PromptFormController {
         description: description != null
             ? PromptDescription.dirty(description)
             : (isNonFormzFieldChanging && prev.description.isPure
-                ? PromptDescription.dirty(prev.description.value)
-                : prev.description),
-        category:
-            category != null ? PromptCategory.dirty(category) : prev.category,
+                  ? PromptDescription.dirty(prev.description.value)
+                  : prev.description),
+        category: category != null
+            ? PromptCategory.dirty(category)
+            : prev.category,
         defaultVariables: defaultVariables,
         aiResponseType: aiResponseType != null
             ? PromptAiResponseType.dirty(aiResponseType)
@@ -251,8 +254,9 @@ class PromptFormController extends _$PromptFormController {
       // Update default model ID if it's no longer valid
       var validDefaultModelId = config.defaultModelId;
       if (!validModelIds.contains(validDefaultModelId)) {
-        validDefaultModelId =
-            validModelIds.isNotEmpty ? validModelIds.first : '';
+        validDefaultModelId = validModelIds.isNotEmpty
+            ? validModelIds.first
+            : '';
       }
 
       configToSave = config.copyWith(
@@ -262,7 +266,8 @@ class PromptFormController extends _$PromptFormController {
     }
 
     // Safely handle createdAt based on config type
-    final createdAt = _config?.createdAt ??
+    final createdAt =
+        _config?.createdAt ??
         (configToSave is AiConfigPrompt ? configToSave.createdAt : null) ??
         DateTime.now();
 

@@ -26,8 +26,9 @@ class AttachmentIngestor {
   AttachmentIngestor({
     this.documentsDirectory,
     int maxConcurrentDownloads = _defaultMaxConcurrentDownloads,
-  }) : _maxConcurrentDownloads =
-            maxConcurrentDownloads < 0 ? 0 : maxConcurrentDownloads;
+  }) : _maxConcurrentDownloads = maxConcurrentDownloads < 0
+           ? 0
+           : maxConcurrentDownloads;
 
   static const int _defaultMaxConcurrentDownloads = 2;
 
@@ -69,7 +70,8 @@ class AttachmentIngestor {
       try {
         final mime = event.attachmentMimetype;
         final content = event.content;
-        final hasUrl = content.containsKey('url') ||
+        final hasUrl =
+            content.containsKey('url') ||
             content.containsKey('mxc') ||
             content.containsKey('mxcUrl') ||
             content.containsKey('uri');
@@ -156,8 +158,8 @@ class AttachmentIngestor {
 
   void _drainQueue() {
     if (_disposed) return;
-    while (
-        _inFlightCount < _maxConcurrentDownloads && _downloadQueue.isNotEmpty) {
+    while (_inFlightCount < _maxConcurrentDownloads &&
+        _downloadQueue.isNotEmpty) {
       final key = _downloadQueue.removeFirst();
       _queuedKeys.remove(key);
       final request = _pendingDownloads[key];

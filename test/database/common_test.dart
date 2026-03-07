@@ -136,9 +136,9 @@ void main() {
       expect(backupFileName, startsWith('db.'));
       expect(backupFileName, endsWith('.sqlite'));
       expect(
-          backupFileName,
-          matches(
-              RegExp(r'db\.\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+\.sqlite')));
+        backupFileName,
+        matches(RegExp(r'db\.\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}-\d+\.sqlite')),
+      );
     });
 
     test('creates backup in correct location', () async {
@@ -343,17 +343,19 @@ void main() {
       }
     });
 
-    test('creates file-based database connection with custom directory',
-        () async {
-      final db = openDbConnection(
-        'test_file.db',
-        documentsDirectoryProvider: () async => testDir,
-        tempDirectoryProvider: () async => testDir,
-      );
+    test(
+      'creates file-based database connection with custom directory',
+      () async {
+        final db = openDbConnection(
+          'test_file.db',
+          documentsDirectoryProvider: () async => testDir,
+          tempDirectoryProvider: () async => testDir,
+        );
 
-      expect(db, isNotNull);
-      expect(db.toString(), contains('LazyDatabase'));
-    });
+        expect(db, isNotNull);
+        expect(db.toString(), contains('LazyDatabase'));
+      },
+    );
 
     test('initializes database file on first use', () async {
       final db = EditorDb(
@@ -540,7 +542,9 @@ void main() {
 
       // Create large source file (1MB)
       final largeData = List.generate(
-          _testLargeFileSizeBytes, (i) => i % _testBinaryDataSize);
+        _testLargeFileSizeBytes,
+        (i) => i % _testBinaryDataSize,
+      );
       final sourceFile = File(p.join(testDir.path, fileName));
       await sourceFile.writeAsBytes(largeData);
 

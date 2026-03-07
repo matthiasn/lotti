@@ -61,11 +61,12 @@ void main() {
       SyncStep step,
       Invocation invocation,
     ) async {
-      final onProgress = invocation.namedArguments[const Symbol('onProgress')]
-          as void Function(double)?;
+      final onProgress =
+          invocation.namedArguments[const Symbol('onProgress')]
+              as void Function(double)?;
       final onDetailedProgress =
-          invocation.namedArguments[const Symbol('onDetailedProgress')] as void
-              Function(int processed, int total)?;
+          invocation.namedArguments[const Symbol('onDetailedProgress')]
+              as void Function(int processed, int total)?;
       final total = totalsByStep[step] ?? 0;
 
       onDetailedProgress?.call(0, total);
@@ -194,8 +195,9 @@ void main() {
   Widget createTestApp(Widget child) {
     return ProviderScope(
       overrides: [
-        syncMaintenanceRepositoryProvider
-            .overrideWithValue(mockSyncMaintenanceRepository),
+        syncMaintenanceRepositoryProvider.overrideWithValue(
+          mockSyncMaintenanceRepository,
+        ),
         syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
         syncControllerProvider.overrideWith(SpySyncController.new),
       ],
@@ -210,82 +212,84 @@ void main() {
   }
 
   testWidgets(
-      'SyncModal.show displays confirmation, and calls syncAll on confirm',
-      (WidgetTester tester) async {
-    // Build a simple widget that can show the dialog
-    await tester.pumpWidget(
-      createTestApp(
-        Builder(
-          builder: (context) {
-            return ElevatedButton(
-              onPressed: () => SyncModal.show(context),
-              child: const Text('Show Sync Modal'),
-            );
+    'SyncModal.show displays confirmation, and calls syncAll on confirm',
+    (WidgetTester tester) async {
+      // Build a simple widget that can show the dialog
+      await tester.pumpWidget(
+        createTestApp(
+          Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () => SyncModal.show(context),
+                child: const Text('Show Sync Modal'),
+              );
+            },
+          ),
+        ),
+      );
+
+      // Tap the button to show the modal
+      await tester.tap(find.text('Show Sync Modal'));
+      await tester.pumpAndSettle(); // Wait for animations and dialog to appear
+
+      // Verify the confirmation dialog is shown with the correct message
+      expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
+      expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
+
+      // Tap the confirm button
+      var syncInvoked = false;
+      Set<SyncStep>? capturedSteps;
+      SpySyncController.onSyncAll = (steps) {
+        syncInvoked = true;
+        capturedSteps = steps;
+      };
+
+      final confirmButtonFinder = find.widgetWithText(
+        LottiPrimaryButton,
+        messages.syncEntitiesConfirm,
+      );
+
+      await tester.ensureVisible(confirmButtonFinder);
+      final confirmButton = tester.widget<LottiPrimaryButton>(
+        confirmButtonFinder,
+      );
+      expect(confirmButton.onPressed, isNotNull);
+      confirmButton.onPressed!.call();
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(syncInvoked, isTrue);
+      expect(
+        capturedSteps,
+        equals(
+          {
+            SyncStep.tags,
+            SyncStep.measurables,
+            SyncStep.labels,
+            SyncStep.categories,
+            SyncStep.dashboards,
+            SyncStep.habits,
+            SyncStep.aiSettings,
+            SyncStep.backfillAgentEntityClocks,
+            SyncStep.backfillAgentLinkClocks,
+            SyncStep.agentEntities,
+            SyncStep.agentLinks,
           },
         ),
-      ),
-    );
+      );
 
-    // Tap the button to show the modal
-    await tester.tap(find.text('Show Sync Modal'));
-    await tester.pumpAndSettle(); // Wait for animations and dialog to appear
-
-    // Verify the confirmation dialog is shown with the correct message
-    expect(find.text(messages.syncEntitiesMessage), findsOneWidget);
-    expect(find.text(messages.syncEntitiesConfirm), findsOneWidget);
-
-    // Tap the confirm button
-    var syncInvoked = false;
-    Set<SyncStep>? capturedSteps;
-    SpySyncController.onSyncAll = (steps) {
-      syncInvoked = true;
-      capturedSteps = steps;
-    };
-
-    final confirmButtonFinder = find.widgetWithText(
-      LottiPrimaryButton,
-      messages.syncEntitiesConfirm,
-    );
-
-    await tester.ensureVisible(confirmButtonFinder);
-    final confirmButton =
-        tester.widget<LottiPrimaryButton>(confirmButtonFinder);
-    expect(confirmButton.onPressed, isNotNull);
-    confirmButton.onPressed!.call();
-
-    await tester.pump();
-    await tester.pumpAndSettle();
-
-    expect(syncInvoked, isTrue);
-    expect(
-      capturedSteps,
-      equals(
-        {
-          SyncStep.tags,
-          SyncStep.measurables,
-          SyncStep.labels,
-          SyncStep.categories,
-          SyncStep.dashboards,
-          SyncStep.habits,
-          SyncStep.aiSettings,
-          SyncStep.backfillAgentEntityClocks,
-          SyncStep.backfillAgentLinkClocks,
-          SyncStep.agentEntities,
-          SyncStep.agentLinks,
-        },
-      ),
-    );
-
-    expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
-    expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
-    expect(find.text('4 / 4'), findsOneWidget);
-    expect(find.text('5 / 5'), findsOneWidget);
-    expect(find.text('6 / 6'), findsOneWidget);
-    expect(find.text('7 / 7'), findsOneWidget);
-    expect(find.text('8 / 8'), findsOneWidget);
-    expect(find.text('9 / 9'), findsOneWidget);
-    expect(find.text('10 / 10'), findsOneWidget);
-  });
+      expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
+      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+      expect(find.text('4 / 4'), findsOneWidget);
+      expect(find.text('5 / 5'), findsOneWidget);
+      expect(find.text('6 / 6'), findsOneWidget);
+      expect(find.text('7 / 7'), findsOneWidget);
+      expect(find.text('8 / 8'), findsOneWidget);
+      expect(find.text('9 / 9'), findsOneWidget);
+      expect(find.text('10 / 10'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'SyncModal lists selectable sync steps on confirmation page',
@@ -317,8 +321,9 @@ void main() {
     },
   );
 
-  testWidgets('SyncModal disables confirm when no steps selected',
-      (WidgetTester tester) async {
+  testWidgets('SyncModal disables confirm when no steps selected', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(
       createTestApp(
         Builder(

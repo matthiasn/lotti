@@ -27,8 +27,8 @@ class FakeEntryController extends EntryController {
     this._entity, {
     ToggleCallTracker? tracker,
     bool showMap = false,
-  })  : _tracker = tracker,
-        _showMap = showMap;
+  }) : _tracker = tracker,
+       _showMap = showMap;
 
   final JournalEntity _entity;
   final ToggleCallTracker? _tracker;
@@ -101,7 +101,7 @@ class CoverArtCallTracker {
 class TrackingFakeEntryController extends FakeEntryController {
   // ignore: use_super_parameters, parent uses private `_entity` field
   TrackingFakeEntryController(JournalEntity entity, this._coverArtTracker)
-      : super(entity);
+    : super(entity);
 
   final CoverArtCallTracker _coverArtTracker;
   JournalEntity? _currentEntity;

@@ -41,8 +41,9 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
 
     final timeSpanDays = state.timeSpanDays;
 
-    final rangeStart =
-        DateTime.now().dayAtMidnight.subtract(Duration(days: timeSpanDays - 1));
+    final rangeStart = DateTime.now().dayAtMidnight.subtract(
+      Duration(days: timeSpanDays - 1),
+    );
 
     final rangeEnd = getEndOfToday();
     final showGaps = timeSpanDays < 180;
@@ -60,21 +61,26 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           .toList();
     }
 
-    final openNow =
-        state.showSearch ? filterMatching(state.openNow) : state.openNow;
+    final openNow = state.showSearch
+        ? filterMatching(state.openNow)
+        : state.openNow;
 
-    final completed =
-        state.showSearch ? filterMatching(state.completed) : state.completed;
+    final completed = state.showSearch
+        ? filterMatching(state.completed)
+        : state.completed;
 
     final pendingLater = state.showSearch
         ? filterMatching(state.pendingLater)
         : state.pendingLater;
 
-    final showOpenNow = openNow.isNotEmpty &&
+    final showOpenNow =
+        openNow.isNotEmpty &&
         (displayFilter == HabitDisplayFilter.openNow || showAll);
-    final showCompleted = completed.isNotEmpty &&
+    final showCompleted =
+        completed.isNotEmpty &&
         (displayFilter == HabitDisplayFilter.completed || showAll);
-    final showPendingLater = pendingLater.isNotEmpty &&
+    final showPendingLater =
+        pendingLater.isNotEmpty &&
         (displayFilter == HabitDisplayFilter.pendingLater || showAll);
 
     return VisibilityDetector(

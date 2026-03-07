@@ -28,8 +28,9 @@ void main() {
       mockNotifications = _MockUpdateNotifications();
       notificationController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockNotifications.updateStream)
-          .thenAnswer((_) => notificationController.stream);
+      when(
+        () => mockNotifications.updateStream,
+      ).thenAnswer((_) => notificationController.stream);
 
       getIt
         ..registerSingleton<JournalDb>(mockDb)
@@ -53,8 +54,9 @@ void main() {
             active: false,
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [activeDashboard, inactiveDashboard]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [activeDashboard, inactiveDashboard]);
 
           final states = <AsyncValue<List<DashboardDefinition>>>[];
           container.listen(
@@ -78,8 +80,9 @@ void main() {
         fakeAsync((async) {
           final inactiveDashboard = testDashboardConfig.copyWith(active: false);
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [inactiveDashboard]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [inactiveDashboard]);
 
           final states = <AsyncValue<List<DashboardDefinition>>>[];
           container.listen(
@@ -101,7 +104,7 @@ void main() {
 
           when(() => mockDb.getAllDashboards()).thenThrow(error);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
 
           async.flushMicrotasks();
 
@@ -164,8 +167,9 @@ void main() {
     group('filteredSortedDashboardsProvider', () {
       test('returns empty list when dashboards are loading', () {
         // Don't stub getAllDashboards — the provider won't have data yet
-        when(() => mockDb.getAllDashboards())
-            .thenAnswer((_) => Completer<List<DashboardDefinition>>().future);
+        when(
+          () => mockDb.getAllDashboards(),
+        ).thenAnswer((_) => Completer<List<DashboardDefinition>>().future);
 
         final state = container.read(filteredSortedDashboardsProvider);
         expect(state, isEmpty);
@@ -182,10 +186,11 @@ void main() {
             name: 'A Dashboard',
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard1, dashboard2]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboard1, dashboard2]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -204,10 +209,11 @@ void main() {
             name: 'Alpha Dashboard',
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboardB, dashboardA]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboardB, dashboardA]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -228,10 +234,11 @@ void main() {
             name: 'Beta Dashboard',
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboardUpper, dashboardLower]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboardUpper, dashboardLower]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final state = container.read(filteredSortedDashboardsProvider);
@@ -258,10 +265,11 @@ void main() {
             categoryId: 'category-1',
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           // Select category-1 filter
@@ -293,10 +301,11 @@ void main() {
             categoryId: 'category-3',
           );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboard1, dashboard2, dashboard3]);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           // Select multiple categories
@@ -316,68 +325,75 @@ void main() {
         });
       });
 
-      test('excludes dashboards with null categoryId when filter is active',
-          () {
-        fakeAsync((async) {
-          final dashboard1 = testDashboardConfig.copyWith(
-            id: 'dashboard-1',
-            name: 'Dashboard 1',
-            categoryId: 'category-1',
-          );
-          final dashboardNoCategory = testDashboardConfig.copyWith(
-            id: 'dashboard-2',
-            name: 'Dashboard 2',
-            categoryId: null,
-          );
+      test(
+        'excludes dashboards with null categoryId when filter is active',
+        () {
+          fakeAsync((async) {
+            final dashboard1 = testDashboardConfig.copyWith(
+              id: 'dashboard-1',
+              name: 'Dashboard 1',
+              categoryId: 'category-1',
+            );
+            final dashboardNoCategory = testDashboardConfig.copyWith(
+              id: 'dashboard-2',
+              name: 'Dashboard 2',
+              categoryId: null,
+            );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
+            when(
+              () => mockDb.getAllDashboards(),
+            ).thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-          container.listen(dashboardsProvider, (_, __) {});
-          async.flushMicrotasks();
+            container.listen(dashboardsProvider, (_, _) {});
+            async.flushMicrotasks();
 
-          // Select category-1 filter
-          container
-              .read(selectedCategoryIdsProvider.notifier)
-              .toggle('category-1');
+            // Select category-1 filter
+            container
+                .read(selectedCategoryIdsProvider.notifier)
+                .toggle('category-1');
 
-          final state = container.read(filteredSortedDashboardsProvider);
-          expect(state.length, 1);
-          expect(state[0].id, 'dashboard-1');
-        });
-      });
+            final state = container.read(filteredSortedDashboardsProvider);
+            expect(state.length, 1);
+            expect(state[0].id, 'dashboard-1');
+          });
+        },
+      );
 
-      test('includes dashboards with null categoryId when no filter is active',
-          () {
-        fakeAsync((async) {
-          final dashboard1 = testDashboardConfig.copyWith(
-            id: 'dashboard-1',
-            name: 'Dashboard 1',
-            categoryId: 'category-1',
-          );
-          final dashboardNoCategory = testDashboardConfig.copyWith(
-            id: 'dashboard-2',
-            name: 'Dashboard 2',
-            categoryId: null,
-          );
+      test(
+        'includes dashboards with null categoryId when no filter is active',
+        () {
+          fakeAsync((async) {
+            final dashboard1 = testDashboardConfig.copyWith(
+              id: 'dashboard-1',
+              name: 'Dashboard 1',
+              categoryId: 'category-1',
+            );
+            final dashboardNoCategory = testDashboardConfig.copyWith(
+              id: 'dashboard-2',
+              name: 'Dashboard 2',
+              categoryId: null,
+            );
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
+            when(
+              () => mockDb.getAllDashboards(),
+            ).thenAnswer((_) async => [dashboard1, dashboardNoCategory]);
 
-          container.listen(dashboardsProvider, (_, __) {});
-          async.flushMicrotasks();
+            container.listen(dashboardsProvider, (_, _) {});
+            async.flushMicrotasks();
 
-          final state = container.read(filteredSortedDashboardsProvider);
-          expect(state.length, 2);
-        });
-      });
+            final state = container.read(filteredSortedDashboardsProvider);
+            expect(state.length, 2);
+          });
+        },
+      );
     });
 
     group('dashboardCategoriesProvider', () {
       test('emits categories from initial fetch', () {
         fakeAsync((async) {
-          when(() => mockDb.getAllCategories())
-              .thenAnswer((_) async => [categoryMindfulness]);
+          when(
+            () => mockDb.getAllCategories(),
+          ).thenAnswer((_) async => [categoryMindfulness]);
 
           final states = <AsyncValue<List<CategoryDefinition>>>[];
           container.listen(
@@ -399,7 +415,7 @@ void main() {
 
           when(() => mockDb.getAllCategories()).thenThrow(error);
 
-          container.listen(dashboardCategoriesProvider, (_, __) {});
+          container.listen(dashboardCategoriesProvider, (_, _) {});
 
           async.flushMicrotasks();
 
@@ -421,12 +437,14 @@ void main() {
         fakeAsync((async) {
           final dashboard = testDashboardConfig;
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard]);
-          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-              .thenReturn(dashboard);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboard]);
+          when(
+            () => mockEntitiesCacheService.getDashboardById(dashboard.id),
+          ).thenReturn(dashboard);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final result = container.read(dashboardByIdProvider(dashboard.id));
@@ -436,12 +454,14 @@ void main() {
 
       test('returns null when dashboard not found in cache', () {
         fakeAsync((async) {
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [testDashboardConfig]);
-          when(() => mockEntitiesCacheService.getDashboardById('unknown-id'))
-              .thenReturn(null);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [testDashboardConfig]);
+          when(
+            () => mockEntitiesCacheService.getDashboardById('unknown-id'),
+          ).thenReturn(null);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           final result = container.read(dashboardByIdProvider('unknown-id'));
@@ -454,22 +474,26 @@ void main() {
           final dashboard = testDashboardConfig;
           final updatedDashboard = dashboard.copyWith(name: 'Updated Name');
 
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [dashboard]);
-          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-              .thenReturn(dashboard);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [dashboard]);
+          when(
+            () => mockEntitiesCacheService.getDashboardById(dashboard.id),
+          ).thenReturn(dashboard);
 
-          container.listen(dashboardsProvider, (_, __) {});
+          container.listen(dashboardsProvider, (_, _) {});
           async.flushMicrotasks();
 
           var result = container.read(dashboardByIdProvider(dashboard.id));
           expect(result?.name, dashboard.name);
 
           // Update stubs for the next fetch
-          when(() => mockDb.getAllDashboards())
-              .thenAnswer((_) async => [updatedDashboard]);
-          when(() => mockEntitiesCacheService.getDashboardById(dashboard.id))
-              .thenReturn(updatedDashboard);
+          when(
+            () => mockDb.getAllDashboards(),
+          ).thenAnswer((_) async => [updatedDashboard]);
+          when(
+            () => mockEntitiesCacheService.getDashboardById(dashboard.id),
+          ).thenReturn(updatedDashboard);
 
           // Fire notification to trigger refetch
           notificationController.add({dashboardsNotification});

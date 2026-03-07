@@ -42,8 +42,9 @@ class _JournalSliverAppBarState extends ConsumerState<JournalSliverAppBar> {
   Widget build(BuildContext context) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     final showVectorToggle = state.enableVectorSearch;
 
@@ -91,8 +92,9 @@ class _SearchModeRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     return Row(
       children: [
@@ -157,8 +159,9 @@ class JournalFilter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     ButtonSegment<DisplayFilter> segment({
       required DisplayFilter filter,

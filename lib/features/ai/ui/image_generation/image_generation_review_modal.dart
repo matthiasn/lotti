@@ -210,8 +210,9 @@ class _ImageGenerationReviewModalState
       });
       ref
           .read(
-            imageGenerationControllerProvider(entityId: widget.entityId)
-                .notifier,
+            imageGenerationControllerProvider(
+              entityId: widget.entityId,
+            ).notifier,
           )
           .generateImage(
             prompt: newPrompt,

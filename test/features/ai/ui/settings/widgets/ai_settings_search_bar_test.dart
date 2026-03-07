@@ -35,11 +35,13 @@ void main() {
             controller: controller,
             hintText: hintText ?? 'Search AI configurations...',
             isCompact: isCompact,
-            onClear: onClear ??
+            onClear:
+                onClear ??
                 () {
                   onClearCalled = true;
                 },
-            onChanged: onChanged ??
+            onChanged:
+                onChanged ??
                 (value) {
                   onChangedCalled = true;
                   lastChangedValue = value;
@@ -49,8 +51,9 @@ void main() {
       );
     }
 
-    testWidgets('displays correctly with default styling',
-        (WidgetTester tester) async {
+    testWidgets('displays correctly with default styling', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       expect(find.byType(TextField), findsOneWidget);
@@ -65,8 +68,9 @@ void main() {
       expect(find.text(customHint), findsOneWidget);
     });
 
-    testWidgets('calls onChanged when text is entered',
-        (WidgetTester tester) async {
+    testWidgets('calls onChanged when text is entered', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       const testText = 'test query';
@@ -76,8 +80,9 @@ void main() {
       expect(lastChangedValue, testText);
     });
 
-    testWidgets('shows clear button when text is present',
-        (WidgetTester tester) async {
+    testWidgets('shows clear button when text is present', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Initially no clear button
@@ -91,8 +96,9 @@ void main() {
       expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
-    testWidgets('hides clear button when text is empty',
-        (WidgetTester tester) async {
+    testWidgets('hides clear button when text is empty', (
+      WidgetTester tester,
+    ) async {
       controller.text = 'test';
       await tester.pumpWidget(createWidget());
 
@@ -107,8 +113,9 @@ void main() {
       expect(find.byIcon(Icons.clear_rounded), findsNothing);
     });
 
-    testWidgets('calls onClear when clear button is tapped',
-        (WidgetTester tester) async {
+    testWidgets('calls onClear when clear button is tapped', (
+      WidgetTester tester,
+    ) async {
       controller.text = 'test';
       await tester.pumpWidget(createWidget());
 
@@ -119,8 +126,9 @@ void main() {
       expect(onClearCalled, isTrue);
     });
 
-    testWidgets('clears text when clear button is tapped',
-        (WidgetTester tester) async {
+    testWidgets('clears text when clear button is tapped', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Enter text
@@ -137,8 +145,9 @@ void main() {
       expect(find.byIcon(Icons.clear_rounded), findsNothing);
     });
 
-    testWidgets('has proper accessibility properties',
-        (WidgetTester tester) async {
+    testWidgets('has proper accessibility properties', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       final textField = find.byType(TextField);
@@ -152,8 +161,9 @@ void main() {
       expect(textFieldWidget.decoration?.hintText, isNotNull);
     });
 
-    testWidgets('responds to controller changes externally',
-        (WidgetTester tester) async {
+    testWidgets('responds to controller changes externally', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // Change controller text externally
@@ -164,8 +174,9 @@ void main() {
       expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
     });
 
-    testWidgets('handles empty hint text gracefully',
-        (WidgetTester tester) async {
+    testWidgets('handles empty hint text gracefully', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(hintText: ''));
 
       expect(find.byType(TextField), findsOneWidget);
@@ -207,21 +218,23 @@ void main() {
 
     group('keyboard navigation', () {
       testWidgets('can be focused with tab', (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          home: Scaffold(
-            body: Column(
-              children: [
-                const TextField(),
-                AiSettingsSearchBar(
-                  controller: controller,
-                  hintText: 'Search...',
-                  onClear: () {},
-                  onChanged: (_) {},
-                ),
-              ],
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                children: [
+                  const TextField(),
+                  AiSettingsSearchBar(
+                    controller: controller,
+                    hintText: 'Search...',
+                    onClear: () {},
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
             ),
           ),
-        ));
+        );
 
         // Tab to the search bar
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
@@ -233,18 +246,21 @@ void main() {
     });
 
     group('edge cases', () {
-      testWidgets('handles null callbacks gracefully',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(MaterialApp(
-          home: Scaffold(
-            body: AiSettingsSearchBar(
-              controller: controller,
-              hintText: 'Search...',
-              onClear: () {}, // Required callback
-              onChanged: (_) {}, // Required callback
+      testWidgets('handles null callbacks gracefully', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: AiSettingsSearchBar(
+                controller: controller,
+                hintText: 'Search...',
+                onClear: () {}, // Required callback
+                onChanged: (_) {}, // Required callback
+              ),
             ),
           ),
-        ));
+        );
 
         // Should not throw when text is entered
         await tester.enterText(find.byType(TextField), 'test');
@@ -268,8 +284,9 @@ void main() {
     });
 
     group('compact mode', () {
-      testWidgets('displays correctly in compact mode',
-          (WidgetTester tester) async {
+      testWidgets('displays correctly in compact mode', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget(isCompact: true));
 
         expect(find.byType(TextField), findsOneWidget);
@@ -281,8 +298,9 @@ void main() {
         expect(containerBox.size.height, 36);
       });
 
-      testWidgets('shows smaller text in compact mode',
-          (WidgetTester tester) async {
+      testWidgets('shows smaller text in compact mode', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget(isCompact: true));
 
         await tester.enterText(find.byType(TextField), 'test');
@@ -292,8 +310,9 @@ void main() {
         expect(textField.style?.fontSize, 14);
       });
 
-      testWidgets('clear button works in compact mode',
-          (WidgetTester tester) async {
+      testWidgets('clear button works in compact mode', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget(isCompact: true));
 
         await tester.enterText(find.byType(TextField), 'test');
@@ -309,11 +328,14 @@ void main() {
     });
 
     group('theme variations', () {
-      testWidgets('displays correctly in dark mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget(
-          theme: ThemeData.dark(),
-        ));
+      testWidgets('displays correctly in dark mode', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget(
+            theme: ThemeData.dark(),
+          ),
+        );
 
         expect(find.byType(TextField), findsOneWidget);
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
@@ -323,11 +345,14 @@ void main() {
         expect(container, findsOneWidget);
       });
 
-      testWidgets('displays correctly in light mode',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget(
-          theme: ThemeData.light(),
-        ));
+      testWidgets('displays correctly in light mode', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget(
+            theme: ThemeData.light(),
+          ),
+        );
 
         expect(find.byType(TextField), findsOneWidget);
         expect(find.byIcon(Icons.search_rounded), findsOneWidget);
@@ -337,12 +362,15 @@ void main() {
         expect(container, findsOneWidget);
       });
 
-      testWidgets('compact mode works in dark theme',
-          (WidgetTester tester) async {
-        await tester.pumpWidget(createWidget(
-          isCompact: true,
-          theme: ThemeData.dark(),
-        ));
+      testWidgets('compact mode works in dark theme', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          createWidget(
+            isCompact: true,
+            theme: ThemeData.dark(),
+          ),
+        );
 
         expect(find.byType(TextField), findsOneWidget);
 
@@ -354,26 +382,30 @@ void main() {
     });
 
     group('widget lifecycle', () {
-      testWidgets('disposes properly when removed from tree',
-          (WidgetTester tester) async {
+      testWidgets('disposes properly when removed from tree', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Verify widget is rendered
         expect(find.byType(AiSettingsSearchBar), findsOneWidget);
 
         // Remove widget from tree
-        await tester.pumpWidget(const MaterialApp(
-          home: Scaffold(
-            body: SizedBox(),
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: SizedBox(),
+            ),
           ),
-        ));
+        );
 
         // Widget should be disposed
         expect(find.byType(AiSettingsSearchBar), findsNothing);
       });
 
-      testWidgets('handles controller listener properly across rebuilds',
-          (WidgetTester tester) async {
+      testWidgets('handles controller listener properly across rebuilds', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Change controller text
@@ -395,8 +427,9 @@ void main() {
         expect(find.byIcon(Icons.clear_rounded), findsNothing);
       });
 
-      testWidgets('text input action is set to search',
-          (WidgetTester tester) async {
+      testWidgets('text input action is set to search', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         final textField = tester.widget<TextField>(find.byType(TextField));
@@ -412,8 +445,9 @@ void main() {
     });
 
     group('accessibility', () {
-      testWidgets('semantic labels are properly set',
-          (WidgetTester tester) async {
+      testWidgets('semantic labels are properly set', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(createWidget());
 
         // Search icon should have semantic label

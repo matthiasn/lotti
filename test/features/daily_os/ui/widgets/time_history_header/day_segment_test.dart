@@ -141,8 +141,9 @@ void main() {
       expect(semantics.properties.selected, true);
     });
 
-    testWidgets('semantics shows not selected when not selected',
-        (tester) async {
+    testWidgets('semantics shows not selected when not selected', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createTestWidget(
           daySummary: createDaySummary(),
@@ -158,8 +159,9 @@ void main() {
     });
 
     group('Weekend styling', () {
-      testWidgets('Saturday displays weekend weekday abbreviation',
-          (tester) async {
+      testWidgets('Saturday displays weekend weekday abbreviation', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(daySummary: createDaySummary(day: saturdayDay)),
         );
@@ -168,8 +170,9 @@ void main() {
         expect(find.text('Sat'), findsOneWidget);
       });
 
-      testWidgets('Sunday displays weekend weekday abbreviation',
-          (tester) async {
+      testWidgets('Sunday displays weekend weekday abbreviation', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(daySummary: createDaySummary(day: sundayDay)),
         );
@@ -198,8 +201,9 @@ void main() {
     });
 
     group('Two-line layout', () {
-      testWidgets('weekday and day number are in same widget tree',
-          (tester) async {
+      testWidgets('weekday and day number are in same widget tree', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(daySummary: createDaySummary()),
         );
@@ -220,8 +224,9 @@ void main() {
         );
       });
 
-      testWidgets('layout contains Column for vertical arrangement',
-          (tester) async {
+      testWidgets('layout contains Column for vertical arrangement', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(daySummary: createDaySummary()),
         );

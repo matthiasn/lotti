@@ -142,7 +142,8 @@ final ChecklistItem testChecklistItem3Deleted = ChecklistItem(
     dateTo: _testTaskDateFrom,
     vectorClock: const VectorClock({'device': 1}),
     deletedAt: _testTaskUpdatedAt, // Mark as deleted
-    starred: false, private: false,
+    starred: false,
+    private: false,
   ),
   data: const ChecklistItemData(
     title: 'Item 3',
@@ -241,10 +242,12 @@ void main() {
     registerFallbackValue(DateTime.now());
     registerFallbackValue(FakeQuillController());
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-    when(() => mockEditorStateService.getUnsavedStream(any(), any()))
-        .thenAnswer((_) => Stream<bool>.fromIterable([false]));
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+    when(
+      () => mockEditorStateService.getUnsavedStream(any(), any()),
+    ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
     when(
       () => mockEditorStateService.entryWasSaved(
         id: any(named: 'id'),
@@ -258,12 +261,15 @@ void main() {
 
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-    when(() => secureStorageMock.readValue(hostKey))
-        .thenAnswer((_) async => 'some_host');
-    when(() => secureStorageMock.readValue(nextAvailableCounterKey))
-        .thenAnswer((_) async => vcMockNext);
-    when(() => secureStorageMock.writeValue(nextAvailableCounterKey, any()))
-        .thenAnswer((invocation) async {
+    when(
+      () => secureStorageMock.readValue(hostKey),
+    ).thenAnswer((_) async => 'some_host');
+    when(
+      () => secureStorageMock.readValue(nextAvailableCounterKey),
+    ).thenAnswer((_) async => vcMockNext);
+    when(
+      () => secureStorageMock.writeValue(nextAvailableCounterKey, any()),
+    ).thenAnswer((invocation) async {
       vcMockNext = invocation.positionalArguments[1] as String;
     });
 
@@ -283,28 +289,35 @@ void main() {
       ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
       ..registerSingleton<EditorStateService>(mockEditorStateService);
 
-    when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-        .thenAnswer((_) async => testTextEntry);
-    when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
-        .thenAnswer((_) async => testTextEntryNoGeo);
-    when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-        .thenAnswer((_) async => testTask);
-    when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
-        .thenAnswer((_) async => testEventEntry);
+    when(
+      () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+    ).thenAnswer((_) async => testTextEntry);
+    when(
+      () => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id),
+    ).thenAnswer((_) async => testTextEntryNoGeo);
+    when(
+      () => mockJournalDb.journalEntityById(testTask.meta.id),
+    ).thenAnswer((_) async => testTask);
+    when(
+      () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+    ).thenAnswer((_) async => testEventEntry);
     // For addTextToImage tests - ensure these are also available if not overridden in group's setUp
-    when(() => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id))
-        .thenAnswer((_) async => testImageEntryNoText);
+    when(
+      () => mockJournalDb.journalEntityById(testImageEntryNoText.meta.id),
+    ).thenAnswer((_) async => testImageEntryNoText);
     when(
       () => mockJournalDb.journalEntityById(testImageEntryWithMarkdown.meta.id),
     ).thenAnswer((_) async => testImageEntryWithMarkdown);
 
-    when(() => mockPersistenceLogic.updateJournalEntity(any(), any()))
-        .thenAnswer((_) async => true);
+    when(
+      () => mockPersistenceLogic.updateJournalEntity(any(), any()),
+    ).thenAnswer((_) async => true);
     when(mockNotificationService.updateBadge).thenAnswer((_) async {});
 
     // Default stub for session ratings config flag check
-    when(() => mockJournalDb.getConfigFlagByName(any()))
-        .thenAnswer((_) async => null);
+    when(
+      () => mockJournalDb.getConfigFlagByName(any()),
+    ).thenAnswer((_) async => null);
 
     // Default stub for updateJournalEntityText
     when(
@@ -346,12 +359,15 @@ void main() {
 
       // JournalDb mocks specific to this group, ensure they don't conflict if IDs overlap
       // with addTextToImage test data, or make IDs unique.
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
-      when(() => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id))
-          .thenAnswer((_) async => testTextEntryNoGeo);
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntryNoGeo.meta.id),
+      ).thenAnswer((_) async => testTextEntryNoGeo);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
     });
 
     test('entry loads', () async {
@@ -365,8 +381,9 @@ void main() {
 
       final container = makeProviderContainer(
         overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
+          journalRepositoryProvider.overrideWithValue(
+            localMockJournalRepository,
+          ),
         ],
       );
       final entryId = testTextEntry.meta.id;
@@ -520,8 +537,9 @@ void main() {
       final entryId = testTextEntry.meta.id;
 
       // Specific stub for this test
-      when(() => localMockJournalRepository.deleteJournalEntity(entryId))
-          .thenAnswer((_) async => true);
+      when(
+        () => localMockJournalRepository.deleteJournalEntity(entryId),
+      ).thenAnswer((_) async => true);
       // If getLinkedEntities is called by the controller during this flow, stub it too.
       when(
         () => localMockJournalRepository.getLinkedEntities(
@@ -531,8 +549,9 @@ void main() {
 
       final container = makeProviderContainer(
         overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
+          journalRepositoryProvider.overrideWithValue(
+            localMockJournalRepository,
+          ),
         ],
       );
       final testEntryProvider = entryControllerProvider(id: entryId);
@@ -548,8 +567,9 @@ void main() {
       );
 
       await notifier.delete(beamBack: false);
-      verify(() => localMockJournalRepository.deleteJournalEntity(entryId))
-          .called(1);
+      verify(
+        () => localMockJournalRepository.deleteJournalEntity(entryId),
+      ).called(1);
       await expectLater(
         container.read(testEntryProvider.future),
         completion(null),
@@ -562,8 +582,9 @@ void main() {
       final entryId = testTextEntry.meta.id;
 
       // Specific stub for this test
-      when(() => localMockJournalRepository.deleteJournalEntity(entryId))
-          .thenAnswer((_) async => true);
+      when(
+        () => localMockJournalRepository.deleteJournalEntity(entryId),
+      ).thenAnswer((_) async => true);
       when(
         () => localMockJournalRepository.getLinkedEntities(
           linkedTo: any(named: 'linkedTo'),
@@ -572,8 +593,9 @@ void main() {
 
       final container = makeProviderContainer(
         overrides: [
-          journalRepositoryProvider
-              .overrideWithValue(localMockJournalRepository),
+          journalRepositoryProvider.overrideWithValue(
+            localMockJournalRepository,
+          ),
         ],
       );
       final testEntryProvider = entryControllerProvider(id: entryId);
@@ -603,8 +625,9 @@ void main() {
       );
 
       await notifier.delete(beamBack: true);
-      verify(() => localMockJournalRepository.deleteJournalEntity(entryId))
-          .called(1);
+      verify(
+        () => localMockJournalRepository.deleteJournalEntity(entryId),
+      ).called(1);
 
       await expectLater(
         container.read(testEntryProvider.future),
@@ -620,9 +643,9 @@ void main() {
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-            testTextEntry,
-            testTextEntry.meta.copyWith(starred: false),
-          );
+        testTextEntry,
+        testTextEntry.meta.copyWith(starred: false),
+      );
       when(testFn).thenAnswer((invocation) async => true);
       await notifier.toggleStarred();
       verify(testFn).called(1);
@@ -636,9 +659,9 @@ void main() {
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-            testTextEntry,
-            testTextEntry.meta.copyWith(private: true),
-          );
+        testTextEntry,
+        testTextEntry.meta.copyWith(private: true),
+      );
       when(testFn).thenAnswer((invocation) async => true);
       await notifier.togglePrivate();
       verify(testFn).called(1);
@@ -652,9 +675,9 @@ void main() {
       final notifier = container.read(testEntryProvider.notifier);
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntity(
-            testTextEntry,
-            testTextEntry.meta.copyWith(flag: EntryFlag.import),
-          );
+        testTextEntry,
+        testTextEntry.meta.copyWith(flag: EntryFlag.import),
+      );
       when(testFn).thenAnswer((invocation) async => true);
       await notifier.toggleFlagged();
       verify(testFn).called(1);
@@ -697,10 +720,10 @@ void main() {
       );
 
       Future<bool> testFn() => mockPersistenceLogic.updateJournalEntityText(
-            entryId,
-            entryTextFromController(notifier.controller),
-            testTextEntry.meta.dateTo,
-          );
+        entryId,
+        entryTextFromController(notifier.controller),
+        testTextEntry.meta.dateTo,
+      );
       when(testFn).thenAnswer((invocation) async => true);
 
       await notifier.save();
@@ -751,10 +774,10 @@ void main() {
         );
 
         Future<bool> testFn() => mockPersistenceLogic.updateJournalEntityText(
-              entryId,
-              entryTextFromController(notifier.controller),
-              testTextEntry.meta.dateTo,
-            );
+          entryId,
+          entryTextFromController(notifier.controller),
+          testTextEntry.meta.dateTo,
+        );
         when(testFn).thenAnswer((invocation) async => true);
 
         await notifier.save();
@@ -763,8 +786,9 @@ void main() {
 
         verify(testFn).called(1);
 
-        final plainText =
-            entryTextFromController(notifier.controller).plainText;
+        final plainText = entryTextFromController(
+          notifier.controller,
+        ).plainText;
         expect(plainText, 'PREFIXED: test entry text\n');
       },
     );
@@ -785,28 +809,32 @@ void main() {
       // shouldShowEditorToolBar remains false (not automatically hidden)
     });
 
-    test('focus node listener - no change when focus state unchanged',
-        () async {
-      final container = makeProviderContainer();
-      final entryId = testTextEntry.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
-      final notifier = container.read(testEntryProvider.notifier);
+    test(
+      'focus node listener - no change when focus state unchanged',
+      () async {
+        final container = makeProviderContainer();
+        final entryId = testTextEntry.meta.id;
+        final testEntryProvider = entryControllerProvider(id: entryId);
+        final notifier = container.read(testEntryProvider.notifier);
 
-      await container.read(testEntryProvider.future);
+        await container.read(testEntryProvider.future);
 
-      // Focus the node
-      notifier.focusNode.requestFocus();
-      notifier.focusNodeListener();
+        // Focus the node
+        notifier.focusNode.requestFocus();
+        notifier.focusNodeListener();
 
-      // Call listener again with same focus state - should return early
-      final stateBeforeSecondCall =
-          await container.read(testEntryProvider.future);
-      notifier.focusNodeListener(); // Should return early
-      final stateAfterSecondCall =
-          await container.read(testEntryProvider.future);
+        // Call listener again with same focus state - should return early
+        final stateBeforeSecondCall = await container.read(
+          testEntryProvider.future,
+        );
+        notifier.focusNodeListener(); // Should return early
+        final stateAfterSecondCall = await container.read(
+          testEntryProvider.future,
+        );
 
-      expect(stateBeforeSecondCall, equals(stateAfterSecondCall));
-    });
+        expect(stateBeforeSecondCall, equals(stateAfterSecondCall));
+      },
+    );
 
     test('focus node listener updates isFocused state', () async {
       final container = makeProviderContainer();
@@ -860,12 +888,14 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         // Ensure the initial state is loaded AFTER container is created and notifier is obtained
         await container.read(entryControllerProvider(id: entryId).future);
 
@@ -887,8 +917,10 @@ void main() {
           meta: testTask.meta.copyWith(id: 'linked_1', categoryId: null),
         );
         final linkedEntry2 = testTextEntryNoGeo.copyWith(
-          meta: testTextEntryNoGeo.meta
-              .copyWith(id: 'linked_2', categoryId: 'old_category'),
+          meta: testTextEntryNoGeo.meta.copyWith(
+            id: 'linked_2',
+            categoryId: 'old_category',
+          ),
         );
 
         // Specific stubs for this test
@@ -916,12 +948,14 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
 
         final result = await notifier.updateCategoryId(testCategoryId);
@@ -990,12 +1024,14 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
 
         final result = await notifier.updateCategoryId(null);
@@ -1021,85 +1057,96 @@ void main() {
         ).called(1);
       });
 
-      test('updates linked entries categories when task category changes',
-          () async {
-        final localMockJournalRepository = MockJournalRepository();
-        const oldCategoryId = 'old_cat_123';
-        const newCategoryId = 'new_cat_456';
+      test(
+        'updates linked entries categories when task category changes',
+        () async {
+          final localMockJournalRepository = MockJournalRepository();
+          const oldCategoryId = 'old_cat_123';
+          const newCategoryId = 'new_cat_456';
 
-        // Create a task with old category and linked entries with same old category
-        final mainTask = testTask.copyWith(
-          meta: testTask.meta.copyWith(categoryId: oldCategoryId),
-        );
-        final linkedEntry1 = testTextEntry.copyWith(
-          meta: testTextEntry.meta
-              .copyWith(id: 'linked_entry_1', categoryId: oldCategoryId),
-        );
-        final linkedEntry2 = testTextEntryNoGeo.copyWith(
-          meta: testTextEntryNoGeo.meta
-              .copyWith(id: 'linked_entry_2', categoryId: oldCategoryId),
-        );
+          // Create a task with old category and linked entries with same old category
+          final mainTask = testTask.copyWith(
+            meta: testTask.meta.copyWith(categoryId: oldCategoryId),
+          );
+          final linkedEntry1 = testTextEntry.copyWith(
+            meta: testTextEntry.meta.copyWith(
+              id: 'linked_entry_1',
+              categoryId: oldCategoryId,
+            ),
+          );
+          final linkedEntry2 = testTextEntryNoGeo.copyWith(
+            meta: testTextEntryNoGeo.meta.copyWith(
+              id: 'linked_entry_2',
+              categoryId: oldCategoryId,
+            ),
+          );
 
-        // Setup mocks
-        when(() => mockJournalDb.journalEntityById(mainTask.meta.id))
-            .thenAnswer((_) async => mainTask);
-        when(
-          () => localMockJournalRepository.updateCategoryId(
-            mainTask.meta.id,
-            categoryId: newCategoryId,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => localMockJournalRepository.getLinkedEntities(
-              linkedTo: mainTask.meta.id),
-        ).thenAnswer((_) async => [linkedEntry1, linkedEntry2]);
-        when(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntry1.id,
-            categoryId: newCategoryId,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntry2.id,
-            categoryId: newCategoryId,
-          ),
-        ).thenAnswer((_) async => true);
+          // Setup mocks
+          when(
+            () => mockJournalDb.journalEntityById(mainTask.meta.id),
+          ).thenAnswer((_) async => mainTask);
+          when(
+            () => localMockJournalRepository.updateCategoryId(
+              mainTask.meta.id,
+              categoryId: newCategoryId,
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => localMockJournalRepository.getLinkedEntities(
+              linkedTo: mainTask.meta.id,
+            ),
+          ).thenAnswer((_) async => [linkedEntry1, linkedEntry2]);
+          when(
+            () => localMockJournalRepository.updateCategoryId(
+              linkedEntry1.id,
+              categoryId: newCategoryId,
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => localMockJournalRepository.updateCategoryId(
+              linkedEntry2.id,
+              categoryId: newCategoryId,
+            ),
+          ).thenAnswer((_) async => true);
 
-        final container = makeProviderContainer(
-          overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
-          ],
-        );
-        final notifier = container
-            .read(entryControllerProvider(id: mainTask.meta.id).notifier);
-        await container
-            .read(entryControllerProvider(id: mainTask.meta.id).future);
+          final container = makeProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                localMockJournalRepository,
+              ),
+            ],
+          );
+          final notifier = container.read(
+            entryControllerProvider(id: mainTask.meta.id).notifier,
+          );
+          await container.read(
+            entryControllerProvider(id: mainTask.meta.id).future,
+          );
 
-        final result = await notifier.updateCategoryId(newCategoryId);
+          final result = await notifier.updateCategoryId(newCategoryId);
 
-        expect(result, isTrue);
-        // Verify all entries (main and linked) are updated to new category
-        verify(
-          () => localMockJournalRepository.updateCategoryId(
-            mainTask.meta.id,
-            categoryId: newCategoryId,
-          ),
-        ).called(1);
-        verify(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntry1.id,
-            categoryId: newCategoryId,
-          ),
-        ).called(1);
-        verify(
-          () => localMockJournalRepository.updateCategoryId(
-            linkedEntry2.id,
-            categoryId: newCategoryId,
-          ),
-        ).called(1);
-      });
+          expect(result, isTrue);
+          // Verify all entries (main and linked) are updated to new category
+          verify(
+            () => localMockJournalRepository.updateCategoryId(
+              mainTask.meta.id,
+              categoryId: newCategoryId,
+            ),
+          ).called(1);
+          verify(
+            () => localMockJournalRepository.updateCategoryId(
+              linkedEntry1.id,
+              categoryId: newCategoryId,
+            ),
+          ).called(1);
+          verify(
+            () => localMockJournalRepository.updateCategoryId(
+              linkedEntry2.id,
+              categoryId: newCategoryId,
+            ),
+          ).called(1);
+        },
+      );
 
       test('returns false if main entry update fails', () async {
         final localMockJournalRepository = MockJournalRepository();
@@ -1117,12 +1164,14 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
 
         final result = await notifier.updateCategoryId(testCategoryId);
@@ -1165,14 +1214,17 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
-        await container
-            .read(entryControllerProvider(id: entryId).future); // Ensure loaded
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
+        await container.read(
+          entryControllerProvider(id: entryId).future,
+        ); // Ensure loaded
 
         final result = await notifier.updateFromTo(
           dateFrom: newDateFrom,
@@ -1203,14 +1255,17 @@ void main() {
 
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
-        await container
-            .read(entryControllerProvider(id: entryId).future); // Ensure loaded
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
+        await container.read(
+          entryControllerProvider(id: entryId).future,
+        ); // Ensure loaded
 
         final result = await notifier.updateFromTo(
           dateFrom: newDateFrom,
@@ -1229,69 +1284,77 @@ void main() {
     });
 
     group('build method', () {
-      test('emits AsyncError when _journalDb.journalEntityById throws',
-          () async {
-        const entryId = 'error-id';
-        final exception = Exception('Database error');
+      test(
+        'emits AsyncError when _journalDb.journalEntityById throws',
+        () async {
+          const entryId = 'error-id';
+          final exception = Exception('Database error');
 
-        when(() => mockJournalDb.journalEntityById(entryId))
-            .thenThrow(exception);
+          when(
+            () => mockJournalDb.journalEntityById(entryId),
+          ).thenThrow(exception);
 
-        final localMockJournalRepository = MockJournalRepository();
-        final container = makeProviderContainer(
-          overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
-          ],
-        );
+          final localMockJournalRepository = MockJournalRepository();
+          final container = makeProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                localMockJournalRepository,
+              ),
+            ],
+          );
 
-        final listener = Listener<AsyncValue<EntryState?>>();
-        container.listen<AsyncValue<EntryState?>>(
-          entryControllerProvider(id: entryId),
-          listener.call,
-          fireImmediately: true,
-        );
+          final listener = Listener<AsyncValue<EntryState?>>();
+          container.listen<AsyncValue<EntryState?>>(
+            entryControllerProvider(id: entryId),
+            listener.call,
+            fireImmediately: true,
+          );
 
-        await container.pump();
+          await container.pump();
 
-        final lastEmittedValue =
-            verify(() => listener(captureAny(), captureAny())).captured.last
-                as AsyncValue<EntryState?>;
-        // In Riverpod 3, async errors may be in AsyncLoading (retrying) state
-        expect(lastEmittedValue.hasError, isTrue);
-        expect(lastEmittedValue.error, exception);
-      });
+          final lastEmittedValue =
+              verify(() => listener(captureAny(), captureAny())).captured.last
+                  as AsyncValue<EntryState?>;
+          // In Riverpod 3, async errors may be in AsyncLoading (retrying) state
+          expect(lastEmittedValue.hasError, isTrue);
+          expect(lastEmittedValue.error, exception);
+        },
+      );
 
       test(
-          'emits EntryState.saved with null entry when _journalDb.journalEntityById returns null',
-          () async {
-        const entryId = 'not-found-id';
+        'emits EntryState.saved with null entry when _journalDb.journalEntityById returns null',
+        () async {
+          const entryId = 'not-found-id';
 
-        when(() => mockJournalDb.journalEntityById(entryId))
-            .thenAnswer((_) async => null);
+          when(
+            () => mockJournalDb.journalEntityById(entryId),
+          ).thenAnswer((_) async => null);
 
-        final localMockJournalRepository = MockJournalRepository();
-        when(
-          () => localMockJournalRepository.getLinkedEntities(
-            linkedTo: any(named: 'linkedTo'),
-          ),
-        ).thenAnswer((_) async => []);
+          final localMockJournalRepository = MockJournalRepository();
+          when(
+            () => localMockJournalRepository.getLinkedEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => []);
 
-        final container = makeProviderContainer(
-          overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
-          ],
-        );
+          final container = makeProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                localMockJournalRepository,
+              ),
+            ],
+          );
 
-        final initialState =
-            await container.read(entryControllerProvider(id: entryId).future);
+          final initialState = await container.read(
+            entryControllerProvider(id: entryId).future,
+          );
 
-        expect(initialState, isNotNull);
-        expect(initialState, isNot(isA<EntryStateDirty>()));
-        expect(initialState?.entry, isNull);
-        expect(initialState?.entryId, entryId);
-      });
+          expect(initialState, isNotNull);
+          expect(initialState, isNot(isA<EntryStateDirty>()));
+          expect(initialState?.entry, isNull);
+          expect(initialState?.entryId, entryId);
+        },
+      );
     });
 
     group('save method - JournalEntry (text)', () {
@@ -1301,18 +1364,21 @@ void main() {
         final localMockJournalRepository = MockJournalRepository();
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
 
         notifier.controller.document.insert(0, 'New text');
         notifier.setDirty(value: true);
-        final dirtyState =
-            await container.read(entryControllerProvider(id: entryId).future);
+        final dirtyState = await container.read(
+          entryControllerProvider(id: entryId).future,
+        );
         expect(dirtyState, isA<EntryStateDirty>());
 
         when(
@@ -1350,8 +1416,9 @@ void main() {
           ),
         ).called(1);
 
-        final savedState =
-            await container.read(entryControllerProvider(id: entryId).future);
+        final savedState = await container.read(
+          entryControllerProvider(id: entryId).future,
+        );
         expect(savedState, isNot(isA<EntryStateDirty>()));
         expect(savedState?.shouldShowEditorToolBar, isFalse);
       });
@@ -1360,12 +1427,14 @@ void main() {
         final localMockJournalRepository = MockJournalRepository();
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
         notifier.setDirty(value: true);
 
@@ -1390,18 +1459,19 @@ void main() {
         verify(mockTimeService.stop).called(1);
       });
 
-      test(
-          'save with stopRecording triggers rating prompt when flag enabled '
+      test('save with stopRecording triggers rating prompt when flag enabled '
           'and session >= 1 min', () async {
         final localMockJournalRepository = MockJournalRepository();
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
         notifier.setDirty(value: true);
 
@@ -1446,18 +1516,19 @@ void main() {
         expect(capturedPromptState?.targetId, equals(entryId));
       });
 
-      test(
-          'save with stopRecording does NOT trigger rating prompt when '
+      test('save with stopRecording does NOT trigger rating prompt when '
           'flag disabled', () async {
         final localMockJournalRepository = MockJournalRepository();
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
         notifier.setDirty(value: true);
 
@@ -1478,8 +1549,9 @@ void main() {
         when(mockTimeService.stop).thenAnswer((_) async {});
 
         // Flag is disabled (default stub returns null)
-        when(() => mockJournalDb.getConfigFlagByName(any()))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.getConfigFlagByName(any()),
+        ).thenAnswer((_) async => null);
 
         // Listen to catch any state change
         RatingPrompt? capturedPromptState;
@@ -1493,8 +1565,7 @@ void main() {
         expect(capturedPromptState, isNull);
       });
 
-      test(
-          'save with stopRecording does NOT trigger rating prompt for '
+      test('save with stopRecording does NOT trigger rating prompt for '
           'short sessions (< 1 min)', () async {
         // Create a short-session entry with dateFrom very recent
         // (less than 1 minute ago is impossible to guarantee with
@@ -1521,13 +1592,15 @@ void main() {
         final localMockJournalRepository = MockJournalRepository();
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
         final shortId = shortSessionEntry.meta.id;
-        final notifier =
-            container.read(entryControllerProvider(id: shortId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: shortId).notifier,
+        );
         await container.read(entryControllerProvider(id: shortId).future);
         notifier.setDirty(value: true);
 
@@ -1576,12 +1649,14 @@ void main() {
         final exception = Exception('Persistence error');
         final container = makeProviderContainer(
           overrides: [
-            journalRepositoryProvider
-                .overrideWithValue(localMockJournalRepository),
+            journalRepositoryProvider.overrideWithValue(
+              localMockJournalRepository,
+            ),
           ],
         );
-        final notifier =
-            container.read(entryControllerProvider(id: entryId).notifier);
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
         await container.read(entryControllerProvider(id: entryId).future);
         notifier.setDirty(value: true);
 
@@ -1606,10 +1681,12 @@ void main() {
       reset(mockPersistenceLogic);
       reset(mockJournalDb);
 
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => testTaskEntry);
-      when(() => mockJournalDb.getJournalEntitiesForIds(any()))
-          .thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => testTaskEntry);
+      when(
+        () => mockJournalDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
 
       // Corrected when call for updateTask
       when(
@@ -1623,12 +1700,14 @@ void main() {
 
     test('does nothing if current entry is not a Task', () async {
       final nonTaskEntryId = testImageEntryNoText.meta.id;
-      when(() => mockJournalDb.journalEntityById(nonTaskEntryId))
-          .thenAnswer((_) async => testImageEntryNoText);
+      when(
+        () => mockJournalDb.journalEntityById(nonTaskEntryId),
+      ).thenAnswer((_) async => testImageEntryNoText);
 
       final container = makeProviderContainer();
-      final notifier =
-          container.read(entryControllerProvider(id: nonTaskEntryId).notifier);
+      final notifier = container.read(
+        entryControllerProvider(id: nonTaskEntryId).notifier,
+      );
       await container.read(entryControllerProvider(id: nonTaskEntryId).future);
 
       await notifier.updateChecklistOrder(['any_id']);
@@ -1643,41 +1722,48 @@ void main() {
       );
     });
 
-    test('updates with an empty list, clearing existing checklistIds',
-        () async {
-      final container = makeProviderContainer();
-      final notifier =
-          container.read(entryControllerProvider(id: entryId).notifier);
-      await container.read(entryControllerProvider(id: entryId).future);
+    test(
+      'updates with an empty list, clearing existing checklistIds',
+      () async {
+        final container = makeProviderContainer();
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
+        await container.read(entryControllerProvider(id: entryId).future);
 
-      notifier.controller.document
-          .insert(0, 'Task description from controller');
-      final expectedEntryText = entryTextFromController(notifier.controller);
+        notifier.controller.document.insert(
+          0,
+          'Task description from controller',
+        );
+        final expectedEntryText = entryTextFromController(notifier.controller);
 
-      when(() => mockJournalDb.getJournalEntitiesForIds(const <String>{}))
-          .thenAnswer((_) async => []);
+        when(
+          () => mockJournalDb.getJournalEntitiesForIds(const <String>{}),
+        ).thenAnswer((_) async => []);
 
-      await notifier.updateChecklistOrder([]);
+        await notifier.updateChecklistOrder([]);
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
+        final captured = verify(
+          () => mockPersistenceLogic.updateTask(
+            entryText: captureAny(named: 'entryText'),
+            journalEntityId: captureAny(named: 'journalEntityId'),
+            taskData: captureAny(named: 'taskData'),
+          ),
+        ).captured;
 
-      expect(captured[0], entryId);
-      final capturedTaskData = captured[1] as TaskData;
-      final capturedEntryText = captured[2] as EntryText;
-      expect(capturedTaskData.checklistIds, isEmpty);
-      expect(capturedEntryText.plainText, expectedEntryText.plainText);
-    });
+        expect(captured[0], entryId);
+        final capturedTaskData = captured[1] as TaskData;
+        final capturedEntryText = captured[2] as EntryText;
+        expect(capturedTaskData.checklistIds, isEmpty);
+        expect(capturedEntryText.plainText, expectedEntryText.plainText);
+      },
+    );
 
     test('updates with a new order of existing checklistIds', () async {
       final container = makeProviderContainer();
-      final notifier =
-          container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier = container.read(
+        entryControllerProvider(id: entryId).notifier,
+      );
       await container.read(entryControllerProvider(id: entryId).future);
       notifier.controller.document.insert(0, 'Reordering checklist');
       final expectedEntryText = entryTextFromController(notifier.controller);
@@ -1708,8 +1794,9 @@ void main() {
 
     test('filters out non-existent or deleted checklistIds', () async {
       final container = makeProviderContainer();
-      final notifier =
-          container.read(entryControllerProvider(id: entryId).notifier);
+      final notifier = container.read(
+        entryControllerProvider(id: entryId).notifier,
+      );
       await container.read(entryControllerProvider(id: entryId).future);
       notifier.controller.document.insert(0, 'Filtering checklist');
       final expectedEntryText = entryTextFromController(notifier.controller);
@@ -1762,10 +1849,12 @@ void main() {
     setUp(() {
       reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
     });
 
     test('updates task status when status changes', () async {
@@ -1852,10 +1941,12 @@ void main() {
     setUp(() {
       reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
-          .thenAnswer((_) async => testEventEntry);
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
     });
 
     test('updates rating for JournalEvent', () async {
@@ -1917,8 +2008,9 @@ void main() {
   group('taskTitleFocusNodeListener method', () {
     setUp(() {
       // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
     });
 
     test('taskTitleFocusNodeListener executes without errors', () async {
@@ -1953,8 +2045,9 @@ void main() {
     setUp(() {
       reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testEventEntry.meta.id))
-          .thenAnswer((_) async => testEventEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
     });
 
     test('saves event', () async {
@@ -1997,8 +2090,9 @@ void main() {
     setUp(() {
       reset(mockPersistenceLogic);
       // Ensure mocks are set up for this group
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
     });
 
     test('saves task with title and estimate', () async {
@@ -2107,8 +2201,9 @@ void main() {
         data: testTask.data.copyWith(due: DateTime(2025, 6, 15)),
       );
 
-      when(() => mockJournalDb.journalEntityById(taskWithDueDate.meta.id))
-          .thenAnswer((_) async => taskWithDueDate);
+      when(
+        () => mockJournalDb.journalEntityById(taskWithDueDate.meta.id),
+      ).thenAnswer((_) async => taskWithDueDate);
 
       final container = makeProviderContainer();
       final entryId = taskWithDueDate.meta.id;
@@ -2156,70 +2251,74 @@ void main() {
     });
 
     test(
-        'preserves existing dueDate when neither dueDate nor clearDueDate provided',
-        () async {
-      final existingDueDate = DateTime(2025, 6, 15);
-      final taskWithDueDate = testTask.copyWith(
-        data: testTask.data.copyWith(due: existingDueDate),
-      );
+      'preserves existing dueDate when neither dueDate nor clearDueDate provided',
+      () async {
+        final existingDueDate = DateTime(2025, 6, 15);
+        final taskWithDueDate = testTask.copyWith(
+          data: testTask.data.copyWith(due: existingDueDate),
+        );
 
-      when(() => mockJournalDb.journalEntityById(taskWithDueDate.meta.id))
-          .thenAnswer((_) async => taskWithDueDate);
+        when(
+          () => mockJournalDb.journalEntityById(taskWithDueDate.meta.id),
+        ).thenAnswer((_) async => taskWithDueDate);
 
-      final container = makeProviderContainer();
-      final entryId = taskWithDueDate.meta.id;
-      final testEntryProvider = entryControllerProvider(id: entryId);
-      final notifier = container.read(testEntryProvider.notifier);
+        final container = makeProviderContainer();
+        final entryId = taskWithDueDate.meta.id;
+        final testEntryProvider = entryControllerProvider(id: entryId);
+        final notifier = container.read(testEntryProvider.notifier);
 
-      await container.read(testEntryProvider.future);
+        await container.read(testEntryProvider.future);
 
-      when(
-        () => mockPersistenceLogic.updateJournalEntityText(
-          any(),
-          any(),
-          any(),
-        ),
-      ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateJournalEntityText(
+            any(),
+            any(),
+            any(),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(
-        () => mockPersistenceLogic.updateTask(
-          entryText: any(named: 'entryText'),
-          journalEntityId: entryId,
-          taskData: any(named: 'taskData'),
-        ),
-      ).thenAnswer((_) async => true);
+        when(
+          () => mockPersistenceLogic.updateTask(
+            entryText: any(named: 'entryText'),
+            journalEntityId: entryId,
+            taskData: any(named: 'taskData'),
+          ),
+        ).thenAnswer((_) async => true);
 
-      when(
-        () => mockEditorStateService.entryWasSaved(
-          id: entryId,
-          lastSaved: any(named: 'lastSaved'),
-          controller: notifier.controller,
-        ),
-      ).thenAnswer((_) async {});
+        when(
+          () => mockEditorStateService.entryWasSaved(
+            id: entryId,
+            lastSaved: any(named: 'lastSaved'),
+            controller: notifier.controller,
+          ),
+        ).thenAnswer((_) async {});
 
-      // Save with just a title change, dueDate should be preserved
-      await notifier.save(title: 'New Title');
+        // Save with just a title change, dueDate should be preserved
+        await notifier.save(title: 'New Title');
 
-      final captured = verify(
-        () => mockPersistenceLogic.updateTask(
-          entryText: captureAny(named: 'entryText'),
-          journalEntityId: captureAny(named: 'journalEntityId'),
-          taskData: captureAny(named: 'taskData'),
-        ),
-      ).captured;
+        final captured = verify(
+          () => mockPersistenceLogic.updateTask(
+            entryText: captureAny(named: 'entryText'),
+            journalEntityId: captureAny(named: 'journalEntityId'),
+            taskData: captureAny(named: 'taskData'),
+          ),
+        ).captured;
 
-      final capturedTaskData = captured[1] as TaskData;
-      expect(capturedTaskData.due, existingDueDate);
-    });
+        final capturedTaskData = captured[1] as TaskData;
+        expect(capturedTaskData.due, existingDueDate);
+      },
+    );
   });
 
   group('setCoverArt method', () {
     setUp(() {
       reset(mockPersistenceLogic);
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
     });
 
     test('sets cover art on a task', () async {
@@ -2256,8 +2355,9 @@ void main() {
       final taskWithCover = testTask.copyWith(
         data: testTask.data.copyWith(coverArtId: 'existing-image'),
       );
-      when(() => mockJournalDb.journalEntityById(taskWithCover.meta.id))
-          .thenAnswer((_) async => taskWithCover);
+      when(
+        () => mockJournalDb.journalEntityById(taskWithCover.meta.id),
+      ).thenAnswer((_) async => taskWithCover);
 
       final container = makeProviderContainer();
       final entryId = taskWithCover.meta.id;

@@ -26,13 +26,12 @@ abstract class ChatSession with _$ChatSession {
   factory ChatSession.create({
     String? categoryId,
     String? title,
-  }) =>
-      ChatSession(
-        id: _uuid.v4(),
-        title: title ?? 'New Chat',
-        createdAt: DateTime.now(),
-        lastMessageAt: DateTime.now(),
-        messages: [],
-        categoryId: categoryId,
-      );
+  }) => ChatSession(
+    id: _uuid.v4(),
+    title: title ?? 'New Chat',
+    createdAt: DateTime.now(),
+    lastMessageAt: DateTime.now(),
+    messages: [],
+    categoryId: categoryId,
+  );
 }

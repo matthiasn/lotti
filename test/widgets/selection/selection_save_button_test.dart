@@ -24,9 +24,11 @@ void main() {
 
     group('Rendering', () {
       testWidgets('renders with default label and icon', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Save'), findsOneWidget);
@@ -35,10 +37,12 @@ void main() {
       });
 
       testWidgets('renders with custom label', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-          label: 'Custom Label',
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            label: 'Custom Label',
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text('Custom Label'), findsOneWidget);
@@ -46,10 +50,12 @@ void main() {
       });
 
       testWidgets('renders with custom icon', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-          icon: Icons.done_all,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            icon: Icons.done_all,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.done_all), findsOneWidget);
@@ -57,9 +63,11 @@ void main() {
       });
 
       testWidgets('takes full width of parent', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The SelectionSaveButton contains a SizedBox with width: double.infinity
@@ -71,9 +79,11 @@ void main() {
       });
 
       testWidgets('has correct text styling', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         final text = tester.widget<Text>(find.text('Save'));
@@ -82,9 +92,11 @@ void main() {
       });
 
       testWidgets('has correct icon size', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
@@ -93,28 +105,34 @@ void main() {
     });
 
     group('States', () {
-      testWidgets('shows enabled state when onPressed is provided',
-          (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+      testWidgets('shows enabled state when onPressed is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
-        final saveButton = tester
-            .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+        final saveButton = tester.widget<SelectionSaveButton>(
+          find.byType(SelectionSaveButton),
+        );
         expect(saveButton.onPressed, isNotNull);
 
         // Verify button is tappable
         await tester.tap(find.byType(SelectionSaveButton));
       });
 
-      testWidgets('shows disabled state when onPressed is null',
-          (tester) async {
+      testWidgets('shows disabled state when onPressed is null', (
+        tester,
+      ) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        final saveButton = tester
-            .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+        final saveButton = tester.widget<SelectionSaveButton>(
+          find.byType(SelectionSaveButton),
+        );
         expect(saveButton.onPressed, isNull);
 
         // Verify button is not tappable
@@ -123,9 +141,11 @@ void main() {
       });
 
       testWidgets('applies correct colors when enabled', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The button should be visible and have the correct styling
@@ -149,9 +169,11 @@ void main() {
       testWidgets('calls onPressed when tapped', (tester) async {
         var pressed = false;
 
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () => pressed = true,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () => pressed = true,
+          ),
+        );
         await tester.pumpAndSettle();
 
         await tester.tap(find.byType(SelectionSaveButton));
@@ -169,9 +191,11 @@ void main() {
       });
 
       testWidgets('shows ink effect on tap when enabled', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Tap and hold to see ink effect
@@ -189,9 +213,11 @@ void main() {
       testWidgets('handles rapid taps correctly', (tester) async {
         var tapCount = 0;
 
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () => tapCount++,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () => tapCount++,
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Rapid taps on the SelectionSaveButton
@@ -206,9 +232,11 @@ void main() {
 
     group('Styling', () {
       testWidgets('has correct padding', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The button should have proper padding as defined in the widget
@@ -216,9 +244,11 @@ void main() {
       });
 
       testWidgets('has correct border radius', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The button should have rounded corners as defined in the widget
@@ -226,9 +256,11 @@ void main() {
       });
 
       testWidgets('has shadow when enabled', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The button should have elevation/shadow when enabled
@@ -298,9 +330,11 @@ void main() {
 
     group('Accessibility', () {
       testWidgets('has minimum touch target size', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+          ),
+        );
         await tester.pumpAndSettle();
 
         // The button should have a minimum height of 48 for accessibility
@@ -311,10 +345,12 @@ void main() {
       });
 
       testWidgets('maintains text legibility', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-          label: 'Very Long Button Label Text That Might Wrap',
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            label: 'Very Long Button Label Text That Might Wrap',
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Text should be visible and not overflow
@@ -327,10 +363,12 @@ void main() {
 
     group('Edge Cases', () {
       testWidgets('handles empty label', (tester) async {
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-          label: '',
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            label: '',
+          ),
+        );
         await tester.pumpAndSettle();
 
         // Find the text widget with empty string
@@ -344,12 +382,14 @@ void main() {
       testWidgets('handles very long label', (tester) async {
         final longLabel =
             'This is an extremely long label that might cause layout issues ' *
-                5;
+            5;
 
-        await tester.pumpWidget(createTestWidget(
-          onPressed: () {},
-          label: longLabel,
-        ));
+        await tester.pumpWidget(
+          createTestWidget(
+            onPressed: () {},
+            label: longLabel,
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.text(longLabel), findsOneWidget);
@@ -383,24 +423,27 @@ void main() {
         await tester.pumpAndSettle();
 
         // Initially enabled - check the SelectionSaveButton
-        var saveButton = tester
-            .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+        var saveButton = tester.widget<SelectionSaveButton>(
+          find.byType(SelectionSaveButton),
+        );
         expect(saveButton.onPressed, isNotNull);
 
         // Toggle to disabled
         await tester.tap(find.text('Toggle'));
         await tester.pump();
 
-        saveButton = tester
-            .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+        saveButton = tester.widget<SelectionSaveButton>(
+          find.byType(SelectionSaveButton),
+        );
         expect(saveButton.onPressed, isNull);
 
         // Toggle back to enabled
         await tester.tap(find.text('Toggle'));
         await tester.pump();
 
-        saveButton = tester
-            .widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+        saveButton = tester.widget<SelectionSaveButton>(
+          find.byType(SelectionSaveButton),
+        );
         expect(saveButton.onPressed, isNotNull);
       });
     });

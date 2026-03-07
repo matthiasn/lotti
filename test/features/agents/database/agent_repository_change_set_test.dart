@@ -167,22 +167,30 @@ void main() {
   group('getPendingChangeSets', () {
     test('returns pending and partiallyResolved sets for agent', () async {
       // Create change sets with various statuses.
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-pending',
-      ));
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-partial',
-        status: ChangeSetStatus.partiallyResolved,
-        createdAt: kAgentTestDate.add(const Duration(hours: 1)),
-      ));
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-resolved',
-        status: ChangeSetStatus.resolved,
-      ));
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-expired',
-        status: ChangeSetStatus.expired,
-      ));
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-pending',
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-partial',
+          status: ChangeSetStatus.partiallyResolved,
+          createdAt: kAgentTestDate.add(const Duration(hours: 1)),
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-resolved',
+          status: ChangeSetStatus.resolved,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-expired',
+          status: ChangeSetStatus.expired,
+        ),
+      );
 
       final results = await repo.getPendingChangeSets(kTestAgentId);
 
@@ -192,14 +200,18 @@ void main() {
     });
 
     test('filters by taskId when provided', () async {
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-task-a',
-        taskId: 'task-A',
-      ));
-      await repo.upsertEntity(makeTestChangeSet(
-        id: 'cs-task-b',
-        taskId: 'task-B',
-      ));
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-task-a',
+          taskId: 'task-A',
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeSet(
+          id: 'cs-task-b',
+          taskId: 'task-B',
+        ),
+      );
 
       final results = await repo.getPendingChangeSets(
         kTestAgentId,
@@ -235,10 +247,12 @@ void main() {
 
     test('respects limit parameter', () async {
       for (var i = 0; i < 5; i++) {
-        await repo.upsertEntity(makeTestChangeSet(
-          id: 'cs-$i',
-          createdAt: kAgentTestDate.add(Duration(hours: i)),
-        ));
+        await repo.upsertEntity(
+          makeTestChangeSet(
+            id: 'cs-$i',
+            createdAt: kAgentTestDate.add(Duration(hours: i)),
+          ),
+        );
       }
 
       final results = await repo.getPendingChangeSets(
@@ -253,11 +267,13 @@ void main() {
   group('getRecentDecisions', () {
     test('returns decisions for agent ordered newest-first', () async {
       for (var i = 0; i < 3; i++) {
-        await repo.upsertEntity(makeTestChangeDecision(
-          id: 'cd-$i',
-          itemIndex: i,
-          createdAt: kAgentTestDate.add(Duration(hours: i)),
-        ));
+        await repo.upsertEntity(
+          makeTestChangeDecision(
+            id: 'cd-$i',
+            itemIndex: i,
+            createdAt: kAgentTestDate.add(Duration(hours: i)),
+          ),
+        );
       }
 
       final results = await repo.getRecentDecisions(kTestAgentId);
@@ -269,14 +285,18 @@ void main() {
     });
 
     test('filters by taskId when provided', () async {
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-task-a',
-        taskId: 'task-A',
-      ));
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-task-b',
-        taskId: 'task-B',
-      ));
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-task-a',
+          taskId: 'task-A',
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-task-b',
+          taskId: 'task-B',
+        ),
+      );
 
       final results = await repo.getRecentDecisions(
         kTestAgentId,
@@ -289,11 +309,13 @@ void main() {
 
     test('respects limit parameter', () async {
       for (var i = 0; i < 10; i++) {
-        await repo.upsertEntity(makeTestChangeDecision(
-          id: 'cd-$i',
-          itemIndex: i,
-          createdAt: kAgentTestDate.add(Duration(hours: i)),
-        ));
+        await repo.upsertEntity(
+          makeTestChangeDecision(
+            id: 'cd-$i',
+            itemIndex: i,
+            createdAt: kAgentTestDate.add(Duration(hours: i)),
+          ),
+        );
       }
 
       final results = await repo.getRecentDecisions(
@@ -311,15 +333,19 @@ void main() {
       await repo.upsertLink(makeTestTemplateAssignmentLink());
 
       // Create decisions for the agent.
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-tpl-1',
-        createdAt: kAgentTestDate,
-      ));
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-tpl-2',
-        itemIndex: 1,
-        createdAt: kAgentTestDate.add(const Duration(hours: 1)),
-      ));
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-tpl-1',
+          createdAt: kAgentTestDate,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-tpl-2',
+          itemIndex: 1,
+          createdAt: kAgentTestDate.add(const Duration(hours: 1)),
+        ),
+      );
 
       final results = await repo.getRecentDecisionsForTemplate(
         kTestTemplateId,
@@ -337,15 +363,19 @@ void main() {
       final oldDate = DateTime(2024);
       final recentDate = DateTime(2024, 3, 15);
 
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-old',
-        createdAt: oldDate,
-      ));
-      await repo.upsertEntity(makeTestChangeDecision(
-        id: 'cd-recent',
-        itemIndex: 1,
-        createdAt: recentDate,
-      ));
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-old',
+          createdAt: oldDate,
+        ),
+      );
+      await repo.upsertEntity(
+        makeTestChangeDecision(
+          id: 'cd-recent',
+          itemIndex: 1,
+          createdAt: recentDate,
+        ),
+      );
 
       final results = await repo.getRecentDecisionsForTemplate(
         kTestTemplateId,

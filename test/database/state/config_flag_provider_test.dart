@@ -217,18 +217,19 @@ void main() {
           (_) => flagController.stream,
         );
 
-        container = ProviderContainer(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-        )
-          // Create subscription
-          ..listen(
-            configFlagProvider(enableEventsFlag),
-            (previous, next) {
-              listenerCalled = true;
-            },
-          );
+        container =
+            ProviderContainer(
+                overrides: [
+                  journalDbProvider.overrideWithValue(mockDb),
+                ],
+              )
+              // Create subscription
+              ..listen(
+                configFlagProvider(enableEventsFlag),
+                (previous, next) {
+                  listenerCalled = true;
+                },
+              );
 
         // Emit value - listener should be called
         flagController.add(<ConfigFlag>{});
@@ -244,8 +245,11 @@ void main() {
         listenerCalled = false;
         flagController.add(<ConfigFlag>{});
         async.flushMicrotasks();
-        expect(listenerCalled, isFalse,
-            reason: 'Listener should not be called after disposal');
+        expect(
+          listenerCalled,
+          isFalse,
+          reason: 'Listener should not be called after disposal',
+        );
 
         flagController.close();
         async.flushMicrotasks();

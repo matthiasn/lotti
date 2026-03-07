@@ -146,47 +146,48 @@ class _TitleTextFieldState extends State<TitleTextField> {
           widget.onTapOutside?.call(data);
         }
       },
-      decoration: inputDecoration(
-        labelText: widget.hintText ?? context.messages.checklistAddItem,
-        semanticsLabel: widget.semanticsLabel,
-        themeData: Theme.of(context),
-      ).copyWith(
-        floatingLabelBehavior: FloatingLabelBehavior.never,
-        suffixIcon: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            AnimatedOpacity(
-              curve: Curves.easeInOutQuint,
-              opacity: _dirty ? 1.0 : 0.0,
-              duration: checklistActionIconFadeDuration,
-              child: IconButton(
-                icon: const Icon(
-                  Icons.check_circle,
-                  size: 30,
-                  semanticLabel: 'save item',
-                ),
-                onPressed: () => onSave(_controller.text),
-              ),
-            ),
-            if (widget.onCancel != null)
-              AnimatedOpacity(
-                curve: Curves.easeInOutQuint,
-                opacity: _showClearButton ? 1.0 : 0.0,
-                duration: checklistActionIconFadeDuration,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.cancel_outlined,
-                    color: context.colorScheme.outline,
-                    size: 30,
-                    semanticLabel: 'discard changes',
+      decoration:
+          inputDecoration(
+            labelText: widget.hintText ?? context.messages.checklistAddItem,
+            semanticsLabel: widget.semanticsLabel,
+            themeData: Theme.of(context),
+          ).copyWith(
+            floatingLabelBehavior: FloatingLabelBehavior.never,
+            suffixIcon: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                AnimatedOpacity(
+                  curve: Curves.easeInOutQuint,
+                  opacity: _dirty ? 1.0 : 0.0,
+                  duration: checklistActionIconFadeDuration,
+                  child: IconButton(
+                    icon: const Icon(
+                      Icons.check_circle,
+                      size: 30,
+                      semanticLabel: 'save item',
+                    ),
+                    onPressed: () => onSave(_controller.text),
                   ),
-                  onPressed: onCancel,
                 ),
-              ),
-          ],
-        ),
-      ),
+                if (widget.onCancel != null)
+                  AnimatedOpacity(
+                    curve: Curves.easeInOutQuint,
+                    opacity: _showClearButton ? 1.0 : 0.0,
+                    duration: checklistActionIconFadeDuration,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.cancel_outlined,
+                        color: context.colorScheme.outline,
+                        size: 30,
+                        semanticLabel: 'discard changes',
+                      ),
+                      onPressed: onCancel,
+                    ),
+                  ),
+              ],
+            ),
+          ),
       showCursor: true,
       minLines: 1,
       maxLines: 10,

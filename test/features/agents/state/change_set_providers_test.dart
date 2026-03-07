@@ -42,12 +42,13 @@ void main() {
       // Keep a subscription alive to prevent premature disposal.
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+      final result = await container.read(
+        pendingChangeSetsProvider('task-001').future,
+      );
 
       expect(result, isEmpty);
       verifyNever(
@@ -87,12 +88,13 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+      final result = await container.read(
+        pendingChangeSetsProvider('task-001').future,
+      );
 
       expect(result, hasLength(1));
       expect(result.first, isA<ChangeSetEntity>());
@@ -121,12 +123,13 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+      final result = await container.read(
+        pendingChangeSetsProvider('task-001').future,
+      );
 
       expect(result, isEmpty);
       verifyNever(
@@ -139,66 +142,69 @@ void main() {
   });
 
   group('pendingChangeSetsProvider deduplication', () {
-    test('collapses duplicate change sets with identical pending items',
-        () async {
-      final agent = makeTestIdentity();
-      const sharedItems = [
-        ChangeItem(
-          toolName: 'update_task_estimate',
-          args: {'minutes': 120},
-          humanSummary: 'Set estimate to 2 hours',
-        ),
-      ];
-
-      // Two change sets with identical pending items (race condition).
-      final older = makeTestChangeSet(
-        id: 'cs-older',
-        agentId: agent.agentId,
-        items: sharedItems,
-        createdAt: DateTime(2024, 3, 15, 10),
-      );
-      final newer = makeTestChangeSet(
-        id: 'cs-newer',
-        agentId: agent.agentId,
-        items: sharedItems,
-        createdAt: DateTime(2024, 3, 15, 11),
-      );
-
-      when(
-        () => mockRepository.getPendingChangeSets(
-          agent.agentId,
-          taskId: 'task-001',
-        ),
-      ).thenAnswer((_) async => [older, newer]);
-
-      final updateController = StreamController<Set<String>>.broadcast();
-      addTearDown(updateController.close);
-
-      final container = ProviderContainer(
-        overrides: [
-          taskAgentProvider('task-001').overrideWith(
-            (ref) async => agent,
+    test(
+      'collapses duplicate change sets with identical pending items',
+      () async {
+        final agent = makeTestIdentity();
+        const sharedItems = [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Set estimate to 2 hours',
           ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(agent.agentId).overrideWith(
-            (ref) => updateController.stream,
+        ];
+
+        // Two change sets with identical pending items (race condition).
+        final older = makeTestChangeSet(
+          id: 'cs-older',
+          agentId: agent.agentId,
+          items: sharedItems,
+          createdAt: DateTime(2024, 3, 15, 10),
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-newer',
+          agentId: agent.agentId,
+          items: sharedItems,
+          createdAt: DateTime(2024, 3, 15, 11),
+        );
+
+        when(
+          () => mockRepository.getPendingChangeSets(
+            agent.agentId,
+            taskId: 'task-001',
           ),
-        ],
-      );
-      addTearDown(container.dispose);
+        ).thenAnswer((_) async => [older, newer]);
 
-      final sub = container.listen(
-        pendingChangeSetsProvider('task-001'),
-        (_, __) {},
-      );
-      addTearDown(sub.close);
+        final updateController = StreamController<Set<String>>.broadcast();
+        addTearDown(updateController.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+        final container = ProviderContainer(
+          overrides: [
+            taskAgentProvider('task-001').overrideWith(
+              (ref) async => agent,
+            ),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentUpdateStreamProvider(agent.agentId).overrideWith(
+              (ref) => updateController.stream,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      expect(result, hasLength(1));
-      expect((result.first as ChangeSetEntity).id, 'cs-newer');
-    });
+        final sub = container.listen(
+          pendingChangeSetsProvider('task-001'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          pendingChangeSetsProvider('task-001').future,
+        );
+
+        expect(result, hasLength(1));
+        expect((result.first as ChangeSetEntity).id, 'cs-newer');
+      },
+    );
 
     test('keeps change sets with different pending items', () async {
       final agent = makeTestIdentity();
@@ -251,12 +257,13 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+      final result = await container.read(
+        pendingChangeSetsProvider('task-001').future,
+      );
 
       expect(result, hasLength(2));
     });
@@ -290,12 +297,13 @@ void main() {
 
       final sub = container.listen(
         pendingChangeSetsProvider('task-001'),
-        (_, __) {},
+        (_, _) {},
       );
       addTearDown(sub.close);
 
-      final result =
-          await container.read(pendingChangeSetsProvider('task-001').future);
+      final result = await container.read(
+        pendingChangeSetsProvider('task-001').future,
+      );
 
       expect(result, hasLength(1));
       expect((result.first as ChangeSetEntity).id, changeSet.id);
@@ -315,8 +323,9 @@ void main() {
           agentSyncServiceProvider.overrideWithValue(mockSyncService),
           journalDbProvider.overrideWithValue(mockJournalDb),
           journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-          checklistRepositoryProvider
-              .overrideWithValue(mockChecklistRepository),
+          checklistRepositoryProvider.overrideWithValue(
+            mockChecklistRepository,
+          ),
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
         ],
       );

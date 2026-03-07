@@ -46,11 +46,12 @@ typedef ReadVectorClock = Future<VectorClock?> Function(String entityId);
 /// conversation history). It must return a [ToolExecutionResult] with at
 /// minimum the [ToolExecutionResult.success] and [ToolExecutionResult.output]
 /// fields populated.
-typedef ExecuteToolHandler = Future<ToolExecutionResult> Function(
-  String toolName,
-  Map<String, dynamic> args,
-  ConversationManager manager,
-);
+typedef ExecuteToolHandler =
+    Future<ToolExecutionResult> Function(
+      String toolName,
+      Map<String, dynamic> args,
+      ConversationManager manager,
+    );
 
 /// [ConversationStrategy] implementation for the Task Agent.
 ///
@@ -409,12 +410,14 @@ class TaskAgentStrategy extends ConversationStrategy {
         final rawCategory = item['category'];
         return ObservationRecord(
           text: text,
-          priority: parseEnumByName(
+          priority:
+              parseEnumByName(
                 ObservationPriority.values,
                 rawPriority is String ? rawPriority : null,
               ) ??
               ObservationPriority.routine,
-          category: parseEnumByName(
+          category:
+              parseEnumByName(
                 ObservationCategory.values,
                 rawCategory is String ? rawCategory : null,
               ) ??
@@ -492,10 +495,10 @@ class TaskAgentStrategy extends ConversationStrategy {
       TaskAgentToolNames.setTaskStatus =>
         'Set status to ${args['status'] ?? '?'}',
       TaskAgentToolNames.assignTaskLabels => () {
-          final labels = args['labels'];
-          final count = labels is List ? labels.length : 0;
-          return 'Assign $count label(s)';
-        }(),
+        final labels = args['labels'];
+        final count = labels is List ? labels.length : 0;
+        return 'Assign $count label(s)';
+      }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }

@@ -104,8 +104,9 @@ Future<DayBudgetStats> dayBudgetStats(Ref ref, {required DateTime date}) async {
     (total, p) => total + p.recordedDuration,
   );
 
-  final overBudgetCount =
-      progress.where((p) => p.status == BudgetProgressStatus.overBudget).length;
+  final overBudgetCount = progress
+      .where((p) => p.status == BudgetProgressStatus.overBudget)
+      .length;
 
   return DayBudgetStats(
     totalPlanned: totalPlanned,

@@ -44,8 +44,8 @@ class HealthImport {
     platform = Platform.isIOS
         ? 'IOS'
         : Platform.isAndroid
-            ? 'ANDROID'
-            : '';
+        ? 'ANDROID'
+        : '';
     if (Platform.isIOS) {
       final iosInfo = await deviceInfo.iosInfo;
       deviceType = iosInfo.utsname.machine;
@@ -167,7 +167,10 @@ class HealthImport {
 
     await addActivityEntries(stepsByDay, 'cumulative_step_count', 'count');
     await addActivityEntries(
-        flightsByDay, 'cumulative_flights_climbed', 'count');
+      flightsByDay,
+      'cumulative_flights_climbed',
+      'count',
+    );
     await addActivityEntries(distanceByDay, 'cumulative_distance', 'meters');
   }
 
@@ -280,8 +283,10 @@ class HealthImport {
 
     for (final type in actualTypes) {
       final subType = type.replaceAll('HealthDataType.', '');
-      final healthDataType =
-          EnumToString.fromString(HealthDataType.values, subType);
+      final healthDataType = EnumToString.fromString(
+        HealthDataType.values,
+        subType,
+      );
 
       if (healthDataType != null) {
         healthDataTypes.add(healthDataType);

@@ -31,6 +31,7 @@ abstract class SyncProvisioningBundle with _$SyncProvisioningBundle {
       _$SyncProvisioningBundleFromJson(json);
 
   @override
-  String toString() => 'SyncProvisioningBundle(v: $v, homeServer: $homeServer, '
+  String toString() =>
+      'SyncProvisioningBundle(v: $v, homeServer: $homeServer, '
       'user: $user, password: <redacted>, roomId: $roomId)';
 }

@@ -19,8 +19,8 @@ typedef ChecklistParams = ({String id, String? taskId});
 
 final checklistControllerProvider = AsyncNotifierProvider.autoDispose
     .family<ChecklistController, Checklist?, ChecklistParams>(
-  ChecklistController.new,
-);
+      ChecklistController.new,
+    );
 
 class ChecklistController extends AsyncNotifier<Checklist?> {
   ChecklistController(this.params);
@@ -51,8 +51,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   }
 
   void _listen() {
-    _updateSubscription =
-        getIt<UpdateNotifications>().updateStream.listen((affectedIds) async {
+    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.intersection(subscribedIds).isNotEmpty) {
         final latest = await _fetch();
         if (latest != state.value) {
@@ -73,8 +74,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   }
 
   Future<bool> delete() async {
-    final res =
-        await ref.read(journalRepositoryProvider).deleteJournalEntity(id);
+    final res = await ref
+        .read(journalRepositoryProvider)
+        .deleteJournalEntity(id);
     if (!res) {
       return false;
     }
@@ -115,16 +117,17 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   }
 
   Future<void> updateTitle(String? title) => updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(title: title ?? ''),
-        ),
-      );
+    (checklist) => checklist.copyWith(
+      data: checklist.data.copyWith(title: title ?? ''),
+    ),
+  );
 
   Future<void> updateItemOrder(List<String> linkedChecklistItems) =>
       updateChecklist(
         (checklist) => checklist.copyWith(
-          data: checklist.data
-              .copyWith(linkedChecklistItems: linkedChecklistItems),
+          data: checklist.data.copyWith(
+            linkedChecklistItems: linkedChecklistItems,
+          ),
         ),
       );
 
@@ -181,8 +184,10 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
 
       await ref
           .read(
-            checklistControllerProvider((id: fromChecklistId, taskId: taskId))
-                .notifier,
+            checklistControllerProvider((
+              id: fromChecklistId,
+              taskId: taskId,
+            )).notifier,
           )
           .unlinkItem(droppedChecklistItemId);
     }
@@ -267,33 +272,35 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   ///
   /// Guards against duplicates so that calling this twice is harmless.
   Future<void> relinkItem(String checklistItemId) => updateChecklist(
-        (checklist) {
-          final items = checklist.data.linkedChecklistItems;
-          if (items.contains(checklistItemId)) return checklist;
-          return checklist.copyWith(
-            data: checklist.data.copyWith(
-              linkedChecklistItems: [...items, checklistItemId],
-            ),
-          );
-        },
-      );
-
-  Future<void> unlinkItem(String checklistItemId) => updateChecklist(
-        (checklist) => checklist.copyWith(
-          data: checklist.data.copyWith(
-            linkedChecklistItems: checklist.data.linkedChecklistItems
-                .where((id) => id != checklistItemId)
-                .toList(),
-          ),
+    (checklist) {
+      final items = checklist.data.linkedChecklistItems;
+      if (items.contains(checklistItemId)) return checklist;
+      return checklist.copyWith(
+        data: checklist.data.copyWith(
+          linkedChecklistItems: [...items, checklistItemId],
         ),
       );
+    },
+  );
+
+  Future<void> unlinkItem(String checklistItemId) => updateChecklist(
+    (checklist) => checklist.copyWith(
+      data: checklist.data.copyWith(
+        linkedChecklistItems: checklist.data.linkedChecklistItems
+            .where((id) => id != checklistItemId)
+            .toList(),
+      ),
+    ),
+  );
 
   Future<void> updateChecklist(Checklist Function(Checklist) updateFn) async {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null) {
       final updated = updateFn(current);
-      await ref.read(checklistRepositoryProvider).updateChecklist(
+      await ref
+          .read(checklistRepositoryProvider)
+          .updateChecklist(
             checklistId: id,
             data: updated.data,
           );
@@ -309,13 +316,14 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     final current = state.value;
     final data = current?.data;
     if (current != null && data != null && title != null) {
-      final created =
-          await ref.read(checklistRepositoryProvider).createChecklistItem(
-                title: title,
-                isChecked: isChecked,
-                checklistId: current.id,
-                categoryId: categoryId,
-              );
+      final created = await ref
+          .read(checklistRepositoryProvider)
+          .createChecklistItem(
+            title: title,
+            isChecked: isChecked,
+            checklistId: current.id,
+            categoryId: categoryId,
+          );
 
       if (created != null) {
         final updated = current.copyWith(
@@ -327,7 +335,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
           ),
         );
 
-        await ref.read(checklistRepositoryProvider).updateChecklist(
+        await ref
+            .read(checklistRepositoryProvider)
+            .updateChecklist(
               checklistId: current.id,
               data: updated.data.copyWith(
                 linkedChecklistItems: [
@@ -351,10 +361,13 @@ typedef ChecklistCompletionParams = ({String id, String? taskId});
 typedef ChecklistCompletionState = ({int completedCount, int totalCount});
 
 final checklistCompletionControllerProvider = AsyncNotifierProvider.autoDispose
-    .family<ChecklistCompletionController, ChecklistCompletionState,
-        ChecklistCompletionParams>(
-  ChecklistCompletionController.new,
-);
+    .family<
+      ChecklistCompletionController,
+      ChecklistCompletionState,
+      ChecklistCompletionParams
+    >(
+      ChecklistCompletionController.new,
+    );
 
 class ChecklistCompletionController
     extends AsyncNotifier<ChecklistCompletionState> {
@@ -363,7 +376,7 @@ class ChecklistCompletionController
   final ChecklistCompletionParams params;
   ProviderSubscription<AsyncValue<Checklist?>>? _checklistSubscription;
   final Map<String, ProviderSubscription<AsyncValue<ChecklistItem?>>>
-      _itemSubscriptions = {};
+  _itemSubscriptions = {};
 
   String get id => params.id;
   String? get taskId => params.taskId;
@@ -379,7 +392,7 @@ class ChecklistCompletionController
 
     _checklistSubscription = ref.listen<AsyncValue<Checklist?>>(
       checklistControllerProvider((id: id, taskId: taskId)),
-      (_, __) => _updateState(),
+      (_, _) => _updateState(),
     );
 
     return _computeState();
@@ -398,7 +411,7 @@ class ChecklistCompletionController
       if (!_itemSubscriptions.containsKey(itemId)) {
         _itemSubscriptions[itemId] = ref.listen<AsyncValue<ChecklistItem?>>(
           checklistItemControllerProvider((id: itemId, taskId: taskId)),
-          (_, __) => _updateState(),
+          (_, _) => _updateState(),
         );
       }
     }
@@ -407,15 +420,17 @@ class ChecklistCompletionController
         .map(
           (itemId) => ref
               .read(
-                  checklistItemControllerProvider((id: itemId, taskId: taskId)))
+                checklistItemControllerProvider((id: itemId, taskId: taskId)),
+              )
               .value,
         )
         .nonNulls
         .where((item) => !item.isDeleted && !item.data.isArchived)
         .toList();
     final totalCount = activeItems.length;
-    final completedCount =
-        activeItems.where((item) => item.data.isChecked).length;
+    final completedCount = activeItems
+        .where((item) => item.data.isChecked)
+        .length;
 
     return (completedCount: completedCount, totalCount: totalCount);
   }
@@ -425,11 +440,15 @@ class ChecklistCompletionController
   }
 }
 
-final checklistCompletionRateControllerProvider =
-    AsyncNotifierProvider.autoDispose.family<ChecklistCompletionRateController,
-        double, ChecklistCompletionParams>(
-  ChecklistCompletionRateController.new,
-);
+final checklistCompletionRateControllerProvider = AsyncNotifierProvider
+    .autoDispose
+    .family<
+      ChecklistCompletionRateController,
+      double,
+      ChecklistCompletionParams
+    >(
+      ChecklistCompletionRateController.new,
+    );
 
 class ChecklistCompletionRateController extends AsyncNotifier<double> {
   ChecklistCompletionRateController(this.params);

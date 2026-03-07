@@ -217,7 +217,8 @@ class ProviderPromptSetupService {
     );
 
     // Find Gemma 3 12B for image analysis
-    final imageModel = models.firstWhereOrNull(
+    final imageModel =
+        models.firstWhereOrNull(
           (m) =>
               m.name.toLowerCase().contains('gemma') &&
               m.name.contains('12') &&
@@ -241,48 +242,48 @@ class ProviderPromptSetupService {
   }) {
     return switch (providerType) {
       InferenceProviderType.alibaba => [
-          if (modelSelection.audioModel != null)
-            PromptConfig(
-              template: audioTranscriptionPrompt,
-              model: modelSelection.audioModel!,
-            ),
-          if (modelSelection.imageModel != null)
-            PromptConfig(
-              template: imageAnalysisInTaskContextPrompt,
-              model: modelSelection.imageModel!,
-            ),
+        if (modelSelection.audioModel != null)
           PromptConfig(
-            template: checklistUpdatesPrompt,
-            model: modelSelection.reasoningModel,
+            template: audioTranscriptionPrompt,
+            model: modelSelection.audioModel!,
           ),
-        ],
+        if (modelSelection.imageModel != null)
+          PromptConfig(
+            template: imageAnalysisInTaskContextPrompt,
+            model: modelSelection.imageModel!,
+          ),
+        PromptConfig(
+          template: checklistUpdatesPrompt,
+          model: modelSelection.reasoningModel,
+        ),
+      ],
       InferenceProviderType.gemini => [
-          if (modelSelection.audioModel != null)
-            PromptConfig(
-              template: audioTranscriptionPrompt,
-              model: modelSelection.audioModel!,
-            ),
-          if (modelSelection.imageModel != null)
-            PromptConfig(
-              template: imageAnalysisInTaskContextPrompt,
-              model: modelSelection.imageModel!,
-            ),
+        if (modelSelection.audioModel != null)
           PromptConfig(
-            template: checklistUpdatesPrompt,
-            model: modelSelection.reasoningModel,
+            template: audioTranscriptionPrompt,
+            model: modelSelection.audioModel!,
           ),
-        ],
+        if (modelSelection.imageModel != null)
+          PromptConfig(
+            template: imageAnalysisInTaskContextPrompt,
+            model: modelSelection.imageModel!,
+          ),
+        PromptConfig(
+          template: checklistUpdatesPrompt,
+          model: modelSelection.reasoningModel,
+        ),
+      ],
       InferenceProviderType.ollama => [
-          if (modelSelection.imageModel != null)
-            PromptConfig(
-              template: imageAnalysisInTaskContextPrompt,
-              model: modelSelection.imageModel!,
-            ),
+        if (modelSelection.imageModel != null)
           PromptConfig(
-            template: checklistUpdatesPrompt,
-            model: modelSelection.reasoningModel,
+            template: imageAnalysisInTaskContextPrompt,
+            model: modelSelection.imageModel!,
           ),
-        ],
+        PromptConfig(
+          template: checklistUpdatesPrompt,
+          model: modelSelection.reasoningModel,
+        ),
+      ],
       _ => [],
     };
   }
@@ -294,71 +295,71 @@ class ProviderPromptSetupService {
   }) {
     return switch (providerType) {
       InferenceProviderType.alibaba => [
-          if (modelSelection.audioModel != null)
-            PromptPreviewInfo(
-              icon: Icons.mic,
-              name: 'Audio Transcript',
-              modelName: modelSelection.audioModel!.name,
-            ),
-          if (modelSelection.imageModel != null)
-            PromptPreviewInfo(
-              icon: Icons.image,
-              name: 'Image Analysis',
-              modelName: modelSelection.imageModel!.name,
-            ),
+        if (modelSelection.audioModel != null)
           PromptPreviewInfo(
-            icon: Icons.checklist,
-            name: 'Checklist Updates',
-            modelName: modelSelection.reasoningModel.name,
+            icon: Icons.mic,
+            name: 'Audio Transcript',
+            modelName: modelSelection.audioModel!.name,
           ),
+        if (modelSelection.imageModel != null)
           PromptPreviewInfo(
-            icon: Icons.summarize,
-            name: 'Task Summary',
-            modelName: modelSelection.reasoningModel.name,
+            icon: Icons.image,
+            name: 'Image Analysis',
+            modelName: modelSelection.imageModel!.name,
           ),
-        ],
+        PromptPreviewInfo(
+          icon: Icons.checklist,
+          name: 'Checklist Updates',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+        PromptPreviewInfo(
+          icon: Icons.summarize,
+          name: 'Task Summary',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+      ],
       InferenceProviderType.gemini => [
-          if (modelSelection.audioModel != null)
-            PromptPreviewInfo(
-              icon: Icons.mic,
-              name: 'Audio Transcript',
-              modelName: modelSelection.audioModel!.name,
-            ),
-          if (modelSelection.imageModel != null)
-            PromptPreviewInfo(
-              icon: Icons.image,
-              name: 'Image Analysis',
-              modelName: modelSelection.imageModel!.name,
-            ),
+        if (modelSelection.audioModel != null)
           PromptPreviewInfo(
-            icon: Icons.checklist,
-            name: 'Checklist Updates',
-            modelName: modelSelection.reasoningModel.name,
+            icon: Icons.mic,
+            name: 'Audio Transcript',
+            modelName: modelSelection.audioModel!.name,
           ),
+        if (modelSelection.imageModel != null)
           PromptPreviewInfo(
-            icon: Icons.summarize,
-            name: 'Task Summary',
-            modelName: modelSelection.reasoningModel.name,
+            icon: Icons.image,
+            name: 'Image Analysis',
+            modelName: modelSelection.imageModel!.name,
           ),
-        ],
+        PromptPreviewInfo(
+          icon: Icons.checklist,
+          name: 'Checklist Updates',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+        PromptPreviewInfo(
+          icon: Icons.summarize,
+          name: 'Task Summary',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+      ],
       InferenceProviderType.ollama => [
-          if (modelSelection.imageModel != null)
-            PromptPreviewInfo(
-              icon: Icons.image,
-              name: 'Image Analysis',
-              modelName: modelSelection.imageModel!.name,
-            ),
+        if (modelSelection.imageModel != null)
           PromptPreviewInfo(
-            icon: Icons.checklist,
-            name: 'Checklist Updates',
-            modelName: modelSelection.reasoningModel.name,
+            icon: Icons.image,
+            name: 'Image Analysis',
+            modelName: modelSelection.imageModel!.name,
           ),
-          PromptPreviewInfo(
-            icon: Icons.summarize,
-            name: 'Task Summary',
-            modelName: modelSelection.reasoningModel.name,
-          ),
-        ],
+        PromptPreviewInfo(
+          icon: Icons.checklist,
+          name: 'Checklist Updates',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+        PromptPreviewInfo(
+          icon: Icons.summarize,
+          name: 'Task Summary',
+          modelName: modelSelection.reasoningModel.name,
+        ),
+      ],
       _ => [],
     };
   }
@@ -409,12 +410,14 @@ class ProviderPromptSetupService {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: context.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
+                      color: context.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color:
-                            context.colorScheme.primary.withValues(alpha: 0.2),
+                        color: context.colorScheme.primary.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -450,8 +453,9 @@ class ProviderPromptSetupService {
                           .withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color:
-                            context.colorScheme.outline.withValues(alpha: 0.2),
+                        color: context.colorScheme.outline.withValues(
+                          alpha: 0.2,
+                        ),
                       ),
                     ),
                     child: Column(
@@ -832,8 +836,9 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     const uuid = Uuid();
 
     // Get existing prompts to check for duplicates
-    final existingPrompts =
-        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPrompts = await repository.getConfigsByType(
+      AiConfigType.prompt,
+    );
     final existingPromptsMap = <String, AiConfigPrompt>{};
     for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
       final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
@@ -1057,8 +1062,10 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Analysis (task context) -> Flash (fast processing)
-    final imageFlash =
-        findPromptId('image_analysis_task_context', flashModelId);
+    final imageFlash = findPromptId(
+      'image_analysis_task_context',
+      flashModelId,
+    );
     if (imageFlash != null) {
       map[AiResponseType.imageAnalysis] = [imageFlash];
     }
@@ -1200,8 +1207,10 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     );
 
     // Step 3: Create or update category with auto-selection
-    final (category, categoryWasCreated) =
-        await _createOrUpdateOpenAiFtueCategory(
+    final (
+      category,
+      categoryWasCreated,
+    ) = await _createOrUpdateOpenAiFtueCategory(
       categoryRepository: categoryRepository,
       prompts: promptResult.allPrompts,
       flashModelId: modelResult.flash.id,
@@ -1317,8 +1326,9 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     const uuid = Uuid();
 
     // Get existing prompts to check for duplicates
-    final existingPrompts =
-        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPrompts = await repository.getConfigsByType(
+      AiConfigType.prompt,
+    );
     final existingPromptsMap = <String, AiConfigPrompt>{};
     for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
       final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
@@ -1531,8 +1541,10 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Analysis (task context) -> Flash (fast processing)
-    final imageAnalysis =
-        findPromptId('image_analysis_task_context', flashModelId);
+    final imageAnalysis = findPromptId(
+      'image_analysis_task_context',
+      flashModelId,
+    );
     if (imageAnalysis != null) {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
     }
@@ -1544,8 +1556,10 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Prompt Generation -> Reasoning (complex reasoning needed)
-    final imagePrompt =
-        findPromptId('image_prompt_generation', reasoningModelId);
+    final imagePrompt = findPromptId(
+      'image_prompt_generation',
+      reasoningModelId,
+    );
     if (imagePrompt != null) {
       map[AiResponseType.imagePromptGeneration] = [imagePrompt];
     }
@@ -1658,8 +1672,10 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     );
 
     // Step 3: Create or update category with auto-selection
-    final (category, categoryWasCreated) =
-        await _createOrUpdateMistralFtueCategory(
+    final (
+      category,
+      categoryWasCreated,
+    ) = await _createOrUpdateMistralFtueCategory(
       categoryRepository: categoryRepository,
       prompts: promptResult.allPrompts,
       flashModelId: modelResult.flash.id,
@@ -1766,8 +1782,9 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     const uuid = Uuid();
 
     // Get existing prompts to check for duplicates
-    final existingPrompts =
-        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPrompts = await repository.getConfigsByType(
+      AiConfigType.prompt,
+    );
     final existingPromptsMap = <String, AiConfigPrompt>{};
     for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
       final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
@@ -1970,8 +1987,10 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Analysis (task context) -> Flash (Mistral Small with vision)
-    final imageAnalysis =
-        findPromptId('image_analysis_task_context', flashModelId);
+    final imageAnalysis = findPromptId(
+      'image_analysis_task_context',
+      flashModelId,
+    );
     if (imageAnalysis != null) {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
     }
@@ -1983,8 +2002,10 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Prompt Generation -> Reasoning (Magistral)
-    final imagePrompt =
-        findPromptId('image_prompt_generation', reasoningModelId);
+    final imagePrompt = findPromptId(
+      'image_prompt_generation',
+      reasoningModelId,
+    );
     if (imagePrompt != null) {
       map[AiResponseType.imagePromptGeneration] = [imagePrompt];
     }
@@ -2093,8 +2114,10 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     );
 
     // Step 3: Create or update category with auto-selection
-    final (category, categoryWasCreated) =
-        await _createOrUpdateAlibabaFtueCategory(
+    final (
+      category,
+      categoryWasCreated,
+    ) = await _createOrUpdateAlibabaFtueCategory(
       categoryRepository: categoryRepository,
       prompts: promptResult.allPrompts,
       flashModelId: modelResult.flash.id,
@@ -2226,8 +2249,9 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     const uuid = Uuid();
 
     // Get existing prompts to check for duplicates
-    final existingPrompts =
-        await repository.getConfigsByType(AiConfigType.prompt);
+    final existingPrompts = await repository.getConfigsByType(
+      AiConfigType.prompt,
+    );
     final existingPromptsMap = <String, AiConfigPrompt>{};
     for (final p in existingPrompts.whereType<AiConfigPrompt>()) {
       final key = '${p.preconfiguredPromptId}_${p.defaultModelId}';
@@ -2444,8 +2468,10 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Analysis (task context) -> Vision (Qwen3 VL Flash)
-    final imageAnalysis =
-        findPromptId('image_analysis_task_context', visionModelId);
+    final imageAnalysis = findPromptId(
+      'image_analysis_task_context',
+      visionModelId,
+    );
     if (imageAnalysis != null) {
       map[AiResponseType.imageAnalysis] = [imageAnalysis];
     }
@@ -2457,8 +2483,10 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     }
 
     // Image Prompt Generation -> Reasoning (Qwen3 Max)
-    final imagePrompt =
-        findPromptId('image_prompt_generation', reasoningModelId);
+    final imagePrompt = findPromptId(
+      'image_prompt_generation',
+      reasoningModelId,
+    );
     if (imagePrompt != null) {
       map[AiResponseType.imagePromptGeneration] = [imagePrompt];
     }

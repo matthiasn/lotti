@@ -20,8 +20,9 @@ void main() {
 
   group('MatrixRoomController', () {
     test('build returns current room from matrix service', () async {
-      when(() => mockMatrixService.getRoom())
-          .thenAnswer((_) async => '!room:server');
+      when(
+        () => mockMatrixService.getRoom(),
+      ).thenAnswer((_) async => '!room:server');
 
       final container = ProviderContainer(
         overrides: [
@@ -38,14 +39,16 @@ void main() {
 
     test('delegates room actions to matrix service', () async {
       when(() => mockMatrixService.getRoom()).thenAnswer((_) async => null);
-      when(() => mockMatrixService.createRoom())
-          .thenAnswer((_) async => '!new:room');
+      when(
+        () => mockMatrixService.createRoom(),
+      ).thenAnswer((_) async => '!new:room');
       when(
         () => mockMatrixService.inviteToSyncRoom(userId: any(named: 'userId')),
       ).thenAnswer((_) async {});
       when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
-      when(() => mockMatrixService.joinRoom(any()))
-          .thenAnswer((_) async => '!joined:room');
+      when(
+        () => mockMatrixService.joinRoom(any()),
+      ).thenAnswer((_) async => '!joined:room');
       when(() => mockMatrixService.leaveRoom()).thenAnswer((_) async {});
 
       final container = ProviderContainer(
@@ -81,8 +84,9 @@ void main() {
 
     setUp(() {
       matrixStatsStreamController = StreamController<MatrixStats>.broadcast();
-      when(() => mockMatrixService.messageCountsController)
-          .thenReturn(matrixStatsStreamController);
+      when(
+        () => mockMatrixService.messageCountsController,
+      ).thenReturn(matrixStatsStreamController);
     });
 
     tearDown(() async {
@@ -118,10 +122,12 @@ void main() {
         messageCounts: {'m.text': 3, 'm.image': 1},
       );
 
-      when(() => mockMatrixService.sentCount)
-          .thenReturn(fallbackStats.sentCount);
-      when(() => mockMatrixService.messageCounts)
-          .thenReturn(fallbackStats.messageCounts);
+      when(
+        () => mockMatrixService.sentCount,
+      ).thenReturn(fallbackStats.sentCount);
+      when(
+        () => mockMatrixService.messageCounts,
+      ).thenReturn(fallbackStats.messageCounts);
 
       final container = ProviderContainer(
         overrides: [
@@ -138,50 +144,54 @@ void main() {
       verify(() => mockMatrixService.messageCounts).called(1);
     });
 
-    test('MatrixStatsController returns latest stream value when available',
-        () async {
-      const streamedStats = MatrixStats(
-        sentCount: 10,
-        messageCounts: {'m.text': 7, 'm.image': 3},
-      );
+    test(
+      'MatrixStatsController returns latest stream value when available',
+      () async {
+        const streamedStats = MatrixStats(
+          sentCount: 10,
+          messageCounts: {'m.text': 7, 'm.image': 3},
+        );
 
-      when(() => mockMatrixService.sentCount).thenReturn(0);
-      when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
+        when(() => mockMatrixService.sentCount).thenReturn(0);
+        when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
 
-      // Use a StreamController that stays open to avoid disposal issues
-      final controller = StreamController<MatrixStats>();
+        // Use a StreamController that stays open to avoid disposal issues
+        final controller = StreamController<MatrixStats>();
 
-      final container = ProviderContainer(
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsStreamProvider.overrideWith(
-            (ref) => controller.stream,
-          ),
-        ],
-      );
-      addTearDown(() {
-        controller.close();
-        container.dispose();
-      });
+        final container = ProviderContainer(
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixStatsStreamProvider.overrideWith(
+              (ref) => controller.stream,
+            ),
+          ],
+        );
+        addTearDown(() {
+          controller.close();
+          container.dispose();
+        });
 
-      // First, subscribe to the stream provider to ensure it's active
-      final streamSub = container.listen(
-        matrixStatsStreamProvider,
-        (_, __) {},
-      );
-      addTearDown(streamSub.close);
+        // First, subscribe to the stream provider to ensure it's active
+        final streamSub = container.listen(
+          matrixStatsStreamProvider,
+          (_, _) {},
+        );
+        addTearDown(streamSub.close);
 
-      // Add value and wait for stream to propagate
-      controller.add(streamedStats);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+        // Add value and wait for stream to propagate
+        controller.add(streamedStats);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
-      // Now read the controller - the stream value should be available
-      final result = await container.read(matrixStatsControllerProvider.future);
+        // Now read the controller - the stream value should be available
+        final result = await container.read(
+          matrixStatsControllerProvider.future,
+        );
 
-      expect(result.sentCount, streamedStats.sentCount);
-      expect(result.messageCounts, streamedStats.messageCounts);
-    });
+        expect(result.sentCount, streamedStats.sentCount);
+        expect(result.messageCounts, streamedStats.messageCounts);
+      },
+    );
   });
 
   group('MatrixStats equality', () {

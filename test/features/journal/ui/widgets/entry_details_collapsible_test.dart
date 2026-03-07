@@ -86,8 +86,9 @@ void main() {
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [],
       );
-      when(() => mockEntitiesCacheService.getCategoryById(any()))
-          .thenReturn(null);
+      when(
+        () => mockEntitiesCacheService.getCategoryById(any()),
+      ).thenReturn(null);
       when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
       when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
@@ -121,16 +122,18 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
 
     group('non-collapsible entries', () {
       testWidgets('text entry without link is NOT collapsible', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -148,10 +151,12 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsNothing);
       });
 
-      testWidgets('image entry without linkedFrom is NOT collapsible',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('image entry without linkedFrom is NOT collapsible', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -180,10 +185,12 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('shows collapse arrow for image in linked context',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('shows collapse arrow for image in linked context', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -203,8 +210,9 @@ void main() {
       });
 
       testWidgets('shows SizeTransition for collapsible entry', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -223,31 +231,36 @@ void main() {
         expect(find.byType(SizeTransition), findsOneWidget);
       });
 
-      testWidgets('does NOT show collapsible AnimatedSize for non-collapsible',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets(
+        'does NOT show collapsible AnimatedSize for non-collapsible',
+        (tester) async {
+          when(
+            () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+          ).thenAnswer((_) async => testTextEntry);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProviderScope(
-              child: EntryDetailsWidget(
-                itemId: testTextEntry.meta.id,
-                showAiEntry: false,
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                child: EntryDetailsWidget(
+                  itemId: testTextEntry.meta.id,
+                  showAiEntry: false,
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        // Non-collapsible entries don't use AnimatedSize for collapse
-        expect(find.byIcon(Icons.expand_more), findsNothing);
-      });
+          // Non-collapsible entries don't use AnimatedSize for collapse
+          expect(find.byIcon(Icons.expand_more), findsNothing);
+        },
+      );
 
-      testWidgets('SizeTransition is fully expanded when not collapsed',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('SizeTransition is fully expanded when not collapsed', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -269,12 +282,14 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
 
-      testWidgets('SizeTransition is fully collapsed when collapsed',
-          (tester) async {
+      testWidgets('SizeTransition is fully collapsed when collapsed', (
+        tester,
+      ) async {
         final collapsedLink = testLink.copyWith(collapsed: true);
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -307,10 +322,12 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('shows collapse arrow for audio in linked context',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('shows collapse arrow for audio in linked context', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -334,8 +351,9 @@ void main() {
       testWidgets('audio entry collapses with collapsed link', (tester) async {
         final collapsedLink = testAudioLink.copyWith(collapsed: true);
 
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -370,10 +388,12 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('text entry in linked context IS collapsible',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets('text entry in linked context IS collapsible', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -392,10 +412,12 @@ void main() {
         expect(find.byIcon(Icons.expand_more), findsOneWidget);
       });
 
-      testWidgets('shows SizeTransition for collapsible text entry',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets('shows SizeTransition for collapsible text entry', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -414,10 +436,12 @@ void main() {
         expect(find.byType(SizeTransition), findsOneWidget);
       });
 
-      testWidgets('SizeTransition is fully expanded when not collapsed',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+      testWidgets('SizeTransition is fully expanded when not collapsed', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -439,12 +463,14 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
 
-      testWidgets('SizeTransition is fully collapsed when collapsed',
-          (tester) async {
+      testWidgets('SizeTransition is fully collapsed when collapsed', (
+        tester,
+      ) async {
         final collapsedLink = textLink.copyWith(collapsed: true);
 
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -466,21 +492,25 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
 
-      testWidgets('tapping chevron calls updateLink with collapsed true',
-          (tester) async {
+      testWidgets('tapping chevron calls updateLink with collapsed true', (
+        tester,
+      ) async {
         final mockJournalRepository = MockJournalRepository();
-        when(() => mockJournalRepository.updateLink(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                journalRepositoryProvider
-                    .overrideWithValue(mockJournalRepository),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
               ],
               child: EntryDetailsWidget(
                 itemId: testTextEntry.meta.id,
@@ -517,10 +547,12 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('expanded image entry shows EntryImageWidget',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('expanded image entry shows EntryImageWidget', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -539,10 +571,12 @@ void main() {
         expect(find.byType(EntryImageWidget), findsOneWidget);
       });
 
-      testWidgets('expanded image entry shows date under image',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+      testWidgets('expanded image entry shows date under image', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -565,8 +599,9 @@ void main() {
       testWidgets('collapsed image entry hides image content', (tester) async {
         final collapsedLink = testLink.copyWith(collapsed: true);
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -589,8 +624,9 @@ void main() {
       });
 
       testWidgets('expanded image entry shows TagsListWidget', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -620,10 +656,12 @@ void main() {
         vectorClock: null,
       );
 
-      testWidgets('expanded audio entry shows AudioPlayerWidget',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('expanded audio entry shows AudioPlayerWidget', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -644,10 +682,12 @@ void main() {
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       });
 
-      testWidgets('expanded audio entry shows date under player',
-          (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+      testWidgets('expanded audio entry shows date under player', (
+        tester,
+      ) async {
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -671,8 +711,9 @@ void main() {
       testWidgets('collapsed audio entry hides player content', (tester) async {
         final collapsedLink = testAudioLink.copyWith(collapsed: true);
 
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -698,8 +739,9 @@ void main() {
     });
 
     group('collapse state from link', () {
-      testWidgets('link with collapsed=null renders as expanded',
-          (tester) async {
+      testWidgets('link with collapsed=null renders as expanded', (
+        tester,
+      ) async {
         final nullCollapsedLink = EntryLink.basic(
           id: 'link-null',
           fromId: testTask.meta.id,
@@ -710,8 +752,9 @@ void main() {
           // collapsed not set -> null
         );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -733,8 +776,9 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 1.0);
       });
 
-      testWidgets('link with collapsed=false renders as expanded',
-          (tester) async {
+      testWidgets('link with collapsed=false renders as expanded', (
+        tester,
+      ) async {
         final falseCollapsedLink = EntryLink.basic(
           id: 'link-false',
           fromId: testTask.meta.id,
@@ -745,8 +789,9 @@ void main() {
           collapsed: false,
         );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -782,8 +827,9 @@ void main() {
     });
 
     group('onToggleCollapse callback', () {
-      testWidgets('collapsible image entry passes onToggleCollapse to header',
-          (tester) async {
+      testWidgets('collapsible image entry passes onToggleCollapse to header', (
+        tester,
+      ) async {
         final testLink = EntryLink.basic(
           id: 'link-toggle',
           fromId: testTask.meta.id,
@@ -793,8 +839,9 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -822,11 +869,13 @@ void main() {
         expect(header.onToggleCollapse, isNotNull);
       });
 
-      testWidgets('tapping chevron calls updateLink with collapsed true',
-          (tester) async {
+      testWidgets('tapping chevron calls updateLink with collapsed true', (
+        tester,
+      ) async {
         final mockJournalRepository = MockJournalRepository();
-        when(() => mockJournalRepository.updateLink(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
 
         final testLink = EntryLink.basic(
           id: 'link-tap-collapse',
@@ -837,15 +886,17 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                journalRepositoryProvider
-                    .overrideWithValue(mockJournalRepository),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
               ],
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
@@ -876,61 +927,66 @@ void main() {
       });
 
       testWidgets(
-          'tapping chevron on collapsed entry calls updateLink with collapsed false',
-          (tester) async {
-        final mockJournalRepository = MockJournalRepository();
-        when(() => mockJournalRepository.updateLink(any()))
-            .thenAnswer((_) async => true);
+        'tapping chevron on collapsed entry calls updateLink with collapsed false',
+        (tester) async {
+          final mockJournalRepository = MockJournalRepository();
+          when(
+            () => mockJournalRepository.updateLink(any()),
+          ).thenAnswer((_) async => true);
 
-        final testLink = EntryLink.basic(
-          id: 'link-tap-expand',
-          fromId: testTask.meta.id,
-          toId: testImageEntry.meta.id,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          vectorClock: null,
-          collapsed: true,
-        );
+          final testLink = EntryLink.basic(
+            id: 'link-tap-expand',
+            fromId: testTask.meta.id,
+            toId: testImageEntry.meta.id,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            collapsed: true,
+          );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+          when(
+            () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+          ).thenAnswer((_) async => testImageEntry);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProviderScope(
-              overrides: [
-                journalRepositoryProvider
-                    .overrideWithValue(mockJournalRepository),
-              ],
-              child: EntryDetailsWidget(
-                itemId: testImageEntry.meta.id,
-                showAiEntry: false,
-                linkedFrom: testTask,
-                link: testLink,
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              ProviderScope(
+                overrides: [
+                  journalRepositoryProvider.overrideWithValue(
+                    mockJournalRepository,
+                  ),
+                ],
+                child: EntryDetailsWidget(
+                  itemId: testImageEntry.meta.id,
+                  showAiEntry: false,
+                  linkedFrom: testTask,
+                  link: testLink,
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        // Tap the collapse chevron (which should expand)
-        await tester.tap(find.byIcon(Icons.expand_more));
-        await tester.pump();
+          // Tap the collapse chevron (which should expand)
+          await tester.tap(find.byIcon(Icons.expand_more));
+          await tester.pump();
 
-        // Verify updateLink was called with collapsed: false
-        final captured = verify(
-          () => mockJournalRepository.updateLink(captureAny()),
-        ).captured;
-        expect(captured, hasLength(1));
-        final updatedLink = captured.first as EntryLink;
-        expect(updatedLink.collapsed, isFalse);
+          // Verify updateLink was called with collapsed: false
+          final captured = verify(
+            () => mockJournalRepository.updateLink(captureAny()),
+          ).captured;
+          expect(captured, hasLength(1));
+          final updatedLink = captured.first as EntryLink;
+          expect(updatedLink.collapsed, isFalse);
 
-        // Drain the Future.delayed timer from the auto-scroll logic
-        await tester.pumpAndSettle();
-      });
+          // Drain the Future.delayed timer from the auto-scroll logic
+          await tester.pumpAndSettle();
+        },
+      );
 
-      testWidgets('collapsible text entry passes onToggleCollapse to header',
-          (tester) async {
+      testWidgets('collapsible text entry passes onToggleCollapse to header', (
+        tester,
+      ) async {
         final textLink = EntryLink.basic(
           id: 'link-text-toggle',
           fromId: testTask.meta.id,
@@ -940,8 +996,9 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-            .thenAnswer((_) async => testTextEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testTextEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -966,13 +1023,15 @@ void main() {
     });
 
     group('collapse toggle error handling', () {
-      testWidgets('catches exception from updateLink and logs it',
-          (tester) async {
+      testWidgets('catches exception from updateLink and logs it', (
+        tester,
+      ) async {
         final mockJournalRepository = MockJournalRepository();
         final mockLoggingService = MockLoggingService();
 
-        when(() => mockJournalRepository.updateLink(any()))
-            .thenThrow(Exception('db write failed'));
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenThrow(Exception('db write failed'));
 
         when(
           () => mockLoggingService.captureException(
@@ -994,15 +1053,17 @@ void main() {
           vectorClock: null,
         );
 
-        when(() => mockJournalDb.journalEntityById(testImageEntry.meta.id))
-            .thenAnswer((_) async => testImageEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
+        ).thenAnswer((_) async => testImageEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             ProviderScope(
               overrides: [
-                journalRepositoryProvider
-                    .overrideWithValue(mockJournalRepository),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
               ],
               child: EntryDetailsWidget(
                 itemId: testImageEntry.meta.id,
@@ -1044,8 +1105,9 @@ void main() {
       );
 
       testWidgets('expanded audio shows date under player', (tester) async {
-        when(() => mockJournalDb.journalEntityById(testAudioEntry.meta.id))
-            .thenAnswer((_) async => testAudioEntry);
+        when(
+          () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => testAudioEntry);
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(

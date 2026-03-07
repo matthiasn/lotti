@@ -105,8 +105,9 @@ class ModernJournalImageCard extends StatelessWidget {
                 dfShorter.format(item.meta.dateFrom),
                 style: context.textTheme.bodySmall?.copyWith(
                   fontFeatures: [const FontFeature.tabularFigures()],
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: AppTheme.alphaSurfaceVariant,
+                  ),
                   fontSize: AppTheme.subtitleFontSize,
                 ),
               ),
@@ -168,7 +169,8 @@ class ModernJournalImageCard extends StatelessWidget {
     const reservedHeight =
         headerHeight + spacingAfterHeader + tagsHeight + spacingAfterTags;
 
-    const availableHeight = imageSize -
+    const availableHeight =
+        imageSize -
         (padding * 2) -
         reservedHeight; // Account for header and tags
 

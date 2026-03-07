@@ -147,8 +147,9 @@ void main() {
       });
     });
 
-    testWidgets('toggles back to absolute format on second tap',
-        (tester) async {
+    testWidgets('toggles back to absolute format on second tap', (
+      tester,
+    ) async {
       final fakeNow = DateTime(2025, 6, 15, 12);
       final dueDate = DateTime(2025, 6, 20);
 

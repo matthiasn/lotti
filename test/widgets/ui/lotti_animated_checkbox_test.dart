@@ -99,8 +99,9 @@ void main() {
       expect(changedValue, isNull);
     });
 
-    testWidgets('shows disabled icon when provided and disabled',
-        (tester) async {
+    testWidgets('shows disabled icon when provided and disabled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           child: const LottiAnimatedCheckbox(
@@ -332,8 +333,10 @@ void main() {
 
       // The Flexible widget should allow text to wrap
       expect(find.byType(Flexible), findsOneWidget);
-      expect(find.text('This is a very long label that should wrap properly'),
-          findsOneWidget);
+      expect(
+        find.text('This is a very long label that should wrap properly'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('disabled state shows correct icon color', (tester) async {

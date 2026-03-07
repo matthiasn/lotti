@@ -36,8 +36,10 @@ void main() {
         const taskId2 = 'task-2';
 
         // Act
-        final result =
-            await journalDb.getBulkLinkedEntities({taskId1, taskId2});
+        final result = await journalDb.getBulkLinkedEntities({
+          taskId1,
+          taskId2,
+        });
 
         // Assert
         expect(result, hasLength(2));
@@ -111,8 +113,10 @@ void main() {
         expect(result, hasLength(1));
         expect(result[task.meta.id], hasLength(1));
         expect(result[task.meta.id]!.first.meta.id, equals(aiResponse.meta.id));
-        expect(result[task.meta.id]!.first.runtimeType.toString(),
-            contains('AiResponseEntry'));
+        expect(
+          result[task.meta.id]!.first.runtimeType.toString(),
+          contains('AiResponseEntry'),
+        );
       });
 
       test('fetches linked entities for multiple parent IDs', () async {
@@ -230,17 +234,23 @@ void main() {
         await journalDb.upsertEntryLink(link2);
 
         // Act
-        final result = await journalDb
-            .getBulkLinkedEntities({task1.meta.id, task2.meta.id});
+        final result = await journalDb.getBulkLinkedEntities({
+          task1.meta.id,
+          task2.meta.id,
+        });
 
         // Assert
         expect(result, hasLength(2));
         expect(result[task1.meta.id], hasLength(1));
         expect(result[task2.meta.id], hasLength(1));
         expect(
-            result[task1.meta.id]!.first.meta.id, equals(aiResponse1.meta.id));
+          result[task1.meta.id]!.first.meta.id,
+          equals(aiResponse1.meta.id),
+        );
         expect(
-            result[task2.meta.id]!.first.meta.id, equals(aiResponse2.meta.id));
+          result[task2.meta.id]!.first.meta.id,
+          equals(aiResponse2.meta.id),
+        );
       });
 
       test('handles multiple linked entities per parent ID', () async {
@@ -341,7 +351,9 @@ void main() {
         expect(result[task.meta.id], hasLength(2));
         final linkedIds = result[task.meta.id]!.map((e) => e.meta.id).toSet();
         expect(
-            linkedIds, containsAll([aiResponse1.meta.id, aiResponse2.meta.id]));
+          linkedIds,
+          containsAll([aiResponse1.meta.id, aiResponse2.meta.id]),
+        );
       });
     });
 
@@ -452,8 +464,10 @@ void main() {
         await journalDb.upsertEntryLink(link);
 
         // Act - include valid and invalid parent IDs
-        final result = await journalDb
-            .getBulkLinkedEntities({task.meta.id, 'non-existent-parent'});
+        final result = await journalDb.getBulkLinkedEntities({
+          task.meta.id,
+          'non-existent-parent',
+        });
 
         // Assert
         expect(result, hasLength(2));
@@ -542,8 +556,10 @@ void main() {
 
         // Assert
         expect(result, hasLength(50));
-        expect(stopwatch.elapsedMilliseconds,
-            lessThan(1000)); // Should complete in < 1 second
+        expect(
+          stopwatch.elapsedMilliseconds,
+          lessThan(1000),
+        ); // Should complete in < 1 second
 
         // Verify each task has the expected number of linked entities
         for (final taskId in taskIds) {
@@ -553,104 +569,109 @@ void main() {
     });
 
     group('performance comparison', () {
-      test('bulk method is faster than individual calls for multiple entities',
-          () async {
-        // Arrange - create 10 tasks with linked entities
-        final taskIds = <String>{};
+      test(
+        'bulk method is faster than individual calls for multiple entities',
+        () async {
+          // Arrange - create 10 tasks with linked entities
+          final taskIds = <String>{};
 
-        for (var i = 0; i < 10; i++) {
-          final taskId = 'task-$i';
-          taskIds.add(taskId);
+          for (var i = 0; i < 10; i++) {
+            final taskId = 'task-$i';
+            taskIds.add(taskId);
 
-          final task = JournalEntity.task(
-            meta: Metadata(
-              id: taskId,
-              createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              categoryId: 'category-1',
-            ),
-            data: TaskData(
-              title: 'Test Task $i',
-              status: TaskStatus.open(
-                id: 'status-$i',
+            final task = JournalEntity.task(
+              meta: Metadata(
+                id: taskId,
                 createdAt: testDate,
-                utcOffset: 0,
+                updatedAt: testDate,
+                dateFrom: testDate,
+                dateTo: testDate,
+                categoryId: 'category-1',
               ),
-              dateFrom: testDate,
-              dateTo: testDate,
-              statusHistory: [],
-            ),
-            entryText: EntryText(plainText: 'Task $i description'),
-          );
+              data: TaskData(
+                title: 'Test Task $i',
+                status: TaskStatus.open(
+                  id: 'status-$i',
+                  createdAt: testDate,
+                  utcOffset: 0,
+                ),
+                dateFrom: testDate,
+                dateTo: testDate,
+                statusHistory: [],
+              ),
+              entryText: EntryText(plainText: 'Task $i description'),
+            );
 
-          final aiResponse = JournalEntity.aiResponse(
-            meta: Metadata(
-              id: 'ai-response-$i',
+            final aiResponse = JournalEntity.aiResponse(
+              meta: Metadata(
+                id: 'ai-response-$i',
+                createdAt: testDate,
+                updatedAt: testDate,
+                dateFrom: testDate,
+                dateTo: testDate,
+              ),
+              data: AiResponseData(
+                model: 'gpt-4',
+                systemMessage: 'You are a helpful assistant',
+                prompt: 'Summarize this task',
+                thoughts: 'User wants task summary',
+                response: 'AI summary $i',
+                promptId: 'prompt-123',
+                type: AiResponseType.taskSummary,
+              ),
+              entryText: EntryText(plainText: 'AI Response $i'),
+            );
+
+            final link = EntryLink.basic(
+              id: 'link-$i',
+              fromId: taskId,
+              toId: 'ai-response-$i',
               createdAt: testDate,
               updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-            ),
-            data: AiResponseData(
-              model: 'gpt-4',
-              systemMessage: 'You are a helpful assistant',
-              prompt: 'Summarize this task',
-              thoughts: 'User wants task summary',
-              response: 'AI summary $i',
-              promptId: 'prompt-123',
-              type: AiResponseType.taskSummary,
-            ),
-            entryText: EntryText(plainText: 'AI Response $i'),
-          );
+              vectorClock: null,
+            );
 
-          final link = EntryLink.basic(
-            id: 'link-$i',
-            fromId: taskId,
-            toId: 'ai-response-$i',
-            createdAt: testDate,
-            updatedAt: testDate,
-            vectorClock: null,
-          );
+            await journalDb.upsertJournalDbEntity(toDbEntity(task));
+            await journalDb.upsertJournalDbEntity(toDbEntity(aiResponse));
+            await journalDb.upsertEntryLink(link);
+          }
 
-          await journalDb.upsertJournalDbEntity(toDbEntity(task));
-          await journalDb.upsertJournalDbEntity(toDbEntity(aiResponse));
-          await journalDb.upsertEntryLink(link);
-        }
+          // Act - measure bulk method
+          final bulkStopwatch = Stopwatch()..start();
+          final bulkResult = await journalDb.getBulkLinkedEntities(taskIds);
+          bulkStopwatch.stop();
 
-        // Act - measure bulk method
-        final bulkStopwatch = Stopwatch()..start();
-        final bulkResult = await journalDb.getBulkLinkedEntities(taskIds);
-        bulkStopwatch.stop();
+          // Act - measure individual calls
+          final individualStopwatch = Stopwatch()..start();
+          final individualResults = <String, List<JournalEntity>>{};
+          for (final taskId in taskIds) {
+            individualResults[taskId] = await journalDb.getLinkedEntities(
+              taskId,
+            );
+          }
+          individualStopwatch.stop();
 
-        // Act - measure individual calls
-        final individualStopwatch = Stopwatch()..start();
-        final individualResults = <String, List<JournalEntity>>{};
-        for (final taskId in taskIds) {
-          individualResults[taskId] = await journalDb.getLinkedEntities(taskId);
-        }
-        individualStopwatch.stop();
+          // Assert - results should be equivalent
+          expect(bulkResult.length, equals(individualResults.length));
+          for (final taskId in taskIds) {
+            expect(
+              bulkResult[taskId]?.length,
+              equals(individualResults[taskId]?.length),
+            );
+          }
 
-        // Assert - results should be equivalent
-        expect(bulkResult.length, equals(individualResults.length));
-        for (final taskId in taskIds) {
-          expect(bulkResult[taskId]?.length,
-              equals(individualResults[taskId]?.length));
-        }
-
-        // Note: Performance comparisons are inherently flaky in unit tests due to:
-        // - JIT compilation overhead
-        // - System load variations
-        // - In-memory databases not showing I/O patterns
-        // The functional equivalence assertion above is the important verification.
-        // Performance benchmarking should be done with dedicated tools.
-      });
+          // Note: Performance comparisons are inherently flaky in unit tests due to:
+          // - JIT compilation overhead
+          // - System load variations
+          // - In-memory databases not showing I/O patterns
+          // The functional equivalence assertion above is the important verification.
+          // Performance benchmarking should be done with dedicated tools.
+        },
+      );
     });
 
     group('deduplication and sorting', () {
-      test('deduplicates entities when multiple links point to same target',
-          () async {
+      test('deduplicates entities when multiple links point to same target', () async {
         // Arrange - Create two tasks and one shared journal entry
         // This tests that when fetching bulk linked entities for multiple parents,
         // if they both link to the same entity, it's not duplicated in individual results
@@ -665,7 +686,10 @@ void main() {
           data: TaskData(
             title: 'Test Task 1',
             status: TaskStatus.open(
-                id: 'status-1', createdAt: testDate, utcOffset: 0),
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
             dateFrom: testDate,
             dateTo: testDate,
             statusHistory: [],
@@ -683,7 +707,10 @@ void main() {
           data: TaskData(
             title: 'Test Task 2',
             status: TaskStatus.done(
-                id: 'status-2', createdAt: testDate, utcOffset: 0),
+              id: 'status-2',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
             dateFrom: testDate,
             dateTo: testDate,
             statusHistory: [],
@@ -728,8 +755,10 @@ void main() {
         await journalDb.upsertEntryLink(link2);
 
         // Act
-        final result = await journalDb
-            .getBulkLinkedEntities({task1.meta.id, task2.meta.id});
+        final result = await journalDb.getBulkLinkedEntities({
+          task1.meta.id,
+          task2.meta.id,
+        });
 
         // Assert - Each task should have the shared entry once (not duplicated per task)
         expect(result, hasLength(2));
@@ -757,7 +786,10 @@ void main() {
           data: TaskData(
             title: 'Test Task',
             status: TaskStatus.open(
-                id: 'status-1', createdAt: testDate, utcOffset: 0),
+              id: 'status-1',
+              createdAt: testDate,
+              utcOffset: 0,
+            ),
             dateFrom: testDate,
             dateTo: testDate,
             statusHistory: [],
@@ -845,22 +877,22 @@ void main() {
         final linkedEntries = result[task.meta.id]!;
         expect(linkedEntries[0].meta.id, newestEntry.meta.id); // First = newest
         expect(
-            linkedEntries[1].meta.id, middleEntry.meta.id); // Second = middle
+          linkedEntries[1].meta.id,
+          middleEntry.meta.id,
+        ); // Second = middle
         expect(linkedEntries[2].meta.id, oldestEntry.meta.id); // Third = oldest
 
         // Double-check dates are actually in descending order
         expect(
-          linkedEntries[0]
-              .meta
-              .dateFrom
-              .isAfter(linkedEntries[1].meta.dateFrom),
+          linkedEntries[0].meta.dateFrom.isAfter(
+            linkedEntries[1].meta.dateFrom,
+          ),
           isTrue,
         );
         expect(
-          linkedEntries[1]
-              .meta
-              .dateFrom
-              .isAfter(linkedEntries[2].meta.dateFrom),
+          linkedEntries[1].meta.dateFrom.isAfter(
+            linkedEntries[2].meta.dateFrom,
+          ),
           isTrue,
         );
       });

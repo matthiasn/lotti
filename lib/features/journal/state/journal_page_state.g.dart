@@ -7,29 +7,33 @@ part of 'journal_page_state.dart';
 // **************************************************************************
 
 _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
-      selectedCategoryIds: (json['selectedCategoryIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          const <String>{},
-      selectedTaskStatuses: (json['selectedTaskStatuses'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          const <String>{},
-      selectedLabelIds: (json['selectedLabelIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          const <String>{},
-      selectedPriorities: (json['selectedPriorities'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toSet() ??
-          const <String>{},
-      sortOption:
-          $enumDecodeNullable(_$TaskSortOptionEnumMap, json['sortOption']) ??
-              TaskSortOption.byPriority,
-      showCreationDate: json['showCreationDate'] as bool? ?? false,
-      showDueDate: json['showDueDate'] as bool? ?? true,
-      showCoverArt: json['showCoverArt'] as bool? ?? true,
-    );
+  selectedCategoryIds:
+      (json['selectedCategoryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet() ??
+      const <String>{},
+  selectedTaskStatuses:
+      (json['selectedTaskStatuses'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet() ??
+      const <String>{},
+  selectedLabelIds:
+      (json['selectedLabelIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet() ??
+      const <String>{},
+  selectedPriorities:
+      (json['selectedPriorities'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet() ??
+      const <String>{},
+  sortOption:
+      $enumDecodeNullable(_$TaskSortOptionEnumMap, json['sortOption']) ??
+      TaskSortOption.byPriority,
+  showCreationDate: json['showCreationDate'] as bool? ?? false,
+  showDueDate: json['showDueDate'] as bool? ?? true,
+  showCoverArt: json['showCoverArt'] as bool? ?? true,
+);
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
     <String, dynamic>{

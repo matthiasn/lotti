@@ -43,8 +43,9 @@ void main() {
       expect(find.byType(QuillEditor), findsOneWidget);
     });
 
-    testWidgets('configures embed builders with unknown fallback',
-        (tester) async {
+    testWidgets('configures embed builders with unknown fallback', (
+      tester,
+    ) async {
       const entryText = EntryText(
         plainText: 'Supports embeds',
       );
@@ -63,9 +64,13 @@ void main() {
 
       expect(builders, isNotNull);
       expect(
-          builders!.any((builder) => builder is DividerEmbedBuilder), isTrue);
+        builders!.any((builder) => builder is DividerEmbedBuilder),
+        isTrue,
+      );
       expect(
-          quillEditor.config.unknownEmbedBuilder, isA<UnknownEmbedBuilder>());
+        quillEditor.config.unknownEmbedBuilder,
+        isA<UnknownEmbedBuilder>(),
+      );
     });
 
     testWidgets('renders with markdown content', (tester) async {
@@ -295,8 +300,10 @@ void main() {
 
       testWidgets('shows ShaderMask when content overflows', (tester) async {
         // Create long content that will overflow
-        final longText =
-            List.generate(50, (i) => 'Line $i of long content').join('\n');
+        final longText = List.generate(
+          50,
+          (i) => 'Line $i of long content',
+        ).join('\n');
         final entryText = EntryText(
           plainText: longText,
         );
@@ -491,8 +498,9 @@ void main() {
         expect(find.byType(QuillEditor), findsOneWidget);
       });
 
-      testWidgets('falls back to plainText when markdown is null',
-          (tester) async {
+      testWidgets('falls back to plainText when markdown is null', (
+        tester,
+      ) async {
         const entryText = EntryText(
           plainText: 'Plain text only',
         );

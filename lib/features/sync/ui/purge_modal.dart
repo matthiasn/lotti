@@ -41,9 +41,9 @@ class PurgeModal {
                           height: 5,
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerHighest,
                             valueColor: AlwaysStoppedAnimation<Color>(
                               Theme.of(context).colorScheme.primary,
                             ),
@@ -67,8 +67,8 @@ class PurgeModal {
                 Text(
                   context.messages.maintenancePurgeDeleted,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
               ],
             );

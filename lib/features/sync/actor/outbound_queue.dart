@@ -31,16 +31,16 @@ class OutboundQueue {
     Duration sendTimeout = SyncTuning.outboxSendTimeout,
     bool connected = true,
     String? syncRoomId,
-  })  : _syncDatabase = syncDatabase,
-        _gateway = gateway,
-        _emitEvent = emitEvent,
-        _leaseDuration = leaseDuration,
-        _retryDelay = retryDelay,
-        _errorDelay = errorDelay,
-        _maxRetries = maxRetries,
-        _sendTimeout = sendTimeout,
-        _connected = connected,
-        _syncRoomId = syncRoomId;
+  }) : _syncDatabase = syncDatabase,
+       _gateway = gateway,
+       _emitEvent = emitEvent,
+       _leaseDuration = leaseDuration,
+       _retryDelay = retryDelay,
+       _errorDelay = errorDelay,
+       _maxRetries = maxRetries,
+       _sendTimeout = sendTimeout,
+       _connected = connected,
+       _syncRoomId = syncRoomId;
 
   final SyncDatabase _syncDatabase;
   final MatrixSdkGateway _gateway;

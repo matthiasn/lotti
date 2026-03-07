@@ -54,12 +54,12 @@ class SyncMaintenanceRepository {
     required AiConfigRepository aiConfigRepository,
     required AgentRepository agentRepository,
     required VectorClockService vectorClockService,
-  })  : _journalDb = journalDb,
-        _outboxService = outboxService,
-        _loggingService = loggingService,
-        _aiConfigRepository = aiConfigRepository,
-        _agentRepository = agentRepository,
-        _vectorClockService = vectorClockService;
+  }) : _journalDb = journalDb,
+       _outboxService = outboxService,
+       _loggingService = loggingService,
+       _aiConfigRepository = aiConfigRepository,
+       _agentRepository = agentRepository,
+       _vectorClockService = vectorClockService;
 
   final JournalDb _journalDb;
   final OutboxService _outboxService;
@@ -70,121 +70,121 @@ class SyncMaintenanceRepository {
 
   late final SyncOperation<TagEntity> _tagSyncOperation =
       _createOperation<TagEntity>(
-    step: SyncStep.tags,
-    fetchEntities: _journalDb.getAllTags,
-    enqueueEntity: (tag) => _outboxService.enqueueMessage(
-      SyncMessage.tagEntity(
-        tagEntity: tag,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (tag) => tag.deletedAt == null,
-  );
+        step: SyncStep.tags,
+        fetchEntities: _journalDb.getAllTags,
+        enqueueEntity: (tag) => _outboxService.enqueueMessage(
+          SyncMessage.tagEntity(
+            tagEntity: tag,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (tag) => tag.deletedAt == null,
+      );
 
   late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
       _createOperation<MeasurableDataType>(
-    step: SyncStep.measurables,
-    fetchEntities: _journalDb.getAllMeasurableDataTypes,
-    enqueueEntity: (measurable) => _outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: measurable,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (measurable) => measurable.deletedAt == null,
-  );
+        step: SyncStep.measurables,
+        fetchEntities: _journalDb.getAllMeasurableDataTypes,
+        enqueueEntity: (measurable) => _outboxService.enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: measurable,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (measurable) => measurable.deletedAt == null,
+      );
 
   late final SyncOperation<CategoryDefinition> _categorySyncOperation =
       _createOperation<CategoryDefinition>(
-    step: SyncStep.categories,
-    fetchEntities: _journalDb.getAllCategories,
-    enqueueEntity: (category) => _outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: category,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (category) => category.deletedAt == null,
-  );
+        step: SyncStep.categories,
+        fetchEntities: _journalDb.getAllCategories,
+        enqueueEntity: (category) => _outboxService.enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: category,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (category) => category.deletedAt == null,
+      );
 
   // Labels: sync label definitions so new/edited labels appear across devices.
   late final SyncOperation<LabelDefinition> _labelSyncOperation =
       _createOperation<LabelDefinition>(
-    step: SyncStep.labels,
-    fetchEntities: _journalDb.getAllLabelDefinitions,
-    enqueueEntity: (label) => _outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: label,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (label) => label.deletedAt == null,
-  );
+        step: SyncStep.labels,
+        fetchEntities: _journalDb.getAllLabelDefinitions,
+        enqueueEntity: (label) => _outboxService.enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: label,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (label) => label.deletedAt == null,
+      );
 
   late final SyncOperation<DashboardDefinition> _dashboardSyncOperation =
       _createOperation<DashboardDefinition>(
-    step: SyncStep.dashboards,
-    fetchEntities: _journalDb.getAllDashboards,
-    enqueueEntity: (dashboard) => _outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: dashboard,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (dashboard) => dashboard.deletedAt == null,
-  );
+        step: SyncStep.dashboards,
+        fetchEntities: _journalDb.getAllDashboards,
+        enqueueEntity: (dashboard) => _outboxService.enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: dashboard,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (dashboard) => dashboard.deletedAt == null,
+      );
 
   late final SyncOperation<HabitDefinition> _habitSyncOperation =
       _createOperation<HabitDefinition>(
-    step: SyncStep.habits,
-    fetchEntities: _journalDb.getAllHabitDefinitions,
-    enqueueEntity: (habit) => _outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: habit,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (habit) => habit.deletedAt == null,
-  );
+        step: SyncStep.habits,
+        fetchEntities: _journalDb.getAllHabitDefinitions,
+        enqueueEntity: (habit) => _outboxService.enqueueMessage(
+          SyncMessage.entityDefinition(
+            entityDefinition: habit,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (habit) => habit.deletedAt == null,
+      );
 
   late final SyncOperation<AiConfig> _aiConfigSyncOperation =
       _createOperation<AiConfig>(
-    step: SyncStep.aiSettings,
-    fetchEntities: _fetchAiConfigsSafely,
-    enqueueEntity: (config) => _outboxService.enqueueMessage(
-      SyncMessage.aiConfig(
-        aiConfig: config,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (_) => true,
-  );
+        step: SyncStep.aiSettings,
+        fetchEntities: _fetchAiConfigsSafely,
+        enqueueEntity: (config) => _outboxService.enqueueMessage(
+          SyncMessage.aiConfig(
+            aiConfig: config,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (_) => true,
+      );
 
   late final SyncOperation<AgentDomainEntity> _agentEntitySyncOperation =
       _createOperation<AgentDomainEntity>(
-    step: SyncStep.agentEntities,
-    fetchEntities: _agentRepository.getAllEntities,
-    enqueueEntity: (entity) => _outboxService.enqueueMessage(
-      SyncMessage.agentEntity(
-        agentEntity: entity,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (_) => true,
-  );
+        step: SyncStep.agentEntities,
+        fetchEntities: _agentRepository.getAllEntities,
+        enqueueEntity: (entity) => _outboxService.enqueueMessage(
+          SyncMessage.agentEntity(
+            agentEntity: entity,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (_) => true,
+      );
 
   late final SyncOperation<agent_model.AgentLink> _agentLinkSyncOperation =
       _createOperation<agent_model.AgentLink>(
-    step: SyncStep.agentLinks,
-    fetchEntities: _agentRepository.getAllLinks,
-    enqueueEntity: (link) => _outboxService.enqueueMessage(
-      SyncMessage.agentLink(
-        agentLink: link,
-        status: SyncEntryStatus.update,
-      ),
-    ),
-    shouldSync: (_) => true,
-  );
+        step: SyncStep.agentLinks,
+        fetchEntities: _agentRepository.getAllLinks,
+        enqueueEntity: (link) => _outboxService.enqueueMessage(
+          SyncMessage.agentLink(
+            agentLink: link,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+        shouldSync: (_) => true,
+      );
 
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
     SyncStep.tags: _tagSyncOperation,
@@ -210,8 +210,8 @@ class SyncMaintenanceRepository {
   }) {
     return _runWithLogging<void>(
       () async {
-        final entities =
-            await _agentRepository.getEntitiesWithNullVectorClock();
+        final entities = await _agentRepository
+            .getEntitiesWithNullVectorClock();
         final total = entities.length;
 
         if (total == 0) {
@@ -590,8 +590,9 @@ class SyncMaintenanceRepository {
   }
 }
 
-final syncMaintenanceRepositoryProvider =
-    Provider<SyncMaintenanceRepository>((ref) {
+final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((
+  ref,
+) {
   return SyncMaintenanceRepository(
     journalDb: ref.watch(journalDbProvider),
     outboxService: ref.watch(outboxServiceProvider),

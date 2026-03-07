@@ -7,8 +7,9 @@ import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('CreateMenuListItem', () {
-    testWidgets('renders with correct icon, title, and trailing plus icon',
-        (tester) async {
+    testWidgets('renders with correct icon, title, and trailing plus icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           CreateMenuListItem(
@@ -200,8 +201,9 @@ void main() {
       expect(icon.color?.a, isNotNull);
     });
 
-    testWidgets('uses Material widget for InkWell ripple effect',
-        (tester) async {
+    testWidgets('uses Material widget for InkWell ripple effect', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           CreateMenuListItem(
@@ -275,8 +277,9 @@ void main() {
       expect(row.children.length, 4);
     });
 
-    testWidgets('title uses Expanded widget to fill available space',
-        (tester) async {
+    testWidgets('title uses Expanded widget to fill available space', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           CreateMenuListItem(

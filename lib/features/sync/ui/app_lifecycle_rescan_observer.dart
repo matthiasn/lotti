@@ -34,7 +34,9 @@ class _AppLifecycleRescanObserverState
         ref.read(matrixServiceProvider).forceRescan().catchError(
           (Object error, StackTrace stackTrace) {
             try {
-              ref.read(loggingServiceProvider).captureException(
+              ref
+                  .read(loggingServiceProvider)
+                  .captureException(
                     error,
                     stackTrace: stackTrace,
                     domain: 'AppLifecycleRescanObserver',

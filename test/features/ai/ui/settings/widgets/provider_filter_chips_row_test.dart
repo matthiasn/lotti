@@ -101,8 +101,9 @@ void main() {
     }
 
     group('Basic Rendering', () {
-      testWidgets('renders provider chips for all available providers',
-          (tester) async {
+      testWidgets('renders provider chips for all available providers', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         await tester.pumpWidget(
@@ -187,8 +188,9 @@ void main() {
     });
 
     group('Multi-Select Mode', () {
-      testWidgets('allows selecting multiple providers in multi-select mode',
-          (tester) async {
+      testWidgets('allows selecting multiple providers in multi-select mode', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
 
@@ -226,8 +228,9 @@ void main() {
         expect(callbackValue, equals({'provider1', 'provider2'}));
       });
 
-      testWidgets('allows deselecting providers in multi-select mode',
-          (tester) async {
+      testWidgets('allows deselecting providers in multi-select mode', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
 
@@ -248,8 +251,9 @@ void main() {
         expect(callbackValue, equals({'provider2'}));
       });
 
-      testWidgets('All chip clears all selections in multi-select mode',
-          (tester) async {
+      testWidgets('All chip clears all selections in multi-select mode', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
 
@@ -313,31 +317,34 @@ void main() {
         expect(callbackValue, equals({'provider2'}));
       });
 
-      testWidgets('deselects when tapping selected chip in single-select mode',
-          (tester) async {
-        final mockProviders = createMockProviders();
-        Set<String>? callbackValue;
+      testWidgets(
+        'deselects when tapping selected chip in single-select mode',
+        (tester) async {
+          final mockProviders = createMockProviders();
+          Set<String>? callbackValue;
 
-        await tester.pumpWidget(
-          createTestWidget(
-            selectedProviderIds: {'provider1'},
-            onChanged: (newSelection) => callbackValue = newSelection,
-            allowMultiSelect: false,
-            mockProviders: mockProviders,
-          ),
-        );
+          await tester.pumpWidget(
+            createTestWidget(
+              selectedProviderIds: {'provider1'},
+              onChanged: (newSelection) => callbackValue = newSelection,
+              allowMultiSelect: false,
+              mockProviders: mockProviders,
+            ),
+          );
 
-        await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-        // Tap provider1 chip again to deselect
-        await tester.tap(find.text('Anthropic'));
-        await tester.pump();
+          // Tap provider1 chip again to deselect
+          await tester.tap(find.text('Anthropic'));
+          await tester.pump();
 
-        expect(callbackValue, equals(<String>{}));
-      });
+          expect(callbackValue, equals(<String>{}));
+        },
+      );
 
-      testWidgets('All chip clears selection in single-select mode',
-          (tester) async {
+      testWidgets('All chip clears selection in single-select mode', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
 
@@ -383,8 +390,9 @@ void main() {
     });
 
     group('Styled vs Plain Chips', () {
-      testWidgets('uses ProviderFilterChip when useStyledChips is true',
-          (tester) async {
+      testWidgets('uses ProviderFilterChip when useStyledChips is true', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         // Need to override individual provider lookups for styled chips
@@ -394,12 +402,15 @@ void main() {
               aiConfigByTypeControllerProvider(
                 configType: AiConfigType.inferenceProvider,
               ).overrideWith(() => TestAiConfigByTypeController(mockProviders)),
-              aiConfigByIdProvider('provider1')
-                  .overrideWith((ref) async => mockProviders[0]),
-              aiConfigByIdProvider('provider2')
-                  .overrideWith((ref) async => mockProviders[1]),
-              aiConfigByIdProvider('provider3')
-                  .overrideWith((ref) async => mockProviders[2]),
+              aiConfigByIdProvider(
+                'provider1',
+              ).overrideWith((ref) async => mockProviders[0]),
+              aiConfigByIdProvider(
+                'provider2',
+              ).overrideWith((ref) async => mockProviders[1]),
+              aiConfigByIdProvider(
+                'provider3',
+              ).overrideWith((ref) async => mockProviders[2]),
             ],
             child: MaterialApp(
               home: Scaffold(
@@ -425,8 +436,9 @@ void main() {
         expect(find.byType(FilterChip), findsNWidgets(3));
       });
 
-      testWidgets('uses plain FilterChip when useStyledChips is false',
-          (tester) async {
+      testWidgets('uses plain FilterChip when useStyledChips is false', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         await tester.pumpWidget(
@@ -448,8 +460,9 @@ void main() {
     });
 
     group('Provider Filtering', () {
-      testWidgets('shows only providers in availableProviderIds list',
-          (tester) async {
+      testWidgets('shows only providers in availableProviderIds list', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         await tester.pumpWidget(
@@ -474,8 +487,9 @@ void main() {
         expect(find.text('OpenAI'), findsNothing);
       });
 
-      testWidgets('shows all providers when availableProviderIds is null',
-          (tester) async {
+      testWidgets('shows all providers when availableProviderIds is null', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         await tester.pumpWidget(
@@ -496,27 +510,28 @@ void main() {
       });
 
       testWidgets(
-          'renders empty when availableProviderIds list excludes all providers',
-          (tester) async {
-        final mockProviders = createMockProviders();
+        'renders empty when availableProviderIds list excludes all providers',
+        (tester) async {
+          final mockProviders = createMockProviders();
 
-        await tester.pumpWidget(
-          createTestWidget(
-            selectedProviderIds: {},
-            onChanged: (_) {},
-            availableProviderIds: [],
-            mockProviders: mockProviders,
-          ),
-        );
+          await tester.pumpWidget(
+            createTestWidget(
+              selectedProviderIds: {},
+              onChanged: (_) {},
+              availableProviderIds: [],
+              mockProviders: mockProviders,
+            ),
+          );
 
-        await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-        // Verify SizedBox.shrink is rendered
-        expect(find.byType(SizedBox), findsOneWidget);
+          // Verify SizedBox.shrink is rendered
+          expect(find.byType(SizedBox), findsOneWidget);
 
-        // Verify no chips are rendered
-        expect(find.byType(FilterChip), findsNothing);
-      });
+          // Verify no chips are rendered
+          expect(find.byType(FilterChip), findsNothing);
+        },
+      );
     });
 
     group('State Management', () {
@@ -553,13 +568,15 @@ void main() {
         await tester.pump();
 
         // Verify provider1 chip still shows as selected
-        final provider1ChipAfterRebuild =
-            tester.widget<FilterChip>(provider1Chips.first);
+        final provider1ChipAfterRebuild = tester.widget<FilterChip>(
+          provider1Chips.first,
+        );
         expect(provider1ChipAfterRebuild.selected, isTrue);
       });
 
-      testWidgets('updates UI when selectedProviderIds prop changes',
-          (tester) async {
+      testWidgets('updates UI when selectedProviderIds prop changes', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
 
         // Start with provider1 selected
@@ -686,8 +703,9 @@ void main() {
     });
 
     group('Interaction & Callbacks', () {
-      testWidgets('onChanged callback receives correct Set on selection',
-          (tester) async {
+      testWidgets('onChanged callback receives correct Set on selection', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
         var callbackCount = 0;
@@ -716,8 +734,9 @@ void main() {
         expect(callbackValue, equals({'provider1'}));
       });
 
-      testWidgets('onChanged callback receives correct Set on deselection',
-          (tester) async {
+      testWidgets('onChanged callback receives correct Set on deselection', (
+        tester,
+      ) async {
         final mockProviders = createMockProviders();
         Set<String>? callbackValue;
         var callbackCount = 0;

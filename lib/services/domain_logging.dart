@@ -29,7 +29,7 @@ abstract final class LogDomains {
 ///   telemetry can be reviewed in isolation.
 class DomainLogger {
   DomainLogger({required LoggingService loggingService})
-      : _loggingService = loggingService;
+    : _loggingService = loggingService;
 
   final LoggingService _loggingService;
   static final _dateFmt = DateFormat('yyyy-MM-dd');

@@ -71,7 +71,7 @@ class PreparedAudio {
 /// to run any configured AI prompt
 class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
-      : _clock = clock ?? DateTime.now {
+    : _clock = clock ?? DateTime.now {
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
@@ -133,8 +133,8 @@ class UnifiedAiInferenceRepository {
 
     // Filter prompts by platform capability (remove local-only models on mobile)
     final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-    final platformFilteredPrompts =
-        await capabilityFilter.filterPromptsByPlatform(activePrompts);
+    final platformFilteredPrompts = await capabilityFilter
+        .filterPromptsByPlatform(activePrompts);
 
     return platformFilteredPrompts;
   }
@@ -166,8 +166,9 @@ class UnifiedAiInferenceRepository {
     // Check if prompt requires specific input data types
     final hasTask = prompt.requiredInputData.contains(InputDataType.task);
     final hasImages = prompt.requiredInputData.contains(InputDataType.images);
-    final hasAudio =
-        prompt.requiredInputData.contains(InputDataType.audioFiles);
+    final hasAudio = prompt.requiredInputData.contains(
+      InputDataType.audioFiles,
+    );
 
     // For prompts that require task context
     if (hasTask) {
@@ -274,8 +275,9 @@ class UnifiedAiInferenceRepository {
       }
 
       // Get the model configuration
-      final model = await aiConfigRepo
-          .getConfigById(promptConfig.defaultModelId) as AiConfigModel?;
+      final model =
+          await aiConfigRepo.getConfigById(promptConfig.defaultModelId)
+              as AiConfigModel?;
 
       if (model == null) {
         throw Exception('Model not found: ${promptConfig.defaultModelId}');
@@ -559,8 +561,8 @@ class UnifiedAiInferenceRepository {
 
       // Extract speech dictionary terms for context biasing
       // (used by Mistral's transcription endpoint as context_bias)
-      final speechDictionaryTerms =
-          await promptBuilderHelper.getSpeechDictionaryTerms(entity);
+      final speechDictionaryTerms = await promptBuilderHelper
+          .getSpeechDictionaryTerms(entity);
 
       return cloudRepo.generateWithAudio(
         prompt,
@@ -572,8 +574,9 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
         stream: isAiStreamingEnabled,
         audioFormat: preparedAudio.format,
-        speechDictionaryTerms:
-            speechDictionaryTerms.isNotEmpty ? speechDictionaryTerms : null,
+        speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
+            ? speechDictionaryTerms
+            : null,
       );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks
@@ -604,8 +607,10 @@ class UnifiedAiInferenceRepository {
       if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
           model.supportsFunctionCalling) {
         const enableLabels = true;
-        final checklistTools =
-            getChecklistToolsForProvider(provider: provider, model: model);
+        final checklistTools = getChecklistToolsForProvider(
+          provider: provider,
+          model: model,
+        );
         tools = [
           ...checklistTools,
           if (enableLabels) ...LabelFunctions.getTools(),
@@ -629,8 +634,10 @@ class UnifiedAiInferenceRepository {
       }
       // Legacy behavior for other cases (should not happen in practice)
       else if (entity is Task && model.supportsFunctionCalling) {
-        final checklistTools =
-            getChecklistToolsForProvider(provider: provider, model: model);
+        final checklistTools = getChecklistToolsForProvider(
+          provider: provider,
+          model: model,
+        );
         tools = [
           ...checklistTools,
           ...TaskFunctions.getTools(),
@@ -770,19 +777,20 @@ class UnifiedAiInferenceRepository {
     AiResponseEntry? aiResponseEntry;
     final shouldSaveEntry =
         promptConfig.aiResponseType.isPromptGenerationType ||
-            (entity is! JournalAudio &&
-                entity is! JournalImage &&
-                promptConfig.aiResponseType != AiResponseType.checklistUpdates);
+        (entity is! JournalAudio &&
+            entity is! JournalImage &&
+            promptConfig.aiResponseType != AiResponseType.checklistUpdates);
 
     if (shouldSaveEntry) {
       try {
-        aiResponseEntry =
-            await ref.read(aiInputRepositoryProvider).createAiResponseEntry(
-                  data: data,
-                  start: start,
-                  linkedId: entity.id,
-                  categoryId: entity.meta.categoryId,
-                );
+        aiResponseEntry = await ref
+            .read(aiInputRepositoryProvider)
+            .createAiResponseEntry(
+              data: data,
+              start: start,
+              linkedId: entity.id,
+              categoryId: entity.meta.categoryId,
+            );
         developer.log(
           'createAiResponseEntry result: ${aiResponseEntry?.id ?? "null"}',
           name: 'UnifiedAiInferenceRepository',
@@ -845,17 +853,18 @@ class UnifiedAiInferenceRepository {
           // Get current image state to avoid overwriting concurrent changes
           final currentImage =
               await EntityStateHelper.getCurrentEntityState<JournalImage>(
-            entityId: entity.id,
-            aiInputRepo: ref.read(aiInputRepositoryProvider),
-            entityTypeName: 'image analysis',
-          );
+                entityId: entity.id,
+                aiInputRepo: ref.read(aiInputRepositoryProvider),
+                entityTypeName: 'image analysis',
+              );
           if (currentImage == null) {
             break;
           }
 
           final originalText = currentImage.entryText?.markdown ?? '';
-          final amendedText =
-              originalText.isEmpty ? response : '$originalText\n\n$response';
+          final amendedText = originalText.isEmpty
+              ? response
+              : '$originalText\n\n$response';
 
           try {
             // Add text to image by appending to existing content using current state
@@ -883,10 +892,10 @@ class UnifiedAiInferenceRepository {
           // Get current audio state to avoid overwriting concurrent changes
           final currentAudio =
               await EntityStateHelper.getCurrentEntityState<JournalAudio>(
-            entityId: entity.id,
-            aiInputRepo: ref.read(aiInputRepositoryProvider),
-            entityTypeName: 'audio transcription',
-          );
+                entityId: entity.id,
+                aiInputRepo: ref.read(aiInputRepositoryProvider),
+                entityTypeName: 'audio transcription',
+              );
           if (currentAudio == null) {
             break;
           }
@@ -937,10 +946,10 @@ class UnifiedAiInferenceRepository {
           // Get current task state to avoid overwriting concurrent changes
           final currentTask =
               await EntityStateHelper.getCurrentEntityState<Task>(
-            entityId: entity.id,
-            aiInputRepo: ref.read(aiInputRepositoryProvider),
-            entityTypeName: 'task summary',
-          );
+                entityId: entity.id,
+                aiInputRepo: ref.read(aiInputRepositoryProvider),
+                entityTypeName: 'task summary',
+              );
           if (currentTask == null) {
             break;
           }
@@ -1187,8 +1196,9 @@ class UnifiedAiInferenceRepository {
 
                 // Refresh the task to get the updated checklistIds
                 final journalDb = getIt<JournalDb>();
-                final updatedEntity =
-                    await journalDb.journalEntityById(currentTask.id);
+                final updatedEntity = await journalDb.journalEntityById(
+                  currentTask.id,
+                );
                 if (updatedEntity is Task) {
                   currentTask = updatedEntity;
                   developer.log(
@@ -1301,8 +1311,9 @@ class UnifiedAiInferenceRepository {
 
           // Re-fetch the task to get the latest state and avoid race conditions
           final journalRepo = ref.read(journalRepositoryProvider);
-          final freshEntity =
-              await journalRepo.getJournalEntityById(currentTask.id);
+          final freshEntity = await journalRepo.getJournalEntityById(
+            currentTask.id,
+          );
 
           if (freshEntity is! Task) {
             developer.log(
@@ -1353,8 +1364,9 @@ class UnifiedAiInferenceRepository {
         // Handle assign task labels (add-only)
         try {
           final parsed = parseLabelCallArgs(toolCall.function.arguments);
-          final requested =
-              LinkedHashSet<String>.from(parsed.selectedIds).toList();
+          final requested = LinkedHashSet<String>.from(
+            parsed.selectedIds,
+          ).toList();
 
           // Defensive check: warn if AI called without valid labels
           if (requested.isEmpty) {
@@ -1369,8 +1381,9 @@ class UnifiedAiInferenceRepository {
           // Phase 3: filter suppressed IDs for this task (hard filter)
           final suppressedSet =
               currentTask.data.aiSuppressedLabelIds ?? const <String>{};
-          final proposed =
-              requested.where((id) => !suppressedSet.contains(id)).toList();
+          final proposed = requested
+              .where((id) => !suppressedSet.contains(id))
+              .toList();
 
           final processor = LabelAssignmentProcessor(
             repository: ref.read(labelsRepositoryProvider),
@@ -1463,8 +1476,9 @@ class UnifiedAiInferenceRepository {
 
           try {
             // Get the current checklist item
-            final checklistItem = await journalRepository
-                .getJournalEntityById(suggestion.checklistItemId);
+            final checklistItem = await journalRepository.getJournalEntityById(
+              suggestion.checklistItemId,
+            );
 
             if (checklistItem is ChecklistItem) {
               if (checklistItem.data.isChecked) {
@@ -1602,8 +1616,10 @@ class UnifiedAiInferenceRepository {
 
       // Define tools for checklist updates
       const enableLabels = true;
-      final checklistTools =
-          getChecklistToolsForProvider(provider: provider, model: model);
+      final checklistTools = getChecklistToolsForProvider(
+        provider: provider,
+        model: model,
+      );
       final tools = [
         ...checklistTools,
         if (enableLabels) ...LabelFunctions.getTools(),

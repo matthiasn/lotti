@@ -16,26 +16,26 @@ void main() {
     int? payloadSize,
     int status = 0,
     String? filePath,
-  }) =>
-      OutboxItem(
-        id: 42,
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        updatedAt: DateTime(2024, 3, 15, 10, 30),
-        status: status,
-        retries: 0,
-        message: jsonEncode({
-          'runtimeType': 'aiConfigDelete',
-          'id': 'config-id',
-        }),
-        subject: 'test-subject',
-        filePath: filePath,
-        payloadSize: payloadSize,
-        priority: OutboxPriority.low.index,
-      );
+  }) => OutboxItem(
+    id: 42,
+    createdAt: DateTime(2024, 3, 15, 10, 30),
+    updatedAt: DateTime(2024, 3, 15, 10, 30),
+    status: status,
+    retries: 0,
+    message: jsonEncode({
+      'runtimeType': 'aiConfigDelete',
+      'id': 'config-id',
+    }),
+    subject: 'test-subject',
+    filePath: filePath,
+    payloadSize: payloadSize,
+    priority: OutboxPriority.low.index,
+  );
 
   group('OutboxListItem', () {
-    testWidgets('shows payload size row when payloadSize is set',
-        (tester) async {
+    testWidgets('shows payload size row when payloadSize is set', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(
@@ -49,8 +49,9 @@ void main() {
       expect(find.byIcon(Icons.data_usage_rounded), findsOneWidget);
     });
 
-    testWidgets('hides payload size row when payloadSize is null',
-        (tester) async {
+    testWidgets('hides payload size row when payloadSize is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(

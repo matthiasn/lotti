@@ -23,43 +23,54 @@ void main() {
       );
     }
 
-    testWidgets('complete multi-selection flow works correctly',
-        (tester) async {
+    testWidgets('complete multi-selection flow works correctly', (
+      tester,
+    ) async {
       final selectedOptions = <String>{};
       final savedOptions = <String>[];
 
-      await tester.pumpWidget(createTestModal(
-        options: ['Option 1', 'Option 2', 'Option 3'],
-        selectedOptions: selectedOptions,
-        onSave: savedOptions.addAll,
-      ));
+      await tester.pumpWidget(
+        createTestModal(
+          options: ['Option 1', 'Option 2', 'Option 3'],
+          selectedOptions: selectedOptions,
+          onSave: savedOptions.addAll,
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Initially no selections
       expect(
-          find.byIcon(Icons.check_rounded), findsOneWidget); // Only save button
+        find.byIcon(Icons.check_rounded),
+        findsOneWidget,
+      ); // Only save button
 
       // Select first option
       await tester.tap(find.text('Option 1'));
       await tester.pumpAndSettle();
 
       // Should show checkmark
-      expect(find.byIcon(Icons.check_rounded),
-          findsNWidgets(2)); // Option + save button
+      expect(
+        find.byIcon(Icons.check_rounded),
+        findsNWidgets(2),
+      ); // Option + save button
 
       // Select second option
       await tester.tap(find.text('Option 2'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check_rounded),
-          findsNWidgets(3)); // 2 options + save button
+      expect(
+        find.byIcon(Icons.check_rounded),
+        findsNWidgets(3),
+      ); // 2 options + save button
 
       // Deselect first option
       await tester.tap(find.text('Option 1'));
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.check_rounded),
-          findsNWidgets(2)); // 1 option + save button
+      expect(
+        find.byIcon(Icons.check_rounded),
+        findsNWidgets(2),
+      ); // 1 option + save button
 
       // Save
       await tester.tap(find.text('Save'));
@@ -68,21 +79,25 @@ void main() {
       expect(savedOptions, ['Option 2']);
     });
 
-    testWidgets('complete single-selection flow works correctly',
-        (tester) async {
+    testWidgets('complete single-selection flow works correctly', (
+      tester,
+    ) async {
       final savedOptions = <String>[];
 
-      await tester.pumpWidget(createTestModal(
-        options: ['Option A', 'Option B', 'Option C'],
-        selectedOptions: {},
-        onSave: savedOptions.addAll,
-        singleSelection: true,
-      ));
+      await tester.pumpWidget(
+        createTestModal(
+          options: ['Option A', 'Option B', 'Option C'],
+          selectedOptions: {},
+          onSave: savedOptions.addAll,
+          singleSelection: true,
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Initially no selection, save button should be disabled
-      final saveButton =
-          tester.widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+      final saveButton = tester.widget<SelectionSaveButton>(
+        find.byType(SelectionSaveButton),
+      );
       expect(saveButton.onPressed, isNull);
 
       // Select first option
@@ -97,8 +112,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Save button should now be enabled
-      final updatedSaveButton =
-          tester.widget<SelectionSaveButton>(find.byType(SelectionSaveButton));
+      final updatedSaveButton = tester.widget<SelectionSaveButton>(
+        find.byType(SelectionSaveButton),
+      );
       expect(updatedSaveButton.onPressed, isNotNull);
 
       // Save
@@ -108,8 +124,9 @@ void main() {
       expect(savedOptions, ['Option B']);
     });
 
-    testWidgets('all components work together in modal context',
-        (tester) async {
+    testWidgets('all components work together in modal context', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: SelectionModalContent(
@@ -146,8 +163,10 @@ void main() {
       expect(find.text('Item 0'), findsOneWidget);
       expect(find.text('Description for item 1'), findsOneWidget);
       expect(find.byIcon(Icons.star), findsNWidgets(3));
-      expect(find.byIcon(Icons.check_rounded),
-          findsNWidgets(2)); // Item 0 + save button
+      expect(
+        find.byIcon(Icons.check_rounded),
+        findsNWidgets(2),
+      ); // Item 0 + save button
 
       // Test save button
       await tester.tap(find.text('Save'));
@@ -159,11 +178,13 @@ void main() {
       tester.view.physicalSize = const Size(800, 600);
       tester.view.devicePixelRatio = 1.0;
 
-      await tester.pumpWidget(createTestModal(
-        options: List.generate(20, (i) => 'Option $i'),
-        selectedOptions: {},
-        onSave: (_) {},
-      ));
+      await tester.pumpWidget(
+        createTestModal(
+          options: List.generate(20, (i) => 'Option $i'),
+          selectedOptions: {},
+          onSave: (_) {},
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Initial items visible
@@ -191,11 +212,13 @@ void main() {
     testWidgets('handles empty options list gracefully', (tester) async {
       final savedOptions = <String>[];
 
-      await tester.pumpWidget(createTestModal(
-        options: [],
-        selectedOptions: {},
-        onSave: savedOptions.addAll,
-      ));
+      await tester.pumpWidget(
+        createTestModal(
+          options: [],
+          selectedOptions: {},
+          onSave: savedOptions.addAll,
+        ),
+      );
       await tester.pumpAndSettle();
 
       // Should show save button only

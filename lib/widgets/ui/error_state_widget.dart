@@ -39,8 +39,9 @@ class ErrorStateWidget extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color:
-            Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.1),
+        color: Theme.of(
+          context,
+        ).colorScheme.errorContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
@@ -58,8 +59,8 @@ class ErrorStateWidget extends StatelessWidget {
           Text(
             title ?? 'Error',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+              color: Theme.of(context).colorScheme.error,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),

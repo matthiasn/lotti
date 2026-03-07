@@ -327,8 +327,10 @@ void main() {
         );
       }
 
-      final results =
-          db.search(queryVector: _makeVector(kEmbeddingDimensions), k: 3);
+      final results = db.search(
+        queryVector: _makeVector(kEmbeddingDimensions),
+        k: 3,
+      );
       expect(results, hasLength(3));
     });
 

@@ -15,8 +15,7 @@ double _contrastRatio(Color a, Color b) {
 }
 
 void main() {
-  test('preset palette maintains WCAG AA contrast with black or white text',
-      () {
+  test('preset palette maintains WCAG AA contrast with black or white text', () {
     for (final preset in labelColorPresets) {
       final color = _presetToColor(preset);
       final whiteContrast = _contrastRatio(color, Colors.white);

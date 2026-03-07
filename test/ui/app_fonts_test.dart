@@ -44,4 +44,5 @@ void main() {
     expect(style.fontFamily, 'Inconsolata');
   });
 }
+
 // End of file

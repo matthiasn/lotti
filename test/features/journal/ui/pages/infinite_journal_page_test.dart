@@ -79,10 +79,12 @@ void main() {
         (_) => Stream<Set<String>>.fromIterable([<String>{}]),
       );
 
-      when(() => mockSettingsDb.itemByKey(any()))
-          .thenAnswer((_) => Future(() => null));
-      when(() => mockSettingsDb.saveSettingsItem(any(), any()))
-          .thenAnswer((_) async => 1);
+      when(
+        () => mockSettingsDb.itemByKey(any()),
+      ).thenAnswer((_) => Future(() => null));
+      when(
+        () => mockSettingsDb.saveSettingsItem(any(), any()),
+      ).thenAnswer((_) async => 1);
 
       when(mockJournalDb.getTasksCount).thenAnswer((_) async => 42);
 
@@ -127,8 +129,9 @@ void main() {
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<Fts5Db>(MockFts5Db());
 
-      when(() => mockJournalDb.getMeasurableDataTypeById(measurableWater.id))
-          .thenAnswer((_) async => measurableWater);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(measurableWater.id),
+      ).thenAnswer((_) async => measurableWater);
 
       when(mockTagsService.watchTags).thenAnswer(
         (_) => Stream<List<TagEntity>>.fromIterable([[]]),
@@ -146,12 +149,13 @@ void main() {
               description: 'Show private entries?',
               status: true,
             ),
-          }
+          },
         ]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
     tearDown(getIt.reset);
 
@@ -188,8 +192,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testTextEntry]);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -231,8 +236,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testTask]);
 
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
@@ -267,8 +273,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testTask]);
 
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -306,8 +313,9 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
-      when(() => mockJournalDb.journalEntityById(testWeightEntry.meta.id))
-          .thenAnswer((_) async => testWeightEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testWeightEntry.meta.id),
+      ).thenAnswer((_) async => testWeightEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -336,86 +344,89 @@ void main() {
     });
 
     testWidgets(
-        'page is rendered with measurement entry, aggregation sum by day',
-        (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
+      'page is rendered with measurement entry, aggregation sum by day',
+      (tester) async {
+        Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+          return mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            private: false,
+          );
+        }
+
+        when(
+          () => mockEntitiesCacheService.getDataTypeById(
+            measurableChocolate.id,
+          ),
+        ).thenAnswer((_) => measurableChocolate);
+
+        when(
+          () => mockJournalDb.getMeasurementsByType(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+            type: measurableChocolate.id,
+          ),
+        ).thenAnswer((_) async => []);
+
+        when(
+          () => mockJournalDb.getMeasurableDataTypeById(any()),
+        ).thenAnswer((_) async => measurableChocolate);
+
+        when(
+          () => mockJournalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: [true, false],
+            privateStatuses: [true, false],
+            flaggedStatuses: [1, 0],
+            ids: null,
+            limit: 50,
+          ),
+        ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
+
+        when(
+          () => mockJournalDb.journalEntityById(
+            testMeasurementChocolateEntry.meta.id,
+          ),
+        ).thenAnswer((_) async => testMeasurementChocolateEntry);
+
+        when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const InfiniteJournalPage(showTasks: false),
+          ),
         );
-      }
 
-      when(
-        () => mockEntitiesCacheService.getDataTypeById(
-          measurableChocolate.id,
-        ),
-      ).thenAnswer((_) => measurableChocolate);
+        await pumpWithDelay(tester);
 
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: measurableChocolate.id,
-        ),
-      ).thenAnswer((_) async => []);
+        // measurement entry displays expected date
+        expect(
+          find.text(
+            dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
+          ),
+          findsOneWidget,
+        );
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableChocolate);
+        // measurement entry displays expected measurement data
+        expect(
+          find.text(
+            '${measurableChocolate.displayName}: '
+            '${testMeasurementChocolateEntry.data.value} '
+            '${measurableChocolate.unitName}',
+          ),
+          findsOneWidget,
+        );
 
-      when(
-        () => mockJournalDb.getJournalEntities(
-          types: any(named: 'types'),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-          limit: 50,
-        ),
-      ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
+        // test measurement is not starred (icon invisible)
+        expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
 
-      when(
-        () => mockJournalDb
-            .journalEntityById(testMeasurementChocolateEntry.meta.id),
-      ).thenAnswer((_) async => testMeasurementChocolateEntry);
+        // test measurement is private (icon visible & red)
+        expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
+      },
+    );
 
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(showTasks: false),
-        ),
-      );
-
-      await pumpWithDelay(tester);
-
-      // measurement entry displays expected date
-      expect(
-        find.text(
-          dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
-        ),
-        findsOneWidget,
-      );
-
-      // measurement entry displays expected measurement data
-      expect(
-        find.text(
-          '${measurableChocolate.displayName}: '
-          '${testMeasurementChocolateEntry.data.value} '
-          '${measurableChocolate.unitName}',
-        ),
-        findsOneWidget,
-      );
-
-      // test measurement is not starred (icon invisible)
-      expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
-
-      // test measurement is private (icon visible & red)
-      expect(find.byIcon(MdiIcons.security).hitTestable(), findsOneWidget);
-    });
-
-    testWidgets('page is rendered with measurement entry, aggregation none',
-        (tester) async {
+    testWidgets('page is rendered with measurement entry, aggregation none', (
+      tester,
+    ) async {
       when(
         () => mockEntitiesCacheService.getDataTypeById(
           measurableCoverage.id,
@@ -509,8 +520,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testTextEntry]);
 
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -540,8 +552,9 @@ void main() {
       ).called(greaterThan(1));
     });
 
-    testWidgets('multiple entries are rendered in correct order',
-        (tester) async {
+    testWidgets('multiple entries are rendered in correct order', (
+      tester,
+    ) async {
       final entries = [testTextEntry, testTask, testWeightEntry];
 
       when(
@@ -556,8 +569,9 @@ void main() {
       ).thenAnswer((_) async => entries);
 
       for (final entry in entries) {
-        when(() => mockJournalDb.journalEntityById(entry.meta.id))
-            .thenAnswer((_) async => entry);
+        when(
+          () => mockJournalDb.journalEntityById(entry.meta.id),
+        ).thenAnswer((_) async => entry);
       }
 
       await tester.pumpWidget(
@@ -572,22 +586,25 @@ void main() {
       expect(find.byType(CardWrapperWidget), findsNWidgets(3));
     });
 
-    testWidgets('floating action button creates task with selected category',
-        (tester) async {
+    testWidgets('floating action button creates task with selected category', (
+      tester,
+    ) async {
       when(
         () => mockEntitiesCacheService.sortedCategories,
-      ).thenAnswer((_) => [
-            CategoryDefinition(
-              id: 'cat1',
-              name: 'Work',
-              color: '#FF0000',
-              createdAt: DateTime.now(),
-              updatedAt: DateTime.now(),
-              active: true,
-              private: false,
-              vectorClock: null,
-            ),
-          ]);
+      ).thenAnswer(
+        (_) => [
+          CategoryDefinition(
+            id: 'cat1',
+            name: 'Work',
+            color: '#FF0000',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            active: true,
+            private: false,
+            vectorClock: null,
+          ),
+        ],
+      );
 
       when(
         () => mockJournalDb.getTasks(
@@ -613,8 +630,9 @@ void main() {
       expect(fab, findsOneWidget);
     });
 
-    testWidgets('tasks page with categories shows correct entries',
-        (tester) async {
+    testWidgets('tasks page with categories shows correct entries', (
+      tester,
+    ) async {
       final testCategories = [
         CategoryDefinition(
           id: 'cat1',
@@ -653,8 +671,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [testTask]);
 
-      when(() => mockJournalDb.journalEntityById(testTask.meta.id))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -684,8 +703,9 @@ void main() {
         ),
       ).thenAnswer((_) async => [privateEntry]);
 
-      when(() => mockJournalDb.journalEntityById(privateEntry.meta.id))
-          .thenAnswer((_) async => privateEntry);
+      when(
+        () => mockJournalDb.journalEntityById(privateEntry.meta.id),
+      ).thenAnswer((_) async => privateEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

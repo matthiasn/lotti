@@ -56,7 +56,7 @@ Map<String, dynamic> createSseChunkEvent({
         'index': 0,
         'delta': {'content': content},
         'finish_reason': finishReason,
-      }
+      },
     ],
   };
 }
@@ -77,7 +77,7 @@ Map<String, dynamic> createSseFinalEvent({
         'index': 0,
         'delta': <String, dynamic>{},
         'finish_reason': 'stop',
-      }
+      },
     ],
   };
 }
@@ -134,8 +134,9 @@ void main() {
         expect(results[1].choices?.first.delta?.content, equals(chunk2));
 
         // Verify the request
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         expect(request.url.toString(), equals('$baseUrl/v1/chat/completions'));
         expect(request.headers['Content-Type'], contains('application/json'));
@@ -152,7 +153,9 @@ void main() {
         expect(messages.length, equals(1));
         expect((messages[0] as Map<String, dynamic>)['role'], equals('user'));
         expect(
-            (messages[0] as Map<String, dynamic>)['content'], equals(prompt));
+          (messages[0] as Map<String, dynamic>)['content'],
+          equals(prompt),
+        );
       });
 
       test('should transcribe single chunk audio', () async {
@@ -180,7 +183,9 @@ void main() {
         // Assert
         expect(results.length, equals(1));
         expect(
-            results[0].choices?.first.delta?.content, equals(transcribedText));
+          results[0].choices?.first.delta?.content,
+          equals(transcribedText),
+        );
         expect(results[0].id, equals('chatcmpl-test'));
       });
 
@@ -209,13 +214,16 @@ void main() {
         expect(results.length, equals(1));
         expect(results[0].choices?.first.delta?.content, equals(expectedText));
 
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         final messages = requestBody['messages'] as List<dynamic>;
-        expect((messages[0] as Map<String, dynamic>)['content'],
-            equals('Transcribe this audio.'));
+        expect(
+          (messages[0] as Map<String, dynamic>)['content'],
+          equals('Transcribe this audio.'),
+        );
       });
 
       test('should use custom max completion tokens', () async {
@@ -240,8 +248,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['max_tokens'], equals(8000));
@@ -269,8 +278,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody['language'], equals('de'));
@@ -298,8 +308,9 @@ void main() {
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody.containsKey('language'), isFalse);
@@ -314,8 +325,13 @@ void main() {
                 baseUrl: baseUrl,
               )
               .toList(),
-          throwsA(isA<ArgumentError>().having(
-              (e) => e.message, 'message', 'Model name cannot be empty')),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              'Model name cannot be empty',
+            ),
+          ),
         );
       });
 
@@ -328,8 +344,13 @@ void main() {
                 baseUrl: '',
               )
               .toList(),
-          throwsA(isA<ArgumentError>()
-              .having((e) => e.message, 'message', 'Base URL cannot be empty')),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              'Base URL cannot be empty',
+            ),
+          ),
         );
       });
 
@@ -342,8 +363,13 @@ void main() {
                 baseUrl: baseUrl,
               )
               .toList(),
-          throwsA(isA<ArgumentError>().having(
-              (e) => e.message, 'message', 'Audio payload cannot be empty')),
+          throwsA(
+            isA<ArgumentError>().having(
+              (e) => e.message,
+              'message',
+              'Audio payload cannot be empty',
+            ),
+          ),
         );
       });
 
@@ -363,33 +389,38 @@ void main() {
 
         expect(
           transcriptionStream.toList(),
-          throwsA(isA<VoxtralInferenceException>()
-              .having((e) => e.message, 'message', contains('HTTP 500'))
-              .having((e) => e.statusCode, 'statusCode', 500)),
+          throwsA(
+            isA<VoxtralInferenceException>()
+                .having((e) => e.message, 'message', contains('HTTP 500'))
+                .having((e) => e.statusCode, 'statusCode', 500),
+          ),
         );
       });
 
       test(
-          'should throw VoxtralModelNotAvailableException when model is missing',
-          () async {
-        final stream = Stream.fromIterable([utf8.encode('Model not found')]);
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => http.StreamedResponse(stream, 404),
-        );
+        'should throw VoxtralModelNotAvailableException when model is missing',
+        () async {
+          final stream = Stream.fromIterable([utf8.encode('Model not found')]);
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => http.StreamedResponse(stream, 404),
+          );
 
-        final transcriptionStream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-        );
+          final transcriptionStream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+          );
 
-        expect(
-          transcriptionStream.toList(),
-          throwsA(isA<VoxtralModelNotAvailableException>()
-              .having((e) => e.modelName, 'modelName', model)
-              .having((e) => e.statusCode, 'statusCode', 404)),
-        );
-      });
+          expect(
+            transcriptionStream.toList(),
+            throwsA(
+              isA<VoxtralModelNotAvailableException>()
+                  .having((e) => e.modelName, 'modelName', model)
+                  .having((e) => e.statusCode, 'statusCode', 404),
+            ),
+          );
+        },
+      );
 
       test('should handle timeout', () {
         fakeAsync((FakeAsync async) {
@@ -409,12 +440,15 @@ void main() {
             timeout: const Duration(milliseconds: 100),
           );
 
-          stream.toList().then((_) {
-            completed = true;
-          }, onError: (Object e) {
-            error = e;
-            completed = true;
-          });
+          stream.toList().then(
+            (_) {
+              completed = true;
+            },
+            onError: (Object e) {
+              error = e;
+              completed = true;
+            },
+          );
 
           // Drive time to trigger timeout deterministically via helper
           final plan = buildRetryBackoffPlan(
@@ -533,18 +567,20 @@ data: [DONE]
                 'index': 0,
                 'message': {
                   'role': 'assistant',
-                  'content': 'Transcribed text.'
+                  'content': 'Transcribed text.',
                 },
                 'finish_reason': 'stop',
-              }
+              },
             ],
           };
 
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer(
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
             (_) async => http.Response(jsonEncode(responseBody), 200),
           );
 
@@ -561,27 +597,33 @@ data: [DONE]
 
           // Assert
           expect(results.length, equals(1));
-          expect(results[0].choices?.first.delta?.content,
-              equals('Transcribed text.'));
+          expect(
+            results[0].choices?.first.delta?.content,
+            equals('Transcribed text.'),
+          );
           expect(results[0].id, equals('chatcmpl-test'));
 
           // Verify request body has stream: false
-          final captured = verify(() => mockHttpClient.post(
-                captureAny(),
-                headers: any(named: 'headers'),
-                body: captureAny(named: 'body'),
-              )).captured;
+          final captured = verify(
+            () => mockHttpClient.post(
+              captureAny(),
+              headers: any(named: 'headers'),
+              body: captureAny(named: 'body'),
+            ),
+          ).captured;
           final requestBody =
               jsonDecode(captured[1] as String) as Map<String, dynamic>;
           expect(requestBody['stream'], isFalse);
         });
 
         test('should handle 404 error in non-streaming mode', () async {
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer(
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
             (_) async => http.Response('Model not found', 404),
           );
 
@@ -594,17 +636,24 @@ data: [DONE]
 
           expect(
             stream.toList(),
-            throwsA(isA<VoxtralModelNotAvailableException>()
-                .having((e) => e.statusCode, 'statusCode', 404)),
+            throwsA(
+              isA<VoxtralModelNotAvailableException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                404,
+              ),
+            ),
           );
         });
 
         test('should handle HTTP error in non-streaming mode', () async {
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer(
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
             (_) async => http.Response('Server error', 500),
           );
 
@@ -617,8 +666,13 @@ data: [DONE]
 
           expect(
             stream.toList(),
-            throwsA(isA<VoxtralInferenceException>()
-                .having((e) => e.statusCode, 'statusCode', 500)),
+            throwsA(
+              isA<VoxtralInferenceException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                500,
+              ),
+            ),
           );
         });
 
@@ -630,11 +684,13 @@ data: [DONE]
             'choices': <dynamic>[],
           };
 
-          when(() => mockHttpClient.post(
-                any(),
-                headers: any(named: 'headers'),
-                body: any(named: 'body'),
-              )).thenAnswer(
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer(
             (_) async => http.Response(jsonEncode(responseBody), 200),
           );
 
@@ -649,46 +705,52 @@ data: [DONE]
           expect(results, isEmpty);
         });
 
-        test('should use fallback id when missing in non-streaming mode',
-            () async {
-          final responseBody = {
-            'object': 'chat.completion',
-            'choices': [
-              {
-                'index': 0,
-                'message': {'role': 'assistant', 'content': 'Text'},
-                'finish_reason': 'stop',
-              }
-            ],
-          };
+        test(
+          'should use fallback id when missing in non-streaming mode',
+          () async {
+            final responseBody = {
+              'object': 'chat.completion',
+              'choices': [
+                {
+                  'index': 0,
+                  'message': {'role': 'assistant', 'content': 'Text'},
+                  'finish_reason': 'stop',
+                },
+              ],
+            };
 
-          when(() => mockHttpClient.post(
+            when(
+              () => mockHttpClient.post(
                 any(),
                 headers: any(named: 'headers'),
                 body: any(named: 'body'),
-              )).thenAnswer(
-            (_) async => http.Response(jsonEncode(responseBody), 200),
-          );
+              ),
+            ).thenAnswer(
+              (_) async => http.Response(jsonEncode(responseBody), 200),
+            );
 
-          final stream = repository.transcribeAudio(
-            model: model,
-            audioBase64: audioBase64,
-            baseUrl: baseUrl,
-            stream: false,
-          );
+            final stream = repository.transcribeAudio(
+              model: model,
+              audioBase64: audioBase64,
+              baseUrl: baseUrl,
+              stream: false,
+            );
 
-          final results = await stream.toList();
-          expect(results.length, equals(1));
-          expect(results[0].id, startsWith('voxtral-'));
-        });
+            final results = await stream.toList();
+            expect(results.length, equals(1));
+            expect(results[0].id, startsWith('voxtral-'));
+          },
+        );
 
         test('should handle timeout in non-streaming mode', () {
           fakeAsync((FakeAsync async) {
-            when(() => mockHttpClient.post(
-                  any(),
-                  headers: any(named: 'headers'),
-                  body: any(named: 'body'),
-                )).thenAnswer((_) async {
+            when(
+              () => mockHttpClient.post(
+                any(),
+                headers: any(named: 'headers'),
+                body: any(named: 'body'),
+              ),
+            ).thenAnswer((_) async {
               await Future<void>.delayed(const Duration(seconds: 2));
               return http.Response('{}', 200);
             });
@@ -703,12 +765,15 @@ data: [DONE]
               timeout: const Duration(milliseconds: 100),
             );
 
-            stream.toList().then((_) {
-              completed = true;
-            }, onError: (Object e) {
-              error = e;
-              completed = true;
-            });
+            stream.toList().then(
+              (_) {
+                completed = true;
+              },
+              onError: (Object e) {
+                error = e;
+                completed = true;
+              },
+            );
 
             final plan = buildRetryBackoffPlan(
               maxRetries: 1,
@@ -770,8 +835,9 @@ data: [DONE]
 
       test('should return unhealthy status on network error', () async {
         // Arrange
-        when(() => mockHttpClient.get(any()))
-            .thenThrow(Exception('Network error'));
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenThrow(Exception('Network error'));
 
         // Act
         final result = await repository.checkHealth();
@@ -784,51 +850,68 @@ data: [DONE]
     group('downloadModel', () {
       test('should download model successfully', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              jsonEncode({'status': 'success'}),
-              200,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({'status': 'success'}),
+            200,
+          ),
+        );
 
         // Act & Assert - should not throw
         await repository.downloadModel();
 
         // Verify the request
-        final captured = verify(() => mockHttpClient.post(
-              captureAny(),
-              headers: any(named: 'headers'),
-              body: captureAny(named: 'body'),
-            )).captured;
+        final captured = verify(
+          () => mockHttpClient.post(
+            captureAny(),
+            headers: any(named: 'headers'),
+            body: captureAny(named: 'body'),
+          ),
+        ).captured;
 
         final uri = captured[0] as Uri;
         expect(uri.path, contains('v1/models/pull'));
 
         final requestBody =
             jsonDecode(captured[1] as String) as Map<String, dynamic>;
-        expect(requestBody['model_name'],
-            equals('mistralai/Voxtral-Mini-3B-2507'));
+        expect(
+          requestBody['model_name'],
+          equals('mistralai/Voxtral-Mini-3B-2507'),
+        );
         expect(requestBody['stream'], isFalse);
       });
 
       test('should throw on download failure', () async {
         // Arrange
-        when(() => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            )).thenAnswer((_) async => http.Response(
-              'Download failed',
-              500,
-            ));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            'Download failed',
+            500,
+          ),
+        );
 
         // Act & Assert
         expect(
           () => repository.downloadModel(),
-          throwsA(isA<VoxtralInferenceException>()
-              .having((e) => e.statusCode, 'statusCode', 500)),
+          throwsA(
+            isA<VoxtralInferenceException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              500,
+            ),
+          ),
         );
       });
     });
@@ -841,8 +924,10 @@ data: [DONE]
           originalError: Exception('Original'),
         );
 
-        expect(exception.toString(),
-            equals('VoxtralInferenceException: Test error'));
+        expect(
+          exception.toString(),
+          equals('VoxtralInferenceException: Test error'),
+        );
         expect(exception.message, equals('Test error'));
         expect(exception.statusCode, equals(404));
         expect(exception.originalError, isA<Exception>());
@@ -857,8 +942,10 @@ data: [DONE]
           statusCode: 404,
         );
 
-        expect(exception.toString(),
-            equals('VoxtralModelNotAvailableException: Model not available'));
+        expect(
+          exception.toString(),
+          equals('VoxtralModelNotAvailableException: Model not available'),
+        );
         expect(exception.modelName, equals('voxtral-mini'));
         expect(exception.statusCode, equals(404));
       });
@@ -991,8 +1078,9 @@ data: [DONE]
         ).thenReturn(null);
 
         // Throw a StateError to trigger the generic catch block
-        when(() => mockHttpClient.send(any()))
-            .thenThrow(StateError('Unexpected error'));
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenThrow(StateError('Unexpected error'));
 
         // Act & Assert
         final transcriptionStream = repository.transcribeAudio(
@@ -1003,8 +1091,13 @@ data: [DONE]
 
         expect(
           transcriptionStream.toList(),
-          throwsA(isA<VoxtralInferenceException>()
-              .having((e) => e.message, 'message', contains('Unexpected'))),
+          throwsA(
+            isA<VoxtralInferenceException>().having(
+              (e) => e.message,
+              'message',
+              contains('Unexpected'),
+            ),
+          ),
         );
 
         // Wait for exception to be logged
@@ -1026,38 +1119,39 @@ data: [DONE]
       const baseUrl = 'http://localhost:11344';
       const audioBase64 = 'base64_audio_data';
 
-      test('should use fallback id and created when missing from response',
-          () async {
-        // Arrange - response without id and created
-        const sseData = '''
+      test(
+        'should use fallback id and created when missing from response',
+        () async {
+          // Arrange - response without id and created
+          const sseData = '''
 data: {"choices": [{"delta": {"content": "Transcribed text"}, "index": 0, "finish_reason": null}], "object": "chat.completion.chunk"}
 
 data: [DONE]
 
 ''';
 
-        final stream = Stream.fromIterable([utf8.encode(sseData)]);
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => http.StreamedResponse(stream, 200),
-        );
+          final stream = Stream.fromIterable([utf8.encode(sseData)]);
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => http.StreamedResponse(stream, 200),
+          );
 
-        // Act
-        final transcriptionStream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-        );
+          // Act
+          final transcriptionStream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+          );
 
-        final results = await transcriptionStream.toList();
+          final results = await transcriptionStream.toList();
 
-        // Assert - should generate fallback id starting with 'voxtral-'
-        expect(results.length, equals(1));
-        expect(results[0].id, startsWith('voxtral-'));
-        expect(results[0].created, isPositive);
-      });
+          // Assert - should generate fallback id starting with 'voxtral-'
+          expect(results.length, equals(1));
+          expect(results[0].id, startsWith('voxtral-'));
+          expect(results[0].created, isPositive);
+        },
+      );
 
-      test('should handle unknown finish_reason with orElse fallback',
-          () async {
+      test('should handle unknown finish_reason with orElse fallback', () async {
         // Arrange - response with unknown finish_reason
         final events = [
           {
@@ -1069,7 +1163,7 @@ data: [DONE]
                 'index': 0,
                 'delta': {'content': 'Text'},
                 'finish_reason': 'unknown_reason', // Not a valid enum value
-              }
+              },
             ],
           },
         ];
@@ -1093,8 +1187,10 @@ data: [DONE]
 
         // Assert - should fallback to 'stop' for unknown finish reason
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.finishReason,
-            equals(ChatCompletionFinishReason.stop));
+        expect(
+          results[0].choices?.first.finishReason,
+          equals(ChatCompletionFinishReason.stop),
+        );
       });
 
       test('should handle stop signal with empty content', () async {
@@ -1149,8 +1245,9 @@ data: [DONE]
         await stream.toList();
 
         // Assert
-        final captured =
-            verify(() => mockHttpClient.send(captureAny())).captured;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
         final request = captured.first as http.Request;
         final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
         expect(requestBody.containsKey('language'), isFalse);
@@ -1174,12 +1271,15 @@ data: [DONE]
             timeout: const Duration(minutes: 1), // Exactly 1 minute
           );
 
-          stream.toList().then((_) {
-            completed = true;
-          }, onError: (Object e) {
-            error = e;
-            completed = true;
-          });
+          stream.toList().then(
+            (_) {
+              completed = true;
+            },
+            onError: (Object e) {
+              error = e;
+              completed = true;
+            },
+          );
 
           // Drive time to trigger timeout
           final plan = buildRetryBackoffPlan(
@@ -1323,48 +1423,64 @@ data: [DONE]
     });
 
     group('downloadModel edge cases', () {
-      test('should wrap network exception in VoxtralInferenceException',
-          () async {
-        // Arrange - throw a non-VoxtralInferenceException
-        when(() => mockHttpClient.post(
+      test(
+        'should wrap network exception in VoxtralInferenceException',
+        () async {
+          // Arrange - throw a non-VoxtralInferenceException
+          when(
+            () => mockHttpClient.post(
               any(),
               headers: any(named: 'headers'),
               body: any(named: 'body'),
-            )).thenThrow(Exception('Network timeout'));
+            ),
+          ).thenThrow(Exception('Network timeout'));
 
-        // Act & Assert
-        expect(
-          () => repository.downloadModel(),
-          throwsA(isA<VoxtralInferenceException>()
-              .having((e) => e.message, 'message', contains('Network timeout'))
-              .having((e) => e.originalError, 'originalError', isA<Exception>())
-              .having((e) => e.statusCode, 'statusCode', isNull)),
-        );
-      });
+          // Act & Assert
+          expect(
+            () => repository.downloadModel(),
+            throwsA(
+              isA<VoxtralInferenceException>()
+                  .having(
+                    (e) => e.message,
+                    'message',
+                    contains('Network timeout'),
+                  )
+                  .having(
+                    (e) => e.originalError,
+                    'originalError',
+                    isA<Exception>(),
+                  )
+                  .having((e) => e.statusCode, 'statusCode', isNull),
+            ),
+          );
+        },
+      );
     });
 
     group('checkHealth edge cases', () {
-      test('should handle missing optional fields in health response',
-          () async {
-        // Arrange - response with only status field
-        final responseBody = {
-          'status': 'healthy',
-        };
+      test(
+        'should handle missing optional fields in health response',
+        () async {
+          // Arrange - response with only status field
+          final responseBody = {
+            'status': 'healthy',
+          };
 
-        when(() => mockHttpClient.get(any())).thenAnswer(
-          (_) async => http.Response(jsonEncode(responseBody), 200),
-        );
+          when(() => mockHttpClient.get(any())).thenAnswer(
+            (_) async => http.Response(jsonEncode(responseBody), 200),
+          );
 
-        // Act
-        final result = await repository.checkHealth();
+          // Act
+          final result = await repository.checkHealth();
 
-        // Assert - should use default values for missing fields
-        expect(result.isHealthy, isTrue);
-        expect(result.modelAvailable, isFalse); // Default
-        expect(result.modelLoaded, isFalse); // Default
-        expect(result.device, equals('unknown')); // Default
-        expect(result.maxAudioMinutes, equals(30)); // Default
-      });
+          // Assert - should use default values for missing fields
+          expect(result.isHealthy, isTrue);
+          expect(result.modelAvailable, isFalse); // Default
+          expect(result.modelLoaded, isFalse); // Default
+          expect(result.device, equals('unknown')); // Default
+          expect(result.maxAudioMinutes, equals(30)); // Default
+        },
+      );
 
       test('should handle non-healthy status', () async {
         // Arrange - response with unhealthy status

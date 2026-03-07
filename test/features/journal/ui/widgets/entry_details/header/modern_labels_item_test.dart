@@ -113,12 +113,15 @@ void main() {
       (invocation) =>
           invocation.positionalArguments.first as List<LabelDefinition>,
     );
-    when(() => cacheService.getLabelById(testLabelDefinition1.id))
-        .thenReturn(testLabelDefinition1);
-    when(() => cacheService.getLabelById(testLabelDefinition2.id))
-        .thenReturn(testLabelDefinition2);
-    when(() => cacheService.sortedLabels)
-        .thenReturn([testLabelDefinition1, testLabelDefinition2]);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition1.id),
+    ).thenReturn(testLabelDefinition1);
+    when(
+      () => cacheService.getLabelById(testLabelDefinition2.id),
+    ).thenReturn(testLabelDefinition2);
+    when(
+      () => cacheService.sortedLabels,
+    ).thenReturn([testLabelDefinition1, testLabelDefinition2]);
   });
 
   tearDown(() async {

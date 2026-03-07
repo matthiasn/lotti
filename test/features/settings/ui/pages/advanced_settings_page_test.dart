@@ -22,8 +22,9 @@ void main() {
   final mockJournalDb = MockJournalDb();
 
   setUp(() {
-    when(() => mockJournalDb.watchConfigFlag(any()))
-        .thenAnswer((_) => Stream.value(true));
+    when(
+      () => mockJournalDb.watchConfigFlag(any()),
+    ).thenAnswer((_) => Stream.value(true));
     when(mockSyncDatabase.watchOutboxCount).thenAnswer((_) => Stream.value(n));
 
     getIt
@@ -38,8 +39,9 @@ void main() {
   tearDown(getIt.reset);
 
   group('AdvancedSettingsPage', () {
-    testWidgets('renders advanced-only cards (no sync items here)',
-        (tester) async {
+    testWidgets('renders advanced-only cards (no sync items here)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const Material(child: AdvancedSettingsPage()),
@@ -61,7 +63,9 @@ void main() {
         findsOneWidget,
       );
       expect(
-          find.text(context.messages.settingsMaintenanceTitle), findsOneWidget);
+        find.text(context.messages.settingsMaintenanceTitle),
+        findsOneWidget,
+      );
       expect(find.text(context.messages.settingsAboutTitle), findsOneWidget);
 
       // Verify sync-related items moved away from Advanced
@@ -79,8 +83,10 @@ void main() {
       );
       await tester.pumpAndSettle();
       final context = tester.element(find.byType(AdvancedSettingsPage));
-      expect(find.text(context.messages.settingsHealthImportTitle),
-          findsOneWidget);
+      expect(
+        find.text(context.messages.settingsHealthImportTitle),
+        findsOneWidget,
+      );
     });
 
     testWidgets('hides health import card on desktop', (tester) async {
@@ -93,7 +99,9 @@ void main() {
       await tester.pumpAndSettle();
       final context = tester.element(find.byType(AdvancedSettingsPage));
       expect(
-          find.text(context.messages.settingsHealthImportTitle), findsNothing);
+        find.text(context.messages.settingsHealthImportTitle),
+        findsNothing,
+      );
     });
   });
 }

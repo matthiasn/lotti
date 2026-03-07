@@ -61,8 +61,9 @@ void main() {
       selectedTaskStatuses: {'OPEN'},
     );
 
-    when(() => mockEntitiesCacheService.sortedCategories)
-        .thenReturn(mockCategories);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn(mockCategories);
     when(() => mockEntitiesCacheService.sortedLabels).thenReturn(mockLabels);
 
     getIt.allowReassignment = true;
@@ -78,8 +79,9 @@ void main() {
       child: ProviderScope(
         overrides: [
           journalPageScopeProvider.overrideWithValue(true),
-          journalPageControllerProvider(true)
-              .overrideWith(() => fakeController),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
         ],
         child: const Scaffold(
           body: SingleChildScrollView(

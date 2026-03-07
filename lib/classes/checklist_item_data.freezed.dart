@@ -14,80 +14,47 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$ChecklistItemData {
-  String get title;
-  bool get isChecked;
-  List<String> get linkedChecklists;
-  bool get isArchived;
-  String? get id;
-  @JsonKey(unknownEnumValue: CheckedBySource.user)
-  CheckedBySource get checkedBy;
-  DateTime? get checkedAt;
 
-  /// Create a copy of ChecklistItemData
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $ChecklistItemDataCopyWith<ChecklistItemData> get copyWith =>
-      _$ChecklistItemDataCopyWithImpl<ChecklistItemData>(
-          this as ChecklistItemData, _$identity);
+ String get title; bool get isChecked; List<String> get linkedChecklists; bool get isArchived; String? get id;@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource get checkedBy; DateTime? get checkedAt;
+/// Create a copy of ChecklistItemData
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ChecklistItemDataCopyWith<ChecklistItemData> get copyWith => _$ChecklistItemDataCopyWithImpl<ChecklistItemData>(this as ChecklistItemData, _$identity);
 
   /// Serializes this ChecklistItemData to a JSON map.
   Map<String, dynamic> toJson();
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is ChecklistItemData &&
-            (identical(other.title, title) || other.title == title) &&
-            (identical(other.isChecked, isChecked) ||
-                other.isChecked == isChecked) &&
-            const DeepCollectionEquality()
-                .equals(other.linkedChecklists, linkedChecklists) &&
-            (identical(other.isArchived, isArchived) ||
-                other.isArchived == isArchived) &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.checkedBy, checkedBy) ||
-                other.checkedBy == checkedBy) &&
-            (identical(other.checkedAt, checkedAt) ||
-                other.checkedAt == checkedAt));
-  }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      title,
-      isChecked,
-      const DeepCollectionEquality().hash(linkedChecklists),
-      isArchived,
-      id,
-      checkedBy,
-      checkedAt);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other.linkedChecklists, linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt));
+}
 
-  @override
-  String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(linkedChecklists),isArchived,id,checkedBy,checkedAt);
+
+@override
+String toString() {
+  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $ChecklistItemDataCopyWith<$Res> {
-  factory $ChecklistItemDataCopyWith(
-          ChecklistItemData value, $Res Function(ChecklistItemData) _then) =
-      _$ChecklistItemDataCopyWithImpl;
-  @useResult
-  $Res call(
-      {String title,
-      bool isChecked,
-      List<String> linkedChecklists,
-      bool isArchived,
-      String? id,
-      @JsonKey(unknownEnumValue: CheckedBySource.user)
-      CheckedBySource checkedBy,
-      DateTime? checkedAt});
-}
+abstract mixin class $ChecklistItemDataCopyWith<$Res>  {
+  factory $ChecklistItemDataCopyWith(ChecklistItemData value, $Res Function(ChecklistItemData) _then) = _$ChecklistItemDataCopyWithImpl;
+@useResult
+$Res call({
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource checkedBy, DateTime? checkedAt
+});
 
+
+
+
+}
 /// @nodoc
 class _$ChecklistItemDataCopyWithImpl<$Res>
     implements $ChecklistItemDataCopyWith<$Res> {
@@ -96,350 +63,215 @@ class _$ChecklistItemDataCopyWithImpl<$Res>
   final ChecklistItemData _self;
   final $Res Function(ChecklistItemData) _then;
 
-  /// Create a copy of ChecklistItemData
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? title = null,
-    Object? isChecked = null,
-    Object? linkedChecklists = null,
-    Object? isArchived = null,
-    Object? id = freezed,
-    Object? checkedBy = null,
-    Object? checkedAt = freezed,
-  }) {
-    return _then(_self.copyWith(
-      title: null == title
-          ? _self.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      isChecked: null == isChecked
-          ? _self.isChecked
-          : isChecked // ignore: cast_nullable_to_non_nullable
-              as bool,
-      linkedChecklists: null == linkedChecklists
-          ? _self.linkedChecklists
-          : linkedChecklists // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      isArchived: null == isArchived
-          ? _self.isArchived
-          : isArchived // ignore: cast_nullable_to_non_nullable
-              as bool,
-      id: freezed == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String?,
-      checkedBy: null == checkedBy
-          ? _self.checkedBy
-          : checkedBy // ignore: cast_nullable_to_non_nullable
-              as CheckedBySource,
-      checkedAt: freezed == checkedAt
-          ? _self.checkedAt
-          : checkedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
-  }
+/// Create a copy of ChecklistItemData
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,}) {
+  return _then(_self.copyWith(
+title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool,linkedChecklists: null == linkedChecklists ? _self.linkedChecklists : linkedChecklists // ignore: cast_nullable_to_non_nullable
+as List<String>,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
+as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
+as CheckedBySource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
 }
+
+}
+
 
 /// Adds pattern-matching-related methods to [ChecklistItemData].
 extension ChecklistItemDataPatterns on ChecklistItemData {
-  /// A variant of `map` that fallback to returning `orElse`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>(
-    TResult Function(_ChecklistItemData value)? $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData() when $default != null:
-        return $default(_that);
-      case _:
-        return orElse();
-    }
-  }
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _ChecklistItemData value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _ChecklistItemData() when $default != null:
+return $default(_that);case _:
+  return orElse();
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// Callbacks receives the raw object, upcasted.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case final Subclass2 value:
-  ///     return ...;
-  /// }
-  /// ```
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>(
-    TResult Function(_ChecklistItemData value) $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData():
-        return $default(_that);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _ChecklistItemData value)  $default,){
+final _that = this;
+switch (_that) {
+case _ChecklistItemData():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
 
-  /// A variant of `map` that fallback to returning `null`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_ChecklistItemData value)? $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData() when $default != null:
-        return $default(_that);
-      case _:
-        return null;
-    }
-  }
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _ChecklistItemData value)?  $default,){
+final _that = this;
+switch (_that) {
+case _ChecklistItemData() when $default != null:
+return $default(_that);case _:
+  return null;
 
-  /// A variant of `when` that fallback to an `orElse` callback.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>(
-    TResult Function(
-            String title,
-            bool isChecked,
-            List<String> linkedChecklists,
-            bool isArchived,
-            String? id,
-            @JsonKey(unknownEnumValue: CheckedBySource.user)
-            CheckedBySource checkedBy,
-            DateTime? checkedAt)?
-        $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData() when $default != null:
-        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
-      case _:
-        return orElse();
-    }
-  }
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _ChecklistItemData() when $default != null:
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
+  return orElse();
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// As opposed to `map`, this offers destructuring.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case Subclass2(:final field2):
-  ///     return ...;
-  /// }
-  /// ```
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>(
-    TResult Function(
-            String title,
-            bool isChecked,
-            List<String> linkedChecklists,
-            bool isArchived,
-            String? id,
-            @JsonKey(unknownEnumValue: CheckedBySource.user)
-            CheckedBySource checkedBy,
-            DateTime? checkedAt)
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData():
-        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)  $default,) {final _that = this;
+switch (_that) {
+case _ChecklistItemData():
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
+  throw StateError('Unexpected subclass');
 
-  /// A variant of `when` that fallback to returning `null`
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(
-            String title,
-            bool isChecked,
-            List<String> linkedChecklists,
-            bool isArchived,
-            String? id,
-            @JsonKey(unknownEnumValue: CheckedBySource.user)
-            CheckedBySource checkedBy,
-            DateTime? checkedAt)?
-        $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _ChecklistItemData() when $default != null:
-        return $default(_that.title, _that.isChecked, _that.linkedChecklists,
-            _that.isArchived, _that.id, _that.checkedBy, _that.checkedAt);
-      case _:
-        return null;
-    }
-  }
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)?  $default,) {final _that = this;
+switch (_that) {
+case _ChecklistItemData() when $default != null:
+return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class _ChecklistItemData implements ChecklistItemData {
-  const _ChecklistItemData(
-      {required this.title,
-      required this.isChecked,
-      required final List<String> linkedChecklists,
-      this.isArchived = false,
-      this.id,
-      @JsonKey(unknownEnumValue: CheckedBySource.user)
-      this.checkedBy = CheckedBySource.user,
-      this.checkedAt})
-      : _linkedChecklists = linkedChecklists;
-  factory _ChecklistItemData.fromJson(Map<String, dynamic> json) =>
-      _$ChecklistItemDataFromJson(json);
+  const _ChecklistItemData({required this.title, required this.isChecked, required final  List<String> linkedChecklists, this.isArchived = false, this.id, @JsonKey(unknownEnumValue: CheckedBySource.user) this.checkedBy = CheckedBySource.user, this.checkedAt}): _linkedChecklists = linkedChecklists;
+  factory _ChecklistItemData.fromJson(Map<String, dynamic> json) => _$ChecklistItemDataFromJson(json);
 
-  @override
-  final String title;
-  @override
-  final bool isChecked;
-  final List<String> _linkedChecklists;
-  @override
-  List<String> get linkedChecklists {
-    if (_linkedChecklists is EqualUnmodifiableListView)
-      return _linkedChecklists;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_linkedChecklists);
-  }
+@override final  String title;
+@override final  bool isChecked;
+ final  List<String> _linkedChecklists;
+@override List<String> get linkedChecklists {
+  if (_linkedChecklists is EqualUnmodifiableListView) return _linkedChecklists;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_linkedChecklists);
+}
 
-  @override
-  @JsonKey()
-  final bool isArchived;
-  @override
-  final String? id;
-  @override
-  @JsonKey(unknownEnumValue: CheckedBySource.user)
-  final CheckedBySource checkedBy;
-  @override
-  final DateTime? checkedAt;
+@override@JsonKey() final  bool isArchived;
+@override final  String? id;
+@override@JsonKey(unknownEnumValue: CheckedBySource.user) final  CheckedBySource checkedBy;
+@override final  DateTime? checkedAt;
 
-  /// Create a copy of ChecklistItemData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  _$ChecklistItemDataCopyWith<_ChecklistItemData> get copyWith =>
-      __$ChecklistItemDataCopyWithImpl<_ChecklistItemData>(this, _$identity);
+/// Create a copy of ChecklistItemData
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$ChecklistItemDataCopyWith<_ChecklistItemData> get copyWith => __$ChecklistItemDataCopyWithImpl<_ChecklistItemData>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$ChecklistItemDataToJson(
-      this,
-    );
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$ChecklistItemDataToJson(this, );
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _ChecklistItemData &&
-            (identical(other.title, title) || other.title == title) &&
-            (identical(other.isChecked, isChecked) ||
-                other.isChecked == isChecked) &&
-            const DeepCollectionEquality()
-                .equals(other._linkedChecklists, _linkedChecklists) &&
-            (identical(other.isArchived, isArchived) ||
-                other.isArchived == isArchived) &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.checkedBy, checkedBy) ||
-                other.checkedBy == checkedBy) &&
-            (identical(other.checkedAt, checkedAt) ||
-                other.checkedAt == checkedAt));
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChecklistItemData&&(identical(other.title, title) || other.title == title)&&(identical(other.isChecked, isChecked) || other.isChecked == isChecked)&&const DeepCollectionEquality().equals(other._linkedChecklists, _linkedChecklists)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.id, id) || other.id == id)&&(identical(other.checkedBy, checkedBy) || other.checkedBy == checkedBy)&&(identical(other.checkedAt, checkedAt) || other.checkedAt == checkedAt));
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      title,
-      isChecked,
-      const DeepCollectionEquality().hash(_linkedChecklists),
-      isArchived,
-      id,
-      checkedBy,
-      checkedAt);
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,title,isChecked,const DeepCollectionEquality().hash(_linkedChecklists),isArchived,id,checkedBy,checkedAt);
 
-  @override
-  String toString() {
-    return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
-  }
+@override
+String toString() {
+  return 'ChecklistItemData(title: $title, isChecked: $isChecked, linkedChecklists: $linkedChecklists, isArchived: $isArchived, id: $id, checkedBy: $checkedBy, checkedAt: $checkedAt)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class _$ChecklistItemDataCopyWith<$Res>
-    implements $ChecklistItemDataCopyWith<$Res> {
-  factory _$ChecklistItemDataCopyWith(
-          _ChecklistItemData value, $Res Function(_ChecklistItemData) _then) =
-      __$ChecklistItemDataCopyWithImpl;
-  @override
-  @useResult
-  $Res call(
-      {String title,
-      bool isChecked,
-      List<String> linkedChecklists,
-      bool isArchived,
-      String? id,
-      @JsonKey(unknownEnumValue: CheckedBySource.user)
-      CheckedBySource checkedBy,
-      DateTime? checkedAt});
-}
+abstract mixin class _$ChecklistItemDataCopyWith<$Res> implements $ChecklistItemDataCopyWith<$Res> {
+  factory _$ChecklistItemDataCopyWith(_ChecklistItemData value, $Res Function(_ChecklistItemData) _then) = __$ChecklistItemDataCopyWithImpl;
+@override @useResult
+$Res call({
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource checkedBy, DateTime? checkedAt
+});
 
+
+
+
+}
 /// @nodoc
 class __$ChecklistItemDataCopyWithImpl<$Res>
     implements _$ChecklistItemDataCopyWith<$Res> {
@@ -448,50 +280,22 @@ class __$ChecklistItemDataCopyWithImpl<$Res>
   final _ChecklistItemData _self;
   final $Res Function(_ChecklistItemData) _then;
 
-  /// Create a copy of ChecklistItemData
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? title = null,
-    Object? isChecked = null,
-    Object? linkedChecklists = null,
-    Object? isArchived = null,
-    Object? id = freezed,
-    Object? checkedBy = null,
-    Object? checkedAt = freezed,
-  }) {
-    return _then(_ChecklistItemData(
-      title: null == title
-          ? _self.title
-          : title // ignore: cast_nullable_to_non_nullable
-              as String,
-      isChecked: null == isChecked
-          ? _self.isChecked
-          : isChecked // ignore: cast_nullable_to_non_nullable
-              as bool,
-      linkedChecklists: null == linkedChecklists
-          ? _self._linkedChecklists
-          : linkedChecklists // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      isArchived: null == isArchived
-          ? _self.isArchived
-          : isArchived // ignore: cast_nullable_to_non_nullable
-              as bool,
-      id: freezed == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String?,
-      checkedBy: null == checkedBy
-          ? _self.checkedBy
-          : checkedBy // ignore: cast_nullable_to_non_nullable
-              as CheckedBySource,
-      checkedAt: freezed == checkedAt
-          ? _self.checkedAt
-          : checkedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-    ));
-  }
+/// Create a copy of ChecklistItemData
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? isChecked = null,Object? linkedChecklists = null,Object? isArchived = null,Object? id = freezed,Object? checkedBy = null,Object? checkedAt = freezed,}) {
+  return _then(_ChecklistItemData(
+title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String,isChecked: null == isChecked ? _self.isChecked : isChecked // ignore: cast_nullable_to_non_nullable
+as bool,linkedChecklists: null == linkedChecklists ? _self._linkedChecklists : linkedChecklists // ignore: cast_nullable_to_non_nullable
+as List<String>,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
+as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
+as CheckedBySource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,
+  ));
+}
+
+
 }
 
 // dart format on

@@ -33,10 +33,10 @@ class TimeSeriesLineChart extends StatelessWidget {
     final gridInterval = rangeInDays > 182
         ? 30
         : rangeInDays > 92
-            ? 14
-            : rangeInDays > 30
-                ? 7
-                : 1;
+        ? 14
+        : rangeInDays > 30
+        ? 7
+        : 1;
 
     final spots = data
         .map(
@@ -95,8 +95,9 @@ class TimeSeriesLineChart extends StatelessWidget {
               tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
-                  final formattedValue =
-                      NumberFormat('#,###.##').format(spot.y);
+                  final formattedValue = NumberFormat(
+                    '#,###.##',
+                  ).format(spot.y);
 
                   return LineTooltipItem(
                     '',

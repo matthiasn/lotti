@@ -89,8 +89,8 @@ void main() {
         name: 'update_task_due_date',
         arguments: jsonEncode({
           'dueDate': dueDate,
-          if (reason != null) 'reason': reason,
-          if (confidence != null) 'confidence': confidence,
+          'reason': ?reason,
+          'confidence': ?confidence,
         }),
       ),
     );
@@ -106,8 +106,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         Task? capturedTask;
         final handler = TaskDueDateHandler(
@@ -142,8 +143,9 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-02-01');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -157,33 +159,36 @@ void main() {
         expect(handler.task.data.due, DateTime(2024, 2));
       });
 
-      test('should work without ConversationManager (for unit testing)',
-          () async {
-        final task = createTask();
-        final toolCall = createDueDateToolCall(dueDate: '2024-03-15');
+      test(
+        'should work without ConversationManager (for unit testing)',
+        () async {
+          final task = createTask();
+          final toolCall = createDueDateToolCall(dueDate: '2024-03-15');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        // Call without manager
-        final result = await handler.processToolCall(toolCall);
+          // Call without manager
+          final result = await handler.processToolCall(toolCall);
 
-        expect(result.success, isTrue);
-        expect(result.requestedDate, DateTime(2024, 3, 15));
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-        // Manager methods should not be called
-        verifyNever(
-          () => mockManager.addToolResponse(
-            toolCallId: any(named: 'toolCallId'),
-            response: any(named: 'response'),
-          ),
-        );
-      });
+          expect(result.success, isTrue);
+          expect(result.requestedDate, DateTime(2024, 3, 15));
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          // Manager methods should not be called
+          verifyNever(
+            () => mockManager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: any(named: 'response'),
+            ),
+          );
+        },
+      );
 
       test('should accept past due dates', () async {
         final task = createTask();
@@ -193,8 +198,9 @@ void main() {
           reason: 'Task was due last week',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -259,8 +265,9 @@ void main() {
           confidence: 'high',
         );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -410,8 +417,9 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database connection lost'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database connection lost'));
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -440,8 +448,9 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database error'));
 
         var callbackCalled = false;
         final handler = TaskDueDateHandler(
@@ -455,24 +464,27 @@ void main() {
         expect(callbackCalled, isFalse);
       });
 
-      test('should not update handler task reference when repository fails',
-          () async {
-        final task = createTask();
-        final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
+      test(
+        'should not update handler task reference when repository fails',
+        () async {
+          final task = createTask();
+          final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database error'));
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenThrow(Exception('Database error'));
 
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        await handler.processToolCall(toolCall);
+          await handler.processToolCall(toolCall);
 
-        // Task should remain unchanged
-        expect(handler.task.data.due, isNull);
-      });
+          // Task should remain unchanged
+          expect(handler.task.data.due, isNull);
+        },
+      );
     });
 
     group('TaskDueDateResult', () {
@@ -507,51 +519,60 @@ void main() {
     });
 
     group('date format variations', () {
-      test('should reject full ISO 8601 datetime (requires date-only)',
-          () async {
-        final task = createTask();
-        // Datetime format should be rejected - we require YYYY-MM-DD only
-        final toolCall = createDueDateToolCall(dueDate: '2024-01-19T10:30:00');
+      test(
+        'should reject full ISO 8601 datetime (requires date-only)',
+        () async {
+          final task = createTask();
+          // Datetime format should be rejected - we require YYYY-MM-DD only
+          final toolCall = createDueDateToolCall(
+            dueDate: '2024-01-19T10:30:00',
+          );
 
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isFalse);
-        expect(result.error, isNotNull);
-        expect(result.error, contains('YYYY-MM-DD'));
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          expect(result.error, contains('YYYY-MM-DD'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
-      test('should reject ISO 8601 with timezone (requires date-only)',
-          () async {
-        final task = createTask();
-        final toolCall = createDueDateToolCall(dueDate: '2024-01-19T10:30:00Z');
+      test(
+        'should reject ISO 8601 with timezone (requires date-only)',
+        () async {
+          final task = createTask();
+          final toolCall = createDueDateToolCall(
+            dueDate: '2024-01-19T10:30:00Z',
+          );
 
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isFalse);
-        expect(result.error, isNotNull);
-        expect(result.error, contains('YYYY-MM-DD'));
+          expect(result.success, isFalse);
+          expect(result.error, isNotNull);
+          expect(result.error, contains('YYYY-MM-DD'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
       test('should handle date at year boundary', () async {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-12-31');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -568,8 +589,9 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-02-29');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -586,8 +608,9 @@ void main() {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2024-01-19');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,
@@ -606,58 +629,62 @@ void main() {
     });
 
     group('edge cases', () {
-      test('should preserve other task fields when updating due date',
-          () async {
-        final task = Task(
-          meta: Metadata(
-            id: 'test-task-id',
-            createdAt: fixedDate,
-            updatedAt: fixedDate,
-            dateFrom: fixedDate,
-            dateTo: fixedDate,
-            categoryId: 'test-category',
-          ),
-          data: TaskData(
-            title: 'Important Task',
-            status: TaskStatus.inProgress(
-              id: 'status-2',
+      test(
+        'should preserve other task fields when updating due date',
+        () async {
+          final task = Task(
+            meta: Metadata(
+              id: 'test-task-id',
               createdAt: fixedDate,
-              utcOffset: 0,
+              updatedAt: fixedDate,
+              dateFrom: fixedDate,
+              dateTo: fixedDate,
+              categoryId: 'test-category',
             ),
-            statusHistory: const [],
-            dateFrom: fixedDate,
-            dateTo: DateTime(2024, 1, 20),
-            estimate: const Duration(minutes: 60),
-            // due is null
-          ),
-        );
-        final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
+            data: TaskData(
+              title: 'Important Task',
+              status: TaskStatus.inProgress(
+                id: 'status-2',
+                createdAt: fixedDate,
+                utcOffset: 0,
+              ),
+              statusHistory: const [],
+              dateFrom: fixedDate,
+              dateTo: DateTime(2024, 1, 20),
+              estimate: const Duration(minutes: 60),
+              // due is null
+            ),
+          );
+          final toolCall = createDueDateToolCall(dueDate: '2024-01-25');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskDueDateHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-        expect(result.success, isTrue);
-        final updated = result.updatedTask!;
-        expect(updated.data.title, 'Important Task');
-        expect(updated.data.status.id, 'status-2');
-        expect(updated.data.estimate, const Duration(minutes: 60));
-        expect(updated.data.due, DateTime(2024, 1, 25));
-        expect(updated.meta.id, 'test-task-id');
-      });
+          expect(result.success, isTrue);
+          final updated = result.updatedTask!;
+          expect(updated.data.title, 'Important Task');
+          expect(updated.data.status.id, 'status-2');
+          expect(updated.data.estimate, const Duration(minutes: 60));
+          expect(updated.data.due, DateTime(2024, 1, 25));
+          expect(updated.meta.id, 'test-task-id');
+        },
+      );
 
       test('should handle date far in the future', () async {
         final task = createTask();
         final toolCall = createDueDateToolCall(dueDate: '2030-12-31');
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskDueDateHandler(
           task: task,

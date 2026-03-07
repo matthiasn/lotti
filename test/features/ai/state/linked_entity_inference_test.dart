@@ -58,33 +58,37 @@ void main() {
 
     // Set up test prompt configs
     final now = DateTime(2024, 3, 15);
-    asrPromptConfig = AiConfig.prompt(
-      id: 'asr-prompt',
-      name: 'Audio Transcription',
-      systemMessage: 'Transcribe audio',
-      userMessage: 'Please transcribe this audio',
-      defaultModelId: 'whisper-1',
-      modelIds: ['whisper-1'],
-      createdAt: now,
-      useReasoning: false,
-      requiredInputData: [InputDataType.audioFiles],
-      aiResponseType: AiResponseType.audioTranscription,
-      description: 'Transcribes audio to text',
-    ) as AiConfigPrompt;
+    asrPromptConfig =
+        AiConfig.prompt(
+              id: 'asr-prompt',
+              name: 'Audio Transcription',
+              systemMessage: 'Transcribe audio',
+              userMessage: 'Please transcribe this audio',
+              defaultModelId: 'whisper-1',
+              modelIds: ['whisper-1'],
+              createdAt: now,
+              useReasoning: false,
+              requiredInputData: [InputDataType.audioFiles],
+              aiResponseType: AiResponseType.audioTranscription,
+              description: 'Transcribes audio to text',
+            )
+            as AiConfigPrompt;
 
-    taskSummaryPromptConfig = AiConfig.prompt(
-      id: 'task-summary-prompt',
-      name: 'Task Summary',
-      systemMessage: 'Summarize task',
-      userMessage: 'Please summarize this task',
-      defaultModelId: 'gpt-4',
-      modelIds: ['gpt-4'],
-      createdAt: now,
-      useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
-      description: 'Generates task summaries',
-    ) as AiConfigPrompt;
+    taskSummaryPromptConfig =
+        AiConfig.prompt(
+              id: 'task-summary-prompt',
+              name: 'Task Summary',
+              systemMessage: 'Summarize task',
+              userMessage: 'Please summarize this task',
+              defaultModelId: 'gpt-4',
+              modelIds: ['gpt-4'],
+              createdAt: now,
+              useReasoning: false,
+              requiredInputData: [InputDataType.task],
+              aiResponseType: AiResponseType.taskSummary,
+              description: 'Generates task summaries',
+            )
+            as AiConfigPrompt;
   });
 
   tearDown(() {
@@ -103,8 +107,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -128,8 +133,9 @@ void main() {
           capturedEntityId = invocation.namedArguments[#entityId] as String;
           capturedLinkedEntityId =
               (invocation.namedArguments[#linkedEntityId] as String?) ?? '';
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           onStatusChange(InferenceStatus.running);
           onStatusChange(InferenceStatus.idle);
@@ -162,11 +168,15 @@ void main() {
 
         // Assert
         expect(finished, isTrue);
-        expect(capturedEntityId,
-            audioEntryId); // Main entity is used for inference
+        expect(
+          capturedEntityId,
+          audioEntryId,
+        ); // Main entity is used for inference
         expect(capturedLinkedEntityId, linkedTaskId);
-        expect(inferenceStatusUpdates,
-            greaterThan(0)); // Linked entity received updates
+        expect(
+          inferenceStatusUpdates,
+          greaterThan(0),
+        ); // Linked entity received updates
 
         // Verify logging includes linkedEntityId
         verify(
@@ -194,8 +204,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -238,8 +249,9 @@ void main() {
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           // Simulate the full lifecycle
           onStatusChange(InferenceStatus.running);
@@ -288,8 +300,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -366,8 +379,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -393,8 +407,9 @@ void main() {
               invocation.namedArguments[#promptConfig] as AiConfigPrompt;
           final onProgress =
               invocation.namedArguments[#onProgress] as void Function(String);
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           if (promptConfig.aiResponseType ==
               AiResponseType.audioTranscription) {
@@ -449,8 +464,9 @@ void main() {
         // Verify that ASR was called before task summary
         final asrStartIndex = executionOrder.indexOf('ASR_START');
         final asrCompleteIndex = executionOrder.indexOf('ASR_COMPLETE');
-        final taskSummaryStartIndex =
-            executionOrder.indexOf('TASK_SUMMARY_START');
+        final taskSummaryStartIndex = executionOrder.indexOf(
+          'TASK_SUMMARY_START',
+        );
 
         expect(asrStartIndex, lessThan(asrCompleteIndex));
         expect(asrCompleteIndex, lessThan(taskSummaryStartIndex));
@@ -469,8 +485,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -494,8 +511,9 @@ void main() {
         ).thenAnswer((invocation) async {
           final promptConfig =
               invocation.namedArguments[#promptConfig] as AiConfigPrompt;
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           if (promptConfig.aiResponseType ==
               AiResponseType.audioTranscription) {
@@ -553,8 +571,9 @@ void main() {
 
         // Verify ordering
         final asrEndIndex = executionOrder.indexOf('ASR_END');
-        final taskSummaryStartIndex =
-            executionOrder.indexOf('TASK_SUMMARY_START');
+        final taskSummaryStartIndex = executionOrder.indexOf(
+          'TASK_SUMMARY_START',
+        );
         expect(
           asrEndIndex,
           lessThan(taskSummaryStartIndex),
@@ -575,8 +594,9 @@ void main() {
 
         final container = ProviderContainer(
           overrides: [
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockRepository),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
             aiConfigByIdProvider(asrPromptId).overrideWith(
               (ref) => Future.value(asrPromptConfig),
             ),
@@ -627,8 +647,9 @@ void main() {
         ).thenAnswer((invocation) async {
           final promptConfig =
               invocation.namedArguments[#promptConfig] as AiConfigPrompt;
-          final onStatusChange = invocation.namedArguments[#onStatusChange]
-              as void Function(InferenceStatus);
+          final onStatusChange =
+              invocation.namedArguments[#onStatusChange]
+                  as void Function(InferenceStatus);
 
           if (promptConfig.aiResponseType ==
               AiResponseType.audioTranscription) {

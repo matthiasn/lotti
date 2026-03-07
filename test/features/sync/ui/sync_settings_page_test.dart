@@ -25,8 +25,9 @@ void main() {
       mockJournalDb = MockJournalDb();
       mockSyncDb = MockSyncDatabase();
 
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
       when(mockSyncDb.watchOutboxCount).thenAnswer((_) => Stream<int>.value(0));
 
       getIt
@@ -37,38 +38,41 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('renders provisioned setup, outbox, conflicts, and stats cards',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const SyncSettingsPage()),
-      );
+    testWidgets(
+      'renders provisioned setup, outbox, conflicts, and stats cards',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const SyncSettingsPage()),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Assert the setup card title specifically (not the page app bar)
-      final pageContext = tester.element(find.byType(SyncSettingsPage));
-      expect(
-        find.descendant(
-          of: find.byType(AnimatedModernSettingsCardWithIcon),
-          matching: find.text(pageContext.messages.provisionedSyncTitle),
-        ),
-        findsOneWidget,
-      );
-      expect(
-        find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
-        findsOneWidget,
-      );
-      expect(find.text('Sync Outbox'), findsOneWidget);
-      expect(find.text('Matrix Stats'), findsOneWidget);
-    });
+        // Assert the setup card title specifically (not the page app bar)
+        final pageContext = tester.element(find.byType(SyncSettingsPage));
+        expect(
+          find.descendant(
+            of: find.byType(AnimatedModernSettingsCardWithIcon),
+            matching: find.text(pageContext.messages.provisionedSyncTitle),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
+          findsOneWidget,
+        );
+        expect(find.text('Sync Outbox'), findsOneWidget);
+        expect(find.text('Matrix Stats'), findsOneWidget);
+      },
+    );
 
     testWidgets('gate hides page when Matrix flag is OFF', (tester) async {
       // Re-register with flag disabled
       await getIt.reset();
       mockJournalDb = MockJournalDb();
       mockSyncDb = MockSyncDatabase();
-      when(() => mockJournalDb.watchConfigFlag(enableMatrixFlag))
-          .thenAnswer((_) => Stream<bool>.value(false));
+      when(
+        () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
       when(mockSyncDb.watchOutboxCount).thenAnswer((_) => Stream<int>.value(0));
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -81,9 +85,13 @@ void main() {
 
       final pageContext = tester.element(find.byType(SyncSettingsPage));
       expect(
-          find.text(pageContext.messages.provisionedSyncTitle), findsNothing);
-      expect(find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
-          findsNothing);
+        find.text(pageContext.messages.provisionedSyncTitle),
+        findsNothing,
+      );
+      expect(
+        find.text(pageContext.messages.settingsMatrixMaintenanceTitle),
+        findsNothing,
+      );
       expect(find.text('Matrix Stats'), findsNothing);
     });
   });

@@ -42,7 +42,7 @@ class DashboardChart extends StatelessWidget {
               ),
             ),
           ),
-          if (overlay != null) overlay!,
+          ?overlay,
         ],
       ),
     );

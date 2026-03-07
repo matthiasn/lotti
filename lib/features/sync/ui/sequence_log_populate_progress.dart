@@ -22,7 +22,8 @@ class SequenceLogPopulateProgress extends StatelessWidget {
     final phase = state.phase;
     final populatedAgentEntitiesCount = state.populatedAgentEntitiesCount;
     final populatedAgentLinksCount = state.populatedAgentLinksCount;
-    final totalPopulated = (populatedCount ?? 0) +
+    final totalPopulated =
+        (populatedCount ?? 0) +
         (populatedLinksCount ?? 0) +
         (populatedAgentEntitiesCount ?? 0) +
         (populatedAgentLinksCount ?? 0);
@@ -79,8 +80,8 @@ class SequenceLogPopulateProgress extends StatelessWidget {
                     _ => '',
                   },
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
                 ),
               const SizedBox(height: 8),
               Row(
@@ -90,9 +91,9 @@ class SequenceLogPopulateProgress extends StatelessWidget {
                       height: 5,
                       child: LinearProgressIndicator(
                         value: progress,
-                        backgroundColor: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
                         valueColor: AlwaysStoppedAnimation<Color>(
                           Theme.of(context).colorScheme.primary,
                         ),
@@ -128,8 +129,8 @@ class SequenceLogPopulateProgress extends StatelessWidget {
           Text(
             context.messages.maintenancePopulateSequenceLog,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
       ],
     );

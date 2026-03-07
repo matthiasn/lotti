@@ -9,11 +9,13 @@ void main() {
   group('MessagesArea', () {
     testWidgets('shows empty state when there are no messages', (tester) async {
       await tester.pumpWidget(
-        wrap(MessagesArea(
-          messages: const <ChatMessage>[],
-          scrollController: ScrollController(),
-          showTypingIndicator: false,
-        )),
+        wrap(
+          MessagesArea(
+            messages: const <ChatMessage>[],
+            scrollController: ScrollController(),
+            showTypingIndicator: false,
+          ),
+        ),
       );
 
       // The empty state contains the AI icon and helper text
@@ -21,14 +23,17 @@ void main() {
       expect(find.text('Ask me about your tasks'), findsOneWidget);
     });
 
-    testWidgets('shows typing indicator at bottom when empty + streaming',
-        (tester) async {
+    testWidgets('shows typing indicator at bottom when empty + streaming', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        wrap(MessagesArea(
-          messages: const <ChatMessage>[],
-          scrollController: ScrollController(),
-          showTypingIndicator: true,
-        )),
+        wrap(
+          MessagesArea(
+            messages: const <ChatMessage>[],
+            scrollController: ScrollController(),
+            showTypingIndicator: true,
+          ),
+        ),
       );
 
       // TypingIndicator renders inside the stack bottom area
@@ -36,19 +41,22 @@ void main() {
       expect(find.byType(AnimatedBuilder), findsWidgets);
     });
 
-    testWidgets('renders bubbles and trailing typing indicator',
-        (tester) async {
+    testWidgets('renders bubbles and trailing typing indicator', (
+      tester,
+    ) async {
       final msgs = <ChatMessage>[
         ChatMessage.user('Hello'),
         ChatMessage.assistant('Hi!'),
       ];
 
       await tester.pumpWidget(
-        wrap(MessagesArea(
-          messages: msgs,
-          scrollController: ScrollController(),
-          showTypingIndicator: true,
-        )),
+        wrap(
+          MessagesArea(
+            messages: msgs,
+            scrollController: ScrollController(),
+            showTypingIndicator: true,
+          ),
+        ),
       );
 
       // Expect both message texts

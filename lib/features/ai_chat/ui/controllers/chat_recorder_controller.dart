@@ -37,13 +37,13 @@ class ChatRecorderState {
   });
 
   const ChatRecorderState.initial()
-      : status = ChatRecorderStatus.idle,
-        amplitudeHistory = const <double>[],
-        transcript = null,
-        partialTranscript = null,
-        error = null,
-        errorType = null,
-        useRealtimeMode = false;
+    : status = ChatRecorderStatus.idle,
+      amplitudeHistory = const <double>[],
+      transcript = null,
+      partialTranscript = null,
+      error = null,
+      errorType = null,
+      useRealtimeMode = false;
 
   // Fields
   final ChatRecorderStatus status;
@@ -87,14 +87,14 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     ChatRecorderConfig? config,
     AudioTranscriptionService? transcriptionService,
     RealtimeTranscriptionService? realtimeTranscriptionService,
-  })  : _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
-        _nowMillisProvider =
-            nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
-        _tempDirectoryProvider =
-            tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
-        _config = config ?? const ChatRecorderConfig(),
-        _transcriptionServiceOverride = transcriptionService,
-        _realtimeServiceOverride = realtimeTranscriptionService;
+  }) : _recorderFactory = recorderFactory ?? record.AudioRecorder.new,
+       _nowMillisProvider =
+           nowMillisProvider ?? (() => DateTime.now().millisecondsSinceEpoch),
+       _tempDirectoryProvider =
+           tempDirectoryProvider ?? (() async => getTemporaryDirectory()),
+       _config = config ?? const ChatRecorderConfig(),
+       _transcriptionServiceOverride = transcriptionService,
+       _realtimeServiceOverride = realtimeTranscriptionService;
 
   final record.AudioRecorder Function() _recorderFactory;
   final int Function() _nowMillisProvider;
@@ -108,9 +108,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
   @override
   ChatRecorderState build() {
-    _transcriptionService = _transcriptionServiceOverride ??
+    _transcriptionService =
+        _transcriptionServiceOverride ??
         ref.read(audioTranscriptionServiceProvider);
-    _realtimeService = _realtimeServiceOverride ??
+    _realtimeService =
+        _realtimeServiceOverride ??
         ref.read(realtimeTranscriptionServiceProvider);
 
     // Register lifecycle observer for backgrounding during realtime recording.
@@ -210,8 +212,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         await recorder.dispose();
         return;
       }
-      _tempDir = await Directory('${baseTemp.path}/lotti_chat_rec')
-          .create(recursive: true);
+      _tempDir = await Directory(
+        '${baseTemp.path}/lotti_chat_rec',
+      ).create(recursive: true);
       if (!ref.mounted) {
         await recorder.dispose();
         return;
@@ -246,20 +249,22 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       // Amplitude stream (throttled)
       _ampSub = recorder
           .onAmplitudeChanged(
-              Duration(milliseconds: _config.amplitudeIntervalMs))
+            Duration(milliseconds: _config.amplitudeIntervalMs),
+          )
           .listen((event) {
-        // Check if this operation is still current and ref is still valid
-        if (currentOpId != _operationId) return;
-        if (!ref.mounted) return;
+            // Check if this operation is still current and ref is still valid
+            if (currentOpId != _operationId) return;
+            if (!ref.mounted) return;
 
-        final dBFS = event.current;
-        final history = List<double>.from(state.amplitudeHistory)..add(dBFS);
-        if (history.length > _historyMax) history.removeAt(0);
-        state = state.copyWith(
-          status: ChatRecorderStatus.recording,
-          amplitudeHistory: history,
-        );
-      });
+            final dBFS = event.current;
+            final history = List<double>.from(state.amplitudeHistory)
+              ..add(dBFS);
+            if (history.length > _historyMax) history.removeAt(0);
+            state = state.copyWith(
+              status: ChatRecorderStatus.recording,
+              amplitudeHistory: history,
+            );
+          });
 
       // Safety stop after configured max duration
       _maxTimer?.cancel();
@@ -562,8 +567,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     // Set up an output path for the audio file
     final baseTemp = await _tempDirectoryProvider();
     if (!ref.mounted) return;
-    _tempDir = await Directory('${baseTemp.path}/lotti_chat_rec')
-        .create(recursive: true);
+    _tempDir = await Directory(
+      '${baseTemp.path}/lotti_chat_rec',
+    ).create(recursive: true);
     if (!ref.mounted) return;
     final outputPath = '${_tempDir!.path}/chat_rt_${_nowMillisProvider()}';
 
@@ -626,8 +632,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     final buffer = StringBuffer();
     var chunkCount = 0;
 
-    await for (final chunk
-        in _transcriptionService.transcribeStream(filePath)) {
+    await for (final chunk in _transcriptionService.transcribeStream(
+      filePath,
+    )) {
       chunkCount++;
       buffer.write(chunk);
 
@@ -705,8 +712,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         final f = File(_filePath!);
         try {
           await f.delete().timeout(
-                const Duration(seconds: _fileDeleteTimeoutSeconds),
-              );
+            const Duration(seconds: _fileDeleteTimeoutSeconds),
+          );
         } on PathNotFoundException catch (e, s) {
           // Log and continue; file already gone
           getIt<LoggingService>().captureException(
@@ -768,8 +775,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
 
 final chatRecorderControllerProvider =
     NotifierProvider.autoDispose<ChatRecorderController, ChatRecorderState>(
-  ChatRecorderController.new,
-);
+      ChatRecorderController.new,
+    );
 
 class ChatRecorderConfig {
   const ChatRecorderConfig({

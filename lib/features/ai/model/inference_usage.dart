@@ -55,8 +55,10 @@ class InferenceUsage {
       inputTokens: _addNullable(inputTokens, other.inputTokens),
       outputTokens: _addNullable(outputTokens, other.outputTokens),
       thoughtsTokens: _addNullable(thoughtsTokens, other.thoughtsTokens),
-      cachedInputTokens:
-          _addNullable(cachedInputTokens, other.cachedInputTokens),
+      cachedInputTokens: _addNullable(
+        cachedInputTokens,
+        other.cachedInputTokens,
+      ),
     );
   }
 
@@ -86,11 +88,11 @@ class InferenceUsage {
 
   @override
   int get hashCode => Object.hash(
-        inputTokens,
-        outputTokens,
-        thoughtsTokens,
-        cachedInputTokens,
-      );
+    inputTokens,
+    outputTokens,
+    thoughtsTokens,
+    cachedInputTokens,
+  );
 
   @override
   String toString() {

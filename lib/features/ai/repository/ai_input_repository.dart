@@ -68,8 +68,10 @@ class AiInputRepository {
     }
 
     final task = entry;
-    final timeSpent =
-        await _calculateTimeSpentWithRepo(task.id, progressRepository);
+    final timeSpent = await _calculateTimeSpentWithRepo(
+      task.id,
+      progressRepository,
+    );
 
     final logEntries = <AiInputLogEntryObject>[];
     final linkedEntities = await _db.getLinkedEntities(id);
@@ -251,12 +253,13 @@ class AiInputRepository {
   ) async {
     // Get entities that link TO this task (where toId = taskId)
     final linkedEntities = await _db.linkedToJournalEntities(taskId).get();
-    final tasks = linkedEntities
-        .map(fromDbEntity)
-        .whereType<Task>()
-        .where((t) => t.meta.deletedAt == null)
-        .toList()
-      ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
+    final tasks =
+        linkedEntities
+            .map(fromDbEntity)
+            .whereType<Task>()
+            .where((t) => t.meta.deletedAt == null)
+            .toList()
+          ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
     return _buildLinkedTaskContextsBatched(tasks);
   }
@@ -268,11 +271,12 @@ class AiInputRepository {
   Future<List<AiLinkedTaskContext>> buildLinkedToContext(String taskId) async {
     // Get entities that this task links TO (where fromId = taskId)
     final linkedEntities = await _db.getLinkedEntities(taskId);
-    final tasks = linkedEntities
-        .whereType<Task>()
-        .where((t) => t.meta.deletedAt == null)
-        .toList()
-      ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
+    final tasks =
+        linkedEntities
+            .whereType<Task>()
+            .where((t) => t.meta.deletedAt == null)
+            .toList()
+          ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
     return _buildLinkedTaskContextsBatched(tasks);
   }
@@ -355,11 +359,12 @@ class AiInputRepository {
   /// sorts by date descending, and returns the response text from the most
   /// recent one. Returns `null` if no summaries exist.
   String? _getLatestSummaryFromEntities(List<JournalEntity> entities) {
-    final summaries = entities
-        .whereType<AiResponseEntry>()
-        .where((e) => e.data.type == AiResponseType.taskSummary)
-        .toList()
-      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    final summaries =
+        entities
+            .whereType<AiResponseEntry>()
+            .where((e) => e.data.type == AiResponseType.taskSummary)
+            .toList()
+          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
 
     if (summaries.isEmpty) return null;
     return summaries.first.data.response;

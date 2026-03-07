@@ -50,19 +50,23 @@ void main() {
     expect(result.assigned, isEmpty);
     expect(result.invalid, isEmpty);
     expect(result.skipped, isEmpty);
-    verifyNever(() => mockRepo.addLabels(
-          journalEntityId: any(named: 'journalEntityId'),
-          addedLabelIds: any(named: 'addedLabelIds'),
-        ));
+    verifyNever(
+      () => mockRepo.addLabels(
+        journalEntityId: any(named: 'journalEntityId'),
+        addedLabelIds: any(named: 'addedLabelIds'),
+      ),
+    );
 
     // Verify a max_total_reached event was logged with expected marker
-    final logged = verify(() => mockLogging.captureEvent(
-          captureAny<dynamic>(),
-          domain: 'labels_ai_assignment',
-          subDomain: 'processor',
-          level: any<InsightLevel>(named: 'level'),
-          type: any<InsightType>(named: 'type'),
-        )).captured;
+    final logged = verify(
+      () => mockLogging.captureEvent(
+        captureAny<dynamic>(),
+        domain: 'labels_ai_assignment',
+        subDomain: 'processor',
+        level: any<InsightLevel>(named: 'level'),
+        type: any<InsightType>(named: 'type'),
+      ),
+    ).captured;
     expect(logged, isNotEmpty);
     final message = logged.first.toString();
     expect(message, contains('max_total_reached'));

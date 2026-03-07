@@ -9,36 +9,36 @@ class TaskSummaryTool {
   static const String name = 'get_task_summaries';
 
   static ChatCompletionTool get toolDefinition => const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: name,
-          description:
-              'Retrieve task summaries for a specified date range (local dates only)',
-          parameters: {
-            'type': 'object',
-            'properties': {
-              'start_date': {
-                'type': 'string',
-                'format': 'date',
-                'description':
-                    'Start date in local time, YYYY-MM-DD (no time or timezone).',
-              },
-              'end_date': {
-                'type': 'string',
-                'format': 'date',
-                'description':
-                    'End date in local time, YYYY-MM-DD (no time or timezone).',
-              },
-              'limit': {
-                'type': 'integer',
-                'description': 'Maximum number of summaries to return',
-                'default': 100,
-              },
-            },
-            'required': ['start_date', 'end_date'],
+    type: ChatCompletionToolType.function,
+    function: FunctionObject(
+      name: name,
+      description:
+          'Retrieve task summaries for a specified date range (local dates only)',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'start_date': {
+            'type': 'string',
+            'format': 'date',
+            'description':
+                'Start date in local time, YYYY-MM-DD (no time or timezone).',
           },
-        ),
-      );
+          'end_date': {
+            'type': 'string',
+            'format': 'date',
+            'description':
+                'End date in local time, YYYY-MM-DD (no time or timezone).',
+          },
+          'limit': {
+            'type': 'integer',
+            'description': 'Maximum number of summaries to return',
+            'default': 100,
+          },
+        },
+        'required': ['start_date', 'end_date'],
+      },
+    ),
+  );
 }
 
 @freezed

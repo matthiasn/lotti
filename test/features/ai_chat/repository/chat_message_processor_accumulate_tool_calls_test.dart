@@ -71,8 +71,10 @@ void main() {
 
       expect(toolCalls.length, 1);
       expect(toolCalls.first.id, 'x');
-      expect(toolCalls.first.function.arguments,
-          '{"start":"2024-01-01T00:00:00Z"}');
+      expect(
+        toolCalls.first.function.arguments,
+        '{"start":"2024-01-01T00:00:00Z"}',
+      );
     });
 
     test('skips malformed delta with no id and no index and logs event', () {
@@ -91,45 +93,49 @@ void main() {
       processor.accumulateToolCalls(toolCalls, [malformed], buffers);
       expect(toolCalls, isEmpty);
 
-      verify(() => logging.captureEvent(
-            any<dynamic>(),
-            domain: 'ChatMessageProcessor',
-            subDomain: 'accumulateToolCalls',
-          )).called(1);
+      verify(
+        () => logging.captureEvent(
+          any<dynamic>(),
+          domain: 'ChatMessageProcessor',
+          subDomain: 'accumulateToolCalls',
+        ),
+      ).called(1);
     });
 
-    test('replaces arguments if both existing and incoming are complete JSON',
-        () {
-      final toolCalls = <ChatCompletionMessageToolCall>[];
-      final buffers = <String, StringBuffer>{};
+    test(
+      'replaces arguments if both existing and incoming are complete JSON',
+      () {
+        final toolCalls = <ChatCompletionMessageToolCall>[];
+        final buffers = <String, StringBuffer>{};
 
-      // First delta provides a complete JSON object
-      const d1 = ChatCompletionStreamMessageToolCallChunk(
-        index: 0,
-        id: 'rep',
-        function: ChatCompletionStreamMessageFunctionCall(
-          name: 'get_task_summaries',
-          arguments: '{"a":1}',
-        ),
-      );
+        // First delta provides a complete JSON object
+        const d1 = ChatCompletionStreamMessageToolCallChunk(
+          index: 0,
+          id: 'rep',
+          function: ChatCompletionStreamMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: '{"a":1}',
+          ),
+        );
 
-      // Second delta resends full args (also complete JSON) — should replace
-      const d2 = ChatCompletionStreamMessageToolCallChunk(
-        index: 0,
-        id: 'rep',
-        function: ChatCompletionStreamMessageFunctionCall(
-          name: 'get_task_summaries',
-          arguments: '{"a":2}',
-        ),
-      );
+        // Second delta resends full args (also complete JSON) — should replace
+        const d2 = ChatCompletionStreamMessageToolCallChunk(
+          index: 0,
+          id: 'rep',
+          function: ChatCompletionStreamMessageFunctionCall(
+            name: 'get_task_summaries',
+            arguments: '{"a":2}',
+          ),
+        );
 
-      processor
-        ..accumulateToolCalls(toolCalls, [d1], buffers)
-        ..accumulateToolCalls(toolCalls, [d2], buffers);
+        processor
+          ..accumulateToolCalls(toolCalls, [d1], buffers)
+          ..accumulateToolCalls(toolCalls, [d2], buffers);
 
-      expect(toolCalls.length, 1);
-      expect(toolCalls.first.id, 'rep');
-      expect(toolCalls.first.function.arguments, '{"a":2}');
-    });
+        expect(toolCalls.length, 1);
+        expect(toolCalls.first.id, 'rep');
+        expect(toolCalls.first.function.arguments, '{"a":2}');
+      },
+    );
   });
 }

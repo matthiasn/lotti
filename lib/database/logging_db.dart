@@ -23,12 +23,12 @@ enum InsightType {
 @DriftDatabase(include: {'logging_db.drift'})
 class LoggingDb extends _$LoggingDb {
   LoggingDb({this.inMemoryDatabase = false})
-      : super(
-          openDbConnection(
-            loggingDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-          ),
-        );
+    : super(
+        openDbConnection(
+          loggingDbFileName,
+          inMemoryDatabase: inMemoryDatabase,
+        ),
+      );
 
   LoggingDb.connect(super.c) : super.connect();
 
@@ -76,9 +76,9 @@ class LoggingDb extends _$LoggingDb {
       // Add wildcards for partial matching and convert to lowercase
       final searchPattern = '%${sanitizedQuery.toLowerCase()}%';
 
-      return searchLogEntries(searchPattern)
-          .watch()
-          .map(_sortEntriesByCreatedAtDesc);
+      return searchLogEntries(
+        searchPattern,
+      ).watch().map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
       DevLogger.warning(
@@ -123,9 +123,10 @@ class LoggingDb extends _$LoggingDb {
       final searchPattern = '%${sanitizedQuery.toLowerCase()}%';
 
       return searchLogEntriesPaginated(
-              searchPattern, validatedLimit, validatedOffset)
-          .watch()
-          .map(_sortEntriesByCreatedAtDesc);
+        searchPattern,
+        validatedLimit,
+        validatedOffset,
+      ).watch().map(_sortEntriesByCreatedAtDesc);
     } catch (e) {
       // Log error and return empty stream to prevent app crashes
       DevLogger.warning(
@@ -170,7 +171,8 @@ class LoggingDb extends _$LoggingDb {
 }
 
 List<LogEntry> _sortEntriesByCreatedAtDesc(List<LogEntry> entries) {
-  final sorted = [...entries]..sort((a, b) {
+  final sorted = [...entries]
+    ..sort((a, b) {
       DateTime parse(String value) {
         try {
           return DateTime.parse(value);

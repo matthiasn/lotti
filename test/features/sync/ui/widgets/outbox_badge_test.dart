@@ -26,7 +26,8 @@ void main() {
             journalDbProvider.overrideWithValue(dbMock),
             syncDatabaseProvider.overrideWithValue(syncDbMock),
             loginStateStreamProvider.overrideWith(
-                (ref) => Stream<LoginState>.value(LoginState.loggedIn)),
+              (ref) => Stream<LoginState>.value(LoginState.loggedIn),
+            ),
           ],
         ),
       );
@@ -133,8 +134,9 @@ void main() {
       final syncDbMock = mockSyncDatabaseWithCount(5);
       final dbMock = MockJournalDb();
       // Don't emit any values - stream stays in loading state
-      when(() => dbMock.watchConfigFlag(any()))
-          .thenAnswer((_) => const Stream<bool>.empty());
+      when(
+        () => dbMock.watchConfigFlag(any()),
+      ).thenAnswer((_) => const Stream<bool>.empty());
 
       const testIcon = Icons.settings_outlined;
 
@@ -164,8 +166,9 @@ void main() {
       final syncDbMock = mockSyncDatabaseWithCount(5);
       final dbMock = MockJournalDb();
       // Emit an error
-      when(() => dbMock.watchConfigFlag(any()))
-          .thenAnswer((_) => Stream<bool>.error(Exception('test error')));
+      when(
+        () => dbMock.watchConfigFlag(any()),
+      ).thenAnswer((_) => Stream<bool>.error(Exception('test error')));
 
       const testIcon = Icons.settings_outlined;
 

@@ -122,18 +122,22 @@ class AiConfigCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
         border: Border.all(
           color: Theme.of(context).brightness == Brightness.light
-              ? context.colorScheme.outline
-                  .withValues(alpha: AppTheme.alphaOutline)
-              : context.colorScheme.primaryContainer
-                  .withValues(alpha: AppTheme.alphaPrimaryContainer),
+              ? context.colorScheme.outline.withValues(
+                  alpha: AppTheme.alphaOutline,
+                )
+              : context.colorScheme.primaryContainer.withValues(
+                  alpha: AppTheme.alphaPrimaryContainer,
+                ),
         ),
         boxShadow: [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.light
-                ? context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowLight)
-                : context.colorScheme.shadow
-                    .withValues(alpha: AppTheme.alphaShadowDark),
+                ? context.colorScheme.shadow.withValues(
+                    alpha: AppTheme.alphaShadowLight,
+                  )
+                : context.colorScheme.shadow.withValues(
+                    alpha: AppTheme.alphaShadowDark,
+                  ),
             blurRadius: Theme.of(context).brightness == Brightness.light
                 ? AppTheme.cardElevationLight
                 : AppTheme.cardElevationDark,
@@ -147,10 +151,12 @@ class AiConfigCard extends ConsumerWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(AppTheme.cardBorderRadius),
-          splashColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimary),
-          highlightColor: context.colorScheme.primary
-              .withValues(alpha: AppTheme.alphaPrimaryHighlight),
+          splashColor: context.colorScheme.primary.withValues(
+            alpha: AppTheme.alphaPrimary,
+          ),
+          highlightColor: context.colorScheme.primary.withValues(
+            alpha: AppTheme.alphaPrimaryHighlight,
+          ),
           child: Container(
             padding: const EdgeInsets.all(AppTheme.cardPadding),
             decoration: BoxDecoration(
@@ -180,18 +186,21 @@ class AiConfigCard extends ConsumerWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius:
-                BorderRadius.circular(AppTheme.iconContainerBorderRadius),
+            borderRadius: BorderRadius.circular(
+              AppTheme.iconContainerBorderRadius,
+            ),
             border: Border.all(
-              color: context.colorScheme.primary
-                  .withValues(alpha: AppTheme.alphaPrimaryBorder),
+              color: context.colorScheme.primary.withValues(
+                alpha: AppTheme.alphaPrimaryBorder,
+              ),
             ),
           ),
           child: Icon(
             _getConfigIcon(),
             size: AppTheme.iconSize,
-            color: context.colorScheme.primary
-                .withValues(alpha: AppTheme.alphaPrimaryIcon),
+            color: context.colorScheme.primary.withValues(
+              alpha: AppTheme.alphaPrimaryIcon,
+            ),
           ),
         ),
 
@@ -219,7 +228,8 @@ class AiConfigCard extends ConsumerWidget {
               // Provider info for models
               if (config is AiConfigModel) ...[
                 const SizedBox(
-                    height: AppTheme.spacingBetweenTitleAndSubtitleCompact),
+                  height: AppTheme.spacingBetweenTitleAndSubtitleCompact,
+                ),
                 _CompactProviderName(
                   providerId: (config as AiConfigModel).inferenceProviderId,
                 ),
@@ -228,7 +238,8 @@ class AiConfigCard extends ConsumerWidget {
               // Provider info for prompts (via default model)
               if (config is AiConfigPrompt) ...[
                 const SizedBox(
-                    height: AppTheme.spacingBetweenTitleAndSubtitleCompact),
+                  height: AppTheme.spacingBetweenTitleAndSubtitleCompact,
+                ),
                 _PromptProviderBadge(
                   modelId: (config as AiConfigPrompt).defaultModelId,
                 ),
@@ -241,8 +252,9 @@ class AiConfigCard extends ConsumerWidget {
                 Text(
                   config.description!,
                   style: context.textTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant
-                        .withValues(alpha: AppTheme.alphaSurfaceVariant),
+                    color: context.colorScheme.onSurfaceVariant.withValues(
+                      alpha: AppTheme.alphaSurfaceVariant,
+                    ),
                     fontSize: AppTheme.subtitleFontSize,
                     height: AppTheme.lineHeightSubtitle,
                     letterSpacing: AppTheme.letterSpacingSubtitle,
@@ -268,8 +280,9 @@ class AiConfigCard extends ConsumerWidget {
           Icon(
             Icons.chevron_right,
             size: AppTheme.chevronSize,
-            color: context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaSurfaceVariantChevron),
+            color: context.colorScheme.onSurfaceVariant.withValues(
+              alpha: AppTheme.alphaSurfaceVariantChevron,
+            ),
           ),
       ],
     );
@@ -317,16 +330,19 @@ class _CompactProviderName extends ConsumerWidget {
           vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
-          color: context.colorScheme.errorContainer
-              .withValues(alpha: AppTheme.alphaErrorContainer),
-          borderRadius:
-              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
+          color: context.colorScheme.errorContainer.withValues(
+            alpha: AppTheme.alphaErrorContainer,
+          ),
+          borderRadius: BorderRadius.circular(
+            AppTheme.statusIndicatorBorderRadiusSmall,
+          ),
         ),
         child: Text(
           context.messages.commonError,
           style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.error
-                .withValues(alpha: AppTheme.alphaErrorText),
+            color: context.colorScheme.error.withValues(
+              alpha: AppTheme.alphaErrorText,
+            ),
             fontSize: AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
@@ -344,27 +360,32 @@ class _CompactProviderName extends ConsumerWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
-                context.colorScheme.primaryContainer
-                    .withValues(alpha: AppTheme.alphaPrimaryContainerLight),
-                context.colorScheme.primaryContainer
-                    .withValues(alpha: AppTheme.alphaPrimaryContainerDark),
+                context.colorScheme.primaryContainer.withValues(
+                  alpha: AppTheme.alphaPrimaryContainerLight,
+                ),
+                context.colorScheme.primaryContainer.withValues(
+                  alpha: AppTheme.alphaPrimaryContainerDark,
+                ),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius:
-                BorderRadius.circular(AppTheme.statusIndicatorBorderRadius),
+            borderRadius: BorderRadius.circular(
+              AppTheme.statusIndicatorBorderRadius,
+            ),
             border: Border.all(
-              color: context.colorScheme.primary
-                  .withValues(alpha: AppTheme.alphaStatusIndicatorBorder),
+              color: context.colorScheme.primary.withValues(
+                alpha: AppTheme.alphaStatusIndicatorBorder,
+              ),
               width: AppTheme.statusIndicatorBorderWidth,
             ),
           ),
           child: Text(
             providerName,
             style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.primary
-                  .withValues(alpha: AppTheme.alphaPrimaryIcon),
+              color: context.colorScheme.primary.withValues(
+                alpha: AppTheme.alphaPrimaryIcon,
+              ),
               fontWeight: FontWeight.w600,
               fontSize: AppTheme.statusIndicatorFontSize,
               letterSpacing: AppTheme.letterSpacingTitle,
@@ -380,22 +401,25 @@ class _CompactProviderName extends ConsumerWidget {
           vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
-          borderRadius:
-              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
+          color: context.colorScheme.surfaceContainerHighest.withValues(
+            alpha: AppTheme.alphaSurfaceContainerHighest,
+          ),
+          borderRadius: BorderRadius.circular(
+            AppTheme.statusIndicatorBorderRadiusSmall,
+          ),
         ),
         child: Text(
           context.messages.commonLoading,
           style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
+            color: context.colorScheme.onSurfaceVariant.withValues(
+              alpha: AppTheme.alphaSurfaceVariantDim,
+            ),
             fontSize: AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
       // Error is handled above with hasError check
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -427,21 +451,24 @@ class _PromptProviderBadge extends ConsumerWidget {
           vertical: AppTheme.statusIndicatorPaddingVertical,
         ),
         decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest
-              .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
-          borderRadius:
-              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusSmall),
+          color: context.colorScheme.surfaceContainerHighest.withValues(
+            alpha: AppTheme.alphaSurfaceContainerHighest,
+          ),
+          borderRadius: BorderRadius.circular(
+            AppTheme.statusIndicatorBorderRadiusSmall,
+          ),
         ),
         child: Text(
           context.messages.commonLoading,
           style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant
-                .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
+            color: context.colorScheme.onSurfaceVariant.withValues(
+              alpha: AppTheme.alphaSurfaceVariantDim,
+            ),
             fontSize: AppTheme.statusIndicatorFontSizeCompact,
           ),
         ),
       ),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 }
@@ -512,20 +539,24 @@ class _CapabilityIndicators extends StatelessWidget {
         height: AppTheme.statusIndicatorSize,
         decoration: BoxDecoration(
           color: isSupported
-              ? context.colorScheme.primaryContainer
-                  .withValues(alpha: AppTheme.alphaPrimaryContainerActive)
-              : context.colorScheme.surfaceContainerHighest
-                  .withValues(alpha: AppTheme.alphaSurfaceContainerHighest),
-          borderRadius:
-              BorderRadius.circular(AppTheme.statusIndicatorBorderRadiusTiny),
+              ? context.colorScheme.primaryContainer.withValues(
+                  alpha: AppTheme.alphaPrimaryContainerActive,
+                )
+              : context.colorScheme.surfaceContainerHighest.withValues(
+                  alpha: AppTheme.alphaSurfaceContainerHighest,
+                ),
+          borderRadius: BorderRadius.circular(
+            AppTheme.statusIndicatorBorderRadiusTiny,
+          ),
         ),
         child: Icon(
           icon,
           size: AppTheme.statusIndicatorIconSize,
           color: isSupported
               ? context.colorScheme.primary
-              : context.colorScheme.onSurfaceVariant
-                  .withValues(alpha: AppTheme.alphaSurfaceVariantDim),
+              : context.colorScheme.onSurfaceVariant.withValues(
+                  alpha: AppTheme.alphaSurfaceVariantDim,
+                ),
         ),
       ),
     );

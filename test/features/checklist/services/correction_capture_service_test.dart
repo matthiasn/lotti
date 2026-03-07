@@ -66,33 +66,38 @@ void main() {
         verifyNever(() => mockCategoryRepository.getCategoryById(any()));
       });
 
-      test('returns noChange when texts are identical after normalization',
-          () async {
-        final result = await service.captureCorrection(
-          categoryId: 'category-1',
-          beforeText: '  hello  world  ',
-          afterText: 'hello world',
-        );
+      test(
+        'returns noChange when texts are identical after normalization',
+        () async {
+          final result = await service.captureCorrection(
+            categoryId: 'category-1',
+            beforeText: '  hello  world  ',
+            afterText: 'hello world',
+          );
 
-        expect(result, equals(CorrectionCaptureResult.noChange));
-        verifyNever(() => mockCategoryRepository.getCategoryById(any()));
-      });
+          expect(result, equals(CorrectionCaptureResult.noChange));
+          verifyNever(() => mockCategoryRepository.getCategoryById(any()));
+        },
+      );
 
-      test('returns trivialChange for case-only changes on short texts',
-          () async {
-        final result = await service.captureCorrection(
-          categoryId: 'category-1',
-          beforeText: 'AB',
-          afterText: 'ab',
-        );
+      test(
+        'returns trivialChange for case-only changes on short texts',
+        () async {
+          final result = await service.captureCorrection(
+            categoryId: 'category-1',
+            beforeText: 'AB',
+            afterText: 'ab',
+          );
 
-        expect(result, equals(CorrectionCaptureResult.trivialChange));
-        verifyNever(() => mockCategoryRepository.getCategoryById(any()));
-      });
+          expect(result, equals(CorrectionCaptureResult.trivialChange));
+          verifyNever(() => mockCategoryRepository.getCategoryById(any()));
+        },
+      );
 
       test('returns categoryNotFound when category does not exist', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => null);
 
         final result = await service.captureCorrection(
           categoryId: 'category-1',
@@ -104,8 +109,9 @@ void main() {
       });
 
       test('returns duplicate when same correction already exists', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-2'))
-            .thenAnswer((_) async => categoryWithExamples);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-2'),
+        ).thenAnswer((_) async => categoryWithExamples);
 
         final result = await service.captureCorrection(
           categoryId: 'category-2',
@@ -117,31 +123,36 @@ void main() {
         verifyNever(() => mockCategoryRepository.updateCategory(any()));
       });
 
-      test('returns pending for valid new correction (no immediate save)',
-          () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+      test(
+        'returns pending for valid new correction (no immediate save)',
+        () async {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
 
-        final result = await service.captureCorrection(
-          categoryId: 'category-1',
-          beforeText: 'test flight release',
-          afterText: 'TestFlight release',
-        );
+          final result = await service.captureCorrection(
+            categoryId: 'category-1',
+            beforeText: 'test flight release',
+            afterText: 'TestFlight release',
+          );
 
-        expect(result, equals(CorrectionCaptureResult.pending));
+          expect(result, equals(CorrectionCaptureResult.pending));
 
-        // Verify no immediate save
-        verifyNever(() => mockCategoryRepository.updateCategory(any()));
-      });
+          // Verify no immediate save
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        },
+      );
 
       test('sets pending correction on notifier', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
           overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -159,8 +170,9 @@ void main() {
         );
 
         // Use service from container (has notifier injected)
-        final serviceWithNotifier =
-            container.read(correctionCaptureServiceProvider);
+        final serviceWithNotifier = container.read(
+          correctionCaptureServiceProvider,
+        );
 
         final result = await serviceWithNotifier.captureCorrection(
           categoryId: 'category-1',
@@ -179,8 +191,9 @@ void main() {
       });
 
       test('does not set pending when no notifier provided', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         // Service without notifier (created manually in setUp)
         final result = await service.captureCorrection(
@@ -194,19 +207,22 @@ void main() {
       });
 
       test('sets pending and does not immediately save', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
           overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
 
-        final serviceWithNotifier =
-            container.read(correctionCaptureServiceProvider);
+        final serviceWithNotifier = container.read(
+          correctionCaptureServiceProvider,
+        );
 
         // Call captureCorrection
         await serviceWithNotifier.captureCorrection(
@@ -216,8 +232,9 @@ void main() {
         );
 
         // Verify getCategoryById was called for validation
-        verify(() => mockCategoryRepository.getCategoryById('category-1'))
-            .called(1);
+        verify(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).called(1);
 
         // Verify NO immediate save
         verifyNever(() => mockCategoryRepository.updateCategory(any()));
@@ -231,13 +248,15 @@ void main() {
       });
 
       test('normalizes whitespace when setting pending', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         final container = ProviderContainer(
           overrides: [
-            categoryRepositoryProvider
-                .overrideWithValue(mockCategoryRepository),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
           ],
         );
         addTearDown(container.dispose);
@@ -254,8 +273,9 @@ void main() {
           fireImmediately: true,
         );
 
-        final serviceWithNotifier =
-            container.read(correctionCaptureServiceProvider);
+        final serviceWithNotifier = container.read(
+          correctionCaptureServiceProvider,
+        );
 
         await serviceWithNotifier.captureCorrection(
           categoryId: 'category-1',
@@ -268,8 +288,9 @@ void main() {
       });
 
       test('captures meaningful case changes for longer texts', () async {
-        when(() => mockCategoryRepository.getCategoryById('category-1'))
-            .thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
 
         final result = await service.captureCorrection(
           categoryId: 'category-1',
@@ -374,7 +395,9 @@ void main() {
       );
 
       // Set pending with save callback
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending,
             onSave: () async {},
           );
@@ -399,7 +422,9 @@ void main() {
       );
 
       // Set pending with save callback
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending,
             onSave: () async {},
           );
@@ -411,8 +436,9 @@ void main() {
       );
 
       // Cancel the pending correction immediately
-      final wasCancelled =
-          container.read(correctionCaptureProvider.notifier).cancel();
+      final wasCancelled = container
+          .read(correctionCaptureProvider.notifier)
+          .cancel();
 
       expect(wasCancelled, isTrue);
 
@@ -427,8 +453,9 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
-      final wasCancelled =
-          container.read(correctionCaptureProvider.notifier).cancel();
+      final wasCancelled = container
+          .read(correctionCaptureProvider.notifier)
+          .cancel();
 
       expect(wasCancelled, isFalse);
     });
@@ -446,7 +473,9 @@ void main() {
       );
 
       // Set first pending
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending1,
             onSave: () async {},
           );
@@ -465,7 +494,9 @@ void main() {
       );
 
       // Set second pending (should replace first)
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending2,
             onSave: () async {},
           );
@@ -496,7 +527,9 @@ void main() {
         );
 
         // Set pending (starts the save timer)
-        container.read(correctionCaptureProvider.notifier).setPending(
+        container
+            .read(correctionCaptureProvider.notifier)
+            .setPending(
               pending: pending,
               onSave: () async {},
             );
@@ -525,7 +558,9 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending,
             onSave: () async {},
           );
@@ -560,7 +595,9 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending,
             onSave: () async {
               saveCalled = true;
@@ -595,7 +632,9 @@ void main() {
         createdAt: DateTime.now(),
       );
 
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending1,
             onSave: () async {
               firstSaveCalled = true;
@@ -611,7 +650,9 @@ void main() {
       );
 
       // Setting a new pending should replace the first one
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: pending2,
             onSave: () async {
               secondSaveCalled = true;
@@ -634,8 +675,9 @@ void main() {
     test('creates service with category repository', () {
       final container = ProviderContainer(
         overrides: [
-          categoryRepositoryProvider
-              .overrideWithValue(MockCategoryRepository()),
+          categoryRepositoryProvider.overrideWithValue(
+            MockCategoryRepository(),
+          ),
         ],
       );
       addTearDown(container.dispose);

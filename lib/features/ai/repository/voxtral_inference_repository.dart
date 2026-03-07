@@ -15,7 +15,7 @@ import 'package:openai_dart/openai_dart.dart';
 /// 30 minutes of audio transcription with 9 languages.
 class VoxtralInferenceRepository {
   VoxtralInferenceRepository({http.Client? httpClient})
-      : _httpClient = httpClient ?? http.Client();
+    : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
 
@@ -140,7 +140,8 @@ class VoxtralInferenceRepository {
 
     // Define timeout error message
     final timeoutMinutes = requestTimeout.inMinutes;
-    final timeoutErrorMessage = 'Transcription request timed out after '
+    final timeoutErrorMessage =
+        'Transcription request timed out after '
         '${timeoutMinutes == 1 ? '1 minute' : '$timeoutMinutes minutes'}. '
         'This can happen with very long audio files or slow processing. '
         'Please try with a shorter recording or check your Voxtral server.';
@@ -159,7 +160,7 @@ class VoxtralInferenceRepository {
         'content': prompt != null && prompt.isNotEmpty
             ? prompt
             : 'Transcribe this audio.',
-      }
+      },
     ];
 
     // Build request body with streaming enabled
@@ -211,7 +212,8 @@ class VoxtralInferenceRepository {
           final content = message?['content'] as String?;
           if (content != null && content.isNotEmpty) {
             yield CreateChatCompletionStreamResponse(
-              id: json['id'] as String? ??
+              id:
+                  json['id'] as String? ??
                   'voxtral-${DateTime.now().millisecondsSinceEpoch}',
               choices: [
                 ChatCompletionStreamResponseChoice(
@@ -221,7 +223,8 @@ class VoxtralInferenceRepository {
                 ),
               ],
               object: 'chat.completion.chunk',
-              created: json['created'] as int? ??
+              created:
+                  json['created'] as int? ??
                   DateTime.now().millisecondsSinceEpoch ~/ 1000,
             );
           }
@@ -235,15 +238,17 @@ class VoxtralInferenceRepository {
       request.headers['Accept'] = 'text/event-stream';
       request.body = jsonEncode(requestBody);
 
-      final streamedResponse = await _httpClient.send(request).timeout(
-        requestTimeout,
-        onTimeout: () {
-          throw VoxtralInferenceException(
-            timeoutErrorMessage,
-            statusCode: httpStatusRequestTimeout,
+      final streamedResponse = await _httpClient
+          .send(request)
+          .timeout(
+            requestTimeout,
+            onTimeout: () {
+              throw VoxtralInferenceException(
+                timeoutErrorMessage,
+                statusCode: httpStatusRequestTimeout,
+              );
+            },
           );
-        },
-      );
 
       if (streamedResponse.statusCode != 200) {
         // Read body for error logging (only for non-200)
@@ -259,8 +264,9 @@ class VoxtralInferenceRepository {
 
       // Parse SSE stream
       var chunksReceived = 0;
-      await for (final chunk
-          in streamedResponse.stream.transform(utf8.decoder)) {
+      await for (final chunk in streamedResponse.stream.transform(
+        utf8.decoder,
+      )) {
         // SSE format: "data: {...}\n\n"
         for (final line in chunk.split('\n')) {
           if (line.startsWith('data: ')) {
@@ -294,7 +300,8 @@ class VoxtralInferenceRepository {
                   );
 
                   yield CreateChatCompletionStreamResponse(
-                    id: json['id'] as String? ??
+                    id:
+                        json['id'] as String? ??
                         'voxtral-${DateTime.now().millisecondsSinceEpoch}',
                     choices: [
                       ChatCompletionStreamResponseChoice(
@@ -311,7 +318,8 @@ class VoxtralInferenceRepository {
                       ),
                     ],
                     object: 'chat.completion.chunk',
-                    created: json['created'] as int? ??
+                    created:
+                        json['created'] as int? ??
                         DateTime.now().millisecondsSinceEpoch ~/ 1000,
                   );
                 }

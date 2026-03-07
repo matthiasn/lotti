@@ -48,8 +48,9 @@ void main() {
 
   setUp(() {
     mockCacheService = MockEntitiesCacheService();
-    when(() => mockCacheService.getCategoryById('cat-1'))
-        .thenReturn(testCategory);
+    when(
+      () => mockCacheService.getCategoryById('cat-1'),
+    ).thenReturn(testCategory);
     when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
     if (getIt.isRegistered<EntitiesCacheService>()) {
@@ -140,8 +141,9 @@ void main() {
 
   group('PlannedBlockEditModal', () {
     testWidgets('renders modal with title', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -150,8 +152,9 @@ void main() {
     });
 
     testWidgets('shows time range section', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -162,8 +165,9 @@ void main() {
     });
 
     testWidgets('shows start and end times', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -177,8 +181,9 @@ void main() {
     });
 
     testWidgets('shows duration', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -191,8 +196,9 @@ void main() {
     });
 
     testWidgets('shows category section', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -213,8 +219,9 @@ void main() {
     });
 
     testWidgets('shows note section', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -224,8 +231,9 @@ void main() {
     });
 
     testWidgets('displays existing note', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(block: createTestBlock(note: 'Important meeting')),
@@ -236,8 +244,9 @@ void main() {
     });
 
     testWidgets('shows action buttons', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -247,8 +256,9 @@ void main() {
     });
 
     testWidgets('shows delete button', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -257,8 +267,9 @@ void main() {
     });
 
     testWidgets('renders PlannedBlockEditModal widget', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -267,8 +278,9 @@ void main() {
     });
 
     testWidgets('displays hours and minutes duration', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(
         createTestWidget(
@@ -281,10 +293,12 @@ void main() {
       expect(find.text('2 hours'), findsOneWidget);
     });
 
-    testWidgets('displays minutes only duration for short block',
-        (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+    testWidgets('displays minutes only duration for short block', (
+      tester,
+    ) async {
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       // Create a 30 minute block
       final block = PlannedBlock(
@@ -320,8 +334,9 @@ void main() {
     });
 
     testWidgets('shows tappable time selectors', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -331,8 +346,9 @@ void main() {
     });
 
     testWidgets('tapping delete shows confirmation dialog', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -350,8 +366,9 @@ void main() {
     });
 
     testWidgets('cancel button closes dialog without deleting', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -369,8 +386,9 @@ void main() {
     });
 
     testWidgets('note field allows text entry', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();
@@ -385,8 +403,9 @@ void main() {
     });
 
     testWidgets('save button is enabled for valid time range', (tester) async {
-      when(() => mockCacheService.getCategoryById('cat-1'))
-          .thenReturn(testCategory);
+      when(
+        () => mockCacheService.getCategoryById('cat-1'),
+      ).thenReturn(testCategory);
 
       await tester.pumpWidget(createTestWidget(block: createTestBlock()));
       await tester.pump();

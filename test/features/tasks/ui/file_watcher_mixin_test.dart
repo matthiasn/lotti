@@ -35,8 +35,9 @@ void main() {
       expect(state.fileExists, isTrue);
     });
 
-    testWidgets('fileExists returns false when file does not exist',
-        (tester) async {
+    testWidgets('fileExists returns false when file does not exist', (
+      tester,
+    ) async {
       final path = '${tempDir.path}/nonexistent.txt';
 
       await tester.pumpWidget(
@@ -49,8 +50,9 @@ void main() {
       expect(state.fileExists, isFalse);
     });
 
-    testWidgets('resetFileWatcher allows re-checking same path',
-        (tester) async {
+    testWidgets('resetFileWatcher allows re-checking same path', (
+      tester,
+    ) async {
       final file = File('${tempDir.path}/test.txt');
       final path = file.path;
 
@@ -84,7 +86,6 @@ void main() {
       );
 
       tester.state<_TestWidgetState>(find.byType(_TestWidget))
-
         // Should not throw
         ..disposeFileWatcher()
         ..disposeFileWatcher(); // Double dispose should be safe
@@ -100,7 +101,6 @@ void main() {
       );
 
       final state = tester.state<_TestWidgetState>(find.byType(_TestWidget))
-
         // Call multiple times - should not cause issues
         ..setupFileWatcher(file.path)
         ..setupFileWatcher(file.path)
@@ -109,8 +109,9 @@ void main() {
       expect(state.fileExists, isTrue);
     });
 
-    testWidgets('setupFileWatcher with forceReset rechecks same path',
-        (tester) async {
+    testWidgets('setupFileWatcher with forceReset rechecks same path', (
+      tester,
+    ) async {
       final path = '${tempDir.path}/force_reset_test.txt';
 
       await tester.pumpWidget(
@@ -132,8 +133,9 @@ void main() {
       expect(state.fileExists, isTrue);
     });
 
-    testWidgets('setupFileWatcher switches to new path correctly',
-        (tester) async {
+    testWidgets('setupFileWatcher switches to new path correctly', (
+      tester,
+    ) async {
       final file1 = File('${tempDir.path}/file1.txt')
         ..writeAsStringSync('test1');
       final path2 = '${tempDir.path}/file2.txt';
@@ -159,8 +161,9 @@ void main() {
       expect(state.fileExists, isTrue);
     });
 
-    testWidgets('handles non-existent parent directory gracefully',
-        (tester) async {
+    testWidgets('handles non-existent parent directory gracefully', (
+      tester,
+    ) async {
       final path = '${tempDir.path}/nonexistent_dir/file.txt';
 
       await tester.pumpWidget(
@@ -194,7 +197,9 @@ void main() {
 
     test('normalizes paths with .. components', () {
       expect(
-          pathsEqual('/foo/baz/../bar/file.txt', '/foo/bar/file.txt'), isTrue);
+        pathsEqual('/foo/baz/../bar/file.txt', '/foo/bar/file.txt'),
+        isTrue,
+      );
     });
 
     test('handles mixed forward and back slashes', () {

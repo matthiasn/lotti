@@ -7,8 +7,8 @@ class CalendarLocation extends BeamLocation<BeamState> {
 
   @override
   List<String> get pathPatterns => [
-        '/calendar',
-      ];
+    '/calendar',
+  ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {

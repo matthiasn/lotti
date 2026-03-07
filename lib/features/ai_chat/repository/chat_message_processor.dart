@@ -83,11 +83,14 @@ class ChatMessageProcessor {
     );
     if (providerConfig is! AiConfigInferenceProvider) {
       throw StateError(
-          'Provider not found: ${modelConfig.inferenceProviderId}');
+        'Provider not found: ${modelConfig.inferenceProviderId}',
+      );
     }
 
-    final config =
-        AiInferenceConfig(provider: providerConfig, model: modelConfig);
+    final config = AiInferenceConfig(
+      provider: providerConfig,
+      model: modelConfig,
+    );
     _cachedConfig = config;
     _cachedModelId = modelId;
     _configCacheTime = _now();
@@ -127,7 +130,8 @@ class ChatMessageProcessor {
   }
 
   List<String> _buildConversationContextLines(
-      List<ChatCompletionMessage> messages) {
+    List<ChatCompletionMessage> messages,
+  ) {
     final parts = <String>[];
     for (final msg in messages) {
       String? line;
@@ -232,7 +236,8 @@ class ChatMessageProcessor {
       if (toolCallDelta.function != null) {
         // Use a stable deterministic id for this tool call within the stream.
         // Prefer provided id; otherwise, use index. If neither is present, skip as malformed.
-        final toolId = toolCallDelta.id ??
+        final toolId =
+            toolCallDelta.id ??
             (toolCallDelta.index != null
                 ? 'tool_${toolCallDelta.index}'
                 : null);
@@ -278,14 +283,16 @@ class ChatMessageProcessor {
           );
         } else {
           // Add new tool call
-          toolCalls.add(ChatCompletionMessageToolCall(
-            id: toolId,
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: toolCallDelta.function?.name ?? '',
-              arguments: argumentBuffers[toolId]!.toString(),
+          toolCalls.add(
+            ChatCompletionMessageToolCall(
+              id: toolId,
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: toolCallDelta.function?.name ?? '',
+                arguments: argumentBuffers[toolId]!.toString(),
+              ),
             ),
-          ));
+          );
         }
       }
     }
@@ -311,10 +318,12 @@ class ChatMessageProcessor {
           categoryId: categoryId,
         );
 
-        toolMessages.add(ChatCompletionMessage.tool(
-          toolCallId: toolCall.id,
-          content: toolResponse,
-        ));
+        toolMessages.add(
+          ChatCompletionMessage.tool(
+            toolCallId: toolCall.id,
+            content: toolResponse,
+          ),
+        );
       }
     }
 
@@ -359,14 +368,16 @@ class ChatMessageProcessor {
       }
 
       final response = summaries
-          .map((s) => {
-                'task_id': s.taskId,
-                'title': s.taskTitle,
-                'summary': s.summary,
-                'date': s.taskDate.toIso8601String(),
-                'status': s.status,
-                'metadata': s.metadata,
-              })
+          .map(
+            (s) => {
+              'task_id': s.taskId,
+              'title': s.taskTitle,
+              'summary': s.summary,
+              'date': s.taskDate.toIso8601String(),
+              'status': s.status,
+              'metadata': s.metadata,
+            },
+          )
           .toList();
 
       return jsonEncode({
@@ -395,7 +406,8 @@ class ChatMessageProcessor {
   String buildFinalPromptFromMessages(List<ChatCompletionMessage> messages) {
     final parts = _buildConversationContextLines(messages)
       ..add(
-          'Based on the conversation and tool results above, provide a helpful response to the user.');
+        'Based on the conversation and tool results above, provide a helpful response to the user.',
+      );
     return parts.join('\n\n');
   }
 

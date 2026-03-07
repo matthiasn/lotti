@@ -44,11 +44,11 @@ extension TaskPriorityExt on TaskPriority {
 
   /// Human-readable label (non-localized) for use in fallback UI.
   String get label => switch (this) {
-        TaskPriority.p0Urgent => 'Urgent',
-        TaskPriority.p1High => 'High',
-        TaskPriority.p2Medium => 'Medium',
-        TaskPriority.p3Low => 'Low',
-      };
+    TaskPriority.p0Urgent => 'Urgent',
+    TaskPriority.p1High => 'High',
+    TaskPriority.p2Medium => 'Medium',
+    TaskPriority.p3Low => 'Low',
+  };
 
   /// Color aligned with task status theme tokens.
   Color colorForBrightness(Brightness brightness) {
@@ -223,14 +223,14 @@ extension TaskStatusExtension on TaskStatus {
   }
 
   String get toDbString => switch (this) {
-        TaskOpen() => 'OPEN',
-        TaskGroomed() => 'GROOMED',
-        TaskInProgress() => 'IN PROGRESS',
-        TaskBlocked() => 'BLOCKED',
-        TaskOnHold() => 'ON HOLD',
-        TaskDone() => 'DONE',
-        TaskRejected() => 'REJECTED',
-      };
+    TaskOpen() => 'OPEN',
+    TaskGroomed() => 'GROOMED',
+    TaskInProgress() => 'IN PROGRESS',
+    TaskBlocked() => 'BLOCKED',
+    TaskOnHold() => 'ON HOLD',
+    TaskDone() => 'DONE',
+    TaskRejected() => 'REJECTED',
+  };
 
   Color get color {
     return colorForBrightness(Brightness.dark);

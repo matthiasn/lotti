@@ -69,27 +69,29 @@ void main() {
   });
 
   group('addBatchItem', () {
-    test('explodes add_multiple_checklist_items into individual items',
-        () async {
-      await builder.addBatchItem(
-        toolName: 'add_multiple_checklist_items',
-        args: {
-          'items': [
-            {'title': 'Design mockup'},
-            {'title': 'Implement API'},
-            {'title': 'Write tests'},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+    test(
+      'explodes add_multiple_checklist_items into individual items',
+      () async {
+        await builder.addBatchItem(
+          toolName: 'add_multiple_checklist_items',
+          args: {
+            'items': [
+              {'title': 'Design mockup'},
+              {'title': 'Implement API'},
+              {'title': 'Write tests'},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(builder.items, hasLength(3));
-      expect(builder.items[0].toolName, 'add_checklist_item');
-      expect(builder.items[0].args, {'title': 'Design mockup'});
-      expect(builder.items[0].humanSummary, 'Add: "Design mockup"');
-      expect(builder.items[1].humanSummary, 'Add: "Implement API"');
-      expect(builder.items[2].humanSummary, 'Add: "Write tests"');
-    });
+        expect(builder.items, hasLength(3));
+        expect(builder.items[0].toolName, 'add_checklist_item');
+        expect(builder.items[0].args, {'title': 'Design mockup'});
+        expect(builder.items[0].humanSummary, 'Add: "Design mockup"');
+        expect(builder.items[1].humanSummary, 'Add: "Implement API"');
+        expect(builder.items[2].humanSummary, 'Add: "Write tests"');
+      },
+    );
 
     test('explodes update_checklist_items into individual items', () async {
       await builder.addBatchItem(
@@ -110,22 +112,24 @@ void main() {
       expect(builder.items[1].humanSummary, contains('Revised title'));
     });
 
-    test('handles check-only update (no title) by ID with truncated ID',
-        () async {
-      await builder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-42', 'isChecked': true},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+    test(
+      'handles check-only update (no title) by ID with truncated ID',
+      () async {
+        await builder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-42', 'isChecked': true},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(builder.items, hasLength(1));
-      // Short ID — no truncation needed.
-      expect(builder.items.first.humanSummary, 'Check off item item-42');
-    });
+        expect(builder.items, hasLength(1));
+        // Short ID — no truncation needed.
+        expect(builder.items.first.humanSummary, 'Check off item item-42');
+      },
+    );
 
     test('truncates long UUIDs in fallback display', () async {
       await builder.addBatchItem(
@@ -304,7 +308,7 @@ void main() {
       await builder.addBatchItem(
         toolName: 'unknown_batch_tool',
         args: {
-          'items': [1, 2, 3]
+          'items': [1, 2, 3],
         },
         summaryPrefix: 'Unknown',
       );
@@ -378,8 +382,9 @@ void main() {
       expect(result.vectorClock, isNull);
 
       // Verify it was persisted.
-      final captured =
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
       expect(captured, hasLength(1));
       expect(captured.first, isA<ChangeSetEntity>());
     });
@@ -662,33 +667,39 @@ void main() {
       expect(result, isNull, reason: 'deferred items must not be re-proposed');
     });
 
-    test('allows proposal when same tool has different args than rejected',
-        () async {
-      // The agent proposes a different value than what was rejected.
-      await builder.addItem(
-        toolName: 'update_task_estimate',
-        args: {'minutes': 60},
-        humanSummary: 'Set estimate to 1 hour',
-      );
+    test(
+      'allows proposal when same tool has different args than rejected',
+      () async {
+        // The agent proposes a different value than what was rejected.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 60},
+          humanSummary: 'Set estimate to 1 hour',
+        );
 
-      final existingSet = makeTestChangeSet(
-        items: const [
-          ChangeItem(
-            toolName: 'update_task_estimate',
-            args: {'minutes': 120},
-            humanSummary: 'Set estimate to 2 hours',
-            status: ChangeItemStatus.rejected,
-          ),
-        ],
-      );
+        final existingSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Set estimate to 2 hours',
+              status: ChangeItemStatus.rejected,
+            ),
+          ],
+        );
 
-      final result = await builder.build(
-        mockSyncService,
-        existingPendingSets: [existingSet],
-      );
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
 
-      expect(result, isNotNull, reason: 'different args should not be blocked');
-    });
+        expect(
+          result,
+          isNotNull,
+          reason: 'different args should not be blocked',
+        );
+      },
+    );
 
     test('skips confirmed items during dedup (already applied)', () async {
       // The agent proposes the same mutation that was already confirmed.
@@ -736,74 +747,77 @@ void main() {
       verify(() => mockSyncService.upsertEntity(any())).called(1);
     });
 
-    test('consolidates multiple existing sets into one and resolves surplus',
-        () async {
-      await builder.addItem(
-        toolName: 'update_task_estimate',
-        args: {'minutes': 45},
-        humanSummary: 'Set estimate to 45 min',
-      );
+    test(
+      'consolidates multiple existing sets into one and resolves surplus',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 45},
+          humanSummary: 'Set estimate to 45 min',
+        );
 
-      // Two racing sets with some overlapping items.
-      final older = makeTestChangeSet(
-        id: 'cs-older',
-        createdAt: DateTime(2024, 3, 15, 10),
-        items: const [
-          ChangeItem(
-            toolName: 'set_task_title',
-            args: {'title': 'Fix bug'},
-            humanSummary: 'Set title',
-          ),
-        ],
-      );
-      final newer = makeTestChangeSet(
-        id: 'cs-newer',
-        createdAt: DateTime(2024, 3, 15, 11),
-        items: const [
-          ChangeItem(
-            toolName: 'set_task_title',
-            args: {'title': 'Fix bug'},
-            humanSummary: 'Set title',
-          ),
-          ChangeItem(
-            toolName: 'set_task_status',
-            args: {'status': 'IN_PROGRESS'},
-            humanSummary: 'Set status',
-          ),
-        ],
-      );
+        // Two racing sets with some overlapping items.
+        final older = makeTestChangeSet(
+          id: 'cs-older',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Fix bug'},
+              humanSummary: 'Set title',
+            ),
+          ],
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-newer',
+          createdAt: DateTime(2024, 3, 15, 11),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Fix bug'},
+              humanSummary: 'Set title',
+            ),
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN_PROGRESS'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
 
-      final result = await builder.build(
-        mockSyncService,
-        existingPendingSets: [older, newer],
-      );
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [older, newer],
+        );
 
-      expect(result, isNotNull);
-      // Survivor is the newer set. It keeps its own items + new items.
-      // The older set's title item is a duplicate (already in newer) so
-      // it's not added again.
-      expect(result!.id, 'cs-newer');
-      expect(result.items, hasLength(3));
-      expect(result.items[0].toolName, 'set_task_title');
-      expect(result.items[1].toolName, 'set_task_status');
-      expect(result.items[2].toolName, 'update_task_estimate');
+        expect(result, isNotNull);
+        // Survivor is the newer set. It keeps its own items + new items.
+        // The older set's title item is a duplicate (already in newer) so
+        // it's not added again.
+        expect(result!.id, 'cs-newer');
+        expect(result.items, hasLength(3));
+        expect(result.items[0].toolName, 'set_task_title');
+        expect(result.items[1].toolName, 'set_task_status');
+        expect(result.items[2].toolName, 'update_task_estimate');
 
-      // Verify: survivor updated + older marked as resolved = 2 upserts.
-      final captured =
-          verify(() => mockSyncService.upsertEntity(captureAny())).captured;
-      expect(captured, hasLength(2));
+        // Verify: survivor updated + older marked as resolved = 2 upserts.
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(captured, hasLength(2));
 
-      // First upsert: the consolidated survivor.
-      final survivor = captured[0] as ChangeSetEntity;
-      expect(survivor.id, 'cs-newer');
-      expect(survivor.items, hasLength(3));
+        // First upsert: the consolidated survivor.
+        final survivor = captured[0] as ChangeSetEntity;
+        expect(survivor.id, 'cs-newer');
+        expect(survivor.items, hasLength(3));
 
-      // Second upsert: the surplus set marked as resolved.
-      final resolved = captured[1] as ChangeSetEntity;
-      expect(resolved.id, 'cs-older');
-      expect(resolved.status, ChangeSetStatus.resolved);
-      expect(resolved.resolvedAt, isNotNull);
-    });
+        // Second upsert: the surplus set marked as resolved.
+        final resolved = captured[1] as ChangeSetEntity;
+        expect(resolved.id, 'cs-older');
+        expect(resolved.status, ChangeSetStatus.resolved);
+        expect(resolved.resolvedAt, isNotNull);
+      },
+    );
   });
 
   group('addBatchItem redundancy filtering', () {
@@ -837,34 +851,36 @@ void main() {
       );
     });
 
-    test('suppresses redundant uncheck when item is already unchecked',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Write tests', isChecked: false),
-      );
+    test(
+      'suppresses redundant uncheck when item is already unchecked',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Write tests', isChecked: false),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-2', 'isChecked': false},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-2', 'isChecked': false},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(resolverBuilder.items, isEmpty);
-      expect(result.redundant, 1);
-      expect(
-        result.redundantDetails.first,
-        contains('"Write tests" is already unchecked'),
-      );
-    });
+        expect(resolverBuilder.items, isEmpty);
+        expect(result.redundant, 1);
+        expect(
+          result.redundantDetails.first,
+          contains('"Write tests" is already unchecked'),
+        );
+      },
+    );
 
     test('allows non-redundant check update to pass through', () async {
       final resolverBuilder = ChangeSetBuilder(
@@ -921,31 +937,33 @@ void main() {
       expect(result.redundant, 1);
     });
 
-    test('title-only update is NOT suppressed even when isChecked matches',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Old title', isChecked: true),
-      );
+    test(
+      'title-only update is NOT suppressed even when isChecked matches',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Old title', isChecked: true),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-1', 'title': 'New title'},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'title': 'New title'},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(resolverBuilder.items, hasLength(1));
-      expect(result.added, 1);
-      expect(result.redundant, 0);
-    });
+        expect(resolverBuilder.items, hasLength(1));
+        expect(result.added, 1);
+        expect(result.redundant, 0);
+      },
+    );
 
     test('title change with redundant isChecked is NOT suppressed', () async {
       final resolverBuilder = ChangeSetBuilder(
@@ -1020,115 +1038,123 @@ void main() {
       expect(result.redundant, 0);
     });
 
-    test('keeps item when resolver returns isChecked as null (conservative)',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Ambiguous item', isChecked: null),
-      );
+    test(
+      'keeps item when resolver returns isChecked as null (conservative)',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Ambiguous item', isChecked: null),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-null', 'isChecked': true},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-null', 'isChecked': true},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(resolverBuilder.items, hasLength(1));
-      expect(result.added, 1);
-      expect(result.redundant, 0);
-    });
+        expect(resolverBuilder.items, hasLength(1));
+        expect(result.added, 1);
+        expect(result.redundant, 0);
+      },
+    );
 
-    test('suppresses when both isChecked and title match current state',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Same title', isChecked: true),
-      );
+    test(
+      'suppresses when both isChecked and title match current state',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Same title', isChecked: true),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-both', 'isChecked': true, 'title': 'Same title'},
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-both', 'isChecked': true, 'title': 'Same title'},
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(resolverBuilder.items, isEmpty);
-      expect(result.added, 0);
-      expect(result.redundant, 1);
-      expect(
-        result.redundantDetails.first,
-        contains('"Same title" is already checked'),
-      );
-    });
+        expect(resolverBuilder.items, isEmpty);
+        expect(result.added, 0);
+        expect(result.redundant, 1);
+        expect(
+          result.redundantDetails.first,
+          contains('"Same title" is already checked'),
+        );
+      },
+    );
 
-    test('keeps update with empty title string (treated as malformed)',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Some item', isChecked: true),
-      );
+    test(
+      'keeps update with empty title string (treated as malformed)',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Some item', isChecked: true),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-y', 'title': ''}, // Empty title — malformed
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-y', 'title': ''}, // Empty title — malformed
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      // Empty title is not a valid proposal — kept defensively.
-      expect(resolverBuilder.items, hasLength(1));
-      expect(result.added, 1);
-      expect(result.redundant, 0);
-    });
+        // Empty title is not a valid proposal — kept defensively.
+        expect(resolverBuilder.items, hasLength(1));
+        expect(result.added, 1);
+        expect(result.redundant, 0);
+      },
+    );
 
-    test('keeps malformed update with only id (no isChecked, no title)',
-        () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (id) async =>
-            (title: 'Some item', isChecked: true),
-      );
+    test(
+      'keeps malformed update with only id (no isChecked, no title)',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async =>
+              (title: 'Some item', isChecked: true),
+        );
 
-      final result = await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {'id': 'item-x'}, // No isChecked, no title — malformed
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-x'}, // No isChecked, no title — malformed
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      // Malformed proposals are kept defensively.
-      expect(resolverBuilder.items, hasLength(1));
-      expect(result.added, 1);
-      expect(result.redundant, 0);
-    });
+        // Malformed proposals are kept defensively.
+        expect(resolverBuilder.items, hasLength(1));
+        expect(result.added, 1);
+        expect(result.redundant, 0);
+      },
+    );
 
     test('does not filter add_checklist_item (only updates)', () async {
       final resolverBuilder = ChangeSetBuilder(
@@ -1157,37 +1183,41 @@ void main() {
   });
 
   group('add_checklist_item title-based dedup', () {
-    test('suppresses add when title already exists (case-insensitive)',
-        () async {
-      final titledBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        existingChecklistTitlesResolver: () async =>
-            {'buy groceries', 'write tests'},
-      );
+    test(
+      'suppresses add when title already exists (case-insensitive)',
+      () async {
+        final titledBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          existingChecklistTitlesResolver: () async => {
+            'buy groceries',
+            'write tests',
+          },
+        );
 
-      final result = await titledBuilder.addBatchItem(
-        toolName: 'add_multiple_checklist_items',
-        args: {
-          'items': [
-            {'title': 'Buy Groceries'}, // exists (case-insensitive)
-            {'title': 'Deploy app'}, // novel
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await titledBuilder.addBatchItem(
+          toolName: 'add_multiple_checklist_items',
+          args: {
+            'items': [
+              {'title': 'Buy Groceries'}, // exists (case-insensitive)
+              {'title': 'Deploy app'}, // novel
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(titledBuilder.items, hasLength(1));
-      expect(titledBuilder.items.first.args['title'], 'Deploy app');
-      expect(result.added, 1);
-      expect(result.redundant, 1);
-      expect(
-        result.redundantDetails.first,
-        contains('"Buy Groceries" already exists on the task'),
-      );
-    });
+        expect(titledBuilder.items, hasLength(1));
+        expect(titledBuilder.items.first.args['title'], 'Deploy app');
+        expect(result.added, 1);
+        expect(result.redundant, 1);
+        expect(
+          result.redundantDetails.first,
+          contains('"Buy Groceries" already exists on the task'),
+        );
+      },
+    );
 
     test('allows add when title is novel', () async {
       final titledBuilder = ChangeSetBuilder(
@@ -1195,8 +1225,10 @@ void main() {
         taskId: 'task-001',
         threadId: 'thread-001',
         runKey: 'run-key-001',
-        existingChecklistTitlesResolver: () async =>
-            {'buy groceries', 'write tests'},
+        existingChecklistTitlesResolver: () async => {
+          'buy groceries',
+          'write tests',
+        },
       );
 
       final result = await titledBuilder.addBatchItem(
@@ -1214,31 +1246,33 @@ void main() {
       expect(result.redundant, 0);
     });
 
-    test('same-wake dedup: second add with same title in batch is suppressed',
-        () async {
-      final titledBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        existingChecklistTitlesResolver: () async => <String>{},
-      );
+    test(
+      'same-wake dedup: second add with same title in batch is suppressed',
+      () async {
+        final titledBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          existingChecklistTitlesResolver: () async => <String>{},
+        );
 
-      final result = await titledBuilder.addBatchItem(
-        toolName: 'add_multiple_checklist_items',
-        args: {
-          'items': [
-            {'title': 'Write tests'},
-            {'title': 'write tests'}, // same title, different case
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await titledBuilder.addBatchItem(
+          toolName: 'add_multiple_checklist_items',
+          args: {
+            'items': [
+              {'title': 'Write tests'},
+              {'title': 'write tests'}, // same title, different case
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(titledBuilder.items, hasLength(1));
-      expect(result.added, 1);
-      expect(result.redundant, 1);
-    });
+        expect(titledBuilder.items, hasLength(1));
+        expect(result.added, 1);
+        expect(result.redundant, 1);
+      },
+    );
 
     test('addItem suppresses add_checklist_item when title exists', () async {
       final titledBuilder = ChangeSetBuilder(

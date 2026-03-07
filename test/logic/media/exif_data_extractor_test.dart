@@ -72,29 +72,37 @@ void main() {
     group('parseGpsCoordinate', () {
       test('parses North latitude correctly', () {
         // San Francisco: 37° 46' 29.64" N
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
         expect(result, closeTo(37.7749, 0.0001));
       });
 
       test('parses South latitude with negative sign', () {
         // Sydney: 33° 52' 0" S
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[33/1, 52/1, 0/1]', 'S');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[33/1, 52/1, 0/1]',
+          'S',
+        );
         expect(result, closeTo(-33.8667, 0.0001));
       });
 
       test('parses East longitude correctly', () {
         // Sydney: 151° 12' 0" E
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[151/1, 12/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[151/1, 12/1, 0/1]',
+          'E',
+        );
         expect(result, closeTo(151.2, 0.0001));
       });
 
       test('parses West longitude with negative sign', () {
         // San Francisco: 122° 25' 9.84" W
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[122/1, 25/1, 984/100]', 'W');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[122/1, 25/1, 984/100]',
+          'W',
+        );
         expect(result, closeTo(-122.4194, 0.0001));
       });
 
@@ -142,38 +150,50 @@ void main() {
       });
 
       test('handles coordinates at equator', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[0/1, 0/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'N',
+        );
         expect(result, equals(0.0));
       });
 
       test('handles coordinates at prime meridian', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[0/1, 0/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[0/1, 0/1, 0/1]',
+          'E',
+        );
         expect(result, equals(0.0));
       });
 
       test('handles maximum latitude North Pole', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[90/1, 0/1, 0/1]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'N',
+        );
         expect(result, equals(90.0));
       });
 
       test('handles maximum latitude South Pole', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[90/1, 0/1, 0/1]', 'S');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[90/1, 0/1, 0/1]',
+          'S',
+        );
         expect(result, equals(-90.0));
       });
 
       test('handles date line crossing West', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[180/1, 0/1, 0/1]', 'W');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[180/1, 0/1, 0/1]',
+          'W',
+        );
         expect(result, equals(-180.0));
       });
 
       test('handles date line crossing East', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[180/1, 0/1, 0/1]', 'E');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[180/1, 0/1, 0/1]',
+          'E',
+        );
         expect(result, equals(180.0));
       });
 
@@ -186,15 +206,19 @@ void main() {
       });
 
       test('handles coordinates without brackets', () {
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('37/1, 46/1, 0/1', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '37/1, 46/1, 0/1',
+          'N',
+        );
         expect(result, closeTo(37.7667, 0.0001));
       });
 
       test('handles fractional seconds', () {
         // 37° 46' 29.64" N (with fractional seconds)
-        final result =
-            ExifDataExtractor.parseGpsCoordinate('[37/1, 46/1, 2964/100]', 'N');
+        final result = ExifDataExtractor.parseGpsCoordinate(
+          '[37/1, 46/1, 2964/100]',
+          'N',
+        );
         expect(result, closeTo(37.7749, 0.0001));
       });
 
@@ -214,20 +238,23 @@ void main() {
 
     group('parseExifDateString', () {
       test('parses valid EXIF datetime format', () {
-        final result =
-            ExifDataExtractor.parseExifDateString('2023:12:25 14:30:45');
+        final result = ExifDataExtractor.parseExifDateString(
+          '2023:12:25 14:30:45',
+        );
         expect(result, DateTime(2023, 12, 25, 14, 30, 45));
       });
 
       test('parses midnight timestamp', () {
-        final result =
-            ExifDataExtractor.parseExifDateString('2024:01:15 00:00:00');
+        final result = ExifDataExtractor.parseExifDateString(
+          '2024:01:15 00:00:00',
+        );
         expect(result, DateTime(2024, 1, 15));
       });
 
       test('parses end of day timestamp', () {
-        final result =
-            ExifDataExtractor.parseExifDateString('2024:12:31 23:59:59');
+        final result = ExifDataExtractor.parseExifDateString(
+          '2024:12:31 23:59:59',
+        );
         expect(result, DateTime(2024, 12, 31, 23, 59, 59));
       });
 
@@ -271,8 +298,9 @@ void main() {
         // has dashes, they remain. This happens to parse successfully.
         // This is acceptable behavior - the function is designed for EXIF format
         // but doesn't strictly reject other formats that happen to parse.
-        final result =
-            ExifDataExtractor.parseExifDateString('2023-12-25 14:30:45');
+        final result = ExifDataExtractor.parseExifDateString(
+          '2023-12-25 14:30:45',
+        );
         expect(result, DateTime(2023, 12, 25, 14, 30, 45));
       });
     });
@@ -327,15 +355,17 @@ void main() {
         expect(ExifDataExtractor.extractTimestamp(exifData), isNull);
       });
 
-      test('falls back to Image DateTime when DateTimeOriginal is malformed',
-          () {
-        final exifData = <String, IfdTag>{
-          'EXIF DateTimeOriginal': _createMockIfdTag('invalid'),
-          'Image DateTime': _createMockIfdTag('2022:06:10 08:15:22'),
-        };
-        final result = ExifDataExtractor.extractTimestamp(exifData);
-        expect(result, DateTime(2022, 6, 10, 8, 15, 22));
-      });
+      test(
+        'falls back to Image DateTime when DateTimeOriginal is malformed',
+        () {
+          final exifData = <String, IfdTag>{
+            'EXIF DateTimeOriginal': _createMockIfdTag('invalid'),
+            'Image DateTime': _createMockIfdTag('2022:06:10 08:15:22'),
+          };
+          final result = ExifDataExtractor.extractTimestamp(exifData);
+          expect(result, DateTime(2022, 6, 10, 8, 15, 22));
+        },
+      );
     });
 
     group('extractGpsCoordinates', () {
@@ -425,8 +455,10 @@ void main() {
         };
         final timestamp = DateTime(2024, 1, 15, 10, 20, 30);
 
-        final result =
-            ExifDataExtractor.extractGpsCoordinates(exifData, timestamp);
+        final result = ExifDataExtractor.extractGpsCoordinates(
+          exifData,
+          timestamp,
+        );
 
         expect(result, isNotNull);
         expect(result!.latitude, closeTo(37.7749, 0.0001));
@@ -444,8 +476,10 @@ void main() {
         };
         final timestamp = DateTime(2024, 6, 15);
 
-        final result =
-            ExifDataExtractor.extractGpsCoordinates(exifData, timestamp);
+        final result = ExifDataExtractor.extractGpsCoordinates(
+          exifData,
+          timestamp,
+        );
 
         expect(result, isNotNull);
         expect(result!.latitude, closeTo(-33.8667, 0.0001));
@@ -461,8 +495,10 @@ void main() {
         };
         final timestamp = DateTime(2024);
 
-        final result =
-            ExifDataExtractor.extractGpsCoordinates(exifData, timestamp);
+        final result = ExifDataExtractor.extractGpsCoordinates(
+          exifData,
+          timestamp,
+        );
 
         expect(result, isNotNull);
         expect(result!.latitude, equals(0.0));
@@ -510,8 +546,10 @@ void main() {
         };
         final timestamp = DateTime(2024, 1, 15);
 
-        final result =
-            ExifDataExtractor.extractGpsCoordinates(exifData, timestamp);
+        final result = ExifDataExtractor.extractGpsCoordinates(
+          exifData,
+          timestamp,
+        );
 
         expect(result, isNotNull);
         // San Francisco geohash starts with '9q8'

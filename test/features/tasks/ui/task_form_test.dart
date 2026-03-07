@@ -74,16 +74,19 @@ void main() {
         final mockEntitiesCacheService = MockEntitiesCacheService();
         when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
         when(() => mockEntitiesCacheService.sortedLabels).thenReturn([]);
-        when(() => mockEntitiesCacheService.getLabelById(any()))
-            .thenReturn(null);
+        when(
+          () => mockEntitiesCacheService.getLabelById(any()),
+        ).thenReturn(null);
         getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
       },
     );
 
-    when(() => mocks.journalDb.getLinkedEntities(any()))
-        .thenAnswer((_) async => <JournalEntity>[]);
-    when(mocks.journalDb.watchConfigFlags)
-        .thenAnswer((_) => const Stream<Set<ConfigFlag>>.empty());
+    when(
+      () => mocks.journalDb.getLinkedEntities(any()),
+    ).thenAnswer((_) async => <JournalEntity>[]);
+    when(
+      mocks.journalDb.watchConfigFlags,
+    ).thenAnswer((_) => const Stream<Set<ConfigFlag>>.empty());
   });
 
   tearDown(tearDownTestGetIt);
@@ -153,15 +156,17 @@ void main() {
       expect(find.byType(ChecklistsWidget), findsOneWidget);
     });
 
-    testWidgets('agent report shows content when agent has report',
-        (tester) async {
+    testWidgets('agent report shows content when agent has report', (
+      tester,
+    ) async {
       final agent = makeTestIdentity(
         id: 'agent-for-task',
         agentId: 'agent-for-task',
       );
       final report = makeTestReport(
         agentId: 'agent-for-task',
-        content: '## 📋 TLDR\nTask is going well.\n\n'
+        content:
+            '## 📋 TLDR\nTask is going well.\n\n'
             '## ✅ Achieved\n- Done things\n',
       );
 
@@ -174,8 +179,9 @@ void main() {
       expect(find.textContaining('Task is going well'), findsOneWidget);
     });
 
-    testWidgets('agent report section hidden when no agent exists',
-        (tester) async {
+    testWidgets('agent report section hidden when no agent exists', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(task: testTask));
       await tester.pumpAndSettle();
 

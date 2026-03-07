@@ -76,8 +76,10 @@ void main() {
         final result = handler.processFunctionCall(call);
 
         expect(result.success, false);
-        expect(result.error,
-            'Empty description provided. Please provide a meaningful description.');
+        expect(
+          result.error,
+          'Empty description provided. Please provide a meaningful description.',
+        );
       });
 
       test('should show error when wrong field name is used', () {
@@ -93,8 +95,10 @@ void main() {
         final result = handler.processFunctionCall(call);
 
         expect(result.success, false);
-        expect(result.error,
-            'Found "description" instead of "actionItemDescription"');
+        expect(
+          result.error,
+          'Found "description" instead of "actionItemDescription"',
+        );
         expect(result.data['attemptedItem'], 'Buy milk');
         expect(result.data['wrongFieldName'], 'description');
       });
@@ -148,8 +152,10 @@ void main() {
         final result = handler.processFunctionCall(call);
 
         expect(result.success, false);
-        expect(result.error,
-            contains('Found "item" instead of "actionItemDescription"'));
+        expect(
+          result.error,
+          contains('Found "item" instead of "actionItemDescription"'),
+        );
         expect(result.data['attemptedItem'], 'Buy groceries');
         expect(result.data['wrongFieldName'], 'item');
       });
@@ -177,8 +183,9 @@ void main() {
       test('should create checklist when none exists', () async {
         // Mock journalDb to return task without checklists first, then with checklist
         var callCount = 0;
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async {
+        when(() => mockJournalDb.journalEntityById(testTask.id)).thenAnswer((
+          _,
+        ) async {
           callCount++;
           if (callCount == 1) {
             // First call: return task without checklists
@@ -195,18 +202,20 @@ void main() {
         });
 
         // Mock successful checklist creation
-        when(() => mockAutoChecklistService.autoCreateChecklist(
-              taskId: testTask.id,
-              suggestions: any(named: 'suggestions'),
-              title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: true,
-              checklistId: 'new-checklist',
-              createdItems: [
-                (id: 'item-1', title: 'Buy milk', isChecked: false)
-              ],
-              error: null,
-            ));
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: testTask.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          ),
+        ).thenAnswer(
+          (_) async => (
+            success: true,
+            checklistId: 'new-checklist',
+            createdItems: [(id: 'item-1', title: 'Buy milk', isChecked: false)],
+            error: null,
+          ),
+        );
 
         const result = FunctionCallResult(
           success: true,
@@ -220,11 +229,13 @@ void main() {
         expect(created, true);
         expect(handler.successfulItems, contains('Buy milk'));
 
-        verify(() => mockAutoChecklistService.autoCreateChecklist(
-              taskId: testTask.id,
-              suggestions: any(named: 'suggestions'),
-              title: 'TODOs',
-            )).called(1);
+        verify(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: testTask.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          ),
+        ).called(1);
       });
 
       test('should add to existing checklist', () async {
@@ -236,32 +247,37 @@ void main() {
           ),
         );
 
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => taskWithChecklist);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => taskWithChecklist);
 
         // Mock successful item addition
-        when(() => mockChecklistRepository.addItemToChecklist(
-              checklistId: 'existing-checklist',
+        when(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: 'existing-checklist',
+            title: 'Buy milk',
+            isChecked: false,
+            categoryId: testTask.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
+          ),
+        ).thenAnswer(
+          (_) async => ChecklistItem(
+            meta: Metadata(
+              id: 'item-123',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+              categoryId: testTask.meta.categoryId,
+            ),
+            data: const ChecklistItemData(
               title: 'Buy milk',
               isChecked: false,
-              categoryId: testTask.meta.categoryId,
+              linkedChecklists: ['existing-checklist'],
               checkedBy: CheckedBySource.agent,
-            )).thenAnswer((_) async => ChecklistItem(
-              meta: Metadata(
-                id: 'item-123',
-                createdAt: DateTime(2025),
-                updatedAt: DateTime(2025),
-                dateFrom: DateTime(2025),
-                dateTo: DateTime(2025),
-                categoryId: testTask.meta.categoryId,
-              ),
-              data: const ChecklistItemData(
-                title: 'Buy milk',
-                isChecked: false,
-                linkedChecklists: ['existing-checklist'],
-                checkedBy: CheckedBySource.agent,
-              ),
-            ));
+            ),
+          ),
+        );
 
         const result = FunctionCallResult(
           success: true,
@@ -275,29 +291,36 @@ void main() {
         expect(created, true);
         expect(handler.successfulItems, contains('Buy milk'));
 
-        verify(() => mockChecklistRepository.addItemToChecklist(
-              checklistId: 'existing-checklist',
-              title: 'Buy milk',
-              isChecked: false,
-              categoryId: testTask.meta.categoryId,
-              checkedBy: CheckedBySource.agent,
-            )).called(1);
+        verify(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: 'existing-checklist',
+            title: 'Buy milk',
+            isChecked: false,
+            categoryId: testTask.meta.categoryId,
+            checkedBy: CheckedBySource.agent,
+          ),
+        ).called(1);
       });
 
       test('should return false on creation failure', () async {
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
 
-        when(() => mockAutoChecklistService.autoCreateChecklist(
-              taskId: testTask.id,
-              suggestions: any(named: 'suggestions'),
-              title: 'TODOs',
-            )).thenAnswer((_) async => (
-              success: false,
-              checklistId: null,
-              createdItems: null,
-              error: 'Creation failed',
-            ));
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: testTask.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'TODOs',
+          ),
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            checklistId: null,
+            createdItems: null,
+            error: 'Creation failed',
+          ),
+        );
 
         const result = FunctionCallResult(
           success: true,
@@ -313,8 +336,9 @@ void main() {
       });
 
       test('should handle exceptions gracefully', () async {
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenThrow(Exception('Database error'));
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenThrow(Exception('Database error'));
 
         const result = FunctionCallResult(
           success: true,
@@ -350,8 +374,10 @@ void main() {
         );
 
         // The prompt should contain the error message and attempted item
-        expect(prompt,
-            contains('Found "item" instead of "actionItemDescription"'));
+        expect(
+          prompt,
+          contains('Found "item" instead of "actionItemDescription"'),
+        );
         expect(prompt, contains('for "Buy milk"'));
         expect(prompt, contains('Buy bread')); // successful item
         expect(prompt, contains('Use the correct format'));

@@ -48,8 +48,9 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('shows desktop-only chip when desktopOnly is true',
-        (tester) async {
+    testWidgets('shows desktop-only chip when desktopOnly is true', (
+      tester,
+    ) async {
       final profile = testInferenceProfile(
         id: 'p1',
         name: 'Desktop Profile',

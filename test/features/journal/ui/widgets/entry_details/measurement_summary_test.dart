@@ -32,8 +32,9 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('displays formatted measurement value with unit',
-        (tester) async {
+    testWidgets('displays formatted measurement value with unit', (
+      tester,
+    ) async {
       when(
         () => mockEntitiesCacheService.getDataTypeById(measurableCoverage.id),
       ).thenAnswer((_) => measurableCoverage);
@@ -48,8 +49,9 @@ void main() {
       expect(find.text('Coverage: 55 %'), findsOneWidget);
     });
 
-    testWidgets('displays TextViewerWidget when entryText is present',
-        (tester) async {
+    testWidgets('displays TextViewerWidget when entryText is present', (
+      tester,
+    ) async {
       when(
         () => mockEntitiesCacheService.getDataTypeById(measurableCoverage.id),
       ).thenAnswer((_) => measurableCoverage);
@@ -66,8 +68,9 @@ void main() {
       expect(find.byType(TextViewerWidget), findsOneWidget);
     });
 
-    testWidgets('renders SizedBox.shrink when dataType is null',
-        (tester) async {
+    testWidgets('renders SizedBox.shrink when dataType is null', (
+      tester,
+    ) async {
       when(
         () => mockEntitiesCacheService.getDataTypeById(measurableCoverage.id),
       ).thenAnswer((_) => null);

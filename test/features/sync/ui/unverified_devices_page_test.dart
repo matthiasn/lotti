@@ -32,15 +32,17 @@ void main() {
     mockMatrixService = MockMatrixService();
   });
 
-  testWidgets('shows status indicator when there are no unverified devices',
-      (tester) async {
+  testWidgets('shows status indicator when there are no unverified devices', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const UnverifiedDevices(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixUnverifiedControllerProvider
-              .overrideWith(() => _FakeMatrixUnverifiedController(const [])),
+          matrixUnverifiedControllerProvider.overrideWith(
+            () => _FakeMatrixUnverifiedController(const []),
+          ),
         ],
       ),
     );

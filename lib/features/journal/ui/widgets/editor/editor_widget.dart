@@ -29,8 +29,7 @@ String? getDictionaryResultMessage(
     // Silent for truly unexpected edge cases
     SpeechDictionaryResult.emptyTerm ||
     SpeechDictionaryResult.entryNotFound ||
-    SpeechDictionaryResult.categoryNotFound =>
-      null,
+    SpeechDictionaryResult.categoryNotFound => null,
   };
 }
 
@@ -123,8 +122,9 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
       elevation: 0,
       clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,
       shape: RoundedRectangleBorder(
-        borderRadius:
-            const BorderRadius.all(Radius.circular(inputBorderRadius)),
+        borderRadius: const BorderRadius.all(
+          Radius.circular(inputBorderRadius),
+        ),
         side: BorderSide(
           color: shouldShowEditorToolBar
               ? context.colorScheme.outline.withAlpha(100)
@@ -175,10 +175,10 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                   ),
                   contextMenuBuilder: (context, rawEditorState) =>
                       _buildContextMenu(
-                    context,
-                    rawEditorState,
-                    controller,
-                  ),
+                        context,
+                        rawEditorState,
+                        controller,
+                      ),
                 ),
               ),
             ),

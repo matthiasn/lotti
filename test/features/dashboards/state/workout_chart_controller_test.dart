@@ -23,8 +23,9 @@ void main() {
 
   setUp(() async {
     mockHealthImport = MockHealthImport();
-    when(() => mockHealthImport.getWorkoutsHealthDataDelta())
-        .thenAnswer((_) async {});
+    when(
+      () => mockHealthImport.getWorkoutsHealthDataDelta(),
+    ).thenAnswer((_) async {});
 
     mocks = await setUpTestGetIt(
       additionalSetup: () {
@@ -77,8 +78,9 @@ void main() {
 
     test('refreshes on workoutNotification', () async {
       final updateController = StreamController<Set<String>>.broadcast();
-      when(() => mocks.updateNotifications.updateStream)
-          .thenAnswer((_) => updateController.stream);
+      when(
+        () => mocks.updateNotifications.updateStream,
+      ).thenAnswer((_) => updateController.stream);
 
       when(
         () => mocks.journalDb.getWorkouts(

@@ -18,8 +18,9 @@ class TestFts5Controller extends Fts5Controller {
 }
 
 void main() {
-  testWidgets('Fts5RecreateModal shows progress and handles states correctly',
-      (WidgetTester tester) async {
+  testWidgets('Fts5RecreateModal shows progress and handles states correctly', (
+    WidgetTester tester,
+  ) async {
     // Initial state: recreating, 50% progress
     final testController = TestFts5Controller(
       const Fts5State(
@@ -52,8 +53,9 @@ void main() {
 
     // Get the confirm button text from the localizations
     final BuildContext context = tester.element(find.text('Show FTS5 Modal'));
-    final confirmText =
-        AppLocalizations.of(context)!.maintenanceRecreateFts5Confirm;
+    final confirmText = AppLocalizations.of(
+      context,
+    )!.maintenanceRecreateFts5Confirm;
 
     // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));
@@ -88,8 +90,9 @@ void main() {
     expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
-  testWidgets('Fts5RecreateModal shows error state',
-      (WidgetTester tester) async {
+  testWidgets('Fts5RecreateModal shows error state', (
+    WidgetTester tester,
+  ) async {
     // Initial state with error
     final testController = TestFts5Controller(
       const Fts5State(
@@ -121,8 +124,9 @@ void main() {
 
     // Get the confirm button text from the localizations
     final BuildContext context = tester.element(find.text('Show FTS5 Modal'));
-    final confirmText =
-        AppLocalizations.of(context)!.maintenanceRecreateFts5Confirm;
+    final confirmText = AppLocalizations.of(
+      context,
+    )!.maintenanceRecreateFts5Confirm;
 
     // Tap the confirm button to proceed to progress page
     await tester.tap(find.text(confirmText));

@@ -47,8 +47,9 @@ class SelectionOption extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected
             ? context.colorScheme.primaryContainer.withValues(alpha: 0.15)
-            : context.colorScheme.surfaceContainerHighest
-                .withValues(alpha: 0.6),
+            : context.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.6,
+              ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isSelected
@@ -86,8 +87,9 @@ class SelectionOption extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? context.colorScheme.primary.withValues(alpha: 0.15)
-                        : context.colorScheme.surfaceContainerHigh
-                            .withValues(alpha: 0.8),
+                        : context.colorScheme.surfaceContainerHigh.withValues(
+                            alpha: 0.8,
+                          ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: isSelected
@@ -126,8 +128,9 @@ class SelectionOption extends StatelessWidget {
                         Text(
                           description!,
                           style: context.textTheme.bodyMedium?.copyWith(
-                            color: context.colorScheme.onSurface
-                                .withValues(alpha: 0.7),
+                            color: context.colorScheme.onSurface.withValues(
+                              alpha: 0.7,
+                            ),
                             height: 1.4,
                           ),
                           maxLines: 2,

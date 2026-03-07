@@ -82,13 +82,16 @@ void main() {
       ..registerSingleton<JournalDb>(mockJournalDb);
 
     // Mock JournalDb methods - linksFromId returns a Selectable
-    when(() => mockJournalDb.linksFromId(any(), any()))
-        .thenReturn(MockSelectable<LinkedDbEntry>([]));
-    when(() => mockJournalDb.linkedToJournalEntities(any()))
-        .thenReturn(MockSelectable<JournalDbEntity>([]));
+    when(
+      () => mockJournalDb.linksFromId(any(), any()),
+    ).thenReturn(MockSelectable<LinkedDbEntry>([]));
+    when(
+      () => mockJournalDb.linkedToJournalEntities(any()),
+    ).thenReturn(MockSelectable<JournalDbEntity>([]));
     // Mock getLinkedEntities for bidirectional link lookup
-    when(() => mockJournalDb.getLinkedEntities(any()))
-        .thenAnswer((_) async => <JournalEntity>[]);
+    when(
+      () => mockJournalDb.getLinkedEntities(any()),
+    ).thenAnswer((_) async => <JournalEntity>[]);
 
     // Mock logging methods
     when(
@@ -178,55 +181,59 @@ void main() {
     // Create test prompts
     testPrompts = [
       AiConfig.prompt(
-        id: 'prompt-1',
-        name: 'Task Summary',
-        systemMessage: 'Summarize this task',
-        userMessage: 'Please summarize the task',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: now,
-        useReasoning: false,
-        requiredInputData: [InputDataType.tasksList],
-        aiResponseType: AiResponseType.taskSummary,
-        description: 'Creates a summary of the task',
-      ) as AiConfigPrompt,
+            id: 'prompt-1',
+            name: 'Task Summary',
+            systemMessage: 'Summarize this task',
+            userMessage: 'Please summarize the task',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: now,
+            useReasoning: false,
+            requiredInputData: [InputDataType.tasksList],
+            aiResponseType: AiResponseType.taskSummary,
+            description: 'Creates a summary of the task',
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'prompt-2',
-        name: 'Image Analysis',
-        systemMessage: 'Analyze this image',
-        userMessage: 'Please analyze the image',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: now,
-        useReasoning: false,
-        requiredInputData: [InputDataType.images],
-        aiResponseType: AiResponseType.imageAnalysis,
-        description: 'Analyzes images in detail',
-      ) as AiConfigPrompt,
+            id: 'prompt-2',
+            name: 'Image Analysis',
+            systemMessage: 'Analyze this image',
+            userMessage: 'Please analyze the image',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: now,
+            useReasoning: false,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+            description: 'Analyzes images in detail',
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'prompt-3',
-        name: 'Audio Transcription',
-        systemMessage: 'Transcribe this audio',
-        userMessage: 'Please transcribe the audio',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: now,
-        useReasoning: false,
-        requiredInputData: [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt,
+            id: 'prompt-3',
+            name: 'Audio Transcription',
+            systemMessage: 'Transcribe this audio',
+            userMessage: 'Please transcribe the audio',
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: now,
+            useReasoning: false,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.taskSummary,
+          )
+          as AiConfigPrompt,
       AiConfig.prompt(
-        id: 'prompt-4',
-        name: 'General Chat',
-        systemMessage: 'Chat about this content',
-        userMessage: "Let's chat about this",
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: now,
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt,
+            id: 'prompt-4',
+            name: 'General Chat',
+            systemMessage: 'Chat about this content',
+            userMessage: "Let's chat about this",
+            defaultModelId: 'model-1',
+            modelIds: ['model-1'],
+            createdAt: now,
+            useReasoning: false,
+            requiredInputData: [],
+            aiResponseType: AiResponseType.taskSummary,
+          )
+          as AiConfigPrompt,
     ];
 
     defaultOverrides = [
@@ -281,8 +288,9 @@ void main() {
   }
 
   group('UnifiedAiPopUpMenu Tests', () {
-    testWidgets('shows assistant icon when prompts are available',
-        (tester) async {
+    testWidgets('shows assistant icon when prompts are available', (
+      tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
@@ -291,10 +299,12 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(testPrompts)),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
       );
@@ -315,8 +325,9 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(false)),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(false)),
           ],
         ),
       );
@@ -340,8 +351,9 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => completer.future),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => completer.future),
           ],
         ),
       );
@@ -367,8 +379,9 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.error('Test error')),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.error('Test error')),
           ],
         ),
       );
@@ -390,10 +403,12 @@ void main() {
             linkedFromId: 'linked-from-1',
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(testPrompts)),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
       );
@@ -422,8 +437,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(prompts)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(prompts)),
           ],
         ),
       );
@@ -438,8 +454,9 @@ void main() {
       expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
     });
 
-    testWidgets('shows correct icons for different prompt types',
-        (tester) async {
+    testWidgets('shows correct icons for different prompt types', (
+      tester,
+    ) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
@@ -448,8 +465,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(testPrompts)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(testPrompts)),
           ],
         ),
       );
@@ -457,8 +475,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - check for the presence of ModernModalPromptItem widgets which should contain the icons
-      expect(find.byType(ModernModalPromptItem),
-          findsNWidgets(testPrompts.length));
+      expect(
+        find.byType(ModernModalPromptItem),
+        findsNWidgets(testPrompts.length),
+      );
       expect(find.byType(Icon), findsNWidgets(testPrompts.length));
 
       // Check for specific prompt names instead of icons which might be harder to match
@@ -470,18 +490,20 @@ void main() {
 
     testWidgets('handles prompts without descriptions', (tester) async {
       // Arrange
-      final promptWithoutDescription = AiConfig.prompt(
-        id: 'prompt-no-desc',
-        name: 'No Description Prompt',
-        systemMessage: 'System message',
-        userMessage: 'User message',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.taskSummary,
-      ) as AiConfigPrompt;
+      final promptWithoutDescription =
+          AiConfig.prompt(
+                id: 'prompt-no-desc',
+                name: 'No Description Prompt',
+                systemMessage: 'System message',
+                userMessage: 'User message',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: [],
+                aiResponseType: AiResponseType.taskSummary,
+              )
+              as AiConfigPrompt;
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -550,8 +572,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([])),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([])),
           ],
         ),
       );
@@ -565,21 +588,24 @@ void main() {
 
     testWidgets('truncates long descriptions correctly', (tester) async {
       // Arrange
-      final longDescriptionPrompt = AiConfig.prompt(
-        id: 'prompt-long',
-        name: 'Long Description Prompt',
-        systemMessage: 'System message',
-        userMessage: 'User message',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.taskSummary,
-        description: 'This is a very long description that should be truncated '
-            'when displayed in the UI because it exceeds the maximum number of lines '
-            'that we want to show in the subtitle of the list tile.',
-      ) as AiConfigPrompt;
+      final longDescriptionPrompt =
+          AiConfig.prompt(
+                id: 'prompt-long',
+                name: 'Long Description Prompt',
+                systemMessage: 'System message',
+                userMessage: 'User message',
+                defaultModelId: 'model-1',
+                modelIds: ['model-1'],
+                createdAt: DateTime.now(),
+                useReasoning: false,
+                requiredInputData: [],
+                aiResponseType: AiResponseType.taskSummary,
+                description:
+                    'This is a very long description that should be truncated '
+                    'when displayed in the UI because it exceeds the maximum number of lines '
+                    'that we want to show in the subtitle of the list tile.',
+              )
+              as AiConfigPrompt;
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -588,8 +614,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([longDescriptionPrompt])),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([longDescriptionPrompt])),
           ],
         ),
       );
@@ -597,8 +624,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      final promptItem = tester
-          .widget<ModernModalPromptItem>(find.byType(ModernModalPromptItem));
+      final promptItem = tester.widget<ModernModalPromptItem>(
+        find.byType(ModernModalPromptItem),
+      );
       expect(promptItem.description, isNotEmpty);
 
       // Find the description Text widget within the ModernModalPromptItem
@@ -731,10 +759,12 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) async => [testPrompts.first]),
-            unifiedAiInferenceRepositoryProvider
-                .overrideWithValue(mockInferenceRepository),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) async => [testPrompts.first]),
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockInferenceRepository,
+            ),
             // Note: aiConfigByIdProvider is already overridden in defaultOverrides
           ],
         ),
@@ -757,8 +787,9 @@ void main() {
   });
 
   group('UnifiedAiModal onPromptSelected callback', () {
-    testWidgets('triggers inference when prompt is selected from modal',
-        (tester) async {
+    testWidgets('triggers inference when prompt is selected from modal', (
+      tester,
+    ) async {
       // Arrange
       var inferenceTriggered = false;
       String? capturedEntityId;
@@ -776,19 +807,23 @@ void main() {
                     linkedFromId: 'linked-test-id',
                   ),
                   // Override the trigger provider to capture the call
-                  Builder(builder: (context) {
-                    // This is just to set up the override
-                    return const SizedBox();
-                  }),
+                  Builder(
+                    builder: (context) {
+                      // This is just to set up the override
+                      return const SizedBox();
+                    },
+                  ),
                 ],
               );
             },
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider((
               entityId: testTaskEntity.id,
               promptId: testPrompts.first.id,
@@ -829,10 +864,12 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([testPrompts.first])),
           ],
         ),
       );
@@ -869,10 +906,12 @@ void main() {
             },
           ),
           overrides: [
-            hasAvailablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+            hasAvailablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider((
               entityId: testTaskEntity.id,
               promptId: testPrompts.first.id,
@@ -898,8 +937,9 @@ void main() {
       expect(capturedLinkedEntityId, isNull);
     });
 
-    testWidgets('uses entry id for linkedEntityId when launching from audio',
-        (tester) async {
+    testWidgets('uses entry id for linkedEntityId when launching from audio', (
+      tester,
+    ) async {
       var triggered = false;
       String? capturedLinkedEntityId;
 
@@ -910,10 +950,12 @@ void main() {
             linkedFromId: 'parent-task',
           ),
           overrides: [
-            hasAvailablePromptsProvider(testAudioEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testAudioEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+            hasAvailablePromptsProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availablePromptsProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value([testPrompts.first])),
             triggerNewInferenceProvider((
               entityId: testAudioEntity.id,
               promptId: testPrompts.first.id,
@@ -938,8 +980,9 @@ void main() {
       expect(capturedLinkedEntityId, equals(testAudioEntity.id));
     });
 
-    testWidgets('modal show method with ScrollController parameter',
-        (tester) async {
+    testWidgets('modal show method with ScrollController parameter', (
+      tester,
+    ) async {
       // Arrange
       final scrollController = ScrollController();
 
@@ -963,8 +1006,9 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([testPrompts.first])),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([testPrompts.first])),
           ],
         ),
       );
@@ -985,98 +1029,110 @@ void main() {
 
   group('Image Generation Handling Tests', () {
     testWidgets(
-        'image generation prompt from non-audio entry returns early without modal',
-        (tester) async {
-      // Create an image generation prompt
-      final imageGenPrompt = AiConfig.prompt(
-        id: 'img-gen-prompt',
-        name: 'Generate Cover Art',
-        systemMessage: 'Generate cover art',
-        userMessage: 'Generate cover art for this task',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.imageGeneration, // Image generation type
-        description: 'Generate cover art',
-      ) as AiConfigPrompt;
+      'image generation prompt from non-audio entry returns early without modal',
+      (tester) async {
+        // Create an image generation prompt
+        final imageGenPrompt =
+            AiConfig.prompt(
+                  id: 'img-gen-prompt',
+                  name: 'Generate Cover Art',
+                  systemMessage: 'Generate cover art',
+                  userMessage: 'Generate cover art for this task',
+                  defaultModelId: 'model-1',
+                  modelIds: ['model-1'],
+                  createdAt: DateTime.now(),
+                  useReasoning: false,
+                  requiredInputData: [],
+                  aiResponseType:
+                      AiResponseType.imageGeneration, // Image generation type
+                  description: 'Generate cover art',
+                )
+                as AiConfigPrompt;
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPopUpMenu(
-            journalEntity: testImageEntity, // Not an audio entry
-            linkedFromId: 'some-task-id',
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testImageEntity, // Not an audio entry
+              linkedFromId: 'some-task-id',
+            ),
+            overrides: [
+              hasAvailablePromptsProvider(
+                testImageEntity.id,
+              ).overrideWith((ref) => Future.value(true)),
+              availablePromptsProvider(
+                testImageEntity.id,
+              ).overrideWith((ref) => Future.value([imageGenPrompt])),
+            ],
           ),
-          overrides: [
-            hasAvailablePromptsProvider(testImageEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testImageEntity.id)
-                .overrideWith((ref) => Future.value([imageGenPrompt])),
-          ],
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
+        // Open the modal
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
 
-      // Select the image generation prompt
-      await tester.tap(find.text('Generate Cover Art'));
-      await tester.pumpAndSettle();
+        // Select the image generation prompt
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pumpAndSettle();
 
-      // The modal should close and no ImageGenerationReviewModal should appear
-      // because the entity is not a JournalAudio
-      expect(find.byType(UnifiedAiPromptsList), findsNothing);
-    });
+        // The modal should close and no ImageGenerationReviewModal should appear
+        // because the entity is not a JournalAudio
+        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+      },
+    );
 
-    testWidgets('image generation prompt from audio entry without linked task',
-        (tester) async {
-      // Create an image generation prompt
-      final imageGenPrompt = AiConfig.prompt(
-        id: 'img-gen-prompt',
-        name: 'Generate Cover Art',
-        systemMessage: 'Generate cover art',
-        userMessage: 'Generate cover art for this task',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [],
-        aiResponseType: AiResponseType.imageGeneration,
-        description: 'Generate cover art',
-      ) as AiConfigPrompt;
+    testWidgets(
+      'image generation prompt from audio entry without linked task',
+      (tester) async {
+        // Create an image generation prompt
+        final imageGenPrompt =
+            AiConfig.prompt(
+                  id: 'img-gen-prompt',
+                  name: 'Generate Cover Art',
+                  systemMessage: 'Generate cover art',
+                  userMessage: 'Generate cover art for this task',
+                  defaultModelId: 'model-1',
+                  modelIds: ['model-1'],
+                  createdAt: DateTime.now(),
+                  useReasoning: false,
+                  requiredInputData: [],
+                  aiResponseType: AiResponseType.imageGeneration,
+                  description: 'Generate cover art',
+                )
+                as AiConfigPrompt;
 
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPopUpMenu(
-            journalEntity: testAudioEntity,
-            linkedFromId: null, // No linked task
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testAudioEntity,
+              linkedFromId: null, // No linked task
+            ),
+            overrides: [
+              hasAvailablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(true)),
+              availablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value([imageGenPrompt])),
+            ],
           ),
-          overrides: [
-            hasAvailablePromptsProvider(testAudioEntity.id)
-                .overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(testAudioEntity.id)
-                .overrideWith((ref) => Future.value([imageGenPrompt])),
-          ],
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
+        // Open the modal
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
 
-      // Select the image generation prompt
-      await tester.tap(find.text('Generate Cover Art'));
-      await tester.pumpAndSettle();
+        // Select the image generation prompt
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pumpAndSettle();
 
-      // Should handle gracefully without crashing
-      expect(find.byType(UnifiedAiPromptsList), findsNothing);
-    });
+        // Should handle gracefully without crashing
+        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+      },
+    );
   });
 
   group('isDefaultPromptSync Tests', () {
@@ -1097,7 +1153,8 @@ void main() {
     testWidgets('maps task input data to checklist icon', (tester) async {
       // Arrange
       final taskPrompt = testPrompts.firstWhere(
-          (p) => p.requiredInputData.contains(InputDataType.tasksList));
+        (p) => p.requiredInputData.contains(InputDataType.tasksList),
+      );
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -1106,8 +1163,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id)
-                .overrideWith((ref) => Future.value([taskPrompt])),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([taskPrompt])),
           ],
         ),
       );
@@ -1134,8 +1192,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testImageEntity.id)
-                .overrideWith((ref) => Future.value([imagePrompt])),
+            availablePromptsProvider(
+              testImageEntity.id,
+            ).overrideWith((ref) => Future.value([imagePrompt])),
           ],
         ),
       );
@@ -1162,8 +1221,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testAudioEntity.id)
-                .overrideWith((ref) => Future.value([audioPrompt])),
+            availablePromptsProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value([audioPrompt])),
           ],
         ),
       );
@@ -1179,8 +1239,9 @@ void main() {
 
     testWidgets('maps no specific input data to chat icon', (tester) async {
       // Arrange
-      final generalPrompt =
-          testPrompts.firstWhere((p) => p.requiredInputData.isEmpty);
+      final generalPrompt = testPrompts.firstWhere(
+        (p) => p.requiredInputData.isEmpty,
+      );
 
       await tester.pumpWidget(
         buildTestWidget(
@@ -1189,8 +1250,9 @@ void main() {
             onPromptSelected: (prompt, index) async {},
           ),
           overrides: [
-            availablePromptsProvider(testJournalEntry.id)
-                .overrideWith((ref) => Future.value([generalPrompt])),
+            availablePromptsProvider(
+              testJournalEntry.id,
+            ).overrideWith((ref) => Future.value([generalPrompt])),
           ],
         ),
       );

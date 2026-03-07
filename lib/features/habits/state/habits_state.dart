@@ -48,35 +48,35 @@ abstract class HabitsState with _$HabitsState {
 
   /// Creates the initial state with default values.
   factory HabitsState.initial() => HabitsState(
-        habitDefinitions: [],
-        habitCompletions: [],
-        completedToday: <String>{},
-        openHabits: [],
-        openNow: [],
-        pendingLater: [],
-        completed: [],
-        days: getHabitDays(isDesktop ? 14 : 7),
-        successfulToday: <String>{},
-        successfulByDay: <String, Set<String>>{},
-        skippedByDay: <String, Set<String>>{},
-        failedByDay: <String, Set<String>>{},
-        allByDay: <String, Set<String>>{},
-        selectedInfoYmd: '',
-        successPercentage: 0,
-        skippedPercentage: 0,
-        failedPercentage: 0,
-        shortStreakCount: 0,
-        longStreakCount: 0,
-        timeSpanDays: isDesktop ? 14 : 7,
-        zeroBased: true,
-        minY: 0,
-        displayFilter: HabitDisplayFilter.openNow,
-        showSearch: false,
-        showTimeSpan: false,
-        searchString: '',
-        selectedCategoryIds: <String>{},
-        isVisible: true,
-      );
+    habitDefinitions: [],
+    habitCompletions: [],
+    completedToday: <String>{},
+    openHabits: [],
+    openNow: [],
+    pendingLater: [],
+    completed: [],
+    days: getHabitDays(isDesktop ? 14 : 7),
+    successfulToday: <String>{},
+    successfulByDay: <String, Set<String>>{},
+    skippedByDay: <String, Set<String>>{},
+    failedByDay: <String, Set<String>>{},
+    allByDay: <String, Set<String>>{},
+    selectedInfoYmd: '',
+    successPercentage: 0,
+    skippedPercentage: 0,
+    failedPercentage: 0,
+    shortStreakCount: 0,
+    longStreakCount: 0,
+    timeSpanDays: isDesktop ? 14 : 7,
+    zeroBased: true,
+    minY: 0,
+    displayFilter: HabitDisplayFilter.openNow,
+    showSearch: false,
+    showTimeSpan: false,
+    searchString: '',
+    selectedCategoryIds: <String>{},
+    isVisible: true,
+  );
 }
 
 /// Calculates the completion rate for a given day.
@@ -116,8 +116,11 @@ List<HabitDefinition> activeBy(
   }
   final activeHabits = habitDefinitions.where((habitDefinition) {
     final activeFrom = habitDefinition.activeFrom ?? DateTime(0);
-    return !DateTime(activeFrom.year, activeFrom.month, activeFrom.day)
-        .isAfter(DateTime.parse(ymd));
+    return !DateTime(
+      activeFrom.year,
+      activeFrom.month,
+      activeFrom.day,
+    ).isAfter(DateTime.parse(ymd));
   }).toList();
 
   return activeHabits;

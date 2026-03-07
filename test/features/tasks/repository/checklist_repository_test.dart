@@ -101,8 +101,9 @@ void main() {
     test('returns null checklist when task not found', () async {
       // Arrange
       const taskId = 'non-existent-task-id';
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await repository.createChecklist(taskId: taskId);
@@ -116,8 +117,9 @@ void main() {
     test('returns null checklist when entity is not a Task', () async {
       // Arrange
       final entryId = testTextEntry.id;
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => testTextEntry);
 
       // Act
       final result = await repository.createChecklist(taskId: entryId);
@@ -133,12 +135,15 @@ void main() {
       final taskId = testTask.id;
       final metadata = testTask.meta.copyWith(id: 'new-checklist-id');
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => metadata);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => metadata);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: taskId,
@@ -175,8 +180,9 @@ void main() {
       // Arrange
       final taskId = testTask.id;
       final metadata = testTask.meta.copyWith(id: 'new-checklist-id');
-      final checklistItemMetadata =
-          testTask.meta.copyWith(id: 'checklist-item-id');
+      final checklistItemMetadata = testTask.meta.copyWith(
+        id: 'checklist-item-id',
+      );
       final items = [
         const ChecklistItemData(
           title: 'Item 1',
@@ -199,12 +205,15 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => metadata);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => metadata);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: taskId,
@@ -220,12 +229,14 @@ void main() {
       ).thenAnswer((_) async => true);
 
       // Mock the nested createChecklistItem call
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => checklistItemMetadata);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => checklistItemMetadata);
 
       // Mock the call to updateChecklist
-      when(() => mockJournalDb.journalEntityById(metadata.id))
-          .thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(metadata.id),
+      ).thenAnswer((_) async => checklist);
 
       // Act
       final result = await repository.createChecklist(
@@ -236,8 +247,9 @@ void main() {
       // Assert
       expect(result.checklist, isNotNull);
       expect(result.createdItems, hasLength(items.length));
-      verify(() => mockPersistenceLogic.createDbEntity(any()))
-          .called(greaterThan(1));
+      verify(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).called(greaterThan(1));
     });
 
     test('handles checklist items not being created', () async {
@@ -261,8 +273,9 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(taskId))
-          .thenAnswer((_) async => testTask);
+      when(
+        () => mockJournalDb.journalEntityById(taskId),
+      ).thenAnswer((_) async => testTask);
 
       // First createMetadata call will succeed (for the checklist)
       // But subsequent calls will throw (for checklist items)
@@ -276,8 +289,9 @@ void main() {
         }
       });
 
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
       when(
         () => mockPersistenceLogic.updateTask(
           journalEntityId: taskId,
@@ -286,8 +300,9 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      when(() => mockJournalDb.journalEntityById(metadata.id))
-          .thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(metadata.id),
+      ).thenAnswer((_) async => checklist);
 
       when(
         () => mockLoggingService.captureException(
@@ -320,7 +335,9 @@ void main() {
       final createdChecklist = result.checklist;
       expect(createdChecklist, isNotNull);
       expect(
-          (createdChecklist! as Checklist).data.linkedChecklistItems, isEmpty);
+        (createdChecklist! as Checklist).data.linkedChecklistItems,
+        isEmpty,
+      );
       expect(result.createdItems, isEmpty);
     });
 
@@ -393,11 +410,14 @@ void main() {
       );
 
       when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
-          (invocation) async => invocation.positionalArguments[0] as Metadata);
-      when(() => mockPersistenceLogic.updateDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          )).thenAnswer((_) async => true);
+        (invocation) async => invocation.positionalArguments[0] as Metadata,
+      );
+      when(
+        () => mockPersistenceLogic.updateDbEntity(
+          any(),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => true);
     });
   });
 
@@ -418,10 +438,12 @@ void main() {
         dateTo: DateTime.now(),
       );
 
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => metadata);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => metadata);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.createChecklistItem(
@@ -496,10 +518,12 @@ void main() {
         dateTo: DateTime(2025),
       );
 
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => metadata);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => metadata);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
 
       final result = await repository.createChecklistItem(
         checklistId: checklistId,
@@ -515,9 +539,11 @@ void main() {
       expect(result.data.checkedAt, checkedAt);
 
       // Verify the entity persisted has the correct provenance
-      final captured = verify(
-        () => mockPersistenceLogic.createDbEntity(captureAny()),
-      ).captured.single as ChecklistItem;
+      final captured =
+          verify(
+                () => mockPersistenceLogic.createDbEntity(captureAny()),
+              ).captured.single
+              as ChecklistItem;
       expect(captured.data.checkedBy, CheckedBySource.agent);
       expect(captured.data.checkedAt, checkedAt);
     });
@@ -533,8 +559,9 @@ void main() {
         linkedTasks: [],
       );
 
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await repository.updateChecklist(
@@ -571,12 +598,15 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((_) async => checklist.meta);
-      when(() => mockPersistenceLogic.updateDbEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
+      when(
+        () => mockPersistenceLogic.updateMetadata(any()),
+      ).thenAnswer((_) async => checklist.meta);
+      when(
+        () => mockPersistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.updateChecklist(
@@ -587,8 +617,9 @@ void main() {
       // Assert
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(checklistId)).called(1);
-      verify(() => mockPersistenceLogic.updateMetadata(checklist.meta))
-          .called(1);
+      verify(
+        () => mockPersistenceLogic.updateMetadata(checklist.meta),
+      ).called(1);
       verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
     });
 
@@ -601,8 +632,9 @@ void main() {
         linkedTasks: [],
       );
 
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => testTextEntry);
       when(
         () => mockLoggingService.captureException(
           any(),
@@ -642,8 +674,9 @@ void main() {
 
       final exception = Exception('Test exception');
 
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenThrow(exception);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenThrow(exception);
       when(
         () => mockLoggingService.captureException(
           any(),
@@ -682,8 +715,9 @@ void main() {
         linkedChecklists: [],
       );
 
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistItemId),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await repository.updateChecklistItem(
@@ -721,10 +755,12 @@ void main() {
         ),
       );
 
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenAnswer((_) async => checklistItem);
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((_) async => checklistItem.meta);
+      when(
+        () => mockJournalDb.journalEntityById(checklistItemId),
+      ).thenAnswer((_) async => checklistItem);
+      when(
+        () => mockPersistenceLogic.updateMetadata(any()),
+      ).thenAnswer((_) async => checklistItem.meta);
       when(
         () => mockPersistenceLogic.updateDbEntity(
           any(),
@@ -742,8 +778,9 @@ void main() {
       // Assert
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(checklistItemId)).called(1);
-      verify(() => mockPersistenceLogic.updateMetadata(checklistItem.meta))
-          .called(1);
+      verify(
+        () => mockPersistenceLogic.updateMetadata(checklistItem.meta),
+      ).called(1);
       verify(
         () => mockPersistenceLogic.updateDbEntity(any(), linkedId: 'task-id'),
       ).called(1);
@@ -758,8 +795,9 @@ void main() {
         linkedChecklists: [],
       );
 
-      when(() => mockJournalDb.journalEntityById(entryId))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => testTextEntry);
       when(
         () => mockLoggingService.captureException(
           any(),
@@ -800,8 +838,9 @@ void main() {
 
       final exception = Exception('Test exception');
 
-      when(() => mockJournalDb.journalEntityById(checklistItemId))
-          .thenThrow(exception);
+      when(
+        () => mockJournalDb.journalEntityById(checklistItemId),
+      ).thenThrow(exception);
       when(
         () => mockLoggingService.captureException(
           any(),
@@ -832,90 +871,99 @@ void main() {
   });
 
   group('addItemToChecklist', () {
-    test('successfully creates item and updates checklist atomically',
-        () async {
-      // Arrange
-      const checklistId = 'checklist-id';
-      const title = 'New Item';
-      const isChecked = false;
-      const categoryId = 'category-id';
+    test(
+      'successfully creates item and updates checklist atomically',
+      () async {
+        // Arrange
+        const checklistId = 'checklist-id';
+        const title = 'New Item';
+        const isChecked = false;
+        const categoryId = 'category-id';
 
-      final checklist = Checklist(
-        meta: Metadata(
-          id: checklistId,
-          categoryId: categoryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          starred: false,
-          private: false,
-          utcOffset: 0,
-          vectorClock: const VectorClock({}),
-        ),
-        data: const ChecklistData(
-          title: 'Test Checklist',
-          linkedChecklistItems: ['existing-item-1', 'existing-item-2'],
-          linkedTasks: ['task-1'],
-        ),
-      );
+        final checklist = Checklist(
+          meta: Metadata(
+            id: checklistId,
+            categoryId: categoryId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            starred: false,
+            private: false,
+            utcOffset: 0,
+            vectorClock: const VectorClock({}),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: ['existing-item-1', 'existing-item-2'],
+            linkedTasks: ['task-1'],
+          ),
+        );
 
-      final newItem = ChecklistItem(
-        meta: Metadata(
-          id: 'new-item-id',
-          categoryId: categoryId,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          starred: false,
-          private: false,
-          utcOffset: 0,
-          vectorClock: const VectorClock({}),
-        ),
-        data: const ChecklistItemData(
+        final newItem = ChecklistItem(
+          meta: Metadata(
+            id: 'new-item-id',
+            categoryId: categoryId,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            starred: false,
+            private: false,
+            utcOffset: 0,
+            vectorClock: const VectorClock({}),
+          ),
+          data: const ChecklistItemData(
+            title: title,
+            isChecked: isChecked,
+            linkedChecklists: [checklistId],
+          ),
+        );
+
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => newItem.meta);
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+          (_) async => checklist.meta.copyWith(
+            updatedAt: DateTime.now(),
+          ),
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        // Act
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
           title: title,
           isChecked: isChecked,
-          linkedChecklists: [checklistId],
-        ),
-      );
+          categoryId: categoryId,
+        );
 
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => newItem.meta);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockPersistenceLogic.updateMetadata(any()))
-          .thenAnswer((_) async => checklist.meta.copyWith(
-                updatedAt: DateTime.now(),
-              ));
-      when(() => mockPersistenceLogic.updateDbEntity(any()))
-          .thenAnswer((_) async => true);
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.data.title, equals(title));
+        expect(result.data.isChecked, equals(isChecked));
 
-      // Act
-      final result = await repository.addItemToChecklist(
-        checklistId: checklistId,
-        title: title,
-        isChecked: isChecked,
-        categoryId: categoryId,
-      );
+        // Verify that the checklist was updated with the new item
+        final capturedChecklist =
+            verify(
+                  () => mockPersistenceLogic.updateDbEntity(captureAny()),
+                ).captured.first
+                as Checklist;
 
-      // Assert
-      expect(result, isNotNull);
-      expect(result!.data.title, equals(title));
-      expect(result.data.isChecked, equals(isChecked));
-
-      // Verify that the checklist was updated with the new item
-      final capturedChecklist = verify(
-        () => mockPersistenceLogic.updateDbEntity(captureAny()),
-      ).captured.first as Checklist;
-
-      expect(
-        capturedChecklist.data.linkedChecklistItems,
-        equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
-      );
-    });
+        expect(
+          capturedChecklist.data.linkedChecklistItems,
+          equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
+        );
+      },
+    );
 
     test('returns null when checklist not found', () async {
       // Arrange
@@ -944,12 +992,15 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => newItem.meta);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => newItem.meta);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => null);
       when(
         () => mockLoggingService.captureException(
           any(),
@@ -1031,12 +1082,15 @@ void main() {
         ),
       );
 
-      when(() => mockPersistenceLogic.createMetadata())
-          .thenAnswer((_) async => newItem.meta);
-      when(() => mockPersistenceLogic.createDbEntity(any()))
-          .thenAnswer((_) async => true);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockPersistenceLogic.createMetadata(),
+      ).thenAnswer((_) async => newItem.meta);
+      when(
+        () => mockPersistenceLogic.createDbEntity(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => task);
       when(
         () => mockLoggingService.captureException(
           any(),

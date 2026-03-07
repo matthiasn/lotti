@@ -57,15 +57,15 @@ void main() {
       // Verify selected color is shown
       final colorContainers = tester
           .widgetList<Container>(
-        find.byType(Container),
-      )
+            find.byType(Container),
+          )
           .where((container) {
-        final decoration = container.decoration;
-        if (decoration is BoxDecoration) {
-          return decoration.color == selectedColor;
-        }
-        return false;
-      });
+            final decoration = container.decoration;
+            if (decoration is BoxDecoration) {
+              return decoration.color == selectedColor;
+            }
+            return false;
+          });
       expect(colorContainers, isNotEmpty);
     });
 
@@ -123,8 +123,9 @@ void main() {
       expect(changedColor, Colors.blue);
     });
 
-    testWidgets('closes dialog on cancel without changing color',
-        (tester) async {
+    testWidgets('closes dialog on cancel without changing color', (
+      tester,
+    ) async {
       Color? changedColor;
 
       await tester.pumpWidget(

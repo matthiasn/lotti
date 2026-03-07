@@ -30,8 +30,9 @@ void main() {
     mockMatrixService = MockMatrixService();
     matrixStatsController = StreamController<MatrixStats>.broadcast();
 
-    when(() => mockMatrixService.messageCountsController)
-        .thenReturn(matrixStatsController);
+    when(
+      () => mockMatrixService.messageCountsController,
+    ).thenReturn(matrixStatsController);
     when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
     when(() => mockMatrixService.sentCount).thenReturn(0);
   });
@@ -40,8 +41,9 @@ void main() {
     await matrixStatsController.close();
   });
 
-  testWidgets('MessageCountsView renders stats from controller',
-      (tester) async {
+  testWidgets('MessageCountsView renders stats from controller', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 2,
       messageCounts: {'m.text': 1, 'm.image': 1},
@@ -55,8 +57,9 @@ void main() {
         const MessageCountsView(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -68,8 +71,9 @@ void main() {
     expect(find.text('1'), findsNWidgets(2));
   });
 
-  testWidgets('MessageCountsView closes subscription on dispose',
-      (tester) async {
+  testWidgets('MessageCountsView closes subscription on dispose', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 1,
       messageCounts: {'m.text': 1},
@@ -83,8 +87,9 @@ void main() {
         const MessageCountsView(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -101,8 +106,9 @@ void main() {
         const SizedBox.shrink(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );

@@ -79,36 +79,48 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
 
   void _initializeAnimations() {
     // Hover animations
-    _hoverScaleAnimation = Tween<double>(
-      begin: 1,
-      end: widget.hoverScale,
-    ).animate(CurvedAnimation(
-      parent: _controller.hoverAnimationController,
-      curve: Curves.easeOutCubic,
-    ));
-    _hoverElevationAnimation = Tween<double>(
-      begin: 0,
-      end: widget.hoverElevation,
-    ).animate(CurvedAnimation(
-      parent: _controller.hoverAnimationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _hoverScaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: widget.hoverScale,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller.hoverAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _hoverElevationAnimation =
+        Tween<double>(
+          begin: 0,
+          end: widget.hoverElevation,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller.hoverAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
 
     // Tap animations
-    _tapScaleAnimation = Tween<double>(
-      begin: 1,
-      end: widget.tapScale,
-    ).animate(CurvedAnimation(
-      parent: _controller.tapAnimationController,
-      curve: Curves.easeOutCubic,
-    ));
-    _tapOpacityAnimation = Tween<double>(
-      begin: 1,
-      end: widget.tapOpacity,
-    ).animate(CurvedAnimation(
-      parent: _controller.tapAnimationController,
-      curve: Curves.easeOutCubic,
-    ));
+    _tapScaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: widget.tapScale,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller.tapAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _tapOpacityAnimation =
+        Tween<double>(
+          begin: 1,
+          end: widget.tapOpacity,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller.tapAnimationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
   }
 
   @override
@@ -151,7 +163,8 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
         color: context.colorScheme.shadow.withValues(
           alpha: isDark ? AppTheme.alphaShadowDark : AppTheme.alphaShadowLight,
         ),
-        blurRadius: (isDark
+        blurRadius:
+            (isDark
                 ? AppTheme.cardElevationDark
                 : AppTheme.cardElevationLight) +
             _hoverElevationAnimation.value,
@@ -165,7 +178,7 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
     return AnimatedBuilder(
       animation: Listenable.merge([
         _controller.tapAnimationController,
-        _controller.hoverAnimationController
+        _controller.hoverAnimationController,
       ]),
       builder: (context, child) {
         final combinedScale =
@@ -186,7 +199,8 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                 opacity: widget.isDisabled ? 0.5 : _tapOpacityAnimation.value,
                 duration: const Duration(milliseconds: 150),
                 child: Container(
-                  margin: widget.margin ??
+                  margin:
+                      widget.margin ??
                       const EdgeInsets.symmetric(
                         horizontal: AppTheme.cardPadding,
                         vertical: AppTheme.cardSpacing / 2,
@@ -194,13 +208,15 @@ class _AnimatedModalItemState extends State<AnimatedModalItem>
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.cardBorderRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.cardBorderRadius,
+                      ),
                       boxShadow: _buildBoxShadow(context, isDark),
                     ),
                     child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppTheme.cardBorderRadius),
+                      borderRadius: BorderRadius.circular(
+                        AppTheme.cardBorderRadius,
+                      ),
                       child: widget.child,
                     ),
                   ),

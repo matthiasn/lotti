@@ -22,8 +22,9 @@ void main() {
   group('TaskLanguageHandler', () {
     group('handle', () {
       test('sets language and returns success with didWrite=true', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -45,8 +46,9 @@ void main() {
       });
 
       test('trims and lowercases language code', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -91,30 +93,33 @@ void main() {
         verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
       });
 
-      test('returns no-op when language is already set to same value',
-          () async {
-        final taskWithLang = task.copyWith(
-          data: task.data.copyWith(languageCode: 'fr'),
-        );
+      test(
+        'returns no-op when language is already set to same value',
+        () async {
+          final taskWithLang = task.copyWith(
+            data: task.data.copyWith(languageCode: 'fr'),
+          );
 
-        final handler = TaskLanguageHandler(
-          task: taskWithLang,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskLanguageHandler(
+            task: taskWithLang,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.handle('fr');
+          final result = await handler.handle('fr');
 
-        expect(result.success, isTrue);
-        expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
-        expect(result.message, contains('already'));
+          expect(result.success, isTrue);
+          expect(result.didWrite, isFalse);
+          expect(result.wasNoOp, isTrue);
+          expect(result.message, contains('already'));
 
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
       test('allows changing from one language to another', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final taskWithLang = task.copyWith(
           data: task.data.copyWith(languageCode: 'en'),
@@ -133,8 +138,9 @@ void main() {
       });
 
       test('returns error when repository returns false', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => false);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -149,8 +155,9 @@ void main() {
       });
 
       test('returns error when repository throws', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('DB error'));
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -165,8 +172,9 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskLanguageHandler(
           task: task,
@@ -181,8 +189,9 @@ void main() {
       });
 
       test('does not update local task field when write fails', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('fail'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('fail'));
 
         final handler = TaskLanguageHandler(
           task: task,

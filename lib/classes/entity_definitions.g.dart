@@ -7,22 +7,22 @@ part of 'entity_definitions.dart';
 // **************************************************************************
 
 _ChecklistCorrectionExample _$ChecklistCorrectionExampleFromJson(
-        Map<String, dynamic> json) =>
-    _ChecklistCorrectionExample(
-      before: json['before'] as String,
-      after: json['after'] as String,
-      capturedAt: json['capturedAt'] == null
-          ? null
-          : DateTime.parse(json['capturedAt'] as String),
-    );
+  Map<String, dynamic> json,
+) => _ChecklistCorrectionExample(
+  before: json['before'] as String,
+  after: json['after'] as String,
+  capturedAt: json['capturedAt'] == null
+      ? null
+      : DateTime.parse(json['capturedAt'] as String),
+);
 
 Map<String, dynamic> _$ChecklistCorrectionExampleToJson(
-        _ChecklistCorrectionExample instance) =>
-    <String, dynamic>{
-      'before': instance.before,
-      'after': instance.after,
-      'capturedAt': instance.capturedAt?.toIso8601String(),
-    };
+  _ChecklistCorrectionExample instance,
+) => <String, dynamic>{
+  'before': instance.before,
+  'after': instance.after,
+  'capturedAt': instance.capturedAt?.toIso8601String(),
+};
 
 DailyHabitSchedule _$DailyHabitScheduleFromJson(Map<String, dynamic> json) =>
     DailyHabitSchedule(
@@ -51,101 +51,101 @@ WeeklyHabitSchedule _$WeeklyHabitScheduleFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$WeeklyHabitScheduleToJson(
-        WeeklyHabitSchedule instance) =>
-    <String, dynamic>{
-      'requiredCompletions': instance.requiredCompletions,
-      'runtimeType': instance.$type,
-    };
+  WeeklyHabitSchedule instance,
+) => <String, dynamic>{
+  'requiredCompletions': instance.requiredCompletions,
+  'runtimeType': instance.$type,
+};
 
 MonthlyHabitSchedule _$MonthlyHabitScheduleFromJson(
-        Map<String, dynamic> json) =>
-    MonthlyHabitSchedule(
-      requiredCompletions: (json['requiredCompletions'] as num).toInt(),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => MonthlyHabitSchedule(
+  requiredCompletions: (json['requiredCompletions'] as num).toInt(),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$MonthlyHabitScheduleToJson(
-        MonthlyHabitSchedule instance) =>
-    <String, dynamic>{
-      'requiredCompletions': instance.requiredCompletions,
-      'runtimeType': instance.$type,
-    };
+  MonthlyHabitSchedule instance,
+) => <String, dynamic>{
+  'requiredCompletions': instance.requiredCompletions,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleHealth _$AutoCompleteRuleHealthFromJson(
-        Map<String, dynamic> json) =>
-    AutoCompleteRuleHealth(
-      dataType: json['dataType'] as String,
-      minimum: json['minimum'] as num?,
-      maximum: json['maximum'] as num?,
-      title: json['title'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AutoCompleteRuleHealth(
+  dataType: json['dataType'] as String,
+  minimum: json['minimum'] as num?,
+  maximum: json['maximum'] as num?,
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AutoCompleteRuleHealthToJson(
-        AutoCompleteRuleHealth instance) =>
-    <String, dynamic>{
-      'dataType': instance.dataType,
-      'minimum': instance.minimum,
-      'maximum': instance.maximum,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleHealth instance,
+) => <String, dynamic>{
+  'dataType': instance.dataType,
+  'minimum': instance.minimum,
+  'maximum': instance.maximum,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleWorkout _$AutoCompleteRuleWorkoutFromJson(
-        Map<String, dynamic> json) =>
-    AutoCompleteRuleWorkout(
-      dataType: json['dataType'] as String,
-      minimum: json['minimum'] as num?,
-      maximum: json['maximum'] as num?,
-      title: json['title'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AutoCompleteRuleWorkout(
+  dataType: json['dataType'] as String,
+  minimum: json['minimum'] as num?,
+  maximum: json['maximum'] as num?,
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AutoCompleteRuleWorkoutToJson(
-        AutoCompleteRuleWorkout instance) =>
-    <String, dynamic>{
-      'dataType': instance.dataType,
-      'minimum': instance.minimum,
-      'maximum': instance.maximum,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleWorkout instance,
+) => <String, dynamic>{
+  'dataType': instance.dataType,
+  'minimum': instance.minimum,
+  'maximum': instance.maximum,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleMeasurable _$AutoCompleteRuleMeasurableFromJson(
-        Map<String, dynamic> json) =>
-    AutoCompleteRuleMeasurable(
-      dataTypeId: json['dataTypeId'] as String,
-      minimum: json['minimum'] as num?,
-      maximum: json['maximum'] as num?,
-      title: json['title'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AutoCompleteRuleMeasurable(
+  dataTypeId: json['dataTypeId'] as String,
+  minimum: json['minimum'] as num?,
+  maximum: json['maximum'] as num?,
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AutoCompleteRuleMeasurableToJson(
-        AutoCompleteRuleMeasurable instance) =>
-    <String, dynamic>{
-      'dataTypeId': instance.dataTypeId,
-      'minimum': instance.minimum,
-      'maximum': instance.maximum,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleMeasurable instance,
+) => <String, dynamic>{
+  'dataTypeId': instance.dataTypeId,
+  'minimum': instance.minimum,
+  'maximum': instance.maximum,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleHabit _$AutoCompleteRuleHabitFromJson(
-        Map<String, dynamic> json) =>
-    AutoCompleteRuleHabit(
-      habitId: json['habitId'] as String,
-      title: json['title'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AutoCompleteRuleHabit(
+  habitId: json['habitId'] as String,
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AutoCompleteRuleHabitToJson(
-        AutoCompleteRuleHabit instance) =>
-    <String, dynamic>{
-      'habitId': instance.habitId,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleHabit instance,
+) => <String, dynamic>{
+  'habitId': instance.habitId,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleAnd _$AutoCompleteRuleAndFromJson(Map<String, dynamic> json) =>
     AutoCompleteRuleAnd(
@@ -157,12 +157,12 @@ AutoCompleteRuleAnd _$AutoCompleteRuleAndFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$AutoCompleteRuleAndToJson(
-        AutoCompleteRuleAnd instance) =>
-    <String, dynamic>{
-      'rules': instance.rules,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleAnd instance,
+) => <String, dynamic>{
+  'rules': instance.rules,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 AutoCompleteRuleOr _$AutoCompleteRuleOrFromJson(Map<String, dynamic> json) =>
     AutoCompleteRuleOr(
@@ -181,24 +181,24 @@ Map<String, dynamic> _$AutoCompleteRuleOrToJson(AutoCompleteRuleOr instance) =>
     };
 
 AutoCompleteRuleMultiple _$AutoCompleteRuleMultipleFromJson(
-        Map<String, dynamic> json) =>
-    AutoCompleteRuleMultiple(
-      rules: (json['rules'] as List<dynamic>)
-          .map((e) => AutoCompleteRule.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      successes: (json['successes'] as num).toInt(),
-      title: json['title'] as String?,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => AutoCompleteRuleMultiple(
+  rules: (json['rules'] as List<dynamic>)
+      .map((e) => AutoCompleteRule.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  successes: (json['successes'] as num).toInt(),
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$AutoCompleteRuleMultipleToJson(
-        AutoCompleteRuleMultiple instance) =>
-    <String, dynamic>{
-      'rules': instance.rules,
-      'successes': instance.successes,
-      'title': instance.title,
-      'runtimeType': instance.$type,
-    };
+  AutoCompleteRuleMultiple instance,
+) => <String, dynamic>{
+  'rules': instance.rules,
+  'successes': instance.successes,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
 
 MeasurableDataType _$MeasurableDataTypeFromJson(Map<String, dynamic> json) =>
     MeasurableDataType(
@@ -219,7 +219,9 @@ MeasurableDataType _$MeasurableDataTypeFromJson(Map<String, dynamic> json) =>
       favorite: json['favorite'] as bool?,
       categoryId: json['categoryId'] as String?,
       aggregationType: $enumDecodeNullable(
-          _$AggregationTypeEnumMap, json['aggregationType']),
+        _$AggregationTypeEnumMap,
+        json['aggregationType'],
+      ),
       $type: json['runtimeType'] as String?,
     );
 
@@ -270,18 +272,22 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
       allowedPromptIds: (json['allowedPromptIds'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
-      automaticPrompts:
-          (json['automaticPrompts'] as Map<String, dynamic>?)?.map(
-        (k, e) => MapEntry($enumDecode(_$AiResponseTypeEnumMap, k),
-            (e as List<dynamic>).map((e) => e as String).toList()),
-      ),
+      automaticPrompts: (json['automaticPrompts'] as Map<String, dynamic>?)
+          ?.map(
+            (k, e) => MapEntry(
+              $enumDecode(_$AiResponseTypeEnumMap, k),
+              (e as List<dynamic>).map((e) => e as String).toList(),
+            ),
+          ),
       icon: const CategoryIconConverter().fromJson(json['icon'] as String?),
       speechDictionary: (json['speechDictionary'] as List<dynamic>?)
           ?.map((e) => e as String)
           .toList(),
       correctionExamples: (json['correctionExamples'] as List<dynamic>?)
-          ?.map((e) =>
-              ChecklistCorrectionExample.fromJson(e as Map<String, dynamic>))
+          ?.map(
+            (e) =>
+                ChecklistCorrectionExample.fromJson(e as Map<String, dynamic>),
+          )
           .toList(),
       $type: json['runtimeType'] as String?,
     );
@@ -301,8 +307,9 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'defaultLanguageCode': instance.defaultLanguageCode,
       'allowedPromptIds': instance.allowedPromptIds,
-      'automaticPrompts': instance.automaticPrompts
-          ?.map((k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e)),
+      'automaticPrompts': instance.automaticPrompts?.map(
+        (k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e),
+      ),
       'icon': const CategoryIconConverter().toJson(instance.icon),
       'speechDictionary': instance.speechDictionary,
       'correctionExamples': instance.correctionExamples,
@@ -364,8 +371,9 @@ HabitDefinition _$HabitDefinitionFromJson(Map<String, dynamic> json) =>
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       name: json['name'] as String,
       description: json['description'] as String,
-      habitSchedule:
-          HabitSchedule.fromJson(json['habitSchedule'] as Map<String, dynamic>),
+      habitSchedule: HabitSchedule.fromJson(
+        json['habitSchedule'] as Map<String, dynamic>,
+      ),
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
@@ -374,7 +382,8 @@ HabitDefinition _$HabitDefinitionFromJson(Map<String, dynamic> json) =>
       autoCompleteRule: json['autoCompleteRule'] == null
           ? null
           : AutoCompleteRule.fromJson(
-              json['autoCompleteRule'] as Map<String, dynamic>),
+              json['autoCompleteRule'] as Map<String, dynamic>,
+            ),
       version: json['version'] as String?,
       activeFrom: json['activeFrom'] == null
           ? null
@@ -444,25 +453,25 @@ DashboardDefinition _$DashboardDefinitionFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$DashboardDefinitionToJson(
-        DashboardDefinition instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
-      'lastReviewed': instance.lastReviewed.toIso8601String(),
-      'name': instance.name,
-      'description': instance.description,
-      'items': instance.items,
-      'version': instance.version,
-      'vectorClock': instance.vectorClock,
-      'active': instance.active,
-      'private': instance.private,
-      'reviewAt': instance.reviewAt?.toIso8601String(),
-      'days': instance.days,
-      'deletedAt': instance.deletedAt?.toIso8601String(),
-      'categoryId': instance.categoryId,
-      'runtimeType': instance.$type,
-    };
+  DashboardDefinition instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'lastReviewed': instance.lastReviewed.toIso8601String(),
+  'name': instance.name,
+  'description': instance.description,
+  'items': instance.items,
+  'version': instance.version,
+  'vectorClock': instance.vectorClock,
+  'active': instance.active,
+  'private': instance.private,
+  'reviewAt': instance.reviewAt?.toIso8601String(),
+  'days': instance.days,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'categoryId': instance.categoryId,
+  'runtimeType': instance.$type,
+};
 
 _MeasurementData _$MeasurementDataFromJson(Map<String, dynamic> json) =>
     _MeasurementData(
@@ -519,14 +528,14 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
     };
 
 _WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) => _WorkoutData(
-      dateFrom: DateTime.parse(json['dateFrom'] as String),
-      dateTo: DateTime.parse(json['dateTo'] as String),
-      id: json['id'] as String,
-      workoutType: json['workoutType'] as String,
-      energy: json['energy'] as num?,
-      distance: json['distance'] as num?,
-      source: json['source'] as String?,
-    );
+  dateFrom: DateTime.parse(json['dateFrom'] as String),
+  dateTo: DateTime.parse(json['dateTo'] as String),
+  id: json['id'] as String,
+  workoutType: json['workoutType'] as String,
+  energy: json['energy'] as num?,
+  distance: json['distance'] as num?,
+  source: json['source'] as String?,
+);
 
 Map<String, dynamic> _$WorkoutDataToJson(_WorkoutData instance) =>
     <String, dynamic>{
@@ -545,17 +554,19 @@ _HabitCompletionData _$HabitCompletionDataFromJson(Map<String, dynamic> json) =>
       dateTo: DateTime.parse(json['dateTo'] as String),
       habitId: json['habitId'] as String,
       completionType: $enumDecodeNullable(
-          _$HabitCompletionTypeEnumMap, json['completionType']),
+        _$HabitCompletionTypeEnumMap,
+        json['completionType'],
+      ),
     );
 
 Map<String, dynamic> _$HabitCompletionDataToJson(
-        _HabitCompletionData instance) =>
-    <String, dynamic>{
-      'dateFrom': instance.dateFrom.toIso8601String(),
-      'dateTo': instance.dateTo.toIso8601String(),
-      'habitId': instance.habitId,
-      'completionType': _$HabitCompletionTypeEnumMap[instance.completionType],
-    };
+  _HabitCompletionData instance,
+) => <String, dynamic>{
+  'dateFrom': instance.dateFrom.toIso8601String(),
+  'dateTo': instance.dateTo.toIso8601String(),
+  'habitId': instance.habitId,
+  'completionType': _$HabitCompletionTypeEnumMap[instance.completionType],
+};
 
 const _$HabitCompletionTypeEnumMap = {
   HabitCompletionType.success: 'success',
@@ -565,21 +576,23 @@ const _$HabitCompletionTypeEnumMap = {
 };
 
 DashboardMeasurementItem _$DashboardMeasurementItemFromJson(
-        Map<String, dynamic> json) =>
-    DashboardMeasurementItem(
-      id: json['id'] as String,
-      aggregationType: $enumDecodeNullable(
-          _$AggregationTypeEnumMap, json['aggregationType']),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => DashboardMeasurementItem(
+  id: json['id'] as String,
+  aggregationType: $enumDecodeNullable(
+    _$AggregationTypeEnumMap,
+    json['aggregationType'],
+  ),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$DashboardMeasurementItemToJson(
-        DashboardMeasurementItem instance) =>
-    <String, dynamic>{
-      'id': instance.id,
-      'aggregationType': _$AggregationTypeEnumMap[instance.aggregationType],
-      'runtimeType': instance.$type,
-    };
+  DashboardMeasurementItem instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'aggregationType': _$AggregationTypeEnumMap[instance.aggregationType],
+  'runtimeType': instance.$type,
+};
 
 DashboardHealthItem _$DashboardHealthItemFromJson(Map<String, dynamic> json) =>
     DashboardHealthItem(
@@ -589,32 +602,32 @@ DashboardHealthItem _$DashboardHealthItemFromJson(Map<String, dynamic> json) =>
     );
 
 Map<String, dynamic> _$DashboardHealthItemToJson(
-        DashboardHealthItem instance) =>
-    <String, dynamic>{
-      'color': instance.color,
-      'healthType': instance.healthType,
-      'runtimeType': instance.$type,
-    };
+  DashboardHealthItem instance,
+) => <String, dynamic>{
+  'color': instance.color,
+  'healthType': instance.healthType,
+  'runtimeType': instance.$type,
+};
 
 DashboardWorkoutItem _$DashboardWorkoutItemFromJson(
-        Map<String, dynamic> json) =>
-    DashboardWorkoutItem(
-      workoutType: json['workoutType'] as String,
-      displayName: json['displayName'] as String,
-      color: json['color'] as String,
-      valueType: $enumDecode(_$WorkoutValueTypeEnumMap, json['valueType']),
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => DashboardWorkoutItem(
+  workoutType: json['workoutType'] as String,
+  displayName: json['displayName'] as String,
+  color: json['color'] as String,
+  valueType: $enumDecode(_$WorkoutValueTypeEnumMap, json['valueType']),
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$DashboardWorkoutItemToJson(
-        DashboardWorkoutItem instance) =>
-    <String, dynamic>{
-      'workoutType': instance.workoutType,
-      'displayName': instance.displayName,
-      'color': instance.color,
-      'valueType': _$WorkoutValueTypeEnumMap[instance.valueType]!,
-      'runtimeType': instance.$type,
-    };
+  DashboardWorkoutItem instance,
+) => <String, dynamic>{
+  'workoutType': instance.workoutType,
+  'displayName': instance.displayName,
+  'color': instance.color,
+  'valueType': _$WorkoutValueTypeEnumMap[instance.valueType]!,
+  'runtimeType': instance.$type,
+};
 
 const _$WorkoutValueTypeEnumMap = {
   WorkoutValueType.duration: 'duration',
@@ -636,50 +649,51 @@ Map<String, dynamic> _$DashboardHabitItemToJson(DashboardHabitItem instance) =>
 
 DashboardSurveyItem _$DashboardSurveyItemFromJson(Map<String, dynamic> json) =>
     DashboardSurveyItem(
-      colorsByScoreKey:
-          Map<String, String>.from(json['colorsByScoreKey'] as Map),
+      colorsByScoreKey: Map<String, String>.from(
+        json['colorsByScoreKey'] as Map,
+      ),
       surveyType: json['surveyType'] as String,
       surveyName: json['surveyName'] as String,
       $type: json['runtimeType'] as String?,
     );
 
 Map<String, dynamic> _$DashboardSurveyItemToJson(
-        DashboardSurveyItem instance) =>
-    <String, dynamic>{
-      'colorsByScoreKey': instance.colorsByScoreKey,
-      'surveyType': instance.surveyType,
-      'surveyName': instance.surveyName,
-      'runtimeType': instance.$type,
-    };
+  DashboardSurveyItem instance,
+) => <String, dynamic>{
+  'colorsByScoreKey': instance.colorsByScoreKey,
+  'surveyType': instance.surveyType,
+  'surveyName': instance.surveyName,
+  'runtimeType': instance.$type,
+};
 
 DashboardStoryTimeItem _$DashboardStoryTimeItemFromJson(
-        Map<String, dynamic> json) =>
-    DashboardStoryTimeItem(
-      storyTagId: json['storyTagId'] as String,
-      color: json['color'] as String,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => DashboardStoryTimeItem(
+  storyTagId: json['storyTagId'] as String,
+  color: json['color'] as String,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$DashboardStoryTimeItemToJson(
-        DashboardStoryTimeItem instance) =>
-    <String, dynamic>{
-      'storyTagId': instance.storyTagId,
-      'color': instance.color,
-      'runtimeType': instance.$type,
-    };
+  DashboardStoryTimeItem instance,
+) => <String, dynamic>{
+  'storyTagId': instance.storyTagId,
+  'color': instance.color,
+  'runtimeType': instance.$type,
+};
 
 WildcardStoryTimeItem _$WildcardStoryTimeItemFromJson(
-        Map<String, dynamic> json) =>
-    WildcardStoryTimeItem(
-      storySubstring: json['storySubstring'] as String,
-      color: json['color'] as String,
-      $type: json['runtimeType'] as String?,
-    );
+  Map<String, dynamic> json,
+) => WildcardStoryTimeItem(
+  storySubstring: json['storySubstring'] as String,
+  color: json['color'] as String,
+  $type: json['runtimeType'] as String?,
+);
 
 Map<String, dynamic> _$WildcardStoryTimeItemToJson(
-        WildcardStoryTimeItem instance) =>
-    <String, dynamic>{
-      'storySubstring': instance.storySubstring,
-      'color': instance.color,
-      'runtimeType': instance.$type,
-    };
+  WildcardStoryTimeItem instance,
+) => <String, dynamic>{
+  'storySubstring': instance.storySubstring,
+  'color': instance.color,
+  'runtimeType': instance.$type,
+};

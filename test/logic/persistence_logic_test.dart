@@ -77,14 +77,17 @@ void main() {
       final journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb, inMemoryDatabase: true);
 
-      when(() => secureStorageMock.readValue(hostKey))
-          .thenAnswer((_) async => 'some_host');
-      when(() => secureStorageMock.readValue(nextAvailableCounterKey))
-          .thenAnswer((_) async {
+      when(
+        () => secureStorageMock.readValue(hostKey),
+      ).thenAnswer((_) async => 'some_host');
+      when(
+        () => secureStorageMock.readValue(nextAvailableCounterKey),
+      ).thenAnswer((_) async {
         return vcMockNext;
       });
-      when(() => secureStorageMock.writeValue(nextAvailableCounterKey, any()))
-          .thenAnswer((invocation) async {
+      when(
+        () => secureStorageMock.writeValue(nextAvailableCounterKey, any()),
+      ).thenAnswer((invocation) async {
         vcMockNext = invocation.positionalArguments[1] as String;
       });
 
@@ -121,8 +124,9 @@ void main() {
         () => mockNotificationService.cancelNotification(any()),
       ).thenAnswer((_) async {});
 
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
 
       when(mockDeviceLocation.getCurrentGeoLocation).thenAnswer(
         (_) async => Geolocation(
@@ -174,7 +178,8 @@ void main() {
         getIt.unregister<Directory>();
       }
       getIt.registerSingleton<Directory>(
-          await getApplicationDocumentsDirectory());
+        await getApplicationDocumentsDirectory(),
+      );
     });
 
     tearDown(() {
@@ -200,9 +205,9 @@ void main() {
 
         // expect to find created entry
         expect(
-          (await getIt<JournalDb>().journalEntityById(textEntry!.meta.id))
-              ?.entryText
-              ?.plainText,
+          (await getIt<JournalDb>().journalEntityById(
+            textEntry!.meta.id,
+          ))?.entryText?.plainText,
           testText,
         );
 
@@ -218,14 +223,15 @@ void main() {
 
         // expect to find updated entry
         expect(
-          (await getIt<JournalDb>().journalEntityById(textEntry.meta.id))
-              ?.entryText
-              ?.plainText,
+          (await getIt<JournalDb>().journalEntityById(
+            textEntry.meta.id,
+          ))?.entryText?.plainText,
           updatedTestText,
         );
 
-        verify(() => mockFts5Db.insertText(any(), removePrevious: true))
-            .called(2);
+        verify(
+          () => mockFts5Db.insertText(any(), removePrevious: true),
+        ).called(2);
 
         // TODO: why is this failing suddenly?
         //verify(mockNotificationService.updateBadge).called(2);
@@ -273,8 +279,7 @@ void main() {
           taskStatuses: ['OPEN'],
           categoryIds: [''],
           labelIds: const [],
-        ))
-            .length,
+        )).length,
         1,
       );
 
@@ -285,8 +290,7 @@ void main() {
           categoryIds: [''],
           labelIds: const [],
           ids: [task.meta.id],
-        ))
-            .length,
+        )).length,
         1,
       );
 
@@ -296,8 +300,7 @@ void main() {
           taskStatuses: ['DONE'],
           categoryIds: [],
           labelIds: const [],
-        ))
-            .length,
+        )).length,
         0,
       );
 
@@ -307,8 +310,7 @@ void main() {
           taskStatuses: ['DONE'],
           categoryIds: [],
           labelIds: const [],
-        ))
-            .length,
+        )).length,
         0,
       );
 
@@ -320,8 +322,7 @@ void main() {
           flaggedStatuses: [1, 0],
           types: ['Task'],
           ids: null,
-        ))
-            .length,
+        )).length,
         1,
       );
 
@@ -386,15 +387,17 @@ void main() {
       getIt<TagsService>().tagsById[testStoryTag.id] = testStoryTag;
 
       // expect tag in database when queried
-      final exactMatch =
-          await getIt<JournalDb>().getMatchingTags(testStoryTag.tag);
+      final exactMatch = await getIt<JournalDb>().getMatchingTags(
+        testStoryTag.tag,
+      );
       expect(exactMatch, hasLength(1));
       expect(exactMatch.first.id, testStoryTag.id);
       expect(exactMatch.first.tag, testStoryTag.tag);
 
       // expect tag in database when queried with substring match
-      final partialMatch = await getIt<JournalDb>()
-          .getMatchingTags(testStoryTag.tag.substring(1, 5));
+      final partialMatch = await getIt<JournalDb>().getMatchingTags(
+        testStoryTag.tag.substring(1, 5),
+      );
       expect(partialMatch.any((t) => t.id == testStoryTag.id), isTrue);
       expect(partialMatch.any((t) => t.tag == testStoryTag.tag), isTrue);
 
@@ -428,11 +431,12 @@ void main() {
       );
 
       expect(
-        (await getIt<JournalDb>().getLinkedEntities(task.meta.id))
-            .first
-            .entryText,
-        (await getIt<JournalDb>().journalEntityById(comment.meta.id))
-            ?.entryText,
+        (await getIt<JournalDb>().getLinkedEntities(
+          task.meta.id,
+        )).first.entryText,
+        (await getIt<JournalDb>().journalEntityById(
+          comment.meta.id,
+        ))?.entryText,
       );
 
       expect(await getIt<JournalDb>().getTaggedCount(), 2);
@@ -446,9 +450,9 @@ void main() {
       expect(await getIt<JournalDb>().getTaggedCount(), 1);
 
       expect(
-        (await getIt<JournalDb>().journalEntityById(comment.meta.id))
-            ?.meta
-            .tagIds,
+        (await getIt<JournalDb>().journalEntityById(
+          comment.meta.id,
+        ))?.meta.tagIds,
         isEmpty,
       );
 
@@ -501,8 +505,9 @@ void main() {
         source: '',
       );
 
-      final workout =
-          await getIt<PersistenceLogic>().createWorkoutEntry(workoutData);
+      final workout = await getIt<PersistenceLogic>().createWorkoutEntry(
+        workoutData,
+      );
       expect(workout?.data, workoutData);
 
       // workout is retrieved as latest workout
@@ -511,10 +516,10 @@ void main() {
       // workout is retrieved on workout watch stream
       expect(
         ((await getIt<JournalDb>().getWorkouts(
-          rangeStart: DateTime(0),
-          rangeEnd: DateTime(2100),
-        ))
-                .first as WorkoutEntry)
+                  rangeStart: DateTime(0),
+                  rangeEnd: DateTime(2100),
+                )).first
+                as WorkoutEntry)
             .data,
         workoutData,
       );
@@ -528,9 +533,9 @@ void main() {
 
       // workout is retrieved as latest workout
       expect(
-        (await getIt<JournalDb>()
-                .latestQuantitativeByType('HealthDataType.WEIGHT'))
-            ?.data,
+        (await getIt<JournalDb>().latestQuantitativeByType(
+          'HealthDataType.WEIGHT',
+        ))?.data,
         testWeightEntry.data,
       );
     });
@@ -549,11 +554,11 @@ void main() {
       );
 
       // measurement data from db equals data used for creating measurement
-      final measurement =
-          await getIt<PersistenceLogic>().createMeasurementEntry(
-        data: measurementData,
-        private: false,
-      );
+      final measurement = await getIt<PersistenceLogic>()
+          .createMeasurementEntry(
+            data: measurementData,
+            private: false,
+          );
 
       expect(measurement?.data, measurementData);
 
@@ -573,8 +578,9 @@ void main() {
       );
 
       expect(
-        await getIt<JournalDb>()
-            .getMeasurableDataTypeById(measurableChocolate.id),
+        await getIt<JournalDb>().getMeasurableDataTypeById(
+          measurableChocolate.id,
+        ),
         measurableChocolate,
       );
 
@@ -584,8 +590,9 @@ void main() {
       );
 
       expect(
-        await getIt<JournalDb>()
-            .getMeasurableDataTypeById(measurableChocolate.id),
+        await getIt<JournalDb>().getMeasurableDataTypeById(
+          measurableChocolate.id,
+        ),
         null,
       );
 
@@ -599,27 +606,32 @@ void main() {
       const testTag = 'test-tag';
       await TagsRepository.addTagDefinition(testTag);
 
-      final createdTag =
-          (await getIt<JournalDb>().getMatchingTags(testTag)).first;
+      final createdTag = (await getIt<JournalDb>().getMatchingTags(
+        testTag,
+      )).first;
 
       expect(createdTag.tag, testTag);
     });
 
     test('create, retrieve and delete dashboard', () async {
-      await getIt<PersistenceLogic>()
-          .upsertDashboardDefinition(testDashboardConfig);
+      await getIt<PersistenceLogic>().upsertDashboardDefinition(
+        testDashboardConfig,
+      );
 
-      final created =
-          await getIt<JournalDb>().getDashboardById(testDashboardConfig.id);
+      final created = await getIt<JournalDb>().getDashboardById(
+        testDashboardConfig.id,
+      );
 
       expect(created, testDashboardConfig);
 
       // Now test the delete method directly
-      await getIt<PersistenceLogic>()
-          .deleteDashboardDefinition(testDashboardConfig);
+      await getIt<PersistenceLogic>().deleteDashboardDefinition(
+        testDashboardConfig,
+      );
 
-      final item =
-          await getIt<JournalDb>().getDashboardById(testDashboardConfig.id);
+      final item = await getIt<JournalDb>().getDashboardById(
+        testDashboardConfig.id,
+      );
 
       expect(item, null);
 
@@ -636,11 +648,11 @@ void main() {
         habitId: habitFlossing.id,
       );
 
-      final habitCompletion =
-          await getIt<PersistenceLogic>().createHabitCompletionEntry(
-        data: habitCompletionData,
-        habitDefinition: habitFlossing,
-      );
+      final habitCompletion = await getIt<PersistenceLogic>()
+          .createHabitCompletionEntry(
+            data: habitCompletionData,
+            habitDefinition: habitFlossing,
+          );
 
       expect(habitCompletion?.data, habitCompletionData);
 
@@ -685,8 +697,9 @@ void main() {
       expect(aiResponse?.data, aiResponseData);
 
       // Retrieve the AI response from the database
-      final retrievedResponse = await getIt<JournalDb>()
-          .journalEntityById(aiResponse!.meta.id) as AiResponseEntry?;
+      final retrievedResponse =
+          await getIt<JournalDb>().journalEntityById(aiResponse!.meta.id)
+              as AiResponseEntry?;
       expect(retrievedResponse, isNotNull);
 
       // Verify it's the correct type and has the right data
@@ -705,17 +718,18 @@ void main() {
         started: now,
       );
 
-      final linkedAiResponse =
-          await getIt<PersistenceLogic>().createAiResponseEntry(
-        data: aiResponseData,
-        linkedId: textEntry!.meta.id,
-      );
+      final linkedAiResponse = await getIt<PersistenceLogic>()
+          .createAiResponseEntry(
+            data: aiResponseData,
+            linkedId: textEntry!.meta.id,
+          );
 
       expect(linkedAiResponse, isNotNull);
 
       // Check that the link was created
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(textEntry.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        textEntry.meta.id,
+      );
       expect(linkedEntities.length, 1);
       expect(linkedEntities.first.meta.id, linkedAiResponse!.meta.id);
 
@@ -741,8 +755,9 @@ void main() {
       expect(event?.data, eventData);
 
       // Retrieve the event from the database
-      final retrievedEvent = await getIt<JournalDb>()
-          .journalEntityById(event!.meta.id) as JournalEvent?;
+      final retrievedEvent =
+          await getIt<JournalDb>().journalEntityById(event!.meta.id)
+              as JournalEvent?;
       expect(retrievedEvent, isNotNull);
 
       // Verify it's the correct type and has the right data
@@ -763,8 +778,9 @@ void main() {
       );
 
       // Retrieve the updated event
-      final updatedEvent = await getIt<JournalDb>()
-          .journalEntityById(event.meta.id) as JournalEvent?;
+      final updatedEvent =
+          await getIt<JournalDb>().journalEntityById(event.meta.id)
+              as JournalEvent?;
       expect(updatedEvent?.data.title, 'Updated Event Title');
       expect(updatedEvent?.data.status, EventStatus.planned);
       expect(updatedEvent?.entryText?.plainText, 'Updated event details');
@@ -794,8 +810,9 @@ void main() {
       expect(linkCreated, true);
 
       // Check that the link exists in the database
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(entry1.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        entry1.meta.id,
+      );
       expect(linkedEntities.length, 1);
       expect(linkedEntities.first.meta.id, entry2.meta.id);
 
@@ -819,16 +836,18 @@ void main() {
       );
 
       // Verify entry has no geolocation initially
-      final beforeEntry =
-          await getIt<JournalDb>().journalEntityById(entry.meta.id);
+      final beforeEntry = await getIt<JournalDb>().journalEntityById(
+        entry.meta.id,
+      );
       expect(beforeEntry?.geolocation, isNull);
 
       // Add geolocation to the entry
       await persistenceLogic.addGeolocationAsync(entry.meta.id);
 
       // Retrieve the entry with geolocation
-      final retrievedEntry =
-          await getIt<JournalDb>().journalEntityById(entry.meta.id);
+      final retrievedEntry = await getIt<JournalDb>().journalEntityById(
+        entry.meta.id,
+      );
       expect(retrievedEntry, isNotNull);
       expect(retrievedEntry?.geolocation, isNotNull);
       expect(retrievedEntry?.geolocation?.latitude, 37.7749);
@@ -888,8 +907,9 @@ void main() {
         unit: 'test_unit',
       );
 
-      final result =
-          await getIt<PersistenceLogic>().createQuantitativeEntry(data);
+      final result = await getIt<PersistenceLogic>().createQuantitativeEntry(
+        data,
+      );
 
       expect(result, isNotNull);
       expect(result?.data.value, 100);
@@ -907,8 +927,9 @@ void main() {
         source: 'test',
       );
 
-      final result =
-          await getIt<PersistenceLogic>().createWorkoutEntry(workoutData);
+      final result = await getIt<PersistenceLogic>().createWorkoutEntry(
+        workoutData,
+      );
 
       expect(result, isNotNull);
       expect(result?.data.workoutType, 'RUNNING');
@@ -965,140 +986,148 @@ void main() {
       expect(result, true);
 
       // Verify link exists
-      final linkedEntities =
-          await getIt<JournalDb>().getLinkedEntities(parent.meta.id);
+      final linkedEntities = await getIt<JournalDb>().getLinkedEntities(
+        parent.meta.id,
+      );
       expect(linkedEntities.length, greaterThan(0));
     });
 
-    test('updateJournalEntityText returns false for non-existent entity',
-        () async {
-      const newText = EntryText(plainText: 'Test');
-      final result = await getIt<PersistenceLogic>().updateJournalEntityText(
-        'non-existent-id',
-        newText,
-        DateTime.now(),
-      );
+    test(
+      'updateJournalEntityText returns false for non-existent entity',
+      () async {
+        const newText = EntryText(plainText: 'Test');
+        final result = await getIt<PersistenceLogic>().updateJournalEntityText(
+          'non-existent-id',
+          newText,
+          DateTime.now(),
+        );
 
-      expect(result, false);
-    });
+        expect(result, false);
+      },
+    );
 
     // Note: Additional entity type branches (Audio, Image, Measurement, HabitCompletion)
     // in updateJournalEntityText are covered by integration tests and existing
     // test coverage. Focus remains on core logic functionality.
 
     test(
-        'Entity Type Branch Coverage: updateJournalEntityText updates JournalAudio and clears flags',
-        () async {
-      final audioData = AudioNote(
-        createdAt: DateTime.now(),
-        audioFile: 'test.m4a',
-        audioDirectory: '/audio/2024-01-01/',
-        duration: const Duration(seconds: 60),
-      );
+      'Entity Type Branch Coverage: updateJournalEntityText updates JournalAudio and clears flags',
+      () async {
+        final audioData = AudioNote(
+          createdAt: DateTime.now(),
+          audioFile: 'test.m4a',
+          audioDirectory: '/audio/2024-01-01/',
+          duration: const Duration(seconds: 60),
+        );
 
-      final audioEntry = await SpeechRepository.createAudioEntry(audioData);
+        final audioEntry = await SpeechRepository.createAudioEntry(audioData);
 
-      expect(audioEntry, isNotNull);
+        expect(audioEntry, isNotNull);
 
-      const newText = EntryText(plainText: 'Transcribed audio text');
-      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
-        audioEntry!.meta.id,
-        newText,
-        DateTime.now(),
-      );
+        const newText = EntryText(plainText: 'Transcribed audio text');
+        final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+          audioEntry!.meta.id,
+          newText,
+          DateTime.now(),
+        );
 
-      // Verifying the update method executes successfully covers the JournalAudio branch
-      expect(success, true);
-    });
-
-    test(
-        'Entity Type Branch Coverage: updateJournalEntityText updates JournalImage',
-        () async {
-      final imageData = ImageData(
-        capturedAt: DateTime.now(),
-        imageId: 'test-image-id',
-        imageFile: 'test.jpg',
-        imageDirectory: '/images/2024-01-01/',
-      );
-
-      final imageEntry = await JournalRepository.createImageEntry(imageData);
-      expect(imageEntry, isNotNull);
-
-      const newText = EntryText(plainText: 'Image caption');
-      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
-        imageEntry!.meta.id,
-        newText,
-        DateTime.now(),
-      );
-
-      // Verifying the update method executes successfully covers the JournalImage branch
-      expect(success, true);
-    });
+        // Verifying the update method executes successfully covers the JournalAudio branch
+        expect(success, true);
+      },
+    );
 
     test(
-        'Entity Type Branch Coverage: updateJournalEntityText updates MeasurementEntry',
-        () async {
-      // Create measurable data type first
-      await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
+      'Entity Type Branch Coverage: updateJournalEntityText updates JournalImage',
+      () async {
+        final imageData = ImageData(
+          capturedAt: DateTime.now(),
+          imageId: 'test-image-id',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images/2024-01-01/',
+        );
 
-      final measurementData = MeasurementData(
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        value: 500,
-        dataTypeId: measurableWater.id,
-      );
+        final imageEntry = await JournalRepository.createImageEntry(imageData);
+        expect(imageEntry, isNotNull);
 
-      final measurementEntry =
-          await getIt<PersistenceLogic>().createMeasurementEntry(
-        data: measurementData,
-        private: false,
-      );
-      expect(measurementEntry, isNotNull);
+        const newText = EntryText(plainText: 'Image caption');
+        final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+          imageEntry!.meta.id,
+          newText,
+          DateTime.now(),
+        );
 
-      const newText = EntryText(plainText: 'Measurement notes');
-      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
-        measurementEntry!.meta.id,
-        newText,
-        DateTime.now(),
-      );
-
-      // Verifying the update method executes successfully covers the MeasurementEntry branch
-      expect(success, true);
-    });
+        // Verifying the update method executes successfully covers the JournalImage branch
+        expect(success, true);
+      },
+    );
 
     test(
-        'Entity Type Branch Coverage: updateJournalEntityText updates HabitCompletionEntry',
-        () async {
-      // Create habit definition first
-      await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
+      'Entity Type Branch Coverage: updateJournalEntityText updates MeasurementEntry',
+      () async {
+        // Create measurable data type first
+        await getIt<JournalDb>().upsertMeasurableDataType(measurableWater);
 
-      final habitCompletionData = HabitCompletionData(
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-        habitId: habitFlossing.id,
-      );
+        final measurementData = MeasurementData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          value: 500,
+          dataTypeId: measurableWater.id,
+        );
 
-      final habitCompletion =
-          await getIt<PersistenceLogic>().createHabitCompletionEntry(
-        data: habitCompletionData,
-        habitDefinition: habitFlossing,
-      );
-      expect(habitCompletion, isNotNull);
+        final measurementEntry = await getIt<PersistenceLogic>()
+            .createMeasurementEntry(
+              data: measurementData,
+              private: false,
+            );
+        expect(measurementEntry, isNotNull);
 
-      const newText = EntryText(plainText: 'Habit completion notes');
-      final success = await getIt<PersistenceLogic>().updateJournalEntityText(
-        habitCompletion!.meta.id,
-        newText,
-        DateTime.now(),
-      );
+        const newText = EntryText(plainText: 'Measurement notes');
+        final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+          measurementEntry!.meta.id,
+          newText,
+          DateTime.now(),
+        );
 
-      expect(success, true);
+        // Verifying the update method executes successfully covers the MeasurementEntry branch
+        expect(success, true);
+      },
+    );
 
-      // Verify the text was updated
-      final updated = await getIt<JournalDb>()
-          .journalEntityById(habitCompletion.meta.id) as HabitCompletionEntry?;
-      expect(updated?.entryText?.plainText, 'Habit completion notes');
-    });
+    test(
+      'Entity Type Branch Coverage: updateJournalEntityText updates HabitCompletionEntry',
+      () async {
+        // Create habit definition first
+        await getIt<PersistenceLogic>().upsertEntityDefinition(habitFlossing);
+
+        final habitCompletionData = HabitCompletionData(
+          dateFrom: DateTime.now(),
+          dateTo: DateTime.now(),
+          habitId: habitFlossing.id,
+        );
+
+        final habitCompletion = await getIt<PersistenceLogic>()
+            .createHabitCompletionEntry(
+              data: habitCompletionData,
+              habitDefinition: habitFlossing,
+            );
+        expect(habitCompletion, isNotNull);
+
+        const newText = EntryText(plainText: 'Habit completion notes');
+        final success = await getIt<PersistenceLogic>().updateJournalEntityText(
+          habitCompletion!.meta.id,
+          newText,
+          DateTime.now(),
+        );
+
+        expect(success, true);
+
+        // Verify the text was updated
+        final updated =
+            await getIt<JournalDb>().journalEntityById(habitCompletion.meta.id)
+                as HabitCompletionEntry?;
+        expect(updated?.entryText?.plainText, 'Habit completion notes');
+      },
+    );
 
     test('updateTask returns false for non-existent entity', () async {
       final taskData = TaskData(
@@ -1136,92 +1165,104 @@ void main() {
       expect(result, false);
     });
 
-    test('addGeolocationAsync prevents concurrent additions for same entity',
-        () async {
-      final persistenceLogic = getIt<PersistenceLogic>();
+    test(
+      'addGeolocationAsync prevents concurrent additions for same entity',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
 
-      // Create entry without geolocation
-      final entry = JournalEntity.journalEntry(
-        entryText: const EntryText(plainText: 'Entry for concurrent test'),
-        meta: await persistenceLogic.createMetadata(
-          dateFrom: DateTime.now(),
-        ),
-      );
-      await persistenceLogic.createDbEntity(
-        entry,
-        shouldAddGeolocation: false,
-      );
+        // Create entry without geolocation
+        final entry = JournalEntity.journalEntry(
+          entryText: const EntryText(plainText: 'Entry for concurrent test'),
+          meta: await persistenceLogic.createMetadata(
+            dateFrom: DateTime.now(),
+          ),
+        );
+        await persistenceLogic.createDbEntity(
+          entry,
+          shouldAddGeolocation: false,
+        );
 
-      // Start two concurrent geolocation additions
-      // addGeolocationAsync returns FutureOr, so wrap in Future for await
-      final future1 =
-          Future.value(persistenceLogic.addGeolocationAsync(entry.meta.id));
-      final future2 =
-          Future.value(persistenceLogic.addGeolocationAsync(entry.meta.id));
+        // Start two concurrent geolocation additions
+        // addGeolocationAsync returns FutureOr, so wrap in Future for await
+        final future1 = Future.value(
+          persistenceLogic.addGeolocationAsync(entry.meta.id),
+        );
+        final future2 = Future.value(
+          persistenceLogic.addGeolocationAsync(entry.meta.id),
+        );
 
-      final results = await Future.wait([future1, future2]);
+        final results = await Future.wait([future1, future2]);
 
-      // One should succeed and one should return null (prevented by race condition guard)
-      expect(results.where((r) => r != null).length, 1);
-    });
+        // One should succeed and one should return null (prevented by race condition guard)
+        expect(results.where((r) => r != null).length, 1);
+      },
+    );
 
     test(
-        'addGeolocationAsync returns existing geolocation if one is already present',
-        () async {
-      final persistenceLogic = getIt<PersistenceLogic>();
+      'addGeolocationAsync returns existing geolocation if one is already present',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
 
-      // Create entry and add geolocation
-      final entry = JournalEntity.journalEntry(
-        entryText:
-            const EntryText(plainText: 'Entry with existing geolocation'),
-        meta: await persistenceLogic.createMetadata(
-          dateFrom: DateTime.now(),
-        ),
-      );
-      await persistenceLogic.createDbEntity(
-        entry,
-        shouldAddGeolocation: false,
-      );
+        // Create entry and add geolocation
+        final entry = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Entry with existing geolocation',
+          ),
+          meta: await persistenceLogic.createMetadata(
+            dateFrom: DateTime.now(),
+          ),
+        );
+        await persistenceLogic.createDbEntity(
+          entry,
+          shouldAddGeolocation: false,
+        );
 
-      // Add geolocation first time
-      final firstResult =
-          await persistenceLogic.addGeolocationAsync(entry.meta.id);
-      expect(firstResult, isNotNull);
+        // Add geolocation first time
+        final firstResult = await persistenceLogic.addGeolocationAsync(
+          entry.meta.id,
+        );
+        expect(firstResult, isNotNull);
 
-      // Try to add again - should return existing geolocation without overwriting
-      final secondResult =
-          await persistenceLogic.addGeolocationAsync(entry.meta.id);
+        // Try to add again - should return existing geolocation without overwriting
+        final secondResult = await persistenceLogic.addGeolocationAsync(
+          entry.meta.id,
+        );
 
-      // Should return the existing geolocation
-      expect(secondResult, isNotNull);
-      expect(secondResult?.latitude, firstResult?.latitude);
-    });
+        // Should return the existing geolocation
+        expect(secondResult, isNotNull);
+        expect(secondResult?.latitude, firstResult?.latitude);
+      },
+    );
 
-    test('createMetadata generates UUID v5 when uuidV5Input is provided',
-        () async {
-      final persistenceLogic = getIt<PersistenceLogic>();
+    test(
+      'createMetadata generates UUID v5 when uuidV5Input is provided',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
 
-      final meta1 = await persistenceLogic.createMetadata(
-        uuidV5Input: 'unique-input-string',
-      );
-      final meta2 = await persistenceLogic.createMetadata(
-        uuidV5Input: 'unique-input-string',
-      );
+        final meta1 = await persistenceLogic.createMetadata(
+          uuidV5Input: 'unique-input-string',
+        );
+        final meta2 = await persistenceLogic.createMetadata(
+          uuidV5Input: 'unique-input-string',
+        );
 
-      // Same input should generate same UUID v5
-      expect(meta1.id, meta2.id);
-    });
+        // Same input should generate same UUID v5
+        expect(meta1.id, meta2.id);
+      },
+    );
 
-    test('createMetadata generates UUID v1 when uuidV5Input is not provided',
-        () async {
-      final persistenceLogic = getIt<PersistenceLogic>();
+    test(
+      'createMetadata generates UUID v1 when uuidV5Input is not provided',
+      () async {
+        final persistenceLogic = getIt<PersistenceLogic>();
 
-      final meta1 = await persistenceLogic.createMetadata();
-      final meta2 = await persistenceLogic.createMetadata();
+        final meta1 = await persistenceLogic.createMetadata();
+        final meta2 = await persistenceLogic.createMetadata();
 
-      // Different calls without uuidV5Input should generate different UUIDs
-      expect(meta1.id, isNot(meta2.id));
-    });
+        // Different calls without uuidV5Input should generate different UUIDs
+        expect(meta1.id, isNot(meta2.id));
+      },
+    );
 
     test('createMetadata sets timezone and utcOffset', () async {
       final persistenceLogic = getIt<PersistenceLogic>();

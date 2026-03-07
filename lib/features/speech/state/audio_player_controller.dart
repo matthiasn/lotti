@@ -38,8 +38,9 @@ PlayerFactory playerFactory(Ref ref) {
 class AudioPlayerController extends _$AudioPlayerController {
   Player? _audioPlayer;
   LoggingService? _loggingService;
-  Duration _completionDelay =
-      const Duration(milliseconds: AudioPlayerConstants.completionDelayMs);
+  Duration _completionDelay = const Duration(
+    milliseconds: AudioPlayerConstants.completionDelayMs,
+  );
 
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration>? _bufferSubscription;
@@ -96,8 +97,8 @@ class AudioPlayerController extends _$AudioPlayerController {
   void updateProgress(Duration duration) {
     final clamped =
         duration > state.totalDuration && state.totalDuration > Duration.zero
-            ? state.totalDuration
-            : duration;
+        ? state.totalDuration
+        : duration;
 
     if (clamped == state.progress) {
       return;
@@ -108,8 +109,9 @@ class AudioPlayerController extends _$AudioPlayerController {
 
   void _updateBuffered(Duration buffered) {
     final total = state.totalDuration;
-    final clamped =
-        total > Duration.zero && buffered > total ? total : buffered;
+    final clamped = total > Duration.zero && buffered > total
+        ? total
+        : buffered;
 
     if (clamped == state.buffered) {
       return;
@@ -178,8 +180,9 @@ class AudioPlayerController extends _$AudioPlayerController {
       if (player == null) return;
 
       await player.seek(newPosition);
-      final newBuffered =
-          newPosition > state.buffered ? newPosition : state.buffered;
+      final newBuffered = newPosition > state.buffered
+          ? newPosition
+          : state.buffered;
 
       if (newPosition == state.progress &&
           newPosition == state.pausedAt &&

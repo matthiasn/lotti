@@ -58,8 +58,9 @@ class SpeechRepository {
   }) async {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       await journalEntity?.maybeMap(
         journalAudio: (JournalAudio item) async {
@@ -93,8 +94,9 @@ class SpeechRepository {
     try {
       final persistenceLogic = getIt<PersistenceLogic>();
 
-      final journalEntity =
-          await getIt<JournalDb>().journalEntityById(journalEntityId);
+      final journalEntity = await getIt<JournalDb>().journalEntityById(
+        journalEntityId,
+      );
 
       if (journalEntity == null) {
         return false;

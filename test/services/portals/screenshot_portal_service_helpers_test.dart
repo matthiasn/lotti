@@ -20,12 +20,14 @@ void main() {
     setUp(() {
       mockLogging = _MockLoggingService();
       getIt.registerSingleton<LoggingService>(mockLogging);
-      when(() => mockLogging.captureException(
-            any<dynamic>(),
-            domain: any(named: 'domain'),
-            subDomain: any(named: 'subDomain'),
-            stackTrace: any<dynamic>(named: 'stackTrace'),
-          )).thenReturn(null);
+      when(
+        () => mockLogging.captureException(
+          any<dynamic>(),
+          domain: any(named: 'domain'),
+          subDomain: any(named: 'subDomain'),
+          stackTrace: any<dynamic>(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
     });
 
     tearDown(getIt.reset);
@@ -33,8 +35,9 @@ void main() {
     group('parseUriFromResults', () {
       test('parses file URI from DBusVariant(DBusString)', () {
         final results = <DBusValue, DBusValue>{
-          const DBusString('uri'):
-              const DBusVariant(DBusString('file:///tmp/a.png')),
+          const DBusString('uri'): const DBusVariant(
+            DBusString('file:///tmp/a.png'),
+          ),
         };
 
         final path = ScreenshotPortalService.parseUriFromResults(results);
@@ -116,12 +119,14 @@ void main() {
         );
 
         expect(result, equals(bogusSource));
-        verify(() => mockLogging.captureException(
-              any<dynamic>(),
-              domain: 'ScreenshotPortalService',
-              subDomain: 'file_copy_error',
-              stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            )).called(1);
+        verify(
+          () => mockLogging.captureException(
+            any<dynamic>(),
+            domain: 'ScreenshotPortalService',
+            subDomain: 'file_copy_error',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
     });
   });

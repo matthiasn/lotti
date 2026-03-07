@@ -37,7 +37,8 @@ void main() {
           dateTo: now,
         ),
         data: TaskData(
-          status: status ??
+          status:
+              status ??
               TaskStatus.open(
                 id: 'status-1',
                 createdAt: now,
@@ -59,8 +60,9 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockUpdateNotifications = MockUpdateNotifications();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
 
       // Default: return empty task list
       when(
@@ -73,8 +75,9 @@ void main() {
       ).thenAnswer((_) async => <JournalEntity>[]);
 
       // Default: FTS returns empty
-      when(() => mockFts5Db.watchFullTextMatches(any()))
-          .thenAnswer((_) => Stream.value(<String>[]));
+      when(
+        () => mockFts5Db.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.value(<String>[]));
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -433,8 +436,9 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
     });
 
-    testWidgets('shows no tasks message when no tasks available',
-        (tester) async {
+    testWidgets('shows no tasks message when no tasks available', (
+      tester,
+    ) async {
       // Default mock returns empty list
       await tester.pumpWidget(
         ProviderScope(
@@ -514,8 +518,9 @@ void main() {
       expect(find.text('Cherry Task'), findsNothing);
     });
 
-    testWidgets('shows no tasks found when search has no matches',
-        (tester) async {
+    testWidgets('shows no tasks found when search has no matches', (
+      tester,
+    ) async {
       final testTasks = [
         buildTask(title: 'Apple Task'),
       ];
@@ -813,8 +818,9 @@ void main() {
       ).thenAnswer((_) async => testTasks);
 
       // FTS5 returns task-2 as a match
-      when(() => mockFts5Db.watchFullTextMatches('special'))
-          .thenAnswer((_) => Stream.value(['task-2']));
+      when(
+        () => mockFts5Db.watchFullTextMatches('special'),
+      ).thenAnswer((_) => Stream.value(['task-2']));
 
       await tester.pumpWidget(
         ProviderScope(
@@ -861,8 +867,9 @@ void main() {
       ).thenAnswer((_) async => testTasks);
 
       // FTS5 throws an error
-      when(() => mockFts5Db.watchFullTextMatches(any()))
-          .thenAnswer((_) => Stream.error(Exception('FTS5 error')));
+      when(
+        () => mockFts5Db.watchFullTextMatches(any()),
+      ).thenAnswer((_) => Stream.error(Exception('FTS5 error')));
 
       await tester.pumpWidget(
         ProviderScope(

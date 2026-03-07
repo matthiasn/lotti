@@ -91,20 +91,23 @@ void main() {
       // Get initial progress value
       final progressFinder = find.byType(LinearProgressIndicator);
       expect(progressFinder, findsOneWidget);
-      final initialProgress =
-          tester.widget<LinearProgressIndicator>(progressFinder).value;
+      final initialProgress = tester
+          .widget<LinearProgressIndicator>(progressFinder)
+          .value;
       expect(initialProgress, isNotNull);
 
       // Advance time and check that progress value has decreased
       await tester.pump(const Duration(milliseconds: 500));
-      final laterProgress =
-          tester.widget<LinearProgressIndicator>(progressFinder).value;
+      final laterProgress = tester
+          .widget<LinearProgressIndicator>(progressFinder)
+          .value;
       expect(laterProgress, isNotNull);
       expect(laterProgress, lessThan(initialProgress!));
     });
 
-    testWidgets('handles expired pending correction gracefully',
-        (tester) async {
+    testWidgets('handles expired pending correction gracefully', (
+      tester,
+    ) async {
       // Create a pending that has already expired
       final expiredPending = PendingCorrection(
         before: 'old',
@@ -130,8 +133,9 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('disposes timer and animation controller properly',
-        (tester) async {
+    testWidgets('disposes timer and animation controller properly', (
+      tester,
+    ) async {
       final pending = PendingCorrection(
         before: 'before',
         after: 'after',
@@ -169,8 +173,9 @@ void main() {
       // If we get here without errors, dispose worked correctly
     });
 
-    testWidgets('displays countdown text based on remainingTime',
-        (tester) async {
+    testWidgets('displays countdown text based on remainingTime', (
+      tester,
+    ) async {
       // Create a pending that was just created
       final pending = PendingCorrection(
         before: 'before',
@@ -195,8 +200,9 @@ void main() {
       expect(find.textContaining('5'), findsOneWidget);
     });
 
-    testWidgets('shows lower countdown when pending has elapsed time',
-        (tester) async {
+    testWidgets('shows lower countdown when pending has elapsed time', (
+      tester,
+    ) async {
       // Create a pending that's already 3 seconds old
       final pending = PendingCorrection(
         before: 'before',

@@ -140,7 +140,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String agentConversationThreadSummary(
-      int messageCount, int toolCallCount, String shortId) {
+    int messageCount,
+    int toolCallCount,
+    String shortId,
+  ) {
     return '$messageCount messages, $toolCallCount tool calls · $shortId';
   }
 
@@ -2858,7 +2861,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String maintenanceGenerateEmbeddingsProgress(
-      int processed, int total, int embedded) {
+    int processed,
+    int total,
+    int embedded,
+  ) {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
@@ -2867,6 +2873,19 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get maintenancePopulatePhaseAgentEntities =>
+      'Processing agent entities...';
+
+  @override
+  String get maintenancePopulatePhaseAgentLinks => 'Processing agent links...';
+
+  @override
+  String get maintenancePopulatePhaseJournal => 'Processing journal entries...';
+
+  @override
+  String get maintenancePopulatePhaseLinks => 'Processing entry links...';
 
   @override
   String get maintenancePopulateSequenceLog => 'Populate sync sequence log';
@@ -2886,19 +2905,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maintenancePopulateSequenceLogMessage =>
       'This will scan all journal entries and add them to the sync sequence log. This enables backfill responses for entries created before this feature was added.';
-
-  @override
-  String get maintenancePopulatePhaseAgentEntities =>
-      'Processing agent entities...';
-
-  @override
-  String get maintenancePopulatePhaseAgentLinks => 'Processing agent links...';
-
-  @override
-  String get maintenancePopulatePhaseJournal => 'Processing journal entries...';
-
-  @override
-  String get maintenancePopulatePhaseLinks => 'Processing entry links...';
 
   @override
   String get maintenancePurgeDeleted => 'Purge deleted items';
@@ -3923,7 +3929,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsMatrixVerificationSuccessLabel(
-      String deviceName, String deviceID) {
+    String deviceName,
+    String deviceID,
+  ) {
     return 'You\'ve successfully verified $deviceName ($deviceID)';
   }
 

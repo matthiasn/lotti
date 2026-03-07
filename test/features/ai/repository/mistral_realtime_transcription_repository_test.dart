@@ -559,21 +559,20 @@ void main() {
         fakeAsync((async) {
           final fakeChannel = _FakeWebSocketChannel();
           final repo = MistralRealtimeTranscriptionRepository(
-            channelFactory: (_, __) => fakeChannel,
+            channelFactory: (_, _) => fakeChannel,
           );
 
           TranscriptionException? caught;
           repo
               .connect(
-            apiKey: 'test-key',
-            baseUrl: 'https://api.mistral.ai/v1',
-          )
+                apiKey: 'test-key',
+                baseUrl: 'https://api.mistral.ai/v1',
+              )
               .catchError((Object e) {
-            caught = e as TranscriptionException;
-          });
+                caught = e as TranscriptionException;
+              });
           async
             ..flushMicrotasks()
-
             // Advance past the 10-second timeout
             ..elapse(const Duration(seconds: 11))
             ..flushMicrotasks();
@@ -587,7 +586,7 @@ void main() {
 
       test('wraps non-TranscriptionException from channel.ready', () async {
         final repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (_, __) => _FailingReadyChannel(),
+          channelFactory: (_, _) => _FailingReadyChannel(),
         );
         addTearDown(repo.dispose);
 
@@ -711,23 +710,25 @@ void main() {
         expect(doneEvents.first.text, '');
       });
 
-      test('error event without nested error key uses data as fallback',
-          () async {
-        final errors = <RealtimeTranscriptionError>[];
-        repo.errors.listen(errors.add);
+      test(
+        'error event without nested error key uses data as fallback',
+        () async {
+          final errors = <RealtimeTranscriptionError>[];
+          repo.errors.listen(errors.add);
 
-        // Error event with flat structure (no nested 'error' map)
-        fakeChannel.simulateServerMessage({
-          'type': 'error',
-          'message': 'Rate limit exceeded',
-          'code': 'rate_limit',
-          'type_field': 'api_error',
-        });
+          // Error event with flat structure (no nested 'error' map)
+          fakeChannel.simulateServerMessage({
+            'type': 'error',
+            'message': 'Rate limit exceeded',
+            'code': 'rate_limit',
+            'type_field': 'api_error',
+          });
 
-        await Future<void>.delayed(Duration.zero);
-        expect(errors, hasLength(1));
-        expect(errors.first.message, 'Rate limit exceeded');
-      });
+          await Future<void>.delayed(Duration.zero);
+          expect(errors, hasLength(1));
+          expect(errors.first.message, 'Rate limit exceeded');
+        },
+      );
 
       test('done event without usage field', () async {
         final doneEvents = <RealtimeTranscriptionDone>[];
@@ -781,18 +782,20 @@ void main() {
         repo.dispose();
       });
 
-      test('emits error and sets isConnected to false on stream error',
-          () async {
-        final errors = <RealtimeTranscriptionError>[];
-        repo.errors.listen(errors.add);
+      test(
+        'emits error and sets isConnected to false on stream error',
+        () async {
+          final errors = <RealtimeTranscriptionError>[];
+          repo.errors.listen(errors.add);
 
-        fakeChannel.simulateError(Exception('Connection lost'));
+          fakeChannel.simulateError(Exception('Connection lost'));
 
-        await Future<void>.delayed(Duration.zero);
-        expect(repo.isConnected, isFalse);
-        expect(errors, hasLength(1));
-        expect(errors.first.type, 'stream_error');
-      });
+          await Future<void>.delayed(Duration.zero);
+          expect(repo.isConnected, isFalse);
+          expect(errors, hasLength(1));
+          expect(errors.first.type, 'stream_error');
+        },
+      );
 
       test('sets isConnected to false when stream closes', () async {
         await fakeChannel.simulateClose();

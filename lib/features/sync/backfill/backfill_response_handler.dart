@@ -29,13 +29,13 @@ class BackfillResponseHandler {
     required LoggingService loggingService,
     required VectorClockService vectorClockService,
     @visibleForTesting Duration? responseCooldown,
-  })  : _journalDb = journalDb,
-        _sequenceLogService = sequenceLogService,
-        _outboxService = outboxService,
-        _loggingService = loggingService,
-        _vectorClockService = vectorClockService,
-        _responseCooldown =
-            responseCooldown ?? SyncTuning.backfillResponseCooldown;
+  }) : _journalDb = journalDb,
+       _sequenceLogService = sequenceLogService,
+       _outboxService = outboxService,
+       _loggingService = loggingService,
+       _vectorClockService = vectorClockService,
+       _responseCooldown =
+           responseCooldown ?? SyncTuning.backfillResponseCooldown;
 
   final JournalDb _journalDb;
   final SyncSequenceLogService _sequenceLogService;
@@ -208,10 +208,10 @@ class BackfillResponseHandler {
       // Limit entries to process to prevent outbox flooding
       final entriesToProcess =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize
-              ? request.entries
-                  .take(SyncTuning.maxBackfillResponseBatchSize)
-                  .toList()
-              : request.entries;
+          ? request.entries
+                .take(SyncTuning.maxBackfillResponseBatchSize)
+                .toList()
+          : request.entries;
 
       final truncated =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
@@ -304,8 +304,9 @@ class BackfillResponseHandler {
     }
 
     final payloadId = logEntry.entryId!;
-    final payloadType =
-        SyncSequencePayloadType.values.elementAt(logEntry.payloadType);
+    final payloadType = SyncSequencePayloadType.values.elementAt(
+      logEntry.payloadType,
+    );
 
     // Use the originatingHostId from the sequence log entry, or fall back to
     // the requested hostId.

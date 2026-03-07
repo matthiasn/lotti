@@ -40,9 +40,9 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
     this.onDeletePressed,
     super.key,
   }) : assert(
-          !selectionMode || onDeletePressed != null,
-          'onDeletePressed must be provided when selectionMode is true',
-        );
+         !selectionMode || onDeletePressed != null,
+         'onDeletePressed must be provided when selectionMode is true',
+       );
 
   /// The currently active tab
   final AiSettingsTab activeTab;
@@ -96,8 +96,11 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
       margin: const EdgeInsets.only(right: 20, bottom: 20),
       child: FloatingActionButton.extended(
         onPressed: onDeletePressed,
-        icon:
-            _buildIconContainer(context, Icons.delete_rounded, isDelete: true),
+        icon: _buildIconContainer(
+          context,
+          Icons.delete_rounded,
+          isDelete: true,
+        ),
         label: _buildLabel(context, label, isDelete: true),
         backgroundColor: context.colorScheme.errorContainer,
         foregroundColor: context.colorScheme.onErrorContainer,
@@ -113,21 +116,21 @@ class AiSettingsFloatingActionButton extends StatelessWidget {
   (IconData, String) _getIconAndLabel(BuildContext context) {
     return switch (activeTab) {
       AiSettingsTab.providers => (
-          Icons.add_link_rounded,
-          context.messages.aiSettingsAddProviderButton
-        ),
+        Icons.add_link_rounded,
+        context.messages.aiSettingsAddProviderButton,
+      ),
       AiSettingsTab.models => (
-          Icons.auto_awesome_rounded,
-          context.messages.aiSettingsAddModelButton
-        ),
+        Icons.auto_awesome_rounded,
+        context.messages.aiSettingsAddModelButton,
+      ),
       AiSettingsTab.prompts => (
-          Icons.edit_note_rounded,
-          context.messages.aiSettingsAddPromptButton
-        ),
+        Icons.edit_note_rounded,
+        context.messages.aiSettingsAddPromptButton,
+      ),
       AiSettingsTab.profiles => (
-          Icons.tune_rounded,
-          context.messages.aiSettingsAddProfileButton
-        ),
+        Icons.tune_rounded,
+        context.messages.aiSettingsAddProfileButton,
+      ),
     };
   }
 

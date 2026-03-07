@@ -12,20 +12,24 @@ part of 'rating_repository.dart';
 @ProviderFor(ratingRepository)
 final ratingRepositoryProvider = RatingRepositoryProvider._();
 
-final class RatingRepositoryProvider extends $FunctionalProvider<
-    RatingRepository,
-    RatingRepository,
-    RatingRepository> with $Provider<RatingRepository> {
+final class RatingRepositoryProvider
+    extends
+        $FunctionalProvider<
+          RatingRepository,
+          RatingRepository,
+          RatingRepository
+        >
+    with $Provider<RatingRepository> {
   RatingRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'ratingRepositoryProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ratingRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$ratingRepositoryHash();

@@ -75,42 +75,44 @@ class TestEntryDetailsWidget extends StatelessWidget {
 void main() {
   group('EntryDetailsWidget Layout Tests', () {
     testWidgets(
-        'wraps task cards with proper padding when showTaskDetails is false',
-        (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestEntryDetailsWidget(
-            isTask: true,
-            showTaskDetails: false,
+      'wraps task cards with proper padding when showTaskDetails is false',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const TestEntryDetailsWidget(
+              isTask: true,
+              showTaskDetails: false,
+            ),
           ),
-        ),
-      );
+        );
 
-      // Find the container that represents our mock card
-      final containerFinder = find.byKey(const Key('modern-journal-card'));
-      expect(containerFinder, findsOneWidget);
+        // Find the container that represents our mock card
+        final containerFinder = find.byKey(const Key('modern-journal-card'));
+        expect(containerFinder, findsOneWidget);
 
-      // Find the padding widget that wraps it
-      final paddingFinder = find.ancestor(
-        of: containerFinder,
-        matching: find.byType(Padding),
-      );
+        // Find the padding widget that wraps it
+        final paddingFinder = find.ancestor(
+          of: containerFinder,
+          matching: find.byType(Padding),
+        );
 
-      expect(paddingFinder, findsOneWidget);
+        expect(paddingFinder, findsOneWidget);
 
-      final padding = tester.widget<Padding>(paddingFinder);
-      expect(
-        padding.padding,
-        const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingXSmall,
-        ),
-      );
-    });
+        final padding = tester.widget<Padding>(paddingFinder);
+        expect(
+          padding.padding,
+          const EdgeInsets.only(
+            left: AppTheme.spacingXSmall,
+            right: AppTheme.spacingXSmall,
+            bottom: AppTheme.spacingXSmall,
+          ),
+        );
+      },
+    );
 
-    testWidgets('renders card layout when showTaskDetails is true',
-        (tester) async {
+    testWidgets('renders card layout when showTaskDetails is true', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const TestEntryDetailsWidget(
@@ -251,16 +253,19 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
 
-    testWidgets('renders without highlight when isHighlighted=false',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('renders without highlight when isHighlighted=false', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -278,10 +283,12 @@ void main() {
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
 
-    testWidgets('renders with highlight when isHighlighted=true',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('renders with highlight when isHighlighted=true', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -302,8 +309,9 @@ void main() {
     });
 
     testWidgets('highlight toggles from false to true', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       var isHighlighted = false;
 
@@ -345,8 +353,9 @@ void main() {
     });
 
     testWidgets('highlight toggles from true to false', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       var isHighlighted = true;
 
@@ -390,8 +399,9 @@ void main() {
     });
 
     testWidgets('showAiEntry and isHighlighted work together', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -484,8 +494,9 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
@@ -521,10 +532,12 @@ void main() {
       expect(widget.isHighlighted, isTrue);
     });
 
-    testWidgets('timer highlight renders a glowing border overlay',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('timer highlight renders a glowing border overlay', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -546,8 +559,9 @@ void main() {
     });
 
     testWidgets('no highlight renders plain card', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -567,10 +581,12 @@ void main() {
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
 
-    testWidgets('scroll highlight renders when only isHighlighted=true',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('scroll highlight renders when only isHighlighted=true', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -591,10 +607,12 @@ void main() {
       expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('timer highlight takes precedence in rendering order',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('timer highlight takes precedence in rendering order', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       // When both are true, isActiveTimer branch executes first
       await tester.pumpWidget(
@@ -692,15 +710,17 @@ void main() {
         (_) => Stream<bool>.fromIterable([false]),
       );
 
-      when(mockTimeService.getStream)
-          .thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      when(
+        mockTimeService.getStream,
+      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
     });
 
     tearDown(getIt.reset);
 
     testWidgets('shows EntryLabelsDisplay for text entries', (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -719,10 +739,12 @@ void main() {
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
     });
 
-    testWidgets('does not show header or edit button for labels in detail view',
-        (tester) async {
-      when(() => mockJournalDb.journalEntityById(testTextEntry.meta.id))
-          .thenAnswer((_) async => testTextEntry);
+    testWidgets('does not show header or edit button for labels in detail view', (
+      tester,
+    ) async {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

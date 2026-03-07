@@ -12,45 +12,46 @@ import '../../../../test_helper.dart';
 void main() {
   group('ChecklistItemWidget Spacing Tests', () {
     testWidgets(
-        'outer padding includes card padding horizontally and 1px vertically',
-        (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: ChecklistItemWidget(
-            title: 'Test Item',
-            isChecked: false,
-            onChanged: (_) {},
+      'outer padding includes card padding horizontally and 1px vertically',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: ChecklistItemWidget(
+              title: 'Test Item',
+              isChecked: false,
+              onChanged: (_) {},
+            ),
           ),
-        ),
-      );
+        );
 
-      // Find the outer Padding widget that wraps the MouseRegion
-      final paddingFinder = find.descendant(
-        of: find.byType(ChecklistItemWidget),
-        matching: find.byType(Padding),
-      );
+        // Find the outer Padding widget that wraps the MouseRegion
+        final paddingFinder = find.descendant(
+          of: find.byType(ChecklistItemWidget),
+          matching: find.byType(Padding),
+        );
 
-      expect(paddingFinder, findsWidgets);
+        expect(paddingFinder, findsWidgets);
 
-      // Find the specific outer Padding with card padding horizontal + 1 vertical
-      final paddings = tester.widgetList<Padding>(paddingFinder);
-      final outerPadding = paddings.firstWhere(
-        (padding) =>
-            padding.padding is EdgeInsets &&
-            (padding.padding as EdgeInsets).top == 1 &&
-            (padding.padding as EdgeInsets).bottom == 1 &&
-            (padding.padding as EdgeInsets).left == AppTheme.cardPadding &&
-            (padding.padding as EdgeInsets).right == AppTheme.cardPadding,
-      );
+        // Find the specific outer Padding with card padding horizontal + 1 vertical
+        final paddings = tester.widgetList<Padding>(paddingFinder);
+        final outerPadding = paddings.firstWhere(
+          (padding) =>
+              padding.padding is EdgeInsets &&
+              (padding.padding as EdgeInsets).top == 1 &&
+              (padding.padding as EdgeInsets).bottom == 1 &&
+              (padding.padding as EdgeInsets).left == AppTheme.cardPadding &&
+              (padding.padding as EdgeInsets).right == AppTheme.cardPadding,
+        );
 
-      expect(
-        outerPadding.padding,
-        const EdgeInsets.symmetric(
-          horizontal: AppTheme.cardPadding,
-          vertical: 1,
-        ),
-      );
-    });
+        expect(
+          outerPadding.padding,
+          const EdgeInsets.symmetric(
+            horizontal: AppTheme.cardPadding,
+            vertical: 1,
+          ),
+        );
+      },
+    );
 
     testWidgets('inner row has correct spacing', (tester) async {
       await tester.pumpWidget(
@@ -75,8 +76,9 @@ void main() {
       expect(find.byType(Checkbox), findsOneWidget);
     });
 
-    testWidgets('spacing remains consistent when item is checked',
-        (tester) async {
+    testWidgets('spacing remains consistent when item is checked', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -106,8 +108,9 @@ void main() {
       expect(hasCorrectOuterPadding, isTrue);
     });
 
-    testWidgets('spacing remains consistent when toggling checked state',
-        (tester) async {
+    testWidgets('spacing remains consistent when toggling checked state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -172,8 +175,9 @@ void main() {
       expect(hasCorrectOuterPadding, isTrue);
     });
 
-    testWidgets('spacing is reduced compared to legacy 4px padding',
-        (tester) async {
+    testWidgets('spacing is reduced compared to legacy 4px padding', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: ChecklistItemWidget(
@@ -205,8 +209,9 @@ void main() {
       expect(edgeInsets.bottom, 1.0);
     });
 
-    testWidgets('multiple items have consistent compact spacing',
-        (tester) async {
+    testWidgets('multiple items have consistent compact spacing', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: Column(

@@ -127,8 +127,9 @@ Please provide step-by-step guidance.
       expect(find.byType(GptMarkdown), findsNothing);
     });
 
-    testWidgets('expands to show full prompt when chevron is tapped',
-        (tester) async {
+    testWidgets('expands to show full prompt when chevron is tapped', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: GeneratedPromptCard(
@@ -184,12 +185,12 @@ Please provide step-by-step guidance.
       final clipboardData = <String>[];
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        if (call.method == 'Clipboard.setData') {
-          final args = call.arguments as Map<dynamic, dynamic>;
-          clipboardData.add(args['text'] as String);
-        }
-        return null;
-      });
+            if (call.method == 'Clipboard.setData') {
+              final args = call.arguments as Map<dynamic, dynamic>;
+              clipboardData.add(args['text'] as String);
+            }
+            return null;
+          });
       addTearDown(
         () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null),
@@ -217,8 +218,8 @@ Please provide step-by-step guidance.
       // Set up clipboard mock
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-        return null;
-      });
+            return null;
+          });
       addTearDown(
         () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
             .setMockMethodCallHandler(SystemChannels.platform, null),
@@ -303,8 +304,9 @@ And more content.
       expect(gptMarkdown.data, contains('And more content'));
     });
 
-    testWidgets('updates content when aiResponse changes via didUpdateWidget',
-        (tester) async {
+    testWidgets('updates content when aiResponse changes via didUpdateWidget', (
+      tester,
+    ) async {
       final firstResponse = testAiResponseEntry.copyWith(
         meta: testAiResponseEntry.meta.copyWith(id: 'first-id'),
         data: testAiResponseEntry.data.copyWith(
@@ -361,56 +363,57 @@ Updated prompt content.
     });
 
     testWidgets(
-        'updates content when response text changes with same id via didUpdateWidget',
-        (tester) async {
-      final firstResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: '''
+      'updates content when response text changes with same id via didUpdateWidget',
+      (tester) async {
+        final firstResponse = testAiResponseEntry.copyWith(
+          data: testAiResponseEntry.data.copyWith(
+            response: '''
 ## Summary
 Original summary.
 
 ## Prompt
 Original prompt.
 ''',
-        ),
-      );
+          ),
+        );
 
-      final updatedResponse = testAiResponseEntry.copyWith(
-        data: testAiResponseEntry.data.copyWith(
-          response: '''
+        final updatedResponse = testAiResponseEntry.copyWith(
+          data: testAiResponseEntry.data.copyWith(
+            response: '''
 ## Summary
 Modified summary.
 
 ## Prompt
 Modified prompt.
 ''',
-        ),
-      );
-
-      // Build widget with first response
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: GeneratedPromptCard(
-            firstResponse,
-            linkedFromId: 'test-id',
           ),
-        ),
-      );
+        );
 
-      expect(find.textContaining('Original summary'), findsOneWidget);
-
-      // Rebuild with updated response (same id, different content)
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: GeneratedPromptCard(
-            updatedResponse,
-            linkedFromId: 'test-id',
+        // Build widget with first response
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              firstResponse,
+              linkedFromId: 'test-id',
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(find.textContaining('Modified summary'), findsOneWidget);
-    });
+        expect(find.textContaining('Original summary'), findsOneWidget);
+
+        // Rebuild with updated response (same id, different content)
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: GeneratedPromptCard(
+              updatedResponse,
+              linkedFromId: 'test-id',
+            ),
+          ),
+        );
+
+        expect(find.textContaining('Modified summary'), findsOneWidget);
+      },
+    );
 
     testWidgets('opens modal on double tap', (tester) async {
       await tester.pumpWidget(
@@ -426,8 +429,9 @@ Modified prompt.
       final initialBarriers = find.byType(ModalBarrier).evaluate().length;
 
       // Find the summary text area and double tap
-      final summaryFinder =
-          find.textContaining('implement a new authentication');
+      final summaryFinder = find.textContaining(
+        'implement a new authentication',
+      );
       expect(summaryFinder, findsOneWidget);
 
       // Double tap to open modal

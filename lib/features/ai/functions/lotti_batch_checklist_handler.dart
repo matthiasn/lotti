@@ -78,7 +78,8 @@ class LottiBatchChecklistHandler extends FunctionHandler {
               'toolCallId': call.id,
               'taskId': task.id,
             },
-            error: error ??
+            error:
+                error ??
                 'Each item must be an object with a title. Example: {"items": [{"title": "Buy milk"}] }',
           );
         }
@@ -89,10 +90,12 @@ class LottiBatchChecklistHandler extends FunctionHandler {
 
       // Convert validated items to the expected format
       final sanitized = validatedItems
-          .map((item) => {
-                'title': item.title,
-                'isChecked': item.isChecked,
-              })
+          .map(
+            (item) => {
+              'title': item.title,
+              'isChecked': item.isChecked,
+            },
+          )
           .toList();
 
       if (!ChecklistValidation.isValidBatchSize(sanitized.length)) {
@@ -209,7 +212,7 @@ Do NOT recreate the items that were already successful.''';
               isChecked: (item['isChecked'] as bool?) ?? false,
               linkedChecklists: [],
               checkedBy: CheckedBySource.agent,
-            )
+            ),
         ];
 
         if (checklistItems.isNotEmpty) {
@@ -233,8 +236,9 @@ Do NOT recreate the items that were already successful.''';
             }
 
             // Refresh the task after creating checklist
-            final refreshedEntity =
-                await journalDb.journalEntityById(currentTask.id);
+            final refreshedEntity = await journalDb.journalEntityById(
+              currentTask.id,
+            );
             if (refreshedEntity is Task) {
               task = refreshedEntity;
               onTaskUpdated?.call(refreshedEntity);
@@ -285,8 +289,9 @@ Do NOT recreate the items that were already successful.''';
 
         // Only refresh the task if items were actually added
         if (successCount > 0) {
-          final refreshedEntity =
-              await journalDb.journalEntityById(currentTask.id);
+          final refreshedEntity = await journalDb.journalEntityById(
+            currentTask.id,
+          );
           if (refreshedEntity is Task) {
             task = refreshedEntity;
             onTaskUpdated?.call(refreshedEntity);
@@ -326,8 +331,9 @@ Do NOT recreate the items that were already successful.''';
 
     if (_createdDetails.isEmpty) {
       if (_failedItems.isNotEmpty) {
-        final failedTitles =
-            _failedItems.map((f) => '"${f.title}" (${f.reason})').join(', ');
+        final failedTitles = _failedItems
+            .map((f) => '"${f.title}" (${f.reason})')
+            .join(', ');
         return 'No checklist items were created. '
             'Failed ${_failedItems.length}: $failedTitles.';
       }
@@ -337,18 +343,21 @@ Do NOT recreate the items that were already successful.''';
     final count = _createdDetails.length;
     final titles = _createdDetails.map((d) => '"${d['title']}"').join(', ');
 
-    final checkedCount =
-        _createdDetails.where((d) => d['isChecked'] == true).length;
-    final checkedNote =
-        checkedCount > 0 ? ' ($checkedCount already checked)' : '';
+    final checkedCount = _createdDetails
+        .where((d) => d['isChecked'] == true)
+        .length;
+    final checkedNote = checkedCount > 0
+        ? ' ($checkedCount already checked)'
+        : '';
 
     final buffer = StringBuffer(
       'Created $count checklist item${count == 1 ? '' : 's'}$checkedNote: $titles.',
     );
 
     if (_failedItems.isNotEmpty) {
-      final failedTitles =
-          _failedItems.map((f) => '"${f.title}" (${f.reason})').join(', ');
+      final failedTitles = _failedItems
+          .map((f) => '"${f.title}" (${f.reason})')
+          .join(', ');
       buffer.write(
         ' Failed ${_failedItems.length}: $failedTitles.',
       );

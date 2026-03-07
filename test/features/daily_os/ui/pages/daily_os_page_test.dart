@@ -44,7 +44,7 @@ class _TestTimeHistoryController extends TimeHistoryHeaderController {
 /// Mock notifier for date selection that tracks selected date.
 class _TestDailyOsSelectedDate extends DailyOsSelectedDate {
   _TestDailyOsSelectedDate(this._initialDate, {DateTime? today})
-      : _today = today ?? _initialDate;
+    : _today = today ?? _initialDate;
 
   final DateTime _initialDate;
   final DateTime _today;
@@ -106,7 +106,8 @@ void main() {
     List<Override> additionalOverrides = const [],
   }) {
     final effectivePlan = plan ?? createTestPlan();
-    final effectiveStats = stats ??
+    final effectiveStats =
+        stats ??
         const DayBudgetStats(
           totalPlanned: Duration.zero,
           totalRecorded: Duration.zero,

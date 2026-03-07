@@ -365,13 +365,14 @@ class _DonutChartPainter extends CustomPainter {
 
     // Center circle with subtle gradient
     final centerPaint = Paint()
-      ..shader = RadialGradient(
-        colors: isDark
-            ? [const Color(0xFF2D2D44), const Color(0xFF1E1E2E)]
-            : [Colors.white, const Color(0xFFF8F9FA)],
-      ).createShader(
-        Rect.fromCircle(center: center, radius: radius - strokeWidth - 4),
-      );
+      ..shader =
+          RadialGradient(
+            colors: isDark
+                ? [const Color(0xFF2D2D44), const Color(0xFF1E1E2E)]
+                : [Colors.white, const Color(0xFFF8F9FA)],
+          ).createShader(
+            Rect.fromCircle(center: center, radius: radius - strokeWidth - 4),
+          );
     canvas.drawCircle(center, radius - strokeWidth - 4, centerPaint);
 
     // Plus icon in center

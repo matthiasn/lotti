@@ -52,12 +52,15 @@ class EntryLabelsDisplay extends ConsumerWidget {
     final showPrivate = cache.showPrivateEntries;
 
     // Use cache for fast label lookups
-    final labels = labelIds
-        .map(cache.getLabelById)
-        .whereType<LabelDefinition>()
-        .where((label) => showPrivate || !(label.private ?? false))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final labels =
+        labelIds
+            .map(cache.getLabelById)
+            .whereType<LabelDefinition>()
+            .where((label) => showPrivate || !(label.private ?? false))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     if (labels.isEmpty && !showEditButton) {
       return const SizedBox.shrink();

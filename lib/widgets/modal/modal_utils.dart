@@ -24,8 +24,12 @@ class ModalUtils {
         : context.colorScheme.outline.withAlpha(128);
   }
 
-  static const defaultPadding =
-      EdgeInsets.only(left: 20, top: 20, right: 20, bottom: 40);
+  static const defaultPadding = EdgeInsets.only(
+    left: 20,
+    top: 20,
+    right: 20,
+    bottom: 40,
+  );
 
   /// Creates a modern styled modal sheet page with enhanced visual effects
   static WoltModalSheetPage modalSheetPage({
@@ -50,7 +54,8 @@ class ModalUtils {
       hasSabGradient: false,
       navBarHeight: navBarHeight ?? 65,
       hasTopBarLayer: hasTopBarLayer,
-      topBarTitle: titleWidget ??
+      topBarTitle:
+          titleWidget ??
           (title != null
               ? Container(
                   padding: const EdgeInsets.only(top: 4),
@@ -71,8 +76,9 @@ class ModalUtils {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -90,8 +96,9 @@ class ModalUtils {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -154,7 +161,7 @@ class ModalUtils {
   static Future<T?> showMultiPageModal<T>({
     required BuildContext context,
     required List<SliverWoltModalSheetPage> Function(BuildContext)
-        pageListBuilder,
+    pageListBuilder,
     ValueNotifier<int>? pageIndexNotifier,
     bool barrierDismissible = true,
     Widget Function(Widget)? modalDecorator,
@@ -195,7 +202,8 @@ class ModalUtils {
       useSafeArea: true,
       resizeToAvoidBottomInset: true,
       navBarHeight: navBarHeight ?? 65,
-      topBarTitle: titleWidget ??
+      topBarTitle:
+          titleWidget ??
           (title != null
               ? Padding(
                   padding: const EdgeInsets.only(top: 4),
@@ -216,8 +224,9 @@ class ModalUtils {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -235,8 +244,9 @@ class ModalUtils {
               icon: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:
-                      colorScheme.surfaceContainerHigh.withValues(alpha: 0.5),
+                  color: colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.5,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(

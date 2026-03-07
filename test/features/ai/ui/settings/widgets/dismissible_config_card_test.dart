@@ -17,27 +17,31 @@ void main() {
     setUp(() {
       tapCalled = false;
 
-      testProvider = AiConfig.inferenceProvider(
-        id: 'test-provider',
-        name: 'Test Provider',
-        description: 'Test description',
-        inferenceProviderType: InferenceProviderType.anthropic,
-        apiKey: 'test-key',
-        baseUrl: 'https://api.test.com',
-        createdAt: DateTime.now(),
-      ) as AiConfigInferenceProvider;
+      testProvider =
+          AiConfig.inferenceProvider(
+                id: 'test-provider',
+                name: 'Test Provider',
+                description: 'Test description',
+                inferenceProviderType: InferenceProviderType.anthropic,
+                apiKey: 'test-key',
+                baseUrl: 'https://api.test.com',
+                createdAt: DateTime.now(),
+              )
+              as AiConfigInferenceProvider;
 
-      testModel = AiConfig.model(
-        id: 'test-model',
-        name: 'Test Model',
-        description: 'Model description',
-        providerModelId: 'model-id',
-        inferenceProviderId: 'provider-id',
-        createdAt: DateTime.now(),
-        inputModalities: [Modality.text, Modality.image],
-        outputModalities: [Modality.text],
-        isReasoningModel: false,
-      ) as AiConfigModel;
+      testModel =
+          AiConfig.model(
+                id: 'test-model',
+                name: 'Test Model',
+                description: 'Model description',
+                providerModelId: 'model-id',
+                inferenceProviderId: 'provider-id',
+                createdAt: DateTime.now(),
+                inputModalities: [Modality.text, Modality.image],
+                outputModalities: [Modality.text],
+                isReasoningModel: false,
+              )
+              as AiConfigModel;
     });
 
     Widget createWidget<T extends AiConfig>({
@@ -100,8 +104,9 @@ void main() {
       expect(dismissible.key, ValueKey(testProvider.id));
     });
 
-    testWidgets('shows dismiss background when swiping',
-        (WidgetTester tester) async {
+    testWidgets('shows dismiss background when swiping', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(config: testProvider));
 
       // Start swipe gesture - use specific type parameter
@@ -123,12 +128,15 @@ void main() {
       expect(tapCalled, isTrue);
     });
 
-    testWidgets('passes showCapabilities to AiConfigCard',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        config: testModel,
-        showCapabilities: true,
-      ));
+    testWidgets('passes showCapabilities to AiConfigCard', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          config: testModel,
+          showCapabilities: true,
+        ),
+      );
 
       final card = tester.widget<AiConfigCard>(
         find.byType(AiConfigCard),
@@ -136,20 +144,24 @@ void main() {
       expect(card.showCapabilities, isTrue);
     });
 
-    testWidgets('works with different config types - provider',
-        (WidgetTester tester) async {
+    testWidgets('works with different config types - provider', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(config: testProvider));
 
       expect(find.text('Test Provider'), findsOneWidget);
       expect(find.text('Test description'), findsOneWidget);
     });
 
-    testWidgets('works with different config types - model',
-        (WidgetTester tester) async {
-      await tester.pumpWidget(createWidget(
-        config: testModel,
-        showCapabilities: true,
-      ));
+    testWidgets('works with different config types - model', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        createWidget(
+          config: testModel,
+          showCapabilities: true,
+        ),
+      );
 
       expect(find.text('Test Model'), findsOneWidget);
       expect(find.text('Model description'), findsOneWidget);
@@ -159,8 +171,9 @@ void main() {
       expect(find.byIcon(Icons.visibility), findsOneWidget);
     });
 
-    testWidgets('maintains dismiss functionality across rebuilds',
-        (WidgetTester tester) async {
+    testWidgets('maintains dismiss functionality across rebuilds', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(config: testProvider));
 
       // Start swipe - use specific type parameter
@@ -177,8 +190,9 @@ void main() {
       expect(find.byType(AiConfigCard), findsOneWidget);
     });
 
-    testWidgets('dismissible has confirm dismiss callback',
-        (WidgetTester tester) async {
+    testWidgets('dismissible has confirm dismiss callback', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget(config: testProvider));
 
       final dismissible = tester.widget<Dismissible>(

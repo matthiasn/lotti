@@ -12,12 +12,12 @@ const aiConfigDbFileName = 'ai_config.sqlite';
 @DriftDatabase(include: {'ai_config_db.drift'})
 class AiConfigDb extends _$AiConfigDb {
   AiConfigDb({this.inMemoryDatabase = false})
-      : super(
-          openDbConnection(
-            aiConfigDbFileName,
-            inMemoryDatabase: inMemoryDatabase,
-          ),
-        );
+    : super(
+        openDbConnection(
+          aiConfigDbFileName,
+          inMemoryDatabase: inMemoryDatabase,
+        ),
+      );
 
   bool inMemoryDatabase = false;
 

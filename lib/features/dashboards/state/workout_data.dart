@@ -39,7 +39,8 @@ List<Observation> aggregateWorkoutDailySum(
           }
 
           if (chartConfig.valueType == WorkoutValueType.duration) {
-            final minutes = workoutEntry.meta.dateTo
+            final minutes =
+                workoutEntry.meta.dateTo
                     .difference(workoutEntry.meta.dateFrom)
                     .inSeconds /
                 60;

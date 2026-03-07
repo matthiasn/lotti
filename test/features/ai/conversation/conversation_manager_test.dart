@@ -24,7 +24,8 @@ void main() {
         expect(manager.messages.length, 20);
         expect(
           manager.messages.any(
-              (msg) => msg.content?.toString().contains('truncated') ?? false),
+            (msg) => msg.content?.toString().contains('truncated') ?? false,
+          ),
           false,
         );
       });
@@ -103,8 +104,9 @@ void main() {
 
         // Should have truncation notice
         expect(
-          messages
-              .any((m) => m.content?.toString().contains('truncated') ?? false),
+          messages.any(
+            (m) => m.content?.toString().contains('truncated') ?? false,
+          ),
           true,
         );
 
@@ -239,9 +241,13 @@ void main() {
 
           expect(manager.messages.length, 1);
           expect(
-              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+            manager.messages.first.role,
+            ChatCompletionMessageRole.assistant,
+          );
           expect(
-              manager.messages.first.content, 'This is the assistant response');
+            manager.messages.first.content,
+            'This is the assistant response',
+          );
 
           expect(events.length, 1);
           expect(events.first, isA<AssistantMessageEvent>());
@@ -274,7 +280,9 @@ void main() {
 
           expect(manager.messages.length, 1);
           expect(
-              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+            manager.messages.first.role,
+            ChatCompletionMessageRole.assistant,
+          );
           expect(manager.messages.first.content, isNull);
           // Tool calls were provided in the addAssistantMessage call
 
@@ -329,7 +337,9 @@ void main() {
 
           expect(manager.messages.length, 1);
           expect(
-              manager.messages.first.role, ChatCompletionMessageRole.assistant);
+            manager.messages.first.role,
+            ChatCompletionMessageRole.assistant,
+          );
           expect(manager.messages.first.content, isNull);
           // Neither content nor tool calls were provided
 
@@ -590,20 +600,24 @@ void main() {
 
     group('Event Classes', () {
       test('ConversationErrorEvent properties', () {
-        final event = ConversationEvent.error(
-          message: 'Test error',
-          turnNumber: 5,
-        ) as ConversationErrorEvent;
+        final event =
+            ConversationEvent.error(
+                  message: 'Test error',
+                  turnNumber: 5,
+                )
+                as ConversationErrorEvent;
 
         expect(event.message, 'Test error');
         expect(event.turnNumber, 5);
       });
 
       test('UserMessageEvent properties', () {
-        final event = ConversationEvent.userMessage(
-          message: 'User input',
-          turnNumber: 3,
-        ) as UserMessageEvent;
+        final event =
+            ConversationEvent.userMessage(
+                  message: 'User input',
+                  turnNumber: 3,
+                )
+                as UserMessageEvent;
 
         expect(event.message, 'User input');
         expect(event.turnNumber, 3);
@@ -621,10 +635,12 @@ void main() {
           ),
         ];
 
-        final event = ConversationEvent.toolCalls(
-          calls: toolCalls,
-          turnNumber: 2,
-        ) as ToolCallsEvent;
+        final event =
+            ConversationEvent.toolCalls(
+                  calls: toolCalls,
+                  turnNumber: 2,
+                )
+                as ToolCallsEvent;
 
         expect(event.calls, toolCalls);
         expect(event.turnNumber, 2);

@@ -85,8 +85,8 @@ class _HabitDialogState extends State<HabitDialog> {
 
     _started =
         widget.dateString is String && DateTime.now().ymd != widget.dateString
-            ? endOfDay()
-            : DateTime.now();
+        ? endOfDay()
+        : DateTime.now();
 
     if (isDesktop) {
       hotKeyManager.register(
@@ -124,8 +124,9 @@ class _HabitDialogState extends State<HabitDialog> {
     }
     final timeSpanDays = isDesktop ? 30 : 14;
 
-    final rangeStart =
-        DateTime.now().dayAtMidnight.subtract(Duration(days: timeSpanDays));
+    final rangeStart = DateTime.now().dayAtMidnight.subtract(
+      Duration(days: timeSpanDays),
+    );
 
     final rangeEnd = getEndOfToday();
 
@@ -167,8 +168,9 @@ class _HabitDialogState extends State<HabitDialog> {
                 child: Container(
                   constraints: BoxConstraints(
                     maxWidth: 500,
-                    minWidth:
-                        isMobile ? MediaQuery.of(context).size.width : 250,
+                    minWidth: isMobile
+                        ? MediaQuery.of(context).size.width
+                        : 250,
                   ),
                   child: Padding(
                     padding: const EdgeInsets.only(
@@ -232,8 +234,9 @@ class _HabitDialogState extends State<HabitDialog> {
                                   ),
                                   minLines: 1,
                                   maxLines: 10,
-                                  keyboardAppearance:
-                                      Theme.of(context).brightness,
+                                  keyboardAppearance: Theme.of(
+                                    context,
+                                  ).brightness,
                                   name: 'comment',
                                 ),
                               ],
@@ -254,7 +257,8 @@ class _HabitDialogState extends State<HabitDialog> {
                                     onPressed: () =>
                                         saveHabit(HabitCompletionType.fail),
                                     label: context
-                                        .messages.completeHabitFailButton,
+                                        .messages
+                                        .completeHabitFailButton,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -264,23 +268,28 @@ class _HabitDialogState extends State<HabitDialog> {
                                     onPressed: () =>
                                         saveHabit(HabitCompletionType.skip),
                                     label: context
-                                        .messages.completeHabitSkipButton,
+                                        .messages
+                                        .completeHabitSkipButton,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
-                                  child: LottiTertiaryButton(
-                                    key: const Key('habit_save'),
-                                    onPressed: () => saveHabit(
-                                      HabitCompletionType.success,
-                                    ),
-                                    label: context
-                                        .messages.completeHabitSuccessButton,
-                                  ).animate(autoPlay: true).shimmer(
-                                        delay: 1.seconds,
-                                        duration: .7.seconds,
-                                        color: Theme.of(context).cardColor,
-                                      ),
+                                  child:
+                                      LottiTertiaryButton(
+                                            key: const Key('habit_save'),
+                                            onPressed: () => saveHabit(
+                                              HabitCompletionType.success,
+                                            ),
+                                            label: context
+                                                .messages
+                                                .completeHabitSuccessButton,
+                                          )
+                                          .animate(autoPlay: true)
+                                          .shimmer(
+                                            delay: 1.seconds,
+                                            duration: .7.seconds,
+                                            color: Theme.of(context).cardColor,
+                                          ),
                                 ),
                               ],
                             ),

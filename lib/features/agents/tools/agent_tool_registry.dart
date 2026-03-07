@@ -85,7 +85,8 @@ class AgentToolRegistry {
   static const taskAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
       name: TaskAgentToolNames.setTaskTitle,
-      description: 'Set the title of the task. Only use when the task has no '
+      description:
+          'Set the title of the task. Only use when the task has no '
           'title yet. Do not change an existing title unless the user '
           'explicitly asks for it.',
       parameters: {
@@ -102,7 +103,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.updateTaskEstimate,
-      description: 'Set the time estimate for completing the task. '
+      description:
+          'Set the time estimate for completing the task. '
           'Only set or update the estimate when the user explicitly asks '
           'for it, or when no estimate exists and you have high confidence.',
       parameters: {
@@ -110,7 +112,8 @@ class AgentToolRegistry {
         'properties': {
           'minutes': {
             'type': 'integer',
-            'description': 'Estimated remaining work in minutes (1–1440). '
+            'description':
+                'Estimated remaining work in minutes (1–1440). '
                 'Examples: 30 for half an hour, 240 for 4 hours.',
           },
         },
@@ -120,7 +123,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.updateTaskDueDate,
-      description: 'Update the due date for the task. '
+      description:
+          'Update the due date for the task. '
           'Only call when you want to CHANGE the due date to a different value. '
           'Do NOT call if the task already has the correct due date — check the '
           'current dueDate in the task context first.',
@@ -138,7 +142,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.updateTaskPriority,
-      description: 'Update the priority of the task. '
+      description:
+          'Update the priority of the task. '
           'Only call when you want to CHANGE the priority to a different value. '
           'Do NOT call if the task already has the correct priority — check the '
           'current priority in the task context first.',
@@ -171,7 +176,8 @@ class AgentToolRegistry {
                 },
                 'isChecked': {
                   'type': 'boolean',
-                  'description': 'Whether the item starts checked. '
+                  'description':
+                      'Whether the item starts checked. '
                       'Defaults to false.',
                 },
               },
@@ -209,21 +215,21 @@ class AgentToolRegistry {
                   'type': 'boolean',
                   'description':
                       'Whether the item is checked. For items last set by '
-                          'the user, you must also provide a reason citing '
-                          'post-dated evidence.',
+                      'the user, you must also provide a reason citing '
+                      'post-dated evidence.',
                 },
                 'title': {
                   'type': 'string',
                   'description':
                       'New title for the item (e.g. fix a transcription '
-                          'error). Max 400 characters.',
+                      'error). Max 400 characters.',
                 },
                 'reason': {
                   'type': 'string',
                   'description':
                       'Required when changing isChecked on a user-set item. '
-                          'Must cite specific evidence (e.g. a recording or '
-                          "note) that postdates the user's last toggle.",
+                      'Must cite specific evidence (e.g. a recording or '
+                      "note) that postdates the user's last toggle.",
                 },
               },
               'required': ['id'],
@@ -250,7 +256,8 @@ class AgentToolRegistry {
         'properties': {
           'tldr': {
             'type': 'string',
-            'description': 'A concise 1-3 sentence overview of the task '
+            'description':
+                'A concise 1-3 sentence overview of the task '
                 'state. This is shown in the collapsed view. Be punchy and '
                 'include 1-2 relevant emojis.',
           },
@@ -262,7 +269,8 @@ class AgentToolRegistry {
           // older template versions that still reference `markdown`.
           'markdown': {
             'type': 'string',
-            'description': 'Deprecated — use "content" instead. If both are '
+            'description':
+                'Deprecated — use "content" instead. If both are '
                 'provided, "content" takes precedence.',
           },
         },
@@ -287,7 +295,8 @@ class AgentToolRegistry {
               'properties': {
                 'text': {
                   'type': 'string',
-                  'description': 'The observation text. For critical '
+                  'description':
+                      'The observation text. For critical '
                       'priority, write a full paragraph explaining the '
                       'situation, what went wrong (or right), and why '
                       'it matters.',
@@ -295,7 +304,8 @@ class AgentToolRegistry {
                 'priority': {
                   'type': 'string',
                   'enum': ['routine', 'notable', 'critical'],
-                  'description': 'Priority level. Use "critical" for user '
+                  'description':
+                      'Priority level. Use "critical" for user '
                       'grievances, excellence notes, and template '
                       'improvement requests. Default: "routine".',
                 },
@@ -307,7 +317,8 @@ class AgentToolRegistry {
                     'template_improvement',
                     'operational',
                   ],
-                  'description': 'Category of observation. Required for '
+                  'description':
+                      'Category of observation. Required for '
                       '"critical" and "notable" priorities.',
                 },
               },
@@ -322,7 +333,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.assignTaskLabels,
-      description: 'Add one or more labels to the task. Only use labels from '
+      description:
+          'Add one or more labels to the task. Only use labels from '
           'the available labels list provided in the context. Do not propose '
           'labels listed as suppressed. Cap to 3 labels per call. If the task '
           'already has 3 or more labels, do not call this tool.',
@@ -358,7 +370,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.setTaskLanguage,
-      description: 'Set the detected language for the task. '
+      description:
+          'Set the detected language for the task. '
           'Only set when the task has no language yet (languageCode is null). '
           'Detect based on the task content (title, transcripts, notes).',
       parameters: {
@@ -380,7 +393,8 @@ class AgentToolRegistry {
     ),
     AgentToolDefinition(
       name: TaskAgentToolNames.setTaskStatus,
-      description: 'Transition the task to a new status. '
+      description:
+          'Transition the task to a new status. '
           'Only call when you want to CHANGE the status to a DIFFERENT value. '
           'Do NOT call if the task is already at the target status — check the '
           'current status in the task context first. '
@@ -398,7 +412,8 @@ class AgentToolRegistry {
           },
           'reason': {
             'type': 'string',
-            'description': 'Required for BLOCKED and ON HOLD. '
+            'description':
+                'Required for BLOCKED and ON HOLD. '
                 'Explanation of why the task is blocked or on hold.',
           },
         },
@@ -412,7 +427,8 @@ class AgentToolRegistry {
   static const evolutionAgentTools = <AgentToolDefinition>[
     AgentToolDefinition(
       name: EvolutionToolNames.proposeDirectives,
-      description: 'Formally propose a new version of the template directives. '
+      description:
+          'Formally propose a new version of the template directives. '
           'Provide COMPLETE rewritten text for both the general directive '
           '(persona, tools, objectives) and the report directive (report '
           'structure, formatting). Include a brief rationale explaining what '
@@ -424,13 +440,13 @@ class AgentToolRegistry {
             'type': 'string',
             'description':
                 'The complete proposed general directive text (persona, '
-                    'tools, objectives).',
+                'tools, objectives).',
           },
           'report_directive': {
             'type': 'string',
             'description':
                 'The complete proposed report directive text (report '
-                    'structure, formatting rules).',
+                'structure, formatting rules).',
           },
           'rationale': {
             'type': 'string',
@@ -456,8 +472,8 @@ class AgentToolRegistry {
             'enum': ['reflection', 'hypothesis', 'decision', 'pattern'],
             'description':
                 'The kind of note: reflection (observation about performance), '
-                    'hypothesis (what might improve the template), decision (a '
-                    'choice made during the session), pattern (a recurring theme).',
+                'hypothesis (what might improve the template), decision (a '
+                'choice made during the session), pattern (a recurring theme).',
           },
           'content': {
             'type': 'string',

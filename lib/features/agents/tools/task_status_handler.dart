@@ -72,7 +72,8 @@ class TaskStatusHandler {
 
     // Reject terminal statuses.
     if (terminalStatuses.contains(normalized)) {
-      final message = 'Cannot set status to "$normalized": '
+      final message =
+          'Cannot set status to "$normalized": '
           'DONE and REJECTED are user-only statuses.';
       developer.log(message, name: 'TaskStatusHandler');
       return TaskStatusResult(
@@ -84,7 +85,8 @@ class TaskStatusHandler {
 
     // Validate against allowed statuses.
     if (!allowedStatuses.contains(normalized)) {
-      final message = 'Unknown status: "$normalized". '
+      final message =
+          'Unknown status: "$normalized". '
           'Valid statuses: ${allowedStatuses.join(", ")}';
       developer.log(message, name: 'TaskStatusHandler');
       return TaskStatusResult(
@@ -196,32 +198,32 @@ class TaskStatusHandler {
 
     return switch (status) {
       'IN PROGRESS' => TaskStatus.inProgress(
-          id: id,
-          createdAt: now,
-          utcOffset: utcOffset,
-        ),
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+      ),
       'GROOMED' => TaskStatus.groomed(
-          id: id,
-          createdAt: now,
-          utcOffset: utcOffset,
-        ),
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+      ),
       'BLOCKED' => TaskStatus.blocked(
-          id: id,
-          createdAt: now,
-          utcOffset: utcOffset,
-          reason: reason ?? 'No reason provided',
-        ),
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+        reason: reason ?? 'No reason provided',
+      ),
       'ON HOLD' => TaskStatus.onHold(
-          id: id,
-          createdAt: now,
-          utcOffset: utcOffset,
-          reason: reason ?? 'No reason provided',
-        ),
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+        reason: reason ?? 'No reason provided',
+      ),
       _ => TaskStatus.open(
-          id: id,
-          createdAt: now,
-          utcOffset: utcOffset,
-        ),
+        id: id,
+        createdAt: now,
+        utcOffset: utcOffset,
+      ),
     };
   }
 }

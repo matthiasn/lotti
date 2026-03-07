@@ -29,8 +29,9 @@ void main() {
 
   group('TaskViewPreference', () {
     test('defaults to list mode when no stored preference', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => null);
 
       final result = await container.read(
         taskViewPreferenceProvider(categoryId: 'cat-1').future,
@@ -40,8 +41,9 @@ void main() {
     });
 
     test('returns list mode when stored as "list"', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => 'list');
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => 'list');
 
       final result = await container.read(
         taskViewPreferenceProvider(categoryId: 'cat-1').future,
@@ -51,8 +53,9 @@ void main() {
     });
 
     test('returns grid mode when stored as "grid"', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => 'grid');
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => 'grid');
 
       final result = await container.read(
         taskViewPreferenceProvider(categoryId: 'cat-1').future,
@@ -62,8 +65,9 @@ void main() {
     });
 
     test('toggle switches from list to grid and persists', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => null);
       when(
         () => mockSettingsDb.saveSettingsItem(
           'time_budget_view_cat-1',
@@ -81,8 +85,9 @@ void main() {
           .read(taskViewPreferenceProvider(categoryId: 'cat-1').notifier)
           .toggle();
 
-      final state =
-          container.read(taskViewPreferenceProvider(categoryId: 'cat-1'));
+      final state = container.read(
+        taskViewPreferenceProvider(categoryId: 'cat-1'),
+      );
 
       expect(state.value, equals(TaskViewMode.grid));
       verify(
@@ -94,8 +99,9 @@ void main() {
     });
 
     test('toggle switches from grid to list and persists', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => 'grid');
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => 'grid');
       when(
         () => mockSettingsDb.saveSettingsItem(
           'time_budget_view_cat-1',
@@ -113,8 +119,9 @@ void main() {
           .read(taskViewPreferenceProvider(categoryId: 'cat-1').notifier)
           .toggle();
 
-      final state =
-          container.read(taskViewPreferenceProvider(categoryId: 'cat-1'));
+      final state = container.read(
+        taskViewPreferenceProvider(categoryId: 'cat-1'),
+      );
 
       expect(state.value, equals(TaskViewMode.list));
       verify(
@@ -126,10 +133,12 @@ void main() {
     });
 
     test('different categories have independent preferences', () async {
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-1'))
-          .thenAnswer((_) async => 'grid');
-      when(() => mockSettingsDb.itemByKey('time_budget_view_cat-2'))
-          .thenAnswer((_) async => 'list');
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-1'),
+      ).thenAnswer((_) async => 'grid');
+      when(
+        () => mockSettingsDb.itemByKey('time_budget_view_cat-2'),
+      ).thenAnswer((_) async => 'list');
 
       final result1 = await container.read(
         taskViewPreferenceProvider(categoryId: 'cat-1').future,

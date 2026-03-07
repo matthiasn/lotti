@@ -18,8 +18,9 @@ mixin InviteListenerMixin<T extends ConsumerStatefulWidget>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (InviteDialogScope.globalListenerActive) return;
       final matrixService = ref.read(matrixServiceProvider);
-      _inviteSub =
-          matrixService.inviteRequests.listen((SyncRoomInvite invite) async {
+      _inviteSub = matrixService.inviteRequests.listen((
+        SyncRoomInvite invite,
+      ) async {
         if (!mounted || _dialogOpen) return;
         _dialogOpen = true;
         try {

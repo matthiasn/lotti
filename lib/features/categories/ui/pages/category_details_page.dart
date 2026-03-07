@@ -227,8 +227,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     if (!mounted) return;
 
     // Check if there was an error during save
-    final state =
-        ref.read(categoryDetailsControllerProvider(widget.categoryId!));
+    final state = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!),
+    );
     if (state.errorMessage != null) {
       // Error is already displayed in the UI via ErrorStateWidget
       return;
@@ -252,8 +253,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
 
     // For edit mode, watch the category details
-    final state =
-        ref.watch(categoryDetailsControllerProvider(widget.categoryId!));
+    final state = ref.watch(
+      categoryDetailsControllerProvider(widget.categoryId!),
+    );
     final category = state.category;
 
     if (category == null && !state.isLoading) {
@@ -395,8 +397,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           : (value) {
               ref
                   .read(
-                    categoryDetailsControllerProvider(widget.categoryId!)
-                        .notifier,
+                    categoryDetailsControllerProvider(
+                      widget.categoryId!,
+                    ).notifier,
                   )
                   .updateFormField(name: value);
             },
@@ -417,11 +420,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     }
 
     // For edit mode, derive color from category state
-    final state =
-        ref.watch(categoryDetailsControllerProvider(widget.categoryId!));
+    final state = ref.watch(
+      categoryDetailsControllerProvider(widget.categoryId!),
+    );
     final category = state.category;
-    final selectedColor =
-        category != null ? colorFromCssHex(category.color) : null;
+    final selectedColor = category != null
+        ? colorFromCssHex(category.color)
+        : null;
 
     return CategoryColorPicker(
       selectedColor: selectedColor,
@@ -467,7 +472,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     return CategoryLanguageDropdown(
       languageCode: category.defaultLanguageCode,
       onTap: () => _showLanguageSelector(
-          context, controller, category.defaultLanguageCode),
+        context,
+        controller,
+        category.defaultLanguageCode,
+      ),
     );
   }
 
@@ -483,8 +491,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
         titleWidget: Padding(
-          padding:
-              const EdgeInsets.only(left: 16, right: 16, top: 20, bottom: 16),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 20,
+            bottom: 16,
+          ),
           child: LanguageSelectionModalContent.buildHeader(
             context: context,
             controller: searchController,
@@ -529,15 +541,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
     return promptsAsync.when(
       data: (prompts) {
-        final promptConfigs = prompts
-            .whereType<AiConfigPrompt>()
-            .where((p) => !p.archived)
-            .toList()
-          ..sort((a, b) => a.name.compareTo(b.name));
+        final promptConfigs =
+            prompts
+                .whereType<AiConfigPrompt>()
+                .where((p) => !p.archived)
+                .toList()
+              ..sort((a, b) => a.name.compareTo(b.name));
 
         final modelConfigs =
             modelsAsync.asData?.value.whereType<AiConfigModel>().toList() ?? [];
-        final providerConfigs = providersAsync.asData?.value
+        final providerConfigs =
+            providersAsync.asData?.value
                 .whereType<AiConfigInferenceProvider>()
                 .toList() ??
             [];
@@ -643,7 +657,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   static void _dummyAutomaticPromptChanged(
-      AiResponseType responseType, List<String> selectedPromptIds) {}
+    AiResponseType responseType,
+    List<String> selectedPromptIds,
+  ) {}
 
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(
@@ -674,14 +690,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     String title,
     IconData icon,
   ) {
-    final validPrompts = allPrompts
-        .where((p) =>
-            !p.archived &&
-            p.aiResponseType == responseType &&
-            category.allowedPromptIds != null &&
-            category.allowedPromptIds!.contains(p.id))
-        .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+    final validPrompts =
+        allPrompts
+            .where(
+              (p) =>
+                  !p.archived &&
+                  p.aiResponseType == responseType &&
+                  category.allowedPromptIds != null &&
+                  category.allowedPromptIds!.contains(p.id),
+            )
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
 
     final selectedPromptIds = category.automaticPrompts?[responseType] ?? [];
 

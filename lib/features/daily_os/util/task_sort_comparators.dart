@@ -22,13 +22,15 @@ abstract final class TaskSortComparators {
   /// ```
   static int byPriorityUrgencyTitle(TaskDayProgress a, TaskDayProgress b) {
     // Sort by priority first (lower rank = higher priority)
-    final priorityCompare =
-        a.task.data.priority.rank.compareTo(b.task.data.priority.rank);
+    final priorityCompare = a.task.data.priority.rank.compareTo(
+      b.task.data.priority.rank,
+    );
     if (priorityCompare != 0) return priorityCompare;
 
     // Same priority: sort by urgency (overdue > dueToday > normal)
-    final urgencyCompare =
-        b.dueDateStatus.urgency.index.compareTo(a.dueDateStatus.urgency.index);
+    final urgencyCompare = b.dueDateStatus.urgency.index.compareTo(
+      a.dueDateStatus.urgency.index,
+    );
     if (urgencyCompare != 0) return urgencyCompare;
 
     // Same urgency: alphabetical by title

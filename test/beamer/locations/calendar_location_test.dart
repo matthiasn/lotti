@@ -16,8 +16,9 @@ void main() {
     });
 
     test('pathPatterns are correct', () {
-      final location =
-          CalendarLocation(RouteInformation(uri: Uri.parse('/calendar')));
+      final location = CalendarLocation(
+        RouteInformation(uri: Uri.parse('/calendar')),
+      );
       expect(location.pathPatterns, ['/calendar']);
     });
 
@@ -36,7 +37,8 @@ void main() {
 
     test('buildPages builds DailyOsPage with provided values', () {
       final routeInformation = RouteInformation(
-          uri: Uri.parse('/calendar?ymd=2023-01-01&timeSpanDays=7'));
+        uri: Uri.parse('/calendar?ymd=2023-01-01&timeSpanDays=7'),
+      );
       final location = CalendarLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
       final pages = location.buildPages(

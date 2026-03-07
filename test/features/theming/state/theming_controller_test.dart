@@ -60,22 +60,29 @@ void main() {
       tooltipController = StreamController<bool>.broadcast();
       notificationsController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => notificationsController.stream);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => notificationsController.stream);
 
       // Setup default mock behaviors
-      when(() => settingsDb.itemByKey(darkSchemeNameKey))
-          .thenAnswer((_) async => 'Grey Law');
-      when(() => settingsDb.itemByKey(lightSchemeNameKey))
-          .thenAnswer((_) async => 'Grey Law');
-      when(() => settingsDb.itemByKey(themeModeKey))
-          .thenAnswer((_) async => 'system');
-      when(() => settingsDb.saveSettingsItem(any<String>(), any<String>()))
-          .thenAnswer((_) async => 1);
-      when(() => journalDb.watchConfigFlag(enableTooltipFlag))
-          .thenAnswer((_) => tooltipController.stream);
-      when(() => outboxService.enqueueMessage(any<SyncMessage>()))
-          .thenAnswer((_) async {});
+      when(
+        () => settingsDb.itemByKey(darkSchemeNameKey),
+      ).thenAnswer((_) async => 'Grey Law');
+      when(
+        () => settingsDb.itemByKey(lightSchemeNameKey),
+      ).thenAnswer((_) async => 'Grey Law');
+      when(
+        () => settingsDb.itemByKey(themeModeKey),
+      ).thenAnswer((_) async => 'system');
+      when(
+        () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => journalDb.watchConfigFlag(enableTooltipFlag),
+      ).thenAnswer((_) => tooltipController.stream);
+      when(
+        () => outboxService.enqueueMessage(any<SyncMessage>()),
+      ).thenAnswer((_) async {});
       when(
         () => loggingService.captureException(
           any<Object>(),
@@ -115,12 +122,15 @@ void main() {
 
       test('loads saved theme preferences on init', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async => 'Indigo');
-          when(() => settingsDb.itemByKey(darkSchemeNameKey))
-              .thenAnswer((_) async => 'Shark');
-          when(() => settingsDb.itemByKey(themeModeKey))
-              .thenAnswer((_) async => 'dark');
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenAnswer((_) async => 'Indigo');
+          when(
+            () => settingsDb.itemByKey(darkSchemeNameKey),
+          ).thenAnswer((_) async => 'Shark');
+          when(
+            () => settingsDb.itemByKey(themeModeKey),
+          ).thenAnswer((_) async => 'dark');
 
           final states = <ThemingState>[];
           container.listen(
@@ -155,12 +165,13 @@ void main() {
           final state = container.read(themingControllerProvider);
           expect(state.lightThemeName, equals('Indigo'));
 
-          verify(() =>
-                  settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'))
-              .called(1);
+          verify(
+            () => settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'),
+          ).called(1);
 
-          final captured =
-              verify(() => outboxService.enqueueMessage(captureAny())).captured;
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
           expect(captured.length, 1);
 
           final message = captured.first as SyncThemingSelection;
@@ -186,11 +197,13 @@ void main() {
           final state = container.read(themingControllerProvider);
           expect(state.darkThemeName, equals('Shark'));
 
-          verify(() => settingsDb.saveSettingsItem(darkSchemeNameKey, 'Shark'))
-              .called(1);
+          verify(
+            () => settingsDb.saveSettingsItem(darkSchemeNameKey, 'Shark'),
+          ).called(1);
 
-          final captured =
-              verify(() => outboxService.enqueueMessage(captureAny())).captured;
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
           expect(captured.length, 1);
 
           final message = captured.first as SyncThemingSelection;
@@ -215,11 +228,13 @@ void main() {
           final state = container.read(themingControllerProvider);
           expect(state.themeMode, equals(ThemeMode.dark));
 
-          verify(() => settingsDb.saveSettingsItem(themeModeKey, 'dark'))
-              .called(1);
+          verify(
+            () => settingsDb.saveSettingsItem(themeModeKey, 'dark'),
+          ).called(1);
 
-          final captured =
-              verify(() => outboxService.enqueueMessage(captureAny())).captured;
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
           expect(captured.length, 1);
 
           final message = captured.first as SyncThemingSelection;
@@ -245,8 +260,9 @@ void main() {
           async.flushMicrotasks();
 
           // Verify enqueueMessage called exactly once (debounced)
-          final captured =
-              verify(() => outboxService.enqueueMessage(captureAny())).captured;
+          final captured = verify(
+            () => outboxService.enqueueMessage(captureAny()),
+          ).captured;
           expect(captured.length, 1);
 
           // Verify message contains all three changes
@@ -260,8 +276,9 @@ void main() {
       test('reloads themes when sync updates arrive', () {
         fakeAsync((async) {
           var callCount = 0;
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey)).thenAnswer((
+            _,
+          ) async {
             callCount++;
             return callCount == 1 ? 'Grey Law' : 'Indigo';
           });
@@ -379,8 +396,9 @@ void main() {
     group('error handling', () {
       test('handles error in _loadSelectedSchemes and logs it', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenThrow(Exception('Database error'));
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenThrow(Exception('Database error'));
 
           final states = <ThemingState>[];
           container.listen(
@@ -456,8 +474,9 @@ void main() {
       test('handles error during theme reload from sync and logs it', () {
         fakeAsync((async) {
           var callCount = 0;
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async {
+          when(() => settingsDb.itemByKey(lightSchemeNameKey)).thenAnswer((
+            _,
+          ) async {
             callCount++;
             if (callCount > 1) {
               throw Exception('Reload error');
@@ -499,8 +518,9 @@ void main() {
 
       test('handles error in enqueueMessage and logs it', () {
         fakeAsync((async) {
-          when(() => outboxService.enqueueMessage(any<SyncMessage>()))
-              .thenThrow(Exception('Enqueue error'));
+          when(
+            () => outboxService.enqueueMessage(any<SyncMessage>()),
+          ).thenThrow(Exception('Enqueue error'));
 
           final controller = container.read(themingControllerProvider.notifier);
 
@@ -552,8 +572,9 @@ void main() {
 
       test('handles null theme mode string gracefully', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(themeModeKey))
-              .thenAnswer((_) async => null);
+          when(
+            () => settingsDb.itemByKey(themeModeKey),
+          ).thenAnswer((_) async => null);
 
           final states = <ThemingState>[];
           container.listen(
@@ -572,8 +593,9 @@ void main() {
 
       test('handles invalid theme mode string gracefully', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(themeModeKey))
-              .thenAnswer((_) async => 'invalid_mode');
+          when(
+            () => settingsDb.itemByKey(themeModeKey),
+          ).thenAnswer((_) async => 'invalid_mode');
 
           final states = <ThemingState>[];
           container.listen(
@@ -592,10 +614,12 @@ void main() {
 
       test('handles null theme names gracefully', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async => null);
-          when(() => settingsDb.itemByKey(darkSchemeNameKey))
-              .thenAnswer((_) async => null);
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenAnswer((_) async => null);
+          when(
+            () => settingsDb.itemByKey(darkSchemeNameKey),
+          ).thenAnswer((_) async => null);
 
           final states = <ThemingState>[];
           container.listen(
@@ -751,8 +775,9 @@ void main() {
     group('Gamey theme integration', () {
       test('setLightTheme accepts gamey theme', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async => 'Grey Law');
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenAnswer((_) async => 'Grey Law');
 
           final controller = container.read(themingControllerProvider.notifier);
 
@@ -776,8 +801,9 @@ void main() {
 
       test('setDarkTheme accepts gamey theme', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(darkSchemeNameKey))
-              .thenAnswer((_) async => 'Grey Law');
+          when(
+            () => settingsDb.itemByKey(darkSchemeNameKey),
+          ).thenAnswer((_) async => 'Grey Law');
 
           final controller = container.read(themingControllerProvider.notifier);
 
@@ -801,10 +827,12 @@ void main() {
 
       test('loads saved gamey theme from preferences', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async => gameyThemeName);
-          when(() => settingsDb.itemByKey(darkSchemeNameKey))
-              .thenAnswer((_) async => gameyThemeName);
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenAnswer((_) async => gameyThemeName);
+          when(
+            () => settingsDb.itemByKey(darkSchemeNameKey),
+          ).thenAnswer((_) async => gameyThemeName);
 
           final states = <ThemingState>[];
           container.listen(
@@ -824,10 +852,12 @@ void main() {
 
       test('gamey theme builds valid ThemeData', () {
         fakeAsync((async) {
-          when(() => settingsDb.itemByKey(lightSchemeNameKey))
-              .thenAnswer((_) async => gameyThemeName);
-          when(() => settingsDb.itemByKey(darkSchemeNameKey))
-              .thenAnswer((_) async => gameyThemeName);
+          when(
+            () => settingsDb.itemByKey(lightSchemeNameKey),
+          ).thenAnswer((_) async => gameyThemeName);
+          when(
+            () => settingsDb.itemByKey(darkSchemeNameKey),
+          ).thenAnswer((_) async => gameyThemeName);
 
           final states = <ThemingState>[];
           container.listen(

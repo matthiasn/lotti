@@ -72,16 +72,18 @@ class OpenAiTranscriptionRepository extends TranscriptionRepository {
           request.fields['prompt'] = prompt;
         }
 
-        final streamedResponse = await httpClient.send(request).timeout(
-          requestTimeout,
-          onTimeout: () {
-            throw TranscriptionException(
-              timeoutErrorMessage,
-              provider: _providerName,
-              statusCode: httpStatusRequestTimeout,
+        final streamedResponse = await httpClient
+            .send(request)
+            .timeout(
+              requestTimeout,
+              onTimeout: () {
+                throw TranscriptionException(
+                  timeoutErrorMessage,
+                  provider: _providerName,
+                  statusCode: httpStatusRequestTimeout,
+                );
+              },
             );
-          },
-        );
 
         return http.Response.fromStream(streamedResponse);
       },

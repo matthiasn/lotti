@@ -21,8 +21,9 @@ void main() {
       expect(find.text('All'), findsOneWidget);
     });
 
-    testWidgets('calls onFilterChanged when Open tab is tapped',
-        (tester) async {
+    testWidgets('calls onFilterChanged when Open tab is tapped', (
+      tester,
+    ) async {
       ChecklistFilter? selectedFilter;
 
       await tester.pumpWidget(

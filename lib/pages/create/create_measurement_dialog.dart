@@ -156,22 +156,21 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
                     measurementTime: measurementTime,
                   )
                 : (_formKey.currentState?.isValid ?? false)
-                    ? SizedBox(
-                        key: const ValueKey('save'),
-                        width: double.infinity,
-                        height: 48,
-                        child: FilledButton.icon(
-                          key: const Key('measurement_save'),
-                          onPressed: () => saveMeasurement(
-                            measurableDataType: dataType,
-                            measurementTime: measurementTime,
-                          ),
-                          icon: const Icon(Icons.check_rounded),
-                          label:
-                              Text(context.messages.addMeasurementSaveButton),
-                        ),
-                      )
-                    : const SizedBox.shrink(key: ValueKey('empty')),
+                ? SizedBox(
+                    key: const ValueKey('save'),
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton.icon(
+                      key: const Key('measurement_save'),
+                      onPressed: () => saveMeasurement(
+                        measurableDataType: dataType,
+                        measurementTime: measurementTime,
+                      ),
+                      icon: const Icon(Icons.check_rounded),
+                      label: Text(context.messages.addMeasurementSaveButton),
+                    ),
+                  )
+                : const SizedBox.shrink(key: ValueKey('empty')),
           ),
         ],
       ),
@@ -198,45 +197,48 @@ class _ValueInputField extends StatelessWidget {
         fontWeight: FontWeight.w600,
         color: context.colorScheme.onSurface,
       ),
-      decoration: inputDecoration(
-        labelText: dataType.displayName,
-        themeData: Theme.of(context),
-      ).copyWith(
-        hintText: '0',
-        hintStyle: context.textTheme.headlineMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: context.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-        ),
-        suffixIcon: hasUnit
-            ? Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Center(
-                  widthFactor: 1,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      dataType.unitName,
-                      style: context.textTheme.labelMedium?.copyWith(
-                        color: context.colorScheme.onPrimaryContainer,
-                        fontWeight: FontWeight.w600,
+      decoration:
+          inputDecoration(
+            labelText: dataType.displayName,
+            themeData: Theme.of(context),
+          ).copyWith(
+            hintText: '0',
+            hintStyle: context.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.colorScheme.onSurfaceVariant.withValues(
+                alpha: 0.3,
+              ),
+            ),
+            suffixIcon: hasUnit
+                ? Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Center(
+                      widthFactor: 1,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: context.colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          dataType.unitName,
+                          style: context.textTheme.labelMedium?.copyWith(
+                            color: context.colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              )
-            : null,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-      ),
+                  )
+                : null,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
       keyboardType: const TextInputType.numberWithOptions(
         decimal: true,
         signed: true,

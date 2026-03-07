@@ -56,20 +56,26 @@ void main() {
       await initConfigFlags(journalDb, inMemoryDatabase: true);
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-      when(() => mockFts5Db.insertText(any(), removePrevious: true))
-          .thenAnswer((_) async {});
-      when(() => mockNotificationService.showNotification(
-            title: any(named: 'title'),
-            body: any(named: 'body'),
-            notificationId: any(named: 'notificationId'),
-            deepLink: any(named: 'deepLink'),
-          )).thenAnswer((_) async {});
-      when(() => mockNotificationService.cancelNotification(any()))
-          .thenAnswer((_) async {});
-      when(() => mockOutboxService.enqueueMessage(any()))
-          .thenAnswer((_) async {});
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+      when(
+        () => mockFts5Db.insertText(any(), removePrevious: true),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockNotificationService.showNotification(
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          notificationId: any(named: 'notificationId'),
+          deepLink: any(named: 'deepLink'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockNotificationService.cancelNotification(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
       when(() => mockTimeService.start(any(), any())).thenAnswer((_) async {});
       when(() => mockNavService.beamToNamed(any())).thenReturn(null);
 
@@ -137,8 +143,9 @@ void main() {
       expect(entry, isNotNull);
 
       // Should navigate when not linked
-      verify(() => mockNavService.beamToNamed('/journal/${entry!.meta.id}'))
-          .called(1);
+      verify(
+        () => mockNavService.beamToNamed('/journal/${entry!.meta.id}'),
+      ).called(1);
     });
 
     test('createTimerEntry without linked creates simple timer', () async {
@@ -162,23 +169,25 @@ void main() {
       verify(() => mockTimeService.start(timer!, parent)).called(1);
     });
 
-    test('createTimerEntry with linked but null timer does not start',
-        () async {
-      // This test covers the edge case where createTextEntry returns null
-      // when linked to a parent
-      final parent = await service.createTextEntry();
-      expect(parent, isNotNull);
+    test(
+      'createTimerEntry with linked but null timer does not start',
+      () async {
+        // This test covers the edge case where createTextEntry returns null
+        // when linked to a parent
+        final parent = await service.createTextEntry();
+        expect(parent, isNotNull);
 
-      // Mock a scenario where timer creation fails (returns null)
-      // In practice this is very rare, but we test the defensive null check
-      // The real-world scenario is already covered by the previous test
-      // This just ensures line 42-43 are covered for the null case
+        // Mock a scenario where timer creation fails (returns null)
+        // In practice this is very rare, but we test the defensive null check
+        // The real-world scenario is already covered by the previous test
+        // This just ensures line 42-43 are covered for the null case
 
-      final timer = await service.createTimerEntry(linked: parent);
+        final timer = await service.createTimerEntry(linked: parent);
 
-      // Timer should still be created in this test
-      expect(timer, isNotNull);
-    });
+        // Timer should still be created in this test
+        expect(timer, isNotNull);
+      },
+    );
 
     test('createTextEntry with categoryId stores category', () async {
       const testCategoryId = 'test-category-123';

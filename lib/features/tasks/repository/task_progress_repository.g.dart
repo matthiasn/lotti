@@ -12,20 +12,24 @@ part of 'task_progress_repository.dart';
 @ProviderFor(taskProgressRepository)
 final taskProgressRepositoryProvider = TaskProgressRepositoryProvider._();
 
-final class TaskProgressRepositoryProvider extends $FunctionalProvider<
-    TaskProgressRepository,
-    TaskProgressRepository,
-    TaskProgressRepository> with $Provider<TaskProgressRepository> {
+final class TaskProgressRepositoryProvider
+    extends
+        $FunctionalProvider<
+          TaskProgressRepository,
+          TaskProgressRepository,
+          TaskProgressRepository
+        >
+    with $Provider<TaskProgressRepository> {
   TaskProgressRepositoryProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'taskProgressRepositoryProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'taskProgressRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$taskProgressRepositoryHash();
@@ -33,8 +37,8 @@ final class TaskProgressRepositoryProvider extends $FunctionalProvider<
   @$internal
   @override
   $ProviderElement<TaskProgressRepository> $createElement(
-          $ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
   TaskProgressRepository create(Ref ref) {

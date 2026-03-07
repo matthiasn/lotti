@@ -18,12 +18,12 @@ class MockTask extends Mock implements Task {
 
   @override
   Metadata get meta => Metadata(
-        id: 'test-task-id',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        dateFrom: DateTime.now(),
-        dateTo: DateTime.now(),
-      );
+    id: 'test-task-id',
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+    dateFrom: DateTime.now(),
+    dateTo: DateTime.now(),
+  );
 }
 
 void main() {
@@ -186,8 +186,9 @@ void main() {
       ); // At least two Text widgets (label and status)
     });
 
-    testWidgets('calls onStatusChanged when new status is selected',
-        (tester) async {
+    testWidgets('calls onStatusChanged when new status is selected', (
+      tester,
+    ) async {
       // This test would require mocking ModalUtils.showSinglePageModal
       // which returns a new status, but this is challenging in widget tests
       // We'll provide a simplified version
@@ -227,8 +228,9 @@ void main() {
       // We can't easily test the modal interaction and callback in this setup
     });
 
-    testWidgets('renders chip-only layout when showLabel is false',
-        (tester) async {
+    testWidgets('renders chip-only layout when showLabel is false', (
+      tester,
+    ) async {
       final taskStatus = createTaskStatus('inProgress');
 
       final taskData = TaskData(

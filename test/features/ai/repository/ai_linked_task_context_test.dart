@@ -220,7 +220,8 @@ void main() {
       final data = <String, dynamic>{
         'linked_from': linkedFrom.map((c) => c.toJson()).toList(),
         'linked_to': linkedTo.map((c) => c.toJson()).toList(),
-        'note': 'If summaries contain links to GitHub PRs, Issues, or similar '
+        'note':
+            'If summaries contain links to GitHub PRs, Issues, or similar '
             'platforms, use web search to retrieve additional context when relevant.',
       };
 
@@ -328,8 +329,9 @@ void main() {
       mockCacheService = MockEntitiesCacheService();
       container = ProviderContainer(
         overrides: [
-          taskProgressRepositoryProvider
-              .overrideWithValue(mockTaskProgressRepository),
+          taskProgressRepositoryProvider.overrideWithValue(
+            mockTaskProgressRepository,
+          ),
         ],
       );
 
@@ -341,16 +343,21 @@ void main() {
       repository = container.read(aiInputRepositoryProvider);
 
       // Default mocks
-      when(() => mockTaskProgressRepository.getTaskProgressData(
-            id: any(named: 'id'),
-          )).thenAnswer((_) async => (null, <String, TimeRange>{}));
+      when(
+        () => mockTaskProgressRepository.getTaskProgressData(
+          id: any(named: 'id'),
+        ),
+      ).thenAnswer((_) async => (null, <String, TimeRange>{}));
       when(() => mockDb.journalEntityById(any())).thenAnswer((_) async => null);
-      when(() => mockDb.getLinkedEntities(any()))
-          .thenAnswer((_) async => <JournalEntity>[]);
-      when(() => mockDb.getBulkLinkedEntities(any()))
-          .thenAnswer((_) async => <String, List<JournalEntity>>{});
-      when(() => mockDb.getAllLabelDefinitions())
-          .thenAnswer((_) async => <LabelDefinition>[]);
+      when(
+        () => mockDb.getLinkedEntities(any()),
+      ).thenAnswer((_) async => <JournalEntity>[]);
+      when(
+        () => mockDb.getBulkLinkedEntities(any()),
+      ).thenAnswer((_) async => <String, List<JournalEntity>>{});
+      when(
+        () => mockDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => <LabelDefinition>[]);
       when(() => mockCacheService.getLabelById(any())).thenReturn(null);
     });
 
@@ -372,7 +379,8 @@ void main() {
       String? languageCode,
       DateTime? deletedAt,
     }) {
-      final taskStatus = status ??
+      final taskStatus =
+          status ??
           TaskStatus.inProgress(
             id: 'status-$id',
             createdAt: createdAt ?? createdDate,
@@ -441,8 +449,9 @@ void main() {
     group('buildLinkedFromContext', () {
       test('returns empty list when no tasks link to this task', () async {
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => []);
 
         final result = await repository.buildLinkedFromContext(taskId);
@@ -467,14 +476,16 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
         // Bulk fetch returns entities for time calculation
-        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
-            .thenAnswer((_) async => {
-                  childTaskId: [timeEntry]
-                });
+        when(() => mockDb.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [timeEntry],
+          },
+        );
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -501,8 +512,9 @@ void main() {
         final deletedDbEntity = createDbEntityFromTask(deletedTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [deletedDbEntity]);
 
         final result = await repository.buildLinkedFromContext(taskId);
@@ -525,15 +537,19 @@ void main() {
         final newerDbEntity = createDbEntityFromTask(newerTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         // Return in reverse order to test sorting
-        when(mockSelectable.get)
-            .thenAnswer((_) async => [newerDbEntity, olderDbEntity]);
+        when(
+          mockSelectable.get,
+        ).thenAnswer((_) async => [newerDbEntity, olderDbEntity]);
         when(() => mockDb.getLinkedEntities(any())).thenAnswer((_) async => []);
-        when(() => mockTaskProgressRepository.getTaskProgressData(
-              id: any(named: 'id'),
-            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -545,8 +561,9 @@ void main() {
 
     group('buildLinkedToContext', () {
       test('returns empty list when task has no parent links', () async {
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
 
         final result = await repository.buildLinkedToContext(taskId);
 
@@ -572,13 +589,15 @@ void main() {
           duration: const Duration(hours: 12, minutes: 30),
         );
 
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => [parentTask]);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask]);
         // Bulk fetch returns entities for time calculation
-        when(() => mockDb.getBulkLinkedEntities({parentTaskId}))
-            .thenAnswer((_) async => {
-                  parentTaskId: [timeEntry]
-                });
+        when(() => mockDb.getBulkLinkedEntities({parentTaskId})).thenAnswer(
+          (_) async => {
+            parentTaskId: [timeEntry],
+          },
+        );
 
         final result = await repository.buildLinkedToContext(taskId);
 
@@ -605,13 +624,17 @@ void main() {
           entryText: const EntryText(plainText: 'Some entry'),
         );
 
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => [parentTask, journalEntry]);
-        when(() => mockDb.getLinkedEntities(parentTaskId))
-            .thenAnswer((_) async => []);
-        when(() => mockTaskProgressRepository.getTaskProgressData(
-              id: parentTaskId,
-            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask, journalEntry]);
+        when(
+          () => mockDb.getLinkedEntities(parentTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(
+            id: parentTaskId,
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedToContext(taskId);
 
@@ -623,11 +646,13 @@ void main() {
     group('buildLinkedTasksJson', () {
       test('returns JSON with empty arrays when no linked tasks', () async {
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => []);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
 
         final result = await repository.buildLinkedTasksJson(taskId);
         final parsed = jsonDecode(result) as Map<String, dynamic>;
@@ -647,13 +672,16 @@ void main() {
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => []);
-        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
-            .thenAnswer((_) async => {childTaskId: <JournalEntity>[]});
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getBulkLinkedEntities({childTaskId}),
+        ).thenAnswer((_) async => {childTaskId: <JournalEntity>[]});
 
         final result = await repository.buildLinkedTasksJson(taskId);
         final parsed = jsonDecode(result) as Map<String, dynamic>;
@@ -678,18 +706,24 @@ void main() {
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(taskId))
-            .thenAnswer((_) async => [parentTask]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() => mockDb.getLinkedEntities(parentTaskId))
-            .thenAnswer((_) async => []);
-        when(() => mockTaskProgressRepository.getTaskProgressData(
-              id: any(named: 'id'),
-            )).thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [parentTask]);
+        when(
+          () => mockDb.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockDb.getLinkedEntities(parentTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(
+            id: any(named: 'id'),
+          ),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         // Use cache service for label lookups
         when(() => mockCacheService.getLabelById('label-1')).thenReturn(
@@ -725,14 +759,16 @@ void main() {
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -767,14 +803,16 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
         // Bulk fetch returns the AI summary entry
-        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
-            .thenAnswer((_) async => {
-                  childTaskId: [summaryEntry]
-                });
+        when(() => mockDb.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [summaryEntry],
+          },
+        );
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -828,14 +866,16 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
         // Return in wrong order to test sorting
-        when(() => mockDb.getBulkLinkedEntities({childTaskId}))
-            .thenAnswer((_) async => {
-                  childTaskId: [olderSummary, newerSummary]
-                });
+        when(() => mockDb.getBulkLinkedEntities({childTaskId})).thenAnswer(
+          (_) async => {
+            childTaskId: [olderSummary, newerSummary],
+          },
+        );
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -872,14 +912,16 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => [imageAnalysis]);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => [imageAnalysis]);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 
@@ -898,14 +940,16 @@ void main() {
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         // Use cache service for label lookups (O(1) per label)
         when(() => mockCacheService.getLabelById('label-1')).thenReturn(
@@ -948,14 +992,16 @@ void main() {
         final childDbEntity = createDbEntityFromTask(childTask);
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockDb.linkedToJournalEntities(taskId))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockDb.linkedToJournalEntities(taskId),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => [childDbEntity]);
-        when(() => mockDb.getLinkedEntities(childTaskId))
-            .thenAnswer((_) async => []);
-        when(() =>
-                mockTaskProgressRepository.getTaskProgressData(id: childTaskId))
-            .thenAnswer((_) async => (null, <String, TimeRange>{}));
+        when(
+          () => mockDb.getLinkedEntities(childTaskId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockTaskProgressRepository.getTaskProgressData(id: childTaskId),
+        ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repository.buildLinkedFromContext(taskId);
 

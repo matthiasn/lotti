@@ -121,8 +121,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            habitsControllerProvider
-                .overrideWith(() => MockHabitsController(testState)),
+            habitsControllerProvider.overrideWith(
+              () => MockHabitsController(testState),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const HabitsTabPage(),
@@ -149,8 +150,9 @@ void main() {
       await tester.tap(timeSpanButtonFinder);
       await tester.pumpAndSettle();
 
-      final habitCategoryFilterFinder =
-          find.byKey(const Key('habit_category_filter'));
+      final habitCategoryFilterFinder = find.byKey(
+        const Key('habit_category_filter'),
+      );
       expect(habitCategoryFilterFinder, findsOneWidget);
 
       await tester.tap(habitCategoryFilterFinder);
@@ -158,95 +160,101 @@ void main() {
     });
 
     testWidgets(
-        'renders HabitCompletionCard for openNow habits with openNow filter',
-        (tester) async {
-      final testState = HabitsState.initial().copyWith(
-        habitDefinitions: [habitFlossing, habitFlossingDueLater],
-        openNow: [habitFlossing],
-        pendingLater: [habitFlossingDueLater],
-        completed: [],
-        displayFilter: HabitDisplayFilter.openNow,
-      );
+      'renders HabitCompletionCard for openNow habits with openNow filter',
+      (tester) async {
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing],
+          pendingLater: [habitFlossingDueLater],
+          completed: [],
+          displayFilter: HabitDisplayFilter.openNow,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider
-                .overrideWith(() => MockHabitsController(testState)),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const HabitsTabPage(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => MockHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Should have exactly 1 HabitCompletionCard for openNow habit
-      expect(find.byType(HabitCompletionCard), findsOneWidget);
-      // Verify the correct habit card by key
-      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
-    });
+        // Should have exactly 1 HabitCompletionCard for openNow habit
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        // Verify the correct habit card by key
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'renders HabitCompletionCard for completed habits with completed filter',
-        (tester) async {
-      final testState = HabitsState.initial().copyWith(
-        habitDefinitions: [habitFlossing, habitFlossingDueLater],
-        openNow: [],
-        pendingLater: [],
-        completed: [habitFlossing],
-        displayFilter: HabitDisplayFilter.completed,
-      );
+      'renders HabitCompletionCard for completed habits with completed filter',
+      (tester) async {
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [],
+          pendingLater: [],
+          completed: [habitFlossing],
+          displayFilter: HabitDisplayFilter.completed,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider
-                .overrideWith(() => MockHabitsController(testState)),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const HabitsTabPage(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => MockHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Should have exactly 1 HabitCompletionCard for completed habit
-      expect(find.byType(HabitCompletionCard), findsOneWidget);
-      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
-    });
+        // Should have exactly 1 HabitCompletionCard for completed habit
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        'renders HabitCompletionCard for pendingLater habits with pendingLater filter',
-        (tester) async {
-      final testState = HabitsState.initial().copyWith(
-        habitDefinitions: [habitFlossing, habitFlossingDueLater],
-        openNow: [],
-        pendingLater: [habitFlossingDueLater],
-        completed: [],
-        displayFilter: HabitDisplayFilter.pendingLater,
-      );
+      'renders HabitCompletionCard for pendingLater habits with pendingLater filter',
+      (tester) async {
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [],
+          pendingLater: [habitFlossingDueLater],
+          completed: [],
+          displayFilter: HabitDisplayFilter.pendingLater,
+        );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider
-                .overrideWith(() => MockHabitsController(testState)),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const HabitsTabPage(),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => MockHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      // Should have exactly 1 HabitCompletionCard for pendingLater habit
-      expect(find.byType(HabitCompletionCard), findsOneWidget);
-      expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
-    });
+        // Should have exactly 1 HabitCompletionCard for pendingLater habit
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+      },
+    );
 
     testWidgets('does not render cards for empty lists', (tester) async {
       final testState = HabitsState.initial().copyWith(
@@ -260,8 +268,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            habitsControllerProvider
-                .overrideWith(() => MockHabitsController(testState)),
+            habitsControllerProvider.overrideWith(
+              () => MockHabitsController(testState),
+            ),
           ],
           child: makeTestableWidgetWithScaffold(
             const HabitsTabPage(),

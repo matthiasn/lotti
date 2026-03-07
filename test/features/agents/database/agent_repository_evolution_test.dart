@@ -191,38 +191,46 @@ void main() {
       );
 
       // Create template_assignment links
-      await repo.upsertLink(model.AgentLink.templateAssignment(
-        id: 'link-ta-A',
-        fromId: templateId,
-        toId: agentIdA,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
-      await repo.upsertLink(model.AgentLink.templateAssignment(
-        id: 'link-ta-B',
-        fromId: templateId,
-        toId: agentIdB,
-        createdAt: testDate,
-        updatedAt: testDate,
-        vectorClock: null,
-      ));
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-ta-A',
+          fromId: templateId,
+          toId: agentIdA,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        model.AgentLink.templateAssignment(
+          id: 'link-ta-B',
+          fromId: templateId,
+          toId: agentIdB,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
     }
 
     group('getRecentReportsByTemplate', () {
       test('returns reports from all instances of a template', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-A',
-          agentId: agentIdA,
-          createdAt: DateTime(2026, 2, 19),
-        ));
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-B',
-          agentId: agentIdB,
-          createdAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-A',
+            agentId: agentIdA,
+            createdAt: DateTime(2026, 2, 19),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-B',
+            agentId: agentIdB,
+            createdAt: DateTime(2026, 2, 20),
+          ),
+        );
 
         final reports = await repo.getRecentReportsByTemplate(templateId);
 
@@ -236,11 +244,13 @@ void main() {
         await seedTemplateWithInstances();
 
         for (var i = 0; i < 5; i++) {
-          await repo.upsertEntity(makeTestReport(
-            id: 'report-$i',
-            agentId: agentIdA,
-            createdAt: DateTime(2026, 2, 15 + i),
-          ));
+          await repo.upsertEntity(
+            makeTestReport(
+              id: 'report-$i',
+              agentId: agentIdA,
+              createdAt: DateTime(2026, 2, 15 + i),
+            ),
+          );
         }
 
         final reports = await repo.getRecentReportsByTemplate(
@@ -251,22 +261,27 @@ void main() {
       });
 
       test('returns empty when no instances exist', () async {
-        final reports =
-            await repo.getRecentReportsByTemplate('nonexistent-template');
+        final reports = await repo.getRecentReportsByTemplate(
+          'nonexistent-template',
+        );
         expect(reports, isEmpty);
       });
 
       test('excludes reports from unrelated agents', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-assigned',
-          agentId: agentIdA,
-        ));
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-unrelated',
-          agentId: 'agent-unrelated',
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-assigned',
+            agentId: agentIdA,
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-unrelated',
+            agentId: 'agent-unrelated',
+          ),
+        );
 
         final reports = await repo.getRecentReportsByTemplate(templateId);
 
@@ -278,17 +293,21 @@ void main() {
         await seedTemplateWithInstances();
 
         // 'current' scope report (default from makeTestReport)
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-current',
-          agentId: agentIdA,
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-current',
+            agentId: agentIdA,
+          ),
+        );
 
         // 'daily' scope report — should be excluded by the query
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-daily',
-          agentId: agentIdA,
-          scope: 'daily',
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-daily',
+            agentId: agentIdA,
+            scope: 'daily',
+          ),
+        );
 
         final reports = await repo.getRecentReportsByTemplate(templateId);
 
@@ -299,19 +318,23 @@ void main() {
       test('excludes soft-deleted reports', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-alive',
-          agentId: agentIdA,
-        ));
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-deleted',
-          agentId: agentIdA,
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-alive',
+            agentId: agentIdA,
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-deleted',
+            agentId: agentIdA,
+          ),
+        );
 
         // Soft-delete one report
-        await (db.update(db.agentEntities)
-              ..where((t) => t.id.equals('report-deleted')))
-            .write(
+        await (db.update(
+          db.agentEntities,
+        )..where((t) => t.id.equals('report-deleted'))).write(
           AgentEntitiesCompanion(
             deletedAt: Value(DateTime(2026, 2, 21)),
           ),
@@ -326,18 +349,23 @@ void main() {
       test('excludes reports via soft-deleted assignment link', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-A',
-          agentId: agentIdA,
-        ));
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-B',
-          agentId: agentIdB,
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-A',
+            agentId: agentIdA,
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-B',
+            agentId: agentIdB,
+          ),
+        );
 
         // Soft-delete the link to agent A
-        await (db.update(db.agentLinks)..where((t) => t.id.equals('link-ta-A')))
-            .write(
+        await (db.update(
+          db.agentLinks,
+        )..where((t) => t.id.equals('link-ta-A'))).write(
           AgentLinksCompanion(
             deletedAt: Value(DateTime(2026, 2, 21)),
           ),
@@ -354,21 +382,26 @@ void main() {
       test('returns observations from all instances of a template', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestMessage(
-          id: 'obs-A',
-          agentId: agentIdA,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2026, 2, 19),
-        ));
-        await repo.upsertEntity(makeTestMessage(
-          id: 'obs-B',
-          agentId: agentIdB,
-          kind: AgentMessageKind.observation,
-          createdAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestMessage(
+            id: 'obs-A',
+            agentId: agentIdA,
+            kind: AgentMessageKind.observation,
+            createdAt: DateTime(2026, 2, 19),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestMessage(
+            id: 'obs-B',
+            agentId: agentIdB,
+            kind: AgentMessageKind.observation,
+            createdAt: DateTime(2026, 2, 20),
+          ),
+        );
 
-        final observations =
-            await repo.getRecentObservationsByTemplate(templateId);
+        final observations = await repo.getRecentObservationsByTemplate(
+          templateId,
+        );
 
         expect(observations.length, 2);
         expect(observations[0].id, 'obs-B');
@@ -378,18 +411,23 @@ void main() {
       test('excludes non-observation messages', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestMessage(
-          id: 'obs-1',
-          agentId: agentIdA,
-          kind: AgentMessageKind.observation,
-        ));
-        await repo.upsertEntity(makeTestMessage(
-          id: 'thought-1',
-          agentId: agentIdA,
-        ));
+        await repo.upsertEntity(
+          makeTestMessage(
+            id: 'obs-1',
+            agentId: agentIdA,
+            kind: AgentMessageKind.observation,
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestMessage(
+            id: 'thought-1',
+            agentId: agentIdA,
+          ),
+        );
 
-        final observations =
-            await repo.getRecentObservationsByTemplate(templateId);
+        final observations = await repo.getRecentObservationsByTemplate(
+          templateId,
+        );
 
         expect(observations.length, 1);
         expect(observations.first.id, 'obs-1');
@@ -399,12 +437,14 @@ void main() {
         await seedTemplateWithInstances();
 
         for (var i = 0; i < 5; i++) {
-          await repo.upsertEntity(makeTestMessage(
-            id: 'obs-$i',
-            agentId: agentIdA,
-            kind: AgentMessageKind.observation,
-            createdAt: DateTime(2026, 2, 15 + i),
-          ));
+          await repo.upsertEntity(
+            makeTestMessage(
+              id: 'obs-$i',
+              agentId: agentIdA,
+              kind: AgentMessageKind.observation,
+              createdAt: DateTime(2026, 2, 15 + i),
+            ),
+          );
         }
 
         final observations = await repo.getRecentObservationsByTemplate(
@@ -417,17 +457,21 @@ void main() {
 
     group('getEvolutionSessions', () {
       test('returns sessions for a template newest-first', () async {
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-1',
-          createdAt: DateTime(2026, 2, 18),
-          updatedAt: DateTime(2026, 2, 18),
-        ));
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-2',
-          sessionNumber: 2,
-          createdAt: DateTime(2026, 2, 20),
-          updatedAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-1',
+            createdAt: DateTime(2026, 2, 18),
+            updatedAt: DateTime(2026, 2, 18),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-2',
+            sessionNumber: 2,
+            createdAt: DateTime(2026, 2, 20),
+            updatedAt: DateTime(2026, 2, 20),
+          ),
+        );
 
         final sessions = await repo.getEvolutionSessions(kTestTemplateId);
 
@@ -438,12 +482,14 @@ void main() {
 
       test('respects limit parameter', () async {
         for (var i = 0; i < 5; i++) {
-          await repo.upsertEntity(makeTestEvolutionSession(
-            id: 'session-$i',
-            sessionNumber: i + 1,
-            createdAt: DateTime(2026, 2, 15 + i),
-            updatedAt: DateTime(2026, 2, 15 + i),
-          ));
+          await repo.upsertEntity(
+            makeTestEvolutionSession(
+              id: 'session-$i',
+              sessionNumber: i + 1,
+              createdAt: DateTime(2026, 2, 15 + i),
+              updatedAt: DateTime(2026, 2, 15 + i),
+            ),
+          );
         }
 
         final sessions = await repo.getEvolutionSessions(
@@ -454,24 +500,29 @@ void main() {
       });
 
       test('returns empty when no sessions exist', () async {
-        final sessions =
-            await repo.getEvolutionSessions('nonexistent-template');
+        final sessions = await repo.getEvolutionSessions(
+          'nonexistent-template',
+        );
         expect(sessions, isEmpty);
       });
 
       test('excludes soft-deleted sessions', () async {
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-alive',
-        ));
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-deleted',
-          sessionNumber: 2,
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-alive',
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-deleted',
+            sessionNumber: 2,
+          ),
+        );
 
         // Soft-delete one session
-        await (db.update(db.agentEntities)
-              ..where((t) => t.id.equals('session-deleted')))
-            .write(
+        await (db.update(
+          db.agentEntities,
+        )..where((t) => t.id.equals('session-deleted'))).write(
           AgentEntitiesCompanion(
             deletedAt: Value(DateTime(2026, 2, 21)),
           ),
@@ -484,9 +535,11 @@ void main() {
       });
 
       test('excludes non-session entity types', () async {
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-1',
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-1',
+          ),
+        );
         await repo.upsertEntity(makeTestEvolutionNote(id: 'note-1'));
         await repo.upsertEntity(makeTestTemplate());
 
@@ -507,21 +560,25 @@ void main() {
           makeTestTemplate(id: 'tpl-B', agentId: 'tpl-B'),
         );
 
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-A1',
-          agentId: 'tpl-A',
-          templateId: 'tpl-A',
-          createdAt: DateTime(2026, 2, 18),
-          updatedAt: DateTime(2026, 2, 18),
-        ));
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-B1',
-          agentId: 'tpl-B',
-          templateId: 'tpl-B',
-          sessionNumber: 2,
-          createdAt: DateTime(2026, 2, 20),
-          updatedAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-A1',
+            agentId: 'tpl-A',
+            templateId: 'tpl-A',
+            createdAt: DateTime(2026, 2, 18),
+            updatedAt: DateTime(2026, 2, 18),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-B1',
+            agentId: 'tpl-B',
+            templateId: 'tpl-B',
+            sessionNumber: 2,
+            createdAt: DateTime(2026, 2, 20),
+            updatedAt: DateTime(2026, 2, 20),
+          ),
+        );
 
         final sessions = await repo.getAllEvolutionSessions();
 
@@ -541,22 +598,26 @@ void main() {
         );
 
         // Create sessions for both
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-alive',
-          agentId: 'tpl-alive',
-          templateId: 'tpl-alive',
-        ));
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-orphan',
-          agentId: 'tpl-dead',
-          templateId: 'tpl-dead',
-          sessionNumber: 2,
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-alive',
+            agentId: 'tpl-alive',
+            templateId: 'tpl-alive',
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'session-orphan',
+            agentId: 'tpl-dead',
+            templateId: 'tpl-dead',
+            sessionNumber: 2,
+          ),
+        );
 
         // Soft-delete the second template
-        await (db.update(db.agentEntities)
-              ..where((t) => t.id.equals('tpl-dead')))
-            .write(
+        await (db.update(
+          db.agentEntities,
+        )..where((t) => t.id.equals('tpl-dead'))).write(
           AgentEntitiesCompanion(
             deletedAt: Value(DateTime(2026, 2, 21)),
           ),
@@ -568,46 +629,54 @@ void main() {
         expect(sessions.first.id, 'session-alive');
       });
 
-      test('excludes soft-deleted sessions even when template is alive',
-          () async {
-        await repo.upsertEntity(
-          makeTestTemplate(id: 'tpl-1', agentId: 'tpl-1'),
-        );
+      test(
+        'excludes soft-deleted sessions even when template is alive',
+        () async {
+          await repo.upsertEntity(
+            makeTestTemplate(id: 'tpl-1', agentId: 'tpl-1'),
+          );
 
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-ok',
-          agentId: 'tpl-1',
-          templateId: 'tpl-1',
-        ));
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'session-gone',
-          agentId: 'tpl-1',
-          templateId: 'tpl-1',
-          sessionNumber: 2,
-        ));
+          await repo.upsertEntity(
+            makeTestEvolutionSession(
+              id: 'session-ok',
+              agentId: 'tpl-1',
+              templateId: 'tpl-1',
+            ),
+          );
+          await repo.upsertEntity(
+            makeTestEvolutionSession(
+              id: 'session-gone',
+              agentId: 'tpl-1',
+              templateId: 'tpl-1',
+              sessionNumber: 2,
+            ),
+          );
 
-        // Soft-delete one session
-        await (db.update(db.agentEntities)
-              ..where((t) => t.id.equals('session-gone')))
-            .write(
-          AgentEntitiesCompanion(
-            deletedAt: Value(DateTime(2026, 2, 21)),
-          ),
-        );
+          // Soft-delete one session
+          await (db.update(
+            db.agentEntities,
+          )..where((t) => t.id.equals('session-gone'))).write(
+            AgentEntitiesCompanion(
+              deletedAt: Value(DateTime(2026, 2, 21)),
+            ),
+          );
 
-        final sessions = await repo.getAllEvolutionSessions();
+          final sessions = await repo.getAllEvolutionSessions();
 
-        expect(sessions, hasLength(1));
-        expect(sessions.first.id, 'session-ok');
-      });
+          expect(sessions, hasLength(1));
+          expect(sessions.first.id, 'session-ok');
+        },
+      );
 
       test('returns empty when no templates exist', () async {
         // Insert a session with no matching template
-        await repo.upsertEntity(makeTestEvolutionSession(
-          id: 'orphan-session',
-          agentId: 'nonexistent-template',
-          templateId: 'nonexistent-template',
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionSession(
+            id: 'orphan-session',
+            agentId: 'nonexistent-template',
+            templateId: 'nonexistent-template',
+          ),
+        );
 
         final sessions = await repo.getAllEvolutionSessions();
 
@@ -617,16 +686,20 @@ void main() {
 
     group('getEvolutionNotes', () {
       test('returns notes for a template newest-first', () async {
-        await repo.upsertEntity(makeTestEvolutionNote(
-          id: 'note-1',
-          kind: EvolutionNoteKind.pattern,
-          createdAt: DateTime(2026, 2, 18),
-        ));
-        await repo.upsertEntity(makeTestEvolutionNote(
-          id: 'note-2',
-          kind: EvolutionNoteKind.hypothesis,
-          createdAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionNote(
+            id: 'note-1',
+            kind: EvolutionNoteKind.pattern,
+            createdAt: DateTime(2026, 2, 18),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestEvolutionNote(
+            id: 'note-2',
+            kind: EvolutionNoteKind.hypothesis,
+            createdAt: DateTime(2026, 2, 20),
+          ),
+        );
 
         final notes = await repo.getEvolutionNotes(kTestTemplateId);
 
@@ -637,10 +710,12 @@ void main() {
 
       test('respects limit parameter', () async {
         for (var i = 0; i < 5; i++) {
-          await repo.upsertEntity(makeTestEvolutionNote(
-            id: 'note-$i',
-            createdAt: DateTime(2026, 2, 15 + i),
-          ));
+          await repo.upsertEntity(
+            makeTestEvolutionNote(
+              id: 'note-$i',
+              createdAt: DateTime(2026, 2, 15 + i),
+            ),
+          );
         }
 
         final notes = await repo.getEvolutionNotes(
@@ -657,14 +732,16 @@ void main() {
 
       test('excludes soft-deleted notes', () async {
         await repo.upsertEntity(makeTestEvolutionNote(id: 'note-alive'));
-        await repo.upsertEntity(makeTestEvolutionNote(
-          id: 'note-deleted',
-          kind: EvolutionNoteKind.decision,
-        ));
+        await repo.upsertEntity(
+          makeTestEvolutionNote(
+            id: 'note-deleted',
+            kind: EvolutionNoteKind.decision,
+          ),
+        );
 
-        await (db.update(db.agentEntities)
-              ..where((t) => t.id.equals('note-deleted')))
-            .write(
+        await (db.update(
+          db.agentEntities,
+        )..where((t) => t.id.equals('note-deleted'))).write(
           AgentEntitiesCompanion(
             deletedAt: Value(DateTime(2026, 2, 21)),
           ),
@@ -681,10 +758,12 @@ void main() {
       test('returns 0 when since is null', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-recent',
-          agentId: agentIdA,
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-recent',
+            agentId: agentIdA,
+          ),
+        );
 
         final count = await repo.countChangedSinceForTemplate(templateId, null);
         expect(count, 0);
@@ -693,16 +772,20 @@ void main() {
       test('counts entities updated after since timestamp', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-old',
-          agentId: agentIdA,
-          createdAt: DateTime(2026, 2, 10),
-        ));
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-new',
-          agentId: agentIdA,
-          createdAt: DateTime(2026, 2, 20),
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-old',
+            agentId: agentIdA,
+            createdAt: DateTime(2026, 2, 10),
+          ),
+        );
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-new',
+            agentId: agentIdA,
+            createdAt: DateTime(2026, 2, 20),
+          ),
+        );
 
         final count = await repo.countChangedSinceForTemplate(
           templateId,
@@ -714,11 +797,13 @@ void main() {
       test('returns 0 when no entities changed after since', () async {
         await seedTemplateWithInstances();
 
-        await repo.upsertEntity(makeTestReport(
-          id: 'report-old',
-          agentId: agentIdA,
-          createdAt: DateTime(2026, 2, 10),
-        ));
+        await repo.upsertEntity(
+          makeTestReport(
+            id: 'report-old',
+            agentId: agentIdA,
+            createdAt: DateTime(2026, 2, 10),
+          ),
+        );
 
         final count = await repo.countChangedSinceForTemplate(
           templateId,

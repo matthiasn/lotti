@@ -120,8 +120,9 @@ void main() {
     mockLoggingService = MockLoggingService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     when(() => mockEntitiesCacheService.sortedCategories).thenReturn([
       createCategory('cat-work', 'Work'),
@@ -155,11 +156,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         expect(result.days.length, equals(60));
         expect(result.isLoadingMore, isFalse);
@@ -195,14 +198,17 @@ void main() {
           ),
         ).thenAnswer((_) async => [entry]);
 
-        when(() => mockDb.linksForEntryIds(any()))
-            .thenAnswer((_) async => [link]);
+        when(
+          () => mockDb.linksForEntryIds(any()),
+        ).thenAnswer((_) async => [link]);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => [task]);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => [task]);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         // Find the day summary for Jan 15
         final daySummary = result.days.firstWhere(
@@ -239,11 +245,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         final daySummary = result.days.firstWhere(
           (d) => d.day.day == 15 && d.day.month == 1,
@@ -285,11 +293,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         // Max should be 3 hours (from Jan 14)
         expect(result.maxDailyTotal, equals(const Duration(hours: 3)));
@@ -338,14 +348,17 @@ void main() {
           ),
         ).thenAnswer((_) async => [entry1, entry2]);
 
-        when(() => mockDb.linksForEntryIds(any()))
-            .thenAnswer((_) async => links);
+        when(
+          () => mockDb.linksForEntryIds(any()),
+        ).thenAnswer((_) async => links);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => [task1, task2]);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => [task1, task2]);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         final jan15Noon = DateTime(2026, 1, 15, 12);
         final heights = result.stackedHeights[jan15Noon];
@@ -369,19 +382,22 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
         // Initial load
         await container.read(timeHistoryHeaderControllerProvider.future);
 
         // Load more
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+        final notifier = container.read(
+          timeHistoryHeaderControllerProvider.notifier,
+        );
         await notifier.loadMoreDays();
 
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
+        final result = container
+            .read(timeHistoryHeaderControllerProvider)
+            .value!;
 
         // Initial: 30 past + 30 future = 60 days, plus 14 more = 74 days
         expect(result.days.length, equals(74));
@@ -399,13 +415,15 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
         await container.read(timeHistoryHeaderControllerProvider.future);
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+        final notifier = container.read(
+          timeHistoryHeaderControllerProvider.notifier,
+        );
 
         // Start two loads simultaneously
         unawaited(notifier.loadMoreDays());
@@ -435,11 +453,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         expect(result.categoryOrder, equals(['cat-work', 'cat-personal']));
       });
@@ -456,11 +476,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         // Verify days are sorted descending (newest first)
         for (var i = 0; i < result.days.length - 1; i++) {
@@ -484,11 +506,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         // Should find day regardless of time component
         final found = result.dayAt(DateTime(2026, 1, 15, 8, 30));
@@ -522,11 +546,13 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final result = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
         final daySummary = result.days.firstWhere(
           (d) => d.day.day == 15 && d.day.month == 1,
@@ -537,106 +563,118 @@ void main() {
       });
     });
 
-    test('recomputes stacked heights when maxDailyTotal increases on merge',
-        () async {
-      await withClock(fixedClock, () async {
-        // Initial load has 1 hour in cat-work (max = 1 hour)
-        final jan15 = DateTime(2026, 1, 15, 10);
+    test(
+      'recomputes stacked heights when maxDailyTotal increases on merge',
+      () async {
+        await withClock(fixedClock, () async {
+          // Initial load has 1 hour in cat-work (max = 1 hour)
+          final jan15 = DateTime(2026, 1, 15, 10);
 
-        final task1 = createTask(
-          id: 'task-1',
-          categoryId: 'cat-work',
-          dateFrom: jan15,
-        );
+          final task1 = createTask(
+            id: 'task-1',
+            categoryId: 'cat-work',
+            dateFrom: jan15,
+          );
 
-        final entry1 = createJournalEntry(
-          id: 'entry-1',
-          categoryId: null,
-          dateFrom: jan15,
-          dateTo: jan15.add(const Duration(hours: 1)),
-        );
+          final entry1 = createJournalEntry(
+            id: 'entry-1',
+            categoryId: null,
+            dateFrom: jan15,
+            dateTo: jan15.add(const Duration(hours: 1)),
+          );
 
-        final link1 = createLink(fromId: 'task-1', toId: 'entry-1');
+          final link1 = createLink(fromId: 'task-1', toId: 'entry-1');
 
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => [entry1]);
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => [entry1]);
 
-        when(() => mockDb.linksForEntryIds(any()))
-            .thenAnswer((_) async => [link1]);
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => [link1]);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => [task1]);
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => [task1]);
 
-        // Initial load
-        await container.read(timeHistoryHeaderControllerProvider.future);
+          // Initial load
+          await container.read(timeHistoryHeaderControllerProvider.future);
 
-        final initialResult =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-        expect(initialResult.maxDailyTotal, equals(const Duration(hours: 1)));
+          final initialResult = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
+          expect(initialResult.maxDailyTotal, equals(const Duration(hours: 1)));
 
-        // Initial heights: cat-work starts at 0, goes to 1.0 (60/60 = 1.0)
-        final jan15Noon = DateTime(2026, 1, 15, 12);
-        final initialHeights = initialResult.stackedHeights[jan15Noon];
-        expect(initialHeights, isNotNull);
-        expect(initialHeights!['cat-work'], equals(0.0));
-        // cat-personal starts after cat-work: 60/60 = 1.0
-        expect(initialHeights['cat-personal'], closeTo(1.0, 0.01));
+          // Initial heights: cat-work starts at 0, goes to 1.0 (60/60 = 1.0)
+          final jan15Noon = DateTime(2026, 1, 15, 12);
+          final initialHeights = initialResult.stackedHeights[jan15Noon];
+          expect(initialHeights, isNotNull);
+          expect(initialHeights!['cat-work'], equals(0.0));
+          // cat-personal starts after cat-work: 60/60 = 1.0
+          expect(initialHeights['cat-personal'], closeTo(1.0, 0.01));
 
-        // Now load more with higher max (5 hours in cat-work)
-        // With clock at Jan 15 and 30 past days, loadMore fetches Dec 3-16
-        final olderDate = DateTime(2025, 12, 10, 10);
+          // Now load more with higher max (5 hours in cat-work)
+          // With clock at Jan 15 and 30 past days, loadMore fetches Dec 3-16
+          final olderDate = DateTime(2025, 12, 10, 10);
 
-        final task2 = createTask(
-          id: 'task-2',
-          categoryId: 'cat-work',
-          dateFrom: olderDate,
-        );
+          final task2 = createTask(
+            id: 'task-2',
+            categoryId: 'cat-work',
+            dateFrom: olderDate,
+          );
 
-        final bigEntry = createJournalEntry(
-          id: 'entry-big',
-          categoryId: null,
-          dateFrom: olderDate,
-          dateTo: olderDate.add(const Duration(hours: 5)),
-        );
+          final bigEntry = createJournalEntry(
+            id: 'entry-big',
+            categoryId: null,
+            dateFrom: olderDate,
+            dateTo: olderDate.add(const Duration(hours: 5)),
+          );
 
-        final link2 = createLink(fromId: 'task-2', toId: 'entry-big');
+          final link2 = createLink(fromId: 'task-2', toId: 'entry-big');
 
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => [bigEntry]);
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => [bigEntry]);
 
-        when(() => mockDb.linksForEntryIds(any()))
-            .thenAnswer((_) async => [link2]);
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => [link2]);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => [task2]);
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => [task2]);
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-        await notifier.loadMoreDays();
+          final notifier = container.read(
+            timeHistoryHeaderControllerProvider.notifier,
+          );
+          await notifier.loadMoreDays();
 
-        final afterMerge =
-            container.read(timeHistoryHeaderControllerProvider).value!;
+          final afterMerge = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
 
-        // Max should have increased
-        expect(afterMerge.maxDailyTotal, equals(const Duration(hours: 5)));
+          // Max should have increased
+          expect(afterMerge.maxDailyTotal, equals(const Duration(hours: 5)));
 
-        // Stacked heights for Jan 15 should be rescaled
-        // With 1 hour out of 5 hours max, cat-personal now starts at 60/300 = 0.2
-        final rescaledHeights = afterMerge.stackedHeights[jan15Noon];
-        expect(rescaledHeights, isNotNull);
-        expect(rescaledHeights!['cat-work'], equals(0.0)); // Still starts at 0
-        // cat-personal now starts at 60/300 = 0.2 (was 1.0 before rescale)
-        expect(rescaledHeights['cat-personal'], closeTo(0.2, 0.01));
-      });
-    });
+          // Stacked heights for Jan 15 should be rescaled
+          // With 1 hour out of 5 hours max, cat-personal now starts at 60/300 = 0.2
+          final rescaledHeights = afterMerge.stackedHeights[jan15Noon];
+          expect(rescaledHeights, isNotNull);
+          expect(
+            rescaledHeights!['cat-work'],
+            equals(0.0),
+          ); // Still starts at 0
+          // cat-personal now starts at 60/300 = 0.2 (was 1.0 before rescale)
+          expect(rescaledHeights['cat-personal'], closeTo(0.2, 0.01));
+        });
+      },
+    );
 
     test('canLoadMore stays true for infinite scroll (gaps allowed)', () async {
       await withClock(fixedClock, () async {
@@ -650,68 +688,79 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
         // Initial load
         await container.read(timeHistoryHeaderControllerProvider.future);
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+        final notifier = container.read(
+          timeHistoryHeaderControllerProvider.notifier,
+        );
 
         // Load more several times
         for (var i = 0; i < 5; i++) {
           await notifier.loadMoreDays();
         }
 
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
+        final result = container
+            .read(timeHistoryHeaderControllerProvider)
+            .value!;
 
         // canLoadMore should stay true for infinite scroll
         expect(result.canLoadMore, isTrue);
       });
     });
 
-    test('resetToToday restores initial view after scrolling far back',
-        () async {
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+    test(
+      'resetToToday restores initial view after scrolling far back',
+      () async {
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
 
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
 
-        // Initial load
-        final initialResult =
-            await container.read(timeHistoryHeaderControllerProvider.future);
-        final initialLatest = initialResult.latestDay;
+          // Initial load
+          final initialResult = await container.read(
+            timeHistoryHeaderControllerProvider.future,
+          );
+          final initialLatest = initialResult.latestDay;
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+          final notifier = container.read(
+            timeHistoryHeaderControllerProvider.notifier,
+          );
 
-        // Load more several times
-        for (var i = 0; i < 5; i++) {
-          await notifier.loadMoreDays();
-        }
+          // Load more several times
+          for (var i = 0; i < 5; i++) {
+            await notifier.loadMoreDays();
+          }
 
-        // Now reset to today
-        await notifier.resetToToday();
+          // Now reset to today
+          await notifier.resetToToday();
 
-        final afterReset =
-            container.read(timeHistoryHeaderControllerProvider).value!;
+          final afterReset = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
 
-        // Should have same latest day as initial (today)
-        expect(afterReset.latestDay, equals(initialLatest));
-        expect(afterReset.days.length, equals(60));
-        expect(afterReset.canLoadMore, isTrue);
-      });
-    });
+          // Should have same latest day as initial (today)
+          expect(afterReset.latestDay, equals(initialLatest));
+          expect(afterReset.days.length, equals(60));
+          expect(afterReset.canLoadMore, isTrue);
+        });
+      },
+    );
 
     test('loadMoreDays handles errors gracefully', () async {
       await withClock(fixedClock, () async {
@@ -732,20 +781,23 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
         // Initial load succeeds
         await container.read(timeHistoryHeaderControllerProvider.future);
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+        final notifier = container.read(
+          timeHistoryHeaderControllerProvider.notifier,
+        );
 
         // Load more should fail but not crash
         await notifier.loadMoreDays();
 
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
+        final result = container
+            .read(timeHistoryHeaderControllerProvider)
+            .value!;
 
         // Should still have initial data and isLoadingMore reset to false
         expect(result.days.length, equals(60));
@@ -781,21 +833,25 @@ void main() {
 
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockDb.getJournalEntitiesForIds(any()),
+        ).thenAnswer((_) async => []);
 
         // Initial load succeeds
-        final initialResult =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+        final initialResult = await container.read(
+          timeHistoryHeaderControllerProvider.future,
+        );
 
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
+        final notifier = container.read(
+          timeHistoryHeaderControllerProvider.notifier,
+        );
 
         // Reset should fail but restore previous state
         await notifier.resetToToday();
 
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value;
+        final result = container
+            .read(timeHistoryHeaderControllerProvider)
+            .value;
 
         // Should have restored the previous state
         expect(result, isNotNull);
@@ -837,8 +893,9 @@ void main() {
       mockLoggingService = MockLoggingService();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => updateStreamController.stream);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => updateStreamController.stream);
 
       when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
 
@@ -857,281 +914,331 @@ void main() {
       getIt.reset();
     });
 
-    test('generates correct days across US DST spring forward (March 8, 2026)',
-        () async {
-      // US DST spring forward: clocks jump 2:00 AM -> 3:00 AM on March 8, 2026
-      // Testing from March 10 to ensure the DST day (March 8) is within range.
-      // With 30 days back from March 10, we cover Feb 9 - March 10, including
-      // the March 8 DST transition.
-      final dstDay = DateTime(2026, 3, 10, 12);
-      final fixedClock = Clock.fixed(dstDay);
+    test(
+      'generates correct days across US DST spring forward (March 8, 2026)',
+      () async {
+        // US DST spring forward: clocks jump 2:00 AM -> 3:00 AM on March 8, 2026
+        // Testing from March 10 to ensure the DST day (March 8) is within range.
+        // With 30 days back from March 10, we cover Feb 9 - March 10, including
+        // the March 8 DST transition.
+        final dstDay = DateTime(2026, 3, 10, 12);
+        final fixedClock = Clock.fixed(dstDay);
 
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
 
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
-
-        // Should have exactly 30 unique days
-        expect(result.days.length, equals(60));
-
-        // Extract day numbers to verify uniqueness
-        final dayDates = result.days
-            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
-        final uniqueDates = dayDates.toSet();
-        expect(
-          uniqueDates.length,
-          equals(60),
-          reason: 'All 60 days should be unique (no duplicates from DST)',
-        );
-
-        // Verify March 8 (DST day) is present exactly once
-        final march8Count =
-            result.days.where((d) => d.day.month == 3 && d.day.day == 8).length;
-        expect(
-          march8Count,
-          equals(1),
-          reason: 'March 8 (DST spring forward day) should appear exactly once',
-        );
-
-        // Verify all days are at noon
-        for (final day in result.days) {
-          expect(day.day.hour, equals(12),
-              reason: 'All days should be at noon');
-        }
-      });
-    });
-
-    test('generates correct days across US DST fall back (November 1, 2026)',
-        () async {
-      // US DST fall back: clocks fall 2:00 AM -> 1:00 AM on November 1, 2026
-      // Testing from November 3 to ensure the DST day (November 1) is within range.
-      final dstDay = DateTime(2026, 11, 3, 12);
-      final fixedClock = Clock.fixed(dstDay);
-
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
-
-        // Should have exactly 30 unique days
-        expect(result.days.length, equals(60));
-
-        // Extract day numbers to verify uniqueness
-        final dayDates = result.days
-            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
-        final uniqueDates = dayDates.toSet();
-        expect(
-          uniqueDates.length,
-          equals(60),
-          reason: 'All 60 days should be unique (no duplicates from DST)',
-        );
-
-        // Verify November 1 (DST day) is present exactly once
-        final nov1Count = result.days
-            .where((d) => d.day.month == 11 && d.day.day == 1)
-            .length;
-        expect(
-          nov1Count,
-          equals(1),
-          reason: 'November 1 (DST fall back day) should appear exactly once',
-        );
-
-        // Verify all days are at noon
-        for (final day in result.days) {
-          expect(day.day.hour, equals(12),
-              reason: 'All days should be at noon');
-        }
-      });
-    });
-
-    test('loadMoreDays produces exact day count near US DST transition',
-        () async {
-      // Test that loadMoreDays produces exactly 44 days (30 initial + 14 more)
-      // even when crossing US DST boundary.
-      final dstDay = DateTime(2026, 3, 10, 12);
-      final fixedClock = Clock.fixed(dstDay);
-
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
-
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
-
-        // Initial load
-        await container.read(timeHistoryHeaderControllerProvider.future);
-
-        // Load more days
-        final notifier =
-            container.read(timeHistoryHeaderControllerProvider.notifier);
-        await notifier.loadMoreDays();
-
-        final result =
-            container.read(timeHistoryHeaderControllerProvider).value!;
-
-        // Should have exactly 74 unique days (60 initial + 14 more)
-        expect(result.days.length, equals(74));
-
-        // Verify all days are unique
-        final dayDates = result.days
-            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
-        final uniqueDates = dayDates.toSet();
-        expect(
-          uniqueDates.length,
-          equals(74),
-          reason: 'All 74 days should be unique after loadMoreDays',
-        );
-
-        // Verify days are properly ordered (newest to oldest)
-        for (var i = 0; i < result.days.length - 1; i++) {
-          expect(
-            result.days[i].day.isAfter(result.days[i + 1].day),
-            isTrue,
-            reason: 'Days should be sorted newest to oldest',
+          final result = await container.read(
+            timeHistoryHeaderControllerProvider.future,
           );
-        }
-      });
-    });
 
-    test('generates correct days across EU DST spring forward (March 29, 2026)',
-        () async {
-      // EU DST spring forward: clocks jump 2:00 AM -> 3:00 AM on last Sunday
-      // in March (March 29, 2026).
-      // Testing from March 31 to ensure the DST day is within range.
-      final dstDay = DateTime(2026, 3, 31, 12);
-      final fixedClock = Clock.fixed(dstDay);
+          // Should have exactly 30 unique days
+          expect(result.days.length, equals(60));
 
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+          // Extract day numbers to verify uniqueness
+          final dayDates = result.days.map(
+            (d) => DateTime(d.day.year, d.day.month, d.day.day),
+          );
+          final uniqueDates = dayDates.toSet();
+          expect(
+            uniqueDates.length,
+            equals(60),
+            reason: 'All 60 days should be unique (no duplicates from DST)',
+          );
 
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+          // Verify March 8 (DST day) is present exactly once
+          final march8Count = result.days
+              .where((d) => d.day.month == 3 && d.day.day == 8)
+              .length;
+          expect(
+            march8Count,
+            equals(1),
+            reason:
+                'March 8 (DST spring forward day) should appear exactly once',
+          );
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+          // Verify all days are at noon
+          for (final day in result.days) {
+            expect(
+              day.day.hour,
+              equals(12),
+              reason: 'All days should be at noon',
+            );
+          }
+        });
+      },
+    );
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+    test(
+      'generates correct days across US DST fall back (November 1, 2026)',
+      () async {
+        // US DST fall back: clocks fall 2:00 AM -> 1:00 AM on November 1, 2026
+        // Testing from November 3 to ensure the DST day (November 1) is within range.
+        final dstDay = DateTime(2026, 11, 3, 12);
+        final fixedClock = Clock.fixed(dstDay);
 
-        // Should have exactly 30 unique days
-        expect(result.days.length, equals(60));
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
 
-        // Extract day numbers to verify uniqueness
-        final dayDates = result.days
-            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
-        final uniqueDates = dayDates.toSet();
-        expect(
-          uniqueDates.length,
-          equals(60),
-          reason: 'All 60 days should be unique (no duplicates from EU DST)',
-        );
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
 
-        // Verify March 29 (EU DST day) is present exactly once
-        final march29Count = result.days
-            .where((d) => d.day.month == 3 && d.day.day == 29)
-            .length;
-        expect(
-          march29Count,
-          equals(1),
-          reason:
-              'March 29 (EU DST spring forward day) should appear exactly once',
-        );
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
 
-        // Verify all days are at noon
-        for (final day in result.days) {
-          expect(day.day.hour, equals(12),
-              reason: 'All days should be at noon');
-        }
-      });
-    });
+          final result = await container.read(
+            timeHistoryHeaderControllerProvider.future,
+          );
 
-    test('generates correct days across EU DST fall back (October 25, 2026)',
-        () async {
-      // EU DST fall back: clocks fall 3:00 AM -> 2:00 AM on last Sunday
-      // in October (October 25, 2026).
-      // Testing from October 27 to ensure the DST day is within range.
-      final dstDay = DateTime(2026, 10, 27, 12);
-      final fixedClock = Clock.fixed(dstDay);
+          // Should have exactly 30 unique days
+          expect(result.days.length, equals(60));
 
-      await withClock(fixedClock, () async {
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+          // Extract day numbers to verify uniqueness
+          final dayDates = result.days.map(
+            (d) => DateTime(d.day.year, d.day.month, d.day.day),
+          );
+          final uniqueDates = dayDates.toSet();
+          expect(
+            uniqueDates.length,
+            equals(60),
+            reason: 'All 60 days should be unique (no duplicates from DST)',
+          );
 
-        when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
+          // Verify November 1 (DST day) is present exactly once
+          final nov1Count = result.days
+              .where((d) => d.day.month == 11 && d.day.day == 1)
+              .length;
+          expect(
+            nov1Count,
+            equals(1),
+            reason: 'November 1 (DST fall back day) should appear exactly once',
+          );
 
-        when(() => mockDb.getJournalEntitiesForIds(any()))
-            .thenAnswer((_) async => []);
+          // Verify all days are at noon
+          for (final day in result.days) {
+            expect(
+              day.day.hour,
+              equals(12),
+              reason: 'All days should be at noon',
+            );
+          }
+        });
+      },
+    );
 
-        final result =
-            await container.read(timeHistoryHeaderControllerProvider.future);
+    test(
+      'loadMoreDays produces exact day count near US DST transition',
+      () async {
+        // Test that loadMoreDays produces exactly 44 days (30 initial + 14 more)
+        // even when crossing US DST boundary.
+        final dstDay = DateTime(2026, 3, 10, 12);
+        final fixedClock = Clock.fixed(dstDay);
 
-        // Should have exactly 30 unique days
-        expect(result.days.length, equals(60));
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
 
-        // Extract day numbers to verify uniqueness
-        final dayDates = result.days
-            .map((d) => DateTime(d.day.year, d.day.month, d.day.day));
-        final uniqueDates = dayDates.toSet();
-        expect(
-          uniqueDates.length,
-          equals(60),
-          reason: 'All 60 days should be unique (no duplicates from EU DST)',
-        );
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
 
-        // Verify October 25 (EU DST day) is present exactly once
-        final oct25Count = result.days
-            .where((d) => d.day.month == 10 && d.day.day == 25)
-            .length;
-        expect(
-          oct25Count,
-          equals(1),
-          reason:
-              'October 25 (EU DST fall back day) should appear exactly once',
-        );
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
 
-        // Verify all days are at noon
-        for (final day in result.days) {
-          expect(day.day.hour, equals(12),
-              reason: 'All days should be at noon');
-        }
-      });
-    });
+          // Initial load
+          await container.read(timeHistoryHeaderControllerProvider.future);
+
+          // Load more days
+          final notifier = container.read(
+            timeHistoryHeaderControllerProvider.notifier,
+          );
+          await notifier.loadMoreDays();
+
+          final result = container
+              .read(timeHistoryHeaderControllerProvider)
+              .value!;
+
+          // Should have exactly 74 unique days (60 initial + 14 more)
+          expect(result.days.length, equals(74));
+
+          // Verify all days are unique
+          final dayDates = result.days.map(
+            (d) => DateTime(d.day.year, d.day.month, d.day.day),
+          );
+          final uniqueDates = dayDates.toSet();
+          expect(
+            uniqueDates.length,
+            equals(74),
+            reason: 'All 74 days should be unique after loadMoreDays',
+          );
+
+          // Verify days are properly ordered (newest to oldest)
+          for (var i = 0; i < result.days.length - 1; i++) {
+            expect(
+              result.days[i].day.isAfter(result.days[i + 1].day),
+              isTrue,
+              reason: 'Days should be sorted newest to oldest',
+            );
+          }
+        });
+      },
+    );
+
+    test(
+      'generates correct days across EU DST spring forward (March 29, 2026)',
+      () async {
+        // EU DST spring forward: clocks jump 2:00 AM -> 3:00 AM on last Sunday
+        // in March (March 29, 2026).
+        // Testing from March 31 to ensure the DST day is within range.
+        final dstDay = DateTime(2026, 3, 31, 12);
+        final fixedClock = Clock.fixed(dstDay);
+
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
+
+          final result = await container.read(
+            timeHistoryHeaderControllerProvider.future,
+          );
+
+          // Should have exactly 30 unique days
+          expect(result.days.length, equals(60));
+
+          // Extract day numbers to verify uniqueness
+          final dayDates = result.days.map(
+            (d) => DateTime(d.day.year, d.day.month, d.day.day),
+          );
+          final uniqueDates = dayDates.toSet();
+          expect(
+            uniqueDates.length,
+            equals(60),
+            reason: 'All 60 days should be unique (no duplicates from EU DST)',
+          );
+
+          // Verify March 29 (EU DST day) is present exactly once
+          final march29Count = result.days
+              .where((d) => d.day.month == 3 && d.day.day == 29)
+              .length;
+          expect(
+            march29Count,
+            equals(1),
+            reason:
+                'March 29 (EU DST spring forward day) should appear exactly once',
+          );
+
+          // Verify all days are at noon
+          for (final day in result.days) {
+            expect(
+              day.day.hour,
+              equals(12),
+              reason: 'All days should be at noon',
+            );
+          }
+        });
+      },
+    );
+
+    test(
+      'generates correct days across EU DST fall back (October 25, 2026)',
+      () async {
+        // EU DST fall back: clocks fall 3:00 AM -> 2:00 AM on last Sunday
+        // in October (October 25, 2026).
+        // Testing from October 27 to ensure the DST day is within range.
+        final dstDay = DateTime(2026, 10, 27, 12);
+        final fixedClock = Clock.fixed(dstDay);
+
+        await withClock(fixedClock, () async {
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockDb.linksForEntryIds(any()),
+          ).thenAnswer((_) async => []);
+
+          when(
+            () => mockDb.getJournalEntitiesForIds(any()),
+          ).thenAnswer((_) async => []);
+
+          final result = await container.read(
+            timeHistoryHeaderControllerProvider.future,
+          );
+
+          // Should have exactly 30 unique days
+          expect(result.days.length, equals(60));
+
+          // Extract day numbers to verify uniqueness
+          final dayDates = result.days.map(
+            (d) => DateTime(d.day.year, d.day.month, d.day.day),
+          );
+          final uniqueDates = dayDates.toSet();
+          expect(
+            uniqueDates.length,
+            equals(60),
+            reason: 'All 60 days should be unique (no duplicates from EU DST)',
+          );
+
+          // Verify October 25 (EU DST day) is present exactly once
+          final oct25Count = result.days
+              .where((d) => d.day.month == 10 && d.day.day == 25)
+              .length;
+          expect(
+            oct25Count,
+            equals(1),
+            reason:
+                'October 25 (EU DST fall back day) should appear exactly once',
+          );
+
+          // Verify all days are at noon
+          for (final day in result.days) {
+            expect(
+              day.day.hour,
+              equals(12),
+              reason: 'All days should be at noon',
+            );
+          }
+        });
+      },
+    );
   });
 
   // Timezone-explicit tests that don't depend on system TZ environment variable.
@@ -1140,86 +1247,93 @@ void main() {
     setUpAll(tz.initializeTimeZones);
 
     test(
-        'Duration subtraction gives wrong day count across US DST spring forward',
-        () {
-      // US Eastern: March 8, 2026 springs forward (loses 1 hour)
-      final eastern = tz.getLocation('America/New_York');
+      'Duration subtraction gives wrong day count across US DST spring forward',
+      () {
+        // US Eastern: March 8, 2026 springs forward (loses 1 hour)
+        final eastern = tz.getLocation('America/New_York');
 
-      // March 10 at noon Eastern
-      final march10 = tz.TZDateTime(eastern, 2026, 3, 10, 12);
-      // March 2 at noon Eastern (8 days earlier, crossing DST)
-      final march2 = tz.TZDateTime(eastern, 2026, 3, 2, 12);
+        // March 10 at noon Eastern
+        final march10 = tz.TZDateTime(eastern, 2026, 3, 10, 12);
+        // March 2 at noon Eastern (8 days earlier, crossing DST)
+        final march2 = tz.TZDateTime(eastern, 2026, 3, 2, 12);
 
-      // Duration between them: should be 8 calendar days
-      final duration = march10.difference(march2);
+        // Duration between them: should be 8 calendar days
+        final duration = march10.difference(march2);
 
-      // Because March 8 only has 23 hours, Duration gives < 8 days worth of hours
-      // 8 days = 192 hours normally, but with DST it's 191 hours
-      expect(duration.inHours, equals(191)); // Not 192!
-      expect(duration.inDays, equals(7)); // Wrong! Should be 8 calendar days
+        // Because March 8 only has 23 hours, Duration gives < 8 days worth of hours
+        // 8 days = 192 hours normally, but with DST it's 191 hours
+        expect(duration.inHours, equals(191)); // Not 192!
+        expect(duration.inDays, equals(7)); // Wrong! Should be 8 calendar days
 
-      // Calendar arithmetic gives correct answer
-      final calendarDays = march10.day -
-          march2.day +
-          (march10.month - march2.month) * 31; // Simplified for same month
-      expect(calendarDays, equals(8)); // Correct!
+        // Calendar arithmetic gives correct answer
+        final calendarDays =
+            march10.day -
+            march2.day +
+            (march10.month - march2.month) * 31; // Simplified for same month
+        expect(calendarDays, equals(8)); // Correct!
 
-      // UTC-based calculation also gives correct answer
-      final march10Utc = DateTime.utc(2026, 3, 10);
-      final march2Utc = DateTime.utc(2026, 3, 2);
-      expect(march10Utc.difference(march2Utc).inDays, equals(8)); // Correct!
-    });
+        // UTC-based calculation also gives correct answer
+        final march10Utc = DateTime.utc(2026, 3, 10);
+        final march2Utc = DateTime.utc(2026, 3, 2);
+        expect(march10Utc.difference(march2Utc).inDays, equals(8)); // Correct!
+      },
+    );
 
     test(
-        'Duration subtraction gives wrong day count across EU DST spring forward',
-        () {
-      // EU Berlin: March 29, 2026 springs forward (loses 1 hour)
-      final berlin = tz.getLocation('Europe/Berlin');
+      'Duration subtraction gives wrong day count across EU DST spring forward',
+      () {
+        // EU Berlin: March 29, 2026 springs forward (loses 1 hour)
+        final berlin = tz.getLocation('Europe/Berlin');
 
-      // March 31 at noon Berlin
-      final march31 = tz.TZDateTime(berlin, 2026, 3, 31, 12);
-      // March 27 at noon Berlin (4 days earlier, crossing DST)
-      final march27 = tz.TZDateTime(berlin, 2026, 3, 27, 12);
+        // March 31 at noon Berlin
+        final march31 = tz.TZDateTime(berlin, 2026, 3, 31, 12);
+        // March 27 at noon Berlin (4 days earlier, crossing DST)
+        final march27 = tz.TZDateTime(berlin, 2026, 3, 27, 12);
 
-      // Duration between them: should be 4 calendar days
-      final duration = march31.difference(march27);
+        // Duration between them: should be 4 calendar days
+        final duration = march31.difference(march27);
 
-      // Because March 29 only has 23 hours, Duration gives < 4 days worth of hours
-      // 4 days = 96 hours normally, but with DST it's 95 hours
-      expect(duration.inHours, equals(95)); // Not 96!
-      expect(duration.inDays, equals(3)); // Wrong! Should be 4 calendar days
+        // Because March 29 only has 23 hours, Duration gives < 4 days worth of hours
+        // 4 days = 96 hours normally, but with DST it's 95 hours
+        expect(duration.inHours, equals(95)); // Not 96!
+        expect(duration.inDays, equals(3)); // Wrong! Should be 4 calendar days
 
-      // UTC-based calculation gives correct answer
-      final march31Utc = DateTime.utc(2026, 3, 31);
-      final march27Utc = DateTime.utc(2026, 3, 27);
-      expect(march31Utc.difference(march27Utc).inDays, equals(4)); // Correct!
-    });
+        // UTC-based calculation gives correct answer
+        final march31Utc = DateTime.utc(2026, 3, 31);
+        final march27Utc = DateTime.utc(2026, 3, 27);
+        expect(march31Utc.difference(march27Utc).inDays, equals(4)); // Correct!
+      },
+    );
 
-    test('Duration subtraction gives wrong day count across US DST fall back',
-        () {
-      // US Eastern: November 1, 2026 falls back (gains 1 hour)
-      final eastern = tz.getLocation('America/New_York');
+    test(
+      'Duration subtraction gives wrong day count across US DST fall back',
+      () {
+        // US Eastern: November 1, 2026 falls back (gains 1 hour)
+        final eastern = tz.getLocation('America/New_York');
 
-      // November 3 at noon Eastern
-      final nov3 = tz.TZDateTime(eastern, 2026, 11, 3, 12);
-      // October 31 at noon Eastern (3 days earlier, crossing DST)
-      final oct31 = tz.TZDateTime(eastern, 2026, 10, 31, 12);
+        // November 3 at noon Eastern
+        final nov3 = tz.TZDateTime(eastern, 2026, 11, 3, 12);
+        // October 31 at noon Eastern (3 days earlier, crossing DST)
+        final oct31 = tz.TZDateTime(eastern, 2026, 10, 31, 12);
 
-      // Duration between them: should be 3 calendar days
-      final duration = nov3.difference(oct31);
+        // Duration between them: should be 3 calendar days
+        final duration = nov3.difference(oct31);
 
-      // Because November 1 has 25 hours, Duration gives > 3 days worth of hours
-      // 3 days = 72 hours normally, but with DST it's 73 hours
-      expect(duration.inHours, equals(73)); // Not 72!
-      // inDays truncates, so this still gives 3, but the hours are wrong
-      expect(duration.inDays,
-          equals(3)); // Happens to be correct due to truncation
+        // Because November 1 has 25 hours, Duration gives > 3 days worth of hours
+        // 3 days = 72 hours normally, but with DST it's 73 hours
+        expect(duration.inHours, equals(73)); // Not 72!
+        // inDays truncates, so this still gives 3, but the hours are wrong
+        expect(
+          duration.inDays,
+          equals(3),
+        ); // Happens to be correct due to truncation
 
-      // UTC-based calculation is always correct
-      final nov3Utc = DateTime.utc(2026, 11, 3);
-      final oct31Utc = DateTime.utc(2026, 10, 31);
-      expect(nov3Utc.difference(oct31Utc).inDays, equals(3)); // Correct!
-    });
+        // UTC-based calculation is always correct
+        final nov3Utc = DateTime.utc(2026, 11, 3);
+        final oct31Utc = DateTime.utc(2026, 10, 31);
+        expect(nov3Utc.difference(oct31Utc).inDays, equals(3)); // Correct!
+      },
+    );
 
     test('Calendar arithmetic generates correct days regardless of DST', () {
       // This is the pattern used in the controller
@@ -1235,13 +1349,15 @@ void main() {
       expect(days.length, equals(10));
 
       // Verify all dates are unique and at noon
-      final uniqueDates =
-          days.map((d) => '${d.year}-${d.month}-${d.day}').toSet();
+      final uniqueDates = days
+          .map((d) => '${d.year}-${d.month}-${d.day}')
+          .toSet();
       expect(uniqueDates.length, equals(10));
 
       // Verify March 29 (EU DST) is present exactly once
-      final march29Count =
-          days.where((d) => d.month == 3 && d.day == 29).length;
+      final march29Count = days
+          .where((d) => d.month == 3 && d.day == 29)
+          .length;
       expect(march29Count, equals(1));
 
       // Verify all are at noon

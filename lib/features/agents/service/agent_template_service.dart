@@ -54,7 +54,9 @@ class EvolutionDataBundle {
   /// Compute the next session number from the existing sessions.
   int get nextSessionNumber =>
       sessions.fold(
-          0, (max, s) => s.sessionNumber > max ? s.sessionNumber : max) +
+        0,
+        (max, s) => s.sessionNumber > max ? s.sessionNumber : max,
+      ) +
       1;
 }
 
@@ -101,18 +103,20 @@ class AgentTemplateService {
     final headId = _uuid.v4();
     final now = clock.now();
 
-    final template = AgentDomainEntity.agentTemplate(
-      id: tplId,
-      agentId: tplId,
-      displayName: displayName,
-      kind: kind,
-      modelId: modelId,
-      profileId: profileId,
-      categoryIds: categoryIds,
-      createdAt: now,
-      updatedAt: now,
-      vectorClock: null,
-    ) as AgentTemplateEntity;
+    final template =
+        AgentDomainEntity.agentTemplate(
+              id: tplId,
+              agentId: tplId,
+              displayName: displayName,
+              kind: kind,
+              modelId: modelId,
+              profileId: profileId,
+              categoryIds: categoryIds,
+              createdAt: now,
+              updatedAt: now,
+              vectorClock: null,
+            )
+            as AgentTemplateEntity;
 
     final version = AgentDomainEntity.agentTemplateVersion(
       id: versionId,
@@ -171,8 +175,9 @@ class AgentTemplateService {
       }
 
       final modelChanged = modelId != null && modelId != template.modelId;
-      final effectiveProfileId =
-          clearProfileId ? null : (profileId ?? template.profileId);
+      final effectiveProfileId = clearProfileId
+          ? null
+          : (profileId ?? template.profileId);
       final profileChanged = effectiveProfileId != template.profileId;
 
       final updated = template.copyWith(
@@ -186,8 +191,9 @@ class AgentTemplateService {
       // When the model or profile changes, create a new version so the change
       // is recorded in the version history.
       if (modelChanged || profileChanged) {
-        final activeVersion =
-            await repository.getActiveTemplateVersion(templateId);
+        final activeVersion = await repository.getActiveTemplateVersion(
+          templateId,
+        );
         if (activeVersion != null) {
           await createVersion(
             templateId: templateId,
@@ -243,25 +249,28 @@ class AgentTemplateService {
       }
 
       // Determine next version number.
-      final nextVersion =
-          await repository.getNextTemplateVersionNumber(templateId);
+      final nextVersion = await repository.getNextTemplateVersionNumber(
+        templateId,
+      );
 
       // Create the new version, recording the template's configured model ID
       // and profile ID.
-      final newVersion = AgentDomainEntity.agentTemplateVersion(
-        id: newVersionId,
-        agentId: templateId,
-        version: nextVersion,
-        status: AgentTemplateVersionStatus.active,
-        directives: directives,
-        generalDirective: generalDirective,
-        reportDirective: reportDirective,
-        authoredBy: authoredBy,
-        createdAt: now,
-        vectorClock: null,
-        modelId: template.modelId,
-        profileId: template.profileId,
-      ) as AgentTemplateVersionEntity;
+      final newVersion =
+          AgentDomainEntity.agentTemplateVersion(
+                id: newVersionId,
+                agentId: templateId,
+                version: nextVersion,
+                status: AgentTemplateVersionStatus.active,
+                directives: directives,
+                generalDirective: generalDirective,
+                reportDirective: reportDirective,
+                authoredBy: authoredBy,
+                createdAt: now,
+                vectorClock: null,
+                modelId: template.modelId,
+                profileId: template.profileId,
+              )
+              as AgentTemplateVersionEntity;
       await syncService.upsertEntity(newVersion);
 
       // Update head pointer (reuse existing head ID if present).
@@ -347,8 +356,9 @@ class AgentTemplateService {
   /// Destroyed agents preserve their links for audit but do not block deletion.
   Future<void> deleteTemplate(String templateId) async {
     final agents = await getAgentsForTemplate(templateId);
-    final activeAgents =
-        agents.where((a) => a.lifecycle != AgentLifecycle.destroyed).toList();
+    final activeAgents = agents
+        .where((a) => a.lifecycle != AgentLifecycle.destroyed)
+        .toList();
 
     if (activeAgents.isNotEmpty) {
       throw TemplateInUseException(
@@ -527,8 +537,9 @@ class AgentTemplateService {
       averageDuration: averageDuration,
       firstWakeAt: firstWakeAt,
       lastWakeAt: lastWakeAt,
-      activeInstanceCount:
-          agents.where((a) => a.lifecycle == AgentLifecycle.active).length,
+      activeInstanceCount: agents
+          .where((a) => a.lifecycle == AgentLifecycle.active)
+          .length,
     );
   }
 
@@ -596,13 +607,16 @@ class AgentTemplateService {
     final sessions = results.$6;
 
     // Second batch: depends on first batch results.
-    final payloadIds =
-        observations.map((obs) => obs.contentEntryId).whereType<String>();
-    final payloadEntitiesFuture =
-        Future.wait(payloadIds.map(repository.getEntity));
+    final payloadIds = observations
+        .map((obs) => obs.contentEntryId)
+        .whereType<String>();
+    final payloadEntitiesFuture = Future.wait(
+      payloadIds.map(repository.getEntity),
+    );
 
-    final lastSessionDate =
-        sessions.isNotEmpty ? sessions.first.createdAt : null;
+    final lastSessionDate = sessions.isNotEmpty
+        ? sessions.first.createdAt
+        : null;
     final changesSinceFuture = countChangesSince(templateId, lastSessionDate);
 
     final batchResults = await (payloadEntitiesFuture, changesSinceFuture).wait;
@@ -684,7 +698,8 @@ class AgentTemplateService {
         displayName: 'Laura',
         kind: AgentTemplateKind.taskAgent,
         modelId: kDefaultAgentTemplateModelId,
-        directives: 'You are Laura, a diligent task management agent. '
+        directives:
+            'You are Laura, a diligent task management agent. '
             'You help users organize, prioritize, and complete their tasks '
             'efficiently. You write clear, actionable reports.',
         generalDirective: taskAgentGeneralDirective,
@@ -699,7 +714,8 @@ class AgentTemplateService {
         displayName: 'Tom',
         kind: AgentTemplateKind.taskAgent,
         modelId: kDefaultAgentTemplateModelId,
-        directives: 'You are Tom, a creative and analytical task agent. '
+        directives:
+            'You are Tom, a creative and analytical task agent. '
             'You help users think through problems, break down complex tasks, '
             'and find innovative solutions. You write insightful reports.',
         generalDirective: taskAgentGeneralDirective,
@@ -714,7 +730,8 @@ class AgentTemplateService {
         displayName: 'Template Improver',
         kind: AgentTemplateKind.templateImprover,
         modelId: kDefaultAgentTemplateModelId,
-        directives: 'You are a template improvement agent. You analyze '
+        directives:
+            'You are a template improvement agent. You analyze '
             'feedback from agent instances, identify patterns in user '
             'decisions, and propose directive improvements during weekly '
             'one-on-one rituals.',
@@ -729,7 +746,8 @@ class AgentTemplateService {
         displayName: 'Meta Improver',
         kind: AgentTemplateKind.templateImprover,
         modelId: kDefaultAgentTemplateModelId,
-        directives: 'You are a meta-improver agent. You evaluate and improve '
+        directives:
+            'You are a meta-improver agent. You evaluate and improve '
             'the template-improver agents themselves. Your focus is on:\n'
             '- Improver ritual effectiveness: Are the one-on-one sessions '
             'producing useful directive proposals?\n'
@@ -780,13 +798,13 @@ class AgentTemplateService {
 
       final (general, report) = switch (template.kind) {
         AgentTemplateKind.taskAgent => (
-            taskAgentGeneralDirective,
-            taskAgentReportDirective,
-          ),
+          taskAgentGeneralDirective,
+          taskAgentReportDirective,
+        ),
         AgentTemplateKind.templateImprover => (
-            templateImproverGeneralDirective,
-            templateImproverReportDirective,
-          ),
+          templateImproverGeneralDirective,
+          templateImproverReportDirective,
+        ),
       };
 
       final updated = activeVersion.copyWith(

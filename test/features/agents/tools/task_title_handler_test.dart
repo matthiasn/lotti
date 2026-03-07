@@ -22,33 +22,37 @@ void main() {
 
   group('TaskTitleHandler', () {
     group('handle', () {
-      test('updates title and returns success result with didWrite=true',
-          () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+      test(
+        'updates title and returns success result with didWrite=true',
+        () async {
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final handler = TaskTitleHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          final handler = TaskTitleHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        final result = await handler.handle('New Title');
+          final result = await handler.handle('New Title');
 
-        expect(result.success, isTrue);
-        expect(result.didWrite, isTrue);
-        expect(result.wasNoOp, isFalse);
-        expect(result.message, contains('New Title'));
-        expect(result.requestedTitle, equals('New Title'));
-        expect(result.updatedTask, isNotNull);
-        expect(result.updatedTask!.data.title, equals('New Title'));
-        expect(result.error, isNull);
+          expect(result.success, isTrue);
+          expect(result.didWrite, isTrue);
+          expect(result.wasNoOp, isFalse);
+          expect(result.message, contains('New Title'));
+          expect(result.requestedTitle, equals('New Title'));
+          expect(result.updatedTask, isNotNull);
+          expect(result.updatedTask!.data.title, equals('New Title'));
+          expect(result.error, isNull);
 
-        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-      });
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+        },
+      );
 
       test('trims whitespace from title before applying', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -113,8 +117,9 @@ void main() {
       });
 
       test('returns error when repository throws', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('DB write failed'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('DB write failed'));
 
         final handler = TaskTitleHandler(
           task: task,
@@ -131,8 +136,9 @@ void main() {
       });
 
       test('returns error when repository returns false', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => false);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => false);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -150,8 +156,9 @@ void main() {
       });
 
       test('updates local task field after successful write', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         final handler = TaskTitleHandler(
           task: task,
@@ -166,8 +173,9 @@ void main() {
       });
 
       test('does not update local task field when write fails', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('fail'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('fail'));
 
         final handler = TaskTitleHandler(
           task: task,
@@ -180,8 +188,9 @@ void main() {
       });
 
       test('invokes onTaskUpdated callback on successful write', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         Task? callbackTask;
         final handler = TaskTitleHandler(
@@ -210,8 +219,9 @@ void main() {
       });
 
       test('does not invoke onTaskUpdated when write fails', () async {
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('fail'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('fail'));
 
         var callbackInvoked = false;
         final handler = TaskTitleHandler(

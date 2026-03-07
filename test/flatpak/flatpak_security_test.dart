@@ -16,7 +16,8 @@ void main() {
         expect(shouldUsePortal, equals(isInFlatpak));
 
         if (Platform.isLinux) {
-          final hasFlatpakId = Platform.environment['FLATPAK_ID'] != null &&
+          final hasFlatpakId =
+              Platform.environment['FLATPAK_ID'] != null &&
               Platform.environment['FLATPAK_ID']!.isNotEmpty;
           expect(isInFlatpak, equals(hasFlatpakId));
         } else {
@@ -121,14 +122,20 @@ void main() {
 
       test('portal services use correct D-Bus names', () {
         // These are standardized by freedesktop.org and should never change
-        expect(PortalConstants.portalBusName,
-            equals('org.freedesktop.portal.Desktop'));
-        expect(PortalConstants.portalPath,
-            equals('/org/freedesktop/portal/desktop'));
+        expect(
+          PortalConstants.portalBusName,
+          equals('org.freedesktop.portal.Desktop'),
+        );
+        expect(
+          PortalConstants.portalPath,
+          equals('/org/freedesktop/portal/desktop'),
+        );
 
         // Verify individual portal interfaces
-        expect(ScreenshotPortalConstants.interfaceName,
-            equals('org.freedesktop.portal.Screenshot'));
+        expect(
+          ScreenshotPortalConstants.interfaceName,
+          equals('org.freedesktop.portal.Screenshot'),
+        );
       });
 
       test('portal handle tokens are unique and secure', () async {
@@ -192,8 +199,11 @@ void main() {
         // FFmpeg was removed — Mistral now accepts M4A natively.
         // Verify pubspec.yaml does not reference ffmpeg_kit_flutter.
         final pubspec = File('pubspec.yaml').readAsStringSync();
-        expect(pubspec, isNot(contains('ffmpeg_kit_flutter')),
-            reason: 'FFmpeg dependency should have been removed');
+        expect(
+          pubspec,
+          isNot(contains('ffmpeg_kit_flutter')),
+          reason: 'FFmpeg dependency should have been removed',
+        );
       });
     });
 
@@ -340,7 +350,9 @@ void main() {
 
         // Timeouts should be reasonable to prevent DoS
         expect(
-            PortalConstants.responseTimeout.inSeconds, lessThanOrEqualTo(60));
+          PortalConstants.responseTimeout.inSeconds,
+          lessThanOrEqualTo(60),
+        );
       });
     });
   });

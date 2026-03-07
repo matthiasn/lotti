@@ -42,15 +42,15 @@ final class AudioRecorderControllerProvider
   ///
   /// The controller is kept alive to maintain recording state across navigation.
   AudioRecorderControllerProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'audioRecorderControllerProvider',
-          isAutoDispose: false,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioRecorderControllerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$audioRecorderControllerHash();
@@ -87,11 +87,14 @@ abstract class _$AudioRecorderController extends $Notifier<AudioRecorderState> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AudioRecorderState, AudioRecorderState>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AudioRecorderState, AudioRecorderState>,
-        AudioRecorderState,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AudioRecorderState, AudioRecorderState>,
+              AudioRecorderState,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

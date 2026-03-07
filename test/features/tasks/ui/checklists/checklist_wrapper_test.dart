@@ -23,8 +23,9 @@ import '../../../../test_helper.dart';
 // Helper to create overrides for checklistItemControllerProvider
 // that returns items from a map based on params.id
 Override checklistItemOverride(Map<String, ChecklistItem?> itemsMap) {
-  return checklistItemControllerProvider
-      .overrideWithBuild((ref, params) async => itemsMap[params.id]);
+  return checklistItemControllerProvider.overrideWithBuild(
+    (ref, params) async => itemsMap[params.id],
+  );
 }
 
 void main() {
@@ -39,10 +40,12 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       mockJournalDb = MockJournalDb();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -106,19 +109,25 @@ void main() {
 
       // Configure JournalDb to return the correct entities
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockJournalDb.journalEntityById(itemId1))
-          .thenAnswer((_) async => item1);
-      when(() => mockJournalDb.journalEntityById(itemId2))
-          .thenAnswer((_) async => item2);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(itemId1),
+      ).thenAnswer((_) async => item1);
+      when(
+        () => mockJournalDb.journalEntityById(itemId2),
+      ).thenAnswer((_) async => item2);
 
       var copied = '';
-      final fakeClipboard = AppClipboard(writePlainText: (text) async {
-        copied = text;
-      });
+      final fakeClipboard = AppClipboard(
+        writePlainText: (text) async {
+          copied = text;
+        },
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -207,14 +216,18 @@ void main() {
 
       // Configure JournalDb to return the correct entities
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockJournalDb.journalEntityById(itemId1))
-          .thenAnswer((_) async => item1);
-      when(() => mockJournalDb.journalEntityById(itemId2))
-          .thenAnswer((_) async => item2);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(itemId1),
+      ).thenAnswer((_) async => item1);
+      when(
+        () => mockJournalDb.journalEntityById(itemId2),
+      ).thenAnswer((_) async => item2);
 
       String? sharedText;
       String? sharedSubject;
@@ -261,8 +274,9 @@ void main() {
       ShareService.instance = oldShare;
     });
 
-    testWidgets('shows "No items to export" when checklist has no items',
-        (tester) async {
+    testWidgets('shows "No items to export" when checklist has no items', (
+      tester,
+    ) async {
       const checklistId = 'empty-1';
       const taskId = 't-empty';
 
@@ -283,10 +297,12 @@ void main() {
 
       // Configure JournalDb to return the checklist
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
 
       await tester.pumpWidget(
         ProviderScope(
@@ -335,10 +351,12 @@ void main() {
 
       // Configure JournalDb to return the checklist
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
 
       var called = false;
       final oldShare = ShareService.instance;
@@ -412,12 +430,15 @@ void main() {
 
       // Configure JournalDb to return the correct entities
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockJournalDb.journalEntityById(itemId1))
-          .thenAnswer((_) async => item1);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(itemId1),
+      ).thenAnswer((_) async => item1);
 
       final oldShare = ShareService.instance;
       ShareService.instance = _FakeShareService(
@@ -492,16 +513,21 @@ void main() {
 
       // Configure JournalDb to return the correct entities
       reset(mockJournalDb);
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
-      when(() => mockJournalDb.journalEntityById(checklistId))
-          .thenAnswer((_) async => checklist);
-      when(() => mockJournalDb.journalEntityById(itemId1))
-          .thenAnswer((_) async => item1);
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockJournalDb.journalEntityById(checklistId),
+      ).thenAnswer((_) async => checklist);
+      when(
+        () => mockJournalDb.journalEntityById(itemId1),
+      ).thenAnswer((_) async => item1);
 
-      final throwingClipboard = AppClipboard(writePlainText: (text) async {
-        throw Exception('copy failed');
-      });
+      final throwingClipboard = AppClipboard(
+        writePlainText: (text) async {
+          throw Exception('copy failed');
+        },
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -557,8 +583,9 @@ void main() {
       expect(find.byType(ChecklistWidget), findsNothing);
     });
 
-    testWidgets('shows snackbar when correction capture event is emitted',
-        (tester) async {
+    testWidgets('shows snackbar when correction capture event is emitted', (
+      tester,
+    ) async {
       const checklistId = 'correction-1';
       const taskId = 't-correction';
       const itemId1 = 'c1';
@@ -620,7 +647,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set a pending correction to trigger snackbar
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: PendingCorrection(
               before: 'test flight',
               after: 'TestFlight',
@@ -637,8 +666,9 @@ void main() {
       expect(find.byType(SnackBar), findsOneWidget);
     });
 
-    testWidgets('cancel button in snackbar clears pending and hides snackbar',
-        (tester) async {
+    testWidgets('cancel button in snackbar clears pending and hides snackbar', (
+      tester,
+    ) async {
       const checklistId = 'correction-2';
       const taskId = 't-correction-2';
       const itemId1 = 'c2';
@@ -700,7 +730,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Set a pending correction to trigger snackbar
-      container.read(correctionCaptureProvider.notifier).setPending(
+      container
+          .read(correctionCaptureProvider.notifier)
+          .setPending(
             pending: PendingCorrection(
               before: 'test flight',
               after: 'TestFlight',

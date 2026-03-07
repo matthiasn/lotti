@@ -60,8 +60,9 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => const Stream<Set<String>>.empty());
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     getIt
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -89,8 +90,9 @@ void main() {
     await getIt.reset();
   });
 
-  testWidgets('TaskHeaderMetaCard renders date row and metadata items',
-      (tester) async {
+  testWidgets('TaskHeaderMetaCard renders date row and metadata items', (
+    tester,
+  ) async {
     final task = testTask;
 
     final overrides = <Override>[
@@ -116,8 +118,9 @@ void main() {
     expect(find.byType(TaskLanguageWrapper), findsOneWidget);
   });
 
-  testWidgets('TaskHeaderMetaCard keeps metadata visible on narrow layouts',
-      (tester) async {
+  testWidgets('TaskHeaderMetaCard keeps metadata visible on narrow layouts', (
+    tester,
+  ) async {
     final task = testTask;
 
     final overrides = <Override>[

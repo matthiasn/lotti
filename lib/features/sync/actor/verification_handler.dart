@@ -6,7 +6,7 @@ typedef VerificationStateSink = void Function(Map<String, Object?> event);
 
 class _VerificationState {
   _VerificationState(this.direction, this.verification)
-      : previousOnUpdate = verification.onUpdate;
+    : previousOnUpdate = verification.onUpdate;
 
   final String direction;
   final KeyVerification verification;
@@ -172,7 +172,8 @@ class VerificationHandler {
     final currentCanceled = verification.canceled;
     final emojiKey = _computeEmojiKey(verification);
 
-    final changed = forceEmit ||
+    final changed =
+        forceEmit ||
         state.lastStep != currentStep ||
         state.lastDone != currentDone ||
         state.lastCanceled != currentCanceled ||

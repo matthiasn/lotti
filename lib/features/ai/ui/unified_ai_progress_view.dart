@@ -106,8 +106,9 @@ class _UnifiedAiProgressContentState
 
       if (activeInference != null) {
         // Subscribe to the progress stream
-        _progressSubscription =
-            activeInference.progressStream.listen((progress) {
+        _progressSubscription = activeInference.progressStream.listen((
+          progress,
+        ) {
           if (mounted) {
             setState(() {
               _streamProgress = progress;
@@ -285,8 +286,9 @@ class _UnifiedAiProgressContentState
           if (inferenceError.message.isNotEmpty) {
             // The message format is expected to be: 'Model "modelName" is not installed. Please install it first.'
             // A case-insensitive regex is used for robustness.
-            final modelNameMatch =
-                _modelNotInstalledRegex.firstMatch(inferenceError.message);
+            final modelNameMatch = _modelNotInstalledRegex.firstMatch(
+              inferenceError.message,
+            );
 
             // Only proceed if we could successfully extract the model name.
             final modelNameToInstall = modelNameMatch?.group(1);
@@ -364,8 +366,9 @@ class _UnifiedAiProgressContentState
         String? extractedPrompt;
         if (isPromptGeneration && state.isNotEmpty) {
           // Reuse static regex from GeneratedPromptCard to avoid duplication
-          final match =
-              GeneratedPromptCard.promptSectionRegex.firstMatch(state);
+          final match = GeneratedPromptCard.promptSectionRegex.firstMatch(
+            state,
+          );
           extractedPrompt = match?.group(1)?.trim() ?? state;
         }
 
@@ -498,25 +501,32 @@ class OllamaModelInstallDialogState
 
     try {
       // Get the provider configuration to find the Ollama base URL
-      final providers = await ref.read(aiConfigByTypeControllerProvider(
-              configType: AiConfigType.inferenceProvider)
-          .future);
+      final providers = await ref.read(
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.inferenceProvider,
+        ).future,
+      );
       final ollamaProvider = providers
           .whereType<AiConfigInferenceProvider>()
-          .where((AiConfigInferenceProvider p) =>
-              p.inferenceProviderType == InferenceProviderType.ollama)
+          .where(
+            (AiConfigInferenceProvider p) =>
+                p.inferenceProviderType == InferenceProviderType.ollama,
+          )
           .firstOrNull;
 
       if (ollamaProvider == null) {
         throw Exception(
-            'Ollama provider not found. Please configure Ollama in settings.');
+          'Ollama provider not found. Please configure Ollama in settings.',
+        );
       }
 
       final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
 
       // Start the installation stream
-      await for (final progress
-          in cloudRepo.installModel(widget.modelName, ollamaProvider.baseUrl)) {
+      await for (final progress in cloudRepo.installModel(
+        widget.modelName,
+        ollamaProvider.baseUrl,
+      )) {
         setState(() {
           _status = progress.status;
           _progress = progress.progress;
@@ -529,8 +539,9 @@ class OllamaModelInstallDialogState
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Model "${widget.modelName}" installed successfully!'),
+            content: Text(
+              'Model "${widget.modelName}" installed successfully!',
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -579,8 +590,10 @@ class OllamaModelInstallDialogState
           if (!_isInstalling) ...[
             const Text('To install it, run this command in your terminal:'),
             const SizedBox(height: 8),
-            SelectableText(command,
-                style: const TextStyle(fontFamily: 'monospace')),
+            SelectableText(
+              command,
+              style: const TextStyle(fontFamily: 'monospace'),
+            ),
             const SizedBox(height: 16),
             const Text('Would you like to install it now from Lotti?'),
           ] else ...[

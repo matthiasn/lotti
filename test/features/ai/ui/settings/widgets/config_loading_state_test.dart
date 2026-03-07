@@ -12,8 +12,9 @@ void main() {
       );
     }
 
-    testWidgets('displays circular progress indicator',
-        (WidgetTester tester) async {
+    testWidgets('displays circular progress indicator', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
@@ -25,8 +26,9 @@ void main() {
       expect(find.byType(Center), findsOneWidget);
     });
 
-    testWidgets('loading indicator is contained properly',
-        (WidgetTester tester) async {
+    testWidgets('loading indicator is contained properly', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(createWidget());
 
       // The ConfigLoadingState itself contains a Center widget

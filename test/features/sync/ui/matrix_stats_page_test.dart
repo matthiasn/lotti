@@ -47,16 +47,20 @@ void main() {
     mockMatrixService = MockMatrixService();
     matrixStatsController = StreamController<MatrixStats>.broadcast();
 
-    when(() => mockMatrixService.messageCountsController)
-        .thenReturn(matrixStatsController);
+    when(
+      () => mockMatrixService.messageCountsController,
+    ).thenReturn(matrixStatsController);
     when(() => mockMatrixService.messageCounts).thenReturn(<String, int>{});
     when(() => mockMatrixService.sentCount).thenReturn(0);
-    when(() => mockMatrixService.getDiagnosticInfo())
-        .thenAnswer((_) async => <String, dynamic>{});
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => '');
-    when(() => mockMatrixService.getSyncMetrics())
-        .thenAnswer((_) async => null);
+    when(
+      () => mockMatrixService.getDiagnosticInfo(),
+    ).thenAnswer((_) async => <String, dynamic>{});
+    when(
+      () => mockMatrixService.getSyncDiagnosticsText(),
+    ).thenAnswer((_) async => '');
+    when(
+      () => mockMatrixService.getSyncMetrics(),
+    ).thenAnswer((_) async => null);
   });
 
   tearDown(() async {
@@ -77,8 +81,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -92,8 +97,9 @@ void main() {
     expect(find.text('2'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats shows V2 metrics and supports refresh',
-      (tester) async {
+  testWidgets('IncomingStats shows V2 metrics and supports refresh', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 1,
       messageCounts: {'m.text': 1},
@@ -122,8 +128,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -154,8 +161,9 @@ void main() {
     expect(find.textContaining('Last updated:'), findsOneWidget);
   });
 
-  testWidgets('Retry Now button triggers MatrixService.retryV2Now',
-      (tester) async {
+  testWidgets('Retry Now button triggers MatrixService.retryV2Now', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 0,
       messageCounts: {},
@@ -173,8 +181,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -185,67 +194,78 @@ void main() {
     verify(() => mockMatrixService.retryNow()).called(1);
   });
 
-  testWidgets('V2 metrics signature gating keeps lastUpdated on identical map',
-      (tester) async {
-    const stats = MatrixStats(
-      sentCount: 0,
-      messageCounts: {},
-    );
-
-    var map = {'processed': 2, 'failures': 0, 'retriesScheduled': 0};
-    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
-    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getSyncMetrics())
-        .thenAnswer((_) async => SyncMetrics.fromMap(map));
-
-    final initialNow = DateTime(2024, 1, 1, 12);
-    var fakeNow = initialNow;
-
-    await withClock(Clock(() => fakeNow), () async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const IncomingStats(),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixStatsControllerProvider
-                .overrideWith(() => _FakeMatrixStatsController(stats)),
-          ],
-        ),
+  testWidgets(
+    'V2 metrics signature gating keeps lastUpdated on identical map',
+    (tester) async {
+      const stats = MatrixStats(
+        sentCount: 0,
+        messageCounts: {},
       );
-      await tester.pumpAndSettle();
 
-      // Grab initial "Last updated" text
-      final lastUpdatedFinder = find.textContaining('Last updated').first;
-      final initialText = tester.widget<Text>(lastUpdatedFinder).data ??
-          tester.widget<Text>(lastUpdatedFinder).toStringShort();
+      var map = {'processed': 2, 'failures': 0, 'retriesScheduled': 0};
+      when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+      when(
+        () => mockMatrixService.messageCounts,
+      ).thenReturn(stats.messageCounts);
+      when(
+        () => mockMatrixService.getSyncMetrics(),
+      ).thenAnswer((_) async => SyncMetrics.fromMap(map));
 
-      // Trigger refresh with identical map; time should not change.
-      await tester.tap(find.byIcon(Icons.refresh_rounded).first);
-      await tester.pump();
-      await tester.pumpAndSettle();
+      final initialNow = DateTime(2024, 1, 1, 12);
+      var fakeNow = initialNow;
 
-      final afterSameText = tester.widget<Text>(lastUpdatedFinder).data ??
-          tester.widget<Text>(lastUpdatedFinder).toStringShort();
-      expect(afterSameText, initialText);
+      await withClock(Clock(() => fakeNow), () async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const IncomingStats(),
+            overrides: [
+              matrixServiceProvider.overrideWithValue(mockMatrixService),
+              matrixStatsControllerProvider.overrideWith(
+                () => _FakeMatrixStatsController(stats),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Change map and trigger refresh; time should update
-      map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
-      when(() => mockMatrixService.getSyncMetrics())
-          .thenAnswer((_) async => SyncMetrics.fromMap(map));
-      fakeNow = fakeNow.add(const Duration(seconds: 5));
+        // Grab initial "Last updated" text
+        final lastUpdatedFinder = find.textContaining('Last updated').first;
+        final initialText =
+            tester.widget<Text>(lastUpdatedFinder).data ??
+            tester.widget<Text>(lastUpdatedFinder).toStringShort();
 
-      await tester.tap(find.byIcon(Icons.refresh_rounded).first);
-      await tester.pump();
-      await tester.pumpAndSettle();
+        // Trigger refresh with identical map; time should not change.
+        await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+        await tester.pump();
+        await tester.pumpAndSettle();
 
-      final afterChangeText = tester.widget<Text>(lastUpdatedFinder).data ??
-          tester.widget<Text>(lastUpdatedFinder).toStringShort();
-      expect(afterChangeText, isNot(equals(initialText)));
-    });
-  });
+        final afterSameText =
+            tester.widget<Text>(lastUpdatedFinder).data ??
+            tester.widget<Text>(lastUpdatedFinder).toStringShort();
+        expect(afterSameText, initialText);
 
-  testWidgets('refresh button invalidates provider and updates metrics',
-      (tester) async {
+        // Change map and trigger refresh; time should update
+        map = {'processed': 3, 'failures': 0, 'retriesScheduled': 0};
+        when(
+          () => mockMatrixService.getSyncMetrics(),
+        ).thenAnswer((_) async => SyncMetrics.fromMap(map));
+        fakeNow = fakeNow.add(const Duration(seconds: 5));
+
+        await tester.tap(find.byIcon(Icons.refresh_rounded).first);
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final afterChangeText =
+            tester.widget<Text>(lastUpdatedFinder).data ??
+            tester.widget<Text>(lastUpdatedFinder).toStringShort();
+        expect(afterChangeText, isNot(equals(initialText)));
+      });
+    },
+  );
+
+  testWidgets('refresh button invalidates provider and updates metrics', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 0,
       messageCounts: {},
@@ -274,8 +294,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -290,8 +311,9 @@ void main() {
     expect(refreshCount, 2);
   });
 
-  testWidgets('renders stable section when V2 metrics are null',
-      (tester) async {
+  testWidgets('renders stable section when V2 metrics are null', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 0,
       messageCounts: {},
@@ -299,16 +321,18 @@ void main() {
 
     when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
     when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getSyncMetrics())
-        .thenAnswer((_) async => null);
+    when(
+      () => mockMatrixService.getSyncMetrics(),
+    ).thenAnswer((_) async => null);
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -318,8 +342,9 @@ void main() {
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats renders stable shell while loading',
-      (tester) async {
+  testWidgets('IncomingStats renders stable shell while loading', (
+    tester,
+  ) async {
     final completer = Completer<MatrixStats>();
 
     await tester.pumpWidget(
@@ -342,15 +367,17 @@ void main() {
     );
   });
 
-  testWidgets('IncomingStats builds even when controller throws',
-      (tester) async {
+  testWidgets('IncomingStats builds even when controller throws', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(_ThrowingMatrixStatsController.new),
+          matrixStatsControllerProvider.overrideWith(
+            _ThrowingMatrixStatsController.new,
+          ),
         ],
       ),
     );
@@ -359,8 +386,9 @@ void main() {
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
   });
 
-  testWidgets('IncomingStats shows DB-apply metrics and legend tooltip',
-      (tester) async {
+  testWidgets('IncomingStats shows DB-apply metrics and legend tooltip', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 1,
       messageCounts: {'m.text': 1},
@@ -390,8 +418,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -428,8 +457,9 @@ void main() {
         ),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -445,8 +475,9 @@ void main() {
     expect(pageIndexNotifier.value, 1);
   });
 
-  testWidgets('Force Rescan button triggers rescan and refresh',
-      (tester) async {
+  testWidgets('Force Rescan button triggers rescan and refresh', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 1,
       messageCounts: {'m.text': 1},
@@ -474,8 +505,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -515,8 +547,9 @@ void main() {
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
@@ -531,8 +564,9 @@ void main() {
     expect(lastUpdatedMatch, findsOneWidget);
   });
 
-  testWidgets('Copy Diagnostics button calls service and shows snackbar',
-      (tester) async {
+  testWidgets('Copy Diagnostics button calls service and shows snackbar', (
+    tester,
+  ) async {
     const stats = MatrixStats(
       sentCount: 1,
       messageCounts: {'m.text': 1},
@@ -553,30 +587,35 @@ void main() {
         'circuitOpens': 0,
       }),
     );
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'processed=1');
+    when(
+      () => mockMatrixService.getSyncDiagnosticsText(),
+    ).thenAnswer((_) async => 'processed=1');
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const IncomingStats(),
         overrides: [
           matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
+          matrixStatsControllerProvider.overrideWith(
+            () => _FakeMatrixStatsController(stats),
+          ),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
     expect(
-        find.byKey(const Key('matrixStats.copyDiagnostics')), findsOneWidget);
+      find.byKey(const Key('matrixStats.copyDiagnostics')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     // Called at least once by the diagnostics section plus this button.
-    verify(() => mockMatrixService.getSyncDiagnosticsText())
-        .called(greaterThan(0));
+    verify(
+      () => mockMatrixService.getSyncDiagnosticsText(),
+    ).called(greaterThan(0));
   });
 
   testWidgets('preserves scroll offset via PageStorageKey', (tester) async {
@@ -609,8 +648,9 @@ void main() {
       longMap['processed.type$i'] = i;
       longMap['droppedByType.type$i'] = i;
     }
-    when(() => mockMatrixService.getSyncMetrics())
-        .thenAnswer((_) async => SyncMetrics.fromMap(longMap));
+    when(
+      () => mockMatrixService.getSyncMetrics(),
+    ).thenAnswer((_) async => SyncMetrics.fromMap(longMap));
 
     final bucket = PageStorageBucket();
 
@@ -623,8 +663,9 @@ void main() {
           ),
           overrides: [
             matrixServiceProvider.overrideWithValue(mockMatrixService),
-            matrixStatsControllerProvider
-                .overrideWith(() => _FakeMatrixStatsController(stats)),
+            matrixStatsControllerProvider.overrideWith(
+              () => _FakeMatrixStatsController(stats),
+            ),
           ],
         ),
       );
@@ -656,60 +697,68 @@ void main() {
     expect(offsetAfter, closeTo(offsetBefore, 1.0));
   });
 
-  testWidgets('Tooltips contain expected messages and snackbar duration holds',
-      (tester) async {
-    const stats = MatrixStats(
-      sentCount: 1,
-      messageCounts: {'m.text': 1},
-    );
+  testWidgets(
+    'Tooltips contain expected messages and snackbar duration holds',
+    (tester) async {
+      const stats = MatrixStats(
+        sentCount: 1,
+        messageCounts: {'m.text': 1},
+      );
 
-    when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
-    when(() => mockMatrixService.messageCounts).thenReturn(stats.messageCounts);
-    when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
-      (_) async => SyncMetrics.fromMap({
-        'processed': 1,
-        'skipped': 0,
-        'failures': 0,
-        'prefetch': 0,
-        'flushes': 1,
-        'catchupBatches': 0,
-        'skippedByRetryLimit': 0,
-        'retriesScheduled': 0,
-        'circuitOpens': 0,
-      }),
-    );
-    when(() => mockMatrixService.getSyncDiagnosticsText())
-        .thenAnswer((_) async => 'ok');
+      when(() => mockMatrixService.sentCount).thenReturn(stats.sentCount);
+      when(
+        () => mockMatrixService.messageCounts,
+      ).thenReturn(stats.messageCounts);
+      when(() => mockMatrixService.getSyncMetrics()).thenAnswer(
+        (_) async => SyncMetrics.fromMap({
+          'processed': 1,
+          'skipped': 0,
+          'failures': 0,
+          'prefetch': 0,
+          'flushes': 1,
+          'catchupBatches': 0,
+          'skippedByRetryLimit': 0,
+          'retriesScheduled': 0,
+          'circuitOpens': 0,
+        }),
+      );
+      when(
+        () => mockMatrixService.getSyncDiagnosticsText(),
+      ).thenAnswer((_) async => 'ok');
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        const IncomingStats(),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-          matrixStatsControllerProvider
-              .overrideWith(() => _FakeMatrixStatsController(stats)),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const IncomingStats(),
+          overrides: [
+            matrixServiceProvider.overrideWithValue(mockMatrixService),
+            matrixStatsControllerProvider.overrideWith(
+              () => _FakeMatrixStatsController(stats),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
 
-    final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
-    expect(
-      tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
-      isTrue,
-    );
-    expect(
-      tooltips.any((t) => t.message == 'Force rescan and catch-up now'),
-      isTrue,
-    );
-    expect(
-      tooltips.any((t) => t.message == 'Copy sync diagnostics to clipboard'),
-      isTrue,
-    );
+      final tooltips = tester
+          .widgetList<Tooltip>(find.byType(Tooltip))
+          .toList();
+      expect(
+        tooltips.any((t) => t.message?.startsWith('Legend:') ?? false),
+        isTrue,
+      );
+      expect(
+        tooltips.any((t) => t.message == 'Force rescan and catch-up now'),
+        isTrue,
+      );
+      expect(
+        tooltips.any((t) => t.message == 'Copy sync diagnostics to clipboard'),
+        isTrue,
+      );
 
-    // Trigger copy diagnostics without asserting snackbar visibility
-    await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-  });
+      // Trigger copy diagnostics without asserting snackbar visibility
+      await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    },
+  );
 }

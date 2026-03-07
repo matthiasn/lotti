@@ -66,9 +66,9 @@ class GeminiSetupPromptService extends _$GeminiSetupPromptService {
       AiConfigType.inferenceProvider,
     );
 
-    return providers
-        .whereType<AiConfigInferenceProvider>()
-        .any((p) => p.inferenceProviderType == InferenceProviderType.gemini);
+    return providers.whereType<AiConfigInferenceProvider>().any(
+      (p) => p.inferenceProviderType == InferenceProviderType.gemini,
+    );
   }
 
   /// Checks if the prompt was previously dismissed.

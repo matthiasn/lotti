@@ -36,15 +36,15 @@ final class GeminiSetupPromptServiceProvider
   /// 3. Waits for What's New modal to be dismissed first
   /// 4. Determines whether to show the setup prompt
   GeminiSetupPromptServiceProvider._()
-      : super(
-          from: null,
-          argument: null,
-          retry: null,
-          name: r'geminiSetupPromptServiceProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'geminiSetupPromptServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
 
   @override
   String debugGetCreateSourceHash() => _$geminiSetupPromptServiceHash();
@@ -71,11 +71,14 @@ abstract class _$GeminiSetupPromptService extends $AsyncNotifier<bool> {
   @override
   void runBuild() {
     final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<bool>, bool>,
-        AsyncValue<bool>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(ref, build);
   }
 }

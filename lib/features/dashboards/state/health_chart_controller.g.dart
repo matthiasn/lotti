@@ -12,23 +12,20 @@ part of 'health_chart_controller.dart';
 @ProviderFor(HealthChartDataController)
 final healthChartDataControllerProvider = HealthChartDataControllerFamily._();
 
-final class HealthChartDataControllerProvider extends $AsyncNotifierProvider<
-    HealthChartDataController, List<JournalEntity>> {
-  HealthChartDataControllerProvider._(
-      {required HealthChartDataControllerFamily super.from,
-      required ({
-        String healthDataType,
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'healthChartDataControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class HealthChartDataControllerProvider
+    extends
+        $AsyncNotifierProvider<HealthChartDataController, List<JournalEntity>> {
+  HealthChartDataControllerProvider._({
+    required HealthChartDataControllerFamily super.from,
+    required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'healthChartDataControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$healthChartDataControllerHash();
@@ -62,34 +59,33 @@ String _$healthChartDataControllerHash() =>
 final class HealthChartDataControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            HealthChartDataController,
-            AsyncValue<List<JournalEntity>>,
-            List<JournalEntity>,
-            FutureOr<List<JournalEntity>>,
-            ({
-              String healthDataType,
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          HealthChartDataController,
+          AsyncValue<List<JournalEntity>>,
+          List<JournalEntity>,
+          FutureOr<List<JournalEntity>>,
+          ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+        > {
   HealthChartDataControllerFamily._()
-      : super(
-          retry: null,
-          name: r'healthChartDataControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'healthChartDataControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   HealthChartDataControllerProvider call({
     required String healthDataType,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      HealthChartDataControllerProvider._(argument: (
-        healthDataType: healthDataType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => HealthChartDataControllerProvider._(
+    argument: (
+      healthDataType: healthDataType,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'healthChartDataControllerProvider';
@@ -97,11 +93,9 @@ final class HealthChartDataControllerFamily extends $Family
 
 abstract class _$HealthChartDataController
     extends $AsyncNotifier<List<JournalEntity>> {
-  late final _$args = ref.$arg as ({
-    String healthDataType,
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args =
+      ref.$arg
+          as ({String healthDataType, DateTime rangeStart, DateTime rangeEnd});
   String get healthDataType => _$args.healthDataType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -116,18 +110,22 @@ abstract class _$HealthChartDataController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<JournalEntity>>, List<JournalEntity>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
-        AsyncValue<List<JournalEntity>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<JournalEntity>>, List<JournalEntity>>,
+              AsyncValue<List<JournalEntity>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              healthDataType: _$args.healthDataType,
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(
+        healthDataType: _$args.healthDataType,
+        rangeStart: _$args.rangeStart,
+        rangeEnd: _$args.rangeEnd,
+      ),
+    );
   }
 }
 
@@ -135,23 +133,23 @@ abstract class _$HealthChartDataController
 final healthObservationsControllerProvider =
     HealthObservationsControllerFamily._();
 
-final class HealthObservationsControllerProvider extends $AsyncNotifierProvider<
-    HealthObservationsController, List<Observation>> {
-  HealthObservationsControllerProvider._(
-      {required HealthObservationsControllerFamily super.from,
-      required ({
-        String healthDataType,
-        DateTime rangeStart,
-        DateTime rangeEnd,
-      })
-          super.argument})
-      : super(
-          retry: null,
-          name: r'healthObservationsControllerProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+final class HealthObservationsControllerProvider
+    extends
+        $AsyncNotifierProvider<
+          HealthObservationsController,
+          List<Observation>
+        > {
+  HealthObservationsControllerProvider._({
+    required HealthObservationsControllerFamily super.from,
+    required ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+    super.argument,
+  }) : super(
+         retry: null,
+         name: r'healthObservationsControllerProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$healthObservationsControllerHash();
@@ -185,34 +183,33 @@ String _$healthObservationsControllerHash() =>
 final class HealthObservationsControllerFamily extends $Family
     with
         $ClassFamilyOverride<
-            HealthObservationsController,
-            AsyncValue<List<Observation>>,
-            List<Observation>,
-            FutureOr<List<Observation>>,
-            ({
-              String healthDataType,
-              DateTime rangeStart,
-              DateTime rangeEnd,
-            })> {
+          HealthObservationsController,
+          AsyncValue<List<Observation>>,
+          List<Observation>,
+          FutureOr<List<Observation>>,
+          ({String healthDataType, DateTime rangeStart, DateTime rangeEnd})
+        > {
   HealthObservationsControllerFamily._()
-      : super(
-          retry: null,
-          name: r'healthObservationsControllerProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'healthObservationsControllerProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   HealthObservationsControllerProvider call({
     required String healthDataType,
     required DateTime rangeStart,
     required DateTime rangeEnd,
-  }) =>
-      HealthObservationsControllerProvider._(argument: (
-        healthDataType: healthDataType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ), from: this);
+  }) => HealthObservationsControllerProvider._(
+    argument: (
+      healthDataType: healthDataType,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+    from: this,
+  );
 
   @override
   String toString() => r'healthObservationsControllerProvider';
@@ -220,11 +217,9 @@ final class HealthObservationsControllerFamily extends $Family
 
 abstract class _$HealthObservationsController
     extends $AsyncNotifier<List<Observation>> {
-  late final _$args = ref.$arg as ({
-    String healthDataType,
-    DateTime rangeStart,
-    DateTime rangeEnd,
-  });
+  late final _$args =
+      ref.$arg
+          as ({String healthDataType, DateTime rangeStart, DateTime rangeEnd});
   String get healthDataType => _$args.healthDataType;
   DateTime get rangeStart => _$args.rangeStart;
   DateTime get rangeEnd => _$args.rangeEnd;
@@ -239,17 +234,21 @@ abstract class _$HealthObservationsController
   void runBuild() {
     final ref =
         this.ref as $Ref<AsyncValue<List<Observation>>, List<Observation>>;
-    final element = ref.element as $ClassProviderElement<
-        AnyNotifier<AsyncValue<List<Observation>>, List<Observation>>,
-        AsyncValue<List<Observation>>,
-        Object?,
-        Object?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<List<Observation>>, List<Observation>>,
+              AsyncValue<List<Observation>>,
+              Object?,
+              Object?
+            >;
     element.handleCreate(
-        ref,
-        () => build(
-              healthDataType: _$args.healthDataType,
-              rangeStart: _$args.rangeStart,
-              rangeEnd: _$args.rangeEnd,
-            ));
+      ref,
+      () => build(
+        healthDataType: _$args.healthDataType,
+        rangeStart: _$args.rangeStart,
+        rangeEnd: _$args.rangeEnd,
+      ),
+    );
   }
 }

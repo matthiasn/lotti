@@ -157,17 +157,19 @@ void main() {
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
-    when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-        .thenAnswer((_) async => false);
+    when(
+      () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+    ).thenAnswer((_) async => false);
 
     // Default mock for getLinkedEntities - returns empty so fallback to getLinkedToEntities
-    when(() =>
-            mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')))
-        .thenAnswer((_) async => <JournalEntity>[]);
+    when(
+      () => mockJournalRepo.getLinkedEntities(linkedTo: any(named: 'linkedTo')),
+    ).thenAnswer((_) async => <JournalEntity>[]);
 
     // Set up default behavior for prompt capability filter to pass through all prompts
-    when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-        .thenAnswer((invocation) async {
+    when(
+      () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+    ).thenAnswer((invocation) async {
       final prompts = invocation.positionalArguments[0] as List<AiConfigPrompt>;
       return prompts;
     });
@@ -176,17 +178,20 @@ void main() {
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
         aiInputRepositoryProvider.overrideWithValue(mockAiInputRepo),
-        cloudInferenceRepositoryProvider
-            .overrideWithValue(mockCloudInferenceRepo),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          mockCloudInferenceRepo,
+        ),
         journalDbProvider.overrideWithValue(mockJournalDb),
         journalRepositoryProvider.overrideWithValue(mockJournalRepo),
         checklistRepositoryProvider.overrideWithValue(mockChecklistRepo),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepo),
-        promptCapabilityFilterProvider
-            .overrideWithValue(mockPromptCapabilityFilter),
+        promptCapabilityFilterProvider.overrideWithValue(
+          mockPromptCapabilityFilter,
+        ),
         labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
-        checklistCompletionServiceProvider
-            .overrideWith(() => testChecklistCompletionService),
+        checklistCompletionServiceProvider.overrideWith(
+          () => testChecklistCompletionService,
+        ),
       ],
     );
 
@@ -268,30 +273,37 @@ void main() {
         inferenceProviderType: InferenceProviderType.openAi,
       );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"task":"details"}');
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+      ).thenAnswer((_) async => '{"task":"details"}');
 
       // Shadow flag
-      when(() => mockJournalDb.getConfigFlag('ai_label_assignment_shadow'))
-          .thenAnswer((_) async => false);
+      when(
+        () => mockJournalDb.getConfigFlag('ai_label_assignment_shadow'),
+      ).thenAnswer((_) async => false);
 
       // Stream a single assign_task_labels tool call for X and Y
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'tool-1',
-                functionName: 'assign_task_labels',
-                arguments: '{"labelIds":["X","Y"]}',
-              )
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'tool-1',
+                  functionName: 'assign_task_labels',
+                  arguments: '{"labelIds":["X","Y"]}',
+                ),
+              ]),
+            )
             ..close();
 
       when(
@@ -316,10 +328,12 @@ void main() {
       );
 
       // Assert: no persistence because both candidates suppressed
-      verifyNever(() => mockLabelsRepository.addLabels(
-            journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
-          ));
+      verifyNever(
+        () => mockLabelsRepository.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      );
     });
 
     test('processToolCalls updates checklist items', () async {
@@ -364,102 +378,109 @@ void main() {
       verify(() => mockJournalDb.entriesForIds(['item-1', 'item-2'])).called(1);
     });
     group('tool injection logging and gating', () {
-      test('stream checklistUpdates logs OpenAI tools without multi-item',
-          () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'stream checklistUpdates logs OpenAI tools without multi-item',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'checklist-updates',
-          name: 'Checklist Updates',
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
+          final promptConfig = _createPrompt(
+            id: 'checklist-updates',
+            name: 'Checklist Updates',
+            aiResponseType: AiResponseType.checklistUpdates,
+          );
 
-        final model = AiConfigModel(
-          id: 'model-1',
-          name: 'gpt-4',
-          providerModelId: 'gpt-4',
-          inferenceProviderId: 'provider-1',
-          createdAt: DateTime.now(),
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: true,
-          supportsFunctionCalling: true,
-        );
+          final model = AiConfigModel(
+            id: 'model-1',
+            name: 'gpt-4',
+            providerModelId: 'gpt-4',
+            inferenceProviderId: 'provider-1',
+            createdAt: DateTime.now(),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+          );
 
-        final provider = AiConfigInferenceProvider(
-          id: 'provider-1',
-          name: 'OpenAI',
-          baseUrl: 'https://api.example.com',
-          apiKey: 'test-api-key',
-          createdAt: DateTime.now(),
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
+          final provider = AiConfigInferenceProvider(
+            id: 'provider-1',
+            name: 'OpenAI',
+            baseUrl: 'https://api.example.com',
+            apiKey: 'test-api-key',
+            createdAt: DateTime.now(),
+            inferenceProviderType: InferenceProviderType.openAi,
+          );
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"task": "Test Task"}');
 
-        const mockStream = Stream<CreateChatCompletionStreamResponse>.empty();
+          const mockStream = Stream<CreateChatCompletionStreamResponse>.empty();
 
-        List<ChatCompletionTool>? capturedTools;
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-            tools: captureAny(named: 'tools'),
-          ),
-        ).thenAnswer((invocation) {
-          capturedTools =
-              invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
-          return mockStream;
-        });
+          List<ChatCompletionTool>? capturedTools;
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+              tools: captureAny(named: 'tools'),
+            ),
+          ).thenAnswer((invocation) {
+            capturedTools =
+                invocation.namedArguments[#tools] as List<ChatCompletionTool>?;
+            return mockStream;
+          });
 
-        DevLogger.clear();
+          DevLogger.clear();
 
-        await repository!.runInference(
-          entityId: 'test-id',
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify tools passed include multi-item (array-only)
-        final names =
-            (capturedTools ?? []).map((t) => t.function.name).toList();
-        expect(names, contains('add_multiple_checklist_items'));
-        expect(names, contains('suggest_checklist_completion'));
+          // Verify tools passed include multi-item (array-only)
+          final names = (capturedTools ?? [])
+              .map((t) => t.function.name)
+              .toList();
+          expect(names, contains('add_multiple_checklist_items'));
+          expect(names, contains('suggest_checklist_completion'));
 
-        // Verify log line includes provider/model and tool list
-        final logged = DevLogger.capturedLogs.join('\n');
-        expect(logged, contains('[UnifiedAiInferenceRepository]'));
-        expect(logged, contains('Checklist tools:'));
-        expect(logged, contains('provider=InferenceProviderType.openAi'));
-        expect(logged, contains('model=gpt-4'));
-        expect(logged, contains('add_multiple_checklist_items'));
-      });
+          // Verify log line includes provider/model and tool list
+          final logged = DevLogger.capturedLogs.join('\n');
+          expect(logged, contains('[UnifiedAiInferenceRepository]'));
+          expect(logged, contains('Checklist tools:'));
+          expect(logged, contains('provider=InferenceProviderType.openAi'));
+          expect(logged, contains('model=gpt-4'));
+          expect(logged, contains('add_multiple_checklist_items'));
+        },
+      );
 
       test('legacy task path logs tool list without multi-item', () async {
         final taskEntity = Task(
@@ -506,14 +527,18 @@ void main() {
           inferenceProviderType: InferenceProviderType.openAi,
         );
 
-        when(() => mockAiInputRepo.getEntity('legacy-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-2'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-2'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'legacy-id'))
-            .thenAnswer((_) async => '{"task": "Legacy"}');
+        when(
+          () => mockAiInputRepo.getEntity('legacy-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-2'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-2'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'legacy-id'),
+        ).thenAnswer((_) async => '{"task": "Legacy"}');
 
         const mockStream = Stream<CreateChatCompletionStreamResponse>.empty();
         when(
@@ -540,7 +565,9 @@ void main() {
 
         final logged = DevLogger.capturedLogs.join('\n');
         expect(
-            logged, contains('Including checklist completion and task tools'));
+          logged,
+          contains('Including checklist completion and task tools'),
+        );
         expect(logged, contains('add_multiple_checklist_items'));
       });
 
@@ -588,14 +615,18 @@ void main() {
           inferenceProviderType: InferenceProviderType.openAi,
         );
 
-        when(() => mockAiInputRepo.getEntity('conv-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-3'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-3'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'conv-id'))
-            .thenAnswer((_) async => '{"task": "Conv"}');
+        when(
+          () => mockAiInputRepo.getEntity('conv-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-3'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-3'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'conv-id'),
+        ).thenAnswer((_) async => '{"task": "Conv"}');
 
         // Cloud repo still required for wrapper; but result won't be used since we'll fail early
         when(
@@ -610,7 +641,8 @@ void main() {
             tools: any(named: 'tools'),
           ),
         ).thenAnswer(
-            (_) => const Stream<CreateChatCompletionStreamResponse>.empty());
+          (_) => const Stream<CreateChatCompletionStreamResponse>.empty(),
+        );
 
         DevLogger.clear();
 
@@ -657,8 +689,9 @@ void main() {
           aiResponseType: AiResponseType.imageAnalysis,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt, imagePrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt, imagePrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -692,8 +725,9 @@ void main() {
           aiResponseType: AiResponseType.imageAnalysis,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt, imagePrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt, imagePrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: imageEntity,
@@ -728,8 +762,9 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [audioPrompt, taskPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [audioPrompt, taskPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: audioEntity,
@@ -761,8 +796,9 @@ void main() {
           requiredInputData: [InputDataType.task, InputDataType.tasksList],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [multiInputPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [multiInputPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -794,8 +830,9 @@ void main() {
           requiredInputData: [InputDataType.task, InputDataType.images],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [mismatchedPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [mismatchedPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -833,8 +870,9 @@ void main() {
           archived: true,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [activePrompt, archivedPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [activePrompt, archivedPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -874,8 +912,9 @@ void main() {
           aiResponseType: AiResponseType.imagePromptGeneration,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt, imagePromptGenPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt, imagePromptGenPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -918,8 +957,9 @@ void main() {
           aiResponseType: AiResponseType.promptGeneration,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt, promptGenPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt, promptGenPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -943,8 +983,9 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: journalEntry,
@@ -953,142 +994,158 @@ void main() {
         expect(result.isEmpty, true);
       });
 
-      test('returns task context prompts only when image is linked to task',
-          () async {
-        final imageEntity = JournalImage(
-          meta: _createMetadata(),
-          data: ImageData(
-            capturedAt: DateTime.now(),
-            imageId: 'test-image',
-            imageFile: 'test.jpg',
-            imageDirectory: '/images/',
-          ),
-        );
-
-        final taskEntity = Task(
-          meta: _createMetadata().copyWith(id: 'task-id'),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'returns task context prompts only when image is linked to task',
+        () async {
+          final imageEntity = JournalImage(
+            meta: _createMetadata(),
+            data: ImageData(
+              capturedAt: DateTime.now(),
+              imageId: 'test-image',
+              imageFile: 'test.jpg',
+              imageDirectory: '/images/',
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final imagePrompt = _createPrompt(
-          id: 'image-prompt',
-          name: 'Image Analysis',
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
-
-        final imageTaskPrompt = _createPrompt(
-          id: 'image-task-prompt',
-          name: 'Image Analysis with Task Context',
-          requiredInputData: [InputDataType.images, InputDataType.task],
-          aiResponseType: AiResponseType.imageAnalysis,
-        );
-
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [imagePrompt, imageTaskPrompt]);
-
-        // Test with linked task
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => [taskEntity]);
-
-        final resultWithTask = await repository!.getActivePromptsForContext(
-          entity: imageEntity,
-        );
-
-        expect(resultWithTask.length, 2);
-        expect(resultWithTask.map((p) => p.id).toSet(),
-            {'image-prompt', 'image-task-prompt'});
-
-        // Test without linked task
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
-
-        final resultWithoutTask = await repository!.getActivePromptsForContext(
-          entity: imageEntity,
-        );
-
-        expect(resultWithoutTask.length, 1);
-        expect(resultWithoutTask.first.id, 'image-prompt');
-      });
-
-      test('returns task context prompts only when audio is linked to task',
-          () async {
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioFile: 'test.mp3',
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-          ),
-        );
-
-        final taskEntity = Task(
-          meta: _createMetadata().copyWith(id: 'task-id'),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+          final taskEntity = Task(
+            meta: _createMetadata().copyWith(id: 'task-id'),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final audioPrompt = _createPrompt(
-          id: 'audio-prompt',
-          name: 'Audio Transcription',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final imagePrompt = _createPrompt(
+            id: 'image-prompt',
+            name: 'Image Analysis',
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        final audioTaskPrompt = _createPrompt(
-          id: 'audio-task-prompt',
-          name: 'Audio Transcription with Task Context',
-          requiredInputData: [InputDataType.audioFiles, InputDataType.task],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final imageTaskPrompt = _createPrompt(
+            id: 'image-task-prompt',
+            name: 'Image Analysis with Task Context',
+            requiredInputData: [InputDataType.images, InputDataType.task],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [audioPrompt, audioTaskPrompt]);
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [imagePrompt, imageTaskPrompt]);
 
-        // Test with linked task
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => [taskEntity]);
+          // Test with linked task
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => [taskEntity]);
 
-        final resultWithTask = await repository!.getActivePromptsForContext(
-          entity: audioEntity,
-        );
+          final resultWithTask = await repository!.getActivePromptsForContext(
+            entity: imageEntity,
+          );
 
-        expect(resultWithTask.length, 2);
-        expect(resultWithTask.map((p) => p.id).toSet(),
-            {'audio-prompt', 'audio-task-prompt'});
+          expect(resultWithTask.length, 2);
+          expect(resultWithTask.map((p) => p.id).toSet(), {
+            'image-prompt',
+            'image-task-prompt',
+          });
 
-        // Test without linked task
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
+          // Test without linked task
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
 
-        final resultWithoutTask = await repository!.getActivePromptsForContext(
-          entity: audioEntity,
-        );
+          final resultWithoutTask = await repository!
+              .getActivePromptsForContext(
+                entity: imageEntity,
+              );
 
-        expect(resultWithoutTask.length, 1);
-        expect(resultWithoutTask.first.id, 'audio-prompt');
-      });
+          expect(resultWithoutTask.length, 1);
+          expect(resultWithoutTask.first.id, 'image-prompt');
+        },
+      );
+
+      test(
+        'returns task context prompts only when audio is linked to task',
+        () async {
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
+
+          final taskEntity = Task(
+            meta: _createMetadata().copyWith(id: 'task-id'),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+          );
+
+          final audioPrompt = _createPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          final audioTaskPrompt = _createPrompt(
+            id: 'audio-task-prompt',
+            name: 'Audio Transcription with Task Context',
+            requiredInputData: [InputDataType.audioFiles, InputDataType.task],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [audioPrompt, audioTaskPrompt]);
+
+          // Test with linked task
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => [taskEntity]);
+
+          final resultWithTask = await repository!.getActivePromptsForContext(
+            entity: audioEntity,
+          );
+
+          expect(resultWithTask.length, 2);
+          expect(resultWithTask.map((p) => p.id).toSet(), {
+            'audio-prompt',
+            'audio-task-prompt',
+          });
+
+          // Test without linked task
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
+
+          final resultWithoutTask = await repository!
+              .getActivePromptsForContext(
+                entity: audioEntity,
+              );
+
+          expect(resultWithoutTask.length, 1);
+          expect(resultWithoutTask.first.id, 'audio-prompt');
+        },
+      );
 
       test('filters prompts based on category allowedPromptIds', () async {
         const categoryId = 'category-1';
@@ -1130,10 +1187,12 @@ void main() {
           allowedPromptIds: ['allowed-prompt'], // Only allow one prompt
         );
 
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
+        when(
+          () => mockCategoryRepo.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -1143,140 +1202,153 @@ void main() {
         expect(result.first.id, 'allowed-prompt');
       });
 
-      test('returns no prompts when category has null allowedPromptIds',
-          () async {
-        const categoryId = 'category-1';
-        final taskEntity = Task(
-          meta: _createMetadata(categoryId: categoryId),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'returns no prompts when category has null allowedPromptIds',
+        () async {
+          const categoryId = 'category-1';
+          final taskEntity = Task(
+            meta: _createMetadata(categoryId: categoryId),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final taskPrompt = _createPrompt(
-          id: 'task-prompt',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final taskPrompt = _createPrompt(
+            id: 'task-prompt',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final category = CategoryDefinition(
-          id: categoryId,
-          name: 'Test Category',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-          active: true,
-          // allowedPromptIds: null, // No prompts allowed (default)
-        );
+          final category = CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+            // allowedPromptIds: null, // No prompts allowed (default)
+          );
 
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt]);
+          when(
+            () => mockCategoryRepo.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [taskPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
-          entity: taskEntity,
-        );
+          final result = await repository!.getActivePromptsForContext(
+            entity: taskEntity,
+          );
 
-        expect(result.isEmpty, true);
-      });
+          expect(result.isEmpty, true);
+        },
+      );
 
-      test('returns no prompts when category has empty allowedPromptIds',
-          () async {
-        const categoryId = 'category-1';
-        final taskEntity = Task(
-          meta: _createMetadata(categoryId: categoryId),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'returns no prompts when category has empty allowedPromptIds',
+        () async {
+          const categoryId = 'category-1';
+          final taskEntity = Task(
+            meta: _createMetadata(categoryId: categoryId),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final taskPrompt = _createPrompt(
-          id: 'task-prompt',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final taskPrompt = _createPrompt(
+            id: 'task-prompt',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final category = CategoryDefinition(
-          id: categoryId,
-          name: 'Test Category',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: null,
-          private: false,
-          active: true,
-          allowedPromptIds: [], // Empty list - no prompts allowed
-        );
+          final category = CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+            allowedPromptIds: [], // Empty list - no prompts allowed
+          );
 
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt]);
+          when(
+            () => mockCategoryRepo.getCategoryById(categoryId),
+          ).thenAnswer((_) async => category);
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [taskPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
-          entity: taskEntity,
-        );
+          final result = await repository!.getActivePromptsForContext(
+            entity: taskEntity,
+          );
 
-        expect(result.isEmpty, true);
-      });
+          expect(result.isEmpty, true);
+        },
+      );
 
-      test('returns all matching prompts when entity has no category',
-          () async {
-        final taskEntity = Task(
-          meta: _createMetadata(), // No categoryId
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+      test(
+        'returns all matching prompts when entity has no category',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(), // No categoryId
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final taskPrompt1 = _createPrompt(
-          id: 'task-prompt-1',
-          name: 'Task Summary 1',
-          requiredInputData: [InputDataType.task],
-        );
+          final taskPrompt1 = _createPrompt(
+            id: 'task-prompt-1',
+            name: 'Task Summary 1',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final taskPrompt2 = _createPrompt(
-          id: 'task-prompt-2',
-          name: 'Task Summary 2',
-          requiredInputData: [InputDataType.task],
-        );
+          final taskPrompt2 = _createPrompt(
+            id: 'task-prompt-2',
+            name: 'Task Summary 2',
+            requiredInputData: [InputDataType.task],
+          );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt1, taskPrompt2]);
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [taskPrompt1, taskPrompt2]);
 
-        final result = await repository!.getActivePromptsForContext(
-          entity: taskEntity,
-        );
+          final result = await repository!.getActivePromptsForContext(
+            entity: taskEntity,
+          );
 
-        expect(result.length, 2);
-        expect(result.map((p) => p.id).toSet(),
-            {'task-prompt-1', 'task-prompt-2'});
-      });
+          expect(result.length, 2);
+          expect(result.map((p) => p.id).toSet(), {
+            'task-prompt-1',
+            'task-prompt-2',
+          });
+        },
+      );
 
       test('returns all prompts when category not found', () async {
         const categoryId = 'category-1';
@@ -1302,10 +1374,12 @@ void main() {
         );
 
         // Category not found - returns null
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => null);
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt]);
+        when(
+          () => mockCategoryRepo.getCategoryById(categoryId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -1356,10 +1430,12 @@ void main() {
           allowedPromptIds: ['allowed-prompt'], // Only one prompt allowed
         );
 
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => category);
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
+        when(
+          () => mockCategoryRepo.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [allowedPrompt, notAllowedPrompt]);
 
         final result = await repository!.getActivePromptsForContext(
           entity: taskEntity,
@@ -1399,12 +1475,14 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [cloudPrompt, localPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [cloudPrompt, localPrompt]);
 
         // Mock platform filter to simulate mobile filtering
-        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .thenAnswer((invocation) async {
+        when(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).thenAnswer((invocation) async {
           final prompts =
               invocation.positionalArguments[0] as List<AiConfigPrompt>;
           // Simulate mobile: filter out local-prompt
@@ -1419,8 +1497,9 @@ void main() {
         expect(result.first.id, 'cloud-prompt');
 
         // Verify filter was called
-        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .called(1);
+        verify(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).called(1);
       });
 
       test('returns all prompts on desktop (no filtering)', () async {
@@ -1451,12 +1530,14 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [cloudPrompt, localPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [cloudPrompt, localPrompt]);
 
         // Mock platform filter to simulate desktop (no filtering)
-        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .thenAnswer((invocation) async {
+        when(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).thenAnswer((invocation) async {
           final prompts =
               invocation.positionalArguments[0] as List<AiConfigPrompt>;
           return prompts; // Desktop: return all
@@ -1467,12 +1548,15 @@ void main() {
         );
 
         expect(result.length, 2);
-        expect(
-            result.map((p) => p.id).toSet(), {'cloud-prompt', 'local-prompt'});
+        expect(result.map((p) => p.id).toSet(), {
+          'cloud-prompt',
+          'local-prompt',
+        });
 
         // Verify filter was called
-        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .called(1);
+        verify(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).called(1);
       });
 
       test('combines category and platform filtering correctly', () async {
@@ -1510,26 +1594,28 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer(
-                (_) async => [cloudPrompt, localPrompt, notAllowedPrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [cloudPrompt, localPrompt, notAllowedPrompt]);
 
         // Mock category to only allow cloud and local prompts
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => CategoryDefinition(
-                  id: categoryId,
-                  name: 'Test Category',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  vectorClock: null,
-                  private: false,
-                  active: true,
-                  allowedPromptIds: ['cloud-prompt', 'local-prompt'],
-                ));
+        when(() => mockCategoryRepo.getCategoryById(categoryId)).thenAnswer(
+          (_) async => CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            vectorClock: null,
+            private: false,
+            active: true,
+            allowedPromptIds: ['cloud-prompt', 'local-prompt'],
+          ),
+        );
 
         // Mock platform filter to simulate mobile (filters out local)
-        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .thenAnswer((invocation) async {
+        when(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).thenAnswer((invocation) async {
           final prompts =
               invocation.positionalArguments[0] as List<AiConfigPrompt>;
           return prompts.where((p) => p.id == 'cloud-prompt').toList();
@@ -1545,63 +1631,67 @@ void main() {
       });
 
       test(
-          'returns empty when all category-allowed prompts are local-only on mobile',
-          () async {
-        const categoryId = 'category-1';
-        final taskEntity = Task(
-          meta: _createMetadata(categoryId: categoryId),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+        'returns empty when all category-allowed prompts are local-only on mobile',
+        () async {
+          const categoryId = 'category-1';
+          final taskEntity = Task(
+            meta: _createMetadata(categoryId: categoryId),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final localPrompt1 = _createPrompt(
-          id: 'local-prompt-1',
-          name: 'Local Prompt 1',
-          requiredInputData: [InputDataType.task],
-        );
+          final localPrompt1 = _createPrompt(
+            id: 'local-prompt-1',
+            name: 'Local Prompt 1',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final localPrompt2 = _createPrompt(
-          id: 'local-prompt-2',
-          name: 'Local Prompt 2',
-          requiredInputData: [InputDataType.task],
-        );
+          final localPrompt2 = _createPrompt(
+            id: 'local-prompt-2',
+            name: 'Local Prompt 2',
+            requiredInputData: [InputDataType.task],
+          );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [localPrompt1, localPrompt2]);
+          when(
+            () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+          ).thenAnswer((_) async => [localPrompt1, localPrompt2]);
 
-        // Mock category to allow both local prompts
-        when(() => mockCategoryRepo.getCategoryById(categoryId))
-            .thenAnswer((_) async => CategoryDefinition(
-                  id: categoryId,
-                  name: 'Test Category',
-                  createdAt: DateTime.now(),
-                  updatedAt: DateTime.now(),
-                  vectorClock: null,
-                  private: false,
-                  active: true,
-                  allowedPromptIds: ['local-prompt-1', 'local-prompt-2'],
-                ));
+          // Mock category to allow both local prompts
+          when(() => mockCategoryRepo.getCategoryById(categoryId)).thenAnswer(
+            (_) async => CategoryDefinition(
+              id: categoryId,
+              name: 'Test Category',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              vectorClock: null,
+              private: false,
+              active: true,
+              allowedPromptIds: ['local-prompt-1', 'local-prompt-2'],
+            ),
+          );
 
-        // Mock platform filter to simulate mobile (filters out all local)
-        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .thenAnswer((invocation) async => []);
+          // Mock platform filter to simulate mobile (filters out all local)
+          when(
+            () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+          ).thenAnswer((invocation) async => []);
 
-        final result = await repository!.getActivePromptsForContext(
-          entity: taskEntity,
-        );
+          final result = await repository!.getActivePromptsForContext(
+            entity: taskEntity,
+          );
 
-        // Should return empty - all allowed prompts filtered by platform
-        expect(result.isEmpty, true);
-      });
+          // Should return empty - all allowed prompts filtered by platform
+          expect(result.isEmpty, true);
+        },
+      );
 
       test('platform filter is called exactly once per invocation', () async {
         final taskEntity = Task(
@@ -1631,14 +1721,16 @@ void main() {
           requiredInputData: [InputDataType.task],
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [prompt1, prompt2]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [prompt1, prompt2]);
 
         await repository!.getActivePromptsForContext(entity: taskEntity);
 
         // Verify exactly one call to filter
-        verify(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .called(1);
+        verify(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).called(1);
       });
 
       test('handles platform filter with mixed prompt types', () async {
@@ -1670,12 +1762,14 @@ void main() {
           aiResponseType: AiResponseType.imageAnalysis,
         );
 
-        when(() => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt))
-            .thenAnswer((_) async => [taskPrompt, imagePrompt]);
+        when(
+          () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
+        ).thenAnswer((_) async => [taskPrompt, imagePrompt]);
 
         // Platform filter simulates filtering (returns only task-prompt)
-        when(() => mockPromptCapabilityFilter.filterPromptsByPlatform(any()))
-            .thenAnswer((invocation) async {
+        when(
+          () => mockPromptCapabilityFilter.filterPromptsByPlatform(any()),
+        ).thenAnswer((invocation) async {
           final prompts =
               invocation.positionalArguments[0] as List<AiConfigPrompt>;
           // After entity type filtering, only task-prompt should be passed
@@ -1768,14 +1862,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"task": "Test Task"}');
 
         // Mock cloud inference repository
         when(
@@ -1799,8 +1897,9 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',
@@ -1835,132 +1934,145 @@ void main() {
       });
 
       test(
-          'runInference emits single progress update when streaming flag is disabled',
-          () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime(2024, 1, 1),
-              utcOffset: 0,
+        'runInference emits single progress update when streaming flag is disabled',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 1, 1),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 1),
+              dateTo: DateTime(2024, 1, 1),
             ),
-            title: 'Test Task',
-            statusHistory: const [],
-            dateFrom: DateTime(2024, 1, 1),
-            dateTo: DateTime(2024, 1, 1),
-          ),
-        );
+          );
 
-        final model = AiConfigModel(
-          id: 'model-1',
-          name: 'Test Model',
-          providerModelId: 'gpt-4',
-          inferenceProviderId: 'provider-1',
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-          supportsFunctionCalling: false,
-        );
+          final model = AiConfigModel(
+            id: 'model-1',
+            name: 'Test Model',
+            providerModelId: 'gpt-4',
+            inferenceProviderId: 'provider-1',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+            supportsFunctionCalling: false,
+          );
 
-        final provider = AiConfigInferenceProvider(
-          id: 'provider-1',
-          name: 'Test Provider',
-          baseUrl: 'https://api.example.com',
-          apiKey: 'test-api-key',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
+          final provider = AiConfigInferenceProvider(
+            id: 'provider-1',
+            name: 'Test Provider',
+            baseUrl: 'https://api.example.com',
+            apiKey: 'test-api-key',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.openAi,
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Test Prompt',
-          defaultModelId: 'model-1',
-          requiredInputData: const [InputDataType.tasksList],
-          aiResponseType: AiResponseType.taskSummary,
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Test Prompt',
+            defaultModelId: 'model-1',
+            requiredInputData: const [InputDataType.tasksList],
+            aiResponseType: AiResponseType.taskSummary,
+          );
 
-        final progressUpdates = <String>[];
-        final statusChanges = <InferenceStatus>[];
+          final progressUpdates = <String>[];
+          final statusChanges = <InferenceStatus>[];
 
-        final mockStream =
-            Stream<CreateChatCompletionStreamResponse>.fromIterable([
-          CreateChatCompletionStreamResponse(
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-          CreateChatCompletionStreamResponse(
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: ' world'),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-          CreateChatCompletionStreamResponse(
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: '!'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+          final mockStream =
+              Stream<CreateChatCompletionStreamResponse>.fromIterable([
+                CreateChatCompletionStreamResponse(
+                  choices: [
+                    const ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta(
+                        content: 'Hello',
+                      ),
+                      index: 0,
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+                CreateChatCompletionStreamResponse(
+                  choices: [
+                    const ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta(
+                        content: ' world',
+                      ),
+                      index: 0,
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+                CreateChatCompletionStreamResponse(
+                  choices: [
+                    const ChatCompletionStreamResponseChoice(
+                      delta: ChatCompletionStreamResponseDelta(content: '!'),
+                      finishReason: ChatCompletionFinishReason.stop,
+                      index: 0,
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                ),
+              ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"task": "Test Task"}');
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-            .thenAnswer((_) async => false);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+          ).thenAnswer((_) async => false);
 
-        await repository!.runInference(
-          entityId: 'test-id',
-          promptConfig: promptConfig,
-          onProgress: progressUpdates.add,
-          onStatusChange: statusChanges.add,
-        );
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: progressUpdates.add,
+            onStatusChange: statusChanges.add,
+          );
 
-        expect(progressUpdates, ['Hello world!']);
-        expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
-      });
+          expect(progressUpdates, ['Hello world!']);
+          expect(statusChanges, [
+            InferenceStatus.running,
+            InferenceStatus.idle,
+          ]);
+        },
+      );
 
       test('successfully runs inference with images', () async {
         // Create a temporary directory for the test
@@ -2012,8 +2124,9 @@ void main() {
             id: 'response-1',
             choices: [
               const ChatCompletionStreamResponseChoice(
-                delta:
-                    ChatCompletionStreamResponseDelta(content: 'Image shows'),
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Image shows',
+                ),
                 index: 0,
               ),
             ],
@@ -2034,16 +2147,21 @@ void main() {
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => imageEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []); // No linked task
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"image": "test.jpg"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []); // No linked task
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"image": "test.jpg"}');
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
@@ -2066,11 +2184,13 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
-        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
 
         try {
           await repository!.runInference(
@@ -2156,8 +2276,9 @@ void main() {
             id: 'response-1',
             choices: [
               const ChatCompletionStreamResponseChoice(
-                delta:
-                    ChatCompletionStreamResponseDelta(content: 'Hello world'),
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Hello world',
+                ),
                 finishReason: ChatCompletionFinishReason.stop,
                 index: 0,
               ),
@@ -2167,14 +2288,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"audio": "test.mp3"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"audio": "test.mp3"}');
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
@@ -2198,12 +2323,14 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Mock getLinkedToEntities to return empty list (no linked tasks)
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
 
         try {
           await repository!.runInference(
@@ -2293,14 +2420,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"task": "Test Task"}');
 
         when(
           () => mockCloudInferenceRepo.generate(
@@ -2322,8 +2453,9 @@ void main() {
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',
@@ -2384,12 +2516,15 @@ void main() {
 
           final statusChanges = <InferenceStatus>[];
 
-          when(() => mockAiInputRepo.getEntity('test-id'))
-              .thenAnswer((_) async => taskEntity);
-          when(() => mockAiConfigRepo.getConfigById('model-1'))
-              .thenAnswer((_) async => model);
-          when(() => mockAiConfigRepo.getConfigById('provider-1'))
-              .thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => null);
 
           expect(
             () => repository!.runInference(
@@ -2444,14 +2579,18 @@ void main() {
 
           final statusChanges = <InferenceStatus>[];
 
-          when(() => mockAiInputRepo.getEntity('test-id'))
-              .thenAnswer((_) async => taskEntity);
-          when(() => mockAiConfigRepo.getConfigById('model-1'))
-              .thenAnswer((_) async => model);
-          when(() => mockAiConfigRepo.getConfigById('provider-1'))
-              .thenAnswer((_) async => provider);
-          when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-              .thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => null);
 
           when(
             () => mockCloudInferenceRepo.generate(
@@ -2544,14 +2683,18 @@ void main() {
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"task": "Test Task"}');
 
         when(
           () => mockCloudInferenceRepo.generate(
@@ -2573,8 +2716,9 @@ void main() {
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer((_) async => null);
-        when(() => mockJournalDb.getConfigFlag(enableAiStreamingFlag))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+        ).thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',
@@ -2612,10 +2756,12 @@ void main() {
 
           final statusChanges = <InferenceStatus>[];
 
-          when(() => mockAiInputRepo.getEntity('test-id'))
-              .thenAnswer((_) async => taskEntity);
-          when(() => mockAiConfigRepo.getConfigById('model-1'))
-              .thenThrow(Exception('Model not found'));
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenThrow(Exception('Model not found'));
 
           expect(
             () => repository!.runInference(
@@ -2644,8 +2790,9 @@ void main() {
 
           final statusChanges = <InferenceStatus>[];
 
-          when(() => mockAiInputRepo.getEntity('test-id'))
-              .thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => null);
 
           expect(
             () => repository!.runInference(
@@ -2708,7 +2855,8 @@ Some task summary content...''';
             choices: [
               const ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(
-                    content: responseWithTitle),
+                  content: responseWithTitle,
+                ),
                 finishReason: ChatCompletionFinishReason.stop,
                 index: 0,
               ),
@@ -2718,14 +2866,18 @@ Some task summary content...''';
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "TODO"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"task": "TODO"}');
 
         when(
           () => mockCloudInferenceRepo.generate(
@@ -2750,8 +2902,9 @@ Some task summary content...''';
         ).thenAnswer((_) async => null);
 
         // Mock the journal repository to throw an exception when updating the task
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenThrow(Exception('Database update failed'));
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenThrow(Exception('Database update failed'));
 
         final statusChanges = <InferenceStatus>[];
 
@@ -2770,198 +2923,208 @@ Some task summary content...''';
         verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       });
 
-      test('audio transcription updates both transcripts and entry text',
-          () async {
-        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+      test(
+        'audio transcription updates both transcripts and entry text',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync('audio_test');
 
-        // Update the mock directory to point to our temp directory
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+          // Update the mock directory to point to our temp directory
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioFile: 'test.mp3',
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-          ),
-        );
-
-        // Create the directory structure and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        final audioFile = File('${tempDir.path}/audio/test.mp3');
-        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
-        audioFile.writeAsBytesSync(mockAudioBytes);
-
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Audio Transcription',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'whisper-1',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        final progressUpdates = <String>[];
-        final statusChanges = <InferenceStatus>[];
-        const transcriptText = 'This is the transcribed audio content.';
-
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta:
-                    ChatCompletionStreamResponseDelta(content: transcriptText),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"audio": "test.mp3"}');
-
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
-
-        // Mock getLinkedToEntities to return empty list (no linked tasks)
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
-
-        try {
-          await repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: progressUpdates.add,
-            onStatusChange: statusChanges.add,
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
           );
 
-          expect(progressUpdates, [transcriptText]);
-          expect(
-            statusChanges,
-            [InferenceStatus.running, InferenceStatus.idle],
+          // Create the directory structure and file
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          final audioFile = File('${tempDir.path}/audio/test.mp3');
+          final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+          audioFile.writeAsBytesSync(mockAudioBytes);
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
           );
 
-          // Verify that updateJournalEntity was called with the correct data
-          final captured =
-              verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-                  .captured;
-          final updatedEntity = captured.first as JournalAudio;
-
-          // Verify that the transcript was added to the transcripts array
-          expect(updatedEntity.data.transcripts, isNotNull);
-          expect(updatedEntity.data.transcripts!.length, 1);
-          expect(
-            updatedEntity.data.transcripts!.first.transcript,
-            transcriptText.trim(),
-          );
-          expect(
-            updatedEntity.data.transcripts!.first.library,
-            'Test Provider',
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
           );
 
-          // Verify that the entry text was updated with the transcript
-          expect(updatedEntity.entryText, isNotNull);
-          expect(updatedEntity.entryText!.plainText, transcriptText.trim());
-          expect(updatedEntity.entryText!.markdown, transcriptText.trim());
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
 
-          verify(
+          final progressUpdates = <String>[];
+          final statusChanges = <InferenceStatus>[];
+          const transcriptText = 'This is the transcribed audio content.';
+
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: transcriptText,
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
+
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"audio": "test.mp3"}');
+
+          when(
             () => mockCloudInferenceRepo.generateWithAudio(
               provider: any(named: 'provider'),
               any(),
-              model: 'whisper-1',
+              model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
-              baseUrl: 'https://api.example.com',
-              apiKey: 'test-api-key',
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
               stream: any(named: 'stream'),
               audioFormat: any(named: 'audioFormat'),
             ),
-          ).called(1);
+          ).thenAnswer((_) => mockStream);
 
-          // updateJournalEntity verification is already done via the captured call above
-        } finally {
-          // Clean up the temporary directory
-          tempDir.deleteSync(recursive: true);
-        }
-      });
-
-      test('task summary extracts title and updates task when title is short',
-          () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
             ),
-            title: 'TODO', // Short title that should be replaced
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          ).thenAnswer((_) async => null);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4',
-        );
+          // Mock getLinkedToEntities to return empty list (no linked tasks)
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
 
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: progressUpdates.add,
+              onStatusChange: statusChanges.add,
+            );
 
-        const responseWithTitle = '''
+            expect(progressUpdates, [transcriptText]);
+            expect(
+              statusChanges,
+              [InferenceStatus.running, InferenceStatus.idle],
+            );
+
+            // Verify that updateJournalEntity was called with the correct data
+            final captured = verify(
+              () => mockJournalRepo.updateJournalEntity(captureAny()),
+            ).captured;
+            final updatedEntity = captured.first as JournalAudio;
+
+            // Verify that the transcript was added to the transcripts array
+            expect(updatedEntity.data.transcripts, isNotNull);
+            expect(updatedEntity.data.transcripts!.length, 1);
+            expect(
+              updatedEntity.data.transcripts!.first.transcript,
+              transcriptText.trim(),
+            );
+            expect(
+              updatedEntity.data.transcripts!.first.library,
+              'Test Provider',
+            );
+
+            // Verify that the entry text was updated with the transcript
+            expect(updatedEntity.entryText, isNotNull);
+            expect(updatedEntity.entryText!.plainText, transcriptText.trim());
+            expect(updatedEntity.entryText!.markdown, transcriptText.trim());
+
+            verify(
+              () => mockCloudInferenceRepo.generateWithAudio(
+                provider: any(named: 'provider'),
+                any(),
+                model: 'whisper-1',
+                audioBase64: any(named: 'audioBase64'),
+                baseUrl: 'https://api.example.com',
+                apiKey: 'test-api-key',
+                stream: any(named: 'stream'),
+                audioFormat: any(named: 'audioFormat'),
+              ),
+            ).called(1);
+
+            // updateJournalEntity verification is already done via the captured call above
+          } finally {
+            // Clean up the temporary directory
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
+
+      test(
+        'task summary extracts title and updates task when title is short',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'TODO', // Short title that should be replaced
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          const responseWithTitle = '''
 # Implement user authentication system
 
 Achieved results:
@@ -2973,172 +3136,188 @@ Remaining steps:
 2. Add session management
 3. Create user profile page''';
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                    content: responseWithTitle),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: responseWithTitle,
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "TODO"}');
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"task": "TODO"}');
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        await repository!.runInference(
-          entityId: 'test-id',
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify that updateJournalEntity was called with updated title
-        final captured =
-            verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-                .captured;
-        final updatedEntity = captured.first as Task;
+          // Verify that updateJournalEntity was called with updated title
+          final captured = verify(
+            () => mockJournalRepo.updateJournalEntity(captureAny()),
+          ).captured;
+          final updatedEntity = captured.first as Task;
 
-        expect(
-            updatedEntity.data.title, 'Implement user authentication system');
-      });
+          expect(
+            updatedEntity.data.title,
+            'Implement user authentication system',
+          );
+        },
+      );
 
       test(
-          'task summary does not update title when existing title is long enough',
-          () async {
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.inProgress(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
+        'task summary does not update title when existing title is long enough',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'This is an existing task with a good title',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
             ),
-            title: 'This is an existing task with a good title',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
+          );
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          requiredInputData: [InputDataType.task],
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4',
-        );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
 
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
 
-        const responseWithTitle = '''
+          const responseWithTitle = '''
 # Better task title from AI
 
 Achieved results:
 ✅ Task already has a good title''';
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                    content: responseWithTitle),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: responseWithTitle,
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"task": "Test Task"}');
 
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        await repository!.runInference(
-          entityId: 'test-id',
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
 
-        // Verify that updateJournalEntity was NOT called
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-      });
+          // Verify that updateJournalEntity was NOT called
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
 
       test('task summary handles response without title gracefully', () async {
         final taskEntity = Task(
@@ -3186,7 +3365,8 @@ Remaining steps:
             choices: [
               const ChatCompletionStreamResponseChoice(
                 delta: ChatCompletionStreamResponseDelta(
-                    content: responseWithoutTitle),
+                  content: responseWithoutTitle,
+                ),
                 finishReason: ChatCompletionFinishReason.stop,
                 index: 0,
               ),
@@ -3196,14 +3376,18 @@ Remaining steps:
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "TODO"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"task": "TODO"}');
 
         when(
           () => mockCloudInferenceRepo.generate(
@@ -3226,8 +3410,9 @@ Remaining steps:
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         await repository!.runInference(
           entityId: 'test-id',
@@ -3241,162 +3426,172 @@ Remaining steps:
       });
 
       test(
-          'audio transcription preserves existing transcripts when adding new one',
-          () async {
-        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        'audio transcription preserves existing transcripts when adding new one',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync('audio_test');
 
-        // Update the mock directory to point to our temp directory
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+          // Update the mock directory to point to our temp directory
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        final existingTranscript = AudioTranscript(
-          created: DateTime.now().subtract(const Duration(hours: 1)),
-          library: 'Previous Transcription',
-          model: 'old-model',
-          detectedLanguage: 'en',
-          transcript: 'Previous transcript content',
-          processingTime: const Duration(seconds: 5),
-        );
+          final existingTranscript = AudioTranscript(
+            created: DateTime.now().subtract(const Duration(hours: 1)),
+            library: 'Previous Transcription',
+            model: 'old-model',
+            detectedLanguage: 'en',
+            transcript: 'Previous transcript content',
+            processingTime: const Duration(seconds: 5),
+          );
 
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioFile: 'test.mp3',
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-            transcripts: [existingTranscript],
-          ),
-        );
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+              transcripts: [existingTranscript],
+            ),
+          );
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        final audioFile = File('${tempDir.path}/audio/test.mp3');
-        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
-        audioFile.writeAsBytesSync(mockAudioBytes);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          final audioFile = File('${tempDir.path}/audio/test.mp3');
+          final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+          audioFile.writeAsBytesSync(mockAudioBytes);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Audio Transcription',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'whisper-1',
-        );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          );
 
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
 
-        const newTranscriptText = 'This is the new AI transcription.';
+          const newTranscriptText = 'This is the new AI transcription.';
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: newTranscriptText,
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: newTranscriptText,
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
                 ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"audio": "test.mp3"}');
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"audio": "test.mp3"}');
 
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
+            ),
+          ).thenAnswer((_) => mockStream);
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        // Mock getLinkedToEntities to return empty list (no linked tasks)
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
+          // Mock getLinkedToEntities to return empty list (no linked tasks)
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
 
-        try {
-          await repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: (_) {},
-          );
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
 
-          // Verify that updateJournalEntity was called with the correct data
-          final captured =
-              verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-                  .captured;
-          final updatedEntity = captured.first as JournalAudio;
+            // Verify that updateJournalEntity was called with the correct data
+            final captured = verify(
+              () => mockJournalRepo.updateJournalEntity(captureAny()),
+            ).captured;
+            final updatedEntity = captured.first as JournalAudio;
 
-          // Verify that both transcripts are present (existing + new)
-          expect(updatedEntity.data.transcripts, isNotNull);
-          expect(updatedEntity.data.transcripts!.length, 2);
+            // Verify that both transcripts are present (existing + new)
+            expect(updatedEntity.data.transcripts, isNotNull);
+            expect(updatedEntity.data.transcripts!.length, 2);
 
-          // Check that the existing transcript is preserved
-          expect(
-            updatedEntity.data.transcripts!.first.transcript,
-            'Previous transcript content',
-          );
-          expect(
-            updatedEntity.data.transcripts!.first.library,
-            'Previous Transcription',
-          );
+            // Check that the existing transcript is preserved
+            expect(
+              updatedEntity.data.transcripts!.first.transcript,
+              'Previous transcript content',
+            );
+            expect(
+              updatedEntity.data.transcripts!.first.library,
+              'Previous Transcription',
+            );
 
-          // Check that the new transcript was added
-          expect(
-            updatedEntity.data.transcripts!.last.transcript,
-            newTranscriptText.trim(),
-          );
-          expect(
-            updatedEntity.data.transcripts!.last.library,
-            'Test Provider',
-          );
+            // Check that the new transcript was added
+            expect(
+              updatedEntity.data.transcripts!.last.transcript,
+              newTranscriptText.trim(),
+            );
+            expect(
+              updatedEntity.data.transcripts!.last.library,
+              'Test Provider',
+            );
 
-          // Verify that the entry text was updated with the new transcript
-          expect(updatedEntity.entryText, isNotNull);
-          expect(updatedEntity.entryText!.plainText, newTranscriptText.trim());
-          expect(updatedEntity.entryText!.markdown, newTranscriptText.trim());
-        } finally {
-          // Clean up the temporary directory
-          tempDir.deleteSync(recursive: true);
-        }
-      });
+            // Verify that the entry text was updated with the new transcript
+            expect(updatedEntity.entryText, isNotNull);
+            expect(
+              updatedEntity.entryText!.plainText,
+              newTranscriptText.trim(),
+            );
+            expect(updatedEntity.entryText!.markdown, newTranscriptText.trim());
+          } finally {
+            // Clean up the temporary directory
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
 
       test('image analysis appends to existing entry text', () async {
         final tempDir = Directory.systemTemp.createTempSync('image_test');
@@ -3463,16 +3658,21 @@ Remaining steps:
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => imageEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []); // No linked task
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"image": "test.jpg"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []); // No linked task
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"image": "test.jpg"}');
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
@@ -3495,8 +3695,9 @@ Remaining steps:
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         try {
           await repository!.runInference(
@@ -3507,9 +3708,9 @@ Remaining steps:
           );
 
           // Verify that updateJournalEntity was called with the correct data
-          final captured =
-              verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-                  .captured;
+          final captured = verify(
+            () => mockJournalRepo.updateJournalEntity(captureAny()),
+          ).captured;
           final updatedEntity = captured.first as JournalImage;
 
           // Verify that the entry text contains both the original text and the analysis
@@ -3602,16 +3803,21 @@ Remaining steps:
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => imageEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []); // No linked task
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"image": "test.jpg"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []); // No linked task
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"image": "test.jpg"}');
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
@@ -3634,8 +3840,9 @@ Remaining steps:
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         try {
           await repository!.runInference(
@@ -3646,9 +3853,9 @@ Remaining steps:
           );
 
           // Verify that updateJournalEntity was called with the correct data
-          final captured =
-              verify(() => mockJournalRepo.updateJournalEntity(captureAny()))
-                  .captured;
+          final captured = verify(
+            () => mockJournalRepo.updateJournalEntity(captureAny()),
+          ).captured;
           final updatedEntity = captured.first as JournalImage;
 
           // Verify that the entry text contains only the analysis (no existing text to append to)
@@ -3666,103 +3873,224 @@ Remaining steps:
     });
 
     group('AI response entry creation', () {
-      test('should not create AI response entry for JournalAudio entities',
-          () async {
-        // Set up test data
-        final promptConfig = _createPrompt(
-          id: 'audio-prompt',
-          name: 'Audio Transcription',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+      test(
+        'should not create AI response entry for JournalAudio entities',
+        () async {
+          // Set up test data
+          final promptConfig = _createPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'test-model',
-        );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'test-model',
+          );
 
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.openAi,
+          );
 
-        final tempDir = Directory.systemTemp.createTempSync('audio_test');
-        overrideTempDirs.add(tempDir);
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+          final tempDir = Directory.systemTemp.createTempSync('audio_test');
+          overrideTempDirs.add(tempDir);
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        // Create the audio directory and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        final audioFile = File('${tempDir.path}/audio/test.mp3');
-        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
-        audioFile.writeAsBytesSync(mockAudioBytes);
+          // Create the audio directory and file
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          final audioFile = File('${tempDir.path}/audio/test.mp3');
+          final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6]);
+          audioFile.writeAsBytesSync(mockAudioBytes);
 
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioFile: 'test.mp3',
-            audioDirectory: '/audio/',
-            duration: const Duration(seconds: 30),
-          ),
-        );
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
 
-        // Set up mocks
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"audio": "test.mp3"}');
+          // Set up mocks
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"audio": "test.mp3"}');
 
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                    content: 'Transcribed text'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Transcribed text',
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          // Mock getLinkedToEntities to return empty list (no linked tasks)
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
+
+          try {
+            // Run inference
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+
+            // Verify that createAiResponseEntry was NOT called for JournalAudio
+            verifyNever(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: any(named: 'linkedId'),
+                categoryId: any(named: 'categoryId'),
               ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
+            );
 
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+            // Verify that the journal entity was still updated with the transcript
+            verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          } finally {
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+      test(
+        'should create AI response entry for non-JournalAudio entities',
+        () async {
+          // Set up test data with a Task entity (non-JournalAudio)
+          final promptConfig = _createPrompt(
+            id: 'task-prompt',
+            name: 'Task Analysis',
+            requiredInputData: [InputDataType.task],
+          );
 
-        // Mock getLinkedToEntities to return empty list (no linked tasks)
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []);
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'test-model',
+          );
 
-        try {
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.openAi,
+          );
+
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime.now(),
+                utcOffset: 0,
+              ),
+              title: 'Test Task',
+              statusHistory: [],
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+          );
+
+          // Set up mocks
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+          ).thenAnswer((_) async => '{"task": "Test Task"}');
+
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'Task analysis result',
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              provider: any(named: 'provider'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
           // Run inference
           await repository!.runInference(
             entityId: 'test-id',
@@ -3771,125 +4099,20 @@ Remaining steps:
             onStatusChange: (_) {},
           );
 
-          // Verify that createAiResponseEntry was NOT called for JournalAudio
-          verifyNever(
+          // Verify that createAiResponseEntry WAS called for non-JournalAudio entity
+          verify(
             () => mockAiInputRepo.createAiResponseEntry(
               data: any(named: 'data'),
               start: any(named: 'start'),
-              linkedId: any(named: 'linkedId'),
+              linkedId: 'test-id',
               categoryId: any(named: 'categoryId'),
             ),
-          );
+          ).called(1);
 
-          // Verify that the journal entity was still updated with the transcript
-          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
-        } finally {
-          tempDir.deleteSync(recursive: true);
-        }
-      });
-
-      test('should create AI response entry for non-JournalAudio entities',
-          () async {
-        // Set up test data with a Task entity (non-JournalAudio)
-        final promptConfig = _createPrompt(
-          id: 'task-prompt',
-          name: 'Task Analysis',
-          requiredInputData: [InputDataType.task],
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'test-model',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.openAi,
-        );
-
-        final taskEntity = Task(
-          meta: _createMetadata(),
-          data: TaskData(
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
-            ),
-            title: 'Test Task',
-            statusHistory: [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-        );
-
-        // Set up mocks
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-            .thenAnswer((_) async => '{"task": "Test Task"}');
-
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                    content: 'Task analysis result'),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-        when(
-          () => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Run inference
-        await repository!.runInference(
-          entityId: 'test-id',
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
-
-        // Verify that createAiResponseEntry WAS called for non-JournalAudio entity
-        verify(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: 'test-id',
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).called(1);
-
-        // For taskSummary type, the journal entity is not updated directly
-        // Only specific response types like audioTranscription update the entity
-      });
+          // For taskSummary type, the journal entity is not updated directly
+          // Only specific response types like audioTranscription update the entity
+        },
+      );
 
       test('image analysis uses task context when linked to a task', () async {
         // Create a temporary directory for the test
@@ -3930,13 +4153,14 @@ Remaining steps:
         final mockImageBytes = Uint8List.fromList([1, 2, 3, 4]);
         imageFile.writeAsBytesSync(mockImageBytes);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Image Analysis',
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        ).copyWith(
-          userMessage: '''
+        final promptConfig =
+            _createPrompt(
+              id: 'prompt-1',
+              name: 'Image Analysis',
+              requiredInputData: [InputDataType.images],
+              aiResponseType: AiResponseType.imageAnalysis,
+            ).copyWith(
+              userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
 **Task Context:**
@@ -3955,7 +4179,7 @@ If the image IS relevant:
 - Extract key information that helps with the task
 - Be direct and concise
 - Focus on actionable insights or important details''',
-        );
+            );
 
         final model = _createModel(
           id: 'model-1',
@@ -3989,18 +4213,24 @@ If the image IS relevant:
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => imageEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => [taskEntity]);
-        when(() =>
-            mockAiInputRepo.buildTaskDetailsJson(
-                id: 'task-id')).thenAnswer((_) async =>
-            '{"title": "Database Migration Task", "status": "IN PROGRESS"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => [taskEntity]);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-id'),
+        ).thenAnswer(
+          (_) async =>
+              '{"title": "Database Migration Task", "status": "IN PROGRESS"}',
+        );
 
         when(
           () => mockCloudInferenceRepo.generateWithImages(
@@ -4023,8 +4253,9 @@ If the image IS relevant:
           ),
         ).thenAnswer((_) async => null);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Create repository after all mocks are set up
         final ref = container.read(testRefProvider);
@@ -4074,48 +4305,55 @@ If the image IS relevant:
 
           final updatedEntity = updateCaptured.first as JournalImage;
           expect(
-              updatedEntity.entryText?.markdown, isNot(contains('Disclaimer')));
+            updatedEntity.entryText?.markdown,
+            isNot(contains('Disclaimer')),
+          );
           expect(
-              updatedEntity.entryText?.markdown, contains('ducks by a lake'));
+            updatedEntity.entryText?.markdown,
+            contains('ducks by a lake'),
+          );
         } finally {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
         }
       });
 
-      test('image analysis uses generic prompt when not linked to a task',
-          () async {
-        // Create a temporary directory for the test
-        final tempDir =
-            Directory.systemTemp.createTempSync('image_generic_test');
-        overrideTempDirs.add(tempDir);
+      test(
+        'image analysis uses generic prompt when not linked to a task',
+        () async {
+          // Create a temporary directory for the test
+          final tempDir = Directory.systemTemp.createTempSync(
+            'image_generic_test',
+          );
+          overrideTempDirs.add(tempDir);
 
-        // Update the mock directory to point to our temp directory
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+          // Update the mock directory to point to our temp directory
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        final imageEntity = JournalImage(
-          meta: _createMetadata(),
-          data: ImageData(
-            capturedAt: DateTime.now(),
-            imageId: 'test-image',
-            imageFile: 'test.jpg',
-            imageDirectory: '/images/',
-          ),
-        );
+          final imageEntity = JournalImage(
+            meta: _createMetadata(),
+            data: ImageData(
+              capturedAt: DateTime.now(),
+              imageId: 'test-image',
+              imageFile: 'test.jpg',
+              imageDirectory: '/images/',
+            ),
+          );
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/images').createSync(recursive: true);
-        final imageFile = File('${tempDir.path}/images/test.jpg');
-        final mockImageBytes = Uint8List.fromList([1, 2, 3, 4]);
-        imageFile.writeAsBytesSync(mockImageBytes);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/images').createSync(recursive: true);
+          final imageFile = File('${tempDir.path}/images/test.jpg');
+          final mockImageBytes = Uint8List.fromList([1, 2, 3, 4]);
+          imageFile.writeAsBytesSync(mockImageBytes);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Image Analysis',
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-        ).copyWith(
-          userMessage: '''
+          final promptConfig =
+              _createPrompt(
+                id: 'prompt-1',
+                name: 'Image Analysis',
+                requiredInputData: [InputDataType.images],
+                aiResponseType: AiResponseType.imageAnalysis,
+              ).copyWith(
+                userMessage: '''
 Analyze the provided image(s) in the context of this task:
 
 **Task Context:**
@@ -4124,102 +4362,107 @@ Analyze the provided image(s) in the context of this task:
 ```
 
 Extract ONLY information from the image that is relevant to this task. Be concise and focus on task-related content.''',
-        );
+              );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4-vision',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'The image shows a cat sitting on a windowsill.',
-                ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => imageEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []); // No linked entities
-
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            images: any(named: 'images'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
-
-        try {
-          await repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: (_) {},
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
           );
 
-          // Verify the prompt was built without task context
-          final captured = verify(
-            () => mockCloudInferenceRepo.generateWithImages(
-              captureAny(),
-              provider: any(named: 'provider'),
-              model: 'gpt-4-vision',
-              temperature: 0.6,
-              images: any(named: 'images'),
-              baseUrl: 'https://api.example.com',
-              apiKey: 'test-api-key',
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'The image shows a cat sitting on a windowsill.',
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
             ),
-          ).captured;
+          ]);
 
-          final capturedPrompt = captured.first as String;
-          // When no task is linked, the prompt should keep the {{task}} placeholder
-          expect(capturedPrompt, contains('{{task}}'));
-          expect(capturedPrompt, contains('Task Context'));
-        } finally {
-          // Clean up the temporary directory
-          tempDir.deleteSync(recursive: true);
-        }
-      });
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => imageEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []); // No linked entities
 
-      test('audio transcription uses task context when linked to a task',
-          () async {
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              provider: any(named: 'provider'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+
+            // Verify the prompt was built without task context
+            final captured = verify(
+              () => mockCloudInferenceRepo.generateWithImages(
+                captureAny(),
+                provider: any(named: 'provider'),
+                model: 'gpt-4-vision',
+                temperature: 0.6,
+                images: any(named: 'images'),
+                baseUrl: 'https://api.example.com',
+                apiKey: 'test-api-key',
+              ),
+            ).captured;
+
+            final capturedPrompt = captured.first as String;
+            // When no task is linked, the prompt should keep the {{task}} placeholder
+            expect(capturedPrompt, contains('{{task}}'));
+            expect(capturedPrompt, contains('Task Context'));
+          } finally {
+            // Clean up the temporary directory
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
+
+      test('audio transcription uses task context when linked to a task', () async {
         // Create a temporary directory for the test
         final tempDir = Directory.systemTemp.createTempSync('audio_task_test');
         overrideTempDirs.add(tempDir);
@@ -4259,13 +4502,14 @@ Extract ONLY information from the image that is relevant to this task. Be concis
         final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4]);
         audioFile.writeAsBytesSync(mockAudioBytes);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Audio Transcription with Task Context',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        ).copyWith(
-          userMessage: '''
+        final promptConfig =
+            _createPrompt(
+              id: 'prompt-1',
+              name: 'Audio Transcription with Task Context',
+              requiredInputData: [InputDataType.audioFiles],
+              aiResponseType: AiResponseType.audioTranscription,
+            ).copyWith(
+              userMessage: '''
 Please transcribe the provided audio.
 Format the transcription clearly with proper punctuation and paragraph breaks where appropriate.
 If there are multiple speakers, try to indicate speaker changes.
@@ -4282,7 +4526,7 @@ The task context will provide additional information about the task, such as the
 goal, and any relevant details such as names of people or places. If in doubt
 about names or concepts mentioned in the audio, then the task context should
 be consulted to ensure accuracy.''',
-        );
+            );
 
         final model = _createModel(
           id: 'model-1',
@@ -4316,18 +4560,24 @@ be consulted to ensure accuracy.''',
           ),
         ]);
 
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => [taskEntity]);
-        when(() =>
-            mockAiInputRepo.buildTaskDetailsJson(
-                id: 'task-id')).thenAnswer((_) async =>
-            '{"title": "Interview with John Smith", "status": "IN PROGRESS"}');
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => [taskEntity]);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-id'),
+        ).thenAnswer(
+          (_) async =>
+              '{"title": "Interview with John Smith", "status": "IN PROGRESS"}',
+        );
 
         when(
           () => mockCloudInferenceRepo.generateWithAudio(
@@ -4342,8 +4592,9 @@ be consulted to ensure accuracy.''',
           ),
         ).thenAnswer((_) => mockStream);
 
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
 
         // Create repository after all mocks are set up
         final ref = container.read(testRefProvider);
@@ -4392,40 +4643,43 @@ be consulted to ensure accuracy.''',
         }
       });
 
-      test('audio transcription keeps placeholder when not linked to a task',
-          () async {
-        // Create a temporary directory for the test
-        final tempDir =
-            Directory.systemTemp.createTempSync('audio_no_task_test');
-        overrideTempDirs.add(tempDir);
+      test(
+        'audio transcription keeps placeholder when not linked to a task',
+        () async {
+          // Create a temporary directory for the test
+          final tempDir = Directory.systemTemp.createTempSync(
+            'audio_no_task_test',
+          );
+          overrideTempDirs.add(tempDir);
 
-        // Update the mock directory to point to our temp directory
-        when(() => mockDirectory.path).thenReturn(tempDir.path);
+          // Update the mock directory to point to our temp directory
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
 
-        final audioEntity = JournalAudio(
-          meta: _createMetadata(),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            audioDirectory: '/audio/',
-            audioFile: 'test.wav',
-            duration: const Duration(seconds: 30),
-          ),
-        );
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+              audioDirectory: '/audio/',
+              audioFile: 'test.wav',
+              duration: const Duration(seconds: 30),
+            ),
+          );
 
-        // Create the directory structure and file
-        Directory('${tempDir.path}/audio').createSync(recursive: true);
-        final audioFile = File('${tempDir.path}/audio/test.wav');
-        final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4]);
-        audioFile.writeAsBytesSync(mockAudioBytes);
+          // Create the directory structure and file
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          final audioFile = File('${tempDir.path}/audio/test.wav');
+          final mockAudioBytes = Uint8List.fromList([1, 2, 3, 4]);
+          audioFile.writeAsBytesSync(mockAudioBytes);
 
-        final promptConfig = _createPrompt(
-          id: 'prompt-1',
-          name: 'Audio Transcription with Task Context',
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-        ).copyWith(
-          userMessage: '''
+          final promptConfig =
+              _createPrompt(
+                id: 'prompt-1',
+                name: 'Audio Transcription with Task Context',
+                requiredInputData: [InputDataType.audioFiles],
+                aiResponseType: AiResponseType.audioTranscription,
+              ).copyWith(
+                userMessage: '''
 Please transcribe the provided audio.
 
 Take into account the following task context:
@@ -4434,92 +4688,98 @@ Take into account the following task context:
 ```json
 {{task}}
 ```''',
-        );
+              );
 
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'whisper-1',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        final mockStream = Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'This is the transcribed audio content.',
-                ),
-                finishReason: ChatCompletionFinishReason.stop,
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          ),
-        ]);
-
-        when(() => mockAiInputRepo.getEntity('test-id'))
-            .thenAnswer((_) async => audioEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'))
-            .thenAnswer((_) async => []); // No linked entities
-
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
-
-        try {
-          await repository!.runInference(
-            entityId: 'test-id',
-            promptConfig: promptConfig,
-            onProgress: (_) {},
-            onStatusChange: (_) {},
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
           );
 
-          // Verify the prompt was built without task context replacement
-          final captured = verify(
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          final mockStream = Stream.fromIterable([
+            CreateChatCompletionStreamResponse(
+              id: 'response-1',
+              choices: [
+                const ChatCompletionStreamResponseChoice(
+                  delta: ChatCompletionStreamResponseDelta(
+                    content: 'This is the transcribed audio content.',
+                  ),
+                  finishReason: ChatCompletionFinishReason.stop,
+                  index: 0,
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ]);
+
+          when(
+            () => mockAiInputRepo.getEntity('test-id'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []); // No linked entities
+
+          when(
             () => mockCloudInferenceRepo.generateWithAudio(
               provider: any(named: 'provider'),
-              captureAny(),
-              model: 'whisper-1',
+              any(),
+              model: any(named: 'model'),
               audioBase64: any(named: 'audioBase64'),
-              baseUrl: 'https://api.example.com',
-              apiKey: 'test-api-key',
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
               stream: any(named: 'stream'),
               audioFormat: any(named: 'audioFormat'),
             ),
-          ).captured;
+          ).thenAnswer((_) => mockStream);
 
-          final capturedPrompt = captured.first as String;
-          // When no task is linked, the prompt should keep the {{task}} placeholder
-          expect(capturedPrompt, contains('{{task}}'));
-          expect(capturedPrompt, contains('Task Context'));
-        } finally {
-          // Clean up the temporary directory
-          tempDir.deleteSync(recursive: true);
-        }
-      });
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+
+            // Verify the prompt was built without task context replacement
+            final captured = verify(
+              () => mockCloudInferenceRepo.generateWithAudio(
+                provider: any(named: 'provider'),
+                captureAny(),
+                model: 'whisper-1',
+                audioBase64: any(named: 'audioBase64'),
+                baseUrl: 'https://api.example.com',
+                apiKey: 'test-api-key',
+                stream: any(named: 'stream'),
+                audioFormat: any(named: 'audioFormat'),
+              ),
+            ).captured;
+
+            final capturedPrompt = captured.first as String;
+            // When no task is linked, the prompt should keep the {{task}} placeholder
+            expect(capturedPrompt, contains('{{task}}'));
+            expect(capturedPrompt, contains('Task Context'));
+          } finally {
+            // Clean up the temporary directory
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
     });
   });
 
@@ -4582,20 +4842,25 @@ Take into account the following task context:
 
     test('task summary uses current task state, not captured state', () async {
       // Setup: AI captures initial task state
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => initialTask);
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => initialTask);
 
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => taskSummaryPrompt);
+      when(
+        () => mockAiConfigRepo.getConfigById('summary-prompt'),
+      ).thenAnswer((_) async => taskSummaryPrompt);
 
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
 
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Old", "status": "IN PROGRESS"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+      ).thenAnswer((_) async => '{"title": "Old", "status": "IN PROGRESS"}');
 
       // Setup: During AI processing, user updates task
       var getEntityCallCount = 0;
@@ -4608,8 +4873,9 @@ Take into account the following task context:
         }
       });
 
-      when(() => mockJournalRepo.updateJournalEntity(any()))
-          .thenAnswer((_) async => true);
+      when(
+        () => mockJournalRepo.updateJournalEntity(any()),
+      ).thenAnswer((_) async => true);
 
       final mockStream = Stream.fromIterable([
         _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
@@ -4651,91 +4917,103 @@ Take into account the following task context:
       verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
     });
 
-    test('handles entity not found during post-processing gracefully',
-        () async {
-      // Setup: Initial task exists
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => initialTask);
+    test(
+      'handles entity not found during post-processing gracefully',
+      () async {
+        // Setup: Initial task exists
+        when(
+          () => mockAiInputRepo.getEntity('test-id'),
+        ).thenAnswer((_) async => initialTask);
 
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => taskSummaryPrompt);
+        when(
+          () => mockAiConfigRepo.getConfigById('summary-prompt'),
+        ).thenAnswer((_) async => taskSummaryPrompt);
 
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
 
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Old"}');
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+        ).thenAnswer((_) async => '{"title": "Old"}');
 
-      // Setup: Entity gets deleted during AI processing
-      var getEntityCallCount = 0;
-      when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
-        getEntityCallCount++;
-        if (getEntityCallCount == 1) {
-          return initialTask; // First call - initial capture
-        } else {
-          return null; // Second call - entity deleted
-        }
-      });
+        // Setup: Entity gets deleted during AI processing
+        var getEntityCallCount = 0;
+        when(() => mockAiInputRepo.getEntity('test-id')).thenAnswer((_) async {
+          getEntityCallCount++;
+          if (getEntityCallCount == 1) {
+            return initialTask; // First call - initial capture
+          } else {
+            return null; // Second call - entity deleted
+          }
+        });
 
-      final mockStream = Stream.fromIterable([
-        _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
-      ]);
+        final mockStream = Stream.fromIterable([
+          _createStreamChunk('# Better Task Title\n\nThis is a good summary.'),
+        ]);
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-        ),
-      ).thenAnswer((_) => mockStream);
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+          ),
+        ).thenAnswer((_) => mockStream);
 
-      when(
-        () => mockAiInputRepo.createAiResponseEntry(
-          data: any(named: 'data'),
-          start: any(named: 'start'),
-          linkedId: any(named: 'linkedId'),
-          categoryId: any(named: 'categoryId'),
-        ),
-      ).thenAnswer((_) async => null);
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
 
-      // Execute: Should not throw when entity is deleted
-      await repository!.runInference(
-        entityId: 'test-id',
-        promptConfig: taskSummaryPrompt,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        // Execute: Should not throw when entity is deleted
+        await repository!.runInference(
+          entityId: 'test-id',
+          promptConfig: taskSummaryPrompt,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify: Should attempt to get current entity but not crash
-      verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
+        // Verify: Should attempt to get current entity but not crash
+        verify(() => mockAiInputRepo.getEntity('test-id')).called(2);
 
-      // Verify: Should not attempt to update non-existent entity
-      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-    });
+        // Verify: Should not attempt to update non-existent entity
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      },
+    );
 
     test('handles getEntity error during post-processing gracefully', () async {
       // Setup: Initial task exists
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => initialTask);
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => initialTask);
 
-      when(() => mockAiConfigRepo.getConfigById('summary-prompt'))
-          .thenAnswer((_) async => taskSummaryPrompt);
+      when(
+        () => mockAiConfigRepo.getConfigById('summary-prompt'),
+      ).thenAnswer((_) async => taskSummaryPrompt);
 
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
 
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
 
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'))
-          .thenAnswer((_) async => '{"title": "Old"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: 'test-id'),
+      ).thenAnswer((_) async => '{"title": "Old"}');
 
       // Setup: Error occurs when getting current entity state
       var getEntityCallCount = 0;
@@ -4823,48 +5101,58 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.genericOpenAi,
       );
 
-      when(() => mockAiInputRepo.getEntity('test-id'))
-          .thenAnswer((_) async => task);
+      when(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).thenAnswer((_) async => task);
 
-      when(() => mockAiConfigRepo.getConfigById('test-prompt'))
-          .thenAnswer((_) async => prompt);
+      when(
+        () => mockAiConfigRepo.getConfigById('test-prompt'),
+      ).thenAnswer((_) async => prompt);
 
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
 
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
 
-      when(() => mockCloudInferenceRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            systemMessage: any(named: 'systemMessage'),
-            provider: any(named: 'provider'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          )).thenAnswer((_) => Stream.value(
-            CreateChatCompletionStreamResponse(
-              id: 'test-id',
-              created: DateTime.now().millisecondsSinceEpoch,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
+      when(
+        () => mockCloudInferenceRepo.generate(
+          any(),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          systemMessage: any(named: 'systemMessage'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+        ),
+      ).thenAnswer(
+        (_) => Stream.value(
+          CreateChatCompletionStreamResponse(
+            id: 'test-id',
+            created: DateTime.now().millisecondsSinceEpoch,
+            choices: [
+              const ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(
+                  content: 'Test response',
                 ),
-              ],
-            ),
-          ));
+              ),
+            ],
+          ),
+        ),
+      );
 
-      when(() => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          )).thenAnswer((_) async => null);
+      when(
+        () => mockAiInputRepo.createAiResponseEntry(
+          data: any(named: 'data'),
+          start: any(named: 'start'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => null);
 
       final ref = container.read(testRefProvider);
       final repository = UnifiedAiInferenceRepository(ref);
@@ -4880,524 +5168,568 @@ Take into account the following task context:
       // Assert - Verify that getEntity was called
       // It may be called twice: once in runInference and potentially once in _getCurrentEntityState
       // depending on the aiResponseType
-      verify(() => mockAiInputRepo.getEntity('test-id'))
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockAiInputRepo.getEntity('test-id'),
+      ).called(greaterThanOrEqualTo(1));
     });
 
-    test('image analysis handles entity not found during post-processing',
-        () async {
-      // Create temporary directory for the test
-      final tempDir = Directory.systemTemp.createTempSync('image_test');
-      overrideTempDirs.add(tempDir);
-
-      // Update the mock directory to point to our temp directory
-      when(() => mockDirectory.path).thenReturn(tempDir.path);
-
-      try {
-        // Create the directory structure
-        Directory('${tempDir.path}/images').createSync();
-
-        // Create the image file
-        File('${tempDir.path}/images/test-image.jpg')
-            .writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG header
-
-        const imageId = 'test-image-id';
-        final image = JournalImage(
-          meta: Metadata(
-            id: imageId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: ImageData(
-            capturedAt: DateTime.now(),
-            imageId: 'test-image-id',
-            imageFile: 'test-image.jpg',
-            imageDirectory: '/images/',
-          ),
-        );
-
-        final promptConfig = _createPrompt(
-          id: 'image-prompt',
-          name: 'Image Analysis',
-          aiResponseType: AiResponseType.imageAnalysis,
-          requiredInputData: [InputDataType.images],
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4-vision',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        // Setup: entity found first time, null second time (during post-processing)
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          return getEntityCallCount == 1 ? image : null;
-        });
-
-        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
-            .thenAnswer((_) async => promptConfig);
-
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
-            .thenAnswer((_) async => '{}');
-
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
-
-        final mockStream = Stream.fromIterable([
-          _createStreamChunk('This is an image of a sunset'),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            images: any(named: 'images'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Execute
-        await repository!.runInference(
-          entityId: imageId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
-
-        // Verify: updateJournalEntity should NOT be called since entity was not found
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-
-        // Verify: getEntity was called twice (initial + post-processing)
-        verify(() => mockAiInputRepo.getEntity(imageId)).called(2);
-      } finally {
-        // Clean up the temporary directory
-        tempDir.deleteSync(recursive: true);
-      }
-    });
-
-    test('audio transcription handles entity type change during processing',
-        () async {
-      // Create temporary directory for the test
-      final tempDir = Directory.systemTemp.createTempSync('audio_test');
-      overrideTempDirs.add(tempDir);
-
-      // Update the mock directory to point to our temp directory
-      when(() => mockDirectory.path).thenReturn(tempDir.path);
-
-      try {
-        // Create the directory structure
-        Directory('${tempDir.path}/audio').createSync();
-
-        // Create the audio file
-        File('${tempDir.path}/audio/test-audio.wav')
-            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
-
-        const audioId = 'test-audio-id';
-        final audio = JournalAudio(
-          meta: Metadata(
-            id: audioId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now().add(const Duration(minutes: 5)),
-            audioFile: 'test-audio.wav',
-            audioDirectory: '/audio/',
-            duration: const Duration(minutes: 5),
-          ),
-        );
-
-        // Create a different entity type with same ID
-        final journalEntry = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: audioId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          entryText: const EntryText(plainText: 'This is now a journal entry'),
-        );
-
-        final promptConfig = _createPrompt(
-          id: 'audio-prompt',
-          name: 'Audio Transcription',
-          aiResponseType: AiResponseType.audioTranscription,
-          requiredInputData: [InputDataType.audioFiles],
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'whisper-1',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        // Setup: audio found first time, journal entry second time (type change)
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          return getEntityCallCount == 1 ? audio : journalEntry;
-        });
-
-        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
-            .thenAnswer((_) async => promptConfig);
-
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
-            .thenAnswer((_) async => '{}');
-
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
-
-        final mockStream = Stream.fromIterable([
-          _createStreamChunk('This is the transcribed audio content'),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Execute
-        await repository!.runInference(
-          entityId: audioId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
-
-        // Verify: updateJournalEntity should NOT be called since entity type changed
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-
-        // Verify: getEntity was called twice (initial + post-processing)
-        verify(() => mockAiInputRepo.getEntity(audioId)).called(2);
-      } finally {
-        // Clean up the temporary directory
-        tempDir.deleteSync(recursive: true);
-      }
-    });
-
-    test('image analysis with concurrent text update preserves user changes',
-        () async {
-      // Create temporary directory for the test
-      final tempDir = Directory.systemTemp.createTempSync('image_test');
-      overrideTempDirs.add(tempDir);
-
-      // Update the mock directory to point to our temp directory
-      when(() => mockDirectory.path).thenReturn(tempDir.path);
-
-      try {
-        // Create the directory structure
-        Directory('${tempDir.path}/images').createSync();
-
-        // Create the image file
-        File('${tempDir.path}/images/test-image.jpg')
-            .writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG header
-
-        const imageId = 'test-image-id';
-        final originalImage = JournalImage(
-          meta: Metadata(
-            id: imageId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: ImageData(
-            capturedAt: DateTime.now(),
-            imageId: 'test-image-id',
-            imageFile: 'test-image.jpg',
-            imageDirectory: '/images/',
-          ),
-        );
-
-        // User updates image with text during AI processing
-        final updatedImage = JournalImage(
-          meta: originalImage.meta,
-          data: originalImage.data,
-          entryText: const EntryText(
-            plainText: 'User added this description',
-            markdown: 'User added this description',
-          ),
-        );
-
-        final promptConfig = _createPrompt(
-          id: 'image-prompt',
-          name: 'Image Analysis',
-          aiResponseType: AiResponseType.imageAnalysis,
-          requiredInputData: [InputDataType.images],
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'gpt-4-vision',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        // Setup: original image first time, updated image second time
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          return getEntityCallCount == 1 ? originalImage : updatedImage;
-        });
-
-        when(() => mockAiConfigRepo.getConfigById('image-prompt'))
-            .thenAnswer((_) async => promptConfig);
-
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: imageId))
-            .thenAnswer((_) async => '{}');
-
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
-
-        when(() => mockJournalRepo.updateJournalEntity(any()))
-            .thenAnswer((_) async => true);
-
-        final mockStream = Stream.fromIterable([
-          _createStreamChunk('AI analysis: Beautiful sunset'),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepo.generateWithImages(
-            any(),
-            provider: any(named: 'provider'),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            images: any(named: 'images'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Execute
-        await repository!.runInference(
-          entityId: imageId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
-
-        // Verify: updateJournalEntity was called with appended text
-        final capturedEntity = verify(
-          () => mockJournalRepo.updateJournalEntity(captureAny()),
-        ).captured.single as JournalImage;
-
-        // Should append AI analysis to user's text
-        expect(capturedEntity.entryText?.plainText,
-            'User added this description\n\nAI analysis: Beautiful sunset');
-
-        // Verify: getEntity was called twice (initial + post-processing)
-        verify(() => mockAiInputRepo.getEntity(imageId)).called(2);
-      } finally {
-        // Clean up the temporary directory
-        tempDir.deleteSync(recursive: true);
-      }
-    });
-
-    test('audio transcription error handling preserves entity integrity',
-        () async {
-      // Create temporary directory for the test
-      final tempDir = Directory.systemTemp.createTempSync('audio_test');
-      overrideTempDirs.add(tempDir);
-
-      // Update the mock directory to point to our temp directory
-      when(() => mockDirectory.path).thenReturn(tempDir.path);
-
-      try {
-        // Create the directory structure
-        Directory('${tempDir.path}/audio').createSync();
-
-        // Create the audio file
-        File('${tempDir.path}/audio/test-audio.wav')
-            .writeAsBytesSync([1, 2, 3, 4, 5, 6]);
-
-        const audioId = 'test-audio-id';
-        final audio = JournalAudio(
-          meta: Metadata(
-            id: audioId,
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: AudioData(
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now().add(const Duration(minutes: 5)),
-            audioFile: 'test-audio.wav',
-            audioDirectory: '/audio/',
-            duration: const Duration(minutes: 5),
-          ),
-        );
-
-        final promptConfig = _createPrompt(
-          id: 'audio-prompt',
-          name: 'Audio Transcription',
-          aiResponseType: AiResponseType.audioTranscription,
-          requiredInputData: [InputDataType.audioFiles],
-        );
-
-        final model = _createModel(
-          id: 'model-1',
-          inferenceProviderId: 'provider-1',
-          providerModelId: 'whisper-1',
-        );
-
-        final provider = _createProvider(
-          id: 'provider-1',
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        );
-
-        // Setup: getEntity throws error during post-processing
-        var getEntityCallCount = 0;
-        when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
-          getEntityCallCount++;
-          if (getEntityCallCount == 1) {
-            return audio;
-          } else {
-            throw Exception('Database error');
-          }
-        });
-
-        when(() => mockAiConfigRepo.getConfigById('audio-prompt'))
-            .thenAnswer((_) async => promptConfig);
-
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: audioId))
-            .thenAnswer((_) async => '{}');
-
-        when(() => mockJournalRepo.getLinkedToEntities(
-                linkedTo: any(named: 'linkedTo')))
-            .thenAnswer((_) async => <JournalEntity>[]);
-
-        final mockStream = Stream.fromIterable([
-          _createStreamChunk('Transcribed content'),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepo.generateWithAudio(
-            provider: any(named: 'provider'),
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            stream: any(named: 'stream'),
-            audioFormat: any(named: 'audioFormat'),
-          ),
-        ).thenAnswer((_) => mockStream);
-
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        // Execute - should complete without throwing
-        await repository!.runInference(
-          entityId: audioId,
-          promptConfig: promptConfig,
-          onProgress: (_) {},
-          onStatusChange: (_) {},
-        );
-
-        // Verify: updateJournalEntity should NOT be called due to error
-        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
-
-        // Verify: getEntity was called twice (initial + attempted post-processing)
-        verify(() => mockAiInputRepo.getEntity(audioId)).called(2);
-      } finally {
-        // Clean up the temporary directory
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+    test(
+      'image analysis handles entity not found during post-processing',
+      () async {
+        // Create temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        try {
+          // Create the directory structure
+          Directory('${tempDir.path}/images').createSync();
+
+          // Create the image file
+          File(
+            '${tempDir.path}/images/test-image.jpg',
+          ).writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG header
+
+          const imageId = 'test-image-id';
+          final image = JournalImage(
+            meta: Metadata(
+              id: imageId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            data: ImageData(
+              capturedAt: DateTime.now(),
+              imageId: 'test-image-id',
+              imageFile: 'test-image.jpg',
+              imageDirectory: '/images/',
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'image-prompt',
+            name: 'Image Analysis',
+            aiResponseType: AiResponseType.imageAnalysis,
+            requiredInputData: [InputDataType.images],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          // Setup: entity found first time, null second time (during post-processing)
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            return getEntityCallCount == 1 ? image : null;
+          });
+
+          when(
+            () => mockAiConfigRepo.getConfigById('image-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: imageId),
+          ).thenAnswer((_) async => '{}');
+
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+
+          final mockStream = Stream.fromIterable([
+            _createStreamChunk('This is an image of a sunset'),
+          ]);
+
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              provider: any(named: 'provider'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Execute
+          await repository!.runInference(
+            entityId: imageId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify: updateJournalEntity should NOT be called since entity was not found
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+
+          // Verify: getEntity was called twice (initial + post-processing)
+          verify(() => mockAiInputRepo.getEntity(imageId)).called(2);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test(
+      'audio transcription handles entity type change during processing',
+      () async {
+        // Create temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        overrideTempDirs.add(tempDir);
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        try {
+          // Create the directory structure
+          Directory('${tempDir.path}/audio').createSync();
+
+          // Create the audio file
+          File(
+            '${tempDir.path}/audio/test-audio.wav',
+          ).writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+
+          const audioId = 'test-audio-id';
+          final audio = JournalAudio(
+            meta: Metadata(
+              id: audioId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now().add(const Duration(minutes: 5)),
+              audioFile: 'test-audio.wav',
+              audioDirectory: '/audio/',
+              duration: const Duration(minutes: 5),
+            ),
+          );
+
+          // Create a different entity type with same ID
+          final journalEntry = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: audioId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            entryText: const EntryText(
+              plainText: 'This is now a journal entry',
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Transcription',
+            aiResponseType: AiResponseType.audioTranscription,
+            requiredInputData: [InputDataType.audioFiles],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          // Setup: audio found first time, journal entry second time (type change)
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            return getEntityCallCount == 1 ? audio : journalEntry;
+          });
+
+          when(
+            () => mockAiConfigRepo.getConfigById('audio-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: audioId),
+          ).thenAnswer((_) async => '{}');
+
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+
+          final mockStream = Stream.fromIterable([
+            _createStreamChunk('This is the transcribed audio content'),
+          ]);
+
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Execute
+          await repository!.runInference(
+            entityId: audioId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify: updateJournalEntity should NOT be called since entity type changed
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+
+          // Verify: getEntity was called twice (initial + post-processing)
+          verify(() => mockAiInputRepo.getEntity(audioId)).called(2);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test(
+      'image analysis with concurrent text update preserves user changes',
+      () async {
+        // Create temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('image_test');
+        overrideTempDirs.add(tempDir);
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        try {
+          // Create the directory structure
+          Directory('${tempDir.path}/images').createSync();
+
+          // Create the image file
+          File(
+            '${tempDir.path}/images/test-image.jpg',
+          ).writeAsBytesSync([0xFF, 0xD8, 0xFF, 0xE0]); // JPEG header
+
+          const imageId = 'test-image-id';
+          final originalImage = JournalImage(
+            meta: Metadata(
+              id: imageId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            data: ImageData(
+              capturedAt: DateTime.now(),
+              imageId: 'test-image-id',
+              imageFile: 'test-image.jpg',
+              imageDirectory: '/images/',
+            ),
+          );
+
+          // User updates image with text during AI processing
+          final updatedImage = JournalImage(
+            meta: originalImage.meta,
+            data: originalImage.data,
+            entryText: const EntryText(
+              plainText: 'User added this description',
+              markdown: 'User added this description',
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'image-prompt',
+            name: 'Image Analysis',
+            aiResponseType: AiResponseType.imageAnalysis,
+            requiredInputData: [InputDataType.images],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          // Setup: original image first time, updated image second time
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(imageId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            return getEntityCallCount == 1 ? originalImage : updatedImage;
+          });
+
+          when(
+            () => mockAiConfigRepo.getConfigById('image-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: imageId),
+          ).thenAnswer((_) async => '{}');
+
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          final mockStream = Stream.fromIterable([
+            _createStreamChunk('AI analysis: Beautiful sunset'),
+          ]);
+
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              provider: any(named: 'provider'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Execute
+          await repository!.runInference(
+            entityId: imageId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify: updateJournalEntity was called with appended text
+          final capturedEntity =
+              verify(
+                    () => mockJournalRepo.updateJournalEntity(captureAny()),
+                  ).captured.single
+                  as JournalImage;
+
+          // Should append AI analysis to user's text
+          expect(
+            capturedEntity.entryText?.plainText,
+            'User added this description\n\nAI analysis: Beautiful sunset',
+          );
+
+          // Verify: getEntity was called twice (initial + post-processing)
+          verify(() => mockAiInputRepo.getEntity(imageId)).called(2);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
+
+    test(
+      'audio transcription error handling preserves entity integrity',
+      () async {
+        // Create temporary directory for the test
+        final tempDir = Directory.systemTemp.createTempSync('audio_test');
+        overrideTempDirs.add(tempDir);
+
+        // Update the mock directory to point to our temp directory
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        try {
+          // Create the directory structure
+          Directory('${tempDir.path}/audio').createSync();
+
+          // Create the audio file
+          File(
+            '${tempDir.path}/audio/test-audio.wav',
+          ).writeAsBytesSync([1, 2, 3, 4, 5, 6]);
+
+          const audioId = 'test-audio-id';
+          final audio = JournalAudio(
+            meta: Metadata(
+              id: audioId,
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now(),
+            ),
+            data: AudioData(
+              dateFrom: DateTime.now(),
+              dateTo: DateTime.now().add(const Duration(minutes: 5)),
+              audioFile: 'test-audio.wav',
+              audioDirectory: '/audio/',
+              duration: const Duration(minutes: 5),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'audio-prompt',
+            name: 'Audio Transcription',
+            aiResponseType: AiResponseType.audioTranscription,
+            requiredInputData: [InputDataType.audioFiles],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          // Setup: getEntity throws error during post-processing
+          var getEntityCallCount = 0;
+          when(() => mockAiInputRepo.getEntity(audioId)).thenAnswer((_) async {
+            getEntityCallCount++;
+            if (getEntityCallCount == 1) {
+              return audio;
+            } else {
+              throw Exception('Database error');
+            }
+          });
+
+          when(
+            () => mockAiConfigRepo.getConfigById('audio-prompt'),
+          ).thenAnswer((_) async => promptConfig);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: audioId),
+          ).thenAnswer((_) async => '{}');
+
+          when(
+            () => mockJournalRepo.getLinkedToEntities(
+              linkedTo: any(named: 'linkedTo'),
+            ),
+          ).thenAnswer((_) async => <JournalEntity>[]);
+
+          final mockStream = Stream.fromIterable([
+            _createStreamChunk('Transcribed content'),
+          ]);
+
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              provider: any(named: 'provider'),
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
+            ),
+          ).thenAnswer((_) => mockStream);
+
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+
+          // Execute - should complete without throwing
+          await repository!.runInference(
+            entityId: audioId,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+
+          // Verify: updateJournalEntity should NOT be called due to error
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+
+          // Verify: getEntity was called twice (initial + attempted post-processing)
+          verify(() => mockAiInputRepo.getEntity(audioId)).called(2);
+        } finally {
+          // Clean up the temporary directory
+          tempDir.deleteSync(recursive: true);
+        }
+      },
+    );
 
     group('Tool call accumulation', () {
       test('handles multiple tool calls with empty IDs correctly', () async {
@@ -5436,58 +5768,61 @@ Take into account the following task context:
           inferenceProviderType: InferenceProviderType.openRouter,
         );
 
-        when(() => mockAiInputRepo.getEntity(taskEntity.id))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-            .thenAnswer((_) async => '{"task": "details"}');
+        when(
+          () => mockAiInputRepo.getEntity(taskEntity.id),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with multiple tool calls with empty IDs
-        final streamController = StreamController<
-            CreateChatCompletionStreamResponse>()
-
+        final streamController = StreamController<CreateChatCompletionStreamResponse>()
           // Add chunks with multiple tool calls, all with empty IDs
           // Since the implementation uses dynamic checking, we can send a custom object
-          ..add(CreateChatCompletionStreamResponse(
-            id: 'test-completion-id',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: [
-                    _createMockToolCall(
-                      index: 0,
-                      id: '', // Empty ID
-                      functionName: 'suggest_checklist_completion',
-                      arguments:
-                          '{"checklistItemId":"item-1","reason":"Developed","confidence":"high"}',
-                    ),
-                    _createMockToolCall(
-                      index: 0,
-                      id: '', // Empty ID
-                      functionName: 'suggest_checklist_completion',
-                      arguments:
-                          '{"checklistItemId":"item-2","reason":"Added tests","confidence":"high"}',
-                    ),
-                    _createMockToolCall(
-                      index: 0,
-                      id: '', // Empty ID
-                      functionName: 'suggest_checklist_completion',
-                      arguments:
-                          '{"checklistItemId":"item-3","reason":"Released","confidence":"high"}',
-                    ),
-                  ],
+          ..add(
+            CreateChatCompletionStreamResponse(
+              id: 'test-completion-id',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(
+                    toolCalls: [
+                      _createMockToolCall(
+                        index: 0,
+                        id: '', // Empty ID
+                        functionName: 'suggest_checklist_completion',
+                        arguments:
+                            '{"checklistItemId":"item-1","reason":"Developed","confidence":"high"}',
+                      ),
+                      _createMockToolCall(
+                        index: 0,
+                        id: '', // Empty ID
+                        functionName: 'suggest_checklist_completion',
+                        arguments:
+                            '{"checklistItemId":"item-2","reason":"Added tests","confidence":"high"}',
+                      ),
+                      _createMockToolCall(
+                        index: 0,
+                        id: '', // Empty ID
+                        functionName: 'suggest_checklist_completion',
+                        arguments:
+                            '{"checklistItemId":"item-3","reason":"Released","confidence":"high"}',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-            model: 'test-model',
-            object: 'chat.completion.chunk',
-          ))
-
+              ],
+              created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+              model: 'test-model',
+              object: 'chat.completion.chunk',
+            ),
+          )
           // Add content chunk
           ..add(_createStreamChunk('Task completed'))
           ..close();
@@ -5518,8 +5853,9 @@ Take into account the following task context:
         // Verify all three suggestions were processed
         expect(testChecklistCompletionService.capturedSuggestions.length, 3);
         expect(
-          testChecklistCompletionService.capturedSuggestions
-              .map((s) => s.checklistItemId),
+          testChecklistCompletionService.capturedSuggestions.map(
+            (s) => s.checklistItemId,
+          ),
           containsAll(['item-1', 'item-2', 'item-3']),
         );
       });
@@ -5557,31 +5893,36 @@ Take into account the following task context:
           inferenceProviderType: InferenceProviderType.openRouter,
         );
 
-        when(() => mockAiInputRepo.getEntity(taskEntity.id))
-            .thenAnswer((_) async => taskEntity);
-        when(() => mockAiConfigRepo.getConfigById('model-1'))
-            .thenAnswer((_) async => model);
-        when(() => mockAiConfigRepo.getConfigById('provider-1'))
-            .thenAnswer((_) async => provider);
-        when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-            .thenAnswer((_) async => '{"task": "details"}');
+        when(
+          () => mockAiInputRepo.getEntity(taskEntity.id),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
         // Create stream with concatenated JSON in a single tool call
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>()
-              ..add(_createStreamChunkWithToolCalls([
-                _createMockToolCall(
-                  index: 0,
-                  id: 'call-1',
-                  functionName: 'suggest_checklist_completion',
-                  arguments:
-                      '{"checklistItemId":"item-1","reason":"Done 1","confidence":"high"} '
-                      '{"checklistItemId":"item-2","reason":"Done 2","confidence":"medium"} '
-                      '{"checklistItemId":"item-3","reason":"Done 3","confidence":"low"}',
-                ),
-              ]))
-              ..add(_createStreamChunk('Task completed'))
-              ..close();
+        final streamController = StreamController<CreateChatCompletionStreamResponse>()
+          ..add(
+            _createStreamChunkWithToolCalls([
+              _createMockToolCall(
+                index: 0,
+                id: 'call-1',
+                functionName: 'suggest_checklist_completion',
+                arguments:
+                    '{"checklistItemId":"item-1","reason":"Done 1","confidence":"high"} '
+                    '{"checklistItemId":"item-2","reason":"Done 2","confidence":"medium"} '
+                    '{"checklistItemId":"item-3","reason":"Done 3","confidence":"low"}',
+              ),
+            ]),
+          )
+          ..add(_createStreamChunk('Task completed'))
+          ..close();
 
         when(
           () => mockCloudInferenceRepo.generate(
@@ -5609,13 +5950,15 @@ Take into account the following task context:
         // Verify all three suggestions were parsed from concatenated JSON
         expect(testChecklistCompletionService.capturedSuggestions.length, 3);
         expect(
-          testChecklistCompletionService.capturedSuggestions
-              .map((s) => s.checklistItemId),
+          testChecklistCompletionService.capturedSuggestions.map(
+            (s) => s.checklistItemId,
+          ),
           containsAll(['item-1', 'item-2', 'item-3']),
         );
         expect(
-          testChecklistCompletionService.capturedSuggestions
-              .map((s) => s.confidence),
+          testChecklistCompletionService.capturedSuggestions.map(
+            (s) => s.confidence,
+          ),
           containsAll([
             ChecklistCompletionConfidence.high,
             ChecklistCompletionConfidence.medium,
@@ -5662,27 +6005,33 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Stream with one tool call using array-of-objects; grouped comma stays within title
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'add_multiple_checklist_items',
-                arguments:
-                    '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'add_multiple_checklist_items',
+                  arguments:
+                      '{"items": [{"title": "Start database (index cache, warm)"}, {"title": "Verify"}]}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Done'))
             ..close();
 
@@ -5699,16 +6048,20 @@ Take into account the following task context:
         ),
       ).thenAnswer((_) => streamController.stream);
 
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: taskEntity.id,
-            suggestions: any(named: 'suggestions'),
-            title: any(named: 'title'),
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: <({String id, String title, bool isChecked})>[],
-            error: null,
-          ));
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: any(named: 'suggestions'),
+          title: any(named: 'title'),
+        ),
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          checklistId: 'new-checklist',
+          createdItems: <({String id, String title, bool isChecked})>[],
+          error: null,
+        ),
+      );
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -5717,12 +6070,13 @@ Take into account the following task context:
         onStatusChange: (_) {},
       );
 
-      final captured =
-          verify(() => mockAutoChecklistService.autoCreateChecklist(
-                taskId: taskEntity.id,
-                suggestions: captureAny(named: 'suggestions'),
-                title: 'TODOs',
-              )).captured;
+      final captured = verify(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: captureAny(named: 'suggestions'),
+          title: 'TODOs',
+        ),
+      ).captured;
 
       // Ensure at least one call with the first parsed item
       expect(captured.length, greaterThanOrEqualTo(1));
@@ -5769,38 +6123,48 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Mock auto checklist creation
-      when(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: taskEntity.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'to-do',
-          )).thenAnswer((_) async => (
-            success: true,
-            checklistId: 'new-checklist-id',
-            createdItems: <({String id, String title, bool isChecked})>[],
-            error: null,
-          ));
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: any(named: 'suggestions'),
+          title: 'to-do',
+        ),
+      ).thenAnswer(
+        (_) async => (
+          success: true,
+          checklistId: 'new-checklist-id',
+          createdItems: <({String id, String title, bool isChecked})>[],
+          error: null,
+        ),
+      );
 
       // Create stream with add_multiple_checklist_items tool call
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'add_multiple_checklist_items',
-                arguments: '{"items": [{"title": "Review documentation"}]}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'add_multiple_checklist_items',
+                  arguments: '{"items": [{"title": "Review documentation"}]}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -5825,11 +6189,13 @@ Take into account the following task context:
       );
 
       // Verify auto checklist creation was called
-      verify(() => mockAutoChecklistService.autoCreateChecklist(
-            taskId: taskEntity.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'TODOs',
-          )).called(1);
+      verify(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: any(named: 'suggestions'),
+          title: 'TODOs',
+        ),
+      ).called(1);
     });
 
     test('adds item to existing checklist', () async {
@@ -5876,18 +6242,23 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Mock journal repository for fetching existing checklist
-      when(() => mockJournalRepo.getJournalEntityById(existingChecklistId))
-          .thenAnswer((_) async => existingChecklist);
+      when(
+        () => mockJournalRepo.getJournalEntityById(existingChecklistId),
+      ).thenAnswer((_) async => existingChecklist);
 
       // Mock checklist repository for creating item
       final newChecklistItem = ChecklistItem(
@@ -5899,25 +6270,29 @@ Take into account the following task context:
         ),
       );
 
-      when(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: existingChecklistId,
-            title: 'New checklist item',
-            isChecked: false,
-            categoryId: taskEntity.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
-          )).thenAnswer((_) async => newChecklistItem);
+      when(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: existingChecklistId,
+          title: 'New checklist item',
+          isChecked: false,
+          categoryId: taskEntity.meta.categoryId,
+          checkedBy: CheckedBySource.agent,
+        ),
+      ).thenAnswer((_) async => newChecklistItem);
 
       // Create stream with add_multiple_checklist_items tool call
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'add_multiple_checklist_items',
-                arguments: '{"items": [{"title": "New checklist item"}]}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'add_multiple_checklist_items',
+                  arguments: '{"items": [{"title": "New checklist item"}]}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -5942,91 +6317,105 @@ Take into account the following task context:
       );
 
       // Verify item was created using atomic method with agent provenance
-      verify(() => mockChecklistRepo.addItemToChecklist(
-            checklistId: existingChecklistId,
-            title: 'New checklist item',
-            isChecked: false,
-            categoryId: taskEntity.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
-          )).called(1);
+      verify(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: existingChecklistId,
+          title: 'New checklist item',
+          isChecked: false,
+          categoryId: taskEntity.meta.categoryId,
+          checkedBy: CheckedBySource.agent,
+        ),
+      ).called(1);
     });
 
     test(
-        'creates only one checklist when processing a single batch multi-item call',
-        () async {
-      final taskEntity = Task(
-        meta: _createMetadata(),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
+      'creates only one checklist when processing a single batch multi-item call',
+      () async {
+        final taskEntity = Task(
+          meta: _createMetadata(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: DateTime.now(),
+              utcOffset: 0,
+            ),
+            title: 'Test Task',
+            statusHistory: [],
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+            checklistIds: [], // No existing checklists
           ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          checklistIds: [], // No existing checklists
-        ),
-      );
+        );
 
-      final promptConfig = _createPrompt(
-        id: 'prompt-1',
-        name: 'Task Summary',
-        requiredInputData: [InputDataType.task],
-      );
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Task Summary',
+          requiredInputData: [InputDataType.task],
+        );
 
-      final model = _createModel(
-        id: 'model-1',
-        inferenceProviderId: 'provider-1',
-        providerModelId: 'gpt-4',
-      ).copyWith(supportsFunctionCalling: true);
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        ).copyWith(supportsFunctionCalling: true);
 
-      final provider = _createProvider(
-        id: 'provider-1',
-        inferenceProviderType: InferenceProviderType.openRouter,
-      );
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.openRouter,
+        );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+        when(
+          () => mockAiInputRepo.getEntity(taskEntity.id),
+        ).thenAnswer((_) async => taskEntity);
+        when(
+          () => mockAiConfigRepo.getConfigById('model-1'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockAiConfigRepo.getConfigById('provider-1'),
+        ).thenAnswer((_) async => provider);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+        ).thenAnswer((_) async => '{"task": "details"}');
 
-      // Mock auto checklist creation
-      const newChecklistId = 'new-checklist-id';
-      when(() => mockAutoChecklistService.autoCreateChecklist(
+        // Mock auto checklist creation
+        const newChecklistId = 'new-checklist-id';
+        when(
+          () => mockAutoChecklistService.autoCreateChecklist(
             taskId: taskEntity.id,
             suggestions: any(named: 'suggestions'),
             title: 'TODOs',
-          )).thenAnswer((_) async => (
+          ),
+        ).thenAnswer(
+          (_) async => (
             success: true,
             checklistId: newChecklistId,
             createdItems: <({String id, String title, bool isChecked})>[],
             error: null,
-          ));
+          ),
+        );
 
-      // Mock the task refresh after checklist creation
-      final updatedTaskEntity = Task(
-        meta: taskEntity.meta,
-        data: taskEntity.data.copyWith(
-          checklistIds: [newChecklistId],
-        ),
-      );
-      when(() => mockJournalDb.journalEntityById(taskEntity.id))
-          .thenAnswer((_) async => updatedTaskEntity);
+        // Mock the task refresh after checklist creation
+        final updatedTaskEntity = Task(
+          meta: taskEntity.meta,
+          data: taskEntity.data.copyWith(
+            checklistIds: [newChecklistId],
+          ),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(taskEntity.id),
+        ).thenAnswer((_) async => updatedTaskEntity);
 
-      // Mock adding items to the newly created checklist
-      when(() => mockChecklistRepo.addItemToChecklist(
+        // Mock adding items to the newly created checklist
+        when(
+          () => mockChecklistRepo.addItemToChecklist(
             checklistId: newChecklistId,
             title: any(named: 'title'),
             isChecked: false,
             categoryId: any(named: 'categoryId'),
             checkedBy: CheckedBySource.agent,
-          )).thenAnswer((_) async => ChecklistItem(
+          ),
+        ).thenAnswer(
+          (_) async => ChecklistItem(
             meta: _createMetadata(id: 'item-new'),
             data: const ChecklistItemData(
               title: 'Test Item',
@@ -6034,82 +6423,92 @@ Take into account the following task context:
               linkedChecklists: [newChecklistId],
               checkedBy: CheckedBySource.agent,
             ),
-          ));
+          ),
+        );
 
-      // Create stream with a single add_multiple_checklist_items tool call containing multiple items
-      final streamController =
-          StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'add_multiple_checklist_items',
-                arguments:
-                    '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
-              ),
-              _createMockToolCall(
-                index: 1,
-                id: 'call-2',
-                functionName: 'add_multiple_checklist_items',
-                arguments: '{"items": [{"title": "noop"}]}',
-              ),
-              _createMockToolCall(
-                index: 2,
-                id: 'call-3',
-                functionName: 'add_multiple_checklist_items',
-                arguments: '{"items": [{"title": "noop2"}]}',
-              ),
-            ]))
-            ..add(_createStreamChunk('Task analysis complete'))
-            ..close();
+        // Create stream with a single add_multiple_checklist_items tool call containing multiple items
+        final streamController =
+            StreamController<CreateChatCompletionStreamResponse>()
+              ..add(
+                _createStreamChunkWithToolCalls([
+                  _createMockToolCall(
+                    index: 0,
+                    id: 'call-1',
+                    functionName: 'add_multiple_checklist_items',
+                    arguments:
+                        '{"items": [{"title": "First item"}, {"title": "Second item"}, {"title": "Third item"}]}',
+                  ),
+                  _createMockToolCall(
+                    index: 1,
+                    id: 'call-2',
+                    functionName: 'add_multiple_checklist_items',
+                    arguments: '{"items": [{"title": "noop"}]}',
+                  ),
+                  _createMockToolCall(
+                    index: 2,
+                    id: 'call-3',
+                    functionName: 'add_multiple_checklist_items',
+                    arguments: '{"items": [{"title": "noop2"}]}',
+                  ),
+                ]),
+              )
+              ..add(_createStreamChunk('Task analysis complete'))
+              ..close();
 
-      when(
-        () => mockCloudInferenceRepo.generate(
-          any(),
-          model: any(named: 'model'),
-          temperature: any(named: 'temperature'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          systemMessage: any(named: 'systemMessage'),
-          provider: any(named: 'provider'),
-          tools: any(named: 'tools'),
-        ),
-      ).thenAnswer((_) => streamController.stream);
+        when(
+          () => mockCloudInferenceRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
 
-      await repository!.runInference(
-        entityId: taskEntity.id,
-        promptConfig: promptConfig,
-        onProgress: (_) {},
-        onStatusChange: (_) {},
-      );
+        await repository!.runInference(
+          entityId: taskEntity.id,
+          promptConfig: promptConfig,
+          onProgress: (_) {},
+          onStatusChange: (_) {},
+        );
 
-      // Verify that checklist creation was called only once
-      verify(() => mockAutoChecklistService.autoCreateChecklist(
+        // Verify that checklist creation was called only once
+        verify(
+          () => mockAutoChecklistService.autoCreateChecklist(
             taskId: taskEntity.id,
             suggestions: any(named: 'suggestions'),
             title: 'TODOs',
-          )).called(1);
+          ),
+        ).called(1);
 
-      // Verify that the task was refreshed after checklist creation
-      verify(() => mockJournalDb.journalEntityById(taskEntity.id)).called(1);
+        // Verify that the task was refreshed after checklist creation
+        verify(() => mockJournalDb.journalEntityById(taskEntity.id)).called(1);
 
-      // Verify that subsequent items were added to the existing checklist
-      verify(() => mockChecklistRepo.addItemToChecklist(
+        // Verify that subsequent items were added to the existing checklist
+        verify(
+          () => mockChecklistRepo.addItemToChecklist(
             checklistId: newChecklistId,
             title: 'Second item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
             checkedBy: CheckedBySource.agent,
-          )).called(1);
+          ),
+        ).called(1);
 
-      verify(() => mockChecklistRepo.addItemToChecklist(
+        verify(
+          () => mockChecklistRepo.addItemToChecklist(
             checklistId: newChecklistId,
             title: 'Third item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
             checkedBy: CheckedBySource.agent,
-          )).called(1);
-    });
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('Auto-check high confidence suggestions', () {
@@ -6164,38 +6563,47 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Mock getting the checklist item
-      when(() => mockJournalRepo.getJournalEntityById('item-1'))
-          .thenAnswer((_) async => checklistItem);
+      when(
+        () => mockJournalRepo.getJournalEntityById('item-1'),
+      ).thenAnswer((_) async => checklistItem);
 
       // Mock updating the checklist item
-      when(() => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: taskEntity.id,
-          )).thenAnswer((_) async => true);
+      when(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: 'item-1',
+          data: any(named: 'data'),
+          taskId: taskEntity.id,
+        ),
+      ).thenAnswer((_) async => true);
 
       // Create stream with high confidence suggestion
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'suggest_checklist_completion',
-                arguments:
-                    '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'suggest_checklist_completion',
+                  arguments:
+                      '{"checklistItemId":"item-1","reason":"Task completed","confidence":"high"}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -6214,8 +6622,9 @@ Take into account the following task context:
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -6225,24 +6634,27 @@ Take into account the following task context:
       );
 
       // Verify the item was updated to be checked with agent provenance
-      verify(() => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(
-                named: 'data',
-                that: isA<ChecklistItemData>()
-                    .having((d) => d.isChecked, 'isChecked', true)
-                    .having(
-                      (d) => d.checkedBy,
-                      'checkedBy',
-                      CheckedBySource.agent,
-                    )
-                    .having(
-                      (d) => d.checkedAt,
-                      'checkedAt',
-                      autoCheckTime,
-                    )),
-            taskId: taskEntity.id,
-          )).called(1);
+      verify(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: 'item-1',
+          data: any(
+            named: 'data',
+            that: isA<ChecklistItemData>()
+                .having((d) => d.isChecked, 'isChecked', true)
+                .having(
+                  (d) => d.checkedBy,
+                  'checkedBy',
+                  CheckedBySource.agent,
+                )
+                .having(
+                  (d) => d.checkedAt,
+                  'checkedAt',
+                  autoCheckTime,
+                ),
+          ),
+          taskId: taskEntity.id,
+        ),
+      ).called(1);
     });
 
     test('does not auto-check items with medium or low confidence', () async {
@@ -6279,27 +6691,33 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Create stream with medium confidence suggestion
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'suggest_checklist_completion',
-                arguments:
-                    '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'suggest_checklist_completion',
+                  arguments:
+                      '{"checklistItemId":"item-2","reason":"Might be done","confidence":"medium"}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -6318,8 +6736,9 @@ Take into account the following task context:
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -6329,11 +6748,13 @@ Take into account the following task context:
       );
 
       // Verify no update was made
-      verifyNever(() => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ));
+      verifyNever(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: any(named: 'checklistItemId'),
+          data: any(named: 'data'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
     });
 
     test('does not update already checked items', () async {
@@ -6379,31 +6800,38 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
       // Mock getting the already checked item
-      when(() => mockJournalRepo.getJournalEntityById('item-3'))
-          .thenAnswer((_) async => alreadyCheckedItem);
+      when(
+        () => mockJournalRepo.getJournalEntityById('item-3'),
+      ).thenAnswer((_) async => alreadyCheckedItem);
 
       // Create stream with high confidence suggestion for already checked item
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'suggest_checklist_completion',
-                arguments:
-                    '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'suggest_checklist_completion',
+                  arguments:
+                      '{"checklistItemId":"item-3","reason":"Task completed","confidence":"high"}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -6422,8 +6850,9 @@ Take into account the following task context:
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -6433,11 +6862,13 @@ Take into account the following task context:
       );
 
       // Verify no update was made since item was already checked
-      verifyNever(() => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ));
+      verifyNever(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: any(named: 'checklistItemId'),
+          data: any(named: 'data'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
     });
 
     test('does not auto-check user-owned items (sovereignty guard)', () async {
@@ -6485,29 +6916,36 @@ Take into account the following task context:
         inferenceProviderType: InferenceProviderType.openRouter,
       );
 
-      when(() => mockAiInputRepo.getEntity(taskEntity.id))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => provider);
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id))
-          .thenAnswer((_) async => '{"task": "details"}');
+      when(
+        () => mockAiInputRepo.getEntity(taskEntity.id),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => provider);
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+      ).thenAnswer((_) async => '{"task": "details"}');
 
-      when(() => mockJournalRepo.getJournalEntityById('item-user'))
-          .thenAnswer((_) async => userOwnedItem);
+      when(
+        () => mockJournalRepo.getJournalEntityById('item-user'),
+      ).thenAnswer((_) async => userOwnedItem);
 
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>()
-            ..add(_createStreamChunkWithToolCalls([
-              _createMockToolCall(
-                index: 0,
-                id: 'call-1',
-                functionName: 'suggest_checklist_completion',
-                arguments:
-                    '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
-              ),
-            ]))
+            ..add(
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'call-1',
+                  functionName: 'suggest_checklist_completion',
+                  arguments:
+                      '{"checklistItemId":"item-user","reason":"Completed","confidence":"high"}',
+                ),
+              ]),
+            )
             ..add(_createStreamChunk('Task analysis complete'))
             ..close();
 
@@ -6525,8 +6963,9 @@ Take into account the following task context:
       ).thenAnswer((_) => streamController.stream);
 
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await repository!.runInference(
         entityId: taskEntity.id,
@@ -6536,11 +6975,13 @@ Take into account the following task context:
       );
 
       // Verify NO update was made — sovereignty guard blocks user-owned items
-      verifyNever(() => mockChecklistRepo.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ));
+      verifyNever(
+        () => mockChecklistRepo.updateChecklistItem(
+          checklistItemId: any(named: 'checklistItemId'),
+          data: any(named: 'data'),
+          taskId: any(named: 'taskId'),
+        ),
+      );
     });
   });
 
@@ -6581,9 +7022,10 @@ Take into account the following task context:
       repository!.autoChecklistServiceForTesting = mockAutoChecklistService;
       // The setter is used for testing purposes
       expect(
-          () => repository!.autoChecklistServiceForTesting =
-              mockAutoChecklistService,
-          returnsNormally);
+        () => repository!.autoChecklistServiceForTesting =
+            mockAutoChecklistService,
+        returnsNormally,
+      );
     });
 
     test('handles model not found error', () async {
@@ -6600,10 +7042,12 @@ Take into account the following task context:
         aiResponseType: AiResponseType.taskSummary,
       );
 
-      when(() => mockAiInputRepo.getEntity(any()))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('non-existent-model'))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockAiInputRepo.getEntity(any()),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('non-existent-model'),
+      ).thenAnswer((_) async => null);
 
       await expectLater(
         repository!.runInference(
@@ -6612,11 +7056,13 @@ Take into account the following task context:
           onProgress: (_) {},
           onStatusChange: (_) {},
         ),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('Model not found: non-existent-model'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Model not found: non-existent-model'),
+          ),
+        ),
       );
     });
 
@@ -6639,12 +7085,15 @@ Take into account the following task context:
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>();
 
-      when(() => mockAiInputRepo.getEntity(any()))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => aiProvider);
+      when(
+        () => mockAiInputRepo.getEntity(any()),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => aiProvider);
 
       when(
         () => mockCloudInferenceRepo.generate(
@@ -6661,8 +7110,9 @@ Take into account the following task context:
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       final inferenceFuture = repository!.runInference(
         entityId: taskEntity.id,
@@ -6749,12 +7199,15 @@ Take into account the following task context:
       final streamController =
           StreamController<CreateChatCompletionStreamResponse>();
 
-      when(() => mockAiInputRepo.getEntity(any()))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => model);
-      when(() => mockAiConfigRepo.getConfigById('provider-1'))
-          .thenAnswer((_) async => aiProvider);
+      when(
+        () => mockAiInputRepo.getEntity(any()),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfigRepo.getConfigById('provider-1'),
+      ).thenAnswer((_) async => aiProvider);
 
       when(
         () => mockCloudInferenceRepo.generate(
@@ -6771,8 +7224,9 @@ Take into account the following task context:
 
       // Clear any captured suggestions from previous tests
       testChecklistCompletionService.capturedSuggestions.clear();
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       final inferenceFuture = repository!.runInference(
         entityId: taskEntity.id,
@@ -6841,25 +7295,30 @@ Take into account the following task context:
         isReasoningModel: false,
       );
 
-      when(() => mockAiInputRepo.getEntity(any()))
-          .thenAnswer((_) async => taskEntity);
-      when(() => mockAiConfigRepo.getConfigById('model-1'))
-          .thenAnswer((_) async => modelWithBadProvider);
-      when(() => mockAiConfigRepo.getConfigById('non-existent-provider'))
-          .thenAnswer((_) async => null); // Provider not found
-      when(() => mockAiInputRepo.generate(any()))
-          .thenAnswer((_) async => AiInputTaskObject(
-                title: 'Test Task',
-                status: 'In Progress',
-                priority: 'P2',
-                estimatedDuration: '1 hour',
-                timeSpent: '30 minutes',
-                creationDate: DateTime(2024, 3, 15),
-                actionItems: [],
-                logEntries: [],
-              ));
-      when(() => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')))
-          .thenAnswer((_) async => '{"title": "Test Task"}');
+      when(
+        () => mockAiInputRepo.getEntity(any()),
+      ).thenAnswer((_) async => taskEntity);
+      when(
+        () => mockAiConfigRepo.getConfigById('model-1'),
+      ).thenAnswer((_) async => modelWithBadProvider);
+      when(
+        () => mockAiConfigRepo.getConfigById('non-existent-provider'),
+      ).thenAnswer((_) async => null); // Provider not found
+      when(() => mockAiInputRepo.generate(any())).thenAnswer(
+        (_) async => AiInputTaskObject(
+          title: 'Test Task',
+          status: 'In Progress',
+          priority: 'P2',
+          estimatedDuration: '1 hour',
+          timeSpent: '30 minutes',
+          creationDate: DateTime(2024, 3, 15),
+          actionItems: [],
+          logEntries: [],
+        ),
+      );
+      when(
+        () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
+      ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await expectLater(
         repository!.runInference(
@@ -6868,11 +7327,13 @@ Take into account the following task context:
           onProgress: (_) {},
           onStatusChange: (_) {},
         ),
-        throwsA(isA<Exception>().having(
-          (e) => e.toString(),
-          'message',
-          contains('Provider not found: non-existent-provider'),
-        )),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            contains('Provider not found: non-existent-provider'),
+          ),
+        ),
       );
     });
   });

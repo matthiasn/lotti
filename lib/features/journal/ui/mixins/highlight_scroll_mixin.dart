@@ -73,8 +73,9 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
 
     // Use longer delay for initial load (navigation from calendar)
     // Shorter delay for subsequent scrolls on already-rendered page
-    final delay =
-        isInitialLoad ? initialScrollDelay : const Duration(milliseconds: 100);
+    final delay = isInitialLoad
+        ? initialScrollDelay
+        : const Duration(milliseconds: 100);
 
     // Attempt to scroll with an appropriate delay
     _scrollingToEntryId = entryId;

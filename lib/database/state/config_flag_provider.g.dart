@@ -22,15 +22,16 @@ final class ConfigFlagProvider
     with $FutureModifier<bool>, $StreamProvider<bool> {
   /// Provides a stream of the status (bool) for a specific config flag.
   /// Returns false by default if the flag doesn't exist or has no status.
-  ConfigFlagProvider._(
-      {required ConfigFlagFamily super.from, required String super.argument})
-      : super(
-          retry: null,
-          name: r'configFlagProvider',
-          isAutoDispose: true,
-          dependencies: null,
-          $allTransitiveDependencies: null,
-        );
+  ConfigFlagProvider._({
+    required ConfigFlagFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'configFlagProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
 
   @override
   String debugGetCreateSourceHash() => _$configFlagHash();
@@ -50,10 +51,7 @@ final class ConfigFlagProvider
   @override
   Stream<bool> create(Ref ref) {
     final argument = this.argument as String;
-    return configFlag(
-      ref,
-      argument,
-    );
+    return configFlag(ref, argument);
   }
 
   @override
@@ -75,20 +73,18 @@ String _$configFlagHash() => r'cb8244b4da8af37d109e0cc56ecd8b977091e30e';
 final class ConfigFlagFamily extends $Family
     with $FunctionalFamilyOverride<Stream<bool>, String> {
   ConfigFlagFamily._()
-      : super(
-          retry: null,
-          name: r'configFlagProvider',
-          dependencies: null,
-          $allTransitiveDependencies: null,
-          isAutoDispose: true,
-        );
+    : super(
+        retry: null,
+        name: r'configFlagProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
 
   /// Provides a stream of the status (bool) for a specific config flag.
   /// Returns false by default if the flag doesn't exist or has no status.
 
-  ConfigFlagProvider call(
-    String flagName,
-  ) =>
+  ConfigFlagProvider call(String flagName) =>
       ConfigFlagProvider._(argument: flagName, from: this);
 
   @override

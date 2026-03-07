@@ -6,22 +6,32 @@ void main() {
   group('GameyAnimations', () {
     group('Duration constants', () {
       test('fast duration is shortest', () {
-        expect(GameyAnimations.fast.inMilliseconds,
-            lessThan(GameyAnimations.normal.inMilliseconds));
+        expect(
+          GameyAnimations.fast.inMilliseconds,
+          lessThan(GameyAnimations.normal.inMilliseconds),
+        );
       });
 
       test('normal duration is between fast and slow', () {
-        expect(GameyAnimations.normal.inMilliseconds,
-            greaterThan(GameyAnimations.fast.inMilliseconds));
-        expect(GameyAnimations.normal.inMilliseconds,
-            lessThan(GameyAnimations.slow.inMilliseconds));
+        expect(
+          GameyAnimations.normal.inMilliseconds,
+          greaterThan(GameyAnimations.fast.inMilliseconds),
+        );
+        expect(
+          GameyAnimations.normal.inMilliseconds,
+          lessThan(GameyAnimations.slow.inMilliseconds),
+        );
       });
 
       test('celebration durations are longer', () {
-        expect(GameyAnimations.celebration.inMilliseconds,
-            greaterThan(GameyAnimations.slow.inMilliseconds));
-        expect(GameyAnimations.celebrationLong.inMilliseconds,
-            greaterThan(GameyAnimations.celebration.inMilliseconds));
+        expect(
+          GameyAnimations.celebration.inMilliseconds,
+          greaterThan(GameyAnimations.slow.inMilliseconds),
+        );
+        expect(
+          GameyAnimations.celebrationLong.inMilliseconds,
+          greaterThan(GameyAnimations.celebration.inMilliseconds),
+        );
       });
 
       test('shimmer and pulse durations are defined', () {
@@ -81,8 +91,10 @@ void main() {
       test('pulse scale range is valid', () {
         expect(GameyAnimations.pulseScaleMin, lessThan(1.0));
         expect(GameyAnimations.pulseScaleMax, greaterThan(1.0));
-        expect(GameyAnimations.pulseScaleMin,
-            lessThan(GameyAnimations.pulseScaleMax));
+        expect(
+          GameyAnimations.pulseScaleMin,
+          lessThan(GameyAnimations.pulseScaleMax),
+        );
       });
 
       test('celebrationScale is significantly larger', () {
@@ -106,8 +118,10 @@ void main() {
       });
 
       test('shakeRotation is larger than wiggle', () {
-        expect(GameyAnimations.shakeRotation,
-            greaterThan(GameyAnimations.wiggleRotation));
+        expect(
+          GameyAnimations.shakeRotation,
+          greaterThan(GameyAnimations.wiggleRotation),
+        );
       });
     });
 
@@ -197,10 +211,14 @@ void main() {
       });
 
       test('staggeredInterval respects totalItems', () {
-        final intervalSmall =
-            GameyAnimations.staggeredInterval(0, totalItems: 5);
-        final intervalLarge =
-            GameyAnimations.staggeredInterval(0, totalItems: 20);
+        final intervalSmall = GameyAnimations.staggeredInterval(
+          0,
+          totalItems: 5,
+        );
+        final intervalLarge = GameyAnimations.staggeredInterval(
+          0,
+          totalItems: 20,
+        );
 
         // With more total items, each item's interval is shorter
         final smallDuration = intervalSmall.end - intervalSmall.begin;

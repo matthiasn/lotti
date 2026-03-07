@@ -6,13 +6,14 @@ import 'package:matrix/matrix.dart';
 /// Signature for a backfill function that attempts to paginate a [timeline]
 /// until [lastEventId] is present or a limit is reached. Returns true if
 /// pagination was attempted (or the event was already present).
-typedef BackfillFn = Future<bool> Function({
-  required Timeline timeline,
-  required String? lastEventId,
-  required int pageSize,
-  required int maxPages,
-  required LoggingService logging,
-});
+typedef BackfillFn =
+    Future<bool> Function({
+      required Timeline timeline,
+      required String? lastEventId,
+      required int pageSize,
+      required int maxPages,
+      required LoggingService logging,
+    });
 
 /// Catch‑up helper used at attach time by the stream consumer.
 ///
@@ -68,7 +69,8 @@ class CatchUpStrategy {
         // Marker found: ensure requested pre-context by count and/or since-ts.
         final availablePre = idx + 1; // events before (and including) marker
         final needCount = preContextCount > 0 && availablePre < preContextCount;
-        final needSinceTs = preContextSinceTs != null &&
+        final needSinceTs =
+            preContextSinceTs != null &&
             (events.isEmpty ||
                 TimelineEventOrdering.timestamp(events.first) >
                     preContextSinceTs);

@@ -46,7 +46,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
         .watch(promptFormControllerProvider(configId: widget.configId))
         .value;
 
-    final isFormValid = formState != null &&
+    final isFormValid =
+        formState != null &&
         formState.isValid &&
         formState.modelIds.isNotEmpty &&
         formState.defaultModelId.isNotEmpty &&
@@ -123,15 +124,21 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                   // Form Content
                   SliverToBoxAdapter(
                     child: switch (configAsync) {
-                      AsyncData(value: final config) => _buildForm(context, ref,
-                          config, formState, isFormValid, handleSave),
+                      AsyncData(value: final config) => _buildForm(
+                        context,
+                        ref,
+                        config,
+                        formState,
+                        isFormValid,
+                        handleSave,
+                      ),
                       AsyncError() => _buildErrorState(context),
                       _ => const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(48),
-                            child: CircularProgressIndicator(),
-                          ),
+                        child: Padding(
+                          padding: EdgeInsets.all(48),
+                          child: CircularProgressIndicator(),
                         ),
+                      ),
                     },
                   ),
                 ],
@@ -236,12 +243,14 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: context.colorScheme.primaryContainer
-                        .withValues(alpha: 0.1),
+                    color: context.colorScheme.primaryContainer.withValues(
+                      alpha: 0.1,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: context.colorScheme.primaryContainer
-                          .withValues(alpha: 0.3),
+                      color: context.colorScheme.primaryContainer.withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -266,8 +275,9 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                             Text(
                               'Keep this prompt synchronized with updates to the template',
                               style: context.textTheme.bodySmall?.copyWith(
-                                color: context.colorScheme.onSurface
-                                    .withValues(alpha: 0.7),
+                                color: context.colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                             ),
                           ],
@@ -329,8 +339,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 value: formState.requiredInputData.isEmpty
                     ? context.messages.promptSelectInputTypeHint
                     : formState.requiredInputData
-                        .map((type) => type.displayName(context))
-                        .join(', '),
+                          .map((type) => type.displayName(context))
+                          .join(', '),
                 isPlaceholderValue: formState.requiredInputData.isEmpty,
                 hasError: formState.requiredInputData.isEmpty,
                 onTap: () {
@@ -349,7 +359,8 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 label: context.messages.promptAiResponseTypeLabel,
                 description: context.messages.promptAiResponseTypeDescription,
                 icon: Icons.output_rounded,
-                value: formState.aiResponseType.value?.localizedName(context) ??
+                value:
+                    formState.aiResponseType.value?.localizedName(context) ??
                     context.messages.promptSelectResponseTypeHint,
                 isPlaceholderValue: formState.aiResponseType.value == null,
                 hasError: formState.aiResponseType.error != null,
@@ -428,8 +439,9 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
                 isDefault: isDefault,
                 onSetDefault: () => controller.defaultModelIdChanged(modelId),
                 onRemove: () {
-                  final updatedIds =
-                      formState.modelIds.where((id) => id != modelId).toList();
+                  final updatedIds = formState.modelIds
+                      .where((id) => id != modelId)
+                      .toList();
                   controller.modelIdsChanged(updatedIds);
 
                   // If removing the default model, set a new default
@@ -532,8 +544,9 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color:
-                    context.colorScheme.errorContainer.withValues(alpha: 0.2),
+                color: context.colorScheme.errorContainer.withValues(
+                  alpha: 0.2,
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
@@ -608,8 +621,9 @@ class _ModelListItem extends ConsumerWidget {
                 if (isDefault)
                   context.colorScheme.primaryContainer.withValues(alpha: 0.1)
                 else
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.2),
+                  context.colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.2,
+                  ),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
@@ -636,18 +650,21 @@ class _ModelListItem extends ConsumerWidget {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
-                          context.colorScheme.primaryContainer
-                              .withValues(alpha: 0.3),
-                          context.colorScheme.primaryContainer
-                              .withValues(alpha: 0.2),
+                          context.colorScheme.primaryContainer.withValues(
+                            alpha: 0.3,
+                          ),
+                          context.colorScheme.primaryContainer.withValues(
+                            alpha: 0.2,
+                          ),
                         ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color:
-                            context.colorScheme.primary.withValues(alpha: 0.15),
+                        color: context.colorScheme.primary.withValues(
+                          alpha: 0.15,
+                        ),
                       ),
                     ),
                     child: Icon(
@@ -693,14 +710,17 @@ class _ModelListItem extends ConsumerWidget {
                   if (isDefault) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: context.colorScheme.primary,
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: context.colorScheme.primary
-                                .withValues(alpha: 0.3),
+                            color: context.colorScheme.primary.withValues(
+                              alpha: 0.3,
+                            ),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
@@ -735,7 +755,9 @@ class _ModelListItem extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(8),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             border: Border.all(
                               color: context.colorScheme.primaryContainer
@@ -767,8 +789,9 @@ class _ModelListItem extends ConsumerWidget {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: context.colorScheme.errorContainer
-                              .withValues(alpha: 0.2),
+                          color: context.colorScheme.errorContainer.withValues(
+                            alpha: 0.2,
+                          ),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Icon(
@@ -803,7 +826,7 @@ class _ModelListItem extends ConsumerWidget {
           ],
         ),
       ),
-      error: (_, __) => Container(
+      error: (_, _) => Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: context.colorScheme.errorContainer.withValues(alpha: 0.1),
@@ -896,8 +919,9 @@ Widget _buildSelectionCard({
               gradient: LinearGradient(
                 colors: [
                   context.colorScheme.surfaceContainer.withValues(alpha: 0.3),
-                  context.colorScheme.surfaceContainerHigh
-                      .withValues(alpha: 0.2),
+                  context.colorScheme.surfaceContainerHigh.withValues(
+                    alpha: 0.2,
+                  ),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -906,8 +930,9 @@ Widget _buildSelectionCard({
               border: Border.all(
                 color: hasError
                     ? context.colorScheme.error.withValues(alpha: 0.5)
-                    : context.colorScheme.primaryContainer
-                        .withValues(alpha: 0.2),
+                    : context.colorScheme.primaryContainer.withValues(
+                        alpha: 0.2,
+                      ),
               ),
             ),
             child: Row(
@@ -919,18 +944,21 @@ Widget _buildSelectionCard({
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.3),
-                        context.colorScheme.primaryContainer
-                            .withValues(alpha: 0.2),
+                        context.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        context.colorScheme.primaryContainer.withValues(
+                          alpha: 0.2,
+                        ),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color:
-                          context.colorScheme.primary.withValues(alpha: 0.15),
+                      color: context.colorScheme.primary.withValues(
+                        alpha: 0.15,
+                      ),
                     ),
                   ),
                   child: Icon(
@@ -951,8 +979,9 @@ Widget _buildSelectionCard({
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
                           color: isPlaceholder
-                              ? context.colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6)
+                              ? context.colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                )
                               : context.colorScheme.onSurface,
                         ),
                       ),
@@ -974,8 +1003,9 @@ Widget _buildSelectionCard({
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 16,
-                  color: context.colorScheme.onSurfaceVariant
-                      .withValues(alpha: 0.6),
+                  color: context.colorScheme.onSurfaceVariant.withValues(
+                    alpha: 0.6,
+                  ),
                 ),
               ],
             ),

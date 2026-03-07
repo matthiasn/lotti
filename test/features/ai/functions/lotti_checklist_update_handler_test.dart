@@ -146,26 +146,28 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items.length, 1);
         expect(items[0]['id'], 'item-1');
         expect(items[0]['isChecked'], true);
       });
 
-      test('should process valid update with isChecked: false (unchecking)',
-          () {
-        final toolCall = TestDataFactory.createToolCall(
-          arguments: '{"items": [{"id": "item-1", "isChecked": false}]}',
-        );
+      test(
+        'should process valid update with isChecked: false (unchecking)',
+        () {
+          final toolCall = TestDataFactory.createToolCall(
+            arguments: '{"items": [{"id": "item-1", "isChecked": false}]}',
+          );
 
-        final result = handler.processFunctionCall(toolCall);
+          final result = handler.processFunctionCall(toolCall);
 
-        expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
-        expect(items[0]['isChecked'], false);
-      });
+          expect(result.success, true);
+          final items = (result.data['items'] as List)
+              .cast<Map<String, dynamic>>();
+          expect(items[0]['isChecked'], false);
+        },
+      );
 
       test('should process valid update with title only', () {
         final toolCall = TestDataFactory.createToolCall(
@@ -175,8 +177,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0]['title'], 'Updated title');
         expect(items[0].containsKey('isChecked'), false);
       });
@@ -190,8 +192,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0]['isChecked'], true);
         expect(items[0]['title'], 'macOS settings');
       });
@@ -205,8 +207,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0]['title'], 'foo bar baz');
       });
 
@@ -218,8 +220,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0]['id'], 'item-1');
       });
 
@@ -394,8 +396,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final parsedItems =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final parsedItems = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(parsedItems.length, 20);
       });
 
@@ -436,8 +438,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items.length, 3);
       });
     });
@@ -451,13 +453,15 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
@@ -472,7 +476,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true}
+              {'id': 'item-1', 'isChecked': true},
             ],
             'taskId': testTask.id,
           },
@@ -498,13 +502,15 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
@@ -519,7 +525,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'title': 'macOS settings'}
+              {'id': 'item-1', 'title': 'macOS settings'},
             ],
             'taskId': testTask.id,
           },
@@ -532,8 +538,9 @@ void main() {
 
       test('should skip non-existent item', () async {
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['missing-item']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['missing-item']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer((_) async => []);
 
         final result = FunctionCallResult(
@@ -542,7 +549,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'missing-item', 'isChecked': true}
+              {'id': 'missing-item', 'isChecked': true},
             ],
             'taskId': testTask.id,
           },
@@ -571,8 +578,9 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
@@ -583,7 +591,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true}
+              {'id': 'item-1', 'isChecked': true},
             ],
             'taskId': testTask.id,
           },
@@ -592,8 +600,10 @@ void main() {
         final count = await handler.executeUpdates(result);
 
         expect(count, 0);
-        expect(handler.skippedItems[0].reason,
-            'Item does not belong to this task');
+        expect(
+          handler.skippedItems[0].reason,
+          'Item does not belong to this task',
+        );
       });
 
       test('should skip item with no actual changes', () async {
@@ -604,8 +614,9 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
@@ -616,7 +627,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true} // Same as current
+              {'id': 'item-1', 'isChecked': true}, // Same as current
             ],
             'taskId': testTask.id,
           },
@@ -636,13 +647,15 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['valid-item', 'missing-item']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['valid-item', 'missing-item']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(validItem)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'valid-item',
@@ -700,7 +713,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true}
+              {'id': 'item-1', 'isChecked': true},
             ],
             'taskId': taskWithoutChecklists.id,
           },
@@ -736,13 +749,15 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => refreshedTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => refreshedTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
@@ -757,7 +772,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true}
+              {'id': 'item-1', 'isChecked': true},
             ],
             'taskId': testTask.id,
           },
@@ -795,7 +810,8 @@ void main() {
       test('should handle mixed whitespace', () {
         expect(
           LottiChecklistUpdateHandler.normalizeWhitespace(
-              '  foo   bar  \t baz  '),
+            '  foo   bar  \t baz  ',
+          ),
           'foo bar baz',
         );
       });
@@ -809,8 +825,8 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true}
-            ]
+              {'id': 'item-1', 'isChecked': true},
+            ],
           },
         );
 
@@ -827,8 +843,8 @@ void main() {
           data: {
             'items': [
               {'id': 'item-1', 'isChecked': true},
-              {'id': 'item-2', 'title': 'Updated'}
-            ]
+              {'id': 'item-2', 'title': 'Updated'},
+            ],
           },
         );
 
@@ -868,13 +884,15 @@ void main() {
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds(['item-1']))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: 'item-1',
@@ -889,7 +907,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': true, 'title': 'Updated'}
+              {'id': 'item-1', 'isChecked': true, 'title': 'Updated'},
             ],
             'taskId': testTask.id,
           },
@@ -929,7 +947,7 @@ void main() {
                 'id': 'item-1',
                 'isChecked': false,
                 'reason': 'User said "not done" in 22:30 recording',
-              }
+              },
             ],
           }),
         );
@@ -937,8 +955,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0]['reason'], 'User said "not done" in 22:30 recording');
       });
 
@@ -946,7 +964,7 @@ void main() {
         final toolCall = TestDataFactory.createToolCall(
           arguments: jsonEncode({
             'items': [
-              {'id': 'item-1', 'isChecked': true, 'reason': '   '}
+              {'id': 'item-1', 'isChecked': true, 'reason': '   '},
             ],
           }),
         );
@@ -954,8 +972,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0].containsKey('reason'), false);
       });
 
@@ -963,7 +981,7 @@ void main() {
         final toolCall = TestDataFactory.createToolCall(
           arguments: jsonEncode({
             'items': [
-              {'id': 'item-1', 'isChecked': true, 'reason': 123}
+              {'id': 'item-1', 'isChecked': true, 'reason': 123},
             ],
           }),
         );
@@ -978,7 +996,7 @@ void main() {
         final toolCall = TestDataFactory.createToolCall(
           arguments: jsonEncode({
             'items': [
-              {'id': 'item-1', 'isChecked': true}
+              {'id': 'item-1', 'isChecked': true},
             ],
           }),
         );
@@ -986,8 +1004,8 @@ void main() {
         final result = handler.processFunctionCall(toolCall);
 
         expect(result.success, true);
-        final items =
-            (result.data['items'] as List).cast<Map<String, dynamic>>();
+        final items = (result.data['items'] as List)
+            .cast<Map<String, dynamic>>();
         expect(items[0].containsKey('reason'), false);
       });
     });
@@ -996,13 +1014,15 @@ void main() {
       /// Helper to set up mocks for a single checklist item entity.
       void stubSingleItem(ChecklistItem item) {
         final mockSelectable = MockSelectable<JournalDbEntity>();
-        when(() => mockJournalDb.entriesForIds([item.id]))
-            .thenReturn(mockSelectable);
+        when(
+          () => mockJournalDb.entriesForIds([item.id]),
+        ).thenReturn(mockSelectable);
         when(mockSelectable.get).thenAnswer(
           (_) async => [_createDbEntity(item)],
         );
-        when(() => mockJournalDb.journalEntityById(testTask.id))
-            .thenAnswer((_) async => testTask);
+        when(
+          () => mockJournalDb.journalEntityById(testTask.id),
+        ).thenAnswer((_) async => testTask);
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: item.id,
@@ -1035,7 +1055,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': false}
+              {'id': 'item-1', 'isChecked': false},
             ],
             'taskId': testTask.id,
           },
@@ -1063,97 +1083,103 @@ void main() {
         );
       });
 
-      test('blocks user-unchecked item from being checked without reason',
-          () async {
-        final item = TestDataFactory.createChecklistItem(
-          id: 'item-1',
-          title: 'Not done yet',
-          checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
-          checkedAt: DateTime(2026, 2, 28, 22),
-        );
-        stubSingleItem(item);
+      test(
+        'blocks user-unchecked item from being checked without reason',
+        () async {
+          final item = TestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Not done yet',
+            checkedBy:
+                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+            checkedAt: DateTime(2026, 2, 28, 22),
+          );
+          stubSingleItem(item);
 
-        handler = LottiChecklistUpdateHandler(
-          task: testTask,
-          checklistRepository: mockChecklistRepository,
-          clock: () => DateTime(2026, 2, 28, 22, 35),
-        );
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            clock: () => DateTime(2026, 2, 28, 22, 35),
+          );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true}
-            ],
-            'taskId': testTask.id,
-          },
-        );
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'update_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {'id': 'item-1', 'isChecked': true},
+              ],
+              'taskId': testTask.id,
+            },
+          );
 
-        final count = await handler.executeUpdates(result);
+          final count = await handler.executeUpdates(result);
 
-        expect(count, 0);
-        expect(handler.skippedItems.length, 1);
-        expect(
-          handler.skippedItems[0].reason,
-          contains('User set this item'),
-        );
-      });
+          expect(count, 0);
+          expect(handler.skippedItems.length, 1);
+          expect(
+            handler.skippedItems[0].reason,
+            contains('User set this item'),
+          );
+        },
+      );
 
-      test('allows override of user-set item when reason is provided',
-          () async {
-        final item = TestDataFactory.createChecklistItem(
-          id: 'item-1',
-          title: 'Deploy to prod',
-          isChecked: true,
-          checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
-          checkedAt: DateTime(2026, 2, 28, 22),
-        );
-        stubSingleItem(item);
+      test(
+        'allows override of user-set item when reason is provided',
+        () async {
+          final item = TestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'Deploy to prod',
+            isChecked: true,
+            checkedBy:
+                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+            checkedAt: DateTime(2026, 2, 28, 22),
+          );
+          stubSingleItem(item);
 
-        final clockTime = DateTime(2026, 2, 28, 22, 35);
-        handler = LottiChecklistUpdateHandler(
-          task: testTask,
-          checklistRepository: mockChecklistRepository,
-          clock: () => clockTime,
-        );
+          final clockTime = DateTime(2026, 2, 28, 22, 35);
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            clock: () => clockTime,
+          );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {
-                'id': 'item-1',
-                'isChecked': false,
-                'reason': 'User said "deploy failed" in 22:30 recording',
-              }
-            ],
-            'taskId': testTask.id,
-          },
-        );
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'update_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {
+                  'id': 'item-1',
+                  'isChecked': false,
+                  'reason': 'User said "deploy failed" in 22:30 recording',
+                },
+              ],
+              'taskId': testTask.id,
+            },
+          );
 
-        final count = await handler.executeUpdates(result);
+          final count = await handler.executeUpdates(result);
 
-        expect(count, 1);
-        expect(handler.skippedItems, isEmpty);
+          expect(count, 1);
+          expect(handler.skippedItems, isEmpty);
 
-        final captured = verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: captureAny(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).captured.single as ChecklistItemData;
+          final captured =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: 'item-1',
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
 
-        expect(captured.isChecked, false);
-        expect(captured.checkedBy, CheckedBySource.agent);
-        expect(captured.checkedAt, clockTime);
-      });
+          expect(captured.isChecked, false);
+          expect(captured.checkedBy, CheckedBySource.agent);
+          expect(captured.checkedAt, clockTime);
+        },
+      );
 
       test('freely updates agent-set item without reason', () async {
         final item = TestDataFactory.createChecklistItem(
@@ -1178,7 +1204,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': false}
+              {'id': 'item-1', 'isChecked': false},
             ],
             'taskId': testTask.id,
           },
@@ -1189,77 +1215,83 @@ void main() {
         expect(count, 1);
         expect(handler.skippedItems, isEmpty);
 
-        final captured = verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: captureAny(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).captured.single as ChecklistItemData;
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    data: captureAny(named: 'data'),
+                    taskId: testTask.id,
+                  ),
+                ).captured.single
+                as ChecklistItemData;
 
         expect(captured.isChecked, false);
         expect(captured.checkedBy, CheckedBySource.agent);
         expect(captured.checkedAt, clockTime);
       });
 
-      test('allows title update but blocks isChecked on user-set item',
-          () async {
-        final item = TestDataFactory.createChecklistItem(
-          id: 'item-1',
-          title: 'mac OS setup',
-          isChecked: true,
-          checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
-          checkedAt: DateTime(2026, 2, 28, 22),
-        );
-        stubSingleItem(item);
+      test(
+        'allows title update but blocks isChecked on user-set item',
+        () async {
+          final item = TestDataFactory.createChecklistItem(
+            id: 'item-1',
+            title: 'mac OS setup',
+            isChecked: true,
+            checkedBy:
+                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+            checkedAt: DateTime(2026, 2, 28, 22),
+          );
+          stubSingleItem(item);
 
-        handler = LottiChecklistUpdateHandler(
-          task: testTask,
-          checklistRepository: mockChecklistRepository,
-          clock: () => DateTime(2026, 2, 28, 22, 35),
-        );
+          handler = LottiChecklistUpdateHandler(
+            task: testTask,
+            checklistRepository: mockChecklistRepository,
+            clock: () => DateTime(2026, 2, 28, 22, 35),
+          );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {
-                'id': 'item-1',
-                'isChecked': false,
-                'title': 'macOS setup',
-              }
-            ],
-            'taskId': testTask.id,
-          },
-        );
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'update_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {
+                  'id': 'item-1',
+                  'isChecked': false,
+                  'title': 'macOS setup',
+                },
+              ],
+              'taskId': testTask.id,
+            },
+          );
 
-        final count = await handler.executeUpdates(result);
+          final count = await handler.executeUpdates(result);
 
-        // Title update succeeds, isChecked skipped
-        expect(count, 1);
-        expect(handler.skippedItems.length, 1);
-        expect(
-          handler.skippedItems[0].reason,
-          contains('User set this item'),
-        );
+          // Title update succeeds, isChecked skipped
+          expect(count, 1);
+          expect(handler.skippedItems.length, 1);
+          expect(
+            handler.skippedItems[0].reason,
+            contains('User set this item'),
+          );
 
-        final captured = verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: captureAny(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).captured.single as ChecklistItemData;
+          final captured =
+              verify(
+                    () => mockChecklistRepository.updateChecklistItem(
+                      checklistItemId: 'item-1',
+                      data: captureAny(named: 'data'),
+                      taskId: testTask.id,
+                    ),
+                  ).captured.single
+                  as ChecklistItemData;
 
-        expect(captured.title, 'macOS setup');
-        // isChecked should remain unchanged (user's value)
-        expect(captured.isChecked, true);
-        // checkedBy should remain user since isChecked wasn't changed
-        expect(captured.checkedBy, CheckedBySource.user);
-      });
+          expect(captured.title, 'macOS setup');
+          // isChecked should remain unchanged (user's value)
+          expect(captured.isChecked, true);
+          // checkedBy should remain user since isChecked wasn't changed
+          expect(captured.checkedBy, CheckedBySource.user);
+        },
+      );
 
       test('treats legacy item (default checkedBy) as user-set', () async {
         // Legacy items deserialize with checkedBy = user (the default)
@@ -1283,7 +1315,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': false}
+              {'id': 'item-1', 'isChecked': false},
             ],
             'taskId': testTask.id,
           },
@@ -1322,7 +1354,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': false, 'reason': '   '}
+              {'id': 'item-1', 'isChecked': false, 'reason': '   '},
             ],
             'taskId': testTask.id,
           },
@@ -1362,7 +1394,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'title': 'macOS'}
+              {'id': 'item-1', 'title': 'macOS'},
             ],
             'taskId': testTask.id,
           },
@@ -1372,13 +1404,15 @@ void main() {
 
         expect(count, 1);
 
-        final captured = verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: captureAny(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).captured.single as ChecklistItemData;
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    data: captureAny(named: 'data'),
+                    taskId: testTask.id,
+                  ),
+                ).captured.single
+                as ChecklistItemData;
 
         // Provenance should be preserved (no isChecked change)
         expect(captured.checkedBy, CheckedBySource.user);
@@ -1408,7 +1442,7 @@ void main() {
           arguments: '',
           data: {
             'items': [
-              {'id': 'item-1', 'isChecked': false, 'reason': 'not done'}
+              {'id': 'item-1', 'isChecked': false, 'reason': 'not done'},
             ],
             'taskId': testTask.id,
           },
@@ -1456,7 +1490,7 @@ void main() {
                 'isChecked': false,
                 'title': 'macOS setup',
                 'reason': 'short',
-              }
+              },
             ],
             'taskId': testTask.id,
           },
@@ -1472,13 +1506,15 @@ void main() {
           contains('Reason too short'),
         );
 
-        final captured = verify(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: captureAny(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).captured.single as ChecklistItemData;
+        final captured =
+            verify(
+                  () => mockChecklistRepository.updateChecklistItem(
+                    checklistItemId: 'item-1',
+                    data: captureAny(named: 'data'),
+                    taskId: testTask.id,
+                  ),
+                ).captured.single
+                as ChecklistItemData;
 
         expect(captured.title, 'macOS setup');
         // isChecked should remain unchanged (user's value)

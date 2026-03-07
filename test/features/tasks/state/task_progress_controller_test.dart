@@ -30,12 +30,12 @@ class MockTask extends Mock implements Task {
 
   @override
   Metadata get meta => Metadata(
-        id: taskId,
-        dateFrom: _fixedDate,
-        dateTo: _fixedDate,
-        createdAt: _fixedDate,
-        updatedAt: _fixedDate,
-      );
+    id: taskId,
+    dateFrom: _fixedDate,
+    dateTo: _fixedDate,
+    createdAt: _fixedDate,
+    updatedAt: _fixedDate,
+  );
 }
 
 // Create a fake TaskProgressState for registerFallbackValue
@@ -100,11 +100,13 @@ void main() {
     updateStreamController = StreamController<Set<String>>.broadcast();
     timeServiceStreamController = StreamController<JournalEntity?>.broadcast();
 
-    when(() => mockUpdateNotifications.updateStream)
-        .thenAnswer((_) => updateStreamController.stream);
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
-    when(() => mockTimeService.getStream())
-        .thenAnswer((_) => timeServiceStreamController.stream);
+    when(
+      () => mockTimeService.getStream(),
+    ).thenAnswer((_) => timeServiceStreamController.stream);
 
     getIt
       ..registerSingleton<TimeService>(mockTimeService)
@@ -117,8 +119,9 @@ void main() {
     );
 
     // Mock repository methods with specific values
-    when(() => mockRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, testTimeRanges));
+    when(
+      () => mockRepository.getTaskProgressData(id: testTaskId),
+    ).thenAnswer((_) async => (testEstimate, testTimeRanges));
 
     when(
       () => mockRepository.getTaskProgress(
@@ -138,7 +141,7 @@ void main() {
     // Add a listener to track state changes
     container.listen(
       taskProgressControllerProvider(id: testTaskId),
-      (_, __) {},
+      (_, _) {},
       fireImmediately: true,
     );
 
@@ -149,77 +152,85 @@ void main() {
     verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
 
     // Verify the state contains the expected data
-    final state =
-        container.read(taskProgressControllerProvider(id: testTaskId));
+    final state = container.read(
+      taskProgressControllerProvider(id: testTaskId),
+    );
     expect(state.value, equals(testProgress));
   });
 
-  test('updates state when relevant update notifications are received',
-      () async {
-    // Set up initial state
-    await container.read(taskProgressControllerProvider(id: testTaskId).future);
+  test(
+    'updates state when relevant update notifications are received',
+    () async {
+      // Set up initial state
+      await container.read(
+        taskProgressControllerProvider(id: testTaskId).future,
+      );
 
-    // Clear previous invocations
-    clearInteractions(mockRepository);
+      // Clear previous invocations
+      clearInteractions(mockRepository);
 
-    // Create updated data for the second fetch
-    final updatedTimeRanges = <String, TimeRange>{
-      'entry1': TimeRange(
-        start: DateTime(2022, 7, 7, 9),
-        end: DateTime(2022, 7, 7, 9, 30), // 30 min
-      ),
-      'entry2': TimeRange(
-        start: DateTime(2022, 7, 7, 14),
-        end: DateTime(2022, 7, 7, 15), // 60 min
-      ),
-    };
-    const updatedProgress = TaskProgressState(
-      progress: Duration(minutes: 90),
-      estimate: testEstimate,
-    );
-
-    when(() => mockRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, updatedTimeRanges));
-
-    when(
-      () => mockRepository.getTaskProgress(
-        timeRanges: updatedTimeRanges,
+      // Create updated data for the second fetch
+      final updatedTimeRanges = <String, TimeRange>{
+        'entry1': TimeRange(
+          start: DateTime(2022, 7, 7, 9),
+          end: DateTime(2022, 7, 7, 9, 30), // 30 min
+        ),
+        'entry2': TimeRange(
+          start: DateTime(2022, 7, 7, 14),
+          end: DateTime(2022, 7, 7, 15), // 60 min
+        ),
+      };
+      const updatedProgress = TaskProgressState(
+        progress: Duration(minutes: 90),
         estimate: testEstimate,
-      ),
-    ).thenReturn(updatedProgress);
+      );
 
-    // Listen for the updated state
-    final updated = Completer<void>();
-    final sub = container.listen(
-      taskProgressControllerProvider(id: testTaskId),
-      (_, next) {
-        if (!updated.isCompleted && next.value == updatedProgress) {
-          updated.complete();
-        }
-      },
-    );
+      when(
+        () => mockRepository.getTaskProgressData(id: testTaskId),
+      ).thenAnswer((_) async => (testEstimate, updatedTimeRanges));
 
-    // Trigger update notification with the changed entry id
-    updateStreamController.add({'entry2'});
-    try {
-      await updated.future.timeout(const Duration(seconds: 1));
-    } on TimeoutException {
-      fail('Timed out waiting for updated task progress state');
-    } finally {
-      sub.close();
-    }
+      when(
+        () => mockRepository.getTaskProgress(
+          timeRanges: updatedTimeRanges,
+          estimate: testEstimate,
+        ),
+      ).thenReturn(updatedProgress);
 
-    // Verify the data was fetched again and state updated
-    verify(() => mockRepository.getTaskProgressData(id: testTaskId)).called(1);
+      // Listen for the updated state
+      final updated = Completer<void>();
+      final sub = container.listen(
+        taskProgressControllerProvider(id: testTaskId),
+        (_, next) {
+          if (!updated.isCompleted && next.value == updatedProgress) {
+            updated.complete();
+          }
+        },
+      );
 
-    // Ensure the final state contains the updated data
-    final state =
-        container.read(taskProgressControllerProvider(id: testTaskId));
-    expect(state.value, equals(updatedProgress));
-  });
+      // Trigger update notification with the changed entry id
+      updateStreamController.add({'entry2'});
+      try {
+        await updated.future.timeout(const Duration(seconds: 1));
+      } on TimeoutException {
+        fail('Timed out waiting for updated task progress state');
+      } finally {
+        sub.close();
+      }
 
-  test('updates state when time service emits a linked journal entity',
-      () async {
+      // Verify the data was fetched again and state updated
+      verify(
+        () => mockRepository.getTaskProgressData(id: testTaskId),
+      ).called(1);
+
+      // Ensure the final state contains the updated data
+      final state = container.read(
+        taskProgressControllerProvider(id: testTaskId),
+      );
+      expect(state.value, equals(updatedProgress));
+    },
+  );
+
+  test('updates state when time service emits a linked journal entity', () async {
     // Set up initial state
     await container.read(taskProgressControllerProvider(id: testTaskId).future);
 
@@ -265,8 +276,9 @@ void main() {
       async.flushMicrotasks();
 
       // Ensure the state was updated
-      final state =
-          container.read(taskProgressControllerProvider(id: testTaskId));
+      final state = container.read(
+        taskProgressControllerProvider(id: testTaskId),
+      );
       expect(state.value?.estimate, equals(testEstimate));
     });
   });
@@ -312,8 +324,9 @@ void main() {
   test('disposes subscriptions when disposed', () async {
     // Create a separate repository for this test to avoid interference
     final testRepository = MockTaskProgressRepository();
-    when(() => testRepository.getTaskProgressData(id: testTaskId))
-        .thenAnswer((_) async => (testEstimate, testTimeRanges));
+    when(
+      () => testRepository.getTaskProgressData(id: testTaskId),
+    ).thenAnswer((_) async => (testEstimate, testTimeRanges));
 
     // Important: We need to mock the getTaskProgress method as well
     when(
@@ -331,8 +344,9 @@ void main() {
     );
 
     // Initialize the controller
-    await localContainer
-        .read(taskProgressControllerProvider(id: testTaskId).future);
+    await localContainer.read(
+      taskProgressControllerProvider(id: testTaskId).future,
+    );
 
     // Clear interactions to start fresh
     clearInteractions(testRepository);

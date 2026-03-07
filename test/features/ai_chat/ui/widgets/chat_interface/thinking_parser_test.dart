@@ -65,8 +65,13 @@ void main() {
     test('interleaves visible and multiple thinking segments', () {
       const input = 'v1<think>a</think>v2<thinking>b</thinking>v3';
       final segs = splitThinkingSegments(input);
-      expect(segs.map((s) => s.isThinking).toList(),
-          [false, true, false, true, false]);
+      expect(segs.map((s) => s.isThinking).toList(), [
+        false,
+        true,
+        false,
+        true,
+        false,
+      ]);
       expect(segs.map((s) => s.text).toList(), ['v1', 'a', 'v2', 'b', 'v3']);
     });
   });
@@ -115,7 +120,9 @@ void main() {
       expect(parsed.visible, isEmpty);
       expect(parsed.thinking, isNotNull);
       expect(
-          parsed.thinking!.endsWith('[Thinking content truncated...]'), isTrue);
+        parsed.thinking!.endsWith('[Thinking content truncated...]'),
+        isTrue,
+      );
     });
 
     test('memoization cache returns identical instance for same input', () {
@@ -146,8 +153,13 @@ void main() {
     test('case-insensitive HTML/bracket detection', () {
       const input = 'a<ThInK>X</THINK>b[ThInKiNg]Y[/tHiNkInG]c';
       final segs = splitThinkingSegments(input);
-      expect(segs.map((s) => s.isThinking).toList(),
-          [false, true, false, true, false]);
+      expect(segs.map((s) => s.isThinking).toList(), [
+        false,
+        true,
+        false,
+        true,
+        false,
+      ]);
       expect(segs.map((s) => s.text).toList(), ['a', 'X', 'b', 'Y', 'c']);
     });
 

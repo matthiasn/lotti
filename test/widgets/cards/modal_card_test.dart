@@ -267,14 +267,15 @@ void main() {
 
       expect(card.color, equals(testColor));
       expect(
-          card.elevation,
-          equals(
-              0)); // Note: elevation parameter is not used in current implementation
+        card.elevation,
+        equals(0),
+      ); // Note: elevation parameter is not used in current implementation
       expect(container.padding, equals(testPadding));
     });
 
-    testWidgets('renders correctly inside a modal-like environment',
-        (tester) async {
+    testWidgets('renders correctly inside a modal-like environment', (
+      tester,
+    ) async {
       // Simulate a modal environment with a colored background
       await tester.pumpWidget(
         MaterialApp(
@@ -300,8 +301,10 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
 
       final card = tester.widget<Card>(find.byType(Card));
-      expect(card.color,
-          equals(ThemeData.dark().colorScheme.surfaceContainerHighest));
+      expect(
+        card.color,
+        equals(ThemeData.dark().colorScheme.surfaceContainerHighest),
+      );
     });
 
     // Border and animation tests
@@ -337,8 +340,9 @@ void main() {
         );
       });
 
-      testWidgets('applies borderColor with default borderRadius',
-          (tester) async {
+      testWidgets('applies borderColor with default borderRadius', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             borderColor: Colors.blue,
@@ -385,8 +389,9 @@ void main() {
         expect(tapCount, 1);
       });
 
-      testWidgets('does not call onTap when isDisabled is true',
-          (tester) async {
+      testWidgets('does not call onTap when isDisabled is true', (
+        tester,
+      ) async {
         var tapCount = 0;
 
         await tester.pumpWidget(
@@ -441,8 +446,9 @@ void main() {
         expect(tapCount, 1);
       });
 
-      testWidgets('card without onTap handler renders correctly',
-          (tester) async {
+      testWidgets('card without onTap handler renders correctly', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           createTestWidget(
             child: const Text('No Tap Handler'),

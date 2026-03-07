@@ -73,8 +73,9 @@ class AiSettingsTabBar extends StatelessWidget {
         labelColor: Theme.of(context).brightness == Brightness.light
             ? context.colorScheme.onPrimaryContainer
             : context.colorScheme.onPrimary,
-        unselectedLabelColor:
-            context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+        unselectedLabelColor: context.colorScheme.onSurfaceVariant.withValues(
+          alpha: 0.7,
+        ),
         labelStyle: context.textTheme.bodyMedium?.copyWith(
           fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
@@ -88,10 +89,12 @@ class AiSettingsTabBar extends StatelessWidget {
         overlayColor: WidgetStateProperty.all(Colors.transparent),
         tabAlignment: TabAlignment.fill,
         tabs: AiSettingsTab.values
-            .map((tab) => Tab(
-                  height: 40,
-                  text: tab.getLocalizedDisplayName(context),
-                ))
+            .map(
+              (tab) => Tab(
+                height: 40,
+                text: tab.getLocalizedDisplayName(context),
+              ),
+            )
             .toList(),
       ),
     );

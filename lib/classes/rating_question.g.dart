@@ -27,15 +27,12 @@ Map<String, dynamic> _$RatingQuestionToJson(_RatingQuestion instance) =>
     };
 
 _RatingQuestionOption _$RatingQuestionOptionFromJson(
-        Map<String, dynamic> json) =>
-    _RatingQuestionOption(
-      label: json['label'] as String,
-      value: (json['value'] as num).toDouble(),
-    );
+  Map<String, dynamic> json,
+) => _RatingQuestionOption(
+  label: json['label'] as String,
+  value: (json['value'] as num).toDouble(),
+);
 
 Map<String, dynamic> _$RatingQuestionOptionToJson(
-        _RatingQuestionOption instance) =>
-    <String, dynamic>{
-      'label': instance.label,
-      'value': instance.value,
-    };
+  _RatingQuestionOption instance,
+) => <String, dynamic>{'label': instance.label, 'value': instance.value};

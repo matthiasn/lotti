@@ -11,8 +11,9 @@ class DashboardsList extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filteredSortedDashboards =
-        ref.watch(filteredSortedDashboardsProvider);
+    final filteredSortedDashboards = ref.watch(
+      filteredSortedDashboardsProvider,
+    );
 
     return SliverToBoxAdapter(
       child: Padding(

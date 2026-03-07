@@ -50,4 +50,5 @@ void main() {
     expect(w1, equals(w2));
   });
 }
+
 // ignore_for_file: avoid_redundant_argument_values

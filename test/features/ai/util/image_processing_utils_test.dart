@@ -192,23 +192,24 @@ void main() {
     });
 
     test(
-        'handles file with valid path but returns null without platform bindings',
-        () async {
-      // Write a valid image file
-      final testFile = File('${tempDir.path}/test image (1).png');
-      await testFile.writeAsBytes(_testPngBytes);
+      'handles file with valid path but returns null without platform bindings',
+      () async {
+        // Write a valid image file
+        final testFile = File('${tempDir.path}/test image (1).png');
+        await testFile.writeAsBytes(_testPngBytes);
 
-      // In unit test environment without platform bindings,
-      // this returns null due to codec initialization failure
-      final result = await processReferenceImage(
-        filePath: testFile.path,
-        imageId: 'special-path-id',
-      );
+        // In unit test environment without platform bindings,
+        // this returns null due to codec initialization failure
+        final result = await processReferenceImage(
+          filePath: testFile.path,
+          imageId: 'special-path-id',
+        );
 
-      // The function handles the error gracefully
-      // In production with platform bindings, this would return a valid result
-      expect(result, isNull);
-    });
+        // The function handles the error gracefully
+        // In production with platform bindings, this would return a valid result
+        expect(result, isNull);
+      },
+    );
 
     test('function signature accepts required parameters', () async {
       // Verify the function exists and has the correct signature

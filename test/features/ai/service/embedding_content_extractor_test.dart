@@ -11,12 +11,12 @@ import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 
 /// Builds a minimal [Metadata] for test entities.
 Metadata _meta({String id = 'test-id'}) => Metadata(
-      id: id,
-      createdAt: DateTime(2024, 3, 15),
-      updatedAt: DateTime(2024, 3, 15),
-      dateFrom: DateTime(2024, 3, 15),
-      dateTo: DateTime(2024, 3, 15),
-    );
+  id: id,
+  createdAt: DateTime(2024, 3, 15),
+  updatedAt: DateTime(2024, 3, 15),
+  dateFrom: DateTime(2024, 3, 15),
+  dateTo: DateTime(2024, 3, 15),
+);
 
 /// Text that is long enough to pass the minimum length threshold.
 const _longText = 'This is a sufficiently long text for embedding generation.';
@@ -72,16 +72,16 @@ void main() {
 
     group('Task', () {
       TaskData taskData({String title = 'Test Task Title'}) => TaskData(
-            status: TaskStatus.open(
-              id: 'status-id',
-              createdAt: DateTime(2024, 3, 15),
-              utcOffset: 0,
-            ),
-            title: title,
-            statusHistory: [],
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-          );
+        status: TaskStatus.open(
+          id: 'status-id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 0,
+        ),
+        title: title,
+        statusHistory: [],
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
+      );
 
       test('combines title and body text', () {
         final task = Task(
@@ -99,8 +99,9 @@ void main() {
       test('uses title only when body is empty', () {
         final task = Task(
           meta: _meta(),
-          data:
-              taskData(title: 'A task title that is long enough for embedding'),
+          data: taskData(
+            title: 'A task title that is long enough for embedding',
+          ),
           entryText: const EntryText(plainText: ''),
         );
 
@@ -113,8 +114,9 @@ void main() {
       test('uses title only when entryText is null', () {
         final task = Task(
           meta: _meta(),
-          data:
-              taskData(title: 'A task title that is long enough for embedding'),
+          data: taskData(
+            title: 'A task title that is long enough for embedding',
+          ),
         );
 
         expect(
@@ -135,13 +137,13 @@ void main() {
 
     group('JournalAudio', () {
       AudioData audioData({List<AudioTranscript>? transcripts}) => AudioData(
-            dateFrom: DateTime(2024, 3, 15),
-            dateTo: DateTime(2024, 3, 15),
-            duration: const Duration(minutes: 5),
-            audioFile: 'test.m4a',
-            audioDirectory: '/audio',
-            transcripts: transcripts,
-          );
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15),
+        duration: const Duration(minutes: 5),
+        audioFile: 'test.m4a',
+        audioDirectory: '/audio',
+        transcripts: transcripts,
+      );
 
       test('prefers entryText over transcript', () {
         final audio = JournalAudio(
@@ -376,7 +378,9 @@ void main() {
       );
 
       expect(
-          result, 'Fix login bug\nLabels: authentication, security, backend');
+        result,
+        'Fix login bug\nLabels: authentication, security, backend',
+      );
     });
 
     test('includes body text after labels', () {

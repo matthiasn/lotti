@@ -76,18 +76,24 @@ class _GameyBottomNavigationBarState extends State<GameyBottomNavigationBar>
     _bounceAnimations = _bounceControllers.map((controller) {
       return TweenSequence<double>([
         TweenSequenceItem<double>(
-          tween: Tween<double>(begin: 1, end: 0.85)
-              .chain(CurveTween(curve: Curves.easeOut)),
+          tween: Tween<double>(
+            begin: 1,
+            end: 0.85,
+          ).chain(CurveTween(curve: Curves.easeOut)),
           weight: 20,
         ),
         TweenSequenceItem<double>(
-          tween: Tween<double>(begin: 0.85, end: 1.15)
-              .chain(CurveTween(curve: Curves.elasticOut)),
+          tween: Tween<double>(
+            begin: 0.85,
+            end: 1.15,
+          ).chain(CurveTween(curve: Curves.elasticOut)),
           weight: 50,
         ),
         TweenSequenceItem<double>(
-          tween: Tween<double>(begin: 1.15, end: 1)
-              .chain(CurveTween(curve: Curves.easeOut)),
+          tween: Tween<double>(
+            begin: 1.15,
+            end: 1,
+          ).chain(CurveTween(curve: Curves.easeOut)),
           weight: 30,
         ),
       ]).animate(controller);
@@ -274,8 +280,9 @@ class _GameyNavBarItem extends StatelessWidget {
                     ),
                     // Outer glow
                     BoxShadow(
-                      color:
-                          featureColor.withValues(alpha: isDark ? 0.25 : 0.15),
+                      color: featureColor.withValues(
+                        alpha: isDark ? 0.25 : 0.15,
+                      ),
                       blurRadius: 20,
                     ),
                   ],

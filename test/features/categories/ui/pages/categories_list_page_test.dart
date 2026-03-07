@@ -134,8 +134,9 @@ void main() {
         expect(find.text('Archive'), findsNothing);
       });
 
-      testWidgets('shows no results message when search has no matches',
-          (tester) async {
+      testWidgets('shows no results message when search has no matches', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(name: 'Work'),
           CategoryTestUtils.createTestCategory(name: 'Personal'),
@@ -294,7 +295,9 @@ void main() {
       testWidgets('displays private category icon', (tester) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
-              name: 'Private Category', private: true),
+            name: 'Private Category',
+            private: true,
+          ),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -309,7 +312,9 @@ void main() {
       testWidgets('displays inactive category icon', (tester) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
-              name: 'Inactive Category', active: false),
+            name: 'Inactive Category',
+            active: false,
+          ),
         ];
 
         when(() => mockRepository.watchCategories()).thenAnswer(
@@ -321,8 +326,9 @@ void main() {
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
       });
 
-      testWidgets('displays category with AI settings subtitle',
-          (tester) async {
+      testWidgets('displays category with AI settings subtitle', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
             name: 'AI Category',
@@ -390,7 +396,9 @@ void main() {
         final categories = [
           CategoryTestUtils.createTestCategory(name: 'Work', private: true),
           CategoryTestUtils.createTestCategory(
-              name: 'Personal', defaultLanguageCode: 'en'),
+            name: 'Personal',
+            defaultLanguageCode: 'en',
+          ),
           CategoryTestUtils.createTestCategory(name: 'Archived', active: false),
         ];
 
@@ -416,9 +424,13 @@ void main() {
 
         // Verify icons are displayed correctly
         expect(
-            find.byIcon(Icons.lock_outline), findsOneWidget); // Work is private
-        expect(find.byIcon(Icons.visibility_off_outlined),
-            findsOneWidget); // Archived is inactive
+          find.byIcon(Icons.lock_outline),
+          findsOneWidget,
+        ); // Work is private
+        expect(
+          find.byIcon(Icons.visibility_off_outlined),
+          findsOneWidget,
+        ); // Archived is inactive
       });
 
       testWidgets('handles categories with automatic prompts', (tester) async {
@@ -507,8 +519,9 @@ void main() {
         expect(find.text('Production'), findsNothing);
       });
 
-      testWidgets('search state persists when categories update',
-          (tester) async {
+      testWidgets('search state persists when categories update', (
+        tester,
+      ) async {
         final categoriesController =
             StreamController<List<CategoryDefinition>>();
 
@@ -546,8 +559,10 @@ void main() {
         await tester.pump();
 
         // Search query should still be applied
-        expect(find.byType(ModernBaseCard),
-            findsNWidgets(2)); // Work and Workspace
+        expect(
+          find.byType(ModernBaseCard),
+          findsNWidgets(2),
+        ); // Work and Workspace
 
         await categoriesController.close();
       });
@@ -590,8 +605,9 @@ void main() {
         expect(find.byType(ModernBaseCard), findsNWidgets(3));
       });
 
-      testWidgets('displays all state icons correctly together',
-          (tester) async {
+      testWidgets('displays all state icons correctly together', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
             name: 'Complex Category',
@@ -668,8 +684,9 @@ void main() {
         expect(find.text('Category 42'), findsOneWidget);
       });
 
-      testWidgets('ModernBaseCard tap interaction with search active',
-          (tester) async {
+      testWidgets('ModernBaseCard tap interaction with search active', (
+        tester,
+      ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(name: 'Work'),
           CategoryTestUtils.createTestCategory(name: 'Personal'),
@@ -695,8 +712,9 @@ void main() {
     });
 
     group('SettingsPageHeader Integration', () {
-      testWidgets('displays SettingsPageHeader with correct title',
-          (tester) async {
+      testWidgets('displays SettingsPageHeader with correct title', (
+        tester,
+      ) async {
         when(() => mockRepository.watchCategories()).thenAnswer(
           (_) => Stream.value([]),
         );

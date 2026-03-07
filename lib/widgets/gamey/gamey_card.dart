@@ -83,15 +83,16 @@ class _GameyCardState extends State<GameyCard>
       duration: GameyAnimations.fast,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1,
-      end: GameyAnimations.tapScale,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: GameyAnimations.smooth,
-      ),
-    );
+    _scaleAnimation =
+        Tween<double>(
+          begin: 1,
+          end: GameyAnimations.tapScale,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: GameyAnimations.smooth,
+          ),
+        );
   }
 
   @override
@@ -157,7 +158,8 @@ class _GameyCardState extends State<GameyCard>
         gradient: widget.backgroundColor == null ? effectiveGradient : null,
         color: widget.backgroundColor,
         borderRadius: BorderRadius.circular(widget.borderRadius),
-        border: widget.border ??
+        border:
+            widget.border ??
             Border.all(
               color: glowColor.withValues(alpha: isDark ? 0.12 : 0.15),
               width: isDark ? 1 : 1.5,

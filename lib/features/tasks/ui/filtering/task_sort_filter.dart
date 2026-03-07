@@ -14,8 +14,9 @@ class TaskSortFilter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

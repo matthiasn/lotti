@@ -48,8 +48,9 @@ void main() {
 
     tearDown(getIt.reset);
 
-    testWidgets('shows modal with all menu items when events enabled',
-        (tester) async {
+    testWidgets('shows modal with all menu items when events enabled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -121,8 +122,9 @@ void main() {
       expect(find.byType(Divider), findsWidgets);
     });
 
-    testWidgets('shows Timer item when linkedFromId is provided',
-        (tester) async {
+    testWidgets('shows Timer item when linkedFromId is provided', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -192,8 +194,9 @@ void main() {
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
     });
 
-    testWidgets('hides Event item when enableEventsFlag is false',
-        (tester) async {
+    testWidgets('hides Event item when enableEventsFlag is false', (
+      tester,
+    ) async {
       // Override to disable events
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -241,8 +244,9 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
 
-    testWidgets('displays correct icons for all standard menu items',
-        (tester) async {
+    testWidgets('displays correct icons for all standard menu items', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [

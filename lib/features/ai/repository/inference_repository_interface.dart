@@ -46,9 +46,11 @@ abstract class InferenceRepositoryInterface {
     if (systemMessage != null) {
       messages.add(ChatCompletionMessage.system(content: systemMessage));
     }
-    messages.add(ChatCompletionMessage.user(
-      content: ChatCompletionUserMessageContent.string(prompt),
-    ));
+    messages.add(
+      ChatCompletionMessage.user(
+        content: ChatCompletionUserMessageContent.string(prompt),
+      ),
+    );
 
     return generateTextWithMessages(
       messages: messages,

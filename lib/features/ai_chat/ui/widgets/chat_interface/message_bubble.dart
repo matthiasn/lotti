@@ -32,7 +32,8 @@ class MessageBubble extends StatelessWidget {
       }
     }
 
-    final hideTimestamp = isAssistant &&
+    final hideTimestamp =
+        isAssistant &&
         !message.isStreaming &&
         isThinkingOnlyMessage(message.content);
 
@@ -43,21 +44,25 @@ class MessageBubble extends StatelessWidget {
         right: isUser ? 0 : 20,
       ),
       child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isUser
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
               children: [
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 14),
+                        horizontal: 18,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: isUser
                             ? theme.colorScheme.primary.withValues(alpha: 0.4)
@@ -87,10 +92,12 @@ class MessageBubble extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: isUser
-                              ? theme.colorScheme.onPrimary
-                                  .withValues(alpha: 0.10)
-                              : theme.colorScheme.onSurface
-                                  .withValues(alpha: 0.06),
+                              ? theme.colorScheme.onPrimary.withValues(
+                                  alpha: 0.10,
+                                )
+                              : theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.06,
+                                ),
                         ),
                       ),
                       child: _MessageContent(
@@ -120,9 +127,9 @@ class MessageBubble extends StatelessWidget {
                       ),
                     if (!isUser &&
                         !message.isStreaming &&
-                        ThinkingUtils.stripThinking(message.content)
-                            .trim()
-                            .isNotEmpty)
+                        ThinkingUtils.stripThinking(
+                          message.content,
+                        ).trim().isNotEmpty)
                       Positioned(
                         top: -10,
                         right: -10,
@@ -131,13 +138,15 @@ class MessageBubble extends StatelessWidget {
                           icon: Icons.copy,
                           onTap: () async {
                             // Copy strips hidden thinking by default to share only the visible answer.
-                            final text =
-                                ThinkingUtils.stripThinking(message.content);
+                            final text = ThinkingUtils.stripThinking(
+                              message.content,
+                            );
                             await Clipboard.setData(ClipboardData(text: text));
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Copied to clipboard')),
+                                  content: Text('Copied to clipboard'),
+                                ),
                               );
                             }
                           },

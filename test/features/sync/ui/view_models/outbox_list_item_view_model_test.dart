@@ -14,51 +14,53 @@ void main() {
 
   group('OutboxListItemViewModel', () {
     testWidgets(
-        'gracefully falls back when the stored status index is out of range',
-        (tester) async {
-      late OutboxListItemViewModel viewModel;
-      late BuildContext capturedContext;
+      'gracefully falls back when the stored status index is out of range',
+      (tester) async {
+        late OutboxListItemViewModel viewModel;
+        late BuildContext capturedContext;
 
-      final item = OutboxItem(
-        id: 1,
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        status: 999, // legacy/invalid value should not crash
-        retries: 0,
-        message: jsonEncode({
-          'runtimeType': 'aiConfigDelete',
-          'id': 'config-id',
-        }),
-        subject: 'subject',
-        priority: OutboxPriority.low.index,
-      );
+        final item = OutboxItem(
+          id: 1,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          status: 999, // legacy/invalid value should not crash
+          retries: 0,
+          message: jsonEncode({
+            'runtimeType': 'aiConfigDelete',
+            'id': 'config-id',
+          }),
+          subject: 'subject',
+          priority: OutboxPriority.low.index,
+        );
 
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Builder(
-            builder: (context) {
-              capturedContext = context;
-              viewModel = OutboxListItemViewModel.fromItem(
-                context: context,
-                item: item,
-              );
-              return const SizedBox.shrink();
-            },
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: item,
+                );
+                return const SizedBox.shrink();
+              },
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      expect(viewModel.statusLabel, 'Pending');
-      expect(
-        viewModel.statusColor,
-        Theme.of(capturedContext).colorScheme.tertiary,
-      );
-    });
+        expect(viewModel.statusLabel, 'Pending');
+        expect(
+          viewModel.statusColor,
+          Theme.of(capturedContext).colorScheme.tertiary,
+        );
+      },
+    );
 
-    testWidgets('trims whitespace subjects and reports missing attachment',
-        (tester) async {
+    testWidgets('trims whitespace subjects and reports missing attachment', (
+      tester,
+    ) async {
       late OutboxListItemViewModel viewModel;
       late BuildContext capturedContext;
 
@@ -296,19 +298,19 @@ void main() {
 
     group('payloadSizeLabel', () {
       OutboxItem makeItem({int? payloadSize}) => OutboxItem(
-            id: 100,
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            status: 0,
-            retries: 0,
-            message: jsonEncode({
-              'runtimeType': 'aiConfigDelete',
-              'id': 'config-id',
-            }),
-            subject: 'test',
-            payloadSize: payloadSize,
-            priority: OutboxPriority.low.index,
-          );
+        id: 100,
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        status: 0,
+        retries: 0,
+        message: jsonEncode({
+          'runtimeType': 'aiConfigDelete',
+          'id': 'config-id',
+        }),
+        subject: 'test',
+        payloadSize: payloadSize,
+        priority: OutboxPriority.low.index,
+      );
 
       testWidgets('is null when payloadSize is null', (tester) async {
         late OutboxListItemViewModel viewModel;

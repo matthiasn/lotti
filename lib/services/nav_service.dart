@@ -93,13 +93,13 @@ class NavService {
   }
 
   List<BeamerDelegate> get beamerDelegates => <BeamerDelegate>[
-        tasksDelegate,
-        if (_isDailyOsPageEnabled) calendarDelegate,
-        if (_isHabitsPageEnabled) habitsDelegate,
-        if (_isDashboardsPageEnabled) dashboardsDelegate,
-        journalDelegate,
-        settingsDelegate,
-      ];
+    tasksDelegate,
+    if (_isDailyOsPageEnabled) calendarDelegate,
+    if (_isHabitsPageEnabled) habitsDelegate,
+    if (_isDashboardsPageEnabled) dashboardsDelegate,
+    journalDelegate,
+    settingsDelegate,
+  ];
 
   BeamerDelegate delegateByIndex(int index) {
     return beamerDelegates[index];

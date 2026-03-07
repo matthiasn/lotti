@@ -41,8 +41,9 @@ void main() {
       expect(find.byType(BarChart), findsNothing);
     });
 
-    testWidgets('creates stacked bars with success and failure counts',
-        (tester) async {
+    testWidgets('creates stacked bars with success and failure counts', (
+      tester,
+    ) async {
       final buckets = [
         DailyWakeBucket(
           date: DateTime(2024, 3, 15),

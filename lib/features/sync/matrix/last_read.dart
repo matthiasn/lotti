@@ -4,11 +4,10 @@ import 'package:lotti/features/sync/matrix.dart';
 Future<void> setLastReadMatrixEventId(
   String eventId,
   SettingsDb settingsDb,
-) =>
-    settingsDb.saveSettingsItem(
-      lastReadMatrixEventId,
-      eventId,
-    );
+) => settingsDb.saveSettingsItem(
+  lastReadMatrixEventId,
+  eventId,
+);
 
 Future<String?> getLastReadMatrixEventId(SettingsDb settingsDb) =>
     settingsDb.itemByKey(lastReadMatrixEventId);
@@ -16,11 +15,10 @@ Future<String?> getLastReadMatrixEventId(SettingsDb settingsDb) =>
 Future<void> setLastReadMatrixEventTs(
   int tsMillis,
   SettingsDb settingsDb,
-) =>
-    settingsDb.saveSettingsItem(
-      lastReadMatrixEventTs,
-      tsMillis.toString(),
-    );
+) => settingsDb.saveSettingsItem(
+  lastReadMatrixEventTs,
+  tsMillis.toString(),
+);
 
 Future<int?> getLastReadMatrixEventTs(SettingsDb settingsDb) async {
   final v = await settingsDb.itemByKey(lastReadMatrixEventTs);

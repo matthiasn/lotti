@@ -67,12 +67,14 @@ void main() {
         waitForLifecycle: any(named: 'waitForLifecycle'),
       ),
     ).thenAnswer((_) async => true);
-    when(() => mockMatrixService.joinRoom(any()))
-        .thenAnswer((_) async => '!room:example.com');
+    when(
+      () => mockMatrixService.joinRoom(any()),
+    ).thenAnswer((_) async => '!room:example.com');
     when(() => mockMatrixService.saveRoom(any())).thenAnswer((_) async {});
     when(() => mockMatrixService.clearPersistedRoom()).thenAnswer((_) async {});
-    when(() => mockMatrixService.getRoom())
-        .thenAnswer((_) async => '!room:example.com');
+    when(
+      () => mockMatrixService.getRoom(),
+    ).thenAnswer((_) async => '!room:example.com');
     when(
       () => mockMatrixService.changePassword(
         oldPassword: any(named: 'oldPassword'),
@@ -87,10 +89,12 @@ void main() {
       ),
     );
     when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
-    when(() => mockMatrixService.keyVerificationStream)
-        .thenAnswer((_) => const Stream.empty());
-    when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
-        .thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockMatrixService.keyVerificationStream,
+    ).thenAnswer((_) => const Stream.empty());
+    when(
+      () => mockMatrixService.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => const Stream.empty());
   });
 
   tearDown(() {
@@ -186,8 +190,9 @@ void main() {
       );
     });
 
-    testWidgets('shows progress when in rotatingPassword state',
-        (tester) async {
+    testWidgets('shows progress when in rotatingPassword state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
@@ -254,8 +259,9 @@ void main() {
         when(() => keyVerification.isDone).thenReturn(true);
         when(() => runner.lastStep).thenReturn('m.key.verification.done');
         when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(() => mockMatrixService.incomingKeyVerificationRunnerStream)
-            .thenAnswer((_) => incomingController.stream);
+        when(
+          () => mockMatrixService.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => incomingController.stream);
         when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
           checks += 1;
           return checks < 3 ? [device] : [];
@@ -299,8 +305,9 @@ void main() {
         when(() => keyVerification.isDone).thenReturn(true);
         when(() => runner.lastStep).thenReturn('m.key.verification.done');
         when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(() => mockMatrixService.keyVerificationStream)
-            .thenAnswer((_) => outgoingController.stream);
+        when(
+          () => mockMatrixService.keyVerificationStream,
+        ).thenAnswer((_) => outgoingController.stream);
         when(() => mockMatrixService.getUnverifiedDevices()).thenReturn([]);
 
         await tester.pumpWidget(
@@ -340,8 +347,9 @@ void main() {
         when(() => keyVerification.isDone).thenReturn(true);
         when(() => runner.lastStep).thenReturn('m.key.verification.done');
         when(() => runner.keyVerification).thenReturn(keyVerification);
-        when(() => mockMatrixService.keyVerificationStream)
-            .thenAnswer((_) => outgoingController.stream);
+        when(
+          () => mockMatrixService.keyVerificationStream,
+        ).thenAnswer((_) => outgoingController.stream);
         when(() => mockMatrixService.getUnverifiedDevices()).thenAnswer((_) {
           checks += 1;
           return checks < 3 ? [device] : [];
@@ -401,12 +409,15 @@ void main() {
         when(() => mockDevice.deviceId).thenReturn('OTHERDEVICE');
         when(() => mockDevice.userId).thenReturn('@alice:example.com');
 
-        when(() => mockMatrixService.getUnverifiedDevices())
-            .thenReturn([mockDevice]);
-        when(() => mockMatrixService.verifyDevice(mockDevice))
-            .thenAnswer((_) async {});
-        when(() => mockMatrixService.keyVerificationStream)
-            .thenAnswer((_) => const Stream.empty());
+        when(
+          () => mockMatrixService.getUnverifiedDevices(),
+        ).thenReturn([mockDevice]);
+        when(
+          () => mockMatrixService.verifyDevice(mockDevice),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockMatrixService.keyVerificationStream,
+        ).thenAnswer((_) => const Stream.empty());
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -546,8 +557,9 @@ void main() {
       expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
     });
 
-    testWidgets('reveals handover data when visibility toggled',
-        (tester) async {
+    testWidgets('reveals handover data when visibility toggled', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
@@ -572,8 +584,9 @@ void main() {
       expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
     });
 
-    testWidgets('copy button copies handover data to clipboard',
-        (tester) async {
+    testWidgets('copy button copies handover data to clipboard', (
+      tester,
+    ) async {
       // Set up a mock clipboard channel
       String? clipboardText;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -623,8 +636,9 @@ void main() {
       );
     });
 
-    testWidgets('retry button invokes controller retry in error state',
-        (tester) async {
+    testWidgets('retry button invokes controller retry in error state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ProvisionedConfigWidget(pageIndexNotifier: pageIndexNotifier),
@@ -649,8 +663,9 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('shows 2-step progress on mobile for loggingIn state',
-        (tester) async {
+    testWidgets('shows 2-step progress on mobile for loggingIn state', (
+      tester,
+    ) async {
       final wasDesktop = isDesktop;
       isDesktop = false;
       addTearDown(() => isDesktop = wasDesktop);
@@ -673,8 +688,9 @@ void main() {
       expect(find.text('1 / 2'), findsOneWidget);
     });
 
-    testWidgets('shows 2-step progress on mobile for joiningRoom state',
-        (tester) async {
+    testWidgets('shows 2-step progress on mobile for joiningRoom state', (
+      tester,
+    ) async {
       final wasDesktop = isDesktop;
       isDesktop = false;
       addTearDown(() => isDesktop = wasDesktop);
@@ -719,8 +735,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
 
         // Find the Next button (LottiPrimaryButton) - it should be disabled
         final nextButton = tester.widget<LottiPrimaryButton>(
@@ -753,8 +770,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
 
         final nextButton = tester.widget<LottiPrimaryButton>(
           find.widgetWithText(
@@ -786,8 +804,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
         await tester.tap(
           find.text(context.messages.settingsMatrixNextPage),
         );
@@ -817,8 +836,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
 
         final nextButton = tester.widget<LottiPrimaryButton>(
           find.widgetWithText(
@@ -850,8 +870,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
         await tester.tap(
           find.text(context.messages.settingsMatrixPreviousPage),
         );
@@ -883,8 +904,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
 
         final nextButton = tester.widget<LottiPrimaryButton>(
           find.widgetWithText(
@@ -916,8 +938,9 @@ void main() {
         );
         await tester.pump();
 
-        final context =
-            tester.element(find.byType(_ConfigActionBarTestWrapper));
+        final context = tester.element(
+          find.byType(_ConfigActionBarTestWrapper),
+        );
 
         final nextButton = tester.widget<LottiPrimaryButton>(
           find.widgetWithText(

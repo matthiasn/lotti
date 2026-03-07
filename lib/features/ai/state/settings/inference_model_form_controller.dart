@@ -22,7 +22,7 @@ class InferenceModelFormController extends _$InferenceModelFormController {
   }) async {
     _config = configId != null
         ? (await ref.read(aiConfigRepositoryProvider).getConfigById(configId)
-            as AiConfigModel?)
+              as AiConfigModel?)
         : null;
 
     nameController.text = _config?.name ?? '';
@@ -45,7 +45,8 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         providerModelId: ProviderModelId.pure(_config!.providerModelId),
         description: ModelDescription.pure(_config!.description ?? ''),
         maxCompletionTokens: MaxCompletionTokens.pure(
-            _config!.maxCompletionTokens?.toString() ?? ''),
+          _config!.maxCompletionTokens?.toString() ?? '',
+        ),
         inferenceProviderId: _config!.inferenceProviderId,
         inputModalities: _config!.inputModalities,
         outputModalities: _config!.outputModalities,
@@ -72,7 +73,8 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     if (prev == null) return;
 
     // Check if any non-FormzInput field is being changed
-    final isNonFormzFieldChanging = (inferenceProviderId != null &&
+    final isNonFormzFieldChanging =
+        (inferenceProviderId != null &&
             inferenceProviderId != prev.inferenceProviderId) ||
         (inputModalities != null &&
             !listEquals(inputModalities, prev.inputModalities)) ||
@@ -89,16 +91,16 @@ class InferenceModelFormController extends _$InferenceModelFormController {
         description: description != null
             ? ModelDescription.dirty(description)
             : (isNonFormzFieldChanging && prev.description.isPure
-                ? ModelDescription.dirty(prev.description.value)
-                : prev.description),
+                  ? ModelDescription.dirty(prev.description.value)
+                  : prev.description),
         providerModelId: providerModelId != null
             ? ProviderModelId.dirty(providerModelId)
             : prev.providerModelId,
         maxCompletionTokens: maxCompletionTokens != null
             ? MaxCompletionTokens.dirty(maxCompletionTokens)
             : (isNonFormzFieldChanging && prev.maxCompletionTokens.isPure
-                ? MaxCompletionTokens.dirty(prev.maxCompletionTokens.value)
-                : prev.maxCompletionTokens),
+                  ? MaxCompletionTokens.dirty(prev.maxCompletionTokens.value)
+                  : prev.maxCompletionTokens),
         inferenceProviderId: inferenceProviderId,
         inputModalities: inputModalities,
         outputModalities: outputModalities,

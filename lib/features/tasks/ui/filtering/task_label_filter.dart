@@ -28,8 +28,9 @@ class _TaskLabelFilterState extends ConsumerState<TaskLabelFilter> {
 
     final showTasks = ref.watch(journalPageScopeProvider);
     final state = ref.watch(journalPageControllerProvider(showTasks));
-    final controller =
-        ref.read(journalPageControllerProvider(showTasks).notifier);
+    final controller = ref.read(
+      journalPageControllerProvider(showTasks).notifier,
+    );
 
     var labelCandidates = _showAll
         ? labels

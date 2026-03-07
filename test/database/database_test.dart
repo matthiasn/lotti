@@ -156,14 +156,16 @@ void main() {
     registerFallbackValue(const Stream<Set<String>>.empty());
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(fallbackTagEntity);
-    registerFallbackValue(EntryLink.basic(
-      id: 'link-id',
-      fromId: 'from',
-      toId: 'to',
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      vectorClock: null,
-    ));
+    registerFallbackValue(
+      EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        vectorClock: null,
+      ),
+    );
     registerFallbackValue(testTag1);
     registerFallbackValue(measurableWater);
     registerFallbackValue(fallbackAiConfig);
@@ -214,66 +216,71 @@ void main() {
     });
 
     group('JSON persistence -', () {
-      test('does not rewrite JSON when update skipped by vector clock',
-          () async {
-        const freshClock = VectorClock(<String, int>{'device1': 2});
-        const staleClock = VectorClock(<String, int>{'device1': 1});
-        final freshEntry = createJournalEntryWithVclock(freshClock).copyWith(
-          entryText: const EntryText(plainText: 'fresh text'),
-        );
-        await db!.updateJournalEntity(freshEntry);
+      test(
+        'does not rewrite JSON when update skipped by vector clock',
+        () async {
+          const freshClock = VectorClock(<String, int>{'device1': 2});
+          const staleClock = VectorClock(<String, int>{'device1': 1});
+          final freshEntry = createJournalEntryWithVclock(freshClock).copyWith(
+            entryText: const EntryText(plainText: 'fresh text'),
+          );
+          await db!.updateJournalEntity(freshEntry);
 
-        final docDir = getIt<Directory>();
-        final savedPath = entityPath(freshEntry, docDir);
-        final file = File(savedPath);
-        final beforeJson = await file.readAsString();
+          final docDir = getIt<Directory>();
+          final savedPath = entityPath(freshEntry, docDir);
+          final file = File(savedPath);
+          final beforeJson = await file.readAsString();
 
-        final staleEntry = createJournalEntryWithVclock(
-          staleClock,
-          id: freshEntry.meta.id,
-        ).copyWith(
-          entryText: const EntryText(plainText: 'stale text'),
-        );
+          final staleEntry =
+              createJournalEntryWithVclock(
+                staleClock,
+                id: freshEntry.meta.id,
+              ).copyWith(
+                entryText: const EntryText(plainText: 'stale text'),
+              );
 
-        final result = await db!.updateJournalEntity(staleEntry);
-        expect(result.applied, isFalse);
-        expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
+          final result = await db!.updateJournalEntity(staleEntry);
+          expect(result.applied, isFalse);
+          expect(result.skipReason, JournalUpdateSkipReason.olderOrEqual);
 
-        final savedEntity = JournalEntity.fromJson(
-          jsonDecode(await file.readAsString()) as Map<String, dynamic>,
-        );
-        expect(savedEntity.entryText?.plainText, 'fresh text');
-        expect(savedEntity.meta.vectorClock, freshClock);
-        expect(await file.readAsString(), beforeJson);
-      });
+          final savedEntity = JournalEntity.fromJson(
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>,
+          );
+          expect(savedEntity.entryText?.plainText, 'fresh text');
+          expect(savedEntity.meta.vectorClock, freshClock);
+          expect(await file.readAsString(), beforeJson);
+        },
+      );
 
-      test('does not rewrite JSON when update prevented by overwrite=false',
-          () async {
-        final entry = createJournalEntry('original text');
-        await db!.updateJournalEntity(entry);
+      test(
+        'does not rewrite JSON when update prevented by overwrite=false',
+        () async {
+          final entry = createJournalEntry('original text');
+          await db!.updateJournalEntity(entry);
 
-        final docDir = getIt<Directory>();
-        final savedPath = entityPath(entry, docDir);
-        final file = File(savedPath);
-        final beforeJson = await file.readAsString();
+          final docDir = getIt<Directory>();
+          final savedPath = entityPath(entry, docDir);
+          final file = File(savedPath);
+          final beforeJson = await file.readAsString();
 
-        final updated = entry.copyWith(
-          entryText: const EntryText(plainText: 'overwrite prevented'),
-        );
+          final updated = entry.copyWith(
+            entryText: const EntryText(plainText: 'overwrite prevented'),
+          );
 
-        final result = await db!.updateJournalEntity(
-          updated,
-          overwrite: false,
-        );
+          final result = await db!.updateJournalEntity(
+            updated,
+            overwrite: false,
+          );
 
-        expect(result.applied, isFalse);
-        expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
-        final savedEntity = JournalEntity.fromJson(
-          jsonDecode(await file.readAsString()) as Map<String, dynamic>,
-        );
-        expect(savedEntity.entryText?.plainText, 'original text');
-        expect(await file.readAsString(), beforeJson);
-      });
+          expect(result.applied, isFalse);
+          expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
+          final savedEntity = JournalEntity.fromJson(
+            jsonDecode(await file.readAsString()) as Map<String, dynamic>,
+          );
+          expect(savedEntity.entryText?.plainText, 'original text');
+          expect(await file.readAsString(), beforeJson);
+        },
+      );
     });
 
     group('Edge cases -', () {
@@ -373,8 +380,9 @@ void main() {
 
       test('addTagged replaces existing tag associations', () async {
         const journalId = 'journal-add-tagged';
-        await db!
-            .upsertTagEntity(testTag1); // existing tag that will be removed
+        await db!.upsertTagEntity(
+          testTag1,
+        ); // existing tag that will be removed
         await db!.upsertTagEntity(testStoryTag1);
         await db!.upsertTagEntity(testPersonTag1);
         await db!.upsertJournalDbEntity(
@@ -406,32 +414,34 @@ void main() {
         expect(tagIds, isNot(contains(testTag1.id)));
       });
 
-      test('addTagged handles empty tag list by removing existing entries',
-          () async {
-        const journalId = 'journal-clear-tags';
-        await db!.upsertTagEntity(testTag1);
-        await db!.upsertJournalDbEntity(
-          toDbEntity(
-            testTextEntry.copyWith(
-              meta: testTextEntry.meta.copyWith(id: journalId),
+      test(
+        'addTagged handles empty tag list by removing existing entries',
+        () async {
+          const journalId = 'journal-clear-tags';
+          await db!.upsertTagEntity(testTag1);
+          await db!.upsertJournalDbEntity(
+            toDbEntity(
+              testTextEntry.copyWith(
+                meta: testTextEntry.meta.copyWith(id: journalId),
+              ),
             ),
-          ),
-        );
+          );
 
-        await db!.insertTag(journalId, testTag1.id);
+          await db!.insertTag(journalId, testTag1.id);
 
-        final noTagEntity = testTextEntry.copyWith(
-          meta: testTextEntry.meta.copyWith(
-            id: journalId,
-            tagIds: const [],
-          ),
-        );
+          final noTagEntity = testTextEntry.copyWith(
+            meta: testTextEntry.meta.copyWith(
+              id: journalId,
+              tagIds: const [],
+            ),
+          );
 
-        await db!.addTagged(noTagEntity);
+          await db!.addTagged(noTagEntity);
 
-        final rows = await db!.select(db!.tagged).get();
-        expect(rows, isEmpty);
-      });
+          final rows = await db!.select(db!.tagged).get();
+          expect(rows, isEmpty);
+        },
+      );
     });
 
     group('Journal queries -', () {
@@ -463,7 +473,7 @@ void main() {
           privateStatuses: const [true, false],
           flaggedStatuses: [
             EntryFlag.none.index,
-            EntryFlag.followUpNeeded.index
+            EntryFlag.followUpNeeded.index,
           ],
         );
 
@@ -494,7 +504,7 @@ void main() {
           privateStatuses: const [true, false],
           flaggedStatuses: [
             EntryFlag.none.index,
-            EntryFlag.followUpNeeded.index
+            EntryFlag.followUpNeeded.index,
           ],
         );
 
@@ -525,7 +535,7 @@ void main() {
           privateStatuses: const [true],
           flaggedStatuses: [
             EntryFlag.none.index,
-            EntryFlag.followUpNeeded.index
+            EntryFlag.followUpNeeded.index,
           ],
         );
 
@@ -585,7 +595,7 @@ void main() {
           privateStatuses: const [true, false],
           flaggedStatuses: [
             EntryFlag.none.index,
-            EntryFlag.followUpNeeded.index
+            EntryFlag.followUpNeeded.index,
           ],
           categoryIds: {'category-1'},
         );
@@ -616,7 +626,7 @@ void main() {
           privateStatuses: const [true, false],
           flaggedStatuses: [
             EntryFlag.none.index,
-            EntryFlag.followUpNeeded.index
+            EntryFlag.followUpNeeded.index,
           ],
           ids: const ['id-B'],
         );
@@ -974,171 +984,175 @@ void main() {
         );
       });
 
-      test('getTasks with sortByDate and ids uses filteredTasksByDate2',
-          () async {
-        final base = DateTime(2024, 7, 5, 12);
-        // Create tasks with different priorities and dates
-        final p3oldest = JournalEntity.task(
-          meta: Metadata(
-            id: 'oldest-low',
-            createdAt: base,
-            updatedAt: base,
-            dateFrom: base,
-            dateTo: base,
-          ),
-          data: testTask.data.copyWith(
-            status: TaskStatus.open(
-              id: 's3',
+      test(
+        'getTasks with sortByDate and ids uses filteredTasksByDate2',
+        () async {
+          final base = DateTime(2024, 7, 5, 12);
+          // Create tasks with different priorities and dates
+          final p3oldest = JournalEntity.task(
+            meta: Metadata(
+              id: 'oldest-low',
+              createdAt: base,
+              updatedAt: base,
+              dateFrom: base,
+              dateTo: base,
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.open(
+                id: 's3',
+                createdAt: base,
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base,
+              dateTo: base,
+              title: 'P3 oldest',
+              priority: TaskPriority.p3Low,
+            ),
+            entryText: const EntryText(plainText: 'oldest low'),
+          );
+          final p0middle = JournalEntity.task(
+            meta: Metadata(
+              id: 'middle-urgent',
+              createdAt: base.add(const Duration(minutes: 1)),
+              updatedAt: base.add(const Duration(minutes: 1)),
+              dateFrom: base.add(const Duration(minutes: 1)),
+              dateTo: base.add(const Duration(minutes: 1)),
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.open(
+                id: 's0',
+                createdAt: base.add(const Duration(minutes: 1)),
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base.add(const Duration(minutes: 1)),
+              dateTo: base.add(const Duration(minutes: 1)),
+              title: 'P0 middle',
+              priority: TaskPriority.p0Urgent,
+            ),
+            entryText: const EntryText(plainText: 'middle urgent'),
+          );
+          final p1newest = JournalEntity.task(
+            meta: Metadata(
+              id: 'newest-high',
+              createdAt: base.add(const Duration(minutes: 2)),
+              updatedAt: base.add(const Duration(minutes: 2)),
+              dateFrom: base.add(const Duration(minutes: 2)),
+              dateTo: base.add(const Duration(minutes: 2)),
+            ),
+            data: testTask.data.copyWith(
+              status: TaskStatus.open(
+                id: 's1',
+                createdAt: base.add(const Duration(minutes: 2)),
+                utcOffset: base.timeZoneOffset.inMinutes,
+              ),
+              dateFrom: base.add(const Duration(minutes: 2)),
+              dateTo: base.add(const Duration(minutes: 2)),
+              title: 'P1 newest',
+              priority: TaskPriority.p1High,
+            ),
+            entryText: const EntryText(plainText: 'newest high'),
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(p3oldest));
+          await db!.upsertJournalDbEntity(toDbEntity(p0middle));
+          await db!.upsertJournalDbEntity(toDbEntity(p1newest));
+
+          // Query with ids filter + sortByDate to exercise filteredTasksByDate2
+          final results = await db!.getTasks(
+            starredStatuses: const [true, false],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const [''],
+            ids: ['oldest-low', 'newest-high', 'middle-urgent'],
+            sortByDate: true,
+          );
+
+          // Order: newest -> middle -> oldest (date_from DESC, ignoring priority)
+          // With ids filter, should use filteredTasksByDate2 query
+          expect(
+            results.map((e) => e.meta.id).toList(),
+            ['newest-high', 'middle-urgent', 'oldest-low'],
+          );
+        },
+      );
+
+      test(
+        'getTasksDueOn returns only tasks due on the specified date',
+        () async {
+          final targetDate = DateTime(2024, 8, 15);
+          final base = DateTime(2024, 8, 10);
+
+          // Task due on target date (should be included)
+          final taskDueOnDate = buildTaskEntry(
+            id: 'task-due-on-date',
+            timestamp: base,
+            status: TaskStatus.inProgress(
+              id: 'status-1',
               createdAt: base,
               utcOffset: base.timeZoneOffset.inMinutes,
             ),
-            dateFrom: base,
-            dateTo: base,
-            title: 'P3 oldest',
-            priority: TaskPriority.p3Low,
-          ),
-          entryText: const EntryText(plainText: 'oldest low'),
-        );
-        final p0middle = JournalEntity.task(
-          meta: Metadata(
-            id: 'middle-urgent',
-            createdAt: base.add(const Duration(minutes: 1)),
-            updatedAt: base.add(const Duration(minutes: 1)),
-            dateFrom: base.add(const Duration(minutes: 1)),
-            dateTo: base.add(const Duration(minutes: 1)),
-          ),
-          data: testTask.data.copyWith(
-            status: TaskStatus.open(
-              id: 's0',
-              createdAt: base.add(const Duration(minutes: 1)),
+            due: DateTime(2024, 8, 15, 14, 30), // Due on target date
+          );
+
+          // Task due the day before (should NOT be included)
+          final taskDueBefore = buildTaskEntry(
+            id: 'task-due-before',
+            timestamp: base,
+            status: TaskStatus.inProgress(
+              id: 'status-2',
+              createdAt: base,
               utcOffset: base.timeZoneOffset.inMinutes,
             ),
-            dateFrom: base.add(const Duration(minutes: 1)),
-            dateTo: base.add(const Duration(minutes: 1)),
-            title: 'P0 middle',
-            priority: TaskPriority.p0Urgent,
-          ),
-          entryText: const EntryText(plainText: 'middle urgent'),
-        );
-        final p1newest = JournalEntity.task(
-          meta: Metadata(
-            id: 'newest-high',
-            createdAt: base.add(const Duration(minutes: 2)),
-            updatedAt: base.add(const Duration(minutes: 2)),
-            dateFrom: base.add(const Duration(minutes: 2)),
-            dateTo: base.add(const Duration(minutes: 2)),
-          ),
-          data: testTask.data.copyWith(
-            status: TaskStatus.open(
-              id: 's1',
-              createdAt: base.add(const Duration(minutes: 2)),
+            due: DateTime(2024, 8, 14, 12), // Due day before
+          );
+
+          // Task due the day after (should NOT be included)
+          final taskDueAfter = buildTaskEntry(
+            id: 'task-due-after',
+            timestamp: base,
+            status: TaskStatus.inProgress(
+              id: 'status-3',
+              createdAt: base,
               utcOffset: base.timeZoneOffset.inMinutes,
             ),
-            dateFrom: base.add(const Duration(minutes: 2)),
-            dateTo: base.add(const Duration(minutes: 2)),
-            title: 'P1 newest',
-            priority: TaskPriority.p1High,
-          ),
-          entryText: const EntryText(plainText: 'newest high'),
-        );
+            due: DateTime(2024, 8, 16, 9), // Due day after
+          );
 
-        await db!.upsertJournalDbEntity(toDbEntity(p3oldest));
-        await db!.upsertJournalDbEntity(toDbEntity(p0middle));
-        await db!.upsertJournalDbEntity(toDbEntity(p1newest));
+          // Task with no due date (should NOT be included)
+          final taskNoDue = buildTaskEntry(
+            id: 'task-no-due',
+            timestamp: base,
+            status: TaskStatus.inProgress(
+              id: 'status-4',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            // No due date
+          );
 
-        // Query with ids filter + sortByDate to exercise filteredTasksByDate2
-        final results = await db!.getTasks(
-          starredStatuses: const [true, false],
-          taskStatuses: const ['OPEN'],
-          categoryIds: const [''],
-          ids: ['oldest-low', 'newest-high', 'middle-urgent'],
-          sortByDate: true,
-        );
+          // Completed task due on target date (should NOT be included)
+          final taskDoneOnDate = buildTaskEntry(
+            id: 'task-done-on-date',
+            timestamp: base,
+            status: TaskStatus.done(
+              id: 'status-5',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            due: DateTime(2024, 8, 15, 10),
+          );
 
-        // Order: newest -> middle -> oldest (date_from DESC, ignoring priority)
-        // With ids filter, should use filteredTasksByDate2 query
-        expect(
-          results.map((e) => e.meta.id).toList(),
-          ['newest-high', 'middle-urgent', 'oldest-low'],
-        );
-      });
+          await db!.upsertJournalDbEntity(toDbEntity(taskDueOnDate));
+          await db!.upsertJournalDbEntity(toDbEntity(taskDueBefore));
+          await db!.upsertJournalDbEntity(toDbEntity(taskDueAfter));
+          await db!.upsertJournalDbEntity(toDbEntity(taskNoDue));
+          await db!.upsertJournalDbEntity(toDbEntity(taskDoneOnDate));
 
-      test('getTasksDueOn returns only tasks due on the specified date',
-          () async {
-        final targetDate = DateTime(2024, 8, 15);
-        final base = DateTime(2024, 8, 10);
+          final results = await db!.getTasksDueOn(targetDate);
 
-        // Task due on target date (should be included)
-        final taskDueOnDate = buildTaskEntry(
-          id: 'task-due-on-date',
-          timestamp: base,
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          due: DateTime(2024, 8, 15, 14, 30), // Due on target date
-        );
-
-        // Task due the day before (should NOT be included)
-        final taskDueBefore = buildTaskEntry(
-          id: 'task-due-before',
-          timestamp: base,
-          status: TaskStatus.inProgress(
-            id: 'status-2',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          due: DateTime(2024, 8, 14, 12), // Due day before
-        );
-
-        // Task due the day after (should NOT be included)
-        final taskDueAfter = buildTaskEntry(
-          id: 'task-due-after',
-          timestamp: base,
-          status: TaskStatus.inProgress(
-            id: 'status-3',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          due: DateTime(2024, 8, 16, 9), // Due day after
-        );
-
-        // Task with no due date (should NOT be included)
-        final taskNoDue = buildTaskEntry(
-          id: 'task-no-due',
-          timestamp: base,
-          status: TaskStatus.inProgress(
-            id: 'status-4',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          // No due date
-        );
-
-        // Completed task due on target date (should NOT be included)
-        final taskDoneOnDate = buildTaskEntry(
-          id: 'task-done-on-date',
-          timestamp: base,
-          status: TaskStatus.done(
-            id: 'status-5',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          due: DateTime(2024, 8, 15, 10),
-        );
-
-        await db!.upsertJournalDbEntity(toDbEntity(taskDueOnDate));
-        await db!.upsertJournalDbEntity(toDbEntity(taskDueBefore));
-        await db!.upsertJournalDbEntity(toDbEntity(taskDueAfter));
-        await db!.upsertJournalDbEntity(toDbEntity(taskNoDue));
-        await db!.upsertJournalDbEntity(toDbEntity(taskDoneOnDate));
-
-        final results = await db!.getTasksDueOn(targetDate);
-
-        // Only the non-completed task due on the target date should be returned
-        expect(results.map((e) => e.meta.id).toList(), ['task-due-on-date']);
-      });
+          // Only the non-completed task due on the target date should be returned
+          expect(results.map((e) => e.meta.id).toList(), ['task-due-on-date']);
+        },
+      );
 
       test('getTasksDueOn returns multiple tasks due on same date', () async {
         final targetDate = DateTime(2024, 9, 20);
@@ -1181,74 +1195,78 @@ void main() {
         );
       });
 
-      test('getTasksDueOn returns empty list when no tasks due on date',
-          () async {
-        final targetDate = DateTime(2024, 10, 5);
-        final base = DateTime(2024, 10, 1);
+      test(
+        'getTasksDueOn returns empty list when no tasks due on date',
+        () async {
+          final targetDate = DateTime(2024, 10, 5);
+          final base = DateTime(2024, 10, 1);
 
-        final taskDueDifferentDay = buildTaskEntry(
-          id: 'task-different-day',
-          timestamp: base,
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: base,
-            utcOffset: base.timeZoneOffset.inMinutes,
-          ),
-          due: DateTime(2024, 10, 10), // Due on different date
-        );
+          final taskDueDifferentDay = buildTaskEntry(
+            id: 'task-different-day',
+            timestamp: base,
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: base,
+              utcOffset: base.timeZoneOffset.inMinutes,
+            ),
+            due: DateTime(2024, 10, 10), // Due on different date
+          );
 
-        await db!.upsertJournalDbEntity(toDbEntity(taskDueDifferentDay));
+          await db!.upsertJournalDbEntity(toDbEntity(taskDueDifferentDay));
 
-        final results = await db!.getTasksDueOn(targetDate);
+          final results = await db!.getTasksDueOn(targetDate);
 
-        expect(results, isEmpty);
-      });
+          expect(results, isEmpty);
+        },
+      );
     });
 
     group('Linked entities -', () {
-      test('getLinkedEntities returns linked children sorted by recency',
-          () async {
-        final base = DateTime(2024, 8);
-        final parent = buildJournalEntry(
-          id: 'parent-entry',
-          timestamp: base,
-          text: 'Parent',
-        );
-        final childOlder = buildJournalEntry(
-          id: 'child-older',
-          timestamp: base.subtract(const Duration(hours: 1)),
-          text: 'Older child',
-        );
-        final childNewer = buildJournalEntry(
-          id: 'child-newer',
-          timestamp: base.add(const Duration(hours: 1)),
-          text: 'Newer child',
-        );
-
-        await db!.upsertJournalDbEntity(toDbEntity(parent));
-        await db!.upsertJournalDbEntity(toDbEntity(childOlder));
-        await db!.upsertJournalDbEntity(toDbEntity(childNewer));
-
-        await db!.upsertEntryLink(
-          buildEntryLink(
-            id: 'link-older',
-            fromId: parent.meta.id,
-            toId: childOlder.meta.id,
+      test(
+        'getLinkedEntities returns linked children sorted by recency',
+        () async {
+          final base = DateTime(2024, 8);
+          final parent = buildJournalEntry(
+            id: 'parent-entry',
             timestamp: base,
-          ),
-        );
-        await db!.upsertEntryLink(
-          buildEntryLink(
-            id: 'link-newer',
-            fromId: parent.meta.id,
-            toId: childNewer.meta.id,
-            timestamp: base.add(const Duration(minutes: 5)),
-          ),
-        );
+            text: 'Parent',
+          );
+          final childOlder = buildJournalEntry(
+            id: 'child-older',
+            timestamp: base.subtract(const Duration(hours: 1)),
+            text: 'Older child',
+          );
+          final childNewer = buildJournalEntry(
+            id: 'child-newer',
+            timestamp: base.add(const Duration(hours: 1)),
+            text: 'Newer child',
+          );
 
-        final results = await db!.getLinkedEntities(parent.meta.id);
-        expect(results.map((e) => e.meta.id), ['child-newer', 'child-older']);
-      });
+          await db!.upsertJournalDbEntity(toDbEntity(parent));
+          await db!.upsertJournalDbEntity(toDbEntity(childOlder));
+          await db!.upsertJournalDbEntity(toDbEntity(childNewer));
+
+          await db!.upsertEntryLink(
+            buildEntryLink(
+              id: 'link-older',
+              fromId: parent.meta.id,
+              toId: childOlder.meta.id,
+              timestamp: base,
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildEntryLink(
+              id: 'link-newer',
+              fromId: parent.meta.id,
+              toId: childNewer.meta.id,
+              timestamp: base.add(const Duration(minutes: 5)),
+            ),
+          );
+
+          final results = await db!.getLinkedEntities(parent.meta.id);
+          expect(results.map((e) => e.meta.id), ['child-newer', 'child-older']);
+        },
+      );
 
       test('getBulkLinkedEntities groups results by parent id', () async {
         final base = DateTime(2024, 8, 2);
@@ -1312,10 +1330,13 @@ void main() {
           parentB.meta.id,
         });
 
-        expect(results[parentA.meta.id]!.map((e) => e.meta.id),
-            ['bulk-child-2', 'bulk-child-1']);
-        expect(
-            results[parentB.meta.id]!.map((e) => e.meta.id), ['bulk-child-3']);
+        expect(results[parentA.meta.id]!.map((e) => e.meta.id), [
+          'bulk-child-2',
+          'bulk-child-1',
+        ]);
+        expect(results[parentB.meta.id]!.map((e) => e.meta.id), [
+          'bulk-child-3',
+        ]);
       });
 
       test('getBulkLinkedEntities returns empty map for empty input', () async {
@@ -1326,8 +1347,9 @@ void main() {
 
     group('Watch streams -', () {
       test('watchConflicts emits unresolved conflicts and updates', () async {
-        final stream =
-            db!.watchConflicts(ConflictStatus.unresolved).asBroadcastStream();
+        final stream = db!
+            .watchConflicts(ConflictStatus.unresolved)
+            .asBroadcastStream();
         final initialFuture = stream.first;
         final afterInsertFuture = stream.skip(1).first;
         final afterResolveFuture = stream.skip(2).first;
@@ -1402,25 +1424,27 @@ void main() {
     group('Upsert helpers -', () {
       test('upsertMeasurableDataType inserts and updates entity', () async {
         await db!.upsertMeasurableDataType(measurableWater);
-        var row = await (db!.select(db!.measurableTypes)
-              ..where((tbl) => tbl.id.equals(measurableWater.id)))
-            .getSingle();
+        var row = await (db!.select(
+          db!.measurableTypes,
+        )..where((tbl) => tbl.id.equals(measurableWater.id))).getSingle();
         expect(
-            measurableDataType(row).displayName, measurableWater.displayName);
+          measurableDataType(row).displayName,
+          measurableWater.displayName,
+        );
 
         final updated = measurableWater.copyWith(displayName: 'Water+');
         await db!.upsertMeasurableDataType(updated);
-        row = await (db!.select(db!.measurableTypes)
-              ..where((tbl) => tbl.id.equals(measurableWater.id)))
-            .getSingle();
+        row = await (db!.select(
+          db!.measurableTypes,
+        )..where((tbl) => tbl.id.equals(measurableWater.id))).getSingle();
         expect(measurableDataType(row).displayName, 'Water+');
       });
 
       test('upsertTagEntity upserts tag definitions', () async {
         await db!.upsertTagEntity(testTag1);
-        var row = await (db!.select(db!.tagEntities)
-              ..where((tbl) => tbl.id.equals(testTag1.id)))
-            .getSingle();
+        var row = await (db!.select(
+          db!.tagEntities,
+        )..where((tbl) => tbl.id.equals(testTag1.id))).getSingle();
         expect(fromTagDbEntity(row).tag, testTag1.tag);
 
         final updated = testTag1.copyWith(
@@ -1428,17 +1452,17 @@ void main() {
           updatedAt: testTag1.updatedAt.add(const Duration(minutes: 1)),
         );
         await db!.upsertTagEntity(updated);
-        row = await (db!.select(db!.tagEntities)
-              ..where((tbl) => tbl.id.equals(testTag1.id)))
-            .getSingle();
+        row = await (db!.select(
+          db!.tagEntities,
+        )..where((tbl) => tbl.id.equals(testTag1.id))).getSingle();
         expect(fromTagDbEntity(row).tag, 'UpdatedTag');
       });
 
       test('upsertHabitDefinition upserts habit', () async {
         await db!.upsertHabitDefinition(habitFlossing);
-        var row = await (db!.select(db!.habitDefinitions)
-              ..where((tbl) => tbl.id.equals(habitFlossing.id)))
-            .getSingle();
+        var row = await (db!.select(
+          db!.habitDefinitions,
+        )..where((tbl) => tbl.id.equals(habitFlossing.id))).getSingle();
         expect(
           HabitDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1448,9 +1472,9 @@ void main() {
 
         final updated = habitFlossing.copyWith(name: 'Floss Nightly');
         await db!.upsertHabitDefinition(updated);
-        row = await (db!.select(db!.habitDefinitions)
-              ..where((tbl) => tbl.id.equals(habitFlossing.id)))
-            .getSingle();
+        row = await (db!.select(
+          db!.habitDefinitions,
+        )..where((tbl) => tbl.id.equals(habitFlossing.id))).getSingle();
         expect(
           HabitDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1467,9 +1491,9 @@ void main() {
           updatedAt: DateTime(2024, 12),
         );
         await db!.upsertDashboardDefinition(dashboard);
-        var row = await (db!.select(db!.dashboardDefinitions)
-              ..where((tbl) => tbl.id.equals('dashboard-upsert')))
-            .getSingle();
+        var row = await (db!.select(
+          db!.dashboardDefinitions,
+        )..where((tbl) => tbl.id.equals('dashboard-upsert'))).getSingle();
         expect(
           DashboardDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1479,9 +1503,9 @@ void main() {
 
         final updated = dashboard.copyWith(name: 'Updated Dashboard');
         await db!.upsertDashboardDefinition(updated);
-        row = await (db!.select(db!.dashboardDefinitions)
-              ..where((tbl) => tbl.id.equals('dashboard-upsert')))
-            .getSingle();
+        row = await (db!.select(
+          db!.dashboardDefinitions,
+        )..where((tbl) => tbl.id.equals('dashboard-upsert'))).getSingle();
         expect(
           DashboardDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1492,9 +1516,9 @@ void main() {
 
       test('upsertCategoryDefinition upserts category', () async {
         await db!.upsertCategoryDefinition(categoryMindfulness);
-        var row = await (db!.select(db!.categoryDefinitions)
-              ..where((tbl) => tbl.id.equals(categoryMindfulness.id)))
-            .getSingle();
+        var row = await (db!.select(
+          db!.categoryDefinitions,
+        )..where((tbl) => tbl.id.equals(categoryMindfulness.id))).getSingle();
         expect(
           CategoryDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1504,9 +1528,9 @@ void main() {
 
         final updated = categoryMindfulness.copyWith(name: 'Mindfulness+');
         await db!.upsertCategoryDefinition(updated);
-        row = await (db!.select(db!.categoryDefinitions)
-              ..where((tbl) => tbl.id.equals(categoryMindfulness.id)))
-            .getSingle();
+        row = await (db!.select(
+          db!.categoryDefinitions,
+        )..where((tbl) => tbl.id.equals(categoryMindfulness.id))).getSingle();
         expect(
           CategoryDefinition.fromJson(
             jsonDecode(row.serialized) as Map<String, dynamic>,
@@ -1516,8 +1540,9 @@ void main() {
       });
 
       test('upsertEntityDefinition delegates based on entity type', () async {
-        final measurable =
-            measurableWater.copyWith(displayName: 'Entity Water');
+        final measurable = measurableWater.copyWith(
+          displayName: 'Entity Water',
+        );
         await db!.upsertEntityDefinition(
           EntityDefinition.measurableDataType(
             id: measurable.id,
@@ -1535,9 +1560,9 @@ void main() {
             categoryId: measurable.categoryId,
           ),
         );
-        final measurableRow = await (db!.select(db!.measurableTypes)
-              ..where((tbl) => tbl.id.equals(measurable.id)))
-            .getSingle();
+        final measurableRow = await (db!.select(
+          db!.measurableTypes,
+        )..where((tbl) => tbl.id.equals(measurable.id))).getSingle();
         expect(measurableDataType(measurableRow).displayName, 'Entity Water');
 
         final habit = habitFlossing.copyWith(name: 'Entity Habit');
@@ -1563,9 +1588,9 @@ void main() {
             priority: habit.priority,
           ),
         );
-        final habitRow = await (db!.select(db!.habitDefinitions)
-              ..where((tbl) => tbl.id.equals(habit.id)))
-            .getSingle();
+        final habitRow = await (db!.select(
+          db!.habitDefinitions,
+        )..where((tbl) => tbl.id.equals(habit.id))).getSingle();
         expect(
           HabitDefinition.fromJson(
             jsonDecode(habitRow.serialized) as Map<String, dynamic>,
@@ -1638,8 +1663,10 @@ void main() {
 
         final image = imageEntry as JournalImage;
         final docDir = getIt<Directory>();
-        final imagePath =
-            getFullImagePath(image, documentsDirectory: docDir.path);
+        final imagePath = getFullImagePath(
+          image,
+          documentsDirectory: docDir.path,
+        );
         await File(imagePath).create(recursive: true);
         await File(imagePath).writeAsBytes(const [1, 2, 3]);
 
@@ -1737,8 +1764,9 @@ void main() {
         final docDir = getIt<Directory>();
         await createPlaceholderDbFile(docDir);
 
-        final progress =
-            await db!.purgeDeleted(stepDelay: Duration.zero).toList();
+        final progress = await db!
+            .purgeDeleted(stepDelay: Duration.zero)
+            .toList();
         expect(progress, equals([1.0]));
 
         final backupDir = Directory('${docDir.path}/backup');
@@ -1835,8 +1863,10 @@ void main() {
           rangeEnd: rangeEnd,
         );
 
-        expect(results.map((e) => e.meta.id),
-            equals(['jan-20-workout', 'jan-05']));
+        expect(
+          results.map((e) => e.meta.id),
+          equals(['jan-20-workout', 'jan-05']),
+        );
       });
 
       test('getMeasurementsByType filters by type and range', () async {
@@ -2010,8 +2040,9 @@ void main() {
         final result = await db!.latestWorkout();
         expect(result, isNull);
         expect(
-          DevLogger.capturedLogs
-              .any((message) => message.contains('no workout found')),
+          DevLogger.capturedLogs.any(
+            (message) => message.contains('no workout found'),
+          ),
           isTrue,
         );
       });
@@ -2046,33 +2077,40 @@ void main() {
         expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ac'});
       });
 
-      test('linksForEntryIdsBidirectional returns links for from/to matches',
-          () async {
-        final linkAb = buildEntryLink(
-          id: 'link-ab',
-          fromId: 'a',
-          toId: 'b',
-          timestamp: DateTime(2024, 8, 1),
-        );
-        final linkCa = buildEntryLink(
-          id: 'link-ca',
-          fromId: 'c',
-          toId: 'a',
-          timestamp: DateTime(2024, 8, 2),
-        );
+      test(
+        'linksForEntryIdsBidirectional returns links for from/to matches',
+        () async {
+          final linkAb = buildEntryLink(
+            id: 'link-ab',
+            fromId: 'a',
+            toId: 'b',
+            timestamp: DateTime(2024, 8, 1),
+          );
+          final linkCa = buildEntryLink(
+            id: 'link-ca',
+            fromId: 'c',
+            toId: 'a',
+            timestamp: DateTime(2024, 8, 2),
+          );
 
-        await db!.upsertEntryLink(linkAb);
-        await db!.upsertEntryLink(linkCa);
+          await db!.upsertEntryLink(linkAb);
+          await db!.upsertEntryLink(linkCa);
 
-        final results = await db!.linksForEntryIdsBidirectional({'a'});
-        expect(results.map((link) => link.id).toSet(), {'link-ab', 'link-ca'});
-      });
+          final results = await db!.linksForEntryIdsBidirectional({'a'});
+          expect(results.map((link) => link.id).toSet(), {
+            'link-ab',
+            'link-ca',
+          });
+        },
+      );
 
-      test('basicLinksForEntryIds returns empty list for empty target set',
-          () async {
-        final results = await db!.basicLinksForEntryIds(<String>{});
-        expect(results, isEmpty);
-      });
+      test(
+        'basicLinksForEntryIds returns empty list for empty target set',
+        () async {
+          final results = await db!.basicLinksForEntryIds(<String>{});
+          expect(results, isEmpty);
+        },
+      );
 
       test('basicLinksForEntryIds filters out RatingLink entries', () async {
         final basicLink = buildEntryLink(
@@ -2260,18 +2298,20 @@ void main() {
         expect(result.data.targetId, 'te-1');
       });
 
-      test('getRatingForTimeEntry returns null when no rating exists',
-          () async {
-        final timeEntry = buildJournalEntry(
-          id: 'te-no-rating',
-          timestamp: base,
-          text: 'No rating',
-        );
-        await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
+      test(
+        'getRatingForTimeEntry returns null when no rating exists',
+        () async {
+          final timeEntry = buildJournalEntry(
+            id: 'te-no-rating',
+            timestamp: base,
+            text: 'No rating',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(timeEntry));
 
-        final result = await db!.getRatingForTimeEntry('te-no-rating');
-        expect(result, isNull);
-      });
+          final result = await db!.getRatingForTimeEntry('te-no-rating');
+          expect(result, isNull);
+        },
+      );
 
       test('getRatingForTimeEntry excludes deleted ratings', () async {
         final timeEntry = buildJournalEntry(
@@ -2325,8 +2365,7 @@ void main() {
         expect(result, isNull);
       });
 
-      test(
-          'getRatingForTimeEntry returns most recently updated when '
+      test('getRatingForTimeEntry returns most recently updated when '
           'multiple ratings exist', () async {
         final timeEntry = buildJournalEntry(
           id: 'te-multi',
@@ -2367,46 +2406,51 @@ void main() {
         expect(result!.meta.id, 'rating-newer');
       });
 
-      test('getRatingIdsForTimeEntries returns mapping for multiple entries',
-          () async {
-        for (final i in [1, 2, 3]) {
-          final teId = 'bulk-te-$i';
-          final ratingId = 'bulk-rating-$i';
-          await db!.upsertJournalDbEntity(
-            toDbEntity(
-              buildJournalEntry(
-                id: teId,
-                timestamp: base.add(Duration(hours: i)),
-                text: 'Session $i',
+      test(
+        'getRatingIdsForTimeEntries returns mapping for multiple entries',
+        () async {
+          for (final i in [1, 2, 3]) {
+            final teId = 'bulk-te-$i';
+            final ratingId = 'bulk-rating-$i';
+            await db!.upsertJournalDbEntity(
+              toDbEntity(
+                buildJournalEntry(
+                  id: teId,
+                  timestamp: base.add(Duration(hours: i)),
+                  text: 'Session $i',
+                ),
               ),
-            ),
-          );
-          await db!.upsertJournalDbEntity(
-            toDbEntity(
-              buildRatingEntry(
-                id: ratingId,
-                targetId: teId,
+            );
+            await db!.upsertJournalDbEntity(
+              toDbEntity(
+                buildRatingEntry(
+                  id: ratingId,
+                  targetId: teId,
+                  timestamp: base.add(Duration(hours: i)),
+                ),
+              ),
+            );
+            await db!.upsertEntryLink(
+              buildRatingLink(
+                id: 'bulk-link-$i',
+                fromId: ratingId,
+                toId: teId,
                 timestamp: base.add(Duration(hours: i)),
               ),
-            ),
-          );
-          await db!.upsertEntryLink(
-            buildRatingLink(
-              id: 'bulk-link-$i',
-              fromId: ratingId,
-              toId: teId,
-              timestamp: base.add(Duration(hours: i)),
-            ),
-          );
-        }
+            );
+          }
 
-        final result = await db!.getRatingIdsForTimeEntries(
-            {'bulk-te-1', 'bulk-te-2', 'bulk-te-3'});
-        expect(result.length, 3);
-        expect(result['bulk-te-1'], 'bulk-rating-1');
-        expect(result['bulk-te-2'], 'bulk-rating-2');
-        expect(result['bulk-te-3'], 'bulk-rating-3');
-      });
+          final result = await db!.getRatingIdsForTimeEntries({
+            'bulk-te-1',
+            'bulk-te-2',
+            'bulk-te-3',
+          });
+          expect(result.length, 3);
+          expect(result['bulk-te-1'], 'bulk-rating-1');
+          expect(result['bulk-te-2'], 'bulk-rating-2');
+          expect(result['bulk-te-3'], 'bulk-rating-3');
+        },
+      );
 
       test('getRatingIdsForTimeEntries excludes deleted ratings', () async {
         // Active rating for te-a
@@ -2462,8 +2506,10 @@ void main() {
           ),
         );
 
-        final result =
-            await db!.getRatingIdsForTimeEntries({'del-te-a', 'del-te-b'});
+        final result = await db!.getRatingIdsForTimeEntries({
+          'del-te-a',
+          'del-te-b',
+        });
         expect(result.length, 1);
         expect(result.containsKey('del-te-a'), isTrue);
         expect(result.containsKey('del-te-b'), isFalse);
@@ -2500,100 +2546,110 @@ void main() {
         expect(result.isEmpty, isTrue);
       });
 
-      test('getRatingIdsForTimeEntries returns empty map for empty input',
-          () async {
-        final result = await db!.getRatingIdsForTimeEntries({});
-        expect(result.isEmpty, isTrue);
-      });
+      test(
+        'getRatingIdsForTimeEntries returns empty map for empty input',
+        () async {
+          final result = await db!.getRatingIdsForTimeEntries({});
+          expect(result.isEmpty, isTrue);
+        },
+      );
     });
 
     group('Vector clock streaming for sequence log population -', () {
-      test('streamEntriesWithVectorClock returns entries with vector clocks',
-          () async {
-        // Create entries with vector clocks
-        const vc1 = VectorClock({'host1': 1, 'host2': 2});
-        const vc2 = VectorClock({'host1': 3});
-        final entry1 = createJournalEntryWithVclock(vc1);
-        final entry2 = createJournalEntryWithVclock(vc2);
+      test(
+        'streamEntriesWithVectorClock returns entries with vector clocks',
+        () async {
+          // Create entries with vector clocks
+          const vc1 = VectorClock({'host1': 1, 'host2': 2});
+          const vc2 = VectorClock({'host1': 3});
+          final entry1 = createJournalEntryWithVclock(vc1);
+          final entry2 = createJournalEntryWithVclock(vc2);
 
-        await db!.updateJournalEntity(entry1);
-        await db!.updateJournalEntity(entry2);
+          await db!.updateJournalEntity(entry1);
+          await db!.updateJournalEntity(entry2);
 
-        // Stream and collect all batches
-        final results = await db!
-            .streamEntriesWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          // Stream and collect all batches
+          final results = await db!
+              .streamEntriesWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        // Verify we got the entries with their vector clocks
-        expect(results.length, greaterThanOrEqualTo(2));
+          // Verify we got the entries with their vector clocks
+          expect(results.length, greaterThanOrEqualTo(2));
 
-        final result1 = results.firstWhere((r) => r.id == entry1.meta.id);
-        expect(result1.vectorClock, {'host1': 1, 'host2': 2});
+          final result1 = results.firstWhere((r) => r.id == entry1.meta.id);
+          expect(result1.vectorClock, {'host1': 1, 'host2': 2});
 
-        final result2 = results.firstWhere((r) => r.id == entry2.meta.id);
-        expect(result2.vectorClock, {'host1': 3});
-      });
+          final result2 = results.firstWhere((r) => r.id == entry2.meta.id);
+          expect(result2.vectorClock, {'host1': 3});
+        },
+      );
 
-      test('streamEntriesWithVectorClock handles entries without vector clock',
-          () async {
-        final entryNoVc = createJournalEntry('no vector clock');
-        await db!.updateJournalEntity(entryNoVc);
+      test(
+        'streamEntriesWithVectorClock handles entries without vector clock',
+        () async {
+          final entryNoVc = createJournalEntry('no vector clock');
+          await db!.updateJournalEntity(entryNoVc);
 
-        final results = await db!
-            .streamEntriesWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          final results = await db!
+              .streamEntriesWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        final found = results.firstWhere((r) => r.id == entryNoVc.meta.id);
-        expect(found.vectorClock, isNull);
-      });
+          final found = results.firstWhere((r) => r.id == entryNoVc.meta.id);
+          expect(found.vectorClock, isNull);
+        },
+      );
 
-      test('streamEntryLinksWithVectorClock returns links with vector clocks',
-          () async {
-        const vc = VectorClock({'host1': 5});
-        final link = EntryLink.basic(
-          id: 'link-with-vc',
-          fromId: 'from-entry',
-          toId: 'to-entry',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: vc,
-        );
+      test(
+        'streamEntryLinksWithVectorClock returns links with vector clocks',
+        () async {
+          const vc = VectorClock({'host1': 5});
+          final link = EntryLink.basic(
+            id: 'link-with-vc',
+            fromId: 'from-entry',
+            toId: 'to-entry',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: vc,
+          );
 
-        await db!.upsertEntryLink(link);
+          await db!.upsertEntryLink(link);
 
-        final results = await db!
-            .streamEntryLinksWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          final results = await db!
+              .streamEntryLinksWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        expect(results, isNotEmpty);
-        final found = results.firstWhere((r) => r.id == 'link-with-vc');
-        expect(found.vectorClock, {'host1': 5});
-      });
+          expect(results, isNotEmpty);
+          final found = results.firstWhere((r) => r.id == 'link-with-vc');
+          expect(found.vectorClock, {'host1': 5});
+        },
+      );
 
-      test('streamEntryLinksWithVectorClock handles links without vector clock',
-          () async {
-        final link = EntryLink.basic(
-          id: 'link-no-vc',
-          fromId: 'from-entry',
-          toId: 'to-entry',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: null,
-        );
+      test(
+        'streamEntryLinksWithVectorClock handles links without vector clock',
+        () async {
+          final link = EntryLink.basic(
+            id: 'link-no-vc',
+            fromId: 'from-entry',
+            toId: 'to-entry',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: null,
+          );
 
-        await db!.upsertEntryLink(link);
+          await db!.upsertEntryLink(link);
 
-        final results = await db!
-            .streamEntryLinksWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          final results = await db!
+              .streamEntryLinksWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        final found = results.firstWhere((r) => r.id == 'link-no-vc');
-        expect(found.vectorClock, isNull);
-      });
+          final found = results.firstWhere((r) => r.id == 'link-no-vc');
+          expect(found.vectorClock, isNull);
+        },
+      );
 
       test('countAllJournalEntries returns correct count', () async {
         final initialCount = await db!.countAllJournalEntries();
@@ -2608,22 +2664,26 @@ void main() {
       test('countAllEntryLinks returns correct count', () async {
         final initialCount = await db!.countAllEntryLinks();
 
-        await db!.upsertEntryLink(EntryLink.basic(
-          id: 'count-link-1',
-          fromId: 'from',
-          toId: 'to1',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: null,
-        ));
-        await db!.upsertEntryLink(EntryLink.basic(
-          id: 'count-link-2',
-          fromId: 'from',
-          toId: 'to2',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: null,
-        ));
+        await db!.upsertEntryLink(
+          EntryLink.basic(
+            id: 'count-link-1',
+            fromId: 'from',
+            toId: 'to1',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: null,
+          ),
+        );
+        await db!.upsertEntryLink(
+          EntryLink.basic(
+            id: 'count-link-2',
+            fromId: 'from',
+            toId: 'to2',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: null,
+          ),
+        );
 
         final newCount = await db!.countAllEntryLinks();
         expect(newCount, initialCount + 2);
@@ -2637,8 +2697,9 @@ void main() {
 
         // Stream with small batch size
         var batchCount = 0;
-        await for (final batch
-            in db!.streamEntriesWithVectorClock(batchSize: 2)) {
+        await for (final batch in db!.streamEntriesWithVectorClock(
+          batchSize: 2,
+        )) {
           batchCount++;
           expect(batch.length, lessThanOrEqualTo(2));
         }
@@ -2647,143 +2708,148 @@ void main() {
         expect(batchCount, greaterThanOrEqualTo(1));
       });
 
-      test('streamEntriesWithVectorClock handles malformed serialized data',
-          () async {
-        // Create a valid entry first
-        final validEntry = createJournalEntryWithVclock(
-          const VectorClock({'host': 42}),
-          id: 'valid-entry',
-        );
-        await db!.updateJournalEntity(validEntry);
+      test(
+        'streamEntriesWithVectorClock handles malformed serialized data',
+        () async {
+          // Create a valid entry first
+          final validEntry = createJournalEntryWithVclock(
+            const VectorClock({'host': 42}),
+            id: 'valid-entry',
+          );
+          await db!.updateJournalEntity(validEntry);
 
-        // Insert a malformed entry via raw SQL with non-numeric vectorClock
-        // This bypasses normal serialization to test DB layer parsing
-        final malformedSerialized = jsonEncode({
-          'meta': {
-            'id': 'malformed-entry',
-            'createdAt': '2024-01-01T00:00:00.000',
-            'updatedAt': '2024-01-01T00:00:00.000',
-            'dateFrom': '2024-01-01T00:00:00.000',
-            'dateTo': '2024-01-01T00:00:00.000',
-            'starred': false,
-            'private': false,
-            'vectorClock': {'host': 'not-a-number'},
-          },
-          'entryText': {'plainText': 'malformed entry'},
-        });
+          // Insert a malformed entry via raw SQL with non-numeric vectorClock
+          // This bypasses normal serialization to test DB layer parsing
+          final malformedSerialized = jsonEncode({
+            'meta': {
+              'id': 'malformed-entry',
+              'createdAt': '2024-01-01T00:00:00.000',
+              'updatedAt': '2024-01-01T00:00:00.000',
+              'dateFrom': '2024-01-01T00:00:00.000',
+              'dateTo': '2024-01-01T00:00:00.000',
+              'starred': false,
+              'private': false,
+              'vectorClock': {'host': 'not-a-number'},
+            },
+            'entryText': {'plainText': 'malformed entry'},
+          });
 
-        final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
-        await db!.customStatement(
-          'INSERT INTO journal '
-          '(id, created_at, updated_at, date_from, date_to, deleted, starred, '
-          'private, task, flag, type, serialized, schema_version, category) '
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            'malformed-entry',
-            timestamp,
-            timestamp,
-            timestamp,
-            timestamp,
-            0, // deleted
-            0, // starred
-            0, // private
-            0, // task
-            0, // flag
-            'JournalEntry',
-            malformedSerialized,
-            0, // schema_version
-            '', // category
-          ],
-        );
+          final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
+          await db!.customStatement(
+            'INSERT INTO journal '
+            '(id, created_at, updated_at, date_from, date_to, deleted, starred, '
+            'private, task, flag, type, serialized, schema_version, category) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              'malformed-entry',
+              timestamp,
+              timestamp,
+              timestamp,
+              timestamp,
+              0, // deleted
+              0, // starred
+              0, // private
+              0, // task
+              0, // flag
+              'JournalEntry',
+              malformedSerialized,
+              0, // schema_version
+              '', // category
+            ],
+          );
 
-        // The streaming method should handle entries gracefully
-        // even if vector clock extraction fails (returns null)
-        final results = await db!
-            .streamEntriesWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          // The streaming method should handle entries gracefully
+          // even if vector clock extraction fails (returns null)
+          final results = await db!
+              .streamEntriesWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        expect(results.length, greaterThanOrEqualTo(2));
+          expect(results.length, greaterThanOrEqualTo(2));
 
-        // Valid entry should have its vectorClock intact
-        final validFound = results.firstWhere((r) => r.id == 'valid-entry');
-        expect(validFound.vectorClock, {'host': 42});
+          // Valid entry should have its vectorClock intact
+          final validFound = results.firstWhere((r) => r.id == 'valid-entry');
+          expect(validFound.vectorClock, {'host': 42});
 
-        // Malformed entry should have vectorClock == null (graceful handling)
-        final malformedFound =
-            results.firstWhere((r) => r.id == 'malformed-entry');
-        expect(
-          malformedFound.vectorClock,
-          isNull,
-          reason: 'Non-numeric vectorClock values should result in null',
-        );
-      });
+          // Malformed entry should have vectorClock == null (graceful handling)
+          final malformedFound = results.firstWhere(
+            (r) => r.id == 'malformed-entry',
+          );
+          expect(
+            malformedFound.vectorClock,
+            isNull,
+            reason: 'Non-numeric vectorClock values should result in null',
+          );
+        },
+      );
 
       test(
-          'streamEntryLinksWithVectorClock handles links with non-numeric vectorClock values gracefully',
-          () async {
-        // Create a valid link first
-        final validLink = EntryLink.basic(
-          id: 'link-valid',
-          fromId: 'from-valid',
-          toId: 'to-valid',
-          createdAt: DateTime(2024, 1, 1),
-          updatedAt: DateTime(2024, 1, 1),
-          vectorClock: const VectorClock({'host': 1}),
-        );
-        await db!.upsertEntryLink(validLink);
+        'streamEntryLinksWithVectorClock handles links with non-numeric vectorClock values gracefully',
+        () async {
+          // Create a valid link first
+          final validLink = EntryLink.basic(
+            id: 'link-valid',
+            fromId: 'from-valid',
+            toId: 'to-valid',
+            createdAt: DateTime(2024, 1, 1),
+            updatedAt: DateTime(2024, 1, 1),
+            vectorClock: const VectorClock({'host': 1}),
+          );
+          await db!.upsertEntryLink(validLink);
 
-        // Insert a malformed link via raw SQL with non-numeric vectorClock values
-        // This bypasses normal serialization to test DB layer parsing
-        final malformedSerialized = jsonEncode({
-          'id': 'link-malformed',
-          'fromId': 'from-malformed',
-          'toId': 'to-malformed',
-          'linkType': 'basic',
-          'createdAt': '2024-01-01T00:00:00.000',
-          'updatedAt': '2024-01-01T00:00:00.000',
-          'vectorClock': {'host': 'not-a-number', 'other': 'also-invalid'},
-        });
+          // Insert a malformed link via raw SQL with non-numeric vectorClock values
+          // This bypasses normal serialization to test DB layer parsing
+          final malformedSerialized = jsonEncode({
+            'id': 'link-malformed',
+            'fromId': 'from-malformed',
+            'toId': 'to-malformed',
+            'linkType': 'basic',
+            'createdAt': '2024-01-01T00:00:00.000',
+            'updatedAt': '2024-01-01T00:00:00.000',
+            'vectorClock': {'host': 'not-a-number', 'other': 'also-invalid'},
+          });
 
-        // Use Unix timestamp in milliseconds for created_at/updated_at
-        final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
-        await db!.customStatement(
-          'INSERT INTO linked_entries '
-          '(id, from_id, to_id, type, serialized, hidden, created_at, updated_at) '
-          'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            'link-malformed',
-            'from-malformed',
-            'to-malformed',
-            'basic',
-            malformedSerialized,
-            0,
-            timestamp,
-            timestamp,
-          ],
-        );
+          // Use Unix timestamp in milliseconds for created_at/updated_at
+          final timestamp = DateTime(2024, 1, 1).millisecondsSinceEpoch;
+          await db!.customStatement(
+            'INSERT INTO linked_entries '
+            '(id, from_id, to_id, type, serialized, hidden, created_at, updated_at) '
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              'link-malformed',
+              'from-malformed',
+              'to-malformed',
+              'basic',
+              malformedSerialized,
+              0,
+              timestamp,
+              timestamp,
+            ],
+          );
 
-        // Streaming should NOT throw and should handle both entries
-        final results = await db!
-            .streamEntryLinksWithVectorClock()
-            .expand((batch) => batch)
-            .toList();
+          // Streaming should NOT throw and should handle both entries
+          final results = await db!
+              .streamEntryLinksWithVectorClock()
+              .expand((batch) => batch)
+              .toList();
 
-        expect(results.length, greaterThanOrEqualTo(2));
+          expect(results.length, greaterThanOrEqualTo(2));
 
-        // Valid link should have its vectorClock intact
-        final validFound = results.firstWhere((r) => r.id == 'link-valid');
-        expect(validFound.vectorClock, {'host': 1});
+          // Valid link should have its vectorClock intact
+          final validFound = results.firstWhere((r) => r.id == 'link-valid');
+          expect(validFound.vectorClock, {'host': 1});
 
-        // Malformed link should have vectorClock == null (graceful handling)
-        final malformedFound =
-            results.firstWhere((r) => r.id == 'link-malformed');
-        expect(
-          malformedFound.vectorClock,
-          isNull,
-          reason: 'Non-numeric vectorClock values should result in null',
-        );
-      });
+          // Malformed link should have vectorClock == null (graceful handling)
+          final malformedFound = results.firstWhere(
+            (r) => r.id == 'link-malformed',
+          );
+          expect(
+            malformedFound.vectorClock,
+            isNull,
+            reason: 'Non-numeric vectorClock values should result in null',
+          );
+        },
+      );
     });
 
     tearDownAll(() async {
@@ -2998,37 +3064,39 @@ void main() {
         expect(retrieved?.meta.starred, true);
       });
 
-      test('updateJournalEntity with overwrite=false does not update',
-          () async {
-        final entry = createJournalEntry('Original text');
-        await db!.updateJournalEntity(entry);
+      test(
+        'updateJournalEntity with overwrite=false does not update',
+        () async {
+          final entry = createJournalEntry('Original text');
+          await db!.updateJournalEntity(entry);
 
-        // Create modified entry with same ID
-        final now = DateTime.now();
-        final updatedEntry = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: entry.meta.id,
-            createdAt: entry.meta.createdAt,
-            updatedAt: now,
-            dateFrom: now,
-            dateTo: now,
-            starred: true,
-            private: false,
-          ),
-          entryText: const EntryText(plainText: 'Updated text'),
-        );
+          // Create modified entry with same ID
+          final now = DateTime.now();
+          final updatedEntry = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: entry.meta.id,
+              createdAt: entry.meta.createdAt,
+              updatedAt: now,
+              dateFrom: now,
+              dateTo: now,
+              starred: true,
+              private: false,
+            ),
+            entryText: const EntryText(plainText: 'Updated text'),
+          );
 
-        final result = await db!.updateJournalEntity(
-          updatedEntry,
-          overwrite: false,
-        );
+          final result = await db!.updateJournalEntity(
+            updatedEntry,
+            overwrite: false,
+          );
 
-        expect(result.applied, isFalse); // No change
-        expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
+          expect(result.applied, isFalse); // No change
+          expect(result.skipReason, JournalUpdateSkipReason.overwritePrevented);
 
-        final retrieved = await db?.journalEntityById(entry.meta.id);
-        expect(retrieved?.meta.starred, false);
-      });
+          final retrieved = await db?.journalEntityById(entry.meta.id);
+          expect(retrieved?.meta.starred, false);
+        },
+      );
     });
 
     group('Conflict Handling -', () {
@@ -3040,8 +3108,10 @@ void main() {
         const vclockB = VectorClock(<String, int>{'device1': 2, 'device3': 1});
 
         final entryA = createJournalEntryWithVclock(vclockA);
-        final entryB =
-            createJournalEntryWithVclock(vclockB, id: entryA.meta.id);
+        final entryB = createJournalEntryWithVclock(
+          vclockB,
+          id: entryA.meta.id,
+        );
 
         // First insert A
         await db!.updateJournalEntity(entryA);
@@ -3078,8 +3148,10 @@ void main() {
         const vclockB = VectorClock(<String, int>{'device1': 2});
 
         final entryA = createJournalEntryWithVclock(vclockA);
-        final entryB =
-            createJournalEntryWithVclock(vclockB, id: entryA.meta.id);
+        final entryB = createJournalEntryWithVclock(
+          vclockB,
+          id: entryA.meta.id,
+        );
 
         // First insert A
         await db!.updateJournalEntity(entryA);
@@ -3646,8 +3718,8 @@ Future<List<JournalEntity>> fetchJournalEntities(
 
 class _DetectConflictThrowsJournalDb extends JournalDb {
   _DetectConflictThrowsJournalDb()
-      : shouldThrowOnDetectConflict = false,
-        super(inMemoryDatabase: true);
+    : shouldThrowOnDetectConflict = false,
+      super(inMemoryDatabase: true);
 
   bool shouldThrowOnDetectConflict;
 

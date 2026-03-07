@@ -80,8 +80,9 @@ class ImageGenerationController extends _$ImageGenerationController {
     try {
       // Get the audio entity
       final journalRepository = ref.read(journalRepositoryProvider);
-      final entity =
-          await journalRepository.getJournalEntityById(audioEntityId);
+      final entity = await journalRepository.getJournalEntityById(
+        audioEntityId,
+      );
 
       // Check if still mounted after async operation
       if (!ref.mounted) return;
@@ -264,13 +265,14 @@ class ImageGenerationController extends _$ImageGenerationController {
   /// Uses repository directly to avoid autoDispose provider lifecycle issues.
   Future<AiConfigInferenceProvider?> _getImageGenerationProvider() async {
     final repository = ref.read(aiConfigRepositoryProvider);
-    final providers =
-        await repository.getConfigsByType(AiConfigType.inferenceProvider);
+    final providers = await repository.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
 
     return providers.whereType<AiConfigInferenceProvider>().firstWhere(
-          (p) => p.inferenceProviderType == InferenceProviderType.gemini,
-          orElse: () => throw Exception('No Gemini provider found'),
-        );
+      (p) => p.inferenceProviderType == InferenceProviderType.gemini,
+      orElse: () => throw Exception('No Gemini provider found'),
+    );
   }
 
   /// Gets the image generation model (Nano Banana Pro).

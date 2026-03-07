@@ -20,11 +20,11 @@ class LabelAssignmentResult {
   });
 
   factory LabelAssignmentResult.rateLimited() => LabelAssignmentResult(
-        assigned: const [],
-        invalid: const [],
-        skipped: const [],
-        rateLimited: true,
-      );
+    assigned: const [],
+    invalid: const [],
+    skipped: const [],
+    rateLimited: true,
+  );
 
   final List<String> assigned;
   final List<String> invalid;
@@ -49,18 +49,17 @@ class LabelAssignmentResult {
   /// }
   String toStructuredJson(
     List<String> requested,
-  ) =>
-      jsonEncode({
-        'function': 'assign_task_labels',
-        'request': {'labelIds': requested},
-        'result': {
-          'assigned': assigned,
-          'invalid': invalid,
-          'skipped': skipped,
-        },
-        'message':
-            'Assigned ${assigned.length} label(s); ${invalid.length} invalid; ${skipped.length} skipped',
-      });
+  ) => jsonEncode({
+    'function': 'assign_task_labels',
+    'request': {'labelIds': requested},
+    'result': {
+      'assigned': assigned,
+      'invalid': invalid,
+      'skipped': skipped,
+    },
+    'message':
+        'Assigned ${assigned.length} label(s); ${invalid.length} invalid; ${skipped.length} skipped',
+  });
 }
 
 class LabelAssignmentProcessor {
@@ -70,11 +69,11 @@ class LabelAssignmentProcessor {
     LabelAssignmentRateLimiter? rateLimiter,
     LoggingService? logging,
     LabelValidator? validator,
-  })  : _repository = repository ?? getIt<LabelsRepository>(),
-        _rateLimiter = rateLimiter ?? getIt<LabelAssignmentRateLimiter>(),
-        _logging = logging ?? getIt<LoggingService>(),
-        _validator = validator ?? LabelValidator(db: db),
-        _db = db;
+  }) : _repository = repository ?? getIt<LabelsRepository>(),
+       _rateLimiter = rateLimiter ?? getIt<LabelAssignmentRateLimiter>(),
+       _logging = logging ?? getIt<LoggingService>(),
+       _validator = validator ?? LabelValidator(db: db),
+       _db = db;
 
   final LabelsRepository _repository;
   final LabelAssignmentRateLimiter _rateLimiter;
@@ -108,16 +107,20 @@ class LabelAssignmentProcessor {
       );
     }
     // Normalize proposed IDs (trim, drop empties)
-    final normalized =
-        proposedIds.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    final normalized = proposedIds
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
 
     // Track duplicates in the original proposal order
     final counts = <String, int>{};
     for (final id in normalized) {
       counts.update(id, (v) => v + 1, ifAbsent: () => 1);
     }
-    final duplicateIds =
-        counts.entries.where((e) => e.value > 1).map((e) => e.key).toSet();
+    final duplicateIds = counts.entries
+        .where((e) => e.value > 1)
+        .map((e) => e.key)
+        .toSet();
 
     // Preserve order, dedupe, and cap by max-per-call
     final dedupedOrder = LinkedHashSet<String>.from(normalized).toList();
@@ -134,7 +137,10 @@ class LabelAssignmentProcessor {
     final requested = base.where((id) => !existingSet.contains(id)).toList();
     if (requested.isEmpty) {
       return LabelAssignmentResult(
-          assigned: const [], invalid: const [], skipped: const []);
+        assigned: const [],
+        invalid: const [],
+        skipped: const [],
+      );
     }
     if (_rateLimiter.isRateLimited(taskId)) {
       _logging.captureEvent(
@@ -214,8 +220,9 @@ class LabelAssignmentProcessor {
     // Add suppressed (defense-in-depth) to skipped reasons
     if (validation.suppressed.isNotEmpty) {
       skipped.addAll(
-        validation.suppressed
-            .map((id) => <String, String>{'id': id, 'reason': 'suppressed'}),
+        validation.suppressed.map(
+          (id) => <String, String>{'id': id, 'reason': 'suppressed'},
+        ),
       );
     }
 
@@ -232,8 +239,9 @@ class LabelAssignmentProcessor {
       skipReasons.putIfAbsent(id, () => 'duplicate');
     }
     skipped.addAll(
-      skipReasons.entries
-          .map((e) => <String, String>{'id': e.key, 'reason': e.value}),
+      skipReasons.entries.map(
+        (e) => <String, String>{'id': e.key, 'reason': e.value},
+      ),
     );
     sw.stop();
 
@@ -255,8 +263,7 @@ class LabelAssignmentProcessor {
       'dropped_low': droppedLow,
       'legacy_capped':
           legacyUsed && (totalCandidates != null && totalCandidates > 3),
-      if (confidenceBreakdown != null)
-        'confidenceBreakdown': confidenceBreakdown,
+      'confidenceBreakdown': ?confidenceBreakdown,
       'phase': 2,
     });
     _logging.captureEvent(

@@ -61,17 +61,19 @@ void main() {
           ),
         );
 
-        when(() => mockCloudRepository.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         final tools = [
           const ChatCompletionTool(
@@ -95,34 +97,38 @@ void main() {
 
         expect(result, equals(responseStream));
 
-        verify(() => mockCloudRepository.generate(
-              'Test prompt',
-              model: 'gpt-4',
-              temperature: 0.7,
-              baseUrl: 'https://api.test.com',
-              apiKey: 'test-key',
-              systemMessage: 'You are helpful',
-              maxCompletionTokens: 1000,
-              provider: provider,
-              tools: tools,
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generate(
+            'Test prompt',
+            model: 'gpt-4',
+            temperature: 0.7,
+            baseUrl: 'https://api.test.com',
+            apiKey: 'test-key',
+            systemMessage: 'You are helpful',
+            maxCompletionTokens: 1000,
+            provider: provider,
+            tools: tools,
+          ),
+        ).called(1);
       });
 
       test('works without optional parameters', () async {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generate(
-              any(),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              baseUrl: any(named: 'baseUrl'),
-              apiKey: any(named: 'apiKey'),
-              systemMessage: any(named: 'systemMessage'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              provider: any(named: 'provider'),
-              tools: any(named: 'tools'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            provider: any(named: 'provider'),
+            tools: any(named: 'tools'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         final result = wrapper.generateText(
           prompt: 'Test prompt',
@@ -134,14 +140,16 @@ void main() {
 
         expect(result, equals(responseStream));
 
-        verify(() => mockCloudRepository.generate(
-              'Test prompt',
-              model: 'gpt-3.5-turbo',
-              temperature: 0.5,
-              baseUrl: 'https://api.test.com',
-              apiKey: 'test-key',
-              provider: provider,
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generate(
+            'Test prompt',
+            model: 'gpt-3.5-turbo',
+            temperature: 0.5,
+            baseUrl: 'https://api.test.com',
+            apiKey: 'test-key',
+            provider: provider,
+          ),
+        ).called(1);
       });
     });
 
@@ -178,16 +186,18 @@ void main() {
           ),
         );
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         final result = await wrapper
             .generateTextWithMessages(
@@ -199,15 +209,19 @@ void main() {
             .toList();
 
         expect(result.length, 1);
-        expect(result.first.choices?.first.delta?.content,
-            "I'm doing well, thank you!");
+        expect(
+          result.first.choices?.first.delta?.content,
+          "I'm doing well, thank you!",
+        );
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: messages,
-              model: 'gpt-4',
-              temperature: 0.7,
-              provider: provider,
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: messages,
+            model: 'gpt-4',
+            temperature: 0.7,
+            provider: provider,
+          ),
+        ).called(1);
       });
 
       test('handles messages with tool and function responses', () async {
@@ -228,16 +242,18 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         await wrapper
             .generateTextWithMessages(
@@ -248,16 +264,18 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: messages,
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: messages,
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).called(1);
       });
 
       test('detects and logs concatenated JSON in tool calls', () async {
@@ -270,16 +288,18 @@ void main() {
         final responseController =
             StreamController<CreateChatCompletionStreamResponse>();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseController.stream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseController.stream);
 
         final resultFuture = wrapper
             .generateTextWithMessages(
@@ -325,7 +345,14 @@ void main() {
         // The malformed JSON is passed through but logged as a warning
         expect(
           result
-              .first.choices?.first.delta?.toolCalls?.first.function?.arguments,
+              .first
+              .choices
+              ?.first
+              .delta
+              ?.toolCalls
+              ?.first
+              .function
+              ?.arguments,
           contains('}{'),
         );
       });
@@ -336,16 +363,18 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         await wrapper
             .generateTextWithMessages(
@@ -356,16 +385,18 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: messages,
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: messages,
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).called(1);
       });
 
       test('preserves tools parameter', () async {
@@ -395,16 +426,18 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         await wrapper
             .generateTextWithMessages(
@@ -416,16 +449,18 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: tools,
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: tools,
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).called(1);
       });
 
       test('passes through signature collector and signatures', () async {
@@ -441,16 +476,18 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         // Pass signatures through method parameters (not constructor)
         await wrapper
@@ -464,16 +501,18 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: signatures,
-              signatureCollector: collector,
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: signatures,
+            signatureCollector: collector,
+          ),
+        ).called(1);
       });
 
       test('handles different provider types', () async {
@@ -495,16 +534,18 @@ void main() {
         const responseStream =
             Stream<CreateChatCompletionStreamResponse>.empty();
 
-        when(() => mockCloudRepository.generateWithMessages(
-              messages: any(named: 'messages'),
-              model: any(named: 'model'),
-              temperature: any(named: 'temperature'),
-              provider: any(named: 'provider'),
-              maxCompletionTokens: any(named: 'maxCompletionTokens'),
-              tools: any(named: 'tools'),
-              thoughtSignatures: any(named: 'thoughtSignatures'),
-              signatureCollector: any(named: 'signatureCollector'),
-            )).thenAnswer((_) => responseStream);
+        when(
+          () => mockCloudRepository.generateWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            provider: any(named: 'provider'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            signatureCollector: any(named: 'signatureCollector'),
+          ),
+        ).thenAnswer((_) => responseStream);
 
         await wrapper
             .generateTextWithMessages(
@@ -515,12 +556,14 @@ void main() {
             )
             .toList();
 
-        verify(() => mockCloudRepository.generateWithMessages(
-              messages: messages,
-              model: 'gemini-pro',
-              temperature: 0.7,
-              provider: geminiProvider,
-            )).called(1);
+        verify(
+          () => mockCloudRepository.generateWithMessages(
+            messages: messages,
+            model: 'gemini-pro',
+            temperature: 0.7,
+            provider: geminiProvider,
+          ),
+        ).called(1);
       });
     });
   });

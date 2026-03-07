@@ -48,24 +48,33 @@ void main() {
   group('InferenceErrorType', () {
     test('has all expected enum values', () {
       expect(InferenceErrorType.values.length, 7);
-      expect(InferenceErrorType.values,
-          contains(InferenceErrorType.networkConnection));
-      expect(InferenceErrorType.values, contains(InferenceErrorType.timeout));
-      expect(InferenceErrorType.values,
-          contains(InferenceErrorType.authentication));
-      expect(InferenceErrorType.values, contains(InferenceErrorType.rateLimit));
-      expect(InferenceErrorType.values,
-          contains(InferenceErrorType.invalidRequest));
       expect(
-          InferenceErrorType.values, contains(InferenceErrorType.serverError));
+        InferenceErrorType.values,
+        contains(InferenceErrorType.networkConnection),
+      );
+      expect(InferenceErrorType.values, contains(InferenceErrorType.timeout));
+      expect(
+        InferenceErrorType.values,
+        contains(InferenceErrorType.authentication),
+      );
+      expect(InferenceErrorType.values, contains(InferenceErrorType.rateLimit));
+      expect(
+        InferenceErrorType.values,
+        contains(InferenceErrorType.invalidRequest),
+      );
+      expect(
+        InferenceErrorType.values,
+        contains(InferenceErrorType.serverError),
+      );
       expect(InferenceErrorType.values, contains(InferenceErrorType.unknown));
     });
   });
 
   group('InferenceErrorTypeExtension', () {
     group('getTitle with BuildContext', () {
-      testWidgets('returns correct localized titles',
-          (WidgetTester tester) async {
+      testWidgets('returns correct localized titles', (
+        WidgetTester tester,
+      ) async {
         await tester.pumpWidget(
           makeTestableWidget(
             Builder(

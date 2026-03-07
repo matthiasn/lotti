@@ -53,8 +53,9 @@ void main() {
           defaultModelId: 'non-existent-model',
         );
 
-        when(() => mockRepo.getConfigById('non-existent-model'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('non-existent-model'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -80,8 +81,9 @@ void main() {
           defaultModelId: 'model',
         );
 
-        when(() => mockRepo.getConfigById('wrong-type'))
-            .thenAnswer((_) async => wrongType);
+        when(
+          () => mockRepo.getConfigById('wrong-type'),
+        ).thenAnswer((_) async => wrongType);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -103,10 +105,12 @@ void main() {
           inferenceProviderId: 'non-existent-provider',
         );
 
-        when(() => mockRepo.getConfigById('test-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('non-existent-provider'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockRepo.getConfigById('test-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('non-existent-provider'),
+        ).thenAnswer((_) async => null);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -115,37 +119,41 @@ void main() {
         expect(result, isFalse);
       });
 
-      test('returns false when provider is not AiConfigInferenceProvider',
-          () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
+      test(
+        'returns false when provider is not AiConfigInferenceProvider',
+        () async {
+          // Skip on desktop
+          if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
+            return;
+          }
 
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt();
+          // Arrange
+          final prompt = AiTestDataFactory.createTestPrompt();
 
-        final model = AiTestDataFactory.createTestModel(
-          inferenceProviderId: 'wrong-type',
-        );
+          final model = AiTestDataFactory.createTestModel(
+            inferenceProviderId: 'wrong-type',
+          );
 
-        final wrongType = AiTestDataFactory.createTestPrompt(
-          id: 'wrong-type',
-          name: 'Wrong',
-          defaultModelId: 'model',
-        );
+          final wrongType = AiTestDataFactory.createTestPrompt(
+            id: 'wrong-type',
+            name: 'Wrong',
+            defaultModelId: 'model',
+          );
 
-        when(() => mockRepo.getConfigById('test-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('wrong-type'))
-            .thenAnswer((_) async => wrongType);
+          when(
+            () => mockRepo.getConfigById('test-model'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockRepo.getConfigById('wrong-type'),
+          ).thenAnswer((_) async => wrongType);
 
-        // Act
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
+          // Act
+          final result = await filter.isPromptAvailableOnPlatform(prompt);
 
-        // Assert
-        expect(result, isFalse);
-      });
+          // Assert
+          expect(result, isFalse);
+        },
+      );
 
       test('returns false when provider is Whisper', () async {
         // Skip on desktop
@@ -172,10 +180,12 @@ void main() {
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -210,10 +220,12 @@ void main() {
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('ollama-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('ollama-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('ollama-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('ollama-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -248,10 +260,12 @@ void main() {
           apiKey: '',
         );
 
-        when(() => mockRepo.getConfigById('voxtral-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('voxtral-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('voxtral-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('voxtral-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -286,10 +300,12 @@ void main() {
           apiKey: 'test-key',
         );
 
-        when(() => mockRepo.getConfigById('openai-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('openai-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('openai-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('openai-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -323,10 +339,12 @@ void main() {
           apiKey: 'test-key',
         );
 
-        when(() => mockRepo.getConfigById('anthropic-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('anthropic-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('anthropic-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('anthropic-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -361,10 +379,12 @@ void main() {
           apiKey: 'test-key',
         );
 
-        when(() => mockRepo.getConfigById('gemini-model'))
-            .thenAnswer((_) async => model);
-        when(() => mockRepo.getConfigById('gemini-provider'))
-            .thenAnswer((_) async => provider);
+        when(
+          () => mockRepo.getConfigById('gemini-model'),
+        ).thenAnswer((_) async => model);
+        when(
+          () => mockRepo.getConfigById('gemini-provider'),
+        ).thenAnswer((_) async => provider);
 
         // Act
         final result = await filter.isPromptAvailableOnPlatform(prompt);
@@ -428,19 +448,25 @@ void main() {
           type: InferenceProviderType.ollama,
         );
 
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => whisperModel);
-        when(() => mockRepo.getConfigById('openai-model'))
-            .thenAnswer((_) async => openAiModel);
-        when(() => mockRepo.getConfigById('ollama-model'))
-            .thenAnswer((_) async => ollamaModel);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => whisperModel);
+        when(
+          () => mockRepo.getConfigById('openai-model'),
+        ).thenAnswer((_) async => openAiModel);
+        when(
+          () => mockRepo.getConfigById('ollama-model'),
+        ).thenAnswer((_) async => ollamaModel);
 
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => whisperProvider);
-        when(() => mockRepo.getConfigById('openai-provider'))
-            .thenAnswer((_) async => openAiProvider);
-        when(() => mockRepo.getConfigById('ollama-provider'))
-            .thenAnswer((_) async => ollamaProvider);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => whisperProvider);
+        when(
+          () => mockRepo.getConfigById('openai-provider'),
+        ).thenAnswer((_) async => openAiProvider);
+        when(
+          () => mockRepo.getConfigById('ollama-provider'),
+        ).thenAnswer((_) async => ollamaProvider);
 
         // Act
         final result = await filter.filterPromptsByPlatform([
@@ -491,15 +517,19 @@ void main() {
           type: InferenceProviderType.ollama,
         );
 
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => whisperModel);
-        when(() => mockRepo.getConfigById('ollama-model'))
-            .thenAnswer((_) async => ollamaModel);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => whisperModel);
+        when(
+          () => mockRepo.getConfigById('ollama-model'),
+        ).thenAnswer((_) async => ollamaModel);
 
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => whisperProvider);
-        when(() => mockRepo.getConfigById('ollama-provider'))
-            .thenAnswer((_) async => ollamaProvider);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => whisperProvider);
+        when(
+          () => mockRepo.getConfigById('ollama-provider'),
+        ).thenAnswer((_) async => ollamaProvider);
 
         // Act
         final result = await filter.filterPromptsByPlatform([
@@ -537,10 +567,12 @@ void main() {
             type: InferenceProviderType.openAi,
           );
 
-          when(() => mockRepo.getConfigById('model-$i'))
-              .thenAnswer((_) async => model);
-          when(() => mockRepo.getConfigById('provider-$i'))
-              .thenAnswer((_) async => provider);
+          when(
+            () => mockRepo.getConfigById('model-$i'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockRepo.getConfigById('provider-$i'),
+          ).thenAnswer((_) async => provider);
         }
 
         // Act
@@ -593,20 +625,26 @@ void main() {
           type: InferenceProviderType.openAi,
         );
 
-        when(() => mockRepo.getConfigById('whisper-prompt'))
-            .thenAnswer((_) async => whisperPrompt);
-        when(() => mockRepo.getConfigById('openai-prompt'))
-            .thenAnswer((_) async => openAiPrompt);
+        when(
+          () => mockRepo.getConfigById('whisper-prompt'),
+        ).thenAnswer((_) async => whisperPrompt);
+        when(
+          () => mockRepo.getConfigById('openai-prompt'),
+        ).thenAnswer((_) async => openAiPrompt);
 
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => whisperModel);
-        when(() => mockRepo.getConfigById('openai-model'))
-            .thenAnswer((_) async => openAiModel);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => whisperModel);
+        when(
+          () => mockRepo.getConfigById('openai-model'),
+        ).thenAnswer((_) async => openAiModel);
 
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => whisperProvider);
-        when(() => mockRepo.getConfigById('openai-provider'))
-            .thenAnswer((_) async => openAiProvider);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => whisperProvider);
+        when(
+          () => mockRepo.getConfigById('openai-provider'),
+        ).thenAnswer((_) async => openAiProvider);
 
         // Act
         final result = await filter.getFirstAvailablePrompt([
@@ -641,12 +679,15 @@ void main() {
           type: InferenceProviderType.whisper,
         );
 
-        when(() => mockRepo.getConfigById('whisper-prompt'))
-            .thenAnswer((_) async => whisperPrompt);
-        when(() => mockRepo.getConfigById('whisper-model'))
-            .thenAnswer((_) async => whisperModel);
-        when(() => mockRepo.getConfigById('whisper-provider'))
-            .thenAnswer((_) async => whisperProvider);
+        when(
+          () => mockRepo.getConfigById('whisper-prompt'),
+        ).thenAnswer((_) async => whisperPrompt);
+        when(
+          () => mockRepo.getConfigById('whisper-model'),
+        ).thenAnswer((_) async => whisperModel);
+        when(
+          () => mockRepo.getConfigById('whisper-provider'),
+        ).thenAnswer((_) async => whisperProvider);
 
         // Act
         final result = await filter.getFirstAvailablePrompt([

@@ -175,8 +175,10 @@ class TaskAgentService {
   /// Looks up `AgentTaskLink`s pointing to [taskId] and resolves the agent
   /// identity from the link's `fromId`.
   Future<AgentIdentityEntity?> getTaskAgentForTask(String taskId) async {
-    final links =
-        await repository.getLinksTo(taskId, type: AgentLinkTypes.agentTask);
+    final links = await repository.getLinksTo(
+      taskId,
+      type: AgentLinkTypes.agentTask,
+    );
     if (links.isEmpty) return null;
 
     final agentId = _selectPrimaryTaskLink(links).fromId;
@@ -341,7 +343,8 @@ class TaskAgentService {
         // cooldown window survives app restarts and backgrounding.
         await _hydrateThrottleDeadline(agent.agentId);
       } catch (e, s) {
-        final msg = 'failed to restore subscriptions '
+        final msg =
+            'failed to restore subscriptions '
             'for ${DomainLogger.sanitizeId(agent.agentId)}';
         if (domainLogger != null) {
           domainLogger!.error(

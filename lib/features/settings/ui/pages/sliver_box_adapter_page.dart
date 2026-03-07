@@ -51,9 +51,9 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
           SliverToBoxAdapter(
             child: Padding(
               padding: widget.padding,
-              child: widget.child
-                  .animate()
-                  .fadeIn(duration: const Duration(milliseconds: 500)),
+              child: widget.child.animate().fadeIn(
+                duration: const Duration(milliseconds: 500),
+              ),
             ),
           ),
         ],

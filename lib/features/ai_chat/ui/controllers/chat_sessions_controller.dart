@@ -51,8 +51,9 @@ class ChatSessionsController extends _$ChatSessionsController {
 
     try {
       final chatRepository = ref.read(chatRepositoryProvider);
-      final session =
-          await chatRepository.createSession(categoryId: categoryId);
+      final session = await chatRepository.createSession(
+        categoryId: categoryId,
+      );
 
       final uiModel = ChatSessionUiModel.fromDomain(session);
 
@@ -189,8 +190,9 @@ class ChatSessionsController extends _$ChatSessionsController {
       'totalSessions': totalSessions,
       'totalMessages': totalMessages,
       'activeSessionsCount': sessionsWithMessages,
-      'averageMessagesPerSession':
-          totalSessions > 0 ? totalMessages ~/ totalSessions : 0,
+      'averageMessagesPerSession': totalSessions > 0
+          ? totalMessages ~/ totalSessions
+          : 0,
     };
   }
 }

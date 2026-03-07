@@ -32,10 +32,22 @@ void main() {
   setUp(() {
     // Give enough viewport height so FAB and CTA are built and tappable.
     TestWidgetsFlutterBinding.ensureInitialized();
-    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        .physicalSize = const Size(1024, 1400);
     TestWidgetsFlutterBinding
-        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .physicalSize = const Size(
+      1024,
+      1400,
+    );
+    TestWidgetsFlutterBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .devicePixelRatio =
+        1.0;
 
     // Ensure ThemingController dependencies are registered
     ensureThemingServicesRegistered();
@@ -43,8 +55,9 @@ void main() {
     if (!getIt.isRegistered<EntitiesCacheService>()) {
       final mock = MockEntitiesCacheService();
       // No categories needed for this suite; return empty list
-      when(() => mock.sortedCategories)
-          .thenReturn(const <CategoryDefinition>[]);
+      when(
+        () => mock.sortedCategories,
+      ).thenReturn(const <CategoryDefinition>[]);
       getIt.registerSingleton<EntitiesCacheService>(mock);
     }
     if (!getIt.isRegistered<NavService>()) {
@@ -54,10 +67,22 @@ void main() {
 
   tearDown(() async {
     // Reset surface size
-    TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
-        .physicalSize = const Size(800, 600);
     TestWidgetsFlutterBinding
-        .instance.platformDispatcher.views.first.devicePixelRatio = 1.0;
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .physicalSize = const Size(
+      800,
+      600,
+    );
+    TestWidgetsFlutterBinding
+            .instance
+            .platformDispatcher
+            .views
+            .first
+            .devicePixelRatio =
+        1.0;
     if (getIt.isRegistered<EntitiesCacheService>()) {
       await getIt.reset(dispose: false);
     }
@@ -183,8 +208,9 @@ void main() {
     await tester.tap(ctaText, warnIfMissed: false);
     await tester.pump();
 
-    verify(() => mockNav.beamToNamed('/settings/labels/create?name=My%20Label'))
-        .called(1);
+    verify(
+      () => mockNav.beamToNamed('/settings/labels/create?name=My%20Label'),
+    ).called(1);
   });
 
   testWidgets('tapping label navigates to details', (tester) async {
@@ -198,9 +224,9 @@ void main() {
     await tester.tap(tile, warnIfMissed: false);
     await tester.pump();
 
-    verify(() =>
-            mockNav.beamToNamed('/settings/labels/${testLabelDefinition1.id}'))
-        .called(1);
+    verify(
+      () => mockNav.beamToNamed('/settings/labels/${testLabelDefinition1.id}'),
+    ).called(1);
   });
 
   testWidgets('private badge renders for private labels', (tester) async {
@@ -260,8 +286,9 @@ void main() {
     expect(tf.textCapitalization, TextCapitalization.words);
   });
 
-  testWidgets('renders applicable category chips under label when present',
-      (tester) async {
+  testWidgets('renders applicable category chips under label when present', (
+    tester,
+  ) async {
     // Arrange categories and mock cache lookups
     final catWork = CategoryDefinition(
       id: 'cat-work',
@@ -303,8 +330,9 @@ void main() {
     expect(find.text('Personal'), findsWidgets);
   });
 
-  testWidgets('category chips use category color and contrast-aware text',
-      (tester) async {
+  testWidgets('category chips use category color and contrast-aware text', (
+    tester,
+  ) async {
     // Use one light and one dark color to test foreground selection.
     final catLight = CategoryDefinition(
       id: 'cat-light',
@@ -347,18 +375,26 @@ void main() {
     expect(darkChip.backgroundColor, colorFromCssHex(catDark.color));
 
     // Foreground contrast: get Text style inside each Chip
-    final lightText = tester.widget<Text>(find.descendant(
+    final lightText = tester.widget<Text>(
+      find.descendant(
         of: find.widgetWithText(Chip, 'Bright'),
-        matching: find.text('Bright')));
-    final darkText = tester.widget<Text>(find.descendant(
-        of: find.widgetWithText(Chip, 'Deep'), matching: find.text('Deep')));
+        matching: find.text('Bright'),
+      ),
+    );
+    final darkText = tester.widget<Text>(
+      find.descendant(
+        of: find.widgetWithText(Chip, 'Deep'),
+        matching: find.text('Deep'),
+      ),
+    );
     expect(lightText.style?.color, Colors.black);
     expect(darkText.style?.color, Colors.white);
   });
 
   group('SettingsPageHeader Integration', () {
-    testWidgets('displays SettingsPageHeader with correct title',
-        (tester) async {
+    testWidgets('displays SettingsPageHeader with correct title', (
+      tester,
+    ) async {
       await tester.pumpWidget(_buildPage(labels: []));
       await tester.pumpAndSettle();
 

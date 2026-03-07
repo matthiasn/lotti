@@ -29,8 +29,9 @@ void main() {
       expect(find.text(testLabel), findsOneWidget);
     });
 
-    testWidgets('color is applied to background, border, and text',
-        (tester) async {
+    testWidgets('color is applied to background, border, and text', (
+      tester,
+    ) async {
       const testLabel = 'Done';
       const testColor = Colors.green;
 
@@ -51,12 +52,16 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
 
       // Background should have color with alpha
-      expect(decoration.color,
-          testColor.withValues(alpha: AppTheme.alphaPrimaryContainerLight));
+      expect(
+        decoration.color,
+        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerLight),
+      );
 
       // Border should have color with alpha
-      expect((decoration.border! as Border).top.color,
-          testColor.withValues(alpha: AppTheme.alphaStatusIndicatorBorder));
+      expect(
+        (decoration.border! as Border).top.color,
+        testColor.withValues(alpha: AppTheme.alphaStatusIndicatorBorder),
+      );
 
       // Text should have color with alpha
       final text = tester.widget<Text>(find.text(testLabel));
@@ -86,7 +91,9 @@ void main() {
       // Check icon color
       final icon = tester.widget<Icon>(find.byIcon(testIcon));
       expect(
-          icon.color, testColor.withValues(alpha: AppTheme.alphaPrimaryIcon));
+        icon.color,
+        testColor.withValues(alpha: AppTheme.alphaPrimaryIcon),
+      );
     });
 
     testWidgets('no icon space when icon is null', (tester) async {
@@ -134,8 +141,10 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
 
       // Dark mode should use different alpha
-      expect(decoration.color,
-          testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark));
+      expect(
+        decoration.color,
+        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark),
+      );
 
       // Text alpha should be different in dark mode
       final text = tester.widget<Text>(find.text(testLabel));
@@ -161,8 +170,10 @@ void main() {
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
 
-      expect(decoration.color,
-          testColor.withValues(alpha: AppTheme.alphaPrimaryContainerLight));
+      expect(
+        decoration.color,
+        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerLight),
+      );
 
       final text = tester.widget<Text>(find.text(testLabel));
       expect(text.style?.color, testColor.withValues(alpha: 0.8));
@@ -189,8 +200,10 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
 
       // Should use dark mode alpha despite light theme
-      expect(decoration.color,
-          testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark));
+      expect(
+        decoration.color,
+        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark),
+      );
     });
 
     testWidgets('normal mode uses standard sizes', (tester) async {
@@ -213,16 +226,19 @@ void main() {
       // Check padding
       final container = tester.widget<Container>(find.byType(Container));
       expect(
-          container.padding,
-          const EdgeInsets.symmetric(
-            horizontal: AppTheme.statusIndicatorPaddingHorizontal,
-            vertical: AppTheme.statusIndicatorPaddingVertical,
-          ));
+        container.padding,
+        const EdgeInsets.symmetric(
+          horizontal: AppTheme.statusIndicatorPaddingHorizontal,
+          vertical: AppTheme.statusIndicatorPaddingVertical,
+        ),
+      );
 
       // Check border radius
       final decoration = container.decoration! as BoxDecoration;
-      expect(decoration.borderRadius,
-          BorderRadius.circular(AppTheme.statusIndicatorBorderRadius));
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(AppTheme.statusIndicatorBorderRadius),
+      );
 
       // Check icon size
       final icon = tester.widget<Icon>(find.byIcon(testIcon));
@@ -361,10 +377,16 @@ void main() {
           .map((p) => p.colorForBrightness(Brightness.dark))
           .toSet();
 
-      expect(lightColors.length, equals(4),
-          reason: 'All 4 priority levels should have unique light colors');
-      expect(darkColors.length, equals(4),
-          reason: 'All 4 priority levels should have unique dark colors');
+      expect(
+        lightColors.length,
+        equals(4),
+        reason: 'All 4 priority levels should have unique light colors',
+      );
+      expect(
+        darkColors.length,
+        equals(4),
+        reason: 'All 4 priority levels should have unique dark colors',
+      );
     });
   });
 }

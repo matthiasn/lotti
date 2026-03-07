@@ -54,15 +54,16 @@ class _ShimmerEffectState extends State<ShimmerEffect>
       duration: widget.duration,
     );
 
-    _animation = Tween<double>(
-      begin: -1.5,
-      end: 1.5,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _animation =
+        Tween<double>(
+          begin: -1.5,
+          end: 1.5,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeInOut,
+          ),
+        );
 
     if (widget.isActive) {
       if (widget.delay > Duration.zero) {
@@ -165,15 +166,16 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
       duration: GameyAnimations.shimmer,
     )..repeat();
 
-    _animation = Tween<double>(
-      begin: -2,
-      end: 2,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
+    _animation =
+        Tween<double>(
+          begin: -2,
+          end: 2,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: Curves.easeInOut,
+          ),
+        );
   }
 
   @override
@@ -185,9 +187,11 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = widget.baseColor ??
+    final baseColor =
+        widget.baseColor ??
         (isDark ? Colors.grey.shade800 : Colors.grey.shade300);
-    final highlightColor = widget.highlightColor ??
+    final highlightColor =
+        widget.highlightColor ??
         (isDark ? Colors.grey.shade700 : Colors.grey.shade100);
 
     return AnimatedBuilder(
@@ -341,15 +345,16 @@ class _PulseEffectState extends State<PulseEffect>
       duration: widget.duration,
     );
 
-    _animation = Tween<double>(
-      begin: widget.minScale,
-      end: widget.maxScale,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _animation =
+        Tween<double>(
+          begin: widget.minScale,
+          end: widget.maxScale,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
 
     if (widget.isActive) {
       _controller.repeat(reverse: true);
@@ -431,15 +436,16 @@ class _GlowPulseState extends State<GlowPulse>
       duration: widget.duration,
     );
 
-    _animation = Tween<double>(
-      begin: widget.minOpacity,
-      end: widget.maxOpacity,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: GameyAnimations.symmetrical,
-      ),
-    );
+    _animation =
+        Tween<double>(
+          begin: widget.minOpacity,
+          end: widget.maxOpacity,
+        ).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: GameyAnimations.symmetrical,
+          ),
+        );
 
     if (widget.isActive) {
       _controller.repeat(reverse: true);

@@ -73,12 +73,14 @@ class _EmptyLocation extends BeamLocation<BeamState> {
 }
 
 void main() {
-  testWidgets('Shows red toast only when outbox attempts send while logged out',
-      (tester) async {
+  testWidgets('Shows red toast only when outbox attempts send while logged out', (
+    tester,
+  ) async {
     final db = MockJournalDb();
     // Emit active flags that include enableMatrixFlag
-    when(db.watchActiveConfigFlagNames)
-        .thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    when(
+      db.watchActiveConfigFlagNames,
+    ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
 
     // Register GetIt dependencies used by AppScreen children
     final syncDb = mockSyncDatabaseWithCount(0);
@@ -87,16 +89,18 @@ void main() {
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
     final settingsDb = MockSettingsDb();
     when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(() => settingsDb.saveSettingsItem(any(), any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
 
     // ThemingController reads tooltip flag
-    when(() => db.watchConfigFlag(enableTooltipFlag))
-        .thenAnswer((_) => Stream<bool>.value(false));
+    when(
+      () => db.watchConfigFlag(enableTooltipFlag),
+    ).thenAnswer((_) => Stream<bool>.value(false));
 
     // Minimal nav service stub with properly initialized delegates
     final mockNav = MockNavService();
@@ -140,18 +144,24 @@ void main() {
     );
 
     // Initialize all delegates
-    await tasksDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/tasks')));
-    await calendarDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/calendar')));
-    await habitsDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/habits')));
-    await dashboardsDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/dashboards')));
-    await journalDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/journal')));
-    await settingsDelegate
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/settings')));
+    await tasksDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/tasks')),
+    );
+    await calendarDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/calendar')),
+    );
+    await habitsDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/habits')),
+    );
+    await dashboardsDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/dashboards')),
+    );
+    await journalDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/journal')),
+    );
+    await settingsDelegate.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/settings')),
+    );
 
     when(mockNav.getIndexStream).thenAnswer((_) => Stream<int>.value(0));
     when(() => mockNav.tasksDelegate).thenReturn(tasksDelegate);
@@ -170,15 +180,18 @@ void main() {
     // Build with provider overrides to satisfy Riverpod + Router via MyBeamerApp
     final mockMatrix = MockMatrixService();
     // Stub matrix streams used by IncomingVerificationWrapper to avoid null errors
-    when(mockMatrix.getIncomingKeyVerificationStream)
-        .thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(() => mockMatrix.incomingKeyVerificationRunnerStream)
-        .thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    when(
+      mockMatrix.getIncomingKeyVerificationStream,
+    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    when(
+      () => mockMatrix.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
     // Additional service stubs used by AppScreen widgets
     final mockTimeService = MockTimeService();
-    when(mockTimeService.getStream)
-        .thenAnswer((_) => const Stream<JournalEntity?>.empty());
+    when(
+      mockTimeService.getStream,
+    ).thenAnswer((_) => const Stream<JournalEntity?>.empty());
     if (getIt.isRegistered<TimeService>()) getIt.unregister<TimeService>();
     getIt.registerSingleton<TimeService>(mockTimeService);
 
@@ -200,8 +213,9 @@ void main() {
     // Mock OutboxService and provide a stream to emit login-gate events
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
-    when(() => mockOutboxService.notLoggedInGateStream)
-        .thenAnswer((_) => controller.stream);
+    when(
+      () => mockOutboxService.notLoggedInGateStream,
+    ).thenAnswer((_) => controller.stream);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -212,8 +226,9 @@ void main() {
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
           // Prevent Gemini setup prompt from triggering during tests
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -250,8 +265,9 @@ void main() {
     );
 
     // Initialize the delegate's route
-    await routerDelegate2
-        .setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+    await routerDelegate2.setNewRoutePath(
+      RouteInformation(uri: Uri.parse('/')),
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -261,8 +277,9 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -280,11 +297,13 @@ void main() {
     // We tolerate one lingering SnackBar due to UI rebuilds.
   });
 
-  testWidgets('Duplicate login-gate events show only one toast per session',
-      (tester) async {
+  testWidgets('Duplicate login-gate events show only one toast per session', (
+    tester,
+  ) async {
     final db = MockJournalDb();
-    when(db.watchActiveConfigFlagNames)
-        .thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    when(
+      db.watchActiveConfigFlagNames,
+    ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
 
     // Register GetIt dependencies used by AppScreen children
     final syncDb = mockSyncDatabaseWithCount(0);
@@ -293,23 +312,27 @@ void main() {
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
     final settingsDb = MockSettingsDb();
     when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(() => settingsDb.saveSettingsItem(any(), any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
 
     final mockMatrix = MockMatrixService();
-    when(mockMatrix.getIncomingKeyVerificationStream)
-        .thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(() => mockMatrix.incomingKeyVerificationRunnerStream)
-        .thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    when(
+      mockMatrix.getIncomingKeyVerificationStream,
+    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    when(
+      () => mockMatrix.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
-    when(() => mockOutboxService.notLoggedInGateStream)
-        .thenAnswer((_) => controller.stream);
+    when(
+      () => mockOutboxService.notLoggedInGateStream,
+    ).thenAnswer((_) => controller.stream);
 
     final routerDelegate = BeamerDelegate(
       setBrowserTabTitle: false,
@@ -327,8 +350,9 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -356,11 +380,13 @@ void main() {
     expect(find.text('Sync is not logged in'), findsOneWidget);
   });
 
-  testWidgets('Guard resets on login; event after login shows toast again',
-      (tester) async {
+  testWidgets('Guard resets on login; event after login shows toast again', (
+    tester,
+  ) async {
     final db = MockJournalDb();
-    when(db.watchActiveConfigFlagNames)
-        .thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    when(
+      db.watchActiveConfigFlagNames,
+    ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
 
     // Register GetIt dependencies used by AppScreen children
     final syncDb = mockSyncDatabaseWithCount(0);
@@ -369,23 +395,27 @@ void main() {
     if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
     final settingsDb = MockSettingsDb();
     when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-    when(() => settingsDb.saveSettingsItem(any(), any()))
-        .thenAnswer((_) async => 1);
+    when(
+      () => settingsDb.saveSettingsItem(any(), any()),
+    ).thenAnswer((_) async => 1);
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
 
     final mockMatrix = MockMatrixService();
-    when(mockMatrix.getIncomingKeyVerificationStream)
-        .thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(() => mockMatrix.incomingKeyVerificationRunnerStream)
-        .thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    when(
+      mockMatrix.getIncomingKeyVerificationStream,
+    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+    when(
+      () => mockMatrix.incomingKeyVerificationRunnerStream,
+    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
-    when(() => mockOutboxService.notLoggedInGateStream)
-        .thenAnswer((_) => controller.stream);
+    when(
+      () => mockOutboxService.notLoggedInGateStream,
+    ).thenAnswer((_) => controller.stream);
 
     final routerDelegate = BeamerDelegate(
       setBrowserTabTitle: false,
@@ -404,8 +434,9 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -434,8 +465,9 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedIn),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -459,8 +491,9 @@ void main() {
             (ref) => Stream<LoginState>.value(LoginState.loggedOut),
           ),
           outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider
-              .overrideWith(_MockAiSetupPromptService.new),
+          aiSetupPromptServiceProvider.overrideWith(
+            _MockAiSetupPromptService.new,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,

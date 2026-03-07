@@ -22,10 +22,12 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       mockJournalDb = MockJournalDb();
 
-      when(() => mockUpdateNotifications.updateStream)
-          .thenAnswer((_) => const Stream.empty());
-      when(() => mockJournalDb.journalEntityById(any()))
-          .thenAnswer((_) async => null);
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream.empty());
+      when(
+        () => mockJournalDb.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -36,8 +38,9 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('keeps focus after save and guards rapid double enter',
-        (tester) async {
+    testWidgets('keeps focus after save and guards rapid double enter', (
+      tester,
+    ) async {
       var createCalls = 0;
 
       await tester.pumpWidget(
@@ -67,8 +70,9 @@ void main() {
       await tester.tap(addField);
       await tester.pump();
       await tester.enterText(
-          find.descendant(of: addField, matching: find.byType(TextField)),
-          'one');
+        find.descendant(of: addField, matching: find.byType(TextField)),
+        'one',
+      );
 
       // Press Enter to save and create a single item
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -77,8 +81,9 @@ void main() {
       expect(createCalls, 1);
 
       // The add field should retain focus for continuous typing
-      final editable =
-          tester.widgetList<EditableText>(find.byType(EditableText)).last;
+      final editable = tester
+          .widgetList<EditableText>(find.byType(EditableText))
+          .last;
       expect(editable.focusNode.hasFocus, isTrue);
     });
   });

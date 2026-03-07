@@ -55,12 +55,12 @@ void main() {
     });
 
     test('exitManageMode sets manageMode to false', () {
-      final notifier = container.read(
-        linkedTasksControllerProvider(taskId: 'task-1').notifier,
-      )
-
-        // Enable manage mode first
-        ..toggleManageMode();
+      final notifier =
+          container.read(
+              linkedTasksControllerProvider(taskId: 'task-1').notifier,
+            )
+            // Enable manage mode first
+            ..toggleManageMode();
       expect(
         container
             .read(linkedTasksControllerProvider(taskId: 'task-1'))

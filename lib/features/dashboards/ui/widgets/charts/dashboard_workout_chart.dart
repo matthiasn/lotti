@@ -57,7 +57,8 @@ class DashboardWorkoutChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final observations = ref
+    final observations =
+        ref
             .watch(
               workoutObservationsControllerProvider(
                 chartConfig: chartConfig,

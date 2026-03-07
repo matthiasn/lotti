@@ -22,8 +22,9 @@ class HealthChartDataController extends _$HealthChartDataController {
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
   void listen() {
-    _updateSubscription =
-        _updateNotifications.updateStream.listen((affectedIds) async {
+    _updateSubscription = _updateNotifications.updateStream.listen((
+      affectedIds,
+    ) async {
       if (affectedIds.contains(healthDataType)) {
         final latest = await _fetch();
         if (latest != state.value) {
@@ -77,7 +78,8 @@ class HealthObservationsController extends _$HealthObservationsController {
   }) async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final items = ref
+    final items =
+        ref
             .watch(
               healthChartDataControllerProvider(
                 healthDataType: healthDataType,

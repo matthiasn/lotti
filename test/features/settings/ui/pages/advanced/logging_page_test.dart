@@ -53,15 +53,16 @@ class TestLogEntryFactory {
     String baseDomain = 'test',
   }) {
     return List.generate(
-        count,
-        (index) => create(
-              id: '${index + 1}',
-              domain: '$baseDomain${index + 1}',
-              message: index == 0
-                  ? TestConstants.firstTestMessage
-                  : TestConstants.secondTestMessage,
-              level: index == 0 ? 'INFO' : 'ERROR',
-            ));
+      count,
+      (index) => create(
+        id: '${index + 1}',
+        domain: '$baseDomain${index + 1}',
+        message: index == 0
+            ? TestConstants.firstTestMessage
+            : TestConstants.secondTestMessage,
+        level: index == 0 ? 'INFO' : 'ERROR',
+      ),
+    );
   }
 }
 
@@ -160,11 +161,12 @@ class MockLoggingDbHelper {
       (_) => Stream.value([
         TestLogEntryFactory.create(
           message: TestConstants.singleTestMessage,
-        )
+        ),
       ]),
     );
-    when(() => mock.getSearchLogEntriesCount(TestConstants.testQuery))
-        .thenAnswer((_) async => 1);
+    when(
+      () => mock.getSearchLogEntriesCount(TestConstants.testQuery),
+    ).thenAnswer((_) async => 1);
   }
 }
 
@@ -182,8 +184,9 @@ void main() {
 
   tearDown(getIt.reset);
 
-  testWidgets('LoggingPage displays logs correctly',
-      (WidgetTester tester) async {
+  testWidgets('LoggingPage displays logs correctly', (
+    WidgetTester tester,
+  ) async {
     await LoggingPageTestHelper.pumpLoggingPage(tester);
 
     // Verify search bar is present
@@ -195,8 +198,9 @@ void main() {
     expect(find.text('test test'), findsOneWidget);
   });
 
-  testWidgets('LoggingPage search functionality works',
-      (WidgetTester tester) async {
+  testWidgets('LoggingPage search functionality works', (
+    WidgetTester tester,
+  ) async {
     await LoggingPageTestHelper.pumpLoggingPage(tester);
 
     // Enter search text
@@ -208,7 +212,9 @@ void main() {
 
     // Enter non-matching search text
     await LoggingPageTestHelper.enterSearchQuery(
-        tester, TestConstants.nonMatchingQuery);
+      tester,
+      TestConstants.nonMatchingQuery,
+    );
 
     // Verify no results found
     expect(find.text('No logs match your search'), findsOneWidget);
@@ -223,11 +229,13 @@ void main() {
     expect(find.text('No logs available'), findsOneWidget);
   });
 
-  testWidgets('LoggingPage handles null values gracefully',
-      (WidgetTester tester) async {
+  testWidgets('LoggingPage handles null values gracefully', (
+    WidgetTester tester,
+  ) async {
     when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
-      (_) => Stream.value(
-          [TestLogEntryFactory.create(subDomain: null, data: null)]),
+      (_) => Stream.value([
+        TestLogEntryFactory.create(subDomain: null, data: null),
+      ]),
     );
 
     await LoggingPageTestHelper.pumpLoggingPage(tester);
@@ -238,8 +246,9 @@ void main() {
   });
 
   group('Search functionality tests', () {
-    testWidgets('Search debouncing works correctly',
-        (WidgetTester tester) async {
+    testWidgets('Search debouncing works correctly', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Enter text rapidly (simulating fast typing)
@@ -251,8 +260,9 @@ void main() {
 
       // Verify search methods were called after debounce
       verify(() => mockLoggingDb.getSearchLogEntriesCount('Test')).called(1);
-      verify(() => mockLoggingDb.watchSearchLogEntriesPaginated('Test'))
-          .called(1);
+      verify(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated('Test'),
+      ).called(1);
     });
 
     testWidgets('Clear search button works', (WidgetTester tester) async {
@@ -283,40 +293,48 @@ void main() {
       }
     });
 
-    testWidgets('Search results count is displayed correctly',
-        (WidgetTester tester) async {
+    testWidgets('Search results count is displayed correctly', (
+      WidgetTester tester,
+    ) async {
       MockLoggingDbHelper.setupMultipleResultsMock(mockLoggingDb);
 
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Enter search text
       await LoggingPageTestHelper.enterSearchQuery(
-          tester, TestConstants.testQuery);
+        tester,
+        TestConstants.testQuery,
+      );
 
       // Verify results count is displayed (actual format from implementation)
       expect(find.text('Found 2 logs (showing 2)'), findsOneWidget);
     });
 
-    testWidgets('Search results count shows singular form for 1 result',
-        (WidgetTester tester) async {
+    testWidgets('Search results count shows singular form for 1 result', (
+      WidgetTester tester,
+    ) async {
       MockLoggingDbHelper.setupSingleResultMock(mockLoggingDb);
 
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Enter search text
       await LoggingPageTestHelper.enterSearchQuery(
-          tester, TestConstants.testQuery);
+        tester,
+        TestConstants.testQuery,
+      );
 
       // Verify singular form is used (actual format from implementation)
       expect(find.text('Found 1 log (showing 1)'), findsOneWidget);
     });
 
-    testWidgets('Loading state is shown during search',
-        (WidgetTester tester) async {
+    testWidgets('Loading state is shown during search', (
+      WidgetTester tester,
+    ) async {
       // Create a completer to control when the stream emits
       final completer = StreamController<List<LogEntry>>();
-      when(() => mockLoggingDb.watchSearchLogEntriesPaginated(any()))
-          .thenAnswer(
+      when(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated(any()),
+      ).thenAnswer(
         (_) => completer.stream,
       );
 
@@ -350,7 +368,9 @@ void main() {
 
       // Enter search text to trigger error
       await LoggingPageTestHelper.enterSearchQuery(
-          tester, TestConstants.testQuery);
+        tester,
+        TestConstants.testQuery,
+      );
 
       // Verify error is shown via SnackBar (actual implementation behavior)
       // The error handling in the actual implementation shows errors via SnackBar
@@ -358,8 +378,9 @@ void main() {
       expect(find.byType(LoggingPage), findsOneWidget);
     });
 
-    testWidgets('Retry button works in error state',
-        (WidgetTester tester) async {
+    testWidgets('Retry button works in error state', (
+      WidgetTester tester,
+    ) async {
       var errorCount = 0;
       // Mock error first, then success
       when(() => mockLoggingDb.getSearchLogEntriesCount(any())).thenAnswer(
@@ -377,20 +398,24 @@ void main() {
 
       // Enter search text to trigger error
       await LoggingPageTestHelper.enterSearchQuery(
-          tester, TestConstants.testQuery);
+        tester,
+        TestConstants.testQuery,
+      );
 
       // The actual implementation handles errors via SnackBar, not inline retry
       // So we just verify the widget handles the error gracefully
       expect(find.byType(LoggingPage), findsOneWidget);
     });
 
-    testWidgets('Empty search query shows recent logs',
-        (WidgetTester tester) async {
+    testWidgets('Empty search query shows recent logs', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Verify recent logs are shown by default
-      verify(() => mockLoggingDb.watchLogEntries())
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockLoggingDb.watchLogEntries(),
+      ).called(greaterThanOrEqualTo(1));
       verifyNever(() => mockLoggingDb.watchSearchLogEntriesPaginated(any()));
 
       // Enter and then clear search
@@ -401,12 +426,14 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify recent logs method was called (allowing for multiple calls during lifecycle)
-      verify(() => mockLoggingDb.watchLogEntries())
-          .called(greaterThanOrEqualTo(1));
+      verify(
+        () => mockLoggingDb.watchLogEntries(),
+      ).called(greaterThanOrEqualTo(1));
     });
 
-    testWidgets('Search hint text and accessibility labels are present',
-        (WidgetTester tester) async {
+    testWidgets('Search hint text and accessibility labels are present', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Verify search hint text
@@ -439,8 +466,9 @@ void main() {
       }
     });
 
-    testWidgets('Search input validation handles long queries',
-        (WidgetTester tester) async {
+    testWidgets('Search input validation handles long queries', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Enter a query longer than the max length (200 characters)
@@ -459,8 +487,9 @@ void main() {
       }
     });
 
-    testWidgets('Visibility detector prevents updates when not visible',
-        (WidgetTester tester) async {
+    testWidgets('Visibility detector prevents updates when not visible', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Find the VisibilityDetector
@@ -470,8 +499,9 @@ void main() {
       expect(find.byType(CustomScrollView), findsOneWidget);
     });
 
-    testWidgets('Loading state shows correct message for recent logs',
-        (WidgetTester tester) async {
+    testWidgets('Loading state shows correct message for recent logs', (
+      WidgetTester tester,
+    ) async {
       // Create a completer to control when the stream emits
       final completer = StreamController<List<LogEntry>>();
       when(() => mockLoggingDb.watchLogEntries()).thenAnswer(
@@ -506,8 +536,9 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('Search functionality shows search icon',
-        (WidgetTester tester) async {
+    testWidgets('Search functionality shows search icon', (
+      WidgetTester tester,
+    ) async {
       await LoggingPageTestHelper.pumpLoggingPage(tester);
 
       // Verify search icon is present initially
@@ -527,8 +558,9 @@ void main() {
 
     testWidgets('Empty state shows correct icons', (WidgetTester tester) async {
       // Mock empty search results
-      when(() => mockLoggingDb.watchSearchLogEntriesPaginated(any()))
-          .thenAnswer(
+      when(
+        () => mockLoggingDb.watchSearchLogEntriesPaginated(any()),
+      ).thenAnswer(
         (_) => Stream.value([]),
       );
 
@@ -540,12 +572,15 @@ void main() {
       // Verify empty search state icon
       expect(find.byIcon(Icons.search_off), findsOneWidget);
       expect(find.text('No logs match your search'), findsOneWidget);
-      expect(find.text('Try different keywords or check your spelling'),
-          findsOneWidget);
+      expect(
+        find.text('Try different keywords or check your spelling'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Empty logs state shows correct icon',
-        (WidgetTester tester) async {
+    testWidgets('Empty logs state shows correct icon', (
+      WidgetTester tester,
+    ) async {
       MockLoggingDbHelper.setupEmptyResultsMock(mockLoggingDb);
 
       await LoggingPageTestHelper.pumpLoggingPage(tester);
@@ -557,8 +592,9 @@ void main() {
   });
 
   group('LogLineCard tests', () {
-    testWidgets('LogLineCard navigation triggers onTap',
-        (WidgetTester tester) async {
+    testWidgets('LogLineCard navigation triggers onTap', (
+      WidgetTester tester,
+    ) async {
       // Register a dummy NavService so navigation doesn't throw
       getIt.registerSingleton<NavService>(MockNavService());
       await LoggingPageTestHelper.pumpLoggingPage(tester);
@@ -574,8 +610,9 @@ void main() {
   });
 
   group('LogDetailPage tests', () {
-    testWidgets('LogDetailPage displays error log with correct styling',
-        (WidgetTester tester) async {
+    testWidgets('LogDetailPage displays error log with correct styling', (
+      WidgetTester tester,
+    ) async {
       final errorLogEntry = TestLogEntryFactory.create(
         id: 'error-id',
         level: 'ERROR',
@@ -596,8 +633,9 @@ void main() {
       expect(find.text('ERROR'), findsOneWidget);
     });
 
-    testWidgets('LogDetailPage displays stacktrace if present',
-        (WidgetTester tester) async {
+    testWidgets('LogDetailPage displays stacktrace if present', (
+      WidgetTester tester,
+    ) async {
       final logEntryWithStacktrace = TestLogEntryFactory.create(
         id: 'stacktrace-id',
         message: 'Message with stacktrace',
@@ -628,8 +666,9 @@ void main() {
       expect(find.textContaining('Test stacktrace'), findsOneWidget);
     });
 
-    testWidgets('LogDetailPage clipboard/copy button works',
-        (WidgetTester tester) async {
+    testWidgets('LogDetailPage clipboard/copy button works', (
+      WidgetTester tester,
+    ) async {
       final testLogEntry = TestLogEntryFactory.create(
         id: 'clipboard-id',
         message: 'Clipboard test message',

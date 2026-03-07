@@ -14,51 +14,49 @@ T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$BackfillRequestEntry {
-  /// The host UUID that originated the missing entry
-  String get hostId;
 
-  /// The monotonic counter for that host
-  int get counter;
-
-  /// Create a copy of BackfillRequestEntry
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $BackfillRequestEntryCopyWith<BackfillRequestEntry> get copyWith =>
-      _$BackfillRequestEntryCopyWithImpl<BackfillRequestEntry>(
-          this as BackfillRequestEntry, _$identity);
+/// The host UUID that originated the missing entry
+ String get hostId;/// The monotonic counter for that host
+ int get counter;
+/// Create a copy of BackfillRequestEntry
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$BackfillRequestEntryCopyWith<BackfillRequestEntry> get copyWith => _$BackfillRequestEntryCopyWithImpl<BackfillRequestEntry>(this as BackfillRequestEntry, _$identity);
 
   /// Serializes this BackfillRequestEntry to a JSON map.
   Map<String, dynamic> toJson();
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is BackfillRequestEntry &&
-            (identical(other.hostId, hostId) || other.hostId == hostId) &&
-            (identical(other.counter, counter) || other.counter == counter));
-  }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, hostId, counter);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BackfillRequestEntry&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.counter, counter) || other.counter == counter));
+}
 
-  @override
-  String toString() {
-    return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,hostId,counter);
+
+@override
+String toString() {
+  return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $BackfillRequestEntryCopyWith<$Res> {
-  factory $BackfillRequestEntryCopyWith(BackfillRequestEntry value,
-          $Res Function(BackfillRequestEntry) _then) =
-      _$BackfillRequestEntryCopyWithImpl;
-  @useResult
-  $Res call({String hostId, int counter});
-}
+abstract mixin class $BackfillRequestEntryCopyWith<$Res>  {
+  factory $BackfillRequestEntryCopyWith(BackfillRequestEntry value, $Res Function(BackfillRequestEntry) _then) = _$BackfillRequestEntryCopyWithImpl;
+@useResult
+$Res call({
+ String hostId, int counter
+});
 
+
+
+
+}
 /// @nodoc
 class _$BackfillRequestEntryCopyWithImpl<$Res>
     implements $BackfillRequestEntryCopyWith<$Res> {
@@ -67,245 +65,201 @@ class _$BackfillRequestEntryCopyWithImpl<$Res>
   final BackfillRequestEntry _self;
   final $Res Function(BackfillRequestEntry) _then;
 
-  /// Create a copy of BackfillRequestEntry
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? hostId = null,
-    Object? counter = null,
-  }) {
-    return _then(_self.copyWith(
-      hostId: null == hostId
-          ? _self.hostId
-          : hostId // ignore: cast_nullable_to_non_nullable
-              as String,
-      counter: null == counter
-          ? _self.counter
-          : counter // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
+/// Create a copy of BackfillRequestEntry
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? hostId = null,Object? counter = null,}) {
+  return _then(_self.copyWith(
+hostId: null == hostId ? _self.hostId : hostId // ignore: cast_nullable_to_non_nullable
+as String,counter: null == counter ? _self.counter : counter // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
 }
+
+}
+
 
 /// Adds pattern-matching-related methods to [BackfillRequestEntry].
 extension BackfillRequestEntryPatterns on BackfillRequestEntry {
-  /// A variant of `map` that fallback to returning `orElse`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>(
-    TResult Function(_BackfillRequestEntry value)? $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry() when $default != null:
-        return $default(_that);
-      case _:
-        return orElse();
-    }
-  }
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _BackfillRequestEntry value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _BackfillRequestEntry() when $default != null:
+return $default(_that);case _:
+  return orElse();
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// Callbacks receives the raw object, upcasted.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case final Subclass2 value:
-  ///     return ...;
-  /// }
-  /// ```
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>(
-    TResult Function(_BackfillRequestEntry value) $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry():
-        return $default(_that);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _BackfillRequestEntry value)  $default,){
+final _that = this;
+switch (_that) {
+case _BackfillRequestEntry():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
 
-  /// A variant of `map` that fallback to returning `null`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>(
-    TResult? Function(_BackfillRequestEntry value)? $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry() when $default != null:
-        return $default(_that);
-      case _:
-        return null;
-    }
-  }
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _BackfillRequestEntry value)?  $default,){
+final _that = this;
+switch (_that) {
+case _BackfillRequestEntry() when $default != null:
+return $default(_that);case _:
+  return null;
 
-  /// A variant of `when` that fallback to an `orElse` callback.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>(
-    TResult Function(String hostId, int counter)? $default, {
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry() when $default != null:
-        return $default(_that.hostId, _that.counter);
-      case _:
-        return orElse();
-    }
-  }
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String hostId,  int counter)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _BackfillRequestEntry() when $default != null:
+return $default(_that.hostId,_that.counter);case _:
+  return orElse();
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// As opposed to `map`, this offers destructuring.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case Subclass2(:final field2):
-  ///     return ...;
-  /// }
-  /// ```
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>(
-    TResult Function(String hostId, int counter) $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry():
-        return $default(_that.hostId, _that.counter);
-      case _:
-        throw StateError('Unexpected subclass');
-    }
-  }
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String hostId,  int counter)  $default,) {final _that = this;
+switch (_that) {
+case _BackfillRequestEntry():
+return $default(_that.hostId,_that.counter);case _:
+  throw StateError('Unexpected subclass');
 
-  /// A variant of `when` that fallback to returning `null`
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>(
-    TResult? Function(String hostId, int counter)? $default,
-  ) {
-    final _that = this;
-    switch (_that) {
-      case _BackfillRequestEntry() when $default != null:
-        return $default(_that.hostId, _that.counter);
-      case _:
-        return null;
-    }
-  }
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String hostId,  int counter)?  $default,) {final _that = this;
+switch (_that) {
+case _BackfillRequestEntry() when $default != null:
+return $default(_that.hostId,_that.counter);case _:
+  return null;
+
+}
+}
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class _BackfillRequestEntry implements BackfillRequestEntry {
   const _BackfillRequestEntry({required this.hostId, required this.counter});
-  factory _BackfillRequestEntry.fromJson(Map<String, dynamic> json) =>
-      _$BackfillRequestEntryFromJson(json);
+  factory _BackfillRequestEntry.fromJson(Map<String, dynamic> json) => _$BackfillRequestEntryFromJson(json);
 
-  /// The host UUID that originated the missing entry
-  @override
-  final String hostId;
+/// The host UUID that originated the missing entry
+@override final  String hostId;
+/// The monotonic counter for that host
+@override final  int counter;
 
-  /// The monotonic counter for that host
-  @override
-  final int counter;
+/// Create a copy of BackfillRequestEntry
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$BackfillRequestEntryCopyWith<_BackfillRequestEntry> get copyWith => __$BackfillRequestEntryCopyWithImpl<_BackfillRequestEntry>(this, _$identity);
 
-  /// Create a copy of BackfillRequestEntry
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  _$BackfillRequestEntryCopyWith<_BackfillRequestEntry> get copyWith =>
-      __$BackfillRequestEntryCopyWithImpl<_BackfillRequestEntry>(
-          this, _$identity);
+@override
+Map<String, dynamic> toJson() {
+  return _$BackfillRequestEntryToJson(this, );
+}
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$BackfillRequestEntryToJson(
-      this,
-    );
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BackfillRequestEntry&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.counter, counter) || other.counter == counter));
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _BackfillRequestEntry &&
-            (identical(other.hostId, hostId) || other.hostId == hostId) &&
-            (identical(other.counter, counter) || other.counter == counter));
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,hostId,counter);
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, hostId, counter);
+@override
+String toString() {
+  return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
+}
 
-  @override
-  String toString() {
-    return 'BackfillRequestEntry(hostId: $hostId, counter: $counter)';
-  }
+
 }
 
 /// @nodoc
-abstract mixin class _$BackfillRequestEntryCopyWith<$Res>
-    implements $BackfillRequestEntryCopyWith<$Res> {
-  factory _$BackfillRequestEntryCopyWith(_BackfillRequestEntry value,
-          $Res Function(_BackfillRequestEntry) _then) =
-      __$BackfillRequestEntryCopyWithImpl;
-  @override
-  @useResult
-  $Res call({String hostId, int counter});
-}
+abstract mixin class _$BackfillRequestEntryCopyWith<$Res> implements $BackfillRequestEntryCopyWith<$Res> {
+  factory _$BackfillRequestEntryCopyWith(_BackfillRequestEntry value, $Res Function(_BackfillRequestEntry) _then) = __$BackfillRequestEntryCopyWithImpl;
+@override @useResult
+$Res call({
+ String hostId, int counter
+});
 
+
+
+
+}
 /// @nodoc
 class __$BackfillRequestEntryCopyWithImpl<$Res>
     implements _$BackfillRequestEntryCopyWith<$Res> {
@@ -314,703 +268,380 @@ class __$BackfillRequestEntryCopyWithImpl<$Res>
   final _BackfillRequestEntry _self;
   final $Res Function(_BackfillRequestEntry) _then;
 
-  /// Create a copy of BackfillRequestEntry
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? hostId = null,
-    Object? counter = null,
-  }) {
-    return _then(_BackfillRequestEntry(
-      hostId: null == hostId
-          ? _self.hostId
-          : hostId // ignore: cast_nullable_to_non_nullable
-              as String,
-      counter: null == counter
-          ? _self.counter
-          : counter // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
+/// Create a copy of BackfillRequestEntry
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? hostId = null,Object? counter = null,}) {
+  return _then(_BackfillRequestEntry(
+hostId: null == hostId ? _self.hostId : hostId // ignore: cast_nullable_to_non_nullable
+as String,counter: null == counter ? _self.counter : counter // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
 }
 
-SyncMessage _$SyncMessageFromJson(Map<String, dynamic> json) {
-  switch (json['runtimeType']) {
-    case 'journalEntity':
-      return SyncJournalEntity.fromJson(json);
-    case 'entityDefinition':
-      return SyncEntityDefinition.fromJson(json);
-    case 'tagEntity':
-      return SyncTagEntity.fromJson(json);
-    case 'entryLink':
-      return SyncEntryLink.fromJson(json);
-    case 'aiConfig':
-      return SyncAiConfig.fromJson(json);
-    case 'aiConfigDelete':
-      return SyncAiConfigDelete.fromJson(json);
-    case 'themingSelection':
-      return SyncThemingSelection.fromJson(json);
-    case 'backfillRequest':
-      return SyncBackfillRequest.fromJson(json);
-    case 'backfillResponse':
-      return SyncBackfillResponse.fromJson(json);
-    case 'agentEntity':
-      return SyncAgentEntity.fromJson(json);
-    case 'agentLink':
-      return SyncAgentLink.fromJson(json);
 
-    default:
-      throw CheckedFromJsonException(json, 'runtimeType', 'SyncMessage',
-          'Invalid union type "${json['runtimeType']}"!');
-  }
+}
+
+SyncMessage _$SyncMessageFromJson(
+  Map<String, dynamic> json
+) {
+        switch (json['runtimeType']) {
+                  case 'journalEntity':
+          return SyncJournalEntity.fromJson(
+            json
+          );
+                case 'entityDefinition':
+          return SyncEntityDefinition.fromJson(
+            json
+          );
+                case 'tagEntity':
+          return SyncTagEntity.fromJson(
+            json
+          );
+                case 'entryLink':
+          return SyncEntryLink.fromJson(
+            json
+          );
+                case 'aiConfig':
+          return SyncAiConfig.fromJson(
+            json
+          );
+                case 'aiConfigDelete':
+          return SyncAiConfigDelete.fromJson(
+            json
+          );
+                case 'themingSelection':
+          return SyncThemingSelection.fromJson(
+            json
+          );
+                case 'backfillRequest':
+          return SyncBackfillRequest.fromJson(
+            json
+          );
+                case 'backfillResponse':
+          return SyncBackfillResponse.fromJson(
+            json
+          );
+                case 'agentEntity':
+          return SyncAgentEntity.fromJson(
+            json
+          );
+                case 'agentLink':
+          return SyncAgentLink.fromJson(
+            json
+          );
+        
+          default:
+            throw CheckedFromJsonException(
+  json,
+  'runtimeType',
+  'SyncMessage',
+  'Invalid union type "${json['runtimeType']}"!'
+);
+        }
+      
 }
 
 /// @nodoc
 mixin _$SyncMessage {
+
+
+
   /// Serializes this SyncMessage to a JSON map.
   Map<String, dynamic> toJson();
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType && other is SyncMessage);
-  }
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => runtimeType.hashCode;
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncMessage);
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage()';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => runtimeType.hashCode;
+
+@override
+String toString() {
+  return 'SyncMessage()';
+}
+
+
 }
 
 /// @nodoc
-class $SyncMessageCopyWith<$Res> {
-  $SyncMessageCopyWith(SyncMessage _, $Res Function(SyncMessage) __);
+class $SyncMessageCopyWith<$Res>  {
+$SyncMessageCopyWith(SyncMessage _, $Res Function(SyncMessage) __);
 }
+
 
 /// Adds pattern-matching-related methods to [SyncMessage].
 extension SyncMessagePatterns on SyncMessage {
-  /// A variant of `map` that fallback to returning `orElse`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult maybeMap<TResult extends Object?>({
-    TResult Function(SyncJournalEntity value)? journalEntity,
-    TResult Function(SyncEntityDefinition value)? entityDefinition,
-    TResult Function(SyncTagEntity value)? tagEntity,
-    TResult Function(SyncEntryLink value)? entryLink,
-    TResult Function(SyncAiConfig value)? aiConfig,
-    TResult Function(SyncAiConfigDelete value)? aiConfigDelete,
-    TResult Function(SyncThemingSelection value)? themingSelection,
-    TResult Function(SyncBackfillRequest value)? backfillRequest,
-    TResult Function(SyncBackfillResponse value)? backfillResponse,
-    TResult Function(SyncAgentEntity value)? agentEntity,
-    TResult Function(SyncAgentLink value)? agentLink,
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(_that);
-      case SyncEntityDefinition() when entityDefinition != null:
-        return entityDefinition(_that);
-      case SyncTagEntity() when tagEntity != null:
-        return tagEntity(_that);
-      case SyncEntryLink() when entryLink != null:
-        return entryLink(_that);
-      case SyncAiConfig() when aiConfig != null:
-        return aiConfig(_that);
-      case SyncAiConfigDelete() when aiConfigDelete != null:
-        return aiConfigDelete(_that);
-      case SyncThemingSelection() when themingSelection != null:
-        return themingSelection(_that);
-      case SyncBackfillRequest() when backfillRequest != null:
-        return backfillRequest(_that);
-      case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that);
-      case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that);
-      case SyncAgentLink() when agentLink != null:
-        return agentLink(_that);
-      case _:
-        return orElse();
-    }
-  }
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( SyncJournalEntity value)?  journalEntity,TResult Function( SyncEntityDefinition value)?  entityDefinition,TResult Function( SyncTagEntity value)?  tagEntity,TResult Function( SyncEntryLink value)?  entryLink,TResult Function( SyncAiConfig value)?  aiConfig,TResult Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult Function( SyncThemingSelection value)?  themingSelection,TResult Function( SyncBackfillRequest value)?  backfillRequest,TResult Function( SyncBackfillResponse value)?  backfillResponse,TResult Function( SyncAgentEntity value)?  agentEntity,TResult Function( SyncAgentLink value)?  agentLink,required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case SyncJournalEntity() when journalEntity != null:
+return journalEntity(_that);case SyncEntityDefinition() when entityDefinition != null:
+return entityDefinition(_that);case SyncTagEntity() when tagEntity != null:
+return tagEntity(_that);case SyncEntryLink() when entryLink != null:
+return entryLink(_that);case SyncAiConfig() when aiConfig != null:
+return aiConfig(_that);case SyncAiConfigDelete() when aiConfigDelete != null:
+return aiConfigDelete(_that);case SyncThemingSelection() when themingSelection != null:
+return themingSelection(_that);case SyncBackfillRequest() when backfillRequest != null:
+return backfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
+return backfillResponse(_that);case SyncAgentEntity() when agentEntity != null:
+return agentEntity(_that);case SyncAgentLink() when agentLink != null:
+return agentLink(_that);case _:
+  return orElse();
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// Callbacks receives the raw object, upcasted.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case final Subclass2 value:
-  ///     return ...;
-  /// }
-  /// ```
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult map<TResult extends Object?>({
-    required TResult Function(SyncJournalEntity value) journalEntity,
-    required TResult Function(SyncEntityDefinition value) entityDefinition,
-    required TResult Function(SyncTagEntity value) tagEntity,
-    required TResult Function(SyncEntryLink value) entryLink,
-    required TResult Function(SyncAiConfig value) aiConfig,
-    required TResult Function(SyncAiConfigDelete value) aiConfigDelete,
-    required TResult Function(SyncThemingSelection value) themingSelection,
-    required TResult Function(SyncBackfillRequest value) backfillRequest,
-    required TResult Function(SyncBackfillResponse value) backfillResponse,
-    required TResult Function(SyncAgentEntity value) agentEntity,
-    required TResult Function(SyncAgentLink value) agentLink,
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity():
-        return journalEntity(_that);
-      case SyncEntityDefinition():
-        return entityDefinition(_that);
-      case SyncTagEntity():
-        return tagEntity(_that);
-      case SyncEntryLink():
-        return entryLink(_that);
-      case SyncAiConfig():
-        return aiConfig(_that);
-      case SyncAiConfigDelete():
-        return aiConfigDelete(_that);
-      case SyncThemingSelection():
-        return themingSelection(_that);
-      case SyncBackfillRequest():
-        return backfillRequest(_that);
-      case SyncBackfillResponse():
-        return backfillResponse(_that);
-      case SyncAgentEntity():
-        return agentEntity(_that);
-      case SyncAgentLink():
-        return agentLink(_that);
-    }
-  }
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( SyncJournalEntity value)  journalEntity,required TResult Function( SyncEntityDefinition value)  entityDefinition,required TResult Function( SyncTagEntity value)  tagEntity,required TResult Function( SyncEntryLink value)  entryLink,required TResult Function( SyncAiConfig value)  aiConfig,required TResult Function( SyncAiConfigDelete value)  aiConfigDelete,required TResult Function( SyncThemingSelection value)  themingSelection,required TResult Function( SyncBackfillRequest value)  backfillRequest,required TResult Function( SyncBackfillResponse value)  backfillResponse,required TResult Function( SyncAgentEntity value)  agentEntity,required TResult Function( SyncAgentLink value)  agentLink,}){
+final _that = this;
+switch (_that) {
+case SyncJournalEntity():
+return journalEntity(_that);case SyncEntityDefinition():
+return entityDefinition(_that);case SyncTagEntity():
+return tagEntity(_that);case SyncEntryLink():
+return entryLink(_that);case SyncAiConfig():
+return aiConfig(_that);case SyncAiConfigDelete():
+return aiConfigDelete(_that);case SyncThemingSelection():
+return themingSelection(_that);case SyncBackfillRequest():
+return backfillRequest(_that);case SyncBackfillResponse():
+return backfillResponse(_that);case SyncAgentEntity():
+return agentEntity(_that);case SyncAgentLink():
+return agentLink(_that);}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  /// A variant of `map` that fallback to returning `null`.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case final Subclass value:
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( SyncJournalEntity value)?  journalEntity,TResult? Function( SyncEntityDefinition value)?  entityDefinition,TResult? Function( SyncTagEntity value)?  tagEntity,TResult? Function( SyncEntryLink value)?  entryLink,TResult? Function( SyncAiConfig value)?  aiConfig,TResult? Function( SyncAiConfigDelete value)?  aiConfigDelete,TResult? Function( SyncThemingSelection value)?  themingSelection,TResult? Function( SyncBackfillRequest value)?  backfillRequest,TResult? Function( SyncBackfillResponse value)?  backfillResponse,TResult? Function( SyncAgentEntity value)?  agentEntity,TResult? Function( SyncAgentLink value)?  agentLink,}){
+final _that = this;
+switch (_that) {
+case SyncJournalEntity() when journalEntity != null:
+return journalEntity(_that);case SyncEntityDefinition() when entityDefinition != null:
+return entityDefinition(_that);case SyncTagEntity() when tagEntity != null:
+return tagEntity(_that);case SyncEntryLink() when entryLink != null:
+return entryLink(_that);case SyncAiConfig() when aiConfig != null:
+return aiConfig(_that);case SyncAiConfigDelete() when aiConfigDelete != null:
+return aiConfigDelete(_that);case SyncThemingSelection() when themingSelection != null:
+return themingSelection(_that);case SyncBackfillRequest() when backfillRequest != null:
+return backfillRequest(_that);case SyncBackfillResponse() when backfillResponse != null:
+return backfillResponse(_that);case SyncAgentEntity() when agentEntity != null:
+return agentEntity(_that);case SyncAgentLink() when agentLink != null:
+return agentLink(_that);case _:
+  return null;
 
-  @optionalTypeArgs
-  TResult? mapOrNull<TResult extends Object?>({
-    TResult? Function(SyncJournalEntity value)? journalEntity,
-    TResult? Function(SyncEntityDefinition value)? entityDefinition,
-    TResult? Function(SyncTagEntity value)? tagEntity,
-    TResult? Function(SyncEntryLink value)? entryLink,
-    TResult? Function(SyncAiConfig value)? aiConfig,
-    TResult? Function(SyncAiConfigDelete value)? aiConfigDelete,
-    TResult? Function(SyncThemingSelection value)? themingSelection,
-    TResult? Function(SyncBackfillRequest value)? backfillRequest,
-    TResult? Function(SyncBackfillResponse value)? backfillResponse,
-    TResult? Function(SyncAgentEntity value)? agentEntity,
-    TResult? Function(SyncAgentLink value)? agentLink,
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(_that);
-      case SyncEntityDefinition() when entityDefinition != null:
-        return entityDefinition(_that);
-      case SyncTagEntity() when tagEntity != null:
-        return tagEntity(_that);
-      case SyncEntryLink() when entryLink != null:
-        return entryLink(_that);
-      case SyncAiConfig() when aiConfig != null:
-        return aiConfig(_that);
-      case SyncAiConfigDelete() when aiConfigDelete != null:
-        return aiConfigDelete(_that);
-      case SyncThemingSelection() when themingSelection != null:
-        return themingSelection(_that);
-      case SyncBackfillRequest() when backfillRequest != null:
-        return backfillRequest(_that);
-      case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(_that);
-      case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that);
-      case SyncAgentLink() when agentLink != null:
-        return agentLink(_that);
-      case _:
-        return null;
-    }
-  }
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
 
-  /// A variant of `when` that fallback to an `orElse` callback.
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return orElse();
-  /// }
-  /// ```
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( TagEntity tagEntity,  SyncEntryStatus status)?  tagEntity,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult Function( String id)?  aiConfigDelete,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case SyncJournalEntity() when journalEntity != null:
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition() when entityDefinition != null:
+return entityDefinition(_that.entityDefinition,_that.status);case SyncTagEntity() when tagEntity != null:
+return tagEntity(_that.tagEntity,_that.status);case SyncEntryLink() when entryLink != null:
+return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
+return aiConfig(_that.aiConfig,_that.status);case SyncAiConfigDelete() when aiConfigDelete != null:
+return aiConfigDelete(_that.id);case SyncThemingSelection() when themingSelection != null:
+return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncBackfillRequest() when backfillRequest != null:
+return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse() when backfillResponse != null:
+return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncAgentEntity() when agentEntity != null:
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case _:
+  return orElse();
 
-  @optionalTypeArgs
-  TResult maybeWhen<TResult extends Object?>({
-    TResult Function(
-            String id,
-            String jsonPath,
-            VectorClock? vectorClock,
-            SyncEntryStatus status,
-            List<EntryLink>? entryLinks,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        journalEntity,
-    TResult Function(EntityDefinition entityDefinition, SyncEntryStatus status)?
-        entityDefinition,
-    TResult Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
-    TResult Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId, List<VectorClock>? coveredVectorClocks)?
-        entryLink,
-    TResult Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
-    TResult Function(String id)? aiConfigDelete,
-    TResult Function(String lightThemeName, String darkThemeName,
-            String themeMode, int updatedAt, SyncEntryStatus status)?
-        themingSelection,
-    TResult Function(List<BackfillRequestEntry> entries, String requesterId)?
-        backfillRequest,
-    TResult Function(
-            String hostId,
-            int counter,
-            bool deleted,
-            bool? unresolvable,
-            String? entryId,
-            SyncSequencePayloadType? payloadType,
-            String? payloadId)?
-        backfillResponse,
-    TResult Function(
-            SyncEntryStatus status,
-            AgentDomainEntity? agentEntity,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        agentEntity,
-    TResult Function(
-            SyncEntryStatus status,
-            AgentLink? agentLink,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        agentLink,
-    required TResult orElse(),
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(
-            _that.id,
-            _that.jsonPath,
-            _that.vectorClock,
-            _that.status,
-            _that.entryLinks,
-            _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncEntityDefinition() when entityDefinition != null:
-        return entityDefinition(_that.entityDefinition, _that.status);
-      case SyncTagEntity() when tagEntity != null:
-        return tagEntity(_that.tagEntity, _that.status);
-      case SyncEntryLink() when entryLink != null:
-        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncAiConfig() when aiConfig != null:
-        return aiConfig(_that.aiConfig, _that.status);
-      case SyncAiConfigDelete() when aiConfigDelete != null:
-        return aiConfigDelete(_that.id);
-      case SyncThemingSelection() when themingSelection != null:
-        return themingSelection(_that.lightThemeName, _that.darkThemeName,
-            _that.themeMode, _that.updatedAt, _that.status);
-      case SyncBackfillRequest() when backfillRequest != null:
-        return backfillRequest(_that.entries, _that.requesterId);
-      case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(
-            _that.hostId,
-            _that.counter,
-            _that.deleted,
-            _that.unresolvable,
-            _that.entryId,
-            _that.payloadType,
-            _that.payloadId);
-      case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-      case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-      case _:
-        return orElse();
-    }
-  }
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
 
-  /// A `switch`-like method, using callbacks.
-  ///
-  /// As opposed to `map`, this offers destructuring.
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case Subclass2(:final field2):
-  ///     return ...;
-  /// }
-  /// ```
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( TagEntity tagEntity,  SyncEntryStatus status)  tagEntity,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status)  aiConfig,required TResult Function( String id)  aiConfigDelete,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,}) {final _that = this;
+switch (_that) {
+case SyncJournalEntity():
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition():
+return entityDefinition(_that.entityDefinition,_that.status);case SyncTagEntity():
+return tagEntity(_that.tagEntity,_that.status);case SyncEntryLink():
+return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig():
+return aiConfig(_that.aiConfig,_that.status);case SyncAiConfigDelete():
+return aiConfigDelete(_that.id);case SyncThemingSelection():
+return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncBackfillRequest():
+return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse():
+return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncAgentEntity():
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink():
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
 
-  @optionalTypeArgs
-  TResult when<TResult extends Object?>({
-    required TResult Function(
-            String id,
-            String jsonPath,
-            VectorClock? vectorClock,
-            SyncEntryStatus status,
-            List<EntryLink>? entryLinks,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)
-        journalEntity,
-    required TResult Function(
-            EntityDefinition entityDefinition, SyncEntryStatus status)
-        entityDefinition,
-    required TResult Function(TagEntity tagEntity, SyncEntryStatus status)
-        tagEntity,
-    required TResult Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId, List<VectorClock>? coveredVectorClocks)
-        entryLink,
-    required TResult Function(AiConfig aiConfig, SyncEntryStatus status)
-        aiConfig,
-    required TResult Function(String id) aiConfigDelete,
-    required TResult Function(String lightThemeName, String darkThemeName,
-            String themeMode, int updatedAt, SyncEntryStatus status)
-        themingSelection,
-    required TResult Function(
-            List<BackfillRequestEntry> entries, String requesterId)
-        backfillRequest,
-    required TResult Function(
-            String hostId,
-            int counter,
-            bool deleted,
-            bool? unresolvable,
-            String? entryId,
-            SyncSequencePayloadType? payloadType,
-            String? payloadId)
-        backfillResponse,
-    required TResult Function(
-            SyncEntryStatus status,
-            AgentDomainEntity? agentEntity,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)
-        agentEntity,
-    required TResult Function(
-            SyncEntryStatus status,
-            AgentLink? agentLink,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)
-        agentLink,
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity():
-        return journalEntity(
-            _that.id,
-            _that.jsonPath,
-            _that.vectorClock,
-            _that.status,
-            _that.entryLinks,
-            _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncEntityDefinition():
-        return entityDefinition(_that.entityDefinition, _that.status);
-      case SyncTagEntity():
-        return tagEntity(_that.tagEntity, _that.status);
-      case SyncEntryLink():
-        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncAiConfig():
-        return aiConfig(_that.aiConfig, _that.status);
-      case SyncAiConfigDelete():
-        return aiConfigDelete(_that.id);
-      case SyncThemingSelection():
-        return themingSelection(_that.lightThemeName, _that.darkThemeName,
-            _that.themeMode, _that.updatedAt, _that.status);
-      case SyncBackfillRequest():
-        return backfillRequest(_that.entries, _that.requesterId);
-      case SyncBackfillResponse():
-        return backfillResponse(
-            _that.hostId,
-            _that.counter,
-            _that.deleted,
-            _that.unresolvable,
-            _that.entryId,
-            _that.payloadType,
-            _that.payloadId);
-      case SyncAgentEntity():
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-      case SyncAgentLink():
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-    }
-  }
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( TagEntity tagEntity,  SyncEntryStatus status)?  tagEntity,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult? Function( String id)?  aiConfigDelete,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,}) {final _that = this;
+switch (_that) {
+case SyncJournalEntity() when journalEntity != null:
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks);case SyncEntityDefinition() when entityDefinition != null:
+return entityDefinition(_that.entityDefinition,_that.status);case SyncTagEntity() when tagEntity != null:
+return tagEntity(_that.tagEntity,_that.status);case SyncEntryLink() when entryLink != null:
+return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
+return aiConfig(_that.aiConfig,_that.status);case SyncAiConfigDelete() when aiConfigDelete != null:
+return aiConfigDelete(_that.id);case SyncThemingSelection() when themingSelection != null:
+return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncBackfillRequest() when backfillRequest != null:
+return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse() when backfillResponse != null:
+return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncAgentEntity() when agentEntity != null:
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case _:
+  return null;
 
-  /// A variant of `when` that fallback to returning `null`
-  ///
-  /// It is equivalent to doing:
-  /// ```dart
-  /// switch (sealedClass) {
-  ///   case Subclass(:final field):
-  ///     return ...;
-  ///   case _:
-  ///     return null;
-  /// }
-  /// ```
+}
+}
 
-  @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(
-            String id,
-            String jsonPath,
-            VectorClock? vectorClock,
-            SyncEntryStatus status,
-            List<EntryLink>? entryLinks,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        journalEntity,
-    TResult? Function(
-            EntityDefinition entityDefinition, SyncEntryStatus status)?
-        entityDefinition,
-    TResult? Function(TagEntity tagEntity, SyncEntryStatus status)? tagEntity,
-    TResult? Function(EntryLink entryLink, SyncEntryStatus status,
-            String? originatingHostId, List<VectorClock>? coveredVectorClocks)?
-        entryLink,
-    TResult? Function(AiConfig aiConfig, SyncEntryStatus status)? aiConfig,
-    TResult? Function(String id)? aiConfigDelete,
-    TResult? Function(String lightThemeName, String darkThemeName,
-            String themeMode, int updatedAt, SyncEntryStatus status)?
-        themingSelection,
-    TResult? Function(List<BackfillRequestEntry> entries, String requesterId)?
-        backfillRequest,
-    TResult? Function(
-            String hostId,
-            int counter,
-            bool deleted,
-            bool? unresolvable,
-            String? entryId,
-            SyncSequencePayloadType? payloadType,
-            String? payloadId)?
-        backfillResponse,
-    TResult? Function(
-            SyncEntryStatus status,
-            AgentDomainEntity? agentEntity,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        agentEntity,
-    TResult? Function(
-            SyncEntryStatus status,
-            AgentLink? agentLink,
-            String? jsonPath,
-            String? originatingHostId,
-            List<VectorClock>? coveredVectorClocks)?
-        agentLink,
-  }) {
-    final _that = this;
-    switch (_that) {
-      case SyncJournalEntity() when journalEntity != null:
-        return journalEntity(
-            _that.id,
-            _that.jsonPath,
-            _that.vectorClock,
-            _that.status,
-            _that.entryLinks,
-            _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncEntityDefinition() when entityDefinition != null:
-        return entityDefinition(_that.entityDefinition, _that.status);
-      case SyncTagEntity() when tagEntity != null:
-        return tagEntity(_that.tagEntity, _that.status);
-      case SyncEntryLink() when entryLink != null:
-        return entryLink(_that.entryLink, _that.status, _that.originatingHostId,
-            _that.coveredVectorClocks);
-      case SyncAiConfig() when aiConfig != null:
-        return aiConfig(_that.aiConfig, _that.status);
-      case SyncAiConfigDelete() when aiConfigDelete != null:
-        return aiConfigDelete(_that.id);
-      case SyncThemingSelection() when themingSelection != null:
-        return themingSelection(_that.lightThemeName, _that.darkThemeName,
-            _that.themeMode, _that.updatedAt, _that.status);
-      case SyncBackfillRequest() when backfillRequest != null:
-        return backfillRequest(_that.entries, _that.requesterId);
-      case SyncBackfillResponse() when backfillResponse != null:
-        return backfillResponse(
-            _that.hostId,
-            _that.counter,
-            _that.deleted,
-            _that.unresolvable,
-            _that.entryId,
-            _that.payloadType,
-            _that.payloadId);
-      case SyncAgentEntity() when agentEntity != null:
-        return agentEntity(_that.status, _that.agentEntity, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-      case SyncAgentLink() when agentLink != null:
-        return agentLink(_that.status, _that.agentLink, _that.jsonPath,
-            _that.originatingHostId, _that.coveredVectorClocks);
-      case _:
-        return null;
-    }
-  }
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncJournalEntity implements SyncMessage {
-  const SyncJournalEntity(
-      {required this.id,
-      required this.jsonPath,
-      required this.vectorClock,
-      required this.status,
-      final List<EntryLink>? entryLinks,
-      this.originatingHostId,
-      final List<VectorClock>? coveredVectorClocks,
-      final String? $type})
-      : _entryLinks = entryLinks,
-        _coveredVectorClocks = coveredVectorClocks,
-        $type = $type ?? 'journalEntity';
-  factory SyncJournalEntity.fromJson(Map<String, dynamic> json) =>
-      _$SyncJournalEntityFromJson(json);
+  const SyncJournalEntity({required this.id, required this.jsonPath, required this.vectorClock, required this.status, final  List<EntryLink>? entryLinks, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _entryLinks = entryLinks,_coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'journalEntity';
+  factory SyncJournalEntity.fromJson(Map<String, dynamic> json) => _$SyncJournalEntityFromJson(json);
 
-  final String id;
-  final String jsonPath;
-  final VectorClock? vectorClock;
-  final SyncEntryStatus status;
-  final List<EntryLink>? _entryLinks;
-  List<EntryLink>? get entryLinks {
-    final value = _entryLinks;
-    if (value == null) return null;
-    if (_entryLinks is EqualUnmodifiableListView) return _entryLinks;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
+ final  String id;
+ final  String jsonPath;
+ final  VectorClock? vectorClock;
+ final  SyncEntryStatus status;
+ final  List<EntryLink>? _entryLinks;
+ List<EntryLink>? get entryLinks {
+  final value = _entryLinks;
+  if (value == null) return null;
+  if (_entryLinks is EqualUnmodifiableListView) return _entryLinks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
 
-  /// The host UUID that created/modified this entry version.
-  /// Used for sequence tracking to detect gaps in sync.
-  final String? originatingHostId;
+/// The host UUID that created/modified this entry version.
+/// Used for sequence tracking to detect gaps in sync.
+ final  String? originatingHostId;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries. Receivers should pre-mark
+/// superseded counters as covered/received to prevent false gap detection;
+/// the current vector clock is ignored for pre-marking.
+ final  List<VectorClock>? _coveredVectorClocks;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries. Receivers should pre-mark
+/// superseded counters as covered/received to prevent false gap detection;
+/// the current vector clock is ignored for pre-marking.
+ List<VectorClock>? get coveredVectorClocks {
+  final value = _coveredVectorClocks;
+  if (value == null) return null;
+  if (_coveredVectorClocks is EqualUnmodifiableListView) return _coveredVectorClocks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries. Receivers should pre-mark
-  /// superseded counters as covered/received to prevent false gap detection;
-  /// the current vector clock is ignored for pre-marking.
-  final List<VectorClock>? _coveredVectorClocks;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries. Receivers should pre-mark
-  /// superseded counters as covered/received to prevent false gap detection;
-  /// the current vector clock is ignored for pre-marking.
-  List<VectorClock>? get coveredVectorClocks {
-    final value = _coveredVectorClocks;
-    if (value == null) return null;
-    if (_coveredVectorClocks is EqualUnmodifiableListView)
-      return _coveredVectorClocks;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncJournalEntityCopyWith<SyncJournalEntity> get copyWith =>
-      _$SyncJournalEntityCopyWithImpl<SyncJournalEntity>(this, _$identity);
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncJournalEntityCopyWith<SyncJournalEntity> get copyWith => _$SyncJournalEntityCopyWithImpl<SyncJournalEntity>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncJournalEntityToJson(
-      this,
-    );
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncJournalEntityToJson(this, );
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncJournalEntity &&
-            (identical(other.id, id) || other.id == id) &&
-            (identical(other.jsonPath, jsonPath) ||
-                other.jsonPath == jsonPath) &&
-            (identical(other.vectorClock, vectorClock) ||
-                other.vectorClock == vectorClock) &&
-            (identical(other.status, status) || other.status == status) &&
-            const DeepCollectionEquality()
-                .equals(other._entryLinks, _entryLinks) &&
-            (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId) &&
-            const DeepCollectionEquality()
-                .equals(other._coveredVectorClocks, _coveredVectorClocks));
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncJournalEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._entryLinks, _entryLinks)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      jsonPath,
-      vectorClock,
-      status,
-      const DeepCollectionEquality().hash(_entryLinks),
-      originatingHostId,
-      const DeepCollectionEquality().hash(_coveredVectorClocks));
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,jsonPath,vectorClock,status,const DeepCollectionEquality().hash(_entryLinks),originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
-  @override
-  String toString() {
-    return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
-  }
+@override
+String toString() {
+  return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncJournalEntityCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncJournalEntityCopyWith(
-          SyncJournalEntity value, $Res Function(SyncJournalEntity) _then) =
-      _$SyncJournalEntityCopyWithImpl;
-  @useResult
-  $Res call(
-      {String id,
-      String jsonPath,
-      VectorClock? vectorClock,
-      SyncEntryStatus status,
-      List<EntryLink>? entryLinks,
-      String? originatingHostId,
-      List<VectorClock>? coveredVectorClocks});
-}
+abstract mixin class $SyncJournalEntityCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncJournalEntityCopyWith(SyncJournalEntity value, $Res Function(SyncJournalEntity) _then) = _$SyncJournalEntityCopyWithImpl;
+@useResult
+$Res call({
+ String id, String jsonPath, VectorClock? vectorClock, SyncEntryStatus status, List<EntryLink>? entryLinks, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+});
 
+
+
+
+}
 /// @nodoc
 class _$SyncJournalEntityCopyWithImpl<$Res>
     implements $SyncJournalEntityCopyWith<$Res> {
@@ -1019,115 +650,78 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
   final SyncJournalEntity _self;
   final $Res Function(SyncJournalEntity) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? id = null,
-    Object? jsonPath = null,
-    Object? vectorClock = freezed,
-    Object? status = null,
-    Object? entryLinks = freezed,
-    Object? originatingHostId = freezed,
-    Object? coveredVectorClocks = freezed,
-  }) {
-    return _then(SyncJournalEntity(
-      id: null == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-      jsonPath: null == jsonPath
-          ? _self.jsonPath
-          : jsonPath // ignore: cast_nullable_to_non_nullable
-              as String,
-      vectorClock: freezed == vectorClock
-          ? _self.vectorClock
-          : vectorClock // ignore: cast_nullable_to_non_nullable
-              as VectorClock?,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-      entryLinks: freezed == entryLinks
-          ? _self._entryLinks
-          : entryLinks // ignore: cast_nullable_to_non_nullable
-              as List<EntryLink>?,
-      originatingHostId: freezed == originatingHostId
-          ? _self.originatingHostId
-          : originatingHostId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      coveredVectorClocks: freezed == coveredVectorClocks
-          ? _self._coveredVectorClocks
-          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
-              as List<VectorClock>?,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? jsonPath = null,Object? vectorClock = freezed,Object? status = null,Object? entryLinks = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+  return _then(SyncJournalEntity(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,jsonPath: null == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
+as VectorClock?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,entryLinks: freezed == entryLinks ? _self._entryLinks : entryLinks // ignore: cast_nullable_to_non_nullable
+as List<EntryLink>?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
+as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+as List<VectorClock>?,
+  ));
+}
+
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncEntityDefinition implements SyncMessage {
-  const SyncEntityDefinition(
-      {required this.entityDefinition,
-      required this.status,
-      final String? $type})
-      : $type = $type ?? 'entityDefinition';
-  factory SyncEntityDefinition.fromJson(Map<String, dynamic> json) =>
-      _$SyncEntityDefinitionFromJson(json);
+  const SyncEntityDefinition({required this.entityDefinition, required this.status, final  String? $type}): $type = $type ?? 'entityDefinition';
+  factory SyncEntityDefinition.fromJson(Map<String, dynamic> json) => _$SyncEntityDefinitionFromJson(json);
 
-  final EntityDefinition entityDefinition;
-  final SyncEntryStatus status;
+ final  EntityDefinition entityDefinition;
+ final  SyncEntryStatus status;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncEntityDefinitionCopyWith<SyncEntityDefinition> get copyWith =>
-      _$SyncEntityDefinitionCopyWithImpl<SyncEntityDefinition>(
-          this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncEntityDefinitionToJson(
-      this,
-    );
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncEntityDefinitionCopyWith<SyncEntityDefinition> get copyWith => _$SyncEntityDefinitionCopyWithImpl<SyncEntityDefinition>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncEntityDefinition &&
-            (identical(other.entityDefinition, entityDefinition) ||
-                other.entityDefinition == entityDefinition) &&
-            (identical(other.status, status) || other.status == status));
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncEntityDefinitionToJson(this, );
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, entityDefinition, status);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncEntityDefinition&&(identical(other.entityDefinition, entityDefinition) || other.entityDefinition == entityDefinition)&&(identical(other.status, status) || other.status == status));
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.entityDefinition(entityDefinition: $entityDefinition, status: $status)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,entityDefinition,status);
+
+@override
+String toString() {
+  return 'SyncMessage.entityDefinition(entityDefinition: $entityDefinition, status: $status)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncEntityDefinitionCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncEntityDefinitionCopyWith(SyncEntityDefinition value,
-          $Res Function(SyncEntityDefinition) _then) =
-      _$SyncEntityDefinitionCopyWithImpl;
-  @useResult
-  $Res call({EntityDefinition entityDefinition, SyncEntryStatus status});
+abstract mixin class $SyncEntityDefinitionCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncEntityDefinitionCopyWith(SyncEntityDefinition value, $Res Function(SyncEntityDefinition) _then) = _$SyncEntityDefinitionCopyWithImpl;
+@useResult
+$Res call({
+ EntityDefinition entityDefinition, SyncEntryStatus status
+});
 
-  $EntityDefinitionCopyWith<$Res> get entityDefinition;
+
+$EntityDefinitionCopyWith<$Res> get entityDefinition;
+
 }
-
 /// @nodoc
 class _$SyncEntityDefinitionCopyWithImpl<$Res>
     implements $SyncEntityDefinitionCopyWith<$Res> {
@@ -1136,97 +730,82 @@ class _$SyncEntityDefinitionCopyWithImpl<$Res>
   final SyncEntityDefinition _self;
   final $Res Function(SyncEntityDefinition) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? entityDefinition = null,
-    Object? status = null,
-  }) {
-    return _then(SyncEntityDefinition(
-      entityDefinition: null == entityDefinition
-          ? _self.entityDefinition
-          : entityDefinition // ignore: cast_nullable_to_non_nullable
-              as EntityDefinition,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? entityDefinition = null,Object? status = null,}) {
+  return _then(SyncEntityDefinition(
+entityDefinition: null == entityDefinition ? _self.entityDefinition : entityDefinition // ignore: cast_nullable_to_non_nullable
+as EntityDefinition,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $EntityDefinitionCopyWith<$Res> get entityDefinition {
-    return $EntityDefinitionCopyWith<$Res>(_self.entityDefinition, (value) {
-      return _then(_self.copyWith(entityDefinition: value));
-    });
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EntityDefinitionCopyWith<$Res> get entityDefinition {
+  
+  return $EntityDefinitionCopyWith<$Res>(_self.entityDefinition, (value) {
+    return _then(_self.copyWith(entityDefinition: value));
+  });
+}
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncTagEntity implements SyncMessage {
-  const SyncTagEntity(
-      {required this.tagEntity, required this.status, final String? $type})
-      : $type = $type ?? 'tagEntity';
-  factory SyncTagEntity.fromJson(Map<String, dynamic> json) =>
-      _$SyncTagEntityFromJson(json);
+  const SyncTagEntity({required this.tagEntity, required this.status, final  String? $type}): $type = $type ?? 'tagEntity';
+  factory SyncTagEntity.fromJson(Map<String, dynamic> json) => _$SyncTagEntityFromJson(json);
 
-  final TagEntity tagEntity;
-  final SyncEntryStatus status;
+ final  TagEntity tagEntity;
+ final  SyncEntryStatus status;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncTagEntityCopyWith<SyncTagEntity> get copyWith =>
-      _$SyncTagEntityCopyWithImpl<SyncTagEntity>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncTagEntityToJson(
-      this,
-    );
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncTagEntityCopyWith<SyncTagEntity> get copyWith => _$SyncTagEntityCopyWithImpl<SyncTagEntity>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncTagEntity &&
-            (identical(other.tagEntity, tagEntity) ||
-                other.tagEntity == tagEntity) &&
-            (identical(other.status, status) || other.status == status));
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncTagEntityToJson(this, );
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, tagEntity, status);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncTagEntity&&(identical(other.tagEntity, tagEntity) || other.tagEntity == tagEntity)&&(identical(other.status, status) || other.status == status));
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.tagEntity(tagEntity: $tagEntity, status: $status)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,tagEntity,status);
+
+@override
+String toString() {
+  return 'SyncMessage.tagEntity(tagEntity: $tagEntity, status: $status)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncTagEntityCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncTagEntityCopyWith(
-          SyncTagEntity value, $Res Function(SyncTagEntity) _then) =
-      _$SyncTagEntityCopyWithImpl;
-  @useResult
-  $Res call({TagEntity tagEntity, SyncEntryStatus status});
+abstract mixin class $SyncTagEntityCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncTagEntityCopyWith(SyncTagEntity value, $Res Function(SyncTagEntity) _then) = _$SyncTagEntityCopyWithImpl;
+@useResult
+$Res call({
+ TagEntity tagEntity, SyncEntryStatus status
+});
 
-  $TagEntityCopyWith<$Res> get tagEntity;
+
+$TagEntityCopyWith<$Res> get tagEntity;
+
 }
-
 /// @nodoc
 class _$SyncTagEntityCopyWithImpl<$Res>
     implements $SyncTagEntityCopyWith<$Res> {
@@ -1235,138 +814,102 @@ class _$SyncTagEntityCopyWithImpl<$Res>
   final SyncTagEntity _self;
   final $Res Function(SyncTagEntity) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? tagEntity = null,
-    Object? status = null,
-  }) {
-    return _then(SyncTagEntity(
-      tagEntity: null == tagEntity
-          ? _self.tagEntity
-          : tagEntity // ignore: cast_nullable_to_non_nullable
-              as TagEntity,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? tagEntity = null,Object? status = null,}) {
+  return _then(SyncTagEntity(
+tagEntity: null == tagEntity ? _self.tagEntity : tagEntity // ignore: cast_nullable_to_non_nullable
+as TagEntity,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $TagEntityCopyWith<$Res> get tagEntity {
-    return $TagEntityCopyWith<$Res>(_self.tagEntity, (value) {
-      return _then(_self.copyWith(tagEntity: value));
-    });
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$TagEntityCopyWith<$Res> get tagEntity {
+  
+  return $TagEntityCopyWith<$Res>(_self.tagEntity, (value) {
+    return _then(_self.copyWith(tagEntity: value));
+  });
+}
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncEntryLink implements SyncMessage {
-  const SyncEntryLink(
-      {required this.entryLink,
-      required this.status,
-      this.originatingHostId,
-      final List<VectorClock>? coveredVectorClocks,
-      final String? $type})
-      : _coveredVectorClocks = coveredVectorClocks,
-        $type = $type ?? 'entryLink';
-  factory SyncEntryLink.fromJson(Map<String, dynamic> json) =>
-      _$SyncEntryLinkFromJson(json);
+  const SyncEntryLink({required this.entryLink, required this.status, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'entryLink';
+  factory SyncEntryLink.fromJson(Map<String, dynamic> json) => _$SyncEntryLinkFromJson(json);
 
-  final EntryLink entryLink;
-  final SyncEntryStatus status;
+ final  EntryLink entryLink;
+ final  SyncEntryStatus status;
+/// The host UUID that created/modified this entry link version.
+/// Used for sequence tracking to detect gaps in sync.
+ final  String? originatingHostId;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries. Receivers should pre-mark
+/// superseded counters as covered/received to prevent false gap detection;
+/// the current vector clock is ignored for pre-marking.
+ final  List<VectorClock>? _coveredVectorClocks;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries. Receivers should pre-mark
+/// superseded counters as covered/received to prevent false gap detection;
+/// the current vector clock is ignored for pre-marking.
+ List<VectorClock>? get coveredVectorClocks {
+  final value = _coveredVectorClocks;
+  if (value == null) return null;
+  if (_coveredVectorClocks is EqualUnmodifiableListView) return _coveredVectorClocks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
 
-  /// The host UUID that created/modified this entry link version.
-  /// Used for sequence tracking to detect gaps in sync.
-  final String? originatingHostId;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries. Receivers should pre-mark
-  /// superseded counters as covered/received to prevent false gap detection;
-  /// the current vector clock is ignored for pre-marking.
-  final List<VectorClock>? _coveredVectorClocks;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries. Receivers should pre-mark
-  /// superseded counters as covered/received to prevent false gap detection;
-  /// the current vector clock is ignored for pre-marking.
-  List<VectorClock>? get coveredVectorClocks {
-    final value = _coveredVectorClocks;
-    if (value == null) return null;
-    if (_coveredVectorClocks is EqualUnmodifiableListView)
-      return _coveredVectorClocks;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncEntryLinkCopyWith<SyncEntryLink> get copyWith => _$SyncEntryLinkCopyWithImpl<SyncEntryLink>(this, _$identity);
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncEntryLinkCopyWith<SyncEntryLink> get copyWith =>
-      _$SyncEntryLinkCopyWithImpl<SyncEntryLink>(this, _$identity);
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncEntryLinkToJson(this, );
+}
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncEntryLinkToJson(
-      this,
-    );
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncEntryLink&&(identical(other.entryLink, entryLink) || other.entryLink == entryLink)&&(identical(other.status, status) || other.status == status)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncEntryLink &&
-            (identical(other.entryLink, entryLink) ||
-                other.entryLink == entryLink) &&
-            (identical(other.status, status) || other.status == status) &&
-            (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId) &&
-            const DeepCollectionEquality()
-                .equals(other._coveredVectorClocks, _coveredVectorClocks));
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,entryLink,status,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      entryLink,
-      status,
-      originatingHostId,
-      const DeepCollectionEquality().hash(_coveredVectorClocks));
+@override
+String toString() {
+  return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.entryLink(entryLink: $entryLink, status: $status, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
-  }
+
 }
 
 /// @nodoc
-abstract mixin class $SyncEntryLinkCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncEntryLinkCopyWith(
-          SyncEntryLink value, $Res Function(SyncEntryLink) _then) =
-      _$SyncEntryLinkCopyWithImpl;
-  @useResult
-  $Res call(
-      {EntryLink entryLink,
-      SyncEntryStatus status,
-      String? originatingHostId,
-      List<VectorClock>? coveredVectorClocks});
+abstract mixin class $SyncEntryLinkCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncEntryLinkCopyWith(SyncEntryLink value, $Res Function(SyncEntryLink) _then) = _$SyncEntryLinkCopyWithImpl;
+@useResult
+$Res call({
+ EntryLink entryLink, SyncEntryStatus status, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+});
 
-  $EntryLinkCopyWith<$Res> get entryLink;
+
+$EntryLinkCopyWith<$Res> get entryLink;
+
 }
-
 /// @nodoc
 class _$SyncEntryLinkCopyWithImpl<$Res>
     implements $SyncEntryLinkCopyWith<$Res> {
@@ -1375,199 +918,167 @@ class _$SyncEntryLinkCopyWithImpl<$Res>
   final SyncEntryLink _self;
   final $Res Function(SyncEntryLink) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? entryLink = null,
-    Object? status = null,
-    Object? originatingHostId = freezed,
-    Object? coveredVectorClocks = freezed,
-  }) {
-    return _then(SyncEntryLink(
-      entryLink: null == entryLink
-          ? _self.entryLink
-          : entryLink // ignore: cast_nullable_to_non_nullable
-              as EntryLink,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-      originatingHostId: freezed == originatingHostId
-          ? _self.originatingHostId
-          : originatingHostId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      coveredVectorClocks: freezed == coveredVectorClocks
-          ? _self._coveredVectorClocks
-          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
-              as List<VectorClock>?,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? entryLink = null,Object? status = null,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+  return _then(SyncEntryLink(
+entryLink: null == entryLink ? _self.entryLink : entryLink // ignore: cast_nullable_to_non_nullable
+as EntryLink,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
+as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+as List<VectorClock>?,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $EntryLinkCopyWith<$Res> get entryLink {
-    return $EntryLinkCopyWith<$Res>(_self.entryLink, (value) {
-      return _then(_self.copyWith(entryLink: value));
-    });
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$EntryLinkCopyWith<$Res> get entryLink {
+  
+  return $EntryLinkCopyWith<$Res>(_self.entryLink, (value) {
+    return _then(_self.copyWith(entryLink: value));
+  });
+}
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncAiConfig implements SyncMessage {
-  const SyncAiConfig(
-      {required this.aiConfig, required this.status, final String? $type})
-      : $type = $type ?? 'aiConfig';
-  factory SyncAiConfig.fromJson(Map<String, dynamic> json) =>
-      _$SyncAiConfigFromJson(json);
+  const SyncAiConfig({required this.aiConfig, required this.status, final  String? $type}): $type = $type ?? 'aiConfig';
+  factory SyncAiConfig.fromJson(Map<String, dynamic> json) => _$SyncAiConfigFromJson(json);
 
-  final AiConfig aiConfig;
-  final SyncEntryStatus status;
+ final  AiConfig aiConfig;
+ final  SyncEntryStatus status;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncAiConfigCopyWith<SyncAiConfig> get copyWith =>
-      _$SyncAiConfigCopyWithImpl<SyncAiConfig>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncAiConfigToJson(
-      this,
-    );
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncAiConfigCopyWith<SyncAiConfig> get copyWith => _$SyncAiConfigCopyWithImpl<SyncAiConfig>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncAiConfig &&
-            (identical(other.aiConfig, aiConfig) ||
-                other.aiConfig == aiConfig) &&
-            (identical(other.status, status) || other.status == status));
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncAiConfigToJson(this, );
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, aiConfig, status);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAiConfig&&(identical(other.aiConfig, aiConfig) || other.aiConfig == aiConfig)&&(identical(other.status, status) || other.status == status));
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.aiConfig(aiConfig: $aiConfig, status: $status)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,aiConfig,status);
+
+@override
+String toString() {
+  return 'SyncMessage.aiConfig(aiConfig: $aiConfig, status: $status)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncAiConfigCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncAiConfigCopyWith(
-          SyncAiConfig value, $Res Function(SyncAiConfig) _then) =
-      _$SyncAiConfigCopyWithImpl;
-  @useResult
-  $Res call({AiConfig aiConfig, SyncEntryStatus status});
+abstract mixin class $SyncAiConfigCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncAiConfigCopyWith(SyncAiConfig value, $Res Function(SyncAiConfig) _then) = _$SyncAiConfigCopyWithImpl;
+@useResult
+$Res call({
+ AiConfig aiConfig, SyncEntryStatus status
+});
 
-  $AiConfigCopyWith<$Res> get aiConfig;
+
+$AiConfigCopyWith<$Res> get aiConfig;
+
 }
-
 /// @nodoc
-class _$SyncAiConfigCopyWithImpl<$Res> implements $SyncAiConfigCopyWith<$Res> {
+class _$SyncAiConfigCopyWithImpl<$Res>
+    implements $SyncAiConfigCopyWith<$Res> {
   _$SyncAiConfigCopyWithImpl(this._self, this._then);
 
   final SyncAiConfig _self;
   final $Res Function(SyncAiConfig) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? aiConfig = null,
-    Object? status = null,
-  }) {
-    return _then(SyncAiConfig(
-      aiConfig: null == aiConfig
-          ? _self.aiConfig
-          : aiConfig // ignore: cast_nullable_to_non_nullable
-              as AiConfig,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? aiConfig = null,Object? status = null,}) {
+  return _then(SyncAiConfig(
+aiConfig: null == aiConfig ? _self.aiConfig : aiConfig // ignore: cast_nullable_to_non_nullable
+as AiConfig,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $AiConfigCopyWith<$Res> get aiConfig {
-    return $AiConfigCopyWith<$Res>(_self.aiConfig, (value) {
-      return _then(_self.copyWith(aiConfig: value));
-    });
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AiConfigCopyWith<$Res> get aiConfig {
+  
+  return $AiConfigCopyWith<$Res>(_self.aiConfig, (value) {
+    return _then(_self.copyWith(aiConfig: value));
+  });
+}
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncAiConfigDelete implements SyncMessage {
-  const SyncAiConfigDelete({required this.id, final String? $type})
-      : $type = $type ?? 'aiConfigDelete';
-  factory SyncAiConfigDelete.fromJson(Map<String, dynamic> json) =>
-      _$SyncAiConfigDeleteFromJson(json);
+  const SyncAiConfigDelete({required this.id, final  String? $type}): $type = $type ?? 'aiConfigDelete';
+  factory SyncAiConfigDelete.fromJson(Map<String, dynamic> json) => _$SyncAiConfigDeleteFromJson(json);
 
-  final String id;
+ final  String id;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncAiConfigDeleteCopyWith<SyncAiConfigDelete> get copyWith =>
-      _$SyncAiConfigDeleteCopyWithImpl<SyncAiConfigDelete>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncAiConfigDeleteToJson(
-      this,
-    );
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncAiConfigDeleteCopyWith<SyncAiConfigDelete> get copyWith => _$SyncAiConfigDeleteCopyWithImpl<SyncAiConfigDelete>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncAiConfigDelete &&
-            (identical(other.id, id) || other.id == id));
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncAiConfigDeleteToJson(this, );
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, id);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAiConfigDelete&&(identical(other.id, id) || other.id == id));
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.aiConfigDelete(id: $id)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id);
+
+@override
+String toString() {
+  return 'SyncMessage.aiConfigDelete(id: $id)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncAiConfigDeleteCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncAiConfigDeleteCopyWith(
-          SyncAiConfigDelete value, $Res Function(SyncAiConfigDelete) _then) =
-      _$SyncAiConfigDeleteCopyWithImpl;
-  @useResult
-  $Res call({String id});
-}
+abstract mixin class $SyncAiConfigDeleteCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncAiConfigDeleteCopyWith(SyncAiConfigDelete value, $Res Function(SyncAiConfigDelete) _then) = _$SyncAiConfigDeleteCopyWithImpl;
+@useResult
+$Res call({
+ String id
+});
 
+
+
+
+}
 /// @nodoc
 class _$SyncAiConfigDeleteCopyWithImpl<$Res>
     implements $SyncAiConfigDeleteCopyWith<$Res> {
@@ -1576,101 +1087,75 @@ class _$SyncAiConfigDeleteCopyWithImpl<$Res>
   final SyncAiConfigDelete _self;
   final $Res Function(SyncAiConfigDelete) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? id = null,
-  }) {
-    return _then(SyncAiConfigDelete(
-      id: null == id
-          ? _self.id
-          : id // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? id = null,}) {
+  return _then(SyncAiConfigDelete(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncThemingSelection implements SyncMessage {
-  const SyncThemingSelection(
-      {required this.lightThemeName,
-      required this.darkThemeName,
-      required this.themeMode,
-      required this.updatedAt,
-      required this.status,
-      final String? $type})
-      : $type = $type ?? 'themingSelection';
-  factory SyncThemingSelection.fromJson(Map<String, dynamic> json) =>
-      _$SyncThemingSelectionFromJson(json);
+  const SyncThemingSelection({required this.lightThemeName, required this.darkThemeName, required this.themeMode, required this.updatedAt, required this.status, final  String? $type}): $type = $type ?? 'themingSelection';
+  factory SyncThemingSelection.fromJson(Map<String, dynamic> json) => _$SyncThemingSelectionFromJson(json);
 
-  final String lightThemeName;
-  final String darkThemeName;
-  final String themeMode;
-  final int updatedAt;
-  final SyncEntryStatus status;
+ final  String lightThemeName;
+ final  String darkThemeName;
+ final  String themeMode;
+ final  int updatedAt;
+ final  SyncEntryStatus status;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncThemingSelectionCopyWith<SyncThemingSelection> get copyWith =>
-      _$SyncThemingSelectionCopyWithImpl<SyncThemingSelection>(
-          this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncThemingSelectionToJson(
-      this,
-    );
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncThemingSelectionCopyWith<SyncThemingSelection> get copyWith => _$SyncThemingSelectionCopyWithImpl<SyncThemingSelection>(this, _$identity);
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncThemingSelection &&
-            (identical(other.lightThemeName, lightThemeName) ||
-                other.lightThemeName == lightThemeName) &&
-            (identical(other.darkThemeName, darkThemeName) ||
-                other.darkThemeName == darkThemeName) &&
-            (identical(other.themeMode, themeMode) ||
-                other.themeMode == themeMode) &&
-            (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt) &&
-            (identical(other.status, status) || other.status == status));
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncThemingSelectionToJson(this, );
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType, lightThemeName, darkThemeName, themeMode, updatedAt, status);
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncThemingSelection&&(identical(other.lightThemeName, lightThemeName) || other.lightThemeName == lightThemeName)&&(identical(other.darkThemeName, darkThemeName) || other.darkThemeName == darkThemeName)&&(identical(other.themeMode, themeMode) || other.themeMode == themeMode)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.status, status) || other.status == status));
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.themingSelection(lightThemeName: $lightThemeName, darkThemeName: $darkThemeName, themeMode: $themeMode, updatedAt: $updatedAt, status: $status)';
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,lightThemeName,darkThemeName,themeMode,updatedAt,status);
+
+@override
+String toString() {
+  return 'SyncMessage.themingSelection(lightThemeName: $lightThemeName, darkThemeName: $darkThemeName, themeMode: $themeMode, updatedAt: $updatedAt, status: $status)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncThemingSelectionCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncThemingSelectionCopyWith(SyncThemingSelection value,
-          $Res Function(SyncThemingSelection) _then) =
-      _$SyncThemingSelectionCopyWithImpl;
-  @useResult
-  $Res call(
-      {String lightThemeName,
-      String darkThemeName,
-      String themeMode,
-      int updatedAt,
-      SyncEntryStatus status});
-}
+abstract mixin class $SyncThemingSelectionCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncThemingSelectionCopyWith(SyncThemingSelection value, $Res Function(SyncThemingSelection) _then) = _$SyncThemingSelectionCopyWithImpl;
+@useResult
+$Res call({
+ String lightThemeName, String darkThemeName, String themeMode, int updatedAt, SyncEntryStatus status
+});
 
+
+
+
+}
 /// @nodoc
 class _$SyncThemingSelectionCopyWithImpl<$Res>
     implements $SyncThemingSelectionCopyWith<$Res> {
@@ -1679,114 +1164,85 @@ class _$SyncThemingSelectionCopyWithImpl<$Res>
   final SyncThemingSelection _self;
   final $Res Function(SyncThemingSelection) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? lightThemeName = null,
-    Object? darkThemeName = null,
-    Object? themeMode = null,
-    Object? updatedAt = null,
-    Object? status = null,
-  }) {
-    return _then(SyncThemingSelection(
-      lightThemeName: null == lightThemeName
-          ? _self.lightThemeName
-          : lightThemeName // ignore: cast_nullable_to_non_nullable
-              as String,
-      darkThemeName: null == darkThemeName
-          ? _self.darkThemeName
-          : darkThemeName // ignore: cast_nullable_to_non_nullable
-              as String,
-      themeMode: null == themeMode
-          ? _self.themeMode
-          : themeMode // ignore: cast_nullable_to_non_nullable
-              as String,
-      updatedAt: null == updatedAt
-          ? _self.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as int,
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? lightThemeName = null,Object? darkThemeName = null,Object? themeMode = null,Object? updatedAt = null,Object? status = null,}) {
+  return _then(SyncThemingSelection(
+lightThemeName: null == lightThemeName ? _self.lightThemeName : lightThemeName // ignore: cast_nullable_to_non_nullable
+as String,darkThemeName: null == darkThemeName ? _self.darkThemeName : darkThemeName // ignore: cast_nullable_to_non_nullable
+as String,themeMode: null == themeMode ? _self.themeMode : themeMode // ignore: cast_nullable_to_non_nullable
+as String,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,
+  ));
+}
+
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncBackfillRequest implements SyncMessage {
-  const SyncBackfillRequest(
-      {required final List<BackfillRequestEntry> entries,
-      required this.requesterId,
-      final String? $type})
-      : _entries = entries,
-        $type = $type ?? 'backfillRequest';
-  factory SyncBackfillRequest.fromJson(Map<String, dynamic> json) =>
-      _$SyncBackfillRequestFromJson(json);
+  const SyncBackfillRequest({required final  List<BackfillRequestEntry> entries, required this.requesterId, final  String? $type}): _entries = entries,$type = $type ?? 'backfillRequest';
+  factory SyncBackfillRequest.fromJson(Map<String, dynamic> json) => _$SyncBackfillRequestFromJson(json);
 
-  /// List of missing entries to request, each with hostId and counter
-  final List<BackfillRequestEntry> _entries;
+/// List of missing entries to request, each with hostId and counter
+ final  List<BackfillRequestEntry> _entries;
+/// List of missing entries to request, each with hostId and counter
+ List<BackfillRequestEntry> get entries {
+  if (_entries is EqualUnmodifiableListView) return _entries;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_entries);
+}
 
-  /// List of missing entries to request, each with hostId and counter
-  List<BackfillRequestEntry> get entries {
-    if (_entries is EqualUnmodifiableListView) return _entries;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_entries);
-  }
+/// The host UUID of the device requesting the backfill
+ final  String requesterId;
 
-  /// The host UUID of the device requesting the backfill
-  final String requesterId;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncBackfillRequestCopyWith<SyncBackfillRequest> get copyWith =>
-      _$SyncBackfillRequestCopyWithImpl<SyncBackfillRequest>(this, _$identity);
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncBackfillRequestCopyWith<SyncBackfillRequest> get copyWith => _$SyncBackfillRequestCopyWithImpl<SyncBackfillRequest>(this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncBackfillRequestToJson(
-      this,
-    );
-  }
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncBackfillRequestToJson(this, );
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncBackfillRequest &&
-            const DeepCollectionEquality().equals(other._entries, _entries) &&
-            (identical(other.requesterId, requesterId) ||
-                other.requesterId == requesterId));
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncBackfillRequest&&const DeepCollectionEquality().equals(other._entries, _entries)&&(identical(other.requesterId, requesterId) || other.requesterId == requesterId));
+}
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType, const DeepCollectionEquality().hash(_entries), requesterId);
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_entries),requesterId);
 
-  @override
-  String toString() {
-    return 'SyncMessage.backfillRequest(entries: $entries, requesterId: $requesterId)';
-  }
+@override
+String toString() {
+  return 'SyncMessage.backfillRequest(entries: $entries, requesterId: $requesterId)';
+}
+
+
 }
 
 /// @nodoc
-abstract mixin class $SyncBackfillRequestCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncBackfillRequestCopyWith(
-          SyncBackfillRequest value, $Res Function(SyncBackfillRequest) _then) =
-      _$SyncBackfillRequestCopyWithImpl;
-  @useResult
-  $Res call({List<BackfillRequestEntry> entries, String requesterId});
-}
+abstract mixin class $SyncBackfillRequestCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncBackfillRequestCopyWith(SyncBackfillRequest value, $Res Function(SyncBackfillRequest) _then) = _$SyncBackfillRequestCopyWithImpl;
+@useResult
+$Res call({
+ List<BackfillRequestEntry> entries, String requesterId
+});
 
+
+
+
+}
 /// @nodoc
 class _$SyncBackfillRequestCopyWithImpl<$Res>
     implements $SyncBackfillRequestCopyWith<$Res> {
@@ -1795,133 +1251,92 @@ class _$SyncBackfillRequestCopyWithImpl<$Res>
   final SyncBackfillRequest _self;
   final $Res Function(SyncBackfillRequest) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? entries = null,
-    Object? requesterId = null,
-  }) {
-    return _then(SyncBackfillRequest(
-      entries: null == entries
-          ? _self._entries
-          : entries // ignore: cast_nullable_to_non_nullable
-              as List<BackfillRequestEntry>,
-      requesterId: null == requesterId
-          ? _self.requesterId
-          : requesterId // ignore: cast_nullable_to_non_nullable
-              as String,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? entries = null,Object? requesterId = null,}) {
+  return _then(SyncBackfillRequest(
+entries: null == entries ? _self._entries : entries // ignore: cast_nullable_to_non_nullable
+as List<BackfillRequestEntry>,requesterId: null == requesterId ? _self.requesterId : requesterId // ignore: cast_nullable_to_non_nullable
+as String,
+  ));
+}
+
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncBackfillResponse implements SyncMessage {
-  const SyncBackfillResponse(
-      {required this.hostId,
-      required this.counter,
-      required this.deleted,
-      this.unresolvable,
-      this.entryId,
-      this.payloadType,
-      this.payloadId,
-      final String? $type})
-      : $type = $type ?? 'backfillResponse';
-  factory SyncBackfillResponse.fromJson(Map<String, dynamic> json) =>
-      _$SyncBackfillResponseFromJson(json);
+  const SyncBackfillResponse({required this.hostId, required this.counter, required this.deleted, this.unresolvable, this.entryId, this.payloadType, this.payloadId, final  String? $type}): $type = $type ?? 'backfillResponse';
+  factory SyncBackfillResponse.fromJson(Map<String, dynamic> json) => _$SyncBackfillResponseFromJson(json);
 
-  /// The host UUID that originated the entry
-  final String hostId;
+/// The host UUID that originated the entry
+ final  String hostId;
+/// The monotonic counter for that host
+ final  int counter;
+/// True if the entry was deleted/purged and cannot be backfilled
+ final  bool deleted;
+/// True if the originating host cannot resolve its own counter.
+/// This happens when a counter was superseded before being recorded
+/// (e.g., rapid edits where intermediate versions were never persisted).
+/// Receivers should mark this counter as permanently unresolvable.
+ final  bool? unresolvable;
+/// Legacy: The journal entry ID if found (null if deleted).
+///
+/// For newer clients, prefer `payloadType` + `payloadId`.
+ final  String? entryId;
+/// Identifies what kind of payload this backfill response refers to.
+/// If omitted, defaults to `SyncSequencePayloadType.journalEntity`.
+ final  SyncSequencePayloadType? payloadType;
+/// The payload ID if found (null if deleted). For journal entities this is
+/// the journal entry ID, for entry links it's the link ID.
+ final  String? payloadId;
 
-  /// The monotonic counter for that host
-  final int counter;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// True if the entry was deleted/purged and cannot be backfilled
-  final bool deleted;
 
-  /// True if the originating host cannot resolve its own counter.
-  /// This happens when a counter was superseded before being recorded
-  /// (e.g., rapid edits where intermediate versions were never persisted).
-  /// Receivers should mark this counter as permanently unresolvable.
-  final bool? unresolvable;
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncBackfillResponseCopyWith<SyncBackfillResponse> get copyWith => _$SyncBackfillResponseCopyWithImpl<SyncBackfillResponse>(this, _$identity);
 
-  /// Legacy: The journal entry ID if found (null if deleted).
-  ///
-  /// For newer clients, prefer `payloadType` + `payloadId`.
-  final String? entryId;
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncBackfillResponseToJson(this, );
+}
 
-  /// Identifies what kind of payload this backfill response refers to.
-  /// If omitted, defaults to `SyncSequencePayloadType.journalEntity`.
-  final SyncSequencePayloadType? payloadType;
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncBackfillResponse&&(identical(other.hostId, hostId) || other.hostId == hostId)&&(identical(other.counter, counter) || other.counter == counter)&&(identical(other.deleted, deleted) || other.deleted == deleted)&&(identical(other.unresolvable, unresolvable) || other.unresolvable == unresolvable)&&(identical(other.entryId, entryId) || other.entryId == entryId)&&(identical(other.payloadType, payloadType) || other.payloadType == payloadType)&&(identical(other.payloadId, payloadId) || other.payloadId == payloadId));
+}
 
-  /// The payload ID if found (null if deleted). For journal entities this is
-  /// the journal entry ID, for entry links it's the link ID.
-  final String? payloadId;
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,hostId,counter,deleted,unresolvable,entryId,payloadType,payloadId);
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+@override
+String toString() {
+  return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, unresolvable: $unresolvable, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncBackfillResponseCopyWith<SyncBackfillResponse> get copyWith =>
-      _$SyncBackfillResponseCopyWithImpl<SyncBackfillResponse>(
-          this, _$identity);
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncBackfillResponseToJson(
-      this,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncBackfillResponse &&
-            (identical(other.hostId, hostId) || other.hostId == hostId) &&
-            (identical(other.counter, counter) || other.counter == counter) &&
-            (identical(other.deleted, deleted) || other.deleted == deleted) &&
-            (identical(other.unresolvable, unresolvable) ||
-                other.unresolvable == unresolvable) &&
-            (identical(other.entryId, entryId) || other.entryId == entryId) &&
-            (identical(other.payloadType, payloadType) ||
-                other.payloadType == payloadType) &&
-            (identical(other.payloadId, payloadId) ||
-                other.payloadId == payloadId));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(runtimeType, hostId, counter, deleted,
-      unresolvable, entryId, payloadType, payloadId);
-
-  @override
-  String toString() {
-    return 'SyncMessage.backfillResponse(hostId: $hostId, counter: $counter, deleted: $deleted, unresolvable: $unresolvable, entryId: $entryId, payloadType: $payloadType, payloadId: $payloadId)';
-  }
 }
 
 /// @nodoc
-abstract mixin class $SyncBackfillResponseCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncBackfillResponseCopyWith(SyncBackfillResponse value,
-          $Res Function(SyncBackfillResponse) _then) =
-      _$SyncBackfillResponseCopyWithImpl;
-  @useResult
-  $Res call(
-      {String hostId,
-      int counter,
-      bool deleted,
-      bool? unresolvable,
-      String? entryId,
-      SyncSequencePayloadType? payloadType,
-      String? payloadId});
-}
+abstract mixin class $SyncBackfillResponseCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncBackfillResponseCopyWith(SyncBackfillResponse value, $Res Function(SyncBackfillResponse) _then) = _$SyncBackfillResponseCopyWithImpl;
+@useResult
+$Res call({
+ String hostId, int counter, bool deleted, bool? unresolvable, String? entryId, SyncSequencePayloadType? payloadType, String? payloadId
+});
 
+
+
+
+}
 /// @nodoc
 class _$SyncBackfillResponseCopyWithImpl<$Res>
     implements $SyncBackfillResponseCopyWith<$Res> {
@@ -1930,155 +1345,95 @@ class _$SyncBackfillResponseCopyWithImpl<$Res>
   final SyncBackfillResponse _self;
   final $Res Function(SyncBackfillResponse) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? hostId = null,
-    Object? counter = null,
-    Object? deleted = null,
-    Object? unresolvable = freezed,
-    Object? entryId = freezed,
-    Object? payloadType = freezed,
-    Object? payloadId = freezed,
-  }) {
-    return _then(SyncBackfillResponse(
-      hostId: null == hostId
-          ? _self.hostId
-          : hostId // ignore: cast_nullable_to_non_nullable
-              as String,
-      counter: null == counter
-          ? _self.counter
-          : counter // ignore: cast_nullable_to_non_nullable
-              as int,
-      deleted: null == deleted
-          ? _self.deleted
-          : deleted // ignore: cast_nullable_to_non_nullable
-              as bool,
-      unresolvable: freezed == unresolvable
-          ? _self.unresolvable
-          : unresolvable // ignore: cast_nullable_to_non_nullable
-              as bool?,
-      entryId: freezed == entryId
-          ? _self.entryId
-          : entryId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      payloadType: freezed == payloadType
-          ? _self.payloadType
-          : payloadType // ignore: cast_nullable_to_non_nullable
-              as SyncSequencePayloadType?,
-      payloadId: freezed == payloadId
-          ? _self.payloadId
-          : payloadId // ignore: cast_nullable_to_non_nullable
-              as String?,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? hostId = null,Object? counter = null,Object? deleted = null,Object? unresolvable = freezed,Object? entryId = freezed,Object? payloadType = freezed,Object? payloadId = freezed,}) {
+  return _then(SyncBackfillResponse(
+hostId: null == hostId ? _self.hostId : hostId // ignore: cast_nullable_to_non_nullable
+as String,counter: null == counter ? _self.counter : counter // ignore: cast_nullable_to_non_nullable
+as int,deleted: null == deleted ? _self.deleted : deleted // ignore: cast_nullable_to_non_nullable
+as bool,unresolvable: freezed == unresolvable ? _self.unresolvable : unresolvable // ignore: cast_nullable_to_non_nullable
+as bool?,entryId: freezed == entryId ? _self.entryId : entryId // ignore: cast_nullable_to_non_nullable
+as String?,payloadType: freezed == payloadType ? _self.payloadType : payloadType // ignore: cast_nullable_to_non_nullable
+as SyncSequencePayloadType?,payloadId: freezed == payloadId ? _self.payloadId : payloadId // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncAgentEntity implements SyncMessage {
-  const SyncAgentEntity(
-      {required this.status,
-      this.agentEntity,
-      this.jsonPath,
-      this.originatingHostId,
-      final List<VectorClock>? coveredVectorClocks,
-      final String? $type})
-      : _coveredVectorClocks = coveredVectorClocks,
-        $type = $type ?? 'agentEntity';
-  factory SyncAgentEntity.fromJson(Map<String, dynamic> json) =>
-      _$SyncAgentEntityFromJson(json);
+  const SyncAgentEntity({required this.status, this.agentEntity, this.jsonPath, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentEntity';
+  factory SyncAgentEntity.fromJson(Map<String, dynamic> json) => _$SyncAgentEntityFromJson(json);
 
-  final SyncEntryStatus status;
-  final AgentDomainEntity? agentEntity;
-  final String? jsonPath;
+ final  SyncEntryStatus status;
+ final  AgentDomainEntity? agentEntity;
+ final  String? jsonPath;
+/// The host UUID that created/modified this agent entity version.
+/// Used for sequence tracking to detect gaps in sync.
+ final  String? originatingHostId;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries.
+ final  List<VectorClock>? _coveredVectorClocks;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries.
+ List<VectorClock>? get coveredVectorClocks {
+  final value = _coveredVectorClocks;
+  if (value == null) return null;
+  if (_coveredVectorClocks is EqualUnmodifiableListView) return _coveredVectorClocks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
 
-  /// The host UUID that created/modified this agent entity version.
-  /// Used for sequence tracking to detect gaps in sync.
-  final String? originatingHostId;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries.
-  final List<VectorClock>? _coveredVectorClocks;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries.
-  List<VectorClock>? get coveredVectorClocks {
-    final value = _coveredVectorClocks;
-    if (value == null) return null;
-    if (_coveredVectorClocks is EqualUnmodifiableListView)
-      return _coveredVectorClocks;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncAgentEntityCopyWith<SyncAgentEntity> get copyWith => _$SyncAgentEntityCopyWithImpl<SyncAgentEntity>(this, _$identity);
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncAgentEntityCopyWith<SyncAgentEntity> get copyWith =>
-      _$SyncAgentEntityCopyWithImpl<SyncAgentEntity>(this, _$identity);
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncAgentEntityToJson(this, );
+}
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncAgentEntityToJson(
-      this,
-    );
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentEntity&&(identical(other.status, status) || other.status == status)&&(identical(other.agentEntity, agentEntity) || other.agentEntity == agentEntity)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncAgentEntity &&
-            (identical(other.status, status) || other.status == status) &&
-            (identical(other.agentEntity, agentEntity) ||
-                other.agentEntity == agentEntity) &&
-            (identical(other.jsonPath, jsonPath) ||
-                other.jsonPath == jsonPath) &&
-            (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId) &&
-            const DeepCollectionEquality()
-                .equals(other._coveredVectorClocks, _coveredVectorClocks));
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,status,agentEntity,jsonPath,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      status,
-      agentEntity,
-      jsonPath,
-      originatingHostId,
-      const DeepCollectionEquality().hash(_coveredVectorClocks));
+@override
+String toString() {
+  return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
-  }
+
 }
 
 /// @nodoc
-abstract mixin class $SyncAgentEntityCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncAgentEntityCopyWith(
-          SyncAgentEntity value, $Res Function(SyncAgentEntity) _then) =
-      _$SyncAgentEntityCopyWithImpl;
-  @useResult
-  $Res call(
-      {SyncEntryStatus status,
-      AgentDomainEntity? agentEntity,
-      String? jsonPath,
-      String? originatingHostId,
-      List<VectorClock>? coveredVectorClocks});
+abstract mixin class $SyncAgentEntityCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncAgentEntityCopyWith(SyncAgentEntity value, $Res Function(SyncAgentEntity) _then) = _$SyncAgentEntityCopyWithImpl;
+@useResult
+$Res call({
+ SyncEntryStatus status, AgentDomainEntity? agentEntity, String? jsonPath, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+});
 
-  $AgentDomainEntityCopyWith<$Res>? get agentEntity;
+
+$AgentDomainEntityCopyWith<$Res>? get agentEntity;
+
 }
-
 /// @nodoc
 class _$SyncAgentEntityCopyWithImpl<$Res>
     implements $SyncAgentEntityCopyWith<$Res> {
@@ -2087,159 +1442,105 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
   final SyncAgentEntity _self;
   final $Res Function(SyncAgentEntity) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? status = null,
-    Object? agentEntity = freezed,
-    Object? jsonPath = freezed,
-    Object? originatingHostId = freezed,
-    Object? coveredVectorClocks = freezed,
-  }) {
-    return _then(SyncAgentEntity(
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-      agentEntity: freezed == agentEntity
-          ? _self.agentEntity
-          : agentEntity // ignore: cast_nullable_to_non_nullable
-              as AgentDomainEntity?,
-      jsonPath: freezed == jsonPath
-          ? _self.jsonPath
-          : jsonPath // ignore: cast_nullable_to_non_nullable
-              as String?,
-      originatingHostId: freezed == originatingHostId
-          ? _self.originatingHostId
-          : originatingHostId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      coveredVectorClocks: freezed == coveredVectorClocks
-          ? _self._coveredVectorClocks
-          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
-              as List<VectorClock>?,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentEntity = freezed,Object? jsonPath = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+  return _then(SyncAgentEntity(
+status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,agentEntity: freezed == agentEntity ? _self.agentEntity : agentEntity // ignore: cast_nullable_to_non_nullable
+as AgentDomainEntity?,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
+as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+as List<VectorClock>?,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $AgentDomainEntityCopyWith<$Res>? get agentEntity {
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentDomainEntityCopyWith<$Res>? get agentEntity {
     if (_self.agentEntity == null) {
-      return null;
-    }
-
-    return $AgentDomainEntityCopyWith<$Res>(_self.agentEntity!, (value) {
-      return _then(_self.copyWith(agentEntity: value));
-    });
+    return null;
   }
+
+  return $AgentDomainEntityCopyWith<$Res>(_self.agentEntity!, (value) {
+    return _then(_self.copyWith(agentEntity: value));
+  });
+}
 }
 
 /// @nodoc
 @JsonSerializable()
+
 class SyncAgentLink implements SyncMessage {
-  const SyncAgentLink(
-      {required this.status,
-      this.agentLink,
-      this.jsonPath,
-      this.originatingHostId,
-      final List<VectorClock>? coveredVectorClocks,
-      final String? $type})
-      : _coveredVectorClocks = coveredVectorClocks,
-        $type = $type ?? 'agentLink';
-  factory SyncAgentLink.fromJson(Map<String, dynamic> json) =>
-      _$SyncAgentLinkFromJson(json);
+  const SyncAgentLink({required this.status, this.agentLink, this.jsonPath, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentLink';
+  factory SyncAgentLink.fromJson(Map<String, dynamic> json) => _$SyncAgentLinkFromJson(json);
 
-  final SyncEntryStatus status;
-  final AgentLink? agentLink;
-  final String? jsonPath;
+ final  SyncEntryStatus status;
+ final  AgentLink? agentLink;
+ final  String? jsonPath;
+/// The host UUID that created/modified this agent link version.
+/// Used for sequence tracking to detect gaps in sync.
+ final  String? originatingHostId;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries.
+ final  List<VectorClock>? _coveredVectorClocks;
+/// Vector clocks covered by this payload, including the current vector
+/// clock and superseded outbox entries.
+ List<VectorClock>? get coveredVectorClocks {
+  final value = _coveredVectorClocks;
+  if (value == null) return null;
+  if (_coveredVectorClocks is EqualUnmodifiableListView) return _coveredVectorClocks;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(value);
+}
 
-  /// The host UUID that created/modified this agent link version.
-  /// Used for sequence tracking to detect gaps in sync.
-  final String? originatingHostId;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries.
-  final List<VectorClock>? _coveredVectorClocks;
+@JsonKey(name: 'runtimeType')
+final String $type;
 
-  /// Vector clocks covered by this payload, including the current vector
-  /// clock and superseded outbox entries.
-  List<VectorClock>? get coveredVectorClocks {
-    final value = _coveredVectorClocks;
-    if (value == null) return null;
-    if (_coveredVectorClocks is EqualUnmodifiableListView)
-      return _coveredVectorClocks;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
 
-  @JsonKey(name: 'runtimeType')
-  final String $type;
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$SyncAgentLinkCopyWith<SyncAgentLink> get copyWith => _$SyncAgentLinkCopyWithImpl<SyncAgentLink>(this, _$identity);
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @pragma('vm:prefer-inline')
-  $SyncAgentLinkCopyWith<SyncAgentLink> get copyWith =>
-      _$SyncAgentLinkCopyWithImpl<SyncAgentLink>(this, _$identity);
+@override
+Map<String, dynamic> toJson() {
+  return _$SyncAgentLinkToJson(this, );
+}
 
-  @override
-  Map<String, dynamic> toJson() {
-    return _$SyncAgentLinkToJson(
-      this,
-    );
-  }
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentLink&&(identical(other.status, status) || other.status == status)&&(identical(other.agentLink, agentLink) || other.agentLink == agentLink)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+}
 
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is SyncAgentLink &&
-            (identical(other.status, status) || other.status == status) &&
-            (identical(other.agentLink, agentLink) ||
-                other.agentLink == agentLink) &&
-            (identical(other.jsonPath, jsonPath) ||
-                other.jsonPath == jsonPath) &&
-            (identical(other.originatingHostId, originatingHostId) ||
-                other.originatingHostId == originatingHostId) &&
-            const DeepCollectionEquality()
-                .equals(other._coveredVectorClocks, _coveredVectorClocks));
-  }
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,status,agentLink,jsonPath,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      status,
-      agentLink,
-      jsonPath,
-      originatingHostId,
-      const DeepCollectionEquality().hash(_coveredVectorClocks));
+@override
+String toString() {
+  return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+}
 
-  @override
-  String toString() {
-    return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
-  }
+
 }
 
 /// @nodoc
-abstract mixin class $SyncAgentLinkCopyWith<$Res>
-    implements $SyncMessageCopyWith<$Res> {
-  factory $SyncAgentLinkCopyWith(
-          SyncAgentLink value, $Res Function(SyncAgentLink) _then) =
-      _$SyncAgentLinkCopyWithImpl;
-  @useResult
-  $Res call(
-      {SyncEntryStatus status,
-      AgentLink? agentLink,
-      String? jsonPath,
-      String? originatingHostId,
-      List<VectorClock>? coveredVectorClocks});
+abstract mixin class $SyncAgentLinkCopyWith<$Res> implements $SyncMessageCopyWith<$Res> {
+  factory $SyncAgentLinkCopyWith(SyncAgentLink value, $Res Function(SyncAgentLink) _then) = _$SyncAgentLinkCopyWithImpl;
+@useResult
+$Res call({
+ SyncEntryStatus status, AgentLink? agentLink, String? jsonPath, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+});
 
-  $AgentLinkCopyWith<$Res>? get agentLink;
+
+$AgentLinkCopyWith<$Res>? get agentLink;
+
 }
-
 /// @nodoc
 class _$SyncAgentLinkCopyWithImpl<$Res>
     implements $SyncAgentLinkCopyWith<$Res> {
@@ -2248,53 +1549,32 @@ class _$SyncAgentLinkCopyWithImpl<$Res>
   final SyncAgentLink _self;
   final $Res Function(SyncAgentLink) _then;
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  $Res call({
-    Object? status = null,
-    Object? agentLink = freezed,
-    Object? jsonPath = freezed,
-    Object? originatingHostId = freezed,
-    Object? coveredVectorClocks = freezed,
-  }) {
-    return _then(SyncAgentLink(
-      status: null == status
-          ? _self.status
-          : status // ignore: cast_nullable_to_non_nullable
-              as SyncEntryStatus,
-      agentLink: freezed == agentLink
-          ? _self.agentLink
-          : agentLink // ignore: cast_nullable_to_non_nullable
-              as AgentLink?,
-      jsonPath: freezed == jsonPath
-          ? _self.jsonPath
-          : jsonPath // ignore: cast_nullable_to_non_nullable
-              as String?,
-      originatingHostId: freezed == originatingHostId
-          ? _self.originatingHostId
-          : originatingHostId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      coveredVectorClocks: freezed == coveredVectorClocks
-          ? _self._coveredVectorClocks
-          : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
-              as List<VectorClock>?,
-    ));
-  }
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentLink = freezed,Object? jsonPath = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+  return _then(SyncAgentLink(
+status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,agentLink: freezed == agentLink ? _self.agentLink : agentLink // ignore: cast_nullable_to_non_nullable
+as AgentLink?,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
+as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+as List<VectorClock>?,
+  ));
+}
 
-  /// Create a copy of SyncMessage
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
-  $AgentLinkCopyWith<$Res>? get agentLink {
+/// Create a copy of SyncMessage
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$AgentLinkCopyWith<$Res>? get agentLink {
     if (_self.agentLink == null) {
-      return null;
-    }
-
-    return $AgentLinkCopyWith<$Res>(_self.agentLink!, (value) {
-      return _then(_self.copyWith(agentLink: value));
-    });
+    return null;
   }
+
+  return $AgentLinkCopyWith<$Res>(_self.agentLink!, (value) {
+    return _then(_self.copyWith(agentLink: value));
+  });
+}
 }
 
 // dart format on

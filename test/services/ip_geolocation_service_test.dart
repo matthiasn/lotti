@@ -36,11 +36,13 @@ void main() {
     getIt.registerSingleton<LoggingService>(mockLoggingService);
 
     // Stub captureException to prevent errors in tests
-    when(() => mockLoggingService.captureException(
-          any<Exception>(),
-          domain: any<String>(named: 'domain'),
-          subDomain: any<String>(named: 'subDomain'),
-        )).thenReturn(null);
+    when(
+      () => mockLoggingService.captureException(
+        any<Exception>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
   });
 
   tearDown(getIt.reset);
@@ -48,21 +50,26 @@ void main() {
   group('IpGeolocationService', () {
     group('getLocationFromIp', () {
       test('returns Geolocation when ipapi.co responds successfully', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'latitude': 37.7749,
-                'longitude': -122.4194,
-                'timezone': 'America/Los_Angeles',
-                'utc_offset': '-0800',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 37.7749,
+              'longitude': -122.4194,
+              'timezone': 'America/Los_Angeles',
+              'utc_offset': '-0800',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNotNull);
         expect(result!.latitude, 37.7749);
@@ -74,26 +81,33 @@ void main() {
       });
 
       test('falls back to ip-api.com when ipapi.co fails', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response('Error', 500));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Error', 500));
 
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ip-api.com/json'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'status': 'success',
-                'lat': 51.5074,
-                'lon': -0.1278,
-                'timezone': 'Europe/London',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ip-api.com/json'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'status': 'success',
+              'lat': 51.5074,
+              'lon': -0.1278,
+              'timezone': 'Europe/London',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNotNull);
         expect(result!.latitude, 51.5074);
@@ -104,23 +118,28 @@ void main() {
       });
 
       test('returns null when both services fail', () async {
-        when(() => mockHttpClient.get(
-              any(),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response('Error', 500));
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Error', 500));
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNull);
       });
 
       test('handles timeout gracefully', () {
         fakeAsync((async) {
-          when(() => mockHttpClient.get(
-                any(),
-                headers: any(named: 'headers'),
-              )).thenAnswer((_) async {
+          when(
+            () => mockHttpClient.get(
+              any(),
+              headers: any(named: 'headers'),
+            ),
+          ).thenAnswer((_) async {
             // Exceed the 5s service timeout to deterministically trigger onTimeout
             await Future<void>.delayed(const Duration(seconds: 6));
             return http.Response('Timeout', 200);
@@ -128,8 +147,9 @@ void main() {
 
           Geolocation? result;
           // Kick off under fake time.
-          IpGeolocationService.getLocationFromIp(httpClient: mockHttpClient)
-              .then((r) => result = r);
+          IpGeolocationService.getLocationFromIp(
+            httpClient: mockHttpClient,
+          ).then((r) => result = r);
 
           // Elapse timeout + epsilon via the retry helper (single attempt)
           final plan = buildRetryBackoffPlan(
@@ -145,53 +165,69 @@ void main() {
       });
 
       test('handles malformed JSON response', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response('Invalid JSON {[}]', 200));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Invalid JSON {[}]', 200));
 
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ip-api.com/json'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response('Also invalid JSON', 200));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ip-api.com/json'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Also invalid JSON', 200));
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNull);
 
-        verify(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: 'IP_GEOLOCATION',
-              subDomain: any<String>(named: 'subDomain'),
-            )).called(2);
+        verify(
+          () => mockLoggingService.captureException(
+            any<Exception>(),
+            domain: 'IP_GEOLOCATION',
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(2);
       });
 
       test('handles missing location data in response', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'timezone': 'America/Los_Angeles',
-                'utc_offset': '-0800',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'timezone': 'America/Los_Angeles',
+              'utc_offset': '-0800',
+            }),
+            200,
+          ),
+        );
 
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ip-api.com/json'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'status': 'success',
-                'timezone': 'Europe/London',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ip-api.com/json'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'status': 'success',
+              'timezone': 'Europe/London',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNull);
       });
@@ -207,24 +243,32 @@ void main() {
         ];
 
         for (final testCase in testCases) {
-          when(() => mockHttpClient.get(
-                Uri.parse('https://ipapi.co/json/'),
-                headers: any(named: 'headers'),
-              )).thenAnswer((_) async => http.Response(
-                json.encode({
-                  'latitude': 0.0,
-                  'longitude': 0.0,
-                  'utc_offset': testCase.$1,
-                }),
-                200,
-              ));
+          when(
+            () => mockHttpClient.get(
+              Uri.parse('https://ipapi.co/json/'),
+              headers: any(named: 'headers'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              json.encode({
+                'latitude': 0.0,
+                'longitude': 0.0,
+                'utc_offset': testCase.$1,
+              }),
+              200,
+            ),
+          );
 
           final result = await IpGeolocationService.getLocationFromIp(
-              httpClient: mockHttpClient);
+            httpClient: mockHttpClient,
+          );
 
           expect(result, isNotNull);
-          expect(result!.utcOffset, testCase.$2,
-              reason: 'Failed for offset ${testCase.$1}');
+          expect(
+            result!.utcOffset,
+            testCase.$2,
+            reason: 'Failed for offset ${testCase.$1}',
+          );
         }
       });
 
@@ -232,65 +276,87 @@ void main() {
         final invalidOffsets = ['invalid', '12', '+12', '-12'];
 
         for (final offset in invalidOffsets) {
-          when(() => mockHttpClient.get(
-                Uri.parse('https://ipapi.co/json/'),
-                headers: any(named: 'headers'),
-              )).thenAnswer((_) async => http.Response(
-                json.encode({
-                  'latitude': 0.0,
-                  'longitude': 0.0,
-                  'utc_offset': offset,
-                }),
-                200,
-              ));
-
-          final result = await IpGeolocationService.getLocationFromIp(
-              httpClient: mockHttpClient);
-
-          expect(result, isNotNull);
-          expect(result!.utcOffset, DateTime.now().timeZoneOffset.inMinutes,
-              reason: 'Failed for invalid offset: $offset');
-        }
-
-        // Test edge case that gets parsed as valid
-        when(() => mockHttpClient.get(
+          when(
+            () => mockHttpClient.get(
               Uri.parse('https://ipapi.co/json/'),
               headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
               json.encode({
                 'latitude': 0.0,
                 'longitude': 0.0,
-                'utc_offset': '++1200',
+                'utc_offset': offset,
               }),
               200,
-            ));
+            ),
+          );
+
+          final result = await IpGeolocationService.getLocationFromIp(
+            httpClient: mockHttpClient,
+          );
+
+          expect(result, isNotNull);
+          expect(
+            result!.utcOffset,
+            DateTime.now().timeZoneOffset.inMinutes,
+            reason: 'Failed for invalid offset: $offset',
+          );
+        }
+
+        // Test edge case that gets parsed as valid
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 0.0,
+              'longitude': 0.0,
+              'utc_offset': '++1200',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
         expect(result, isNotNull);
-        expect(result!.utcOffset,
-            720); // ++1200 gets parsed as +1200 = 720 minutes
+        expect(
+          result!.utcOffset,
+          720,
+        ); // ++1200 gets parsed as +1200 = 720 minutes
       });
 
       test('ip-api.com fallback handles failed status correctly', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response('Error', 500));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('Error', 500));
 
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ip-api.com/json'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'status': 'fail',
-                'message': 'private range',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ip-api.com/json'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'status': 'fail',
+              'message': 'private range',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
 
         expect(result, isNull);
       });
@@ -298,81 +364,103 @@ void main() {
 
     group('_parseUtcOffset', () {
       test('parses positive offsets correctly', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'latitude': 0.0,
-                'longitude': 0.0,
-                'utc_offset': '+0530',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 0.0,
+              'longitude': 0.0,
+              'utc_offset': '+0530',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
         expect(result?.utcOffset, 330);
       });
 
       test('parses negative offsets correctly', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'latitude': 0.0,
-                'longitude': 0.0,
-                'utc_offset': '-0430',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 0.0,
+              'longitude': 0.0,
+              'utc_offset': '-0430',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
         expect(result?.utcOffset, -270);
       });
 
       test('handles empty offset string', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'latitude': 0.0,
-                'longitude': 0.0,
-                'utc_offset': '',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 0.0,
+              'longitude': 0.0,
+              'utc_offset': '',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
         expect(result?.utcOffset, 0);
       });
 
       test('handles malformed offset string', () async {
-        when(() => mockHttpClient.get(
-              Uri.parse('https://ipapi.co/json/'),
-              headers: any(named: 'headers'),
-            )).thenAnswer((_) async => http.Response(
-              json.encode({
-                'latitude': 0.0,
-                'longitude': 0.0,
-                'utc_offset': 'invalid',
-              }),
-              200,
-            ));
+        when(
+          () => mockHttpClient.get(
+            Uri.parse('https://ipapi.co/json/'),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            json.encode({
+              'latitude': 0.0,
+              'longitude': 0.0,
+              'utc_offset': 'invalid',
+            }),
+            200,
+          ),
+        );
 
         final result = await IpGeolocationService.getLocationFromIp(
-            httpClient: mockHttpClient);
+          httpClient: mockHttpClient,
+        );
         expect(result?.utcOffset, DateTime.now().timeZoneOffset.inMinutes);
 
-        verify(() => mockLoggingService.captureException(
-              any<Exception>(),
-              domain: 'IP_GEOLOCATION',
-              subDomain: '_parseUtcOffset',
-            )).called(1);
+        verify(
+          () => mockLoggingService.captureException(
+            any<Exception>(),
+            domain: 'IP_GEOLOCATION',
+            subDomain: '_parseUtcOffset',
+          ),
+        ).called(1);
       });
     });
   });

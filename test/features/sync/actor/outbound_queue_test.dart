@@ -65,15 +65,18 @@ void main() {
     });
 
     test('drains one queued row and marks it sent', () async {
-      when(() => room.getState(lottiSyncRoomStateType))
-          .thenReturn(MockStateEvent());
+      when(
+        () => room.getState(lottiSyncRoomStateType),
+      ).thenReturn(MockStateEvent());
       when(() => client.rooms).thenReturn([room]);
-      when(() => gateway.sendText(
-            roomId: '!room:localhost',
-            message: any<String>(named: 'message'),
-            messageType: 'com.lotti.sync.message',
-            displayPendingEvent: false,
-          )).thenAnswer((_) async => r'$event:1');
+      when(
+        () => gateway.sendText(
+          roomId: '!room:localhost',
+          message: any<String>(named: 'message'),
+          messageType: 'com.lotti.sync.message',
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async => r'$event:1');
 
       await db.addOutboxItem(
         _buildOutbox(
@@ -120,15 +123,18 @@ void main() {
 
     test('retries a failed send and schedules delay', () async {
       var attempt = 0;
-      when(() => room.getState(lottiSyncRoomStateType))
-          .thenReturn(MockStateEvent());
+      when(
+        () => room.getState(lottiSyncRoomStateType),
+      ).thenReturn(MockStateEvent());
       when(() => client.rooms).thenReturn([room]);
-      when(() => gateway.sendText(
-            roomId: '!room:localhost',
-            message: any<String>(named: 'message'),
-            messageType: 'com.lotti.sync.message',
-            displayPendingEvent: false,
-          )).thenAnswer((_) async {
+      when(
+        () => gateway.sendText(
+          roomId: '!room:localhost',
+          message: any<String>(named: 'message'),
+          messageType: 'com.lotti.sync.message',
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async {
         attempt++;
         if (attempt == 1) {
           throw Exception('send failed');
@@ -174,8 +180,9 @@ void main() {
     });
 
     test('does not drain when disconnected', () async {
-      when(() => room.getState(lottiSyncRoomStateType))
-          .thenReturn(MockStateEvent());
+      when(
+        () => room.getState(lottiSyncRoomStateType),
+      ).thenReturn(MockStateEvent());
       when(() => client.rooms).thenReturn([room]);
       await db.addOutboxItem(
         _buildOutbox(
@@ -213,12 +220,14 @@ void main() {
       )..updateSyncRoomId('!override:localhost');
 
       when(() => client.rooms).thenReturn([room]);
-      when(() => gateway.sendText(
-            roomId: '!override:localhost',
-            message: any<String>(named: 'message'),
-            messageType: 'com.lotti.sync.message',
-            displayPendingEvent: false,
-          )).thenAnswer((_) async => r'$event:1');
+      when(
+        () => gateway.sendText(
+          roomId: '!override:localhost',
+          message: any<String>(named: 'message'),
+          messageType: 'com.lotti.sync.message',
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async => r'$event:1');
 
       await db.addOutboxItem(
         _buildOutbox(
@@ -278,12 +287,14 @@ void main() {
       );
       when(() => client.rooms).thenReturn([room, syncRoom]);
       when(() => room.getState(lottiSyncRoomStateType)).thenReturn(null);
-      when(() => gateway.sendText(
-            roomId: '!sync-room:localhost',
-            message: any<String>(named: 'message'),
-            messageType: 'com.lotti.sync.message',
-            displayPendingEvent: false,
-          )).thenAnswer((_) async => r'$event:1');
+      when(
+        () => gateway.sendText(
+          roomId: '!sync-room:localhost',
+          message: any<String>(named: 'message'),
+          messageType: 'com.lotti.sync.message',
+          displayPendingEvent: false,
+        ),
+      ).thenAnswer((_) async => r'$event:1');
 
       await db.addOutboxItem(
         _buildOutbox(
@@ -311,45 +322,47 @@ void main() {
       ).called(1);
     });
 
-    test('does not drain when multiple sync-marked rooms are present',
-        () async {
-      final syncRoom = MockRoom();
-      final competingRoom = MockRoom();
+    test(
+      'does not drain when multiple sync-marked rooms are present',
+      () async {
+        final syncRoom = MockRoom();
+        final competingRoom = MockRoom();
 
-      when(() => syncRoom.id).thenReturn('!sync-room-1:localhost');
-      when(() => competingRoom.id).thenReturn('!sync-room-2:localhost');
-      when(() => syncRoom.getState(lottiSyncRoomStateType)).thenReturn(
-        MockStateEvent(),
-      );
-      when(() => competingRoom.getState(lottiSyncRoomStateType)).thenReturn(
-        MockStateEvent(),
-      );
-      when(() => client.rooms).thenReturn([syncRoom, competingRoom]);
+        when(() => syncRoom.id).thenReturn('!sync-room-1:localhost');
+        when(() => competingRoom.id).thenReturn('!sync-room-2:localhost');
+        when(() => syncRoom.getState(lottiSyncRoomStateType)).thenReturn(
+          MockStateEvent(),
+        );
+        when(() => competingRoom.getState(lottiSyncRoomStateType)).thenReturn(
+          MockStateEvent(),
+        );
+        when(() => client.rooms).thenReturn([syncRoom, competingRoom]);
 
-      await db.addOutboxItem(
-        _buildOutbox(
-          subject: 'first',
-          message: _syncMessageJson('id1'),
-          createdAt: DateTime(2024),
-        ),
-      );
+        await db.addOutboxItem(
+          _buildOutbox(
+            subject: 'first',
+            message: _syncMessageJson('id1'),
+            createdAt: DateTime(2024),
+          ),
+        );
 
-      final queue = OutboundQueue(
-        syncDatabase: db,
-        gateway: gateway,
-        emitEvent: events.add,
-      );
-      final delay = await queue.drain();
+        final queue = OutboundQueue(
+          syncDatabase: db,
+          gateway: gateway,
+          emitEvent: events.add,
+        );
+        final delay = await queue.drain();
 
-      expect(delay, isNull);
-      verifyNever(
-        () => gateway.sendText(
-          roomId: any<String>(named: 'roomId'),
-          message: any<String>(named: 'message'),
-          messageType: any<String>(named: 'messageType'),
-          displayPendingEvent: any<bool>(named: 'displayPendingEvent'),
-        ),
-      );
-    });
+        expect(delay, isNull);
+        verifyNever(
+          () => gateway.sendText(
+            roomId: any<String>(named: 'roomId'),
+            message: any<String>(named: 'message'),
+            messageType: any<String>(named: 'messageType'),
+            displayPendingEvent: any<bool>(named: 'displayPendingEvent'),
+          ),
+        );
+      },
+    );
   });
 }

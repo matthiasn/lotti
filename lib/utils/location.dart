@@ -68,8 +68,9 @@ class DeviceLocation {
   }
 
   Future<Geolocation?> getCurrentGeoLocation() async {
-    final recordLocation =
-        await getIt<JournalDb>().getConfigFlag(recordLocationFlag);
+    final recordLocation = await getIt<JournalDb>().getConfigFlag(
+      recordLocationFlag,
+    );
 
     if (!recordLocation || Platform.isWindows) {
       return null;

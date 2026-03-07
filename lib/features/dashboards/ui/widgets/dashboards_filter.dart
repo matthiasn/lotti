@@ -13,8 +13,9 @@ class DashboardsFilter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(dashboardCategoriesProvider);
-    final filteredSortedDashboards =
-        ref.watch(filteredSortedDashboardsProvider);
+    final filteredSortedDashboards = ref.watch(
+      filteredSortedDashboardsProvider,
+    );
 
     final categories = categoriesAsync.value ?? [];
     final categoriesById = {for (final c in categories) c.id: c};
