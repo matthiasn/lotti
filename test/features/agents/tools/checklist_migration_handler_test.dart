@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -13,7 +14,6 @@ void main() {
 
   late MockChecklistRepository mockChecklistRepository;
   late MockJournalDb mockJournalDb;
-  late MockAutoChecklistService mockAutoChecklistService;
   late ChecklistMigrationHandler handler;
 
   const sourceTaskId = 'source-task-001';
@@ -77,11 +77,9 @@ void main() {
   setUp(() {
     mockChecklistRepository = MockChecklistRepository();
     mockJournalDb = MockJournalDb();
-    mockAutoChecklistService = MockAutoChecklistService();
     handler = ChecklistMigrationHandler(
       checklistRepository: mockChecklistRepository,
       journalDb: mockJournalDb,
-      autoChecklistService: mockAutoChecklistService,
     );
   });
 
@@ -171,6 +169,52 @@ void main() {
           expect(result.output, contains('does not belong to source task'));
         },
       );
+    });
+
+    group('idempotency', () {
+      test('skips already-archived items without error', () async {
+        final archivedItem =
+            JournalEntity.checklistItem(
+                  meta: Metadata(
+                    id: itemId,
+                    dateFrom: DateTime(2024, 3, 15),
+                    dateTo: DateTime(2024, 3, 15),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                  ),
+                  data: const ChecklistItemData(
+                    title: 'Already archived',
+                    isChecked: false,
+                    isArchived: true,
+                    linkedChecklists: ['checklist-001'],
+                  ),
+                )
+                as ChecklistItem;
+
+        when(
+          () => mockJournalDb.journalEntityById(itemId),
+        ).thenAnswer((_) async => archivedItem);
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'id': itemId, 'targetTaskId': targetTaskId},
+        );
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('already archived'));
+
+        // Should not attempt any migration operations.
+        verifyNever(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        );
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
+      });
     });
 
     group('migration — target has existing checklist', () {
@@ -332,8 +376,22 @@ void main() {
     });
 
     group('migration — target has no checklist', () {
-      test('auto-creates checklist on target task', () async {
+      test('creates checklist on target task', () async {
         final item = makeChecklistItem();
+        final createdChecklist = JournalEntity.checklist(
+          meta: Metadata(
+            id: 'auto-created-checklist',
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+          data: const ChecklistData(
+            title: 'TODOs',
+            linkedChecklistItems: [],
+            linkedTasks: [],
+          ),
+        );
 
         when(
           () => mockJournalDb.journalEntityById(itemId),
@@ -367,17 +425,13 @@ void main() {
         );
 
         when(
-          () => mockAutoChecklistService.autoCreateChecklist(
+          () => mockChecklistRepository.createChecklist(
             taskId: any(named: 'taskId'),
-            suggestions: any(named: 'suggestions'),
-            shouldAutoCreate: any(named: 'shouldAutoCreate'),
           ),
         ).thenAnswer(
           (_) async => (
-            success: true,
-            checklistId: 'auto-created-checklist',
-            createdItems: null,
-            error: null,
+            checklist: createdChecklist,
+            createdItems: <({String id, String title, bool isChecked})>[],
           ),
         );
 
@@ -407,10 +461,8 @@ void main() {
         expect(result.success, isTrue);
 
         verify(
-          () => mockAutoChecklistService.autoCreateChecklist(
+          () => mockChecklistRepository.createChecklist(
             taskId: targetTaskId,
-            suggestions: any(named: 'suggestions'),
-            shouldAutoCreate: true,
           ),
         ).called(1);
 
@@ -424,7 +476,7 @@ void main() {
         ).called(1);
       });
 
-      test('returns failure when auto-create fails', () async {
+      test('returns failure when createChecklist fails', () async {
         final item = makeChecklistItem();
 
         when(
@@ -450,17 +502,13 @@ void main() {
         );
 
         when(
-          () => mockAutoChecklistService.autoCreateChecklist(
+          () => mockChecklistRepository.createChecklist(
             taskId: any(named: 'taskId'),
-            suggestions: any(named: 'suggestions'),
-            shouldAutoCreate: any(named: 'shouldAutoCreate'),
           ),
         ).thenAnswer(
           (_) async => (
-            success: false,
-            checklistId: null,
-            createdItems: null,
-            error: 'DB error',
+            checklist: null,
+            createdItems: <({String id, String title, bool isChecked})>[],
           ),
         );
 
@@ -529,6 +577,68 @@ void main() {
             taskId: any(named: 'taskId'),
           ),
         );
+      });
+
+      test('returns failure when archival fails after copy', () async {
+        final item = makeChecklistItem();
+
+        when(
+          () => mockJournalDb.journalEntityById(itemId),
+        ).thenAnswer((_) async => item);
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer(
+          (_) async => makeTask(
+            id: sourceTaskId,
+            checklistIds: [checklistId],
+          ),
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(targetTaskId),
+        ).thenAnswer(
+          (_) async => makeTask(
+            id: targetTaskId,
+            checklistIds: [targetChecklistId],
+          ),
+        );
+
+        when(
+          () => mockChecklistRepository.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer(
+          (_) async => makeChecklistItem(
+            id: 'new-item-copy',
+            linkedChecklists: [targetChecklistId],
+          ),
+        );
+
+        // Copy succeeds but archival fails.
+        when(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {
+            'id': itemId,
+            'title': 'Buy milk',
+            'targetTaskId': targetTaskId,
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(result.errorMessage, 'Source item archival failed');
+        expect(result.output, contains('failed to archive'));
       });
 
       test('returns failure when addItemToChecklist returns null', () async {

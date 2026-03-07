@@ -520,9 +520,6 @@ class TaskToolDispatcher {
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
       journalDb: journalDb,
-      autoChecklistService: AutoChecklistService(
-        checklistRepository: checklistRepository,
-      ),
     );
     return handler.handle(sourceTaskId, args);
   }

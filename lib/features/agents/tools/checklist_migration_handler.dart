@@ -1,7 +1,6 @@
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
-import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 
 /// Migrates a single checklist item from a source task to a target task.
@@ -10,19 +9,16 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 /// in the target task's checklist (preserving title and checked state).
 ///
 /// If the target task does not yet have a checklist, one is created
-/// automatically via [AutoChecklistService].
+/// automatically via [ChecklistRepository.createChecklist].
 class ChecklistMigrationHandler {
   ChecklistMigrationHandler({
     required ChecklistRepository checklistRepository,
     required JournalDb journalDb,
-    required AutoChecklistService autoChecklistService,
   }) : _checklistRepository = checklistRepository,
-       _journalDb = journalDb,
-       _autoChecklistService = autoChecklistService;
+       _journalDb = journalDb;
 
   final ChecklistRepository _checklistRepository;
   final JournalDb _journalDb;
-  final AutoChecklistService _autoChecklistService;
 
   /// Migrates a checklist item: archives in source, copies to target.
   ///
@@ -57,6 +53,16 @@ class ChecklistMigrationHandler {
         success: false,
         output: 'Error: checklist item $itemId not found',
         errorMessage: 'Checklist item lookup failed',
+      );
+    }
+
+    // Reject already-archived items to stay idempotent on replay.
+    if (itemEntity.data.isArchived) {
+      return ToolExecutionResult(
+        success: true,
+        output:
+            'Item "${itemEntity.data.title}" is already archived — '
+            'skipping migration',
       );
     }
 
@@ -98,22 +104,19 @@ class ChecklistMigrationHandler {
     String targetChecklistId;
 
     if (targetChecklistIds.isEmpty) {
-      // Auto-create a checklist on the target task.
-      final createResult = await _autoChecklistService.autoCreateChecklist(
+      // Create a checklist on the target task directly — we bypass
+      // AutoChecklistService because it rejects empty suggestions.
+      final createResult = await _checklistRepository.createChecklist(
         taskId: targetTaskId,
-        suggestions: const [],
-        shouldAutoCreate: true,
       );
-      if (!createResult.success || createResult.checklistId == null) {
-        return ToolExecutionResult(
+      if (createResult.checklist == null) {
+        return const ToolExecutionResult(
           success: false,
-          output:
-              'Error: failed to create checklist on target task '
-              '$targetTaskId: ${createResult.error}',
+          output: 'Error: failed to create checklist on target task',
           errorMessage: 'Target checklist creation failed',
         );
       }
-      targetChecklistId = createResult.checklistId!;
+      targetChecklistId = createResult.checklist!.meta.id;
     } else {
       targetChecklistId = targetChecklistIds.first;
     }

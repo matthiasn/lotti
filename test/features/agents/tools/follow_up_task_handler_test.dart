@@ -109,6 +109,51 @@ void main() {
         expect(result.output, contains('"title" must be a non-empty string'));
       });
 
+      test('returns failure when priority is malformed string', () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'title': 'Follow-Up', 'priority': 'URGENT'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('must be one of P0, P1, P2, P3'));
+        expect(result.errorMessage, 'Invalid priority');
+      });
+
+      test('returns failure when priority is non-string type', () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'title': 'Follow-Up', 'priority': 42},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('must be one of P0, P1, P2, P3'));
+        expect(result.errorMessage, 'Invalid priority');
+      });
+
+      test('returns failure when dueDate is malformed', () async {
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => makeSourceTask());
+
+        final result = await handler.handle(
+          sourceTaskId,
+          {'title': 'Follow-Up', 'dueDate': 'not-a-date'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('must be a valid YYYY-MM-DD date'));
+        expect(result.errorMessage, 'Invalid dueDate');
+      });
+
       test('returns failure when source task not found', () async {
         when(
           () => mockJournalDb.journalEntityById(sourceTaskId),
@@ -381,6 +426,96 @@ void main() {
               toId: any(named: 'toId'),
             ),
           ).called(1);
+        });
+      });
+    });
+
+    group('link failure warnings', () {
+      test('surfaces link failure warning in output', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-link-fail');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenThrow(Exception('DB connection lost'));
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'Link Fail Task'},
+          );
+
+          // Task creation still succeeds — link failure is a warning.
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-link-fail');
+          expect(result.output, contains('Warning'));
+          expect(result.output, contains('failed to link source task'));
+        });
+      });
+
+      test('surfaces audio link failure warning in output', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-audio-fail');
+        var linkCallCount = 0;
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async {
+          linkCallCount++;
+          if (linkCallCount == 2) {
+            throw Exception('Audio link failed');
+          }
+          return true;
+        });
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'title': 'Audio Fail Task',
+              'sourceAudioId': 'audio-fail-001',
+            },
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-audio-fail');
+          expect(result.output, contains('Warning'));
+          expect(result.output, contains('failed to link audio entry'));
+          // Source link should have succeeded — no source warning.
+          expect(
+            result.output,
+            isNot(contains('failed to link source task')),
+          );
         });
       });
     });

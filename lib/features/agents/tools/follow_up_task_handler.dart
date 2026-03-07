@@ -61,7 +61,15 @@ class FollowUpTaskHandler {
     final now = clock.now();
 
     // Parse optional fields.
-    final priority = _parsePriority(args['priority']);
+    final rawPriority = args['priority'];
+    final priority = _parsePriority(rawPriority);
+    if (rawPriority != null && priority == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "priority" must be one of P0, P1, P2, P3',
+        errorMessage: 'Invalid priority',
+      );
+    }
     final rawDueDate = args['dueDate'];
     final dueDate = _parseDueDate(rawDueDate);
     if (rawDueDate != null && dueDate == null) {
@@ -84,7 +92,7 @@ class FollowUpTaskHandler {
       dateTo: now,
       statusHistory: [],
       title: title.trim(),
-      priority: priority,
+      priority: priority!,
       due: dueDate,
     );
 
@@ -108,6 +116,7 @@ class FollowUpTaskHandler {
     }
 
     final newTaskId = newTask.meta.id;
+    final warnings = <String>[];
 
     // Link source task → new task. Wrapped in try-catch so a link failure
     // does not lose the already-created task ID.
@@ -121,6 +130,7 @@ class FollowUpTaskHandler {
         'Failed to link source $sourceTaskId → $newTaskId: $e',
         name: 'FollowUpTaskHandler',
       );
+      warnings.add('Warning: failed to link source task');
     }
 
     // Optionally link audio entry → new task.
@@ -136,21 +146,34 @@ class FollowUpTaskHandler {
           'Failed to link audio $sourceAudioId → $newTaskId: $e',
           name: 'FollowUpTaskHandler',
         );
+        warnings.add('Warning: failed to link audio entry');
       }
+    }
+
+    final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');
+    for (final w in warnings) {
+      output.write('. $w');
     }
 
     return ToolExecutionResult(
       success: true,
-      output: 'Created follow-up task "$title" ($newTaskId)',
+      output: output.toString(),
       mutatedEntityId: newTaskId,
     );
   }
 
-  static TaskPriority _parsePriority(Object? value) {
-    if (value is String) {
-      return taskPriorityFromString(value);
-    }
-    return TaskPriority.p2Medium;
+  /// Parses a priority string. Returns `null` if the value is present but
+  /// not a recognized priority string (caller should reject).
+  /// Absent/null values return `p2Medium` as default.
+  static TaskPriority? _parsePriority(Object? value) {
+    if (value == null) return TaskPriority.p2Medium;
+    if (value is! String) return null;
+    final parsed = taskPriorityFromString(value);
+    // taskPriorityFromString returns fallback for unknown values — detect that
+    // by checking if the input (case-insensitive) matches a known priority.
+    final upper = value.trim().toUpperCase();
+    if (!const {'P0', 'P1', 'P2', 'P3'}.contains(upper)) return null;
+    return parsed;
   }
 
   static DateTime? _parseDueDate(Object? value) {

@@ -124,13 +124,14 @@ proposals in consecutive wakes would produce different fingerprints.
 **Solution:** Derive the placeholder deterministically from the tool's semantic content:
 
 ```dart
-static String _deterministicPlaceholder(String sourceTaskId, String title) {
-  // UUID v5 from source task ID + title ensures stability across wakes
-  return Uuid().v5(Uuid.NAMESPACE_URL, 'follow-up:$sourceTaskId:$title');
+static String deterministicPlaceholder(String sourceTaskId, String distinguishingKey) {
+  // UUID v5 from source task ID + canonicalized key ensures stability across wakes
+  return Uuid().v5(Namespace.url.value, 'follow-up:$sourceTaskId:$distinguishingKey');
 }
+// Called with: deterministicPlaceholder(taskId, '$canonTitle|$canonDueDate|$canonPriority')
 ```
 
-Same `(sourceTaskId, title)` pair → same placeholder → same fingerprint → dedup works.
+Same `(sourceTaskId, canonicalized key)` → same placeholder → same fingerprint → dedup works.
 
 ## Implementation Phases
 

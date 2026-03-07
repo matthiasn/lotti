@@ -466,9 +466,10 @@ class TaskAgentStrategy extends ConversationStrategy {
     if (batchKey != null) {
       // For migrate_checklist_items, pass the targetTaskId as groupId so
       // items are visually grouped with their follow-up task.
-      final groupId = toolName == TaskAgentToolNames.migrateChecklistItems
-          ? args['targetTaskId'] as String?
+      final rawTargetId = toolName == TaskAgentToolNames.migrateChecklistItems
+          ? args['targetTaskId']
           : null;
+      final groupId = rawTargetId is String ? rawTargetId : null;
       final result = await csBuilder.addBatchItem(
         toolName: toolName,
         args: args,

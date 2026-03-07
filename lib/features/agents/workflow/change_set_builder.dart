@@ -758,11 +758,16 @@ class ChangeSetBuilder {
     final title = args['title'];
     final dueDate = args['dueDate'];
     final priority = args['priority'];
+    // Canonicalize: trim whitespace, uppercase priority so trivial
+    // formatting differences don't produce different placeholders.
+    final canonTitle = title is String ? title.trim() : '';
+    final canonDueDate = dueDate is String ? dueDate.trim() : '';
+    final canonPriority = priority is String
+        ? priority.trim().toUpperCase()
+        : '';
     final placeholderId = deterministicPlaceholder(
       taskId,
-      '${title is String ? title : ''}'
-      '|${dueDate is String ? dueDate : ''}'
-      '|${priority is String ? priority : ''}',
+      '$canonTitle|$canonDueDate|$canonPriority',
     );
 
     final enrichedArgs = {
