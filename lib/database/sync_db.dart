@@ -606,6 +606,25 @@ class SyncDatabase extends _$SyncDatabase {
     return entries.take(limit).toList();
   }
 
+  /// Reset entries that were incorrectly marked as unresolvable back to
+  /// "missing" so they can be re-requested. Only resets entries that have
+  /// a known payload (entryId IS NOT NULL), meaning repopulation found them.
+  /// Returns the number of entries reset.
+  Future<int> resetUnresolvableWithKnownPayload() {
+    return customUpdate(
+      'UPDATE sync_sequence_log '
+      'SET status = ?, request_count = 0, '
+      'last_requested_at = NULL, updated_at = ? '
+      'WHERE status = ? AND entry_id IS NOT NULL',
+      variables: [
+        Variable.withInt(SyncSequenceStatus.missing.index),
+        Variable.withDateTime(DateTime.now()),
+        Variable.withInt(SyncSequenceStatus.unresolvable.index),
+      ],
+      updates: {syncSequenceLog},
+    );
+  }
+
   // ============ Outbox Deduplication Methods ============
 
   /// Find a pending outbox item for a specific entry ID.

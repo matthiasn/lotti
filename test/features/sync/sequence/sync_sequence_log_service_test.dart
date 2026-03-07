@@ -3095,6 +3095,214 @@ void main() {
       },
     );
   });
+
+  group('resetUnresolvableEntries', () {
+    test('delegates to syncDatabase and returns count', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 42);
+
+      final count = await service.resetUnresolvableEntries();
+
+      expect(count, 42);
+      verify(() => mockDb.resetUnresolvableWithKnownPayload()).called(1);
+    });
+
+    test('logs when entries are reset', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 5);
+
+      await service.resetUnresolvableEntries();
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('reset 5 entries')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'resetUnresolvable',
+        ),
+      ).called(1);
+    });
+
+    test('does not log when no entries reset', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 0);
+
+      await service.resetUnresolvableEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'resetUnresolvable',
+        ),
+      );
+    });
+  });
+
+  group('host activity cache', () {
+    test(
+      'caches getHostLastSeen and reuses on subsequent calls',
+      () async {
+        // Set up stubs for both hosts
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Process entry from alice with bob in the VC
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob (non-originator) should have getHostLastSeen called via cache
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+
+        // Alice is originator — host activity is set directly via
+        // updateHostActivity, not via getHostLastSeen
+        verifyNever(() => mockDb.getHostLastSeen(aliceHostId));
+
+        // Process a second entry — bob's getHostLastSeen should be served
+        // from cache (no additional DB call) since cache is still valid.
+        // Note: getLastCounterForHost for bob gets invalidated per-host
+        // after writes, but getHostLastSeen stays cached.
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's getHostLastSeen was NOT called again — served from cache
+        verifyNever(() => mockDb.getHostLastSeen(bobHostId));
+      },
+    );
+
+    test(
+      'clears cache after expiry and re-queries DB',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // First call — populates cache for bob
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+
+        // Force expire the cache
+        service.expireCacheForTesting();
+
+        // Second call — cache is expired, should re-query DB
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 7,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's host last seen should be queried again after cache expiry
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+      },
+    );
+
+    test(
+      'invalidates last counter cache after recording entries for a host',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Process an entry — bob counter at 6 means gap detection checks
+        // getLastCounterForHost(bob) which returns 5 → gap for counter 6
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's counter was queried once via cache
+        verify(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).called(1);
+
+        // After the first call, cache was invalidated for bob because
+        // entries were written for bob. The next call must re-query DB.
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 7,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's counter was queried again because cache was invalidated
+        // after the first recordReceivedEntry wrote to bob's entries
+        verify(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).called(1);
+      },
+    );
+  });
 }
 
 SyncSequenceLogItem _createLogItem(

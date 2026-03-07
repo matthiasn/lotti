@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.908" date="2026-03-07">
+      <description>
+          <p>Fixed sync backfill: agent entities and links are now included in sequence log population. Added self-request guard to prevent hot-loop. New "Reset Unresolvable" action recovers stuck entries. Host activity cache improves sync performance.</p>
+      </description>
+    </release>
     <release version="0.9.907" date="2026-03-07">
       <description>
           <p>Agent-proposed labels are now individually confirmable or rejectable instead of all-or-nothing. Rejecting a label automatically suppresses it so the agent will not re-propose it.</p>

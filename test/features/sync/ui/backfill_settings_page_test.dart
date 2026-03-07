@@ -558,6 +558,144 @@ void main() {
       },
     );
 
+    testWidgets('renders reset unresolvable section with restore icon', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+      );
+      await tester.pumpAndSettle();
+
+      // Should find restore icon for reset unresolvable section
+      expect(find.byIcon(Icons.restore), findsWidgets);
+    });
+
+    testWidgets(
+      'reset unresolvable button is disabled when unresolvableCount is 0',
+      (tester) async {
+        // Default testStats has unresolvableCount = 0
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Find the reset unresolvable section Card (contains restore icon)
+        final resetSectionCard = find.ancestor(
+          of: find.byIcon(Icons.restore).first,
+          matching: find.byType(Card),
+        );
+
+        // Find the button inside that Card
+        final buttonFinder = find.descendant(
+          of: resetSectionCard,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+
+        await tester.ensureVisible(buttonFinder);
+        await tester.pump();
+
+        // Button should be disabled (onPressed is null)
+        final button = tester.widget<FilledButton>(buttonFinder);
+        expect(button.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'reset unresolvable button is enabled when unresolvableCount > 0',
+      (tester) async {
+        // Setup stats with unresolvable count > 0
+        when(() => mockSequenceService.getBackfillStats()).thenAnswer(
+          (_) async => BackfillStats.fromHostStats([
+            const BackfillHostStats(
+              receivedCount: 100,
+              missingCount: 5,
+              requestedCount: 2,
+              backfilledCount: 10,
+              deletedCount: 1,
+              unresolvableCount: 42,
+            ),
+          ]),
+        );
+        when(
+          () => mockSequenceService.resetUnresolvableEntries(),
+        ).thenAnswer((_) async => 42);
+
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Find the reset unresolvable section Card
+        final resetSectionCard = find.ancestor(
+          of: find.byIcon(Icons.restore).first,
+          matching: find.byType(Card),
+        );
+
+        // Find the button inside that Card
+        final buttonFinder = find.descendant(
+          of: resetSectionCard,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+
+        await tester.ensureVisible(buttonFinder);
+        await tester.pump();
+
+        // Button should be enabled
+        final button = tester.widget<FilledButton>(buttonFinder);
+        expect(button.onPressed, isNotNull);
+
+        // Tap the button
+        await tester.tap(buttonFinder);
+        await tester.pump();
+
+        // Verify the service was called
+        verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
+      },
+    );
+
+    testWidgets(
+      'shows success message after reset unresolvable completes',
+      (tester) async {
+        when(() => mockSequenceService.getBackfillStats()).thenAnswer(
+          (_) async => BackfillStats.fromHostStats([
+            const BackfillHostStats(
+              receivedCount: 100,
+              missingCount: 5,
+              requestedCount: 2,
+              backfilledCount: 10,
+              deletedCount: 1,
+              unresolvableCount: 10,
+            ),
+          ]),
+        );
+        when(
+          () => mockSequenceService.resetUnresolvableEntries(),
+        ).thenAnswer((_) async => 10);
+
+        await tester.pumpWidget(
+          const RiverpodWidgetTestBench(child: BackfillSettingsPage()),
+        );
+        await tester.pumpAndSettle();
+
+        // Find and tap the reset button
+        final resetSectionCard = find.ancestor(
+          of: find.byIcon(Icons.restore).first,
+          matching: find.byType(Card),
+        );
+        final buttonFinder = find.descendant(
+          of: resetSectionCard,
+          matching: find.bySubtype<ButtonStyleButton>(),
+        );
+        await tester.ensureVisible(buttonFinder);
+        await tester.pump();
+        await tester.tap(buttonFinder);
+        await tester.pumpAndSettle();
+
+        // Should show check_circle icon for success
+        expect(find.byIcon(Icons.check_circle), findsWidgets);
+      },
+    );
+
     testWidgets('displays unresolvable count when present', (tester) async {
       // Setup stats with unresolvable count > 0
       when(() => mockSequenceService.getBackfillStats()).thenAnswer(

@@ -181,6 +181,20 @@ class BackfillResponseHandler {
   /// bandwidth on metered/slow networks.
   Future<void> handleBackfillRequest(SyncBackfillRequest request) async {
     try {
+      // Skip our own backfill requests — they echo back via the Matrix room
+      // after the SentEventRegistry TTL expires. Without this guard, we'd
+      // process our own requests in a hot-loop.
+      await _vectorClockService.initialized;
+      final myHost = await _vectorClockService.getHost();
+      if (myHost != null && request.requesterId == myHost) {
+        _loggingService.captureEvent(
+          'handleBackfillRequest: skipping own request (${request.entries.length} entries)',
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipSelf',
+        );
+        return;
+      }
+
       // Check if backfill is enabled
       final enabled = await isBackfillEnabled();
       if (!enabled) {

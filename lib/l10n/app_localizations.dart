@@ -2589,6 +2589,36 @@ abstract class AppLocalizations {
   /// **'Re-Request Pending Entries'**
   String get backfillReRequestTrigger;
 
+  /// No description provided for @backfillResetUnresolvableDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset entries marked as unresolvable back to missing so they can be re-requested. Use after sequence log repopulation.'**
+  String get backfillResetUnresolvableDescription;
+
+  /// No description provided for @backfillResetUnresolvableProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Resetting...'**
+  String get backfillResetUnresolvableProcessing;
+
+  /// No description provided for @backfillResetUnresolvableSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}'**
+  String backfillResetUnresolvableSuccess(int count);
+
+  /// No description provided for @backfillResetUnresolvableTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Unresolvable'**
+  String get backfillResetUnresolvableTitle;
+
+  /// No description provided for @backfillResetUnresolvableTrigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Unresolvable Entries'**
+  String get backfillResetUnresolvableTrigger;
+
   /// No description provided for @backfillSettingsInfo.
   ///
   /// In en, this message translates to:

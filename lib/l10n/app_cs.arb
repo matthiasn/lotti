@@ -470,6 +470,18 @@
   },
   "backfillReRequestTitle": "Znovu požádat o čekající",
   "backfillReRequestTrigger": "Požádat znovu o čekající položky",
+  "backfillResetUnresolvableDescription": "Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použijte po opětovném naplnění sekvenčního logu.",
+  "backfillResetUnresolvableProcessing": "Resetování...",
+  "backfillResetUnresolvableSuccess": "{count, plural, one{# záznam resetován na chybějící} few{# záznamy resetovány na chybějící} other{# záznamů resetováno na chybějící}}",
+  "@backfillResetUnresolvableSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillResetUnresolvableTitle": "Resetovat neřešitelné",
+  "backfillResetUnresolvableTrigger": "Resetovat neřešitelné záznamy",
   "backfillSettingsInfo": "Automatické žádosti o doplnění chybějících položek za posledních 24 hodin. Použijte ruční záplň pro starší zápisy.",
   "backfillSettingsSubtitle": "Správa obnovy mezer v synchronizaci",
   "backfillSettingsTitle": "Synchronizace doplnění",

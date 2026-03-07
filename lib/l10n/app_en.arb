@@ -789,6 +789,18 @@
   },
   "backfillReRequestTitle": "Re-Request Pending",
   "backfillReRequestTrigger": "Re-Request Pending Entries",
+  "backfillResetUnresolvableDescription": "Reset entries marked as unresolvable back to missing so they can be re-requested. Use after sequence log repopulation.",
+  "backfillResetUnresolvableProcessing": "Resetting...",
+  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}",
+  "@backfillResetUnresolvableSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillResetUnresolvableTitle": "Reset Unresolvable",
+  "backfillResetUnresolvableTrigger": "Reset Unresolvable Entries",
   "backfillSettingsInfo": "Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.",
   "backfillSettingsSubtitle": "Manage sync gap recovery",
   "backfillSettingsTitle": "Backfill Sync",

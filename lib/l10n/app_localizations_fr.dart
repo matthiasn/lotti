@@ -1448,6 +1448,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get backfillReRequestTrigger => 'Redemander les entrées en attente';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Réinitialise les entrées marquées comme irrésolubles à l\'état manquant pour qu\'elles puissent être redemandées. Utilisez cette option après la repopulation du journal de séquence.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Réinitialisation...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# entrées réinitialisées à l\'état manquant',
+      one: '# entrée réinitialisée à l\'état manquant',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle =>
+      'Réinitialiser les entrées irrésolubles';
+
+  @override
+  String get backfillResetUnresolvableTrigger =>
+      'Réinitialiser les entrées irrésolubles';
+
+  @override
   String get backfillSettingsInfo =>
       'Le rattrapage automatique demande les entrées manquantes des dernières 24 heures. Utilisez le rattrapage manuel pour les entrées plus anciennes.';
 

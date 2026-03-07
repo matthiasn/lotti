@@ -1431,6 +1431,31 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ausstehende Einträge erneut anfordern';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Setze als unlösbar markierte Einträge auf fehlend zurück, damit sie erneut angefordert werden können. Verwende dies nach der Sequenzlog-Neubefüllung.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Wird zurückgesetzt...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge auf fehlend zurückgesetzt',
+      one: '1 Eintrag auf fehlend zurückgesetzt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle => 'Unlösbare zurücksetzen';
+
+  @override
+  String get backfillResetUnresolvableTrigger =>
+      'Unlösbare Einträge zurücksetzen';
+
+  @override
   String get backfillSettingsInfo =>
       'Automatische Nachfüllung fordert fehlende Einträge der letzten 24 Stunden an. Nutze manuelle Nachfüllung für ältere Einträge.';
 

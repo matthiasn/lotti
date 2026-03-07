@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -204,13 +205,17 @@ void main() {
     late MockSettingsDb settingsDb;
     late MockSyncDatabase syncDatabase;
     late MockJournalDb journalDb;
+    late MockAgentDatabase agentDb;
     late MockSyncSequenceLogService sequenceLogService;
+
+    const settingsKey = 'maintenance_sequenceLogPopulatedV2';
 
     setUp(() {
       loggingService = MockLoggingService();
       settingsDb = MockSettingsDb();
       syncDatabase = MockSyncDatabase();
       journalDb = MockJournalDb();
+      agentDb = MockAgentDatabase();
       sequenceLogService = MockSyncSequenceLogService();
 
       when(
@@ -234,12 +239,13 @@ void main() {
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<SyncDatabase>(syncDatabase)
         ..registerSingleton<JournalDb>(journalDb)
+        ..registerSingleton<AgentDatabase>(agentDb)
         ..registerSingleton<SyncSequenceLogService>(sequenceLogService);
     });
 
     test('skips when flag already set', () async {
       when(
-        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+        () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => 'true');
 
       await checkAndPopulateSequenceLogForTesting();
@@ -249,14 +255,26 @@ void main() {
     });
 
     test(
-      'marks done and skips when sequence log already has entries',
+      'marks done and skips when all data sources are empty',
       () async {
         when(
-          () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+          () => settingsDb.itemByKey(settingsKey),
         ).thenAnswer((_) async => null);
         when(
           () => syncDatabase.getSequenceLogCount(),
         ).thenAnswer((_) async => 150);
+        when(
+          () => journalDb.countAllJournalEntries(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => journalDb.countAllEntryLinks(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => agentDb.countAllAgentEntities(),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => agentDb.countAllAgentLinks(),
+        ).thenAnswer((_) async => 0);
         when(
           () => settingsDb.saveSettingsItem(any(), any()),
         ).thenAnswer((_) async => 1);
@@ -265,28 +283,22 @@ void main() {
 
         verify(
           () => settingsDb.saveSettingsItem(
-            'maintenance_sequenceLogPopulated',
+            settingsKey,
             'true',
           ),
         ).called(1);
-        verify(
-          () => loggingService.captureEvent(
-            any<String>(that: contains('Sequence log already has 150 entries')),
-            domain: 'MAINTENANCE',
-            subDomain: 'sequenceLogPopulation',
-          ),
-        ).called(1);
-        verifyNever(() => journalDb.countAllJournalEntries());
       },
     );
 
-    test('marks done when journal and links are empty', () async {
+    test('marks done when journal, links, and agent data are empty', () async {
       when(
-        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+        () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => null);
       when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
       when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
       when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
       when(
         () => settingsDb.saveSettingsItem(any(), any()),
       ).thenAnswer((_) async => 1);
@@ -295,7 +307,7 @@ void main() {
 
       verify(
         () => settingsDb.saveSettingsItem(
-          'maintenance_sequenceLogPopulated',
+          settingsKey,
           'true',
         ),
       ).called(1);
@@ -303,7 +315,7 @@ void main() {
 
     test('logs exception when population fails', () async {
       when(
-        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+        () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => null);
       when(
         () => syncDatabase.getSequenceLogCount(),
@@ -314,21 +326,37 @@ void main() {
       verifyNever(() => settingsDb.saveSettingsItem(any(), any()));
     });
 
-    test('populates from journal and links when needed', () async {
+    test('populates from all data sources when needed', () async {
       when(
-        () => settingsDb.itemByKey('maintenance_sequenceLogPopulated'),
+        () => settingsDb.itemByKey(settingsKey),
       ).thenAnswer((_) async => null);
       when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
       when(
         () => journalDb.countAllJournalEntries(),
       ).thenAnswer((_) async => 100);
       when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 50);
+      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 10);
+      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 5);
+      const entriesStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const entryLinksStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const agentEntitiesStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const agentLinksStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
       when(
         () => journalDb.streamEntriesWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => entriesStream);
       when(
         () => journalDb.streamEntryLinksWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => entryLinksStream);
+      when(
+        () => agentDb.streamAgentEntitiesWithVectorClock(),
+      ).thenAnswer((_) => agentEntitiesStream);
+      when(
+        () => agentDb.streamAgentLinksWithVectorClock(),
+      ).thenAnswer((_) => agentLinksStream);
       // Use specific callback matching instead of any() for complex types
       when(
         () => sequenceLogService.populateFromJournal(
@@ -349,6 +377,24 @@ void main() {
         ),
       ).thenAnswer((_) async => 50);
       when(
+        () => sequenceLogService.populateFromAgentEntities(
+          entityStream:
+              any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                named: 'entityStream',
+              ),
+          getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+        ),
+      ).thenAnswer((_) async => 10);
+      when(
+        () => sequenceLogService.populateFromAgentLinks(
+          linkStream:
+              any<Stream<List<({String id, Map<String, int>? vectorClock})>>>(
+                named: 'linkStream',
+              ),
+          getTotalCount: any<Future<int> Function()>(named: 'getTotalCount'),
+        ),
+      ).thenAnswer((_) async => 5);
+      when(
         () => settingsDb.saveSettingsItem(any(), any()),
       ).thenAnswer((_) async => 1);
 
@@ -357,8 +403,33 @@ void main() {
       // Verify settings saved (which means population completed)
       verify(
         () => settingsDb.saveSettingsItem(
-          'maintenance_sequenceLogPopulated',
+          settingsKey,
           'true',
+        ),
+      ).called(1);
+      // Verify all populate methods were called
+      verify(
+        () => sequenceLogService.populateFromJournal(
+          entryStream: any(named: 'entryStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ).called(1);
+      verify(
+        () => sequenceLogService.populateFromEntryLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ).called(1);
+      verify(
+        () => sequenceLogService.populateFromAgentEntities(
+          entityStream: any(named: 'entityStream'),
+          getTotalCount: any(named: 'getTotalCount'),
+        ),
+      ).called(1);
+      verify(
+        () => sequenceLogService.populateFromAgentLinks(
+          linkStream: any(named: 'linkStream'),
+          getTotalCount: any(named: 'getTotalCount'),
         ),
       ).called(1);
       // Verify logging events
@@ -371,7 +442,7 @@ void main() {
       ).called(1);
       verify(
         () => loggingService.captureEvent(
-          any<String>(that: contains('population completed')),
+          any<String>(that: contains('(V2) completed')),
           domain: 'MAINTENANCE',
           subDomain: 'sequenceLogPopulation',
         ),

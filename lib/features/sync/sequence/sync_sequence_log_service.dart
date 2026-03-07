@@ -5,6 +5,7 @@ import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
@@ -20,6 +21,65 @@ class SyncSequenceLogService {
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
   final LoggingService _loggingService;
+
+  // ============ Host Activity Cache ============
+  // Reduces O(hosts_in_VC) DB queries per incoming entry by caching
+  // getHostLastSeen() and getLastCounterForHost() results with a short TTL.
+
+  final _hostActivityCache = <String, DateTime?>{};
+  final _lastCounterCache = <String, int?>{};
+  DateTime? _cacheExpiry;
+  static const _cacheTtl = Duration(minutes: 5);
+
+  void _invalidateCacheIfExpired() {
+    final now = DateTime.now();
+    if (_cacheExpiry != null && now.isAfter(_cacheExpiry!)) {
+      _hostActivityCache.clear();
+      _lastCounterCache.clear();
+      _cacheExpiry = null;
+    }
+  }
+
+  void _ensureCacheWindow() {
+    _cacheExpiry ??= DateTime.now().add(_cacheTtl);
+  }
+
+  Future<DateTime?> _getCachedHostLastSeen(String hostId) async {
+    _invalidateCacheIfExpired();
+    _ensureCacheWindow();
+    if (_hostActivityCache.containsKey(hostId)) {
+      return _hostActivityCache[hostId];
+    }
+    final result = await _syncDatabase.getHostLastSeen(hostId);
+    _hostActivityCache[hostId] = result;
+    return result;
+  }
+
+  Future<int?> _getCachedLastCounterForHost(String hostId) async {
+    _invalidateCacheIfExpired();
+    _ensureCacheWindow();
+    if (_lastCounterCache.containsKey(hostId)) {
+      return _lastCounterCache[hostId];
+    }
+    final result = await _syncDatabase.getLastCounterForHost(hostId);
+    _lastCounterCache[hostId] = result;
+    return result;
+  }
+
+  /// Invalidate cache entries for a specific host after recording new data.
+  void _invalidateCacheForHost(String hostId) {
+    _lastCounterCache.remove(hostId);
+    // Don't remove host activity — it's updated via updateHostActivity
+    // which we track separately.
+  }
+
+  /// Force-expire the host activity cache. Used in tests to verify
+  /// that expired caches are cleared and DB is re-queried.
+  @visibleForTesting
+  void expireCacheForTesting() {
+    // Set expiry to the past so the next cache access triggers invalidation.
+    _cacheExpiry = DateTime.now().subtract(const Duration(seconds: 1));
+  }
 
   /// Record an entry being sent by this device.
   /// This allows us to respond to backfill requests from other devices.
@@ -100,6 +160,8 @@ class SyncSequenceLogService {
 
     // Update host activity for the originating host - they're online!
     await _syncDatabase.updateHostActivity(originatingHostId, now);
+    // Update cache so subsequent checks in this batch see the new activity
+    _hostActivityCache[originatingHostId] = now;
 
     // IMPORTANT: Process covered vector clocks BEFORE gap detection.
     // This prevents false positives: covered counters are pre-emptively marked
@@ -137,7 +199,7 @@ class SyncSequenceLogService {
       // Note: We still record the sequence entry for offline hosts (below),
       // just skip gap detection. This allows us to respond to backfill
       // requests later if the host comes online.
-      final hostLastOnline = await _syncDatabase.getHostLastSeen(hostId);
+      final hostLastOnline = await _getCachedHostLastSeen(hostId);
       final shouldDetectGaps =
           hostLastOnline != null || hostId == originatingHostId;
 
@@ -149,7 +211,7 @@ class SyncSequenceLogService {
         );
       }
 
-      final lastSeen = await _syncDatabase.getLastCounterForHost(hostId);
+      final lastSeen = await _getCachedLastCounterForHost(hostId);
 
       if (shouldDetectGaps && lastSeen != null && counter > lastSeen + 1) {
         // Gap detected! Mark missing counters for this host
@@ -310,6 +372,9 @@ class SyncSequenceLogService {
             );
         }
       }
+
+      // Invalidate counter cache for this host since we just recorded entries
+      _invalidateCacheForHost(hostId);
     }
 
     if (gaps.isNotEmpty) {
@@ -690,6 +755,23 @@ class SyncSequenceLogService {
     }
 
     return resolved;
+  }
+
+  /// Reset entries marked as unresolvable that now have a known payload
+  /// (entryId) back to "missing" so they can be re-requested.
+  /// Returns the number of entries reset.
+  Future<int> resetUnresolvableEntries() async {
+    final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
+
+    if (count > 0) {
+      _loggingService.captureEvent(
+        'resetUnresolvableEntries: reset $count entries back to missing',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'resetUnresolvable',
+      );
+    }
+
+    return count;
   }
 
   /// Get entry by host ID and counter (for responding to backfill requests).

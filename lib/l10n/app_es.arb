@@ -642,6 +642,18 @@
   },
   "backfillReRequestTitle": "Volver a solicitar pendientes",
   "backfillReRequestTrigger": "Volver a solicitar entradas pendientes",
+  "backfillResetUnresolvableDescription": "Restablece las entradas marcadas como irresolubles como faltantes para que puedan volver a solicitarse. Úsalo después de la repoblación del registro de secuencia.",
+  "backfillResetUnresolvableProcessing": "Restableciendo...",
+  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 entrada restablecida como faltante} other{{count} entradas restablecidas como faltantes}}",
+  "@backfillResetUnresolvableSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backfillResetUnresolvableTitle": "Restablecer irresolubles",
+  "backfillResetUnresolvableTrigger": "Restablecer entradas irresolubles",
   "backfillSettingsInfo": "El relleno automático solicita las entradas faltantes de las últimas 24 horas. Use el relleno manual para entradas más antiguas.",
   "backfillSettingsSubtitle": "Gestionar recuperación de brechas de sincronización",
   "backfillSettingsTitle": "Relleno de sincronización",

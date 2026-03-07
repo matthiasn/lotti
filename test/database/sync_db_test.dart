@@ -3032,4 +3032,88 @@ void main() {
       expect(sentCountNone, 0);
     });
   });
+
+  group('resetUnresolvableWithKnownPayload', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+
+    tearDown(() async {
+      await database.close();
+    });
+
+    test('resets unresolvable entries with known entryId to missing', () async {
+      final now = DateTime(2024, 3, 15);
+
+      // Insert an unresolvable entry WITH entryId (should be reset)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(5),
+          entryId: const Value('known-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          requestCount: const Value(3),
+        ),
+      );
+
+      // Insert an unresolvable entry WITHOUT entryId (should NOT be reset)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(6),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.unresolvable.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+          requestCount: const Value(2),
+        ),
+      );
+
+      // Insert a received entry (should NOT be affected)
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-a'),
+          counter: const Value(7),
+          entryId: const Value('another-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      final resetCount = await database.resetUnresolvableWithKnownPayload();
+
+      expect(resetCount, 1);
+
+      // Verify the reset entry
+      final resetEntry = await database.getEntryByHostAndCounter('host-a', 5);
+      expect(resetEntry, isNotNull);
+      expect(resetEntry!.status, SyncSequenceStatus.missing.index);
+      expect(resetEntry.requestCount, 0);
+
+      // Verify the unresolvable without entryId was NOT reset
+      final unchanged = await database.getEntryByHostAndCounter('host-a', 6);
+      expect(unchanged, isNotNull);
+      expect(unchanged!.status, SyncSequenceStatus.unresolvable.index);
+
+      // Verify the received entry was NOT affected
+      final received = await database.getEntryByHostAndCounter('host-a', 7);
+      expect(received, isNotNull);
+      expect(received!.status, SyncSequenceStatus.received.index);
+    });
+
+    test('returns 0 when no unresolvable entries exist', () async {
+      final database = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(database.close);
+
+      final resetCount = await database.resetUnresolvableWithKnownPayload();
+      expect(resetCount, 0);
+    });
+  });
 }
