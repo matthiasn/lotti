@@ -90,6 +90,7 @@ void main() {
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenReturn(null);
+    when(() => mockVcService.initialized).thenAnswer((_) async {});
     when(() => mockVcService.getHost()).thenAnswer((_) async => aliceHostId);
 
     mockAgentRepository = MockAgentRepository();

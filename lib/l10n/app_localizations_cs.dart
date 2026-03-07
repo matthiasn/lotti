@@ -1420,14 +1420,21 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backfillResetUnresolvableDescription =>
-      'Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použij po opětovném naplnění sekvenčního logu.';
+      'Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použijte po opětovném naplnění sekvenčního logu.';
 
   @override
   String get backfillResetUnresolvableProcessing => 'Resetování...';
 
   @override
   String backfillResetUnresolvableSuccess(int count) {
-    return '$count záznamů resetováno na chybějící';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# záznamů resetováno na chybějící',
+      few: '# záznamy resetovány na chybějící',
+      one: '# záznam resetován na chybějící',
+    );
+    return '$_temp0';
   }
 
   @override

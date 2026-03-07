@@ -3143,7 +3143,7 @@ void main() {
 
   group('host activity cache', () {
     test(
-      'caches getHostLastSeen for non-originating hosts',
+      'caches getHostLastSeen and reuses on subsequent calls',
       () async {
         // Set up stubs for both hosts
         when(
@@ -3175,6 +3175,26 @@ void main() {
         // Alice is originator — host activity is set directly via
         // updateHostActivity, not via getHostLastSeen
         verifyNever(() => mockDb.getHostLastSeen(aliceHostId));
+
+        // Process a second entry — bob's getHostLastSeen should be served
+        // from cache (no additional DB call) since cache is still valid.
+        // Note: getLastCounterForHost for bob gets invalidated per-host
+        // after writes, but getHostLastSeen stays cached.
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's getHostLastSeen was NOT called again — served from cache
+        verifyNever(() => mockDb.getHostLastSeen(bobHostId));
       },
     );
 
@@ -3229,7 +3249,7 @@ void main() {
     );
 
     test(
-      'caches getLastCounterForHost and avoids redundant DB calls',
+      'invalidates last counter cache after recording entries for a host',
       () async {
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
@@ -3244,7 +3264,8 @@ void main() {
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
 
-        // Process an entry that mentions bobHostId
+        // Process an entry — bob counter at 6 means gap detection checks
+        // getLastCounterForHost(bob) which returns 5 → gap for counter 6
         await service.recordReceivedEntry(
           entryId: 'entry-1',
           vectorClock: const VectorClock({
@@ -3259,8 +3280,8 @@ void main() {
           () => mockDb.getLastCounterForHost(bobHostId),
         ).called(1);
 
-        // Now process another entry — cache should be invalidated for bob
-        // since we recorded entries for bob, so it will query again.
+        // After the first call, cache was invalidated for bob because
+        // entries were written for bob. The next call must re-query DB.
         when(
           () => mockDb.getLastCounterForHost(bobHostId),
         ).thenAnswer((_) async => 6);

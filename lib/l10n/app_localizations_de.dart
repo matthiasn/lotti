@@ -1439,7 +1439,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String backfillResetUnresolvableSuccess(int count) {
-    return '$count Einträge auf fehlend zurückgesetzt';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge auf fehlend zurückgesetzt',
+      one: '1 Eintrag auf fehlend zurückgesetzt',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -644,7 +644,7 @@
   "backfillReRequestTrigger": "Ausstehende Einträge erneut anfordern",
   "backfillResetUnresolvableDescription": "Setze als unlösbar markierte Einträge auf fehlend zurück, damit sie erneut angefordert werden können. Verwende dies nach der Sequenzlog-Neubefüllung.",
   "backfillResetUnresolvableProcessing": "Wird zurückgesetzt...",
-  "backfillResetUnresolvableSuccess": "{count} Einträge auf fehlend zurückgesetzt",
+  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 Eintrag auf fehlend zurückgesetzt} other{{count} Einträge auf fehlend zurückgesetzt}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {

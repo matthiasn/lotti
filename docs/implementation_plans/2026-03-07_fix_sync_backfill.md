@@ -225,4 +225,4 @@ sequenceDiagram
 1. `make analyze` — zero warnings
 2. `make test` — all sync tests pass
 3. New tests for: self-request guard, unresolvable reset, host activity cache
-4. Post-deploy: verify via sync diagnostics that unresolvable count drops
+4. Post-deploy: trigger "Reset Unresolvable" manually in sync diagnostics, then verify the unresolvable count drops

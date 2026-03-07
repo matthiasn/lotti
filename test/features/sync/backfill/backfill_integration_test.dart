@@ -87,6 +87,8 @@ void main() {
     bobVcService = MockVectorClockService();
 
     // Configure vector clock services
+    when(() => aliceVcService.initialized).thenAnswer((_) async {});
+    when(() => bobVcService.initialized).thenAnswer((_) async {});
     when(() => aliceVcService.getHost()).thenAnswer((_) async => aliceHostId);
     when(() => bobVcService.getHost()).thenAnswer((_) async => bobHostId);
 

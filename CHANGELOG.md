@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.908] - 2026-03-07
+### Fixed
+- Sync backfill: agent entities and links are now included in automatic
+  sequence log population at startup (previously only journal entries and
+  entry links were populated, leaving agent counters unrecorded).
+- Sync backfill: added self-request guard to prevent hot-loop when echoed
+  backfill requests arrive back from the Matrix room.
+- Sync backfill: "Reset Unresolvable" action in sync diagnostics allows
+  recovery of entries incorrectly marked as permanently unresolvable.
+
+### Changed
+- Sync performance: host activity cache (5-minute TTL) reduces redundant
+  DB queries during incoming entry processing.
+- Localization: added ICU plural forms for reset success messages across
+  all supported languages.
+
 ## [0.9.907] - 2026-03-07
 ### Added
 - Individually rejectable label suggestions: agent-proposed labels are now

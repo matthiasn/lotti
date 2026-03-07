@@ -470,9 +470,9 @@
   },
   "backfillReRequestTitle": "Znovu požádat o čekající",
   "backfillReRequestTrigger": "Požádat znovu o čekající položky",
-  "backfillResetUnresolvableDescription": "Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použij po opětovném naplnění sekvenčního logu.",
+  "backfillResetUnresolvableDescription": "Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použijte po opětovném naplnění sekvenčního logu.",
   "backfillResetUnresolvableProcessing": "Resetování...",
-  "backfillResetUnresolvableSuccess": "{count} záznamů resetováno na chybějící",
+  "backfillResetUnresolvableSuccess": "{count, plural, one{# záznam resetován na chybějící} few{# záznamy resetovány na chybějící} other{# záznamů resetováno na chybějící}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {

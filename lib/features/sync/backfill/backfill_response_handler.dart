@@ -184,6 +184,7 @@ class BackfillResponseHandler {
       // Skip our own backfill requests — they echo back via the Matrix room
       // after the SentEventRegistry TTL expires. Without this guard, we'd
       // process our own requests in a hot-loop.
+      await _vectorClockService.initialized;
       final myHost = await _vectorClockService.getHost();
       if (myHost != null && request.requesterId == myHost) {
         _loggingService.captureEvent(

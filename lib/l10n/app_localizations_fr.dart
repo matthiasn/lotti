@@ -1449,18 +1449,25 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get backfillResetUnresolvableDescription =>
-      'Réinitialise les entrées marquées comme irrésolubles en manquantes pour qu\'elles puissent être redemandées. Utilise après la repopulation du journal de séquence.';
+      'Réinitialise les entrées marquées comme irrésolubles à l\'état manquant pour qu\'elles puissent être redemandées. Utilisez cette option après la repopulation du journal de séquence.';
 
   @override
   String get backfillResetUnresolvableProcessing => 'Réinitialisation...';
 
   @override
   String backfillResetUnresolvableSuccess(int count) {
-    return '$count entrées réinitialisées en manquantes';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# entrées réinitialisées à l\'état manquant',
+      one: '# entrée réinitialisée à l\'état manquant',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get backfillResetUnresolvableTitle => 'Réinitialiser irrésolubles';
+  String get backfillResetUnresolvableTitle =>
+      'Réinitialiser les entrées irrésolubles';
 
   @override
   String get backfillResetUnresolvableTrigger =>

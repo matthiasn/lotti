@@ -791,7 +791,7 @@
   "backfillReRequestTrigger": "Re-Request Pending Entries",
   "backfillResetUnresolvableDescription": "Reset entries marked as unresolvable back to missing so they can be re-requested. Use after sequence log repopulation.",
   "backfillResetUnresolvableProcessing": "Resetting...",
-  "backfillResetUnresolvableSuccess": "{count} entries reset to missing",
+  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {

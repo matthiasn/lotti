@@ -644,7 +644,7 @@
   "backfillReRequestTrigger": "Resolicită intrări în așteptare",
   "backfillResetUnresolvableDescription": "Resetează intrările marcate ca nerezolvabile înapoi la lipsă, pentru a putea fi solicitate din nou. Utilizați după repopularea jurnalului de secvență.",
   "backfillResetUnresolvableProcessing": "Se resetează...",
-  "backfillResetUnresolvableSuccess": "{count} intrări resetate la lipsă",
+  "backfillResetUnresolvableSuccess": "{count, plural, one{# intrare resetată la lipsă} other{# intrări resetate la lipsă}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {
@@ -653,7 +653,7 @@
     }
   },
   "backfillResetUnresolvableTitle": "Resetare nerezolvabile",
-  "backfillResetUnresolvableTrigger": "Resetare intrări nerezolvabile",
+  "backfillResetUnresolvableTrigger": "Resetați intrările nerezolvabile",
   "backfillSettingsInfo": "Completarea automată solicită intrările lipsă din ultimele 24 de ore. Folosiți completarea manuală pentru intrări mai vechi.",
   "backfillSettingsSubtitle": "Gestionează recuperarea lacunelor de sincronizare",
   "backfillSettingsTitle": "Completare sincronizare",

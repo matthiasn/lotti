@@ -642,9 +642,9 @@
   },
   "backfillReRequestTitle": "Volver a solicitar pendientes",
   "backfillReRequestTrigger": "Volver a solicitar entradas pendientes",
-  "backfillResetUnresolvableDescription": "Restablece las entradas marcadas como irresolubles a faltantes para que puedan volver a solicitarse. Úsalo después de la repoblación del registro de secuencia.",
+  "backfillResetUnresolvableDescription": "Restablece las entradas marcadas como irresolubles como faltantes para que puedan volver a solicitarse. Úsalo después de la repoblación del registro de secuencia.",
   "backfillResetUnresolvableProcessing": "Restableciendo...",
-  "backfillResetUnresolvableSuccess": "{count} entradas restablecidas a faltantes",
+  "backfillResetUnresolvableSuccess": "{count, plural, =1{1 entrada restablecida como faltante} other{{count} entradas restablecidas como faltantes}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {

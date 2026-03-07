@@ -337,18 +337,26 @@ void main() {
       when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 50);
       when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 10);
       when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 5);
+      const entriesStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const entryLinksStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const agentEntitiesStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
+      const agentLinksStream =
+          Stream<List<({String id, Map<String, int>? vectorClock})>>.empty();
       when(
         () => journalDb.streamEntriesWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => entriesStream);
       when(
         () => journalDb.streamEntryLinksWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => entryLinksStream);
       when(
         () => agentDb.streamAgentEntitiesWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => agentEntitiesStream);
       when(
         () => agentDb.streamAgentLinksWithVectorClock(),
-      ).thenAnswer((_) => const Stream.empty());
+      ).thenAnswer((_) => agentLinksStream);
       // Use specific callback matching instead of any() for complex types
       when(
         () => sequenceLogService.populateFromJournal(

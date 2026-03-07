@@ -642,9 +642,9 @@
   },
   "backfillReRequestTitle": "Redemander les en attente",
   "backfillReRequestTrigger": "Redemander les entrées en attente",
-  "backfillResetUnresolvableDescription": "Réinitialise les entrées marquées comme irrésolubles en manquantes pour qu'elles puissent être redemandées. Utilise après la repopulation du journal de séquence.",
+  "backfillResetUnresolvableDescription": "Réinitialise les entrées marquées comme irrésolubles à l'état manquant pour qu'elles puissent être redemandées. Utilisez cette option après la repopulation du journal de séquence.",
   "backfillResetUnresolvableProcessing": "Réinitialisation...",
-  "backfillResetUnresolvableSuccess": "{count} entrées réinitialisées en manquantes",
+  "backfillResetUnresolvableSuccess": "{count, plural, one{# entrée réinitialisée à l'état manquant} other{# entrées réinitialisées à l'état manquant}}",
   "@backfillResetUnresolvableSuccess": {
     "placeholders": {
       "count": {
@@ -652,7 +652,7 @@
       }
     }
   },
-  "backfillResetUnresolvableTitle": "Réinitialiser irrésolubles",
+  "backfillResetUnresolvableTitle": "Réinitialiser les entrées irrésolubles",
   "backfillResetUnresolvableTrigger": "Réinitialiser les entrées irrésolubles",
   "backfillSettingsInfo": "Le rattrapage automatique demande les entrées manquantes des dernières 24 heures. Utilisez le rattrapage manuel pour les entrées plus anciennes.",
   "backfillSettingsSubtitle": "Gérer la récupération des écarts de synchronisation",

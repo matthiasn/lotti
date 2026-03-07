@@ -1436,7 +1436,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String backfillResetUnresolvableSuccess(int count) {
-    return '$count intrări resetate la lipsă';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '# intrări resetate la lipsă',
+      one: '# intrare resetată la lipsă',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -1444,7 +1450,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backfillResetUnresolvableTrigger =>
-      'Resetare intrări nerezolvabile';
+      'Resetați intrările nerezolvabile';
 
   @override
   String get backfillSettingsInfo =>

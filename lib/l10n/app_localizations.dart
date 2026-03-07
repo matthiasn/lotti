@@ -2604,7 +2604,7 @@ abstract class AppLocalizations {
   /// No description provided for @backfillResetUnresolvableSuccess.
   ///
   /// In en, this message translates to:
-  /// **'{count} entries reset to missing'**
+  /// **'{count, plural, =1{1 entry reset to missing} other{{count} entries reset to missing}}'**
   String backfillResetUnresolvableSuccess(int count);
 
   /// No description provided for @backfillResetUnresolvableTitle.
