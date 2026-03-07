@@ -6,7 +6,9 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:uuid/uuid.dart';
 
@@ -24,11 +26,14 @@ class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required AgentSyncService syncService,
     required TaskToolDispatcher toolDispatcher,
+    required LabelsRepository labelsRepository,
   }) : _syncService = syncService,
-       _toolDispatcher = toolDispatcher;
+       _toolDispatcher = toolDispatcher,
+       _labelsRepository = labelsRepository;
 
   final AgentSyncService _syncService;
   final TaskToolDispatcher _toolDispatcher;
+  final LabelsRepository _labelsRepository;
 
   static const _uuid = Uuid();
 
@@ -167,6 +172,18 @@ class ChangeSetConfirmationService {
       itemIndex,
       ChangeItemStatus.rejected,
     );
+
+    // 3. For rejected label assignments, automatically suppress the label
+    //    so the agent does not re-propose it in future wakes.
+    if (item.toolName == TaskAgentToolNames.assignTaskLabel) {
+      final labelId = item.args['id'];
+      if (labelId is String) {
+        await _labelsRepository.suppressLabelOnTask(
+          taskId: current.taskId,
+          labelId: labelId,
+        );
+      }
+    }
 
     return true;
   }

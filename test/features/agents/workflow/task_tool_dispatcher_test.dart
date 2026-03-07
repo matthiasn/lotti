@@ -524,6 +524,33 @@ void main() {
           expect(result.output, isNotEmpty);
         },
       );
+
+      test(
+        'assign_task_label wraps as single-element labels array',
+        () async {
+          final labelDef = _makeLabelDef('label-bug');
+          when(
+            () => mockJournalDb.getLabelDefinitionById('label-bug'),
+          ).thenAnswer((_) async => labelDef);
+
+          // Stub LabelAssignmentRateLimiter via getIt.
+          when(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: any(named: 'journalEntityId'),
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            'assign_task_label',
+            {'id': 'label-bug', 'confidence': 'high'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, isNotEmpty);
+        },
+      );
     });
   });
 }

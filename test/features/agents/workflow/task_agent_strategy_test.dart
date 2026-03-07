@@ -1274,7 +1274,12 @@ void main() {
         expect(csBuilder.items[2].humanSummary, 'Set due date to 2024-06-30');
         expect(csBuilder.items[3].humanSummary, 'Set priority to P1');
         expect(csBuilder.items[4].humanSummary, 'Set status to GROOMED');
-        expect(csBuilder.items[5].humanSummary, 'Assign 1 label(s)');
+        // Labels are now exploded into individual items via batch path.
+        expect(
+          csBuilder.items[5].humanSummary,
+          contains('Assign label:'),
+        );
+        expect(csBuilder.items[5].toolName, 'assign_task_label');
       });
 
       test('handles malformed labels arg without crashing', () async {
@@ -1294,8 +1299,10 @@ void main() {
           manager: mockManager,
         );
 
+        // Malformed labels (not a list) goes through the batch path which
+        // falls back to a single item with an (empty) suffix.
         expect(csBuilder.items, hasLength(1));
-        expect(csBuilder.items.first.humanSummary, 'Assign 0 label(s)');
+        expect(csBuilder.items.first.humanSummary, 'Label (empty)');
       });
 
       test('warns LLM when batch items contain non-map elements', () async {

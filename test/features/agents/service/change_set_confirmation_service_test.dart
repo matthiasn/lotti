@@ -17,6 +17,7 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late MockTaskToolDispatcher mockToolDispatcher;
   late MockAgentRepository mockRepository;
+  late MockLabelsRepository mockLabelsRepository;
   late ChangeSetConfirmationService service;
 
   final testClock = Clock.fixed(DateTime(2024, 6, 15, 12));
@@ -25,6 +26,7 @@ void main() {
     mockSyncService = MockAgentSyncService();
     mockToolDispatcher = MockTaskToolDispatcher();
     mockRepository = MockAgentRepository();
+    mockLabelsRepository = MockLabelsRepository();
 
     when(() => mockSyncService.repository).thenReturn(mockRepository);
 
@@ -36,6 +38,7 @@ void main() {
     service = ChangeSetConfirmationService(
       syncService: mockSyncService,
       toolDispatcher: mockToolDispatcher,
+      labelsRepository: mockLabelsRepository,
     );
   });
 
@@ -527,6 +530,78 @@ void main() {
           );
         });
       });
+    });
+
+    group('rejectItem - label suppression', () {
+      test(
+        'rejecting an assign_task_label item suppresses the label',
+        () async {
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'assign_task_label',
+                args: {'id': 'label-bug', 'confidence': 'high'},
+                humanSummary: 'Assign label: "Bug" (high)',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockLabelsRepository.suppressLabelOnTask(
+              taskId: any(named: 'taskId'),
+              labelId: any(named: 'labelId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 0);
+
+            expect(applied, isTrue);
+
+            // Verify suppress was called with the correct args.
+            verify(
+              () => mockLabelsRepository.suppressLabelOnTask(
+                taskId: 'task-001',
+                labelId: 'label-bug',
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'rejecting a non-label item does not call suppressLabelOnTask',
+        () async {
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 120},
+                humanSummary: 'Set estimate to 2 hours',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            await service.rejectItem(changeSet, 0);
+
+            verifyNever(
+              () => mockLabelsRepository.suppressLabelOnTask(
+                taskId: any(named: 'taskId'),
+                labelId: any(named: 'labelId'),
+              ),
+            );
+          });
+        },
+      );
     });
   });
 }

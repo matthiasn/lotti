@@ -41,6 +41,7 @@ abstract final class TaskAgentToolNames {
   // Legacy single-item aliases (dispatched to batch handlers).
   static const addChecklistItem = 'add_checklist_item';
   static const updateChecklistItem = 'update_checklist_item';
+  static const assignTaskLabel = 'assign_task_label';
 }
 
 /// Tool name constants used by the evolution agent.
@@ -79,6 +80,7 @@ class AgentToolRegistry {
   static const explodedBatchTools = <String, String>{
     TaskAgentToolNames.addMultipleChecklistItems: 'items',
     TaskAgentToolNames.updateChecklistItems: 'items',
+    TaskAgentToolNames.assignTaskLabels: 'labels',
   };
 
   /// All tools available to the Task Agent.
