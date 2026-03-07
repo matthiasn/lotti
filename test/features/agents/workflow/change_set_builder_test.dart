@@ -1718,9 +1718,10 @@ void main() {
         );
 
         // Same source task and title should produce the same placeholder.
+        // The compound key includes title|dueDate|priority (empty when absent).
         final placeholder2 = ChangeSetBuilder.deterministicPlaceholder(
           'task-001',
-          'Follow-Up A',
+          'Follow-Up A||',
         );
 
         expect(placeholder1, placeholder2);

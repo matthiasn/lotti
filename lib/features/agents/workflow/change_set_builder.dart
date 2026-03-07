@@ -756,9 +756,13 @@ class ChangeSetBuilder {
     String? groupId,
   }) async {
     final title = args['title'];
+    final dueDate = args['dueDate'];
+    final priority = args['priority'];
     final placeholderId = deterministicPlaceholder(
       taskId,
-      title is String ? title : '',
+      '${title is String ? title : ''}'
+      '|${dueDate is String ? dueDate : ''}'
+      '|${priority is String ? priority : ''}',
     );
 
     final enrichedArgs = {
@@ -780,16 +784,17 @@ class ChangeSetBuilder {
 
   /// Generates a deterministic placeholder UUID for a follow-up task.
   ///
-  /// Uses UUID v5 seeded from the source task ID and title so that
-  /// identical split proposals across wakes produce the same placeholder,
-  /// preserving cross-wake dedup via [ChangeItem.fingerprint].
+  /// Uses UUID v5 seeded from the source task ID and a distinguishing key
+  /// (typically `title|dueDate|priority`) so that identical split proposals
+  /// across wakes produce the same placeholder, preserving cross-wake dedup
+  /// via [ChangeItem.fingerprint].
   static String deterministicPlaceholder(
     String sourceTaskId,
-    String title,
+    String distinguishingKey,
   ) {
     return _uuid.v5(
       Namespace.url.value,
-      'follow-up:$sourceTaskId:$title',
+      'follow-up:$sourceTaskId:$distinguishingKey',
     );
   }
 

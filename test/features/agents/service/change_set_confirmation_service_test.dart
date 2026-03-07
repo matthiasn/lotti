@@ -855,6 +855,7 @@ void main() {
           final freshService = ChangeSetConfirmationService(
             syncService: mockSyncService,
             toolDispatcher: mockToolDispatcher,
+            labelsRepository: mockLabelsRepository,
           );
 
           await withClock(testClock, () async {

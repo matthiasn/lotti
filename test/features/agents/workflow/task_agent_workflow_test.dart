@@ -30,6 +30,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 /// Minimal mock of [ConversationRepository] that avoids Riverpod build().
@@ -217,7 +218,7 @@ void main() {
           )
           as AiConfigModel;
 
-  setUp(() {
+  setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
@@ -235,10 +236,11 @@ void main() {
 
     registerAllFallbackValues();
 
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+      },
+    );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     when(
@@ -293,7 +295,7 @@ void main() {
     );
   });
 
-  tearDownAll(() async => getIt.reset());
+  tearDownAll(tearDownTestGetIt);
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {

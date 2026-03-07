@@ -136,11 +136,21 @@ class ChecklistMigrationHandler {
     }
 
     // Archive the item in the source (after copy succeeded).
-    await _checklistRepository.updateChecklistItem(
+    final archived = await _checklistRepository.updateChecklistItem(
       checklistItemId: itemId,
       data: itemEntity.data.copyWith(isArchived: true),
       taskId: sourceTaskId,
     );
+
+    if (!archived) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: copied item to target but failed to archive '
+            'source item $itemId',
+        errorMessage: 'Source item archival failed',
+      );
+    }
 
     return ToolExecutionResult(
       success: true,

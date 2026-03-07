@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -60,7 +62,15 @@ class FollowUpTaskHandler {
 
     // Parse optional fields.
     final priority = _parsePriority(args['priority']);
-    final dueDate = _parseDueDate(args['dueDate']);
+    final rawDueDate = args['dueDate'];
+    final dueDate = _parseDueDate(rawDueDate);
+    if (rawDueDate != null && dueDate == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: "dueDate" must be a valid YYYY-MM-DD date',
+        errorMessage: 'Invalid dueDate',
+      );
+    }
     final description = args['description'];
 
     // Build task data.
@@ -99,19 +109,34 @@ class FollowUpTaskHandler {
 
     final newTaskId = newTask.meta.id;
 
-    // Link source task → new task.
-    await _persistenceLogic.createLink(
-      fromId: sourceTaskId,
-      toId: newTaskId,
-    );
+    // Link source task → new task. Wrapped in try-catch so a link failure
+    // does not lose the already-created task ID.
+    try {
+      await _persistenceLogic.createLink(
+        fromId: sourceTaskId,
+        toId: newTaskId,
+      );
+    } catch (e) {
+      developer.log(
+        'Failed to link source $sourceTaskId → $newTaskId: $e',
+        name: 'FollowUpTaskHandler',
+      );
+    }
 
     // Optionally link audio entry → new task.
     final sourceAudioId = args['sourceAudioId'];
     if (sourceAudioId is String && sourceAudioId.isNotEmpty) {
-      await _persistenceLogic.createLink(
-        fromId: sourceAudioId,
-        toId: newTaskId,
-      );
+      try {
+        await _persistenceLogic.createLink(
+          fromId: sourceAudioId,
+          toId: newTaskId,
+        );
+      } catch (e) {
+        developer.log(
+          'Failed to link audio $sourceAudioId → $newTaskId: $e',
+          name: 'FollowUpTaskHandler',
+        );
+      }
     }
 
     return ToolExecutionResult(

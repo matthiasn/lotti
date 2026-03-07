@@ -193,7 +193,7 @@ Dependencies: `PersistenceLogic`, `JournalDb`
 **New file:** `lib/features/agents/tools/checklist_migration_handler.dart`
 
 - Look up checklist item by `itemId`, verify it belongs to source task's checklist
-- Archive it: `updateChecklistItem(data.copyWith(deletedAt: now))`
+- Archive it: `updateChecklistItem(data.copyWith(isArchived: true))`
 - Ensure target task has a checklist (via `AutoChecklistService`)
 - Create copy in target: `addItemToChecklist(title, isChecked from original)`
 - Return success
@@ -243,7 +243,7 @@ Changes to `confirmAll()`:
 Add a new section to `taskAgentScaffoldTrailing` (after the checklist sovereignty block,
 before the `## Important` section) with tool usage guidelines for the new tools:
 
-```
+```text
 - **Task splitting**: When a user describes follow-up tasks in audio or notes —
   especially when referencing specific checklist items to move — use the split
   workflow:
@@ -265,7 +265,7 @@ before the `## Important` section) with tool usage guidelines for the new tools:
 
 Add task splitting to the `taskAgentGeneralDirective` under Tool Discipline:
 
-```
+```text
 - Use `create_follow_up_task` + `migrate_checklist_items` when the user
   describes a distinct follow-up task and identifies checklist items to move.
   Both tools go through user approval before executing.

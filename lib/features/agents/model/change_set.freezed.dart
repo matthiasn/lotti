@@ -21,6 +21,7 @@ mixin _$ChangeItem {
  String get humanSummary;/// Current status of this item within the change set.
  ChangeItemStatus get status;/// Optional group identifier for related items (e.g., a task-split
 /// operation produces a create + N migrate items sharing the same group).
+/// Used by the approval UI to visually group related items.
  String? get groupId;
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
@@ -239,6 +240,7 @@ class _ChangeItem implements ChangeItem {
 @override@JsonKey() final  ChangeItemStatus status;
 /// Optional group identifier for related items (e.g., a task-split
 /// operation produces a create + N migrate items sharing the same group).
+/// Used by the approval UI to visually group related items.
 @override final  String? groupId;
 
 /// Create a copy of ChangeItem

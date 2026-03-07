@@ -139,6 +139,7 @@ class TaskToolDispatcher {
         return _handleCreateFollowUpTask(args, taskId);
 
       case TaskAgentToolNames.migrateChecklistItem:
+      case TaskAgentToolNames.migrateChecklistItems:
         return _handleMigrateChecklistItem(args, taskId);
 
       default:
