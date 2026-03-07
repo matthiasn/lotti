@@ -156,11 +156,27 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
       // Trigger provider invalidation.
       notifier.notify({agentId});
 
-      final anyFailed = results.any((r) => !r.success);
-      if (anyFailed && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.messages.changeSetConfirmError)),
-        );
+      if (context.mounted) {
+        final anyFailed = results.any((r) => !r.success);
+        final warningCount = results
+            .where((r) => r.success && r.errorMessage != null)
+            .length;
+
+        if (anyFailed) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(context.messages.changeSetConfirmError)),
+          );
+        } else if (warningCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                context.messages.changeSetItemConfirmedWithWarning(
+                  '$warningCount item(s) had partial issues',
+                ),
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       developer.log(
@@ -352,17 +368,17 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
       notifier.notify({agentId});
 
       if (context.mounted) {
+        final message = !result.success
+            ? context.messages.changeSetConfirmError
+            : result.errorMessage != null
+            ? context.messages.changeSetItemConfirmedWithWarning(
+                result.errorMessage!,
+              )
+            : context.messages.changeSetItemConfirmed;
+
         ScaffoldMessenger.of(context)
           ..clearSnackBars()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                result.success
-                    ? context.messages.changeSetItemConfirmed
-                    : context.messages.changeSetConfirmError,
-              ),
-            ),
-          );
+          ..showSnackBar(SnackBar(content: Text(message)));
       }
     } catch (e) {
       developer.log(

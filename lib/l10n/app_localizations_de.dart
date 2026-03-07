@@ -1592,6 +1592,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get changeSetItemConfirmed => 'Änderung angewendet';
 
   @override
+  String changeSetItemConfirmedWithWarning(String warning) {
+    return 'Angewendet mit Warnung: $warning';
+  }
+
+  @override
   String get changeSetItemRejected => 'Änderung abgelehnt';
 
   @override

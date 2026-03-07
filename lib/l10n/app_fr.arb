@@ -700,6 +700,14 @@
   "changeSetConfirmAll": "Tout confirmer",
   "changeSetConfirmError": "Impossible d'appliquer la modification",
   "changeSetItemConfirmed": "Modification appliquée",
+  "changeSetItemConfirmedWithWarning": "Appliquée avec avertissement : {warning}",
+  "@changeSetItemConfirmedWithWarning": {
+    "placeholders": {
+      "warning": {
+        "type": "String"
+      }
+    }
+  },
   "changeSetItemRejected": "Modification rejetée",
   "changeSetPendingCount": "{count} en attente",
   "@changeSetPendingCount": {

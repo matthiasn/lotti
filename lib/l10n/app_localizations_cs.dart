@@ -1580,6 +1580,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get changeSetItemConfirmed => 'Change applied';
 
   @override
+  String changeSetItemConfirmedWithWarning(String warning) {
+    return 'Applied with warning: $warning';
+  }
+
+  @override
   String get changeSetItemRejected => 'Change rejected';
 
   @override

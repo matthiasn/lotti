@@ -700,6 +700,14 @@
   "changeSetConfirmAll": "Confirmați toate",
   "changeSetConfirmError": "Modificarea nu a putut fi aplicată",
   "changeSetItemConfirmed": "Modificare aplicată",
+  "changeSetItemConfirmedWithWarning": "Aplicată cu avertisment: {warning}",
+  "@changeSetItemConfirmedWithWarning": {
+    "placeholders": {
+      "warning": {
+        "type": "String"
+      }
+    }
+  },
   "changeSetItemRejected": "Modificare respinsă",
   "changeSetPendingCount": "{count} în așteptare",
   "@changeSetPendingCount": {

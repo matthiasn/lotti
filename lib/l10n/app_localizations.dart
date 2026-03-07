@@ -2853,6 +2853,12 @@ abstract class AppLocalizations {
   /// **'Change applied'**
   String get changeSetItemConfirmed;
 
+  /// No description provided for @changeSetItemConfirmedWithWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied with warning: {warning}'**
+  String changeSetItemConfirmedWithWarning(String warning);
+
   /// No description provided for @changeSetItemRejected.
   ///
   /// In en, this message translates to:

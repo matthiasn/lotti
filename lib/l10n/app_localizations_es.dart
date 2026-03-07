@@ -1617,6 +1617,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get changeSetItemConfirmed => 'Cambio aplicado';
 
   @override
+  String changeSetItemConfirmedWithWarning(String warning) {
+    return 'Aplicado con advertencia: $warning';
+  }
+
+  @override
   String get changeSetItemRejected => 'Cambio rechazado';
 
   @override
