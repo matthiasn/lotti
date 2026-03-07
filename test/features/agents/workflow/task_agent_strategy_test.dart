@@ -1299,10 +1299,9 @@ void main() {
           manager: mockManager,
         );
 
-        // Malformed labels (not a list) goes through the batch path which
-        // falls back to a single item with an (empty) suffix.
-        expect(csBuilder.items, hasLength(1));
-        expect(csBuilder.items.first.humanSummary, 'Label (empty)');
+        // Malformed labels (not a list) are rejected — no placeholder
+        // item is queued to the change set.
+        expect(csBuilder.items, isEmpty);
       });
 
       test('warns LLM when batch items contain non-map elements', () async {

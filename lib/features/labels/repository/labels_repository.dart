@@ -220,7 +220,31 @@ class LabelsRepository {
           aiSuppressedLabelIds: nextSuppressed,
         ),
       );
-      return await _persistenceLogic.updateDbEntity(updated) ?? false;
+      final applied = await _persistenceLogic.updateDbEntity(updated);
+      if (applied ?? false) return true;
+
+      // Write conflict — re-read and retry with override, matching the
+      // mergeable-update pattern used by setLabels().
+      final latest = await _journalDb.journalEntityById(taskId);
+      if (latest is! Task) return false;
+
+      final latestSuppressed =
+          latest.data.aiSuppressedLabelIds ?? const <String>{};
+      if (latestSuppressed.contains(labelId)) return true;
+
+      final retried = latest.copyWith(
+        data: latest.data.copyWith(
+          aiSuppressedLabelIds: _mergeSuppressed(
+            current: latestSuppressed,
+            add: {labelId},
+          ),
+        ),
+      );
+      return await _persistenceLogic.updateDbEntity(
+            retried,
+            overrideComparison: true,
+          ) ??
+          false;
     } catch (error, stackTrace) {
       _loggingService.captureException(
         error,

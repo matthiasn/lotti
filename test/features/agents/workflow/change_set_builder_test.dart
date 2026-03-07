@@ -318,26 +318,26 @@ void main() {
       expect(builder.items.first.humanSummary, 'Unknown (batch)');
     });
 
-    test('handles empty array gracefully', () async {
-      await builder.addBatchItem(
+    test('handles empty array without queuing a placeholder', () async {
+      final result = await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'items': <dynamic>[]},
         summaryPrefix: 'Checklist',
       );
 
-      expect(builder.items, hasLength(1));
-      expect(builder.items.first.humanSummary, 'Checklist (empty)');
+      expect(builder.items, isEmpty);
+      expect(result.added, 0);
     });
 
-    test('handles missing array key gracefully', () async {
-      await builder.addBatchItem(
+    test('handles missing array key without queuing a placeholder', () async {
+      final result = await builder.addBatchItem(
         toolName: 'add_multiple_checklist_items',
         args: {'wrong_key': 'value'},
         summaryPrefix: 'Checklist',
       );
 
-      expect(builder.items, hasLength(1));
-      expect(builder.items.first.humanSummary, 'Checklist (empty)');
+      expect(builder.items, isEmpty);
+      expect(result.added, 0);
     });
   });
 

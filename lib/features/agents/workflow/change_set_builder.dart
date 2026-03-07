@@ -189,12 +189,8 @@ class ChangeSetBuilder {
 
     final array = args[arrayKey];
     if (array is! List || array.isEmpty) {
-      // Empty or invalid array — add as a single item.
-      await addItem(
-        toolName: toolName,
-        args: args,
-        humanSummary: '$summaryPrefix (empty)',
-      );
+      // Empty or invalid array — skip without queuing a placeholder.
+      // The caller (strategy) will format an appropriate LLM response.
       return const BatchAddResult(added: 0, skipped: 0);
     }
 

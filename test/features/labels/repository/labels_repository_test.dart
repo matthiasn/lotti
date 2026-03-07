@@ -1031,6 +1031,82 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('retries with override on write conflict', () async {
+      final task = buildTask();
+      final taskAfterConflict = buildTask(
+        aiSuppressedLabelIds: {'other-label'},
+      );
+
+      var readCount = 0;
+      when(
+        () => journalDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async {
+        readCount++;
+        return readCount == 1 ? task : taskAfterConflict;
+      });
+
+      var writeCount = 0;
+      when(
+        () => persistenceLogic.updateDbEntity(
+          any(),
+          overrideComparison: any(named: 'overrideComparison'),
+        ),
+      ).thenAnswer((_) async {
+        writeCount++;
+        // First write fails (conflict), retry succeeds.
+        return writeCount > 1;
+      });
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'task-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isTrue);
+      // Two writes: initial attempt + retry.
+      expect(writeCount, 2);
+
+      final captured = verify(
+        () => persistenceLogic.updateDbEntity(
+          captureAny(),
+          overrideComparison: any(named: 'overrideComparison'),
+        ),
+      ).captured;
+      final retriedTask = captured.last as Task;
+      expect(
+        retriedTask.data.aiSuppressedLabelIds,
+        containsAll(['other-label', 'label-bug']),
+      );
+    });
+
+    test('returns true on retry when label already in latest', () async {
+      final task = buildTask();
+      final taskAlreadySuppressed = buildTask(
+        aiSuppressedLabelIds: {'label-bug'},
+      );
+
+      var readCount = 0;
+      when(
+        () => journalDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async {
+        readCount++;
+        return readCount == 1 ? task : taskAlreadySuppressed;
+      });
+
+      when(
+        () => persistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((_) async => false); // First write fails.
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'task-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isTrue);
+      // Only one write — the retry discovers label already suppressed.
+      verify(() => persistenceLogic.updateDbEntity(any())).called(1);
+    });
+
     test('returns false and logs on exception', () async {
       when(
         () => journalDb.journalEntityById('task-001'),
