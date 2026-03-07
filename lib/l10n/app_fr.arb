@@ -1907,6 +1907,7 @@
   "tasksQuickFilterUnassignedLabel": "Non attribué",
   "tasksShowCoverArt": "Afficher la couverture sur les cartes",
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
+  "tasksShowDistances": "Afficher les distances sur les cartes",
   "tasksShowDueDate": "Afficher la date d'échéance sur les cartes",
   "tasksSortByCreationDate": "Création",
   "tasksSortByDate": "Date",

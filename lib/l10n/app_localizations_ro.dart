@@ -4731,6 +4731,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksShowCreationDate => 'Afișează data creării pe carduri';
 
   @override
+  String get tasksShowDistances => 'Afișează distanțele pe carduri';
+
+  @override
   String get tasksShowDueDate => 'Afișează data scadenței pe carduri';
 
   @override

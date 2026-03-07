@@ -140,8 +140,9 @@ class _InfiniteJournalPageBodyState
                       animateTransitions: true,
                       invisibleItemsThreshold: 10,
                       itemBuilder: (context, item, index) {
-                        final distance =
-                            state.vectorSearchDistances[item.meta.id];
+                        final distance = state.showDistances
+                            ? state.vectorSearchDistances[item.meta.id]
+                            : null;
                         return CardWrapperWidget(
                           item: item,
                           showCreationDate: state.showCreationDate,

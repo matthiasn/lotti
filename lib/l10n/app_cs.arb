@@ -1687,6 +1687,7 @@
   "tasksQuickFilterUnassignedLabel": "Nepřiřazeno",
   "tasksShowCoverArt": "Zobrazit obal na kartách",
   "tasksShowCreationDate": "Zobrazit datum vytvoření na kartách",
+  "tasksShowDistances": "Zobrazit vzdálenosti na kartách",
   "tasksShowDueDate": "Zobrazit datum splnění na kartách",
   "tasksSortByCreationDate": "Vytvořeno",
   "tasksSortByDate": "Datum",

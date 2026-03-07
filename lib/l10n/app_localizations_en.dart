@@ -4640,6 +4640,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksShowCreationDate => 'Show creation date on cards';
 
   @override
+  String get tasksShowDistances => 'Show distances on cards';
+
+  @override
   String get tasksShowDueDate => 'Show due date on cards';
 
   @override

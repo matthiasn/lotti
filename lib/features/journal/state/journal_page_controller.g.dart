@@ -71,7 +71,7 @@ final class JournalPageControllerProvider
 }
 
 String _$journalPageControllerHash() =>
-    r'76b864edf5b301c4ab7de5e11cf3b4c7bea43d3c';
+    r'89c07b2e895785b2837c8d67c84f2bddf89c1ff5';
 
 /// Controller for managing journal/tasks page state.
 ///

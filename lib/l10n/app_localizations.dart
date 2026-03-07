@@ -8452,6 +8452,12 @@ abstract class AppLocalizations {
   /// **'Show creation date on cards'**
   String get tasksShowCreationDate;
 
+  /// No description provided for @tasksShowDistances.
+  ///
+  /// In en, this message translates to:
+  /// **'Show distances on cards'**
+  String get tasksShowDistances;
+
   /// No description provided for @tasksShowDueDate.
   ///
   /// In en, this message translates to:

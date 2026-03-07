@@ -1907,6 +1907,7 @@
   "tasksQuickFilterUnassignedLabel": "Neatribuit",
   "tasksShowCoverArt": "Afișează coperta pe carduri",
   "tasksShowCreationDate": "Afișează data creării pe carduri",
+  "tasksShowDistances": "Afișează distanțele pe carduri",
   "tasksShowDueDate": "Afișează data scadenței pe carduri",
   "tasksSortByCreationDate": "Creație",
   "tasksSortByDate": "Dată",
