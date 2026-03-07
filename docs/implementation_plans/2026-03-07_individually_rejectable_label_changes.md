@@ -68,7 +68,8 @@ sequenceDiagram
     UI->>ConfSvc: confirmItem(changeSet, 0)
     ConfSvc->>DB: Persist ChangeDecisionEntity(confirmed)
     ConfSvc->>Dispatcher: dispatch(assign_task_label, {id: A})
-    Dispatcher->>LabelRepo: _handleAssignLabels(wraps single into array)
+    Dispatcher->>Dispatcher: wraps single label into array
+    Dispatcher->>LabelRepo: addLabels(...) via TaskLabelHandler
 
     UI->>ConfSvc: rejectItem(changeSet, 1)
     ConfSvc->>DB: Persist ChangeDecisionEntity(rejected)

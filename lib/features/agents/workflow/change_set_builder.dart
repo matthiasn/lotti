@@ -687,7 +687,11 @@ class ChangeSetBuilder {
         : null;
     final display =
         labelName ?? (labelId is String ? _truncateId(labelId) : '?');
-    final confidenceSuffix = confidence is String ? ' ($confidence)' : '';
+    final confidenceSuffix =
+        confidence is String &&
+            const ['very_high', 'high', 'medium', 'low'].contains(confidence)
+        ? ' ($confidence)'
+        : '';
     return 'Assign label: "$display"$confidenceSuffix';
   }
 

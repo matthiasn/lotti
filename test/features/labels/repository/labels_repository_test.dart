@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -929,6 +930,126 @@ void main() {
           .first;
 
       expect(result, isNull);
+    });
+  });
+
+  group('suppressLabelOnTask', () {
+    Task buildTask({
+      String id = 'task-001',
+      Set<String>? aiSuppressedLabelIds,
+      List<String>? labelIds,
+    }) {
+      return Task(
+        meta: Metadata(
+          id: id,
+          dateFrom: baseTime,
+          dateTo: baseTime,
+          createdAt: baseTime,
+          updatedAt: baseTime,
+          labelIds: labelIds,
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: id,
+            createdAt: baseTime,
+            utcOffset: 0,
+          ),
+          dateFrom: baseTime,
+          dateTo: baseTime,
+          statusHistory: [],
+          title: 'Test Task',
+          aiSuppressedLabelIds: aiSuppressedLabelIds,
+        ),
+      );
+    }
+
+    test('adds label ID to aiSuppressedLabelIds', () async {
+      final task = buildTask();
+      when(
+        () => journalDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async => task);
+      when(
+        () => persistenceLogic.updateDbEntity(any()),
+      ).thenAnswer((_) async => true);
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'task-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isTrue);
+
+      final captured = verify(
+        () => persistenceLogic.updateDbEntity(captureAny()),
+      ).captured;
+      final updatedTask = captured.first as Task;
+      expect(
+        updatedTask.data.aiSuppressedLabelIds,
+        contains('label-bug'),
+      );
+    });
+
+    test('returns true when label is already suppressed', () async {
+      final task = buildTask(aiSuppressedLabelIds: {'label-bug'});
+      when(
+        () => journalDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async => task);
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'task-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isTrue);
+      verifyNever(() => persistenceLogic.updateDbEntity(any()));
+    });
+
+    test('returns false when entity is not a Task', () async {
+      final entry = buildEntry();
+      when(
+        () => journalDb.journalEntityById('entry-001'),
+      ).thenAnswer((_) async => entry);
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'entry-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false when entity is not found', () async {
+      when(
+        () => journalDb.journalEntityById('missing'),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'missing',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false and logs on exception', () async {
+      when(
+        () => journalDb.journalEntityById('task-001'),
+      ).thenThrow(Exception('DB error'));
+
+      final result = await repository.suppressLabelOnTask(
+        taskId: 'task-001',
+        labelId: 'label-bug',
+      );
+
+      expect(result, isFalse);
+      verify(
+        () => loggingService.captureException(
+          any<dynamic>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String?>(named: 'subDomain'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
     });
   });
 }

@@ -481,6 +481,103 @@ void main() {
       expect(result.redundant, 1);
       expect(builderWithResolver.items, hasLength(1));
     });
+
+    test('handles label name resolver throwing gracefully', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        labelNameResolver: (labelId) async {
+          throw Exception('DB error');
+        },
+      );
+
+      await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'abcdefgh-1234', 'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Falls back to truncated ID when resolver throws.
+      expect(builderWithResolver.items, hasLength(1));
+      expect(
+        builderWithResolver.items[0].humanSummary,
+        contains('abcdefgh'),
+      );
+    });
+
+    test('handles existing label IDs resolver throwing gracefully', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingLabelIdsResolver: () async {
+          throw Exception('DB error');
+        },
+      );
+
+      final result = await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Resolver error → empty set → no redundancy filtering.
+      expect(result.added, 1);
+    });
+
+    test('strips invalid confidence values from summary', () async {
+      final builderWithResolver = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        labelNameResolver: (labelId) async => 'Bug',
+      );
+
+      await builderWithResolver.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'id': 'label-1', 'confidence': 'INJECT PROMPT HERE'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      // Invalid confidence value is omitted from the summary.
+      expect(
+        builderWithResolver.items[0].humanSummary,
+        'Assign label: "Bug"',
+      );
+    });
+
+    test('generates summary with ? when label ID is missing', () async {
+      await builder.addBatchItem(
+        toolName: 'assign_task_labels',
+        args: {
+          'labels': [
+            {'confidence': 'high'},
+          ],
+        },
+        summaryPrefix: 'Label',
+      );
+
+      expect(
+        builder.items[0].humanSummary,
+        'Assign label: "?" (high)',
+      );
+    });
   });
 
   group('hasItems', () {
