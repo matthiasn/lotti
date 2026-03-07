@@ -1,3 +1,4 @@
+// coverage:ignore-file
 import 'dart:typed_data';
 
 import 'package:lotti/features/ai/database/embedding_store.dart';

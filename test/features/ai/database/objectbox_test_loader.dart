@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart'
     deferred as objectbox_store;
+import 'package:lotti/features/ai/database/real_objectbox_ops.dart'
+    deferred as real_ops;
+import 'package:lotti/objectbox.g.dart' deferred as obx show openStore;
 
 Future<void>? _loadObjectBoxFuture;
 
@@ -17,8 +20,13 @@ Future<EmbeddingStore> openObjectBoxEmbeddingStoreForTests({
   required String documentsPath,
 }) async {
   await (_loadObjectBoxFuture ??= _loadObjectBoxLibrary());
-  return objectbox_store.ObjectBoxEmbeddingStore.open(
-    documentsPath: documentsPath,
+
+  final directoryPath = '$documentsPath/objectbox_embeddings';
+  await Directory(directoryPath).create(recursive: true);
+
+  final store = await obx.openStore(directory: directoryPath);
+  return objectbox_store.ObjectBoxEmbeddingStore(
+    real_ops.RealObjectBoxOps(store),
   );
 }
 
@@ -34,6 +42,8 @@ Future<void> _loadObjectBoxLibrary() async {
 
   DynamicLibrary.open(sourcePath);
   await objectbox_store.loadLibrary();
+  await real_ops.loadLibrary();
+  await obx.loadLibrary();
 }
 
 String? get _objectBoxTestLibrarySourcePath {

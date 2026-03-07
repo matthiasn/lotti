@@ -4,7 +4,9 @@ import 'dart:typed_data';
 import 'package:clock/clock.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
-import 'package:lotti/objectbox.g.dart';
+import 'package:lotti/features/ai/database/objectbox_ops.dart';
+import 'package:lotti/features/ai/database/real_objectbox_ops.dart'; // coverage:ignore-line
+import 'package:lotti/objectbox.g.dart'; // coverage:ignore-line
 import 'package:path/path.dart' as p;
 
 /// Sidecar directory name for the ObjectBox embedding store.
@@ -19,12 +21,16 @@ const kMacOsObjectBoxApplicationGroup = 'SS586VG7L7.lottiobx';
 
 /// ObjectBox-backed [EmbeddingStore] for vector embeddings and ANN search.
 class ObjectBoxEmbeddingStore implements EmbeddingStore {
-  ObjectBoxEmbeddingStore._(this._store)
-    : _box = _store.box<EmbeddingChunkEntity>();
+  /// Creates an [ObjectBoxEmbeddingStore] backed by the given [ObjectBoxOps].
+  ///
+  /// Prefer the [open] factory for production use. This constructor is visible
+  /// for testing with a mock [ObjectBoxOps].
+  ObjectBoxEmbeddingStore(this._ops);
 
-  final Store _store;
-  final Box<EmbeddingChunkEntity> _box;
+  final ObjectBoxOps _ops;
 
+  /// Opens a production ObjectBox store at [documentsPath].
+  // coverage:ignore-start
   static Future<ObjectBoxEmbeddingStore> open({
     required String documentsPath,
   }) async {
@@ -40,51 +46,36 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
           ? kMacOsObjectBoxApplicationGroup
           : null,
     );
-    return ObjectBoxEmbeddingStore._(store);
+    return ObjectBoxEmbeddingStore(RealObjectBoxOps(store));
   }
+  // coverage:ignore-end
 
   @override
-  int get count => _box.count();
+  int get count => _ops.count();
 
   @override
-  void close() => _store.close();
+  void close() => _ops.close();
 
   @override
   void deleteAll() {
-    _store.runInTransaction(TxMode.write, _box.removeAll);
+    _ops.runInWriteTransaction(_ops.removeAll);
   }
 
   @override
   void deleteEntityEmbeddings(String entityId) {
-    _store.runInTransaction(TxMode.write, () {
+    _ops.runInWriteTransaction(() {
       _removeEntityEmbeddingsInCurrentTransaction(entityId);
     });
   }
 
   @override
   String? getContentHash(String entityId) {
-    final query = _box
-        .query(
-          EmbeddingChunkEntity_.embeddingKey.equals(_embeddingKey(entityId, 0)),
-        )
-        .build();
-    try {
-      return query.findFirst()?.contentHash;
-    } finally {
-      query.close();
-    }
+    return _ops.findByEmbeddingKey(_embeddingKey(entityId, 0))?.contentHash;
   }
 
   @override
   bool hasEmbedding(String entityId) {
-    final query =
-        _box.query(EmbeddingChunkEntity_.entityId.equals(entityId)).build()
-          ..limit = 1;
-    try {
-      return query.findFirst() != null;
-    } finally {
-      query.close();
-    }
+    return _ops.findFirstByEntityId(entityId) != null;
   }
 
   @override
@@ -121,11 +112,11 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
         ),
     ];
 
-    _store.runInTransaction(TxMode.write, () {
+    _ops.runInWriteTransaction(() {
       _removeEntityEmbeddingsInCurrentTransaction(entityId);
 
       if (entities.isNotEmpty) {
-        _box.putMany(entities);
+        _ops.putMany(entities);
       }
     });
   }
@@ -150,58 +141,35 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
     final hasFilter = entityTypeFilter != null || hasCategoryFilter;
     final maxResultCount = hasFilter ? k * 3 : k;
 
-    var condition = EmbeddingChunkEntity_.embedding.nearestNeighborsF32(
-      queryVector,
-      maxResultCount,
+    final hits = _ops.nearestNeighborSearch(
+      queryVector: queryVector,
+      maxResults: maxResultCount,
+      limit: k,
+      entityTypeFilter: entityTypeFilter,
+      categoryIds: hasCategoryFilter ? categoryIds.toList() : null,
     );
 
-    if (entityTypeFilter != null) {
-      condition = condition.and(
-        EmbeddingChunkEntity_.entityType.equals(entityTypeFilter),
-      );
-    }
-
-    if (hasCategoryFilter) {
-      condition = condition.and(
-        EmbeddingChunkEntity_.categoryId.oneOf(categoryIds.toList()),
-      );
-    }
-
-    final query = _box.query(condition).build()..limit = k;
-
-    try {
-      final hits = query.findWithScores();
-      return hits
-          .map(
-            (hit) => EmbeddingSearchResult(
-              entityId: hit.object.entityId,
-              distance: hit.score,
-              entityType: hit.object.entityType,
-              chunkIndex: hit.object.chunkIndex,
-              taskId: hit.object.taskId,
-              subtype: hit.object.subtype,
-            ),
-          )
-          .toList(growable: false);
-    } finally {
-      query.close();
-    }
+    return hits
+        .map(
+          (hit) => EmbeddingSearchResult(
+            entityId: hit.object.entityId,
+            distance: hit.score,
+            entityType: hit.object.entityType,
+            chunkIndex: hit.object.chunkIndex,
+            taskId: hit.object.taskId,
+            subtype: hit.object.subtype,
+          ),
+        )
+        .toList(growable: false);
   }
 
   static String _embeddingKey(String entityId, int chunkIndex) =>
       '$entityId:$chunkIndex';
 
   void _removeEntityEmbeddingsInCurrentTransaction(String entityId) {
-    final query = _box
-        .query(EmbeddingChunkEntity_.entityId.equals(entityId))
-        .build();
-    try {
-      final ids = query.findIds();
-      if (ids.isNotEmpty) {
-        _box.removeMany(ids);
-      }
-    } finally {
-      query.close();
+    final ids = _ops.findIdsByEntityId(entityId);
+    if (ids.isNotEmpty) {
+      _ops.removeMany(ids);
     }
   }
 

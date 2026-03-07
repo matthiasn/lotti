@@ -34,6 +34,7 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -397,3 +398,5 @@ class MockVectorSearchRepository extends Mock
     implements VectorSearchRepository {}
 
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
+
+class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
