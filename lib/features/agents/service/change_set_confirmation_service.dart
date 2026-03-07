@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -10,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Handles user confirmation and rejection of individual change items
@@ -32,15 +31,19 @@ class ChangeSetConfirmationService {
     required AgentSyncService syncService,
     required TaskToolDispatcher toolDispatcher,
     required LabelsRepository labelsRepository,
+    DomainLogger? domainLogger,
   }) : _syncService = syncService,
        _toolDispatcher = toolDispatcher,
-       _labelsRepository = labelsRepository;
+       _labelsRepository = labelsRepository,
+       _domainLogger = domainLogger;
 
   final AgentSyncService _syncService;
   final TaskToolDispatcher _toolDispatcher;
   final LabelsRepository _labelsRepository;
+  final DomainLogger? _domainLogger;
 
   static const _uuid = Uuid();
+  static const _sub = 'ChangeSetConfirmation';
 
   /// Maps placeholder task IDs (from `create_follow_up_task`) to actual
   /// task IDs after successful dispatch. Persists across calls within the
@@ -70,10 +73,11 @@ class ChangeSetConfirmationService {
     final item = current.items[itemIndex];
 
     if (item.status != ChangeItemStatus.pending) {
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Skipping item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       return ToolExecutionResult(
         success: false,
@@ -96,10 +100,11 @@ class ChangeSetConfirmationService {
       );
     }
 
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
       '${current.id}, dispatchArgs: $dispatchArgs',
-      name: 'ChangeSetConfirmationService',
+      subDomain: _sub,
     );
 
     // 1. Mark the item as confirmed and persist the decision BEFORE
@@ -129,10 +134,11 @@ class ChangeSetConfirmationService {
     );
 
     if (!result.success) {
-      developer.log(
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
         '${result.errorMessage ?? result.output} — reverting to pending',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       await _updateChangeSetItemStatus(
         current,
@@ -171,18 +177,20 @@ class ChangeSetConfirmationService {
     final item = current.items[itemIndex];
 
     if (item.status != ChangeItemStatus.pending) {
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Skipping reject for item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       return false;
     }
 
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Rejecting item $itemIndex (${item.toolName}) in change set '
       '${current.id}',
-      name: 'ChangeSetConfirmationService',
+      subDomain: _sub,
     );
 
     // 1. Persist the decision (no tool dispatch for rejections).
@@ -336,10 +344,11 @@ class ChangeSetConfirmationService {
 
     if (changed) {
       await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Persisted resolved targetTaskId ($actualId) to sibling '
         'migration items in change set ${fresh.id}',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
     }
   }
@@ -359,9 +368,10 @@ class ChangeSetConfirmationService {
       if (sibling.toolName == TaskAgentToolNames.migrateChecklistItem &&
           sibling.status == ChangeItemStatus.pending &&
           sibling.args['targetTaskId'] == placeholderId) {
-        developer.log(
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
           'Cascade-rejecting migration item $i — target task rejected',
-          name: 'ChangeSetConfirmationService',
+          subDomain: _sub,
         );
 
         await _persistDecision(
@@ -393,9 +403,10 @@ class ChangeSetConfirmationService {
     final actualId = result.mutatedEntityId;
     if (placeholderId is String && actualId != null && actualId.isNotEmpty) {
       _resolvedIds[placeholderId] = actualId;
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Captured placeholder resolution: $placeholderId → $actualId',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
     }
   }

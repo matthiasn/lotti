@@ -464,15 +464,25 @@ class TaskAgentStrategy extends ConversationStrategy {
     final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
     String response;
     if (batchKey != null) {
-      // For migrate_checklist_items, pass the targetTaskId as groupId so
-      // items are visually grouped with their follow-up task.
-      final rawTargetId = toolName == TaskAgentToolNames.migrateChecklistItems
-          ? args['targetTaskId']
+      var effectiveArgs = args;
+
+      // For migrate_checklist_items, replace the LLM's targetTaskId with the
+      // real placeholder from the builder. The LLM often hallucinate its own
+      // placeholder string (e.g. "placeholder_targetTaskId_1") instead of
+      // using the UUID v5 we returned.
+      if (toolName == TaskAgentToolNames.migrateChecklistItems) {
+        final realPlaceholder = csBuilder.followUpPlaceholderId;
+        if (realPlaceholder != null) {
+          effectiveArgs = {...args, 'targetTaskId': realPlaceholder};
+        }
+      }
+
+      final groupId = toolName == TaskAgentToolNames.migrateChecklistItems
+          ? effectiveArgs['targetTaskId'] as String?
           : null;
-      final groupId = rawTargetId is String ? rawTargetId : null;
       final result = await csBuilder.addBatchItem(
         toolName: toolName,
-        args: args,
+        args: effectiveArgs,
         summaryPrefix: _humanToolPrefix(toolName),
         groupId: groupId,
       );

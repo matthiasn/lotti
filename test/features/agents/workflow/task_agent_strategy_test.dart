@@ -1582,6 +1582,72 @@ void main() {
           }
         },
       );
+
+      test(
+        'migrate_checklist_items overrides LLM targetTaskId with real '
+        'placeholder from create_follow_up_task',
+        () async {
+          // First, the LLM calls create_follow_up_task.
+          final createCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-create',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({
+                  'title': 'Release Task',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: createCalls,
+            manager: mockManager,
+          );
+
+          // The builder should now have a follow-up task with a real
+          // placeholder UUID.
+          final realPlaceholder = csBuilder.followUpPlaceholderId;
+          expect(realPlaceholder, isNotNull);
+          expect(realPlaceholder, isNot('hallucinated_id'));
+
+          // Then the LLM calls migrate_checklist_items with a hallucinated
+          // targetTaskId that doesn't match the real placeholder.
+          final migrateCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-migrate',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'migrate_checklist_items',
+                arguments: jsonEncode({
+                  'targetTaskId': 'hallucinated_id',
+                  'items': [
+                    {'id': 'item-1', 'title': 'Do thing'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: migrateCalls,
+            manager: mockManager,
+          );
+
+          // The migration item should have the REAL placeholder, not the
+          // LLM's hallucinated one.
+          final migrateItems = csBuilder.items.where(
+            (i) => i.toolName == 'migrate_checklist_item',
+          );
+          expect(migrateItems, hasLength(1));
+          expect(
+            migrateItems.first.args['targetTaskId'],
+            realPlaceholder,
+          );
+          expect(migrateItems.first.groupId, realPlaceholder);
+        },
+      );
     });
   });
 }

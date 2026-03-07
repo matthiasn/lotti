@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.910] - 2026-03-08
+### Added
+- Task agent follow-up task creation with deferred confirmation: the agent
+  can propose splitting a task by creating a follow-up task and migrating
+  checklist items, all presented for user review before execution.
+- Structured domain logging (DomainLogger) in the change set confirmation
+  service, follow-up task handler, and checklist migration handler for
+  better production diagnostics.
+
+### Fixed
+- Checklist migration: LLM-hallucinated placeholder IDs are now replaced
+  with the real deterministic placeholder, fixing "Target task lookup
+  failed" errors when confirming migration items.
+- Checklist migration: copy is now created before archiving the source
+  item, preventing data loss if the copy fails.
+- Checklist migration: archival failure no longer blocks the entire
+  migration — returns success with a warning instead.
+- Follow-up task rejection now cascade-rejects sibling migration items
+  that depend on the rejected task.
+- Follow-up task handler validates priority and dueDate args, rejecting
+  malformed values.
+- Follow-up task handler checks createLink bool return value, surfacing
+  link failure warnings.
+- Change set UI now shows partial-failure warnings in snackbars instead
+  of silently discarding them.
+
 ## [0.9.909] - 2026-03-08
 ### Added
 - Vector search distance telemetry: search result cards now show a

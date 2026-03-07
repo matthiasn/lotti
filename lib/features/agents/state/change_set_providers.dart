@@ -87,6 +87,7 @@ List<AgentDomainEntity> _deduplicateChangeSets(
 @riverpod
 ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
   final labelsRepository = ref.watch(labelsRepositoryProvider);
+  final logger = ref.watch(domainLoggerProvider);
   return ChangeSetConfirmationService(
     syncService: ref.watch(agentSyncServiceProvider),
     toolDispatcher: TaskToolDispatcher(
@@ -95,7 +96,9 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       checklistRepository: ref.watch(checklistRepositoryProvider),
       labelsRepository: labelsRepository,
       persistenceLogic: getIt<PersistenceLogic>(),
+      domainLogger: logger,
     ),
     labelsRepository: labelsRepository,
+    domainLogger: logger,
   );
 }

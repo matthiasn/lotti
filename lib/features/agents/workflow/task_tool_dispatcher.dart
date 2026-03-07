@@ -24,6 +24,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -39,6 +40,7 @@ class TaskToolDispatcher {
     required this.checklistRepository,
     required this.labelsRepository,
     required this.persistenceLogic,
+    this.domainLogger,
   });
 
   final JournalDb journalDb;
@@ -46,6 +48,7 @@ class TaskToolDispatcher {
   final ChecklistRepository checklistRepository;
   final LabelsRepository labelsRepository;
   final PersistenceLogic persistenceLogic;
+  final DomainLogger? domainLogger;
 
   static const _uuid = Uuid();
 
@@ -509,6 +512,7 @@ class TaskToolDispatcher {
     final handler = FollowUpTaskHandler(
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
+      domainLogger: domainLogger,
     );
     return handler.handle(sourceTaskId, args);
   }
@@ -520,6 +524,7 @@ class TaskToolDispatcher {
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
       journalDb: journalDb,
+      domainLogger: domainLogger,
     );
     return handler.handle(sourceTaskId, args);
   }

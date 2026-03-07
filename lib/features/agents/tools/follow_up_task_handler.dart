@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -7,6 +5,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Creates a follow-up task linked to the source task, with optional audio
@@ -22,13 +21,17 @@ class FollowUpTaskHandler {
   FollowUpTaskHandler({
     required PersistenceLogic persistenceLogic,
     required JournalDb journalDb,
+    DomainLogger? domainLogger,
   }) : _persistenceLogic = persistenceLogic,
-       _journalDb = journalDb;
+       _journalDb = journalDb,
+       _domainLogger = domainLogger;
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
+  final DomainLogger? _domainLogger;
 
   static const _uuid = Uuid();
+  static const _sub = 'FollowUpTaskHandler';
 
   /// Creates a follow-up task and links it to the source task.
   ///
@@ -119,10 +122,11 @@ class FollowUpTaskHandler {
 
     // Verify the task is actually persisted and readable.
     final verifyTask = await _journalDb.journalEntityById(newTaskId);
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Created task $newTaskId — verify lookup: '
       '${verifyTask?.runtimeType} (found: ${verifyTask != null})',
-      name: 'FollowUpTaskHandler',
+      subDomain: _sub,
     );
 
     final warnings = <String>[];
@@ -139,9 +143,11 @@ class FollowUpTaskHandler {
         warnings.add('Warning: failed to link source task');
       }
     } catch (e) {
-      developer.log(
-        'Failed to link source $sourceTaskId → $newTaskId: $e',
-        name: 'FollowUpTaskHandler',
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Failed to link source $sourceTaskId → $newTaskId',
+        error: e,
+        subDomain: _sub,
       );
       warnings.add('Warning: failed to link source task');
     }
@@ -158,9 +164,11 @@ class FollowUpTaskHandler {
           warnings.add('Warning: failed to link audio entry');
         }
       } catch (e) {
-        developer.log(
-          'Failed to link audio $sourceAudioId → $newTaskId: $e',
-          name: 'FollowUpTaskHandler',
+        _domainLogger?.error(
+          LogDomains.agentWorkflow,
+          'Failed to link audio $sourceAudioId → $newTaskId',
+          error: e,
+          subDomain: _sub,
         );
         warnings.add('Warning: failed to link audio entry');
       }

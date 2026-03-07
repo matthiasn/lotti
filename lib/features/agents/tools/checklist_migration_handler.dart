@@ -1,9 +1,8 @@
-import 'dart:developer' as developer;
-
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Migrates a single checklist item from a source task to a target task.
 ///
@@ -16,11 +15,16 @@ class ChecklistMigrationHandler {
   ChecklistMigrationHandler({
     required ChecklistRepository checklistRepository,
     required JournalDb journalDb,
+    DomainLogger? domainLogger,
   }) : _checklistRepository = checklistRepository,
-       _journalDb = journalDb;
+       _journalDb = journalDb,
+       _domainLogger = domainLogger;
 
   final ChecklistRepository _checklistRepository;
   final JournalDb _journalDb;
+  final DomainLogger? _domainLogger;
+
+  static const _sub = 'ChecklistMigrationHandler';
 
   /// Migrates a checklist item: archives in source, copies to target.
   ///
@@ -93,17 +97,24 @@ class ChecklistMigrationHandler {
 
     // Validate the target task and resolve its checklist BEFORE archiving the
     // source item, so we never leave an item archived without a valid target.
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Looking up target task: $targetTaskId',
-      name: 'ChecklistMigrationHandler',
+      subDomain: _sub,
     );
     final targetTask = await _journalDb.journalEntityById(targetTaskId);
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Target task lookup result: ${targetTask?.runtimeType} '
       '(id: ${targetTask?.meta.id})',
-      name: 'ChecklistMigrationHandler',
+      subDomain: _sub,
     );
     if (targetTask is! Task) {
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Target task $targetTaskId not found',
+        subDomain: _sub,
+      );
       return ToolExecutionResult(
         success: false,
         output: 'Error: target task $targetTaskId not found',

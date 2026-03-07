@@ -333,6 +333,7 @@ void main() {
             mockChecklistRepository,
           ),
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
         ],
       );
       addTearDown(container.dispose);

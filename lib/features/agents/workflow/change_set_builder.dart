@@ -787,6 +787,23 @@ class ChangeSetBuilder {
     return placeholderId;
   }
 
+  /// Returns the `_placeholderTaskId` from the most recently added
+  /// `create_follow_up_task` item, or `null` if none exists.
+  ///
+  /// Used by the strategy to override the LLM's `targetTaskId` in
+  /// `migrate_checklist_items` calls — the LLM may hallucinate a different
+  /// string than the placeholder we returned.
+  String? get followUpPlaceholderId {
+    for (var i = _items.length - 1; i >= 0; i--) {
+      final item = _items[i];
+      if (item.toolName == TaskAgentToolNames.createFollowUpTask) {
+        final pid = item.args['_placeholderTaskId'];
+        if (pid is String) return pid;
+      }
+    }
+    return null;
+  }
+
   /// Generates a deterministic placeholder UUID for a follow-up task.
   ///
   /// Uses UUID v5 seeded from the source task ID and a distinguishing key

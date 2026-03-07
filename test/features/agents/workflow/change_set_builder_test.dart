@@ -1795,6 +1795,22 @@ void main() {
 
       expect(p1, isNot(p2));
     });
+
+    test('followUpPlaceholderId returns null when no follow-up exists', () {
+      expect(builder.followUpPlaceholderId, isNull);
+    });
+
+    test(
+      'followUpPlaceholderId returns placeholder after addFollowUpTask',
+      () async {
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up X'},
+          humanSummary: 'Create follow-up task X',
+        );
+
+        expect(builder.followUpPlaceholderId, placeholder);
+      },
+    );
   });
 
   group('task splitting — migrate batch explosion', () {
