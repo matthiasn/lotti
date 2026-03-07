@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -1503,6 +1505,134 @@ void main() {
         final head = heads.first as AgentReportHeadEntity;
         expect(head.id, 'existing-head-id');
       });
+
+      test(
+        'embeds a new report and deletes the previous report embedding',
+        () async {
+          final existingHead =
+              AgentDomainEntity.agentReportHead(
+                    id: 'existing-head-id',
+                    agentId: agentId,
+                    scope: 'current',
+                    reportId: 'old-report',
+                    updatedAt: testDate,
+                    vectorClock: null,
+                  )
+                  as AgentReportHeadEntity;
+          final mockEmbeddingStore = MockEmbeddingsDb();
+          final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+          final workflowWithEmbeddings = TaskAgentWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            domainLogger: DomainLogger(loggingService: LoggingService())
+              ..enabledDomains.add(LogDomains.agentWorkflow),
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepository,
+          );
+
+          when(
+            () => mockAgentRepository.getReportHead(agentId, 'current'),
+          ).thenAnswer((_) async => existingHead);
+          when(
+            () => mockAiConfigRepository.resolveOllamaBaseUrl(),
+          ).thenAnswer((_) async => 'http://localhost:11434');
+          when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
+          when(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+            ),
+          ).thenAnswer(
+            (_) async => Float32List.fromList(
+              List<double>.filled(kEmbeddingDimensions, 0.25),
+            ),
+          );
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_id',
+                  createdAt: DateTime(2024, 3, 15),
+                  utcOffset: 60,
+                ),
+                title: 'Add tests for embedding cleanup',
+                statusHistory: [],
+                dateTo: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+              ),
+              meta: Metadata(
+                id: taskId,
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                categoryId: 'cat-001',
+              ),
+            ),
+          );
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                if (strategy is TaskAgentStrategy) {
+                  await strategy.processToolCalls(
+                    toolCalls: [
+                      const ChatCompletionMessageToolCall(
+                        id: 'rpt-call',
+                        type: ChatCompletionMessageToolCallType.function,
+                        function: ChatCompletionMessageFunctionCall(
+                          name: 'update_report',
+                          arguments:
+                              r'{"markdown":"# Report\nThis report has enough content to embed."}',
+                        ),
+                      ),
+                    ],
+                    manager: mockConversationManager,
+                  );
+                }
+                return null;
+              };
+          when(() => mockConversationManager.messages).thenReturn([]);
+
+          final result = await workflowWithEmbeddings.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          await pumpEventQueue();
+
+          verify(
+            () => mockEmbeddingRepository.embed(
+              input: any(named: 'input'),
+              baseUrl: 'http://localhost:11434',
+            ),
+          ).called(1);
+          verify(
+            () => mockEmbeddingStore.deleteEntityEmbeddings('old-report'),
+          ).called(1);
+        },
+      );
     });
 
     group('_executeToolHandler dispatch', () {

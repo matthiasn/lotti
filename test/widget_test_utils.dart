@@ -6,6 +6,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -73,6 +74,7 @@ Future<TestGetItMocks> setUpTestGetIt({
   when(
     () => mockSettingsDb.saveSettingsItem(any(), any()),
   ).thenAnswer((_) async => 1);
+  final mockEmbeddingsDb = MockEmbeddingsDb();
 
   getIt
     ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -80,7 +82,8 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<SettingsDb>(mockSettingsDb)
     ..registerSingleton<LoggingDb>(mockLoggingDb)
     ..registerSingleton<LoggingService>(loggingService)
-    ..registerSingleton<EmbeddingsDb>(MockEmbeddingsDb())
+    ..registerSingleton<EmbeddingsDb>(mockEmbeddingsDb)
+    ..registerSingleton<EmbeddingStore>(mockEmbeddingsDb)
     ..registerSingleton<OllamaEmbeddingRepository>(
       MockOllamaEmbeddingRepository(),
     );

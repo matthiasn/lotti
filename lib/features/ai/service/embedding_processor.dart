@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
@@ -40,7 +40,7 @@ class EmbeddingProcessor {
   static Future<bool> processEntity({
     required String entityId,
     required JournalDb journalDb,
-    required EmbeddingsDb embeddingsDb,
+    required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
     LabelNameResolver? labelNameResolver,
@@ -57,7 +57,7 @@ class EmbeddingProcessor {
 
     // Skip if content hash unchanged.
     final hash = EmbeddingContentExtractor.contentHash(text);
-    final existingHash = embeddingsDb.getContentHash(entityId);
+    final existingHash = await embeddingStore.getContentHash(entityId);
     if (existingHash == hash) return false;
 
     final categoryId = entity.meta.categoryId ?? '';
@@ -67,7 +67,7 @@ class EmbeddingProcessor {
       entityType: type,
       contentHash: hash,
       categoryId: categoryId,
-      embeddingsDb: embeddingsDb,
+      embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
     );
@@ -128,7 +128,7 @@ class EmbeddingProcessor {
     required String taskId,
     required String categoryId,
     required String subtype,
-    required EmbeddingsDb embeddingsDb,
+    required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
   }) async {
@@ -136,7 +136,7 @@ class EmbeddingProcessor {
     if (text.length < kMinEmbeddingTextLength) return false;
 
     final hash = EmbeddingContentExtractor.contentHash(text);
-    final existingHash = embeddingsDb.getContentHash(reportId);
+    final existingHash = await embeddingStore.getContentHash(reportId);
     if (existingHash == hash) return false;
 
     await _embedChunks(
@@ -147,7 +147,7 @@ class EmbeddingProcessor {
       categoryId: categoryId,
       taskId: taskId,
       subtype: subtype,
-      embeddingsDb: embeddingsDb,
+      embeddingStore: embeddingStore,
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
     );
@@ -165,7 +165,7 @@ class EmbeddingProcessor {
     required String entityId,
     required String entityType,
     required String contentHash,
-    required EmbeddingsDb embeddingsDb,
+    required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required String baseUrl,
     String categoryId = '',
@@ -182,20 +182,15 @@ class EmbeddingProcessor {
       );
     }
 
-    // Phase 2: Swap — delete old, insert new (local DB, unlikely to fail).
-    embeddingsDb.deleteEntityEmbeddings(entityId);
-    for (var i = 0; i < generated.length; i++) {
-      embeddingsDb.upsertEmbedding(
-        entityId: entityId,
-        chunkIndex: i,
-        entityType: entityType,
-        modelId: ollamaEmbedDefaultModel,
-        embedding: generated[i],
-        contentHash: contentHash,
-        categoryId: categoryId,
-        taskId: taskId,
-        subtype: subtype,
-      );
-    }
+    await embeddingStore.replaceEntityEmbeddings(
+      entityId: entityId,
+      entityType: entityType,
+      modelId: ollamaEmbedDefaultModel,
+      contentHash: contentHash,
+      embeddings: generated,
+      categoryId: categoryId,
+      taskId: taskId,
+      subtype: subtype,
+    );
   }
 }

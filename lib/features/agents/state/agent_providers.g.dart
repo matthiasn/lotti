@@ -3616,7 +3616,7 @@ final class TaskAgentWorkflowProvider
   }
 }
 
-String _$taskAgentWorkflowHash() => r'8a305573ce2354d90a755c5dbe070b15e48fb370';
+String _$taskAgentWorkflowHash() => r'3574d3849739f983607b6d13965bd3a3ea02d4f9';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

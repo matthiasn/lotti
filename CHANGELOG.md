@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one at a time. Includes Select All / Unselect All toggle.
 - Vector search now available on the journal tab (previously tasks-only).
 
+### Changed
+- Refactored the embedding pipeline behind a backend-neutral store interface to
+  prepare alternate vector backends without another large call-site migration.
+
 ### Removed
 - Removed "Re-index All Embeddings" maintenance action (superseded by
   multi-category generate).

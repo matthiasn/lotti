@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -78,14 +79,14 @@ void _stubNoExistingHash(MockEmbeddingsDb db) {
   when(() => db.getContentHash(any())).thenReturn(null);
 }
 
-void _stubUpsertEmbedding(MockEmbeddingsDb db) {
+void _stubReplaceEntityEmbeddings(MockEmbeddingsDb db) {
   when(
-    () => db.upsertEmbedding(
+    () => db.replaceEntityEmbeddings(
       entityId: any(named: 'entityId'),
       entityType: any(named: 'entityType'),
       modelId: any(named: 'modelId'),
-      embedding: any(named: 'embedding'),
       contentHash: any(named: 'contentHash'),
+      embeddings: any(named: 'embeddings'),
       categoryId: any(named: 'categoryId'),
       taskId: any(named: 'taskId'),
       subtype: any(named: 'subtype'),
@@ -139,12 +140,13 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<EmbeddingsDb>(mockEmbeddingsDb)
+      ..registerSingleton<EmbeddingStore>(mockEmbeddingsDb)
       ..registerSingleton<OllamaEmbeddingRepository>(mockEmbeddingRepo)
       ..registerSingleton<AiConfigRepository>(mockAiConfigRepo);
 
     _stubOllamaProvider(mockAiConfigRepo);
     _stubNoExistingHash(mockEmbeddingsDb);
-    _stubUpsertEmbedding(mockEmbeddingsDb);
+    _stubReplaceEntityEmbeddings(mockEmbeddingsDb);
     _stubEmbed(mockEmbeddingRepo);
 
     // Default: embeddings flag enabled
@@ -205,12 +207,12 @@ void main() {
       expect(s.error, isNull);
 
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'entity-1',
           entityType: 'task',
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
@@ -229,12 +231,12 @@ void main() {
 
       expect(state().embeddedCount, 1);
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'entry-1',
           entityType: 'journal_text',
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           categoryId: any(named: 'categoryId'),
         ),
       ).called(1);
@@ -875,12 +877,12 @@ void main() {
       expect(s.progress, 1.0);
 
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           categoryId: any(named: 'categoryId'),
           taskId: 'task-1',
           subtype: AgentReportScopes.current,
@@ -1097,12 +1099,12 @@ void main() {
       await controller().backfillAgentReports();
 
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           categoryId: 'my-category',
           taskId: 'task-1',
           subtype: AgentReportScopes.current,
@@ -1140,12 +1142,12 @@ void main() {
       await controller().backfillAgentReports();
 
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           taskId: 'task-1',
           subtype: AgentReportScopes.current,
         ),

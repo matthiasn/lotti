@@ -1,46 +1,11 @@
 import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:sqlite3/sqlite3.dart';
 
-/// The fixed embedding dimension used by the vec0 virtual table.
-///
-/// This must match the `float[N]` declaration in the vec0 schema.
-const kEmbeddingDimensions = 1024;
-
-/// Result of a vector similarity search.
-class EmbeddingSearchResult {
-  const EmbeddingSearchResult({
-    required this.entityId,
-    required this.distance,
-    required this.entityType,
-    this.chunkIndex = 0,
-    this.taskId = '',
-    this.subtype = '',
-  });
-
-  final String entityId;
-  final double distance;
-  final String entityType;
-
-  /// The zero-based chunk index within the source entity.
-  ///
-  /// For short content that fits in a single chunk this is 0.
-  /// For chunked content this identifies which segment matched.
-  final int chunkIndex;
-
-  /// The task ID this embedding relates to, for direct lookup.
-  ///
-  /// Populated for agent report embeddings to link back to the parent task.
-  /// Empty string when not applicable.
-  final String taskId;
-
-  /// The subtype of the embedding, e.g. agent template name.
-  ///
-  /// Used to distinguish between multiple agent reports for the same task.
-  /// Empty string when not applicable.
-  final String subtype;
-}
+export 'package:lotti/features/ai/database/embedding_store.dart'
+    show EmbeddingSearchResult, kEmbeddingDimensions;
 
 /// Standalone vector-embedding database backed by sqlite-vec.
 ///
@@ -231,6 +196,76 @@ class EmbeddingsDb {
     String taskId = '',
     String subtype = '',
   }) {
+    _runInTransaction(() {
+      _upsertEmbeddingInCurrentTransaction(
+        entityId: entityId,
+        entityType: entityType,
+        modelId: modelId,
+        embedding: embedding,
+        contentHash: contentHash,
+        chunkIndex: chunkIndex,
+        categoryId: categoryId,
+        taskId: taskId,
+        subtype: subtype,
+      );
+    });
+  }
+
+  /// Replaces all chunk embeddings for an entity atomically.
+  ///
+  /// The old chunks are deleted and the new chunks are inserted in a single
+  /// transaction so readers never observe a partially replaced embedding set.
+  void replaceEntityEmbeddings({
+    required String entityId,
+    required String entityType,
+    required String modelId,
+    required List<Float32List> embeddings,
+    required String contentHash,
+    String categoryId = '',
+    String taskId = '',
+    String subtype = '',
+  }) {
+    _runInTransaction(() {
+      _deleteEntityEmbeddingsInCurrentTransaction(entityId);
+
+      for (var i = 0; i < embeddings.length; i++) {
+        _upsertEmbeddingInCurrentTransaction(
+          entityId: entityId,
+          entityType: entityType,
+          modelId: modelId,
+          embedding: embeddings[i],
+          contentHash: contentHash,
+          chunkIndex: i,
+          categoryId: categoryId,
+          taskId: taskId,
+          subtype: subtype,
+        );
+      }
+    });
+  }
+
+  void _runInTransaction(void Function() operation) {
+    db.execute('BEGIN');
+    try {
+      operation();
+      db.execute('COMMIT');
+    } on Object {
+      db.execute('ROLLBACK');
+      rethrow;
+    }
+  }
+
+  void _upsertEmbeddingInCurrentTransaction({
+    required String entityId,
+    required String entityType,
+    required String modelId,
+    required Float32List embedding,
+    required String contentHash,
+    int chunkIndex = 0,
+    String categoryId = '',
+    String taskId = '',
+    String subtype = '',
+  }) {
     if (embedding.length != kEmbeddingDimensions) {
       throw ArgumentError(
         'EmbeddingsDb.upsertEmbedding(): embedding.length '
@@ -251,50 +286,42 @@ class EmbeddingsDb {
 
     // All three mutations must be atomic — metadata and vector data must stay
     // consistent even if one statement fails.
-    db.execute('BEGIN');
-    try {
-      db
-        ..execute(
-          '''
-          INSERT OR REPLACE INTO embedding_metadata
-            (entity_id, chunk_index, embedding_id, entity_type, model_id,
-             content_hash, created_at, category_id, task_id, subtype)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          ''',
-          [
-            entityId,
-            chunkIndex,
-            vecId,
-            entityType,
-            modelId,
-            contentHash,
-            now,
-            categoryId,
-            taskId,
-            subtype,
-          ],
-        )
-        // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
-        ..execute(
-          'DELETE FROM vec_embeddings WHERE embedding_id = ?',
-          [vecId],
-        )
-        ..execute(
-          'INSERT INTO vec_embeddings (embedding_id, embedding) VALUES (?, ?)',
-          [vecId, blob],
-        )
-        ..execute('COMMIT');
-    } on Object {
-      db.execute('ROLLBACK');
-      rethrow;
-    }
+    db
+      ..execute(
+        '''
+        INSERT OR REPLACE INTO embedding_metadata
+          (entity_id, chunk_index, embedding_id, entity_type, model_id,
+           content_hash, created_at, category_id, task_id, subtype)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''',
+        [
+          entityId,
+          chunkIndex,
+          vecId,
+          entityType,
+          modelId,
+          contentHash,
+          now,
+          categoryId,
+          taskId,
+          subtype,
+        ],
+      )
+      // vec0 virtual tables don't support INSERT OR REPLACE — delete first.
+      ..execute(
+        'DELETE FROM vec_embeddings WHERE embedding_id = ?',
+        [vecId],
+      )
+      ..execute(
+        'INSERT INTO vec_embeddings (embedding_id, embedding) VALUES (?, ?)',
+        [vecId, blob],
+      );
   }
 
   /// Deletes a single chunk embedding by entity ID and chunk index.
   void deleteEmbedding(String entityId, {int chunkIndex = 0}) {
     final vecId = embeddingId(entityId, chunkIndex);
-    db.execute('BEGIN');
-    try {
+    _runInTransaction(() {
       db
         ..execute(
           'DELETE FROM vec_embeddings WHERE embedding_id = ?',
@@ -304,16 +331,18 @@ class EmbeddingsDb {
           'DELETE FROM embedding_metadata '
           'WHERE entity_id = ? AND chunk_index = ?',
           [entityId, chunkIndex],
-        )
-        ..execute('COMMIT');
-    } on Object {
-      db.execute('ROLLBACK');
-      rethrow;
-    }
+        );
+    });
   }
 
   /// Deletes all chunk embeddings for a given entity ID.
   void deleteEntityEmbeddings(String entityId) {
+    _runInTransaction(() {
+      _deleteEntityEmbeddingsInCurrentTransaction(entityId);
+    });
+  }
+
+  void _deleteEntityEmbeddingsInCurrentTransaction(String entityId) {
     // First, find all chunk indices so we can delete from vec_embeddings
     // (which uses composite embedding_id, not entity_id).
     final rows = db.select(
@@ -323,25 +352,17 @@ class EmbeddingsDb {
 
     if (rows.isEmpty) return;
 
-    db.execute('BEGIN');
-    try {
-      for (final row in rows) {
-        final idx = row['chunk_index'] as int;
-        db.execute(
-          'DELETE FROM vec_embeddings WHERE embedding_id = ?',
-          [embeddingId(entityId, idx)],
-        );
-      }
-      db
-        ..execute(
-          'DELETE FROM embedding_metadata WHERE entity_id = ?',
-          [entityId],
-        )
-        ..execute('COMMIT');
-    } on Object {
-      db.execute('ROLLBACK');
-      rethrow;
+    for (final row in rows) {
+      final idx = row['chunk_index'] as int;
+      db.execute(
+        'DELETE FROM vec_embeddings WHERE embedding_id = ?',
+        [embeddingId(entityId, idx)],
+      );
     }
+    db.execute(
+      'DELETE FROM embedding_metadata WHERE entity_id = ?',
+      [entityId],
+    );
   }
 
   /// Performs k-nearest-neighbor search.

@@ -5,14 +5,14 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 /// Repository for generating text embeddings via Ollama's `/api/embed` endpoint.
 ///
 /// Uses `mxbai-embed-large` (1024 dimensions) by default. The returned
-/// [Float32List] can be stored directly in [EmbeddingsDb].
+/// [Float32List] can be stored directly in an [EmbeddingStore].
 ///
 /// Follows the same HTTP/retry/error patterns as [OllamaInferenceRepository].
 class OllamaEmbeddingRepository {

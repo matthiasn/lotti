@@ -24,7 +24,7 @@ import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -76,7 +76,7 @@ class TaskAgentWorkflow {
     required this.syncService,
     required this.templateService,
     this.domainLogger,
-    this.embeddingsDb,
+    this.embeddingStore,
     this.embeddingRepository,
   });
 
@@ -101,7 +101,7 @@ class TaskAgentWorkflow {
   /// Optional embedding dependencies. When both are provided, agent reports
   /// are embedded for vector search after persistence. The pipeline is
   /// non-essential — if unavailable, reports are still persisted normally.
-  final EmbeddingsDb? embeddingsDb;
+  final EmbeddingStore? embeddingStore;
   final OllamaEmbeddingRepository? embeddingRepository;
 
   static const _uuid = Uuid();
@@ -672,9 +672,9 @@ class TaskAgentWorkflow {
     required String taskId,
     String? previousReportId,
   }) async {
-    final db = embeddingsDb;
+    final store = embeddingStore;
     final repo = embeddingRepository;
-    if (db == null || repo == null) return;
+    if (store == null || repo == null) return;
 
     try {
       final baseUrl = await aiConfigRepository.resolveOllamaBaseUrl();
@@ -690,7 +690,7 @@ class TaskAgentWorkflow {
         taskId: taskId,
         categoryId: categoryId,
         subtype: AgentReportScopes.current,
-        embeddingsDb: db,
+        embeddingStore: store,
         embeddingRepository: repo,
         baseUrl: baseUrl,
       );
@@ -699,7 +699,7 @@ class TaskAgentWorkflow {
       // so we don't lose search coverage if the embedding call fails or
       // the content is too short.
       if (didEmbed && previousReportId != null) {
-        db.deleteEntityEmbeddings(previousReportId);
+        await store.deleteEntityEmbeddings(previousReportId);
       }
     } catch (e, s) {
       _logError('failed to embed agent report', error: e, stackTrace: s);
