@@ -21,13 +21,20 @@ import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart'
-    show loggingServiceProvider, outboxServiceProvider;
+    show journalDbProvider, loggingServiceProvider, outboxServiceProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -1192,6 +1199,91 @@ void main() {
       await pumpEventQueue();
 
       expect(values, hasLength(3));
+    });
+  });
+
+  group('taskAgentWorkflowProvider', () {
+    late MockAiInputRepository mockAiInputRepository;
+    late MockAiConfigRepository mockAiConfigRepository;
+    late MockJournalDb mockJournalDb;
+    late MockCloudInferenceRepository mockCloudInferenceRepository;
+    late MockJournalRepository mockJournalRepository;
+    late MockChecklistRepository mockChecklistRepository;
+    late MockLabelsRepository mockLabelsRepository;
+    late MockAgentSyncService mockAgentSyncService;
+    late MockAgentTemplateService mockAgentTemplateService;
+    late DomainLogger domainLogger;
+
+    setUp(() async {
+      await getIt.reset();
+      mockAiInputRepository = MockAiInputRepository();
+      mockAiConfigRepository = MockAiConfigRepository();
+      mockJournalDb = MockJournalDb();
+      mockCloudInferenceRepository = MockCloudInferenceRepository();
+      mockJournalRepository = MockJournalRepository();
+      mockChecklistRepository = MockChecklistRepository();
+      mockLabelsRepository = MockLabelsRepository();
+      mockAgentSyncService = MockAgentSyncService();
+      mockAgentTemplateService = MockAgentTemplateService();
+      domainLogger = DomainLogger(loggingService: LoggingService());
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    ProviderContainer createTaskWorkflowContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          conversationRepositoryProvider.overrideWith(
+            ConversationRepository.new,
+          ),
+          aiInputRepositoryProvider.overrideWithValue(mockAiInputRepository),
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          journalDbProvider.overrideWithValue(mockJournalDb),
+          cloudInferenceRepositoryProvider.overrideWithValue(
+            mockCloudInferenceRepository,
+          ),
+          journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+          checklistRepositoryProvider.overrideWithValue(
+            mockChecklistRepository,
+          ),
+          labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+          agentSyncServiceProvider.overrideWithValue(mockAgentSyncService),
+          agentTemplateServiceProvider.overrideWithValue(
+            mockAgentTemplateService,
+          ),
+          domainLoggerProvider.overrideWithValue(domainLogger),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('leaves embedding dependencies null when they are unregistered', () {
+      final container = createTaskWorkflowContainer();
+
+      final workflow = container.read(taskAgentWorkflowProvider);
+
+      expect(workflow.embeddingStore, isNull);
+      expect(workflow.embeddingRepository, isNull);
+    });
+
+    test('wires optional embedding dependencies from GetIt', () {
+      final mockEmbeddingStore = MockEmbeddingsDb();
+      final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
+      getIt
+        ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
+        ..registerSingleton<OllamaEmbeddingRepository>(
+          mockEmbeddingRepository,
+        );
+
+      final container = createTaskWorkflowContainer();
+      final workflow = container.read(taskAgentWorkflowProvider);
+
+      expect(workflow.embeddingStore, same(mockEmbeddingStore));
+      expect(workflow.embeddingRepository, same(mockEmbeddingRepository));
     });
   });
 

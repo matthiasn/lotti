@@ -33,7 +33,7 @@ void main() {
     mockAiConfigRepo = MockAiConfigRepository();
 
     sut = VectorSearchRepository(
-      embeddingsDb: mockEmbeddingsDb,
+      embeddingStore: mockEmbeddingsDb,
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       aiConfigRepository: mockAiConfigRepo,

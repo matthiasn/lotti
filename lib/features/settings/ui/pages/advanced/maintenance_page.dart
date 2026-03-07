@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
@@ -150,7 +150,7 @@ class MaintenancePage extends ConsumerWidget {
                     icon: Icons.search_rounded,
                     onTap: () => Fts5RecreateModal.show(context),
                   ),
-                  if (getIt.isRegistered<EmbeddingsDb>())
+                  if (getIt.isRegistered<EmbeddingStore>())
                     AdaptiveSettingsCard(
                       title: context.messages.maintenanceGenerateEmbeddings,
                       subtitle: context

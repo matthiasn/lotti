@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
@@ -63,13 +63,13 @@ class EmbeddingBackfillState {
 class _BackfillServices {
   _BackfillServices({
     required this.journalDb,
-    required this.embeddingsDb,
+    required this.embeddingStore,
     required this.embeddingRepository,
     required this.baseUrl,
   });
 
   final JournalDb journalDb;
-  final EmbeddingsDb embeddingsDb;
+  final EmbeddingStore embeddingStore;
   final OllamaEmbeddingRepository embeddingRepository;
   final String baseUrl;
 }
@@ -93,7 +93,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
   }) async {
     if (state.isRunning) return;
 
-    if (!getIt.isRegistered<EmbeddingsDb>()) {
+    if (!getIt.isRegistered<EmbeddingStore>()) {
       state = state.copyWith(
         error: 'Embedding pipeline not available',
         isRunning: false,
@@ -122,7 +122,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
 
     try {
       final db = getIt<JournalDb>();
-      final embeddingsDb = getIt<EmbeddingsDb>();
+      final embeddingStore = getIt<EmbeddingStore>();
       final embeddingRepository = getIt<OllamaEmbeddingRepository>();
       final aiConfigRepository = getIt<AiConfigRepository>();
 
@@ -147,7 +147,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       await body(
         _BackfillServices(
           journalDb: db,
-          embeddingsDb: embeddingsDb,
+          embeddingStore: embeddingStore,
           embeddingRepository: embeddingRepository,
           baseUrl: baseUrl,
         ),
@@ -188,7 +188,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         final didEmbed = await EmbeddingProcessor.processEntity(
           entityId: entityId,
           journalDb: services.journalDb,
-          embeddingsDb: services.embeddingsDb,
+          embeddingStore: services.embeddingStore,
           embeddingRepository: services.embeddingRepository,
           baseUrl: services.baseUrl,
           labelNameResolver: labelResolver,
@@ -321,7 +321,7 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
               taskId: taskId,
               categoryId: categoryId,
               subtype: AgentReportScopes.current,
-              embeddingsDb: services.embeddingsDb,
+              embeddingStore: services.embeddingStore,
               embeddingRepository: services.embeddingRepository,
               baseUrl: services.baseUrl,
             );

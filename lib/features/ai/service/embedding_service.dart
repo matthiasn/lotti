@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_processor.dart';
@@ -22,14 +22,14 @@ import 'package:lotti/utils/consts.dart';
 /// with a set for pending entity IDs.
 class EmbeddingService {
   EmbeddingService({
-    required this.embeddingsDb,
+    required this.embeddingStore,
     required this.embeddingRepository,
     required this.journalDb,
     required this.updateNotifications,
     required this.aiConfigRepository,
   });
 
-  final EmbeddingsDb embeddingsDb;
+  final EmbeddingStore embeddingStore;
   final OllamaEmbeddingRepository embeddingRepository;
   final JournalDb journalDb;
   final UpdateNotifications updateNotifications;
@@ -135,7 +135,7 @@ class EmbeddingService {
           await EmbeddingProcessor.processEntity(
             entityId: entityId,
             journalDb: journalDb,
-            embeddingsDb: embeddingsDb,
+            embeddingStore: embeddingStore,
             embeddingRepository: embeddingRepository,
             baseUrl: baseUrl,
             labelNameResolver: labelResolver,

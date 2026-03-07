@@ -14,8 +14,10 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/database/embeddings_init.dart';
+import 'package:lotti/features/ai/database/sqlite_embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -400,18 +402,20 @@ Future<void> registerSingletons() async {
     final embeddingsDb = initProductionEmbeddingsDb(
       documentsPath: getIt<Directory>().path,
     );
+    final embeddingStore = SqliteEmbeddingStore(embeddingsDb);
     getIt
       ..registerSingleton<EmbeddingsDb>(
         embeddingsDb,
         dispose: (db) => db.close(),
       )
+      ..registerSingleton<EmbeddingStore>(embeddingStore)
       ..registerSingleton<OllamaEmbeddingRepository>(
         OllamaEmbeddingRepository(),
         dispose: (repo) => repo.close(),
       )
       ..registerSingleton<EmbeddingService>(
         EmbeddingService(
-          embeddingsDb: embeddingsDb,
+          embeddingStore: embeddingStore,
           embeddingRepository: getIt<OllamaEmbeddingRepository>(),
           journalDb: getIt<JournalDb>(),
           updateNotifications: getIt<UpdateNotifications>(),
@@ -421,7 +425,7 @@ Future<void> registerSingletons() async {
       )
       ..registerSingleton<VectorSearchRepository>(
         VectorSearchRepository(
-          embeddingsDb: embeddingsDb,
+          embeddingStore: embeddingStore,
           embeddingRepository: getIt<OllamaEmbeddingRepository>(),
           journalDb: getIt<JournalDb>(),
           aiConfigRepository: getIt<AiConfigRepository>(),

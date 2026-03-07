@@ -53,7 +53,7 @@ void main() {
     updateNotifications = UpdateNotifications();
 
     service = EmbeddingService(
-      embeddingsDb: mockEmbeddingsDb,
+      embeddingStore: mockEmbeddingsDb,
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       updateNotifications: updateNotifications,
@@ -73,14 +73,14 @@ void main() {
     // Default: no existing content hash
     when(() => mockEmbeddingsDb.getContentHash(any())).thenReturn(null);
 
-    // Default: upsert succeeds
+    // Default: store swap succeeds
     when(
-      () => mockEmbeddingsDb.upsertEmbedding(
+      () => mockEmbeddingsDb.replaceEntityEmbeddings(
         entityId: any(named: 'entityId'),
         entityType: any(named: 'entityType'),
         modelId: any(named: 'modelId'),
-        embedding: any(named: 'embedding'),
         contentHash: any(named: 'contentHash'),
+        embeddings: any(named: 'embeddings'),
         categoryId: any(named: 'categoryId'),
         taskId: any(named: 'taskId'),
         subtype: any(named: 'subtype'),
@@ -153,12 +153,12 @@ void main() {
         ).called(1);
 
         verify(
-          () => mockEmbeddingsDb.upsertEmbedding(
+          () => mockEmbeddingsDb.replaceEntityEmbeddings(
             entityId: _entityId,
             entityType: kEntityTypeJournalText,
             modelId: ollamaEmbedDefaultModel,
-            embedding: any(named: 'embedding'),
             contentHash: EmbeddingContentExtractor.contentHash(_longText),
+            embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
@@ -371,12 +371,12 @@ void main() {
 
         // Only second entity was stored (first failed)
         verify(
-          () => mockEmbeddingsDb.upsertEmbedding(
+          () => mockEmbeddingsDb.replaceEntityEmbeddings(
             entityId: entityId2,
             entityType: any(named: 'entityType'),
             modelId: any(named: 'modelId'),
-            embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
           ),
         ).called(1);
@@ -409,12 +409,12 @@ void main() {
         sendAndProcess(async, {_entityId, taskNotification});
 
         verify(
-          () => mockEmbeddingsDb.upsertEmbedding(
+          () => mockEmbeddingsDb.replaceEntityEmbeddings(
             entityId: _entityId,
             entityType: kEntityTypeTask,
             modelId: any(named: 'modelId'),
-            embedding: any(named: 'embedding'),
             contentHash: any(named: 'contentHash'),
+            embeddings: any(named: 'embeddings'),
             categoryId: any(named: 'categoryId'),
           ),
         ).called(1);

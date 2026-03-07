@@ -60,19 +60,14 @@ void _stubNoExistingHash(MockEmbeddingsDb db) {
   when(() => db.getContentHash(any())).thenReturn(null);
 }
 
-void _stubDeleteEntityEmbeddings(MockEmbeddingsDb db) {
-  when(() => db.deleteEntityEmbeddings(any())).thenReturn(null);
-}
-
-void _stubUpsertEmbedding(MockEmbeddingsDb db) {
+void _stubReplaceEntityEmbeddings(MockEmbeddingsDb db) {
   when(
-    () => db.upsertEmbedding(
+    () => db.replaceEntityEmbeddings(
       entityId: any(named: 'entityId'),
-      chunkIndex: any(named: 'chunkIndex'),
       entityType: any(named: 'entityType'),
       modelId: any(named: 'modelId'),
-      embedding: any(named: 'embedding'),
       contentHash: any(named: 'contentHash'),
+      embeddings: any(named: 'embeddings'),
       categoryId: any(named: 'categoryId'),
       taskId: any(named: 'taskId'),
       subtype: any(named: 'subtype'),
@@ -113,8 +108,7 @@ void main() {
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
 
     _stubNoExistingHash(mockEmbeddingsDb);
-    _stubDeleteEntityEmbeddings(mockEmbeddingsDb);
-    _stubUpsertEmbedding(mockEmbeddingsDb);
+    _stubReplaceEntityEmbeddings(mockEmbeddingsDb);
     _stubEmbed(mockEmbeddingRepo);
   });
 
@@ -129,19 +123,19 @@ void main() {
       final result = await EmbeddingProcessor.processEntity(
         entityId: entry.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
 
       expect(result, isTrue);
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: entry.id,
           entityType: kEntityTypeJournalText,
           modelId: ollamaEmbedDefaultModel,
-          embedding: any(named: 'embedding'),
           contentHash: _hashOf(_longText),
+          embeddings: any(named: 'embeddings'),
           categoryId: 'cat-1',
           taskId: any(named: 'taskId'),
           subtype: any(named: 'subtype'),
@@ -157,7 +151,7 @@ void main() {
       final result = await EmbeddingProcessor.processEntity(
         entityId: 'missing',
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -180,7 +174,7 @@ void main() {
       final result = await EmbeddingProcessor.processEntity(
         entityId: image.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -198,7 +192,7 @@ void main() {
       final result = await EmbeddingProcessor.processEntity(
         entityId: entry.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -219,7 +213,7 @@ void main() {
       final result = await EmbeddingProcessor.processEntity(
         entityId: entry.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -247,7 +241,7 @@ void main() {
         await EmbeddingProcessor.processEntity(
           entityId: task.id,
           journalDb: mockJournalDb,
-          embeddingsDb: mockEmbeddingsDb,
+          embeddingStore: mockEmbeddingsDb,
           embeddingRepository: mockEmbeddingRepo,
           baseUrl: _baseUrl,
         );
@@ -281,7 +275,7 @@ void main() {
         await EmbeddingProcessor.processEntity(
           entityId: task.id,
           journalDb: mockJournalDb,
-          embeddingsDb: mockEmbeddingsDb,
+          embeddingStore: mockEmbeddingsDb,
           embeddingRepository: mockEmbeddingRepo,
           baseUrl: _baseUrl,
           labelNameResolver: labelResolver,
@@ -310,7 +304,7 @@ void main() {
       await EmbeddingProcessor.processEntity(
         entityId: task.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
         labelNameResolver: labelResolver,
@@ -340,7 +334,7 @@ void main() {
       await EmbeddingProcessor.processEntity(
         entityId: entry.id,
         journalDb: mockJournalDb,
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
         labelNameResolver: labelResolver,
@@ -373,7 +367,7 @@ void main() {
         () => EmbeddingProcessor.processEntity(
           entityId: entry.id,
           journalDb: mockJournalDb,
-          embeddingsDb: mockEmbeddingsDb,
+          embeddingStore: mockEmbeddingsDb,
           embeddingRepository: mockEmbeddingRepo,
           baseUrl: _baseUrl,
         ),
@@ -393,19 +387,19 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
 
       expect(result, isTrue);
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: ollamaEmbedDefaultModel,
-          embedding: any(named: 'embedding'),
           contentHash: _hashOf(reportContent),
+          embeddings: any(named: 'embeddings'),
           categoryId: 'cat-1',
           taskId: 'task-1',
           subtype: 'current',
@@ -420,7 +414,7 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -443,7 +437,7 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -463,7 +457,7 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -483,7 +477,7 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
@@ -501,19 +495,18 @@ void main() {
         taskId: 'task-1',
         categoryId: 'cat-1',
         subtype: 'current',
-        embeddingsDb: mockEmbeddingsDb,
+        embeddingStore: mockEmbeddingsDb,
         embeddingRepository: mockEmbeddingRepo,
         baseUrl: _baseUrl,
       );
 
       verify(
-        () => mockEmbeddingsDb.upsertEmbedding(
+        () => mockEmbeddingsDb.replaceEntityEmbeddings(
           entityId: any(named: 'entityId'),
-          chunkIndex: any(named: 'chunkIndex'),
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
-          embedding: any(named: 'embedding'),
           contentHash: any(named: 'contentHash'),
+          embeddings: any(named: 'embeddings'),
           categoryId: any(named: 'categoryId'),
           taskId: any(named: 'taskId'),
           subtype: any(named: 'subtype'),

@@ -34,6 +34,7 @@
     <release version="0.9.905" date="2026-03-06">
       <description>
           <p>Unified embedding generation: select multiple categories at once with a Select All toggle. Vector search is now available on the journal tab alongside tasks. Removed the separate "Re-index All Embeddings" action.</p>
+          <p>Refactored the embedding pipeline behind a backend-neutral store interface to prepare alternate vector backends without another large call-site migration.</p>
       </description>
     </release>
     <release version="0.9.904" date="2026-03-06">

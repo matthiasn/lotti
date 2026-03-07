@@ -16,6 +16,14 @@ The AI feature consists of several key components:
 8. **Automatic Setup**: Model pre-population and intelligent defaults
 9. **Error Recovery**: Comprehensive error handling and user-friendly messages
 
+## Embedding Search
+
+The AI feature also owns the local embedding pipeline used for semantic search.
+
+- **`database/embedding_store.dart`** defines the backend-neutral `EmbeddingStore` contract used by services, repositories, and maintenance UI.
+- **`database/sqlite_embedding_store.dart`** adapts the existing sqlite-vec `EmbeddingsDb` to that contract.
+- Higher-level code depends on `EmbeddingStore`, not directly on sqlite-vec internals, so the vector backend can be swapped in a future change without another large call-site migration.
+
 ## Architecture
 
 ### Core Components

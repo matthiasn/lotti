@@ -2,7 +2,7 @@ import 'dart:typed_data';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -24,20 +24,21 @@ class VectorSearchResult {
 /// Flow:
 /// 1. Resolve Ollama base URL from AI config
 /// 2. Embed the query text via [OllamaEmbeddingRepository]
-/// 3. Search the vector database via [EmbeddingsDb.search]
+/// 3. Search the vector database via [EmbeddingStore.search]
 /// 4. Resolve results to parent tasks (deduplicating by ID)
 class VectorSearchRepository {
   VectorSearchRepository({
-    required EmbeddingsDb embeddingsDb,
+    required EmbeddingStore embeddingStore,
     required OllamaEmbeddingRepository embeddingRepository,
     required JournalDb journalDb,
     required AiConfigRepository aiConfigRepository,
-  }) : _embeddingsDb = embeddingsDb,
+  }) : _embeddingStore = embeddingStore,
+
        _embeddingRepository = embeddingRepository,
        _journalDb = journalDb,
        _aiConfigRepository = aiConfigRepository;
 
-  final EmbeddingsDb _embeddingsDb;
+  final EmbeddingStore _embeddingStore;
   final OllamaEmbeddingRepository _embeddingRepository;
   final JournalDb _journalDb;
   final AiConfigRepository _aiConfigRepository;
@@ -177,7 +178,7 @@ class VectorSearchRepository {
       return null;
     }
 
-    final rawResults = _embeddingsDb.search(
+    final rawResults = _embeddingStore.search(
       queryVector: queryVector,
       k: k * 3,
       categoryIds: categoryIds,

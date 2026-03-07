@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -263,7 +264,7 @@ void main() {
     testWidgets(
       'generate embeddings card hidden when pipeline not registered',
       (tester) async {
-        // EmbeddingsDb is NOT registered in this test group's setUp
+        // EmbeddingStore is NOT registered in this test group's setUp
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
@@ -276,7 +277,10 @@ void main() {
     testWidgets(
       'generate embeddings card visible when pipeline is registered',
       (tester) async {
-        getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
+        final mockEmbeddingsDb = MockEmbeddingsDb();
+        getIt
+          ..registerSingleton<EmbeddingsDb>(mockEmbeddingsDb)
+          ..registerSingleton<EmbeddingStore>(mockEmbeddingsDb);
 
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
@@ -292,7 +296,10 @@ void main() {
     );
 
     testWidgets('re-index all embeddings card is not shown', (tester) async {
-      getIt.registerSingleton<EmbeddingsDb>(MockEmbeddingsDb());
+      final mockEmbeddingsDb = MockEmbeddingsDb();
+      getIt
+        ..registerSingleton<EmbeddingsDb>(mockEmbeddingsDb)
+        ..registerSingleton<EmbeddingStore>(mockEmbeddingsDb);
 
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
