@@ -92,10 +92,10 @@ class TestConfig {
   }
 
   static MatrixConfig configForUser(String username) => MatrixConfig(
-        homeServer: testHomeServer,
-        user: username,
-        password: testPassword,
-      );
+    homeServer: testHomeServer,
+    user: username,
+    password: testPassword,
+  );
 }
 
 /// Create a test journal entry
@@ -207,8 +207,9 @@ Future<bool> verifyTestEnvironment() async {
   try {
     // Check if Dendrite is reachable
     final httpClient = HttpClient();
-    final request = await httpClient
-        .getUrl(Uri.parse('http://localhost:8008/_matrix/client/versions'));
+    final request = await httpClient.getUrl(
+      Uri.parse('http://localhost:8008/_matrix/client/versions'),
+    );
     final response = await request.close();
     await response.drain<void>();
     httpClient.close();

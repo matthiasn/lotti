@@ -1271,7 +1271,7 @@ void main() {
     });
 
     test('wires optional embedding dependencies from GetIt', () {
-      final mockEmbeddingStore = MockEmbeddingsDb();
+      final mockEmbeddingStore = MockEmbeddingStore();
       final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
       getIt
         ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)

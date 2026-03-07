@@ -1519,7 +1519,7 @@ void main() {
                     vectorClock: null,
                   )
                   as AgentReportHeadEntity;
-          final mockEmbeddingStore = MockEmbeddingsDb();
+          final mockEmbeddingStore = MockEmbeddingStore();
           final mockEmbeddingRepository = MockOllamaEmbeddingRepository();
           final workflowWithEmbeddings = TaskAgentWorkflow(
             agentRepository: mockAgentRepository,

@@ -122,16 +122,18 @@ void main() {
     when(
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
-    when(() => secureStorageMock.read(key: any(named: 'key')))
-        .thenAnswer((_) async => null);
+    when(
+      () => secureStorageMock.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
     when(
       () => secureStorageMock.write(
         key: any(named: 'key'),
         value: any(named: 'value'),
       ),
     ).thenAnswer((_) async {});
-    when(() => secureStorageMock.delete(key: any(named: 'key')))
-        .thenAnswer((_) async {});
+    when(
+      () => secureStorageMock.delete(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
 
     final aliceDb = JournalDb(
       overriddenFilename: 'alice_db.sqlite',
@@ -163,8 +165,8 @@ void main() {
     const testHomeServer = bool.hasEnvironment(testServerEnv)
         ? String.fromEnvironment(testServerEnv)
         : testSlowNetwork
-            ? 'http://localhost:18008'
-            : 'http://localhost:8008';
+        ? 'http://localhost:18008'
+        : 'http://localhost:8008';
     const testPassword = bool.hasEnvironment(testPasswordEnv)
         ? String.fromEnvironment(testPasswordEnv)
         : '?Secret123@';

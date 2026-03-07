@@ -17,7 +17,6 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
@@ -75,11 +74,11 @@ void _stubOllamaProvider(MockAiConfigRepository repo) {
   ).thenAnswer((_) async => _ollamaBaseUrl);
 }
 
-void _stubNoExistingHash(MockEmbeddingsDb db) {
+void _stubNoExistingHash(MockEmbeddingStore db) {
   when(() => db.getContentHash(any())).thenReturn(null);
 }
 
-void _stubReplaceEntityEmbeddings(MockEmbeddingsDb db) {
+void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   when(
     () => db.replaceEntityEmbeddings(
       entityId: any(named: 'entityId'),
@@ -120,7 +119,7 @@ void _stubEntity(MockJournalDb db, JournalEntity entity) {
 
 void main() {
   late MockJournalDb mockJournalDb;
-  late MockEmbeddingsDb mockEmbeddingsDb;
+  late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockAiConfigRepository mockAiConfigRepo;
   late ProviderContainer container;
@@ -133,20 +132,19 @@ void main() {
     await getIt.reset();
 
     mockJournalDb = MockJournalDb();
-    mockEmbeddingsDb = MockEmbeddingsDb();
+    mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockAiConfigRepo = MockAiConfigRepository();
 
     getIt
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<EmbeddingsDb>(mockEmbeddingsDb)
-      ..registerSingleton<EmbeddingStore>(mockEmbeddingsDb)
+      ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
       ..registerSingleton<OllamaEmbeddingRepository>(mockEmbeddingRepo)
       ..registerSingleton<AiConfigRepository>(mockAiConfigRepo);
 
     _stubOllamaProvider(mockAiConfigRepo);
-    _stubNoExistingHash(mockEmbeddingsDb);
-    _stubReplaceEntityEmbeddings(mockEmbeddingsDb);
+    _stubNoExistingHash(mockEmbeddingStore);
+    _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
 
     // Default: embeddings flag enabled
@@ -207,7 +205,7 @@ void main() {
       expect(s.error, isNull);
 
       verify(
-        () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'entity-1',
           entityType: 'task',
           modelId: any(named: 'modelId'),
@@ -231,7 +229,7 @@ void main() {
 
       expect(state().embeddedCount, 1);
       verify(
-        () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'entry-1',
           entityType: 'journal_text',
           modelId: any(named: 'modelId'),
@@ -433,7 +431,7 @@ void main() {
       _stubEntity(mockJournalDb, entry);
 
       when(
-        () => mockEmbeddingsDb.getContentHash('cached-1'),
+        () => mockEmbeddingStore.getContentHash('cached-1'),
       ).thenReturn(_hashOf(_longText));
 
       await controller().backfillCategories({_testCategoryId});
@@ -477,7 +475,7 @@ void main() {
       _stubEntity(mockJournalDb, image);
       _stubEntity(mockJournalDb, cached);
       when(
-        () => mockEmbeddingsDb.getContentHash('cached-1'),
+        () => mockEmbeddingStore.getContentHash('cached-1'),
       ).thenReturn(_hashOf(_longText));
 
       await controller().backfillCategories({_testCategoryId});
@@ -877,7 +875,7 @@ void main() {
       expect(s.progress, 1.0);
 
       verify(
-        () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
@@ -1099,7 +1097,7 @@ void main() {
       await controller().backfillAgentReports();
 
       verify(
-        () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),
@@ -1142,7 +1140,7 @@ void main() {
       await controller().backfillAgentReports();
 
       verify(
-        () => mockEmbeddingsDb.replaceEntityEmbeddings(
+        () => mockEmbeddingStore.replaceEntityEmbeddings(
           entityId: 'report-1',
           entityType: kEntityTypeAgentReport,
           modelId: any(named: 'modelId'),

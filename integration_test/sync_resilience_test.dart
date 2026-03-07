@@ -63,16 +63,18 @@ void main() {
     when(
       () => mockUpdateNotifications.notify(any()),
     ).thenAnswer((_) {});
-    when(() => secureStorageMock.read(key: any(named: 'key')))
-        .thenAnswer((_) async => null);
+    when(
+      () => secureStorageMock.read(key: any(named: 'key')),
+    ).thenAnswer((_) async => null);
     when(
       () => secureStorageMock.write(
         key: any(named: 'key'),
         value: any(named: 'value'),
       ),
     ).thenAnswer((_) async {});
-    when(() => secureStorageMock.delete(key: any(named: 'key')))
-        .thenAnswer((_) async {});
+    when(
+      () => secureStorageMock.delete(key: any(named: 'key')),
+    ).thenAnswer((_) async {});
 
     late JournalDb aliceDb;
     late JournalDb bobDb;
@@ -208,7 +210,7 @@ void main() {
     });
 
     Future<({MatrixService alice, MatrixService bob, String roomId})>
-        setupAliceAndBob({required int testIndex}) async {
+    setupAliceAndBob({required int testIndex}) async {
       // Ensure proxy is enabled at the start
       await toxiproxy.reset(ToxiproxyController.dendriteProxy);
 
@@ -539,7 +541,8 @@ void main() {
         const totalMessages = 10;
 
         debugPrint(
-            '\n--- Alice sends $totalMessages messages with high latency');
+          '\n--- Alice sends $totalMessages messages with high latency',
+        );
         for (var i = 0; i < totalMessages; i++) {
           await sendTestMessage(
             matrixService: alice,
@@ -603,7 +606,8 @@ void main() {
         const totalMessages = 15;
 
         debugPrint(
-            '\n--- Alice sends $totalMessages messages with limited bandwidth');
+          '\n--- Alice sends $totalMessages messages with limited bandwidth',
+        );
         for (var i = 0; i < totalMessages; i++) {
           await sendTestMessage(
             matrixService: alice,

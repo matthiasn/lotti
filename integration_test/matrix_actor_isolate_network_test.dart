@@ -136,10 +136,13 @@ Future<Map<String, Object?>> _sendTextWithRetries({
     lastError = sendResult['error'];
     debugPrint('[TEST] sendText attempt $attempt failed: $sendResult');
 
-    await Future<void>.delayed(Duration(
-      milliseconds: _baseRetryDelay.inMilliseconds +
-          (attempt * _baseRetryDelay.inMilliseconds ~/ 2),
-    ));
+    await Future<void>.delayed(
+      Duration(
+        milliseconds:
+            _baseRetryDelay.inMilliseconds +
+            (attempt * _baseRetryDelay.inMilliseconds ~/ 2),
+      ),
+    );
   }
 
   return {
@@ -160,8 +163,9 @@ String get _matrixServer {
 Future<bool> _isMatrixReachable(String baseUrl) async {
   final client = HttpClient();
   try {
-    final request =
-        await client.getUrl(Uri.parse('$baseUrl/_matrix/client/versions'));
+    final request = await client.getUrl(
+      Uri.parse('$baseUrl/_matrix/client/versions'),
+    );
     final response = await request.close();
     await response.drain<void>();
     return response.statusCode == HttpStatus.ok;
@@ -198,10 +202,12 @@ void main() {
           fail('TEST_USER/TEST_PASSWORD not provided via --dart-define');
         }
 
-        final dbRoot1 =
-            await Directory.systemTemp.createTemp('actor_host_dev1_');
-        final dbRoot2 =
-            await Directory.systemTemp.createTemp('actor_host_dev2_');
+        final dbRoot1 = await Directory.systemTemp.createTemp(
+          'actor_host_dev1_',
+        );
+        final dbRoot2 = await Directory.systemTemp.createTemp(
+          'actor_host_dev2_',
+        );
         addTearDown(() async {
           // ignore: avoid_slow_async_io
           if (await dbRoot1.exists()) {
@@ -472,25 +478,29 @@ void main() {
 
         Map<String, Object?>? host1VerificationState;
         Map<String, Object?>? host2VerificationState;
-        final starterDirection =
-            verificationStarter == 'DeviceA' ? 'outgoing' : 'incoming';
-        final responderDirection =
-            verificationResponder == 'DeviceA' ? 'outgoing' : 'incoming';
+        final starterDirection = verificationStarter == 'DeviceA'
+            ? 'outgoing'
+            : 'incoming';
+        final responderDirection = verificationResponder == 'DeviceA'
+            ? 'outgoing'
+            : 'incoming';
         await _waitUntil(
           message: 'SAS events with matching emojis did not converge',
           timeout: const Duration(seconds: 45),
           condition: () async {
             host1VerificationState = _latestVerificationState(
               host1Events,
-              direction:
-                  host1 == starterHost ? starterDirection : responderDirection,
+              direction: host1 == starterHost
+                  ? starterDirection
+                  : responderDirection,
               requiredStep: 'm.key.verification.key',
               requireEmojis: true,
             );
             host2VerificationState = _latestVerificationState(
               host2Events,
-              direction:
-                  host2 == starterHost ? starterDirection : responderDirection,
+              direction: host2 == starterHost
+                  ? starterDirection
+                  : responderDirection,
               requiredStep: 'm.key.verification.key',
               requireEmojis: true,
             );
@@ -545,13 +555,15 @@ void main() {
 
         final host1VerificationDone = _latestVerificationState(
           host1Events,
-          direction:
-              host1 == starterHost ? starterDirection : responderDirection,
+          direction: host1 == starterHost
+              ? starterDirection
+              : responderDirection,
         );
         final host2VerificationDone = _latestVerificationState(
           host2Events,
-          direction:
-              host2 == starterHost ? starterDirection : responderDirection,
+          direction: host2 == starterHost
+              ? starterDirection
+              : responderDirection,
         );
         expect(host1VerificationDone, isNot(equals(null)));
         expect(host2VerificationDone, isNot(equals(null)));
