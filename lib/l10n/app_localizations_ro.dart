@@ -1428,6 +1428,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get backfillReRequestTrigger => 'Resolicită intrări în așteptare';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Resetează intrările marcate ca nerezolvabile înapoi la lipsă, pentru a putea fi solicitate din nou. Utilizați după repopularea jurnalului de secvență.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Se resetează...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    return '$count intrări resetate la lipsă';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle => 'Resetare nerezolvabile';
+
+  @override
+  String get backfillResetUnresolvableTrigger =>
+      'Resetare intrări nerezolvabile';
+
+  @override
   String get backfillSettingsInfo =>
       'Completarea automată solicită intrările lipsă din ultimele 24 de ore. Folosiți completarea manuală pentru intrări mai vechi.';
 

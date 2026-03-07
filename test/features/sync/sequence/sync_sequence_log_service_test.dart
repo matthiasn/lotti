@@ -3095,6 +3095,143 @@ void main() {
       },
     );
   });
+
+  group('resetUnresolvableEntries', () {
+    test('delegates to syncDatabase and returns count', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 42);
+
+      final count = await service.resetUnresolvableEntries();
+
+      expect(count, 42);
+      verify(() => mockDb.resetUnresolvableWithKnownPayload()).called(1);
+    });
+
+    test('logs when entries are reset', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 5);
+
+      await service.resetUnresolvableEntries();
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('reset 5 entries')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'resetUnresolvable',
+        ),
+      ).called(1);
+    });
+
+    test('does not log when no entries reset', () async {
+      when(
+        () => mockDb.resetUnresolvableWithKnownPayload(),
+      ).thenAnswer((_) async => 0);
+
+      await service.resetUnresolvableEntries();
+
+      verifyNever(
+        () => mockLogging.captureEvent(
+          any<String>(),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'resetUnresolvable',
+        ),
+      );
+    });
+  });
+
+  group('host activity cache', () {
+    test(
+      'caches getHostLastSeen for non-originating hosts',
+      () async {
+        // Set up stubs for both hosts
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Process entry from alice with bob in the VC
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob (non-originator) should have getHostLastSeen called via cache
+        verify(() => mockDb.getHostLastSeen(bobHostId)).called(1);
+
+        // Alice is originator — host activity is set directly via
+        // updateHostActivity, not via getHostLastSeen
+        verifyNever(() => mockDb.getHostLastSeen(aliceHostId));
+      },
+    );
+
+    test(
+      'caches getLastCounterForHost and avoids redundant DB calls',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 9);
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 5);
+        when(
+          () => mockDb.getEntryByHostAndCounter(any(), any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // Process an entry that mentions bobHostId
+        await service.recordReceivedEntry(
+          entryId: 'entry-1',
+          vectorClock: const VectorClock({
+            aliceHostId: 10,
+            bobHostId: 6,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's counter was queried once via cache
+        verify(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).called(1);
+
+        // Now process another entry — cache should be invalidated for bob
+        // since we recorded entries for bob, so it will query again.
+        when(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).thenAnswer((_) async => 6);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({
+            aliceHostId: 11,
+            bobHostId: 7,
+          }),
+          originatingHostId: aliceHostId,
+        );
+
+        // Bob's counter was queried again because cache was invalidated
+        // after the first recordReceivedEntry wrote to bob's entries
+        verify(
+          () => mockDb.getLastCounterForHost(bobHostId),
+        ).called(1);
+      },
+    );
+  });
 }
 
 SyncSequenceLogItem _createLogItem(

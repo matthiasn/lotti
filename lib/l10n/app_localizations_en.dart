@@ -1406,6 +1406,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get backfillReRequestTrigger => 'Re-Request Pending Entries';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Reset entries marked as unresolvable back to missing so they can be re-requested. Use after sequence log repopulation.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Resetting...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    return '$count entries reset to missing';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle => 'Reset Unresolvable';
+
+  @override
+  String get backfillResetUnresolvableTrigger => 'Reset Unresolvable Entries';
+
+  @override
   String get backfillSettingsInfo =>
       'Automatic backfill requests missing entries from the last 24 hours. Use manual backfill for older entries.';
 

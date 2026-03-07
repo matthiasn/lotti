@@ -1448,6 +1448,25 @@ class AppLocalizationsEs extends AppLocalizations {
       'Volver a solicitar entradas pendientes';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Restablece las entradas marcadas como irresolubles a faltantes para que puedan volver a solicitarse. Úsalo después de la repoblación del registro de secuencia.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Restableciendo...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    return '$count entradas restablecidas a faltantes';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle => 'Restablecer irresolubles';
+
+  @override
+  String get backfillResetUnresolvableTrigger =>
+      'Restablecer entradas irresolubles';
+
+  @override
   String get backfillSettingsInfo =>
       'El relleno automático solicita las entradas faltantes de las últimas 24 horas. Use el relleno manual para entradas más antiguas.';
 

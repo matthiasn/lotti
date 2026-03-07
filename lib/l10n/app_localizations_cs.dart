@@ -1419,6 +1419,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get backfillReRequestTrigger => 'Požádat znovu o čekající položky';
 
   @override
+  String get backfillResetUnresolvableDescription =>
+      'Resetuje záznamy označené jako neřešitelné zpět na chybějící, aby mohly být znovu požadovány. Použij po opětovném naplnění sekvenčního logu.';
+
+  @override
+  String get backfillResetUnresolvableProcessing => 'Resetování...';
+
+  @override
+  String backfillResetUnresolvableSuccess(int count) {
+    return '$count záznamů resetováno na chybějící';
+  }
+
+  @override
+  String get backfillResetUnresolvableTitle => 'Resetovat neřešitelné';
+
+  @override
+  String get backfillResetUnresolvableTrigger =>
+      'Resetovat neřešitelné záznamy';
+
+  @override
   String get backfillSettingsInfo =>
       'Automatické žádosti o doplnění chybějících položek za posledních 24 hodin. Použijte ruční záplň pro starší zápisy.';
 

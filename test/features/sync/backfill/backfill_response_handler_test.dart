@@ -104,6 +104,35 @@ void main() {
   });
 
   group('handleBackfillRequest', () {
+    test('skips own backfill requests (self-request guard)', () async {
+      // The handler's host is aliceHostId (set in setUp).
+      // Send a request where requesterId matches our own host.
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 1),
+          BackfillRequestEntry(hostId: bobHostId, counter: 2),
+        ],
+        requesterId: aliceHostId, // Same as our host
+      );
+
+      await handler.handleBackfillRequest(request);
+
+      // Should NOT check backfill enabled, look up entries, or enqueue anything
+      verifyNever(
+        () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
+      );
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+      // Should log that we skipped our own request
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('skipping own request')),
+          domain: 'SYNC_BACKFILL',
+          subDomain: 'skipSelf',
+        ),
+      ).called(1);
+    });
+
     test('ignores request when backfill is disabled', () async {
       // Set backfill_enabled to false
       SharedPreferences.setMockInitialValues({'backfill_enabled': false});

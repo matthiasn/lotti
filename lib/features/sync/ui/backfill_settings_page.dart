@@ -56,6 +56,19 @@ class BackfillSettingsPage extends ConsumerWidget {
 
             const SizedBox(height: 24),
 
+            // Reset Unresolvable Section
+            _ResetUnresolvableSection(
+              isProcessing: statsState.isResetting,
+              lastResetCount: statsState.lastResetCount,
+              unresolvableCount: statsState.stats?.totalUnresolvable ?? 0,
+              error: statsState.error,
+              onTrigger: () => ref
+                  .read(backfillStatsControllerProvider.notifier)
+                  .resetUnresolvable(),
+            ),
+
+            const SizedBox(height: 24),
+
             // Re-Request Section
             _ReRequestSection(
               isProcessing: statsState.isReRequesting,
@@ -403,6 +416,119 @@ class _ManualBackfillSection extends StatelessWidget {
                   isProcessing
                       ? context.messages.backfillManualProcessing
                       : context.messages.backfillManualTrigger,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResetUnresolvableSection extends StatelessWidget {
+  const _ResetUnresolvableSection({
+    required this.isProcessing,
+    required this.lastResetCount,
+    required this.unresolvableCount,
+    required this.error,
+    required this.onTrigger,
+  });
+
+  final bool isProcessing;
+  final int? lastResetCount;
+  final int unresolvableCount;
+  final String? error;
+  final VoidCallback onTrigger;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.restore,
+                  color: unresolvableCount > 0
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    context.messages.backfillResetUnresolvableTitle,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.messages.backfillResetUnresolvableDescription,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Text(
+                  error!,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ),
+            if (lastResetCount != null && !isProcessing)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle,
+                      color: Colors.green,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      context.messages.backfillResetUnresolvableSuccess(
+                        lastResetCount!,
+                      ),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: isProcessing || unresolvableCount == 0
+                    ? null
+                    : onTrigger,
+                icon: isProcessing
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.restore),
+                label: Text(
+                  isProcessing
+                      ? context.messages.backfillResetUnresolvableProcessing
+                      : context.messages.backfillResetUnresolvableTrigger,
                 ),
               ),
             ),

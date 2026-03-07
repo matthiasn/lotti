@@ -456,8 +456,13 @@ Future<void> registerSingletons() async {
 /// This enables proper backfill responses - without the sequence log populated,
 /// a device can't respond to backfill requests from other devices for historical
 /// entries.
+///
+/// V2 adds agent entities and links to the population, which were missing in V1.
+/// Devices that already ran V1 will re-run with the full set of data sources.
 Future<void> _checkAndPopulateSequenceLog() async {
-  const settingsKey = 'maintenance_sequenceLogPopulated';
+  // Bumped from 'maintenance_sequenceLogPopulated' to V2 so devices that
+  // ran V1 (journal + links only) will re-run with agent data included.
+  const settingsKey = 'maintenance_sequenceLogPopulatedV2';
   final settingsDb = getIt<SettingsDb>();
   final loggingService = getIt<LoggingService>();
 
@@ -470,33 +475,35 @@ Future<void> _checkAndPopulateSequenceLog() async {
 
     final syncDatabase = getIt<SyncDatabase>();
     final journalDb = getIt<JournalDb>();
+    final agentDb = getIt<AgentDatabase>();
 
     // Check current sequence log count
     final sequenceLogCount = await syncDatabase.getSequenceLogCount();
 
-    // If already has significant entries, mark as done
-    if (sequenceLogCount > kSequenceLogPopulationThreshold) {
-      await settingsDb.saveSettingsItem(settingsKey, 'true');
-      loggingService.captureEvent(
-        'Sequence log already has $sequenceLogCount entries, skipping population',
-        domain: 'MAINTENANCE',
-        subDomain: 'sequenceLogPopulation',
-      );
-      return;
-    }
+    // If already has significant entries, skip the threshold check — we still
+    // need to populate agent data even if journal data is already present.
+    // Only skip entirely if this V2 key has been set.
 
-    // Check if journal has entries that need populating
+    // Check if there's any data that needs populating
     final journalCount = await journalDb.countAllJournalEntries();
     final linksCount = await journalDb.countAllEntryLinks();
+    final agentEntityCount = await agentDb.countAllAgentEntities();
+    final agentLinkCount = await agentDb.countAllAgentLinks();
 
-    if (journalCount == 0 && linksCount == 0) {
+    if (journalCount == 0 &&
+        linksCount == 0 &&
+        agentEntityCount == 0 &&
+        agentLinkCount == 0) {
       // Empty database, nothing to populate
       await settingsDb.saveSettingsItem(settingsKey, 'true');
       return;
     }
 
     loggingService.captureEvent(
-      'Starting automatic sequence log population: journal=$journalCount links=$linksCount sequenceLog=$sequenceLogCount',
+      'Starting automatic sequence log population (V2): '
+      'journal=$journalCount links=$linksCount '
+      'agentEntities=$agentEntityCount agentLinks=$agentLinkCount '
+      'sequenceLog=$sequenceLogCount',
       domain: 'MAINTENANCE',
       subDomain: 'sequenceLogPopulation',
     );
@@ -515,11 +522,26 @@ Future<void> _checkAndPopulateSequenceLog() async {
       getTotalCount: journalDb.countAllEntryLinks,
     );
 
+    // Populate from agent entities
+    final populatedAgentEntities = await sequenceLogService
+        .populateFromAgentEntities(
+          entityStream: agentDb.streamAgentEntitiesWithVectorClock(),
+          getTotalCount: agentDb.countAllAgentEntities,
+        );
+
+    // Populate from agent links
+    final populatedAgentLinks = await sequenceLogService.populateFromAgentLinks(
+      linkStream: agentDb.streamAgentLinksWithVectorClock(),
+      getTotalCount: agentDb.countAllAgentLinks,
+    );
+
     // Mark as completed
     await settingsDb.saveSettingsItem(settingsKey, 'true');
 
     loggingService.captureEvent(
-      'Automatic sequence log population completed: journal=$populatedJournal links=$populatedLinks',
+      'Automatic sequence log population (V2) completed: '
+      'journal=$populatedJournal links=$populatedLinks '
+      'agentEntities=$populatedAgentEntities agentLinks=$populatedAgentLinks',
       domain: 'MAINTENANCE',
       subDomain: 'sequenceLogPopulation',
     );

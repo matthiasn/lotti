@@ -13,8 +13,10 @@ class BackfillStatsState {
     this.isLoading = false,
     this.isProcessing = false,
     this.isReRequesting = false,
+    this.isResetting = false,
     this.lastProcessedCount,
     this.lastReRequestedCount,
+    this.lastResetCount,
     this.error,
   });
 
@@ -22,8 +24,10 @@ class BackfillStatsState {
   final bool isLoading;
   final bool isProcessing;
   final bool isReRequesting;
+  final bool isResetting;
   final int? lastProcessedCount;
   final int? lastReRequestedCount;
+  final int? lastResetCount;
   final String? error;
 
   BackfillStatsState copyWith({
@@ -31,24 +35,31 @@ class BackfillStatsState {
     bool? isLoading,
     bool? isProcessing,
     bool? isReRequesting,
+    bool? isResetting,
     int? lastProcessedCount,
     int? lastReRequestedCount,
+    int? lastResetCount,
     String? error,
     bool clearError = false,
     bool clearLastProcessed = false,
     bool clearLastReRequested = false,
+    bool clearLastReset = false,
   }) {
     return BackfillStatsState(
       stats: stats ?? this.stats,
       isLoading: isLoading ?? this.isLoading,
       isProcessing: isProcessing ?? this.isProcessing,
       isReRequesting: isReRequesting ?? this.isReRequesting,
+      isResetting: isResetting ?? this.isResetting,
       lastProcessedCount: clearLastProcessed
           ? null
           : lastProcessedCount ?? this.lastProcessedCount,
       lastReRequestedCount: clearLastReRequested
           ? null
           : lastReRequestedCount ?? this.lastReRequestedCount,
+      lastResetCount: clearLastReset
+          ? null
+          : lastResetCount ?? this.lastResetCount,
       error: clearError ? null : error ?? this.error,
     );
   }
@@ -92,7 +103,7 @@ class BackfillStatsController extends _$BackfillStatsController {
   /// Trigger a full historical backfill request.
   Future<void> triggerFullBackfill() async {
     if (!ref.mounted) return;
-    if (state.isProcessing || state.isReRequesting) return;
+    if (state.isProcessing || state.isReRequesting || state.isResetting) return;
 
     state = state.copyWith(
       isProcessing: true,
@@ -121,10 +132,42 @@ class BackfillStatsController extends _$BackfillStatsController {
     }
   }
 
+  /// Reset unresolvable entries that now have a known payload back to missing.
+  Future<void> resetUnresolvable() async {
+    if (!ref.mounted) return;
+    if (state.isProcessing || state.isReRequesting || state.isResetting) return;
+
+    state = state.copyWith(
+      isResetting: true,
+      clearError: true,
+      clearLastReset: true,
+    );
+
+    try {
+      final sequenceLogService = getIt<SyncSequenceLogService>();
+      final count = await sequenceLogService.resetUnresolvableEntries();
+
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isResetting: false,
+        lastResetCount: count,
+      );
+
+      // Refresh stats after reset
+      await _loadStats();
+    } catch (e) {
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        isResetting: false,
+        error: e.toString(),
+      );
+    }
+  }
+
   /// Re-request entries that are in 'requested' status but never received.
   Future<void> triggerReRequest() async {
     if (!ref.mounted) return;
-    if (state.isProcessing || state.isReRequesting) return;
+    if (state.isProcessing || state.isReRequesting || state.isResetting) return;
 
     state = state.copyWith(
       isReRequesting: true,
