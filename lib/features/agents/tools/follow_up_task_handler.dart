@@ -116,6 +116,15 @@ class FollowUpTaskHandler {
     }
 
     final newTaskId = newTask.meta.id;
+
+    // Verify the task is actually persisted and readable.
+    final verifyTask = await _journalDb.journalEntityById(newTaskId);
+    developer.log(
+      'Created task $newTaskId — verify lookup: '
+      '${verifyTask?.runtimeType} (found: ${verifyTask != null})',
+      name: 'FollowUpTaskHandler',
+    );
+
     final warnings = <String>[];
 
     // Link source task → new task. Wrapped in try-catch so a link failure

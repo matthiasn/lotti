@@ -558,6 +558,8 @@ void main() {
       test(
         'create_follow_up_task delegates to FollowUpTaskHandler',
         () async {
+          final newTask = _makeTestTask('new-task-001');
+
           // FollowUpTaskHandler needs a source task to inherit category.
           when(
             () => mockPersistenceLogic.createTaskEntry(
@@ -565,7 +567,12 @@ void main() {
               entryText: any(named: 'entryText'),
               categoryId: any(named: 'categoryId'),
             ),
-          ).thenAnswer((_) async => _makeTestTask('new-task-001'));
+          ).thenAnswer((_) async => newTask);
+
+          // Stub verify-lookup after task creation.
+          when(
+            () => mockJournalDb.journalEntityById('new-task-001'),
+          ).thenAnswer((_) async => newTask);
 
           when(
             () => mockPersistenceLogic.createLink(

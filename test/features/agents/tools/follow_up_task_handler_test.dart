@@ -74,6 +74,12 @@ void main() {
       persistenceLogic: mockPersistenceLogic,
       journalDb: mockJournalDb,
     );
+
+    // Stub the verify-lookup that follow_up_task_handler performs after
+    // creating a task. Individual tests override for specific IDs.
+    when(
+      () => mockJournalDb.journalEntityById(any()),
+    ).thenAnswer((_) async => null);
   });
 
   group('FollowUpTaskHandler', () {

@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -91,7 +93,16 @@ class ChecklistMigrationHandler {
 
     // Validate the target task and resolve its checklist BEFORE archiving the
     // source item, so we never leave an item archived without a valid target.
+    developer.log(
+      'Looking up target task: $targetTaskId',
+      name: 'ChecklistMigrationHandler',
+    );
     final targetTask = await _journalDb.journalEntityById(targetTaskId);
+    developer.log(
+      'Target task lookup result: ${targetTask?.runtimeType} '
+      '(id: ${targetTask?.meta.id})',
+      name: 'ChecklistMigrationHandler',
+    );
     if (targetTask is! Task) {
       return ToolExecutionResult(
         success: false,

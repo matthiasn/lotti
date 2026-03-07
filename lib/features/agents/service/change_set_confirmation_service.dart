@@ -98,7 +98,7 @@ class ChangeSetConfirmationService {
 
     developer.log(
       'Confirming item $itemIndex (${item.toolName}) in change set '
-      '${current.id}',
+      '${current.id}, dispatchArgs: $dispatchArgs',
       name: 'ChangeSetConfirmationService',
     );
 
