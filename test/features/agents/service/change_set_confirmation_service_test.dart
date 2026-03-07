@@ -990,5 +990,139 @@ void main() {
         },
       );
     });
+
+    group('rejectItem - cascade rejection of migration items', () {
+      test(
+        'rejecting create_follow_up_task cascade-rejects sibling migrations',
+        () async {
+          const placeholderId = 'placeholder-cascade-001';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Split Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task: "Split Task"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-1',
+                  'title': 'Buy milk',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate to follow-up: "Buy milk"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-2',
+                  'title': 'Walk dog',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate to follow-up: "Walk dog"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          // _freshChangeSet and _cascadeRejectMigrationItems both call
+          // getEntity — return the change set (then progressively updated
+          // versions as items are rejected).
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 0);
+
+            expect(applied, isTrue);
+
+            // The create item + 2 migration siblings = 3 decisions + 3 status
+            // updates = 6 upserts total.
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            // Count rejected decisions.
+            final decisions = captured.whereType<ChangeDecisionEntity>();
+            expect(
+              decisions.length,
+              3,
+              reason: 'One decision per rejected item (create + 2 migrations)',
+            );
+            for (final d in decisions) {
+              expect(d.verdict, ChangeDecisionVerdict.rejected);
+            }
+          });
+        },
+      );
+
+      test(
+        'rejecting create_follow_up_task does not reject unrelated items',
+        () async {
+          const placeholderId = 'placeholder-cascade-002';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Split Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task: "Split Task"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-1',
+                  'title': 'Buy milk',
+                  'targetTaskId': 'other-placeholder',
+                },
+                humanSummary: 'Migrate to different task',
+              ),
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 60},
+                humanSummary: 'Set estimate',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            await service.rejectItem(changeSet, 0);
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            // Only 1 decision (the create item) — no cascade because
+            // the migration targets a different placeholder.
+            final decisions = captured.whereType<ChangeDecisionEntity>();
+            expect(decisions.length, 1);
+
+            // The change set update should only reject item 0.
+            final changeSets = captured.whereType<ChangeSetEntity>();
+            final lastCS = changeSets.last;
+            expect(lastCS.items[0].status, ChangeItemStatus.rejected);
+            expect(lastCS.items[1].status, ChangeItemStatus.pending);
+            expect(lastCS.items[2].status, ChangeItemStatus.pending);
+          });
+        },
+      );
+    });
   });
 }

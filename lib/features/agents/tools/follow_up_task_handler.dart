@@ -119,12 +119,16 @@ class FollowUpTaskHandler {
     final warnings = <String>[];
 
     // Link source task → new task. Wrapped in try-catch so a link failure
-    // does not lose the already-created task ID.
+    // does not lose the already-created task ID. Also checks the bool return
+    // value since PersistenceLogic.createLink reports some failures that way.
     try {
-      await _persistenceLogic.createLink(
+      final linked = await _persistenceLogic.createLink(
         fromId: sourceTaskId,
         toId: newTaskId,
       );
+      if (!linked) {
+        warnings.add('Warning: failed to link source task');
+      }
     } catch (e) {
       developer.log(
         'Failed to link source $sourceTaskId → $newTaskId: $e',
@@ -137,10 +141,13 @@ class FollowUpTaskHandler {
     final sourceAudioId = args['sourceAudioId'];
     if (sourceAudioId is String && sourceAudioId.isNotEmpty) {
       try {
-        await _persistenceLogic.createLink(
+        final linked = await _persistenceLogic.createLink(
           fromId: sourceAudioId,
           toId: newTaskId,
         );
+        if (!linked) {
+          warnings.add('Warning: failed to link audio entry');
+        }
       } catch (e) {
         developer.log(
           'Failed to link audio $sourceAudioId → $newTaskId: $e',

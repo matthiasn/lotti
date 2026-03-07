@@ -468,6 +468,43 @@ void main() {
         });
       });
 
+      test('surfaces warning when createLink returns false', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-link-false');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        // createLink returns false instead of throwing.
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'Bool Fail Task'},
+          );
+
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-link-false');
+          expect(result.output, contains('Warning'));
+          expect(result.output, contains('failed to link source task'));
+        });
+      });
+
       test('surfaces audio link failure warning in output', () async {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-audio-fail');

@@ -215,6 +215,16 @@ class ChangeSetConfirmationService {
       }
     }
 
+    // 4. For rejected follow-up tasks, cascade-reject sibling migration
+    //    items that reference this task's placeholder — they can never
+    //    succeed without the target task.
+    if (item.toolName == TaskAgentToolNames.createFollowUpTask) {
+      final placeholderId = item.args['_placeholderTaskId'];
+      if (placeholderId is String) {
+        await _cascadeRejectMigrationItems(current, placeholderId, reason);
+      }
+    }
+
     return true;
   }
 
@@ -331,6 +341,45 @@ class ChangeSetConfirmationService {
         'migration items in change set ${fresh.id}',
         name: 'ChangeSetConfirmationService',
       );
+    }
+  }
+
+  /// When a `create_follow_up_task` item is rejected, cascade-rejects all
+  /// pending `migrate_checklist_item` siblings whose `targetTaskId` matches
+  /// the placeholder. Without the target task, those migrations can never
+  /// succeed.
+  Future<void> _cascadeRejectMigrationItems(
+    ChangeSetEntity changeSet,
+    String placeholderId,
+    String? reason,
+  ) async {
+    final fresh = await _freshChangeSet(changeSet);
+    for (var i = 0; i < fresh.items.length; i++) {
+      final sibling = fresh.items[i];
+      if (sibling.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          sibling.status == ChangeItemStatus.pending &&
+          sibling.args['targetTaskId'] == placeholderId) {
+        developer.log(
+          'Cascade-rejecting migration item $i — target task rejected',
+          name: 'ChangeSetConfirmationService',
+        );
+
+        await _persistDecision(
+          changeSet: fresh,
+          itemIndex: i,
+          toolName: sibling.toolName,
+          verdict: ChangeDecisionVerdict.rejected,
+          rejectionReason: reason ?? 'Target follow-up task was rejected',
+          humanSummary: sibling.humanSummary,
+          args: sibling.args,
+        );
+
+        await _updateChangeSetItemStatus(
+          fresh,
+          i,
+          ChangeItemStatus.rejected,
+        );
+      }
     }
   }
 

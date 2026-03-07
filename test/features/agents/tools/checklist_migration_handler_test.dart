@@ -579,67 +579,73 @@ void main() {
         );
       });
 
-      test('returns failure when archival fails after copy', () async {
-        final item = makeChecklistItem();
+      test(
+        'returns success with warning when archival fails after copy',
+        () async {
+          final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+          when(
+            () => mockJournalDb.journalEntityById(itemId),
+          ).thenAnswer((_) async => item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+          when(
+            () => mockJournalDb.journalEntityById(sourceTaskId),
+          ).thenAnswer(
+            (_) async => makeTask(
+              id: sourceTaskId,
+              checklistIds: [checklistId],
+            ),
+          );
 
-        when(
-          () => mockJournalDb.journalEntityById(targetTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: targetTaskId,
-            checklistIds: [targetChecklistId],
-          ),
-        );
+          when(
+            () => mockJournalDb.journalEntityById(targetTaskId),
+          ).thenAnswer(
+            (_) async => makeTask(
+              id: targetTaskId,
+              checklistIds: [targetChecklistId],
+            ),
+          );
 
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => makeChecklistItem(
-            id: 'new-item-copy',
-            linkedChecklists: [targetChecklistId],
-          ),
-        );
+          when(
+            () => mockChecklistRepository.addItemToChecklist(
+              checklistId: any(named: 'checklistId'),
+              title: any(named: 'title'),
+              isChecked: any(named: 'isChecked'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => makeChecklistItem(
+              id: 'new-item-copy',
+              linkedChecklists: [targetChecklistId],
+            ),
+          );
 
-        // Copy succeeds but archival fails.
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => false);
+          // Copy succeeds but archival fails.
+          when(
+            () => mockChecklistRepository.updateChecklistItem(
+              checklistItemId: any(named: 'checklistItemId'),
+              data: any(named: 'data'),
+              taskId: any(named: 'taskId'),
+            ),
+          ).thenAnswer((_) async => false);
 
-        final result = await handler.handle(
-          sourceTaskId,
-          {
-            'id': itemId,
-            'title': 'Buy milk',
-            'targetTaskId': targetTaskId,
-          },
-        );
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'id': itemId,
+              'title': 'Buy milk',
+              'targetTaskId': targetTaskId,
+            },
+          );
 
-        expect(result.success, isFalse);
-        expect(result.errorMessage, 'Source item archival failed');
-        expect(result.output, contains('failed to archive'));
-      });
+          // Success to prevent retry (which would duplicate the copy).
+          expect(result.success, isTrue);
+          expect(result.errorMessage, 'Source item archival failed');
+          expect(result.output, contains('Warning'));
+          expect(result.output, contains('not archived'));
+          expect(result.mutatedEntityId, targetTaskId);
+        },
+      );
 
       test('returns failure when addItemToChecklist returns null', () async {
         final item = makeChecklistItem();

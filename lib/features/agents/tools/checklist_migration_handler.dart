@@ -139,28 +139,24 @@ class ChecklistMigrationHandler {
     }
 
     // Archive the item in the source (after copy succeeded).
+    // Return success even if archival fails — the copy exists and a retry
+    // would create a duplicate. The source staying unarchived is a minor
+    // inconsistency that beats duplicate target items.
     final archived = await _checklistRepository.updateChecklistItem(
       checklistItemId: itemId,
       data: itemEntity.data.copyWith(isArchived: true),
       taskId: sourceTaskId,
     );
 
-    if (!archived) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: copied item to target but failed to archive '
-            'source item $itemId',
-        errorMessage: 'Source item archival failed',
-      );
-    }
+    final warning = archived ? '' : '. Warning: source item was not archived';
 
     return ToolExecutionResult(
       success: true,
       output:
           'Migrated "${itemEntity.data.title}" from task $sourceTaskId '
-          'to $targetTaskId',
+          'to $targetTaskId$warning',
       mutatedEntityId: targetTaskId,
+      errorMessage: archived ? null : 'Source item archival failed',
     );
   }
 }
