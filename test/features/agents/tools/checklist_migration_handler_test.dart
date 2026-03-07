@@ -441,14 +441,6 @@ void main() {
         );
 
         when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
           () => mockJournalDb.journalEntityById(targetTaskId),
         ).thenAnswer(
           (_) async => makeTask(
@@ -483,6 +475,16 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.errorMessage, 'Target checklist creation failed');
+
+        // Source item should NOT be archived when target checklist
+        // creation fails.
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
       });
     });
 
@@ -504,14 +506,6 @@ void main() {
         );
 
         when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
           () => mockJournalDb.journalEntityById(targetTaskId),
         ).thenAnswer((_) async => null);
 
@@ -526,6 +520,15 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.output, contains('target task $targetTaskId not found'));
+
+        // Source item should NOT be archived when target validation fails.
+        verifyNever(
+          () => mockChecklistRepository.updateChecklistItem(
+            checklistItemId: any(named: 'checklistItemId'),
+            data: any(named: 'data'),
+            taskId: any(named: 'taskId'),
+          ),
+        );
       });
 
       test('returns failure when addItemToChecklist returns null', () async {

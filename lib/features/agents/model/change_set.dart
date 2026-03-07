@@ -28,6 +28,7 @@ abstract class ChangeItem with _$ChangeItem {
 
     /// Optional group identifier for related items (e.g., a task-split
     /// operation produces a create + N migrate items sharing the same group).
+    /// Used by the approval UI to visually group related items.
     String? groupId,
   }) = _ChangeItem;
 

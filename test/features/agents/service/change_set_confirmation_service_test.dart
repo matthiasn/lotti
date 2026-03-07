@@ -603,8 +603,8 @@ void main() {
         'confirmItem returns failure for unresolved migration placeholder',
         () async {
           // Migration item without a preceding create_follow_up_task confirm.
-          // The placeholder is not in _resolvedIds, so it should be dispatched
-          // with the original args (which may fail downstream).
+          // The placeholder is not in _resolvedIds, so confirmItem should
+          // return a clear error without dispatching.
           const placeholderId = 'unresolved-placeholder';
           final changeSet = makeTestChangeSet(
             items: const [
@@ -620,26 +620,23 @@ void main() {
             ],
           );
 
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
-          // The dispatch will receive the unresolved placeholder as-is.
-          when(
-            () => mockToolDispatcher.dispatch(any(), any(), any()),
-          ).thenAnswer(
-            (_) async => const ToolExecutionResult(
-              success: false,
-              output: 'Target task not found',
-              errorMessage: 'Task lookup failed',
-            ),
-          );
-
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
 
-            // The dispatch happens with the unresolved placeholder and fails.
             expect(result.success, isFalse);
+            expect(
+              result.output,
+              contains('target task has not been created yet'),
+            );
+            expect(
+              result.errorMessage,
+              'Unresolved placeholder targetTaskId',
+            );
+
+            // No dispatch should have been attempted.
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
           });
         },
       );

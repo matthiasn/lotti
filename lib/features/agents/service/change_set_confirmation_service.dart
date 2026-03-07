@@ -259,23 +259,16 @@ class ChangeSetConfirmationService {
       return item.args;
     }
 
-    // Check if this is already a resolved real ID (i.e. the target task
-    // exists in the journal DB).
-    // First try the in-memory map.
+    // Look up the placeholder→actual mapping populated by a prior
+    // create_follow_up_task confirmation.
     final resolved = _resolvedIds[targetTaskId];
     if (resolved != null) {
       return {...item.args, 'targetTaskId': resolved};
     }
 
-    // DB fallback: the task may have been created in a prior session.
-    // We do a synchronous-style check here; if no JournalDb is available,
-    // we can't resolve and must fail.
-    // Note: this method is called from an async context, but the placeholder
-    // resolution via DB is handled in _resolveTargetTaskId.
-    // For the sync path, we return args as-is and let the handler fail if
-    // the target doesn't exist. This keeps the method simple.
-    // The _resolvedIds map covers the primary case (confirmAll flow).
-    return item.args;
+    // The placeholder has not been resolved yet — the follow-up task must be
+    // confirmed before any of its migration items can be dispatched.
+    return null;
   }
 
   /// After a successful `create_follow_up_task` dispatch, captures the

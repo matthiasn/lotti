@@ -516,13 +516,12 @@ class TaskToolDispatcher {
     Map<String, dynamic> args,
     String sourceTaskId,
   ) async {
-    final autoChecklistService = AutoChecklistService(
-      checklistRepository: checklistRepository,
-    );
     final handler = ChecklistMigrationHandler(
       checklistRepository: checklistRepository,
       journalDb: journalDb,
-      autoChecklistService: autoChecklistService,
+      autoChecklistService: AutoChecklistService(
+        checklistRepository: checklistRepository,
+      ),
     );
     return handler.handle(sourceTaskId, args);
   }

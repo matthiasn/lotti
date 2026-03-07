@@ -83,14 +83,8 @@ class ChecklistMigrationHandler {
       );
     }
 
-    // Archive the item in the source.
-    await _checklistRepository.updateChecklistItem(
-      checklistItemId: itemId,
-      data: itemEntity.data.copyWith(isArchived: true),
-      taskId: sourceTaskId,
-    );
-
-    // Ensure the target task has a checklist.
+    // Validate the target task and resolve its checklist BEFORE archiving the
+    // source item, so we never leave an item archived without a valid target.
     final targetTask = await _journalDb.journalEntityById(targetTaskId);
     if (targetTask is! Task) {
       return ToolExecutionResult(
@@ -123,6 +117,13 @@ class ChecklistMigrationHandler {
     } else {
       targetChecklistId = targetChecklistIds.first;
     }
+
+    // Archive the item in the source (after target validation succeeded).
+    await _checklistRepository.updateChecklistItem(
+      checklistItemId: itemId,
+      data: itemEntity.data.copyWith(isArchived: true),
+      taskId: sourceTaskId,
+    );
 
     // Copy the item to the target checklist.
     final newItem = await _checklistRepository.addItemToChecklist(

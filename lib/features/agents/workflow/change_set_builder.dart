@@ -210,26 +210,23 @@ class ChangeSetBuilder {
         : null;
 
     // For migration batch tools, inject top-level keys (targetTaskId) into
-    // each child element so singular items are self-contained and
-    // dispatchable after explosion.
+    // copies of each child element so singular items are self-contained and
+    // dispatchable after explosion. We copy to avoid mutating caller data.
     final isMigrateBatch = toolName == TaskAgentToolNames.migrateChecklistItems;
-    if (isMigrateBatch) {
-      final targetTaskId = args['targetTaskId'];
-      if (targetTaskId is String) {
-        for (final element in array) {
-          if (element is Map<String, dynamic>) {
-            element['targetTaskId'] = targetTaskId;
-          }
-        }
-      }
-    }
+    final targetTaskIdForMigration = isMigrateBatch
+        ? args['targetTaskId']
+        : null;
 
     var added = 0;
     var skipped = 0;
     var redundant = 0;
     final redundantDetails = <String>[];
-    for (final element in array) {
+    for (var element in array) {
       if (element is Map<String, dynamic>) {
+        // Inject targetTaskId into a copy for migration items.
+        if (targetTaskIdForMigration is String) {
+          element = {...element, 'targetTaskId': targetTaskIdForMigration};
+        }
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
         if (existingTitles != null) {
@@ -768,7 +765,7 @@ class ChangeSetBuilder {
     String sourceTaskId,
     String title,
   ) {
-    return const Uuid().v5(
+    return _uuid.v5(
       Namespace.url.value,
       'follow-up:$sourceTaskId:$title',
     );
