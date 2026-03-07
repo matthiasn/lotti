@@ -5,6 +5,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
+import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -35,12 +38,14 @@ class TaskToolDispatcher {
     required this.journalRepository,
     required this.checklistRepository,
     required this.labelsRepository,
+    required this.persistenceLogic,
   });
 
   final JournalDb journalDb;
   final JournalRepository journalRepository;
   final ChecklistRepository checklistRepository;
   final LabelsRepository labelsRepository;
+  final PersistenceLogic persistenceLogic;
 
   static const _uuid = Uuid();
 
@@ -129,6 +134,12 @@ class TaskToolDispatcher {
 
       case TaskAgentToolNames.setTaskStatus:
         return _handleSetStatus(taskEntity, args, taskId);
+
+      case TaskAgentToolNames.createFollowUpTask:
+        return _handleCreateFollowUpTask(args, taskId);
+
+      case TaskAgentToolNames.migrateChecklistItem:
+        return _handleMigrateChecklistItem(args, taskId);
 
       default:
         return ToolExecutionResult(
@@ -488,5 +499,31 @@ class TaskToolDispatcher {
           ? 'All ${handler.skippedItems.length} item(s) skipped or failed'
           : null,
     );
+  }
+
+  Future<ToolExecutionResult> _handleCreateFollowUpTask(
+    Map<String, dynamic> args,
+    String sourceTaskId,
+  ) async {
+    final handler = FollowUpTaskHandler(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
+    );
+    return handler.handle(sourceTaskId, args);
+  }
+
+  Future<ToolExecutionResult> _handleMigrateChecklistItem(
+    Map<String, dynamic> args,
+    String sourceTaskId,
+  ) async {
+    final autoChecklistService = AutoChecklistService(
+      checklistRepository: checklistRepository,
+    );
+    final handler = ChecklistMigrationHandler(
+      checklistRepository: checklistRepository,
+      journalDb: journalDb,
+      autoChecklistService: autoChecklistService,
+    );
+    return handler.handle(sourceTaskId, args);
   }
 }

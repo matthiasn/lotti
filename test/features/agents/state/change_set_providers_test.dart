@@ -11,6 +11,8 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
@@ -317,6 +319,10 @@ void main() {
       final mockJournalRepository = MockJournalRepository();
       final mockChecklistRepository = MockChecklistRepository();
       final mockLabelsRepository = MockLabelsRepository();
+      final mockPersistenceLogic = MockPersistenceLogic();
+
+      getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      addTearDown(() async => getIt.reset());
 
       final container = ProviderContainer(
         overrides: [

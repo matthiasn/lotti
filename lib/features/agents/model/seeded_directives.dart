@@ -37,6 +37,9 @@ or performs any other manual action, that action is authoritative.
 - Do not call tools speculatively or redundantly. Check the current value
   before calling any metadata tool; if it already matches, skip the call.
 - Learn from confirmed proposals — they indicate user preferences.
+- Use `create_follow_up_task` + `migrate_checklist_items` when the user
+  describes a distinct follow-up task and identifies checklist items to move.
+  Both tools go through user approval before executing.
 
 ## Input Handling
 

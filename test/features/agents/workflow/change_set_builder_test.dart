@@ -1633,4 +1633,167 @@ void main() {
       expect(result!.items, hasLength(1));
     });
   });
+
+  group('task splitting — addFollowUpTask', () {
+    test(
+      'generates deterministic placeholder from sourceTaskId + title',
+      () async {
+        final placeholder1 = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up A'},
+          humanSummary: 'Create follow-up task A',
+        );
+
+        // Same source task and title should produce the same placeholder.
+        final placeholder2 = ChangeSetBuilder.deterministicPlaceholder(
+          'task-001',
+          'Follow-Up A',
+        );
+
+        expect(placeholder1, placeholder2);
+        expect(placeholder1, isNotEmpty);
+      },
+    );
+
+    test('adds item with _placeholderTaskId in args', () async {
+      final placeholder = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up B'},
+        humanSummary: 'Create follow-up task B',
+      );
+
+      expect(builder.items, hasLength(1));
+      final item = builder.items.first;
+      expect(item.toolName, 'create_follow_up_task');
+      expect(item.args['title'], 'Follow-Up B');
+      expect(item.args['_placeholderTaskId'], placeholder);
+    });
+
+    test('uses placeholder as default groupId', () async {
+      final placeholder = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up C'},
+        humanSummary: 'Create follow-up task C',
+      );
+
+      expect(builder.items.first.groupId, placeholder);
+    });
+
+    test('uses provided groupId over default', () async {
+      await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up D'},
+        humanSummary: 'Create follow-up task D',
+        groupId: 'custom-group',
+      );
+
+      expect(builder.items.first.groupId, 'custom-group');
+    });
+
+    test('deterministic placeholder is stable across wakes', () {
+      // Two different builder instances with the same task ID should
+      // produce the same placeholder for the same title.
+      final builder2 = ChangeSetBuilder(
+        agentId: 'agent-002',
+        taskId: 'task-001',
+        threadId: 'thread-002',
+        runKey: 'run-key-002',
+      );
+
+      final p1 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Refactor login',
+      );
+      final p2 = ChangeSetBuilder.deterministicPlaceholder(
+        builder2.taskId,
+        'Refactor login',
+      );
+
+      expect(p1, p2);
+    });
+
+    test('different titles produce different placeholders', () {
+      final p1 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Follow-Up A',
+      );
+      final p2 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Follow-Up B',
+      );
+
+      expect(p1, isNot(p2));
+    });
+  });
+
+  group('task splitting — migrate batch explosion', () {
+    test(
+      'singularizes migrate_checklist_items to migrate_checklist_item',
+      () async {
+        final result = await builder.addBatchItem(
+          toolName: 'migrate_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'title': 'Buy milk'},
+            ],
+            'targetTaskId': 'target-001',
+          },
+          summaryPrefix: 'Migrate',
+        );
+
+        expect(result.added, 1);
+        expect(builder.items.first.toolName, 'migrate_checklist_item');
+      },
+    );
+
+    test('injects targetTaskId into each child element', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Buy milk'},
+            {'id': 'item-2', 'title': 'Walk dog'},
+          ],
+          'targetTaskId': 'target-task-xyz',
+        },
+        summaryPrefix: 'Migrate',
+      );
+
+      expect(builder.items, hasLength(2));
+      for (final item in builder.items) {
+        expect(item.args['targetTaskId'], 'target-task-xyz');
+      }
+    });
+
+    test('assigns groupId to all exploded items', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Item A'},
+            {'id': 'item-2', 'title': 'Item B'},
+          ],
+          'targetTaskId': 'target-001',
+        },
+        summaryPrefix: 'Migrate',
+        groupId: 'split-group-001',
+      );
+
+      expect(builder.items, hasLength(2));
+      expect(builder.items[0].groupId, 'split-group-001');
+      expect(builder.items[1].groupId, 'split-group-001');
+    });
+
+    test('handles missing targetTaskId gracefully', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Buy milk'},
+          ],
+        },
+        summaryPrefix: 'Migrate',
+      );
+
+      // Item is still added, just without targetTaskId injection.
+      expect(builder.items, hasLength(1));
+      expect(builder.items.first.args.containsKey('targetTaskId'), isFalse);
+    });
+  });
 }

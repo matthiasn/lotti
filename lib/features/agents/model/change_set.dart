@@ -25,6 +25,10 @@ abstract class ChangeItem with _$ChangeItem {
 
     /// Current status of this item within the change set.
     @Default(ChangeItemStatus.pending) ChangeItemStatus status,
+
+    /// Optional group identifier for related items (e.g., a task-split
+    /// operation produces a create + N migrate items sharing the same group).
+    String? groupId,
   }) = _ChangeItem;
 
   factory ChangeItem.fromJson(Map<String, dynamic> json) =>

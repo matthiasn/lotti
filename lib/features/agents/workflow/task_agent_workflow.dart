@@ -36,6 +36,8 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -307,6 +309,7 @@ class TaskAgentWorkflow {
         journalRepository: journalRepository,
         checklistRepository: checklistRepository,
         labelsRepository: labelsRepository,
+        persistenceLogic: getIt<PersistenceLogic>(),
       );
 
       final changeSetBuilder = ChangeSetBuilder(
@@ -958,6 +961,22 @@ and never shown to the user. They persist as your memory across wakes.''';
     Without a reason, the system will reject the isChecked change.
   - Title updates (fixing typos, transcription errors) are always allowed
     regardless of who last toggled the item.
+
+- **Task splitting**: When a user describes follow-up tasks in audio or notes —
+  especially when referencing specific checklist items to move — use the split
+  workflow:
+  1. Call `create_follow_up_task` with the identified title, due date (if
+     mentioned), and `sourceAudioId` (the audio entry that triggered the split).
+     The system returns a placeholder `targetTaskId`.
+  2. Call `migrate_checklist_items` with the checklist item IDs and titles to
+     move, plus the `targetTaskId` from step 1.
+  3. Record an observation about the split rationale.
+  - Only split when the user clearly describes a separate task. Do not
+    proactively suggest splits based on task size alone.
+  - When unsure which items to move, err on the side of moving fewer items.
+    The user can always move more later.
+  - Priority defaults to P2 if not mentioned. The new task inherits the
+    source task's category automatically.
 
 ## Important
 

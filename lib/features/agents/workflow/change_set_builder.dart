@@ -175,6 +175,7 @@ class ChangeSetBuilder {
     required String toolName,
     required Map<String, dynamic> args,
     required String summaryPrefix,
+    String? groupId,
   }) async {
     final arrayKey = AgentToolRegistry.explodedBatchTools[toolName];
     if (arrayKey == null) {
@@ -207,6 +208,21 @@ class ChangeSetBuilder {
     final existingLabelIds = isLabelBatch
         ? await _resolveExistingLabelIds()
         : null;
+
+    // For migration batch tools, inject top-level keys (targetTaskId) into
+    // each child element so singular items are self-contained and
+    // dispatchable after explosion.
+    final isMigrateBatch = toolName == TaskAgentToolNames.migrateChecklistItems;
+    if (isMigrateBatch) {
+      final targetTaskId = args['targetTaskId'];
+      if (targetTaskId is String) {
+        for (final element in array) {
+          if (element is Map<String, dynamic>) {
+            element['targetTaskId'] = targetTaskId;
+          }
+        }
+      }
+    }
 
     var added = 0;
     var skipped = 0;
@@ -274,6 +290,7 @@ class ChangeSetBuilder {
             toolName: singularToolName,
             args: element,
             humanSummary: summary,
+            groupId: groupId,
           ),
         );
 
@@ -441,6 +458,8 @@ class ChangeSetBuilder {
     TaskAgentToolNames.updateChecklistItems =>
       TaskAgentToolNames.updateChecklistItem,
     TaskAgentToolNames.assignTaskLabels => TaskAgentToolNames.assignTaskLabel,
+    TaskAgentToolNames.migrateChecklistItems =>
+      TaskAgentToolNames.migrateChecklistItem,
     _ => throw ArgumentError(
       'Unsupported batch tool for singularization: $toolName. '
       'Add an explicit mapping.',
@@ -707,6 +726,52 @@ class ChangeSetBuilder {
       );
       return null;
     }
+  }
+
+  /// Adds a `create_follow_up_task` item with a deterministic placeholder ID
+  /// and returns the placeholder so callers can reference it in subsequent
+  /// `migrate_checklist_items` calls.
+  Future<String> addFollowUpTask({
+    required Map<String, dynamic> args,
+    required String humanSummary,
+    String? groupId,
+  }) async {
+    final title = args['title'];
+    final placeholderId = deterministicPlaceholder(
+      taskId,
+      title is String ? title : '',
+    );
+
+    final enrichedArgs = {
+      ...args,
+      '_placeholderTaskId': placeholderId,
+    };
+
+    _items.add(
+      ChangeItem(
+        toolName: TaskAgentToolNames.createFollowUpTask,
+        args: enrichedArgs,
+        humanSummary: humanSummary,
+        groupId: groupId ?? placeholderId,
+      ),
+    );
+
+    return placeholderId;
+  }
+
+  /// Generates a deterministic placeholder UUID for a follow-up task.
+  ///
+  /// Uses UUID v5 seeded from the source task ID and title so that
+  /// identical split proposals across wakes produce the same placeholder,
+  /// preserving cross-wake dedup via [ChangeItem.fingerprint].
+  static String deterministicPlaceholder(
+    String sourceTaskId,
+    String title,
+  ) {
+    return const Uuid().v5(
+      Namespace.url.value,
+      'follow-up:$sourceTaskId:$title',
+    );
   }
 
   /// Truncate a UUID to a short prefix for display as a fallback.

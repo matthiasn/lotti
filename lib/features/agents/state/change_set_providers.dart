@@ -8,6 +8,8 @@ import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -92,6 +94,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       journalRepository: ref.watch(journalRepositoryProvider),
       checklistRepository: ref.watch(checklistRepositoryProvider),
       labelsRepository: labelsRepository,
+      persistenceLogic: getIt<PersistenceLogic>(),
     ),
     labelsRepository: labelsRepository,
   );

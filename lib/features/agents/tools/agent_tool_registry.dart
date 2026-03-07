@@ -38,6 +38,11 @@ abstract final class TaskAgentToolNames {
   static const setTaskLanguage = 'set_task_language';
   static const setTaskStatus = 'set_task_status';
 
+  // Task splitting tools.
+  static const createFollowUpTask = 'create_follow_up_task';
+  static const migrateChecklistItems = 'migrate_checklist_items';
+  static const migrateChecklistItem = 'migrate_checklist_item';
+
   // Legacy single-item aliases (dispatched to batch handlers).
   static const addChecklistItem = 'add_checklist_item';
   static const updateChecklistItem = 'update_checklist_item';
@@ -70,6 +75,8 @@ class AgentToolRegistry {
     TaskAgentToolNames.setTaskStatus,
     TaskAgentToolNames.addMultipleChecklistItems,
     TaskAgentToolNames.updateChecklistItems,
+    TaskAgentToolNames.createFollowUpTask,
+    TaskAgentToolNames.migrateChecklistItems,
   };
 
   /// Batch tools that should be exploded into individual change item entries.
@@ -81,6 +88,7 @@ class AgentToolRegistry {
     TaskAgentToolNames.addMultipleChecklistItems: 'items',
     TaskAgentToolNames.updateChecklistItems: 'items',
     TaskAgentToolNames.assignTaskLabels: 'labels',
+    TaskAgentToolNames.migrateChecklistItems: 'items',
   };
 
   /// All tools available to the Task Agent.
@@ -241,6 +249,88 @@ class AgentToolRegistry {
           },
         },
         'required': ['items'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.createFollowUpTask,
+      description:
+          'Create a follow-up task linked to the current task. Use when the '
+          'user describes a distinct new task in audio or notes, especially '
+          'when combined with checklist items to migrate. The new task '
+          "inherits the source task's category. Returns a placeholder "
+          'targetTaskId for use with migrate_checklist_items.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'title': {
+            'type': 'string',
+            'description': 'Title for the new follow-up task.',
+          },
+          'dueDate': {
+            'type': 'string',
+            'description':
+                'Optional due date in YYYY-MM-DD format (e.g., 2024-06-30).',
+          },
+          'priority': {
+            'type': 'string',
+            'description':
+                'Priority level (P0, P1, P2, P3). Defaults to P2 if omitted.',
+          },
+          'description': {
+            'type': 'string',
+            'description':
+                'Optional description text for the new task. '
+                "Becomes the task's entry text.",
+          },
+          'sourceAudioId': {
+            'type': 'string',
+            'description':
+                'Optional ID of the audio entry that triggered this split. '
+                'Creates an additional link from the audio to the new task.',
+          },
+        },
+        'required': ['title'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.migrateChecklistItems,
+      description:
+          'Migrate checklist items from the current task to a follow-up task. '
+          'Archives items in the source task and creates copies in the target. '
+          'Use after create_follow_up_task to move identified items.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'items': {
+            'type': 'array',
+            'items': {
+              'type': 'object',
+              'properties': {
+                'id': {
+                  'type': 'string',
+                  'description': 'The checklist item ID to migrate.',
+                },
+                'title': {
+                  'type': 'string',
+                  'description':
+                      'The checklist item title (for display in the '
+                      'approval UI).',
+                },
+              },
+              'required': ['id', 'title'],
+              'additionalProperties': false,
+            },
+            'description': 'List of checklist items to migrate.',
+          },
+          'targetTaskId': {
+            'type': 'string',
+            'description':
+                'The placeholder task ID returned by create_follow_up_task.',
+          },
+        },
+        'required': ['items', 'targetTaskId'],
         'additionalProperties': false,
       },
     ),

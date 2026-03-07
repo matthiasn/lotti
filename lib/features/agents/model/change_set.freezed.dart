@@ -19,7 +19,9 @@ mixin _$ChangeItem {
  String get toolName;/// The arguments to pass to the tool handler.
  Map<String, dynamic> get args;/// A user-facing plain-text description of what this change does.
  String get humanSummary;/// Current status of this item within the change set.
- ChangeItemStatus get status;
+ ChangeItemStatus get status;/// Optional group identifier for related items (e.g., a task-split
+/// operation produces a create + N migrate items sharing the same group).
+ String? get groupId;
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -32,16 +34,16 @@ $ChangeItemCopyWith<ChangeItem> get copyWith => _$ChangeItemCopyWithImpl<ChangeI
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other.args, args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other.args, args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(args),humanSummary,status);
+int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(args),humanSummary,status,groupId);
 
 @override
 String toString() {
-  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status)';
+  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId)';
 }
 
 
@@ -52,7 +54,7 @@ abstract mixin class $ChangeItemCopyWith<$Res>  {
   factory $ChangeItemCopyWith(ChangeItem value, $Res Function(ChangeItem) _then) = _$ChangeItemCopyWithImpl;
 @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId
 });
 
 
@@ -69,13 +71,14 @@ class _$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,}) {
   return _then(_self.copyWith(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self.args : args // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary : humanSummary // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as ChangeItemStatus,
+as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -160,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId);case _:
   return orElse();
 
 }
@@ -181,10 +184,10 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId)  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem():
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +204,10 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String toolName,  Map<String, dynamic> args,  String humanSummary,  ChangeItemStatus status,  String? groupId)?  $default,) {final _that = this;
 switch (_that) {
 case _ChangeItem() when $default != null:
-return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case _:
+return $default(_that.toolName,_that.args,_that.humanSummary,_that.status,_that.groupId);case _:
   return null;
 
 }
@@ -216,7 +219,7 @@ return $default(_that.toolName,_that.args,_that.humanSummary,_that.status);case 
 @JsonSerializable()
 
 class _ChangeItem implements ChangeItem {
-  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending}): _args = args;
+  const _ChangeItem({required this.toolName, required final  Map<String, dynamic> args, required this.humanSummary, this.status = ChangeItemStatus.pending, this.groupId}): _args = args;
   factory _ChangeItem.fromJson(Map<String, dynamic> json) => _$ChangeItemFromJson(json);
 
 /// The tool name for this mutation (e.g., `add_checklist_item`).
@@ -234,6 +237,9 @@ class _ChangeItem implements ChangeItem {
 @override final  String humanSummary;
 /// Current status of this item within the change set.
 @override@JsonKey() final  ChangeItemStatus status;
+/// Optional group identifier for related items (e.g., a task-split
+/// operation produces a create + N migrate items sharing the same group).
+@override final  String? groupId;
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
@@ -248,16 +254,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other._args, _args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ChangeItem&&(identical(other.toolName, toolName) || other.toolName == toolName)&&const DeepCollectionEquality().equals(other._args, _args)&&(identical(other.humanSummary, humanSummary) || other.humanSummary == humanSummary)&&(identical(other.status, status) || other.status == status)&&(identical(other.groupId, groupId) || other.groupId == groupId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(_args),humanSummary,status);
+int get hashCode => Object.hash(runtimeType,toolName,const DeepCollectionEquality().hash(_args),humanSummary,status,groupId);
 
 @override
 String toString() {
-  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status)';
+  return 'ChangeItem(toolName: $toolName, args: $args, humanSummary: $humanSummary, status: $status, groupId: $groupId)';
 }
 
 
@@ -268,7 +274,7 @@ abstract mixin class _$ChangeItemCopyWith<$Res> implements $ChangeItemCopyWith<$
   factory _$ChangeItemCopyWith(_ChangeItem value, $Res Function(_ChangeItem) _then) = __$ChangeItemCopyWithImpl;
 @override @useResult
 $Res call({
- String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status
+ String toolName, Map<String, dynamic> args, String humanSummary, ChangeItemStatus status, String? groupId
 });
 
 
@@ -285,13 +291,14 @@ class __$ChangeItemCopyWithImpl<$Res>
 
 /// Create a copy of ChangeItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? toolName = null,Object? args = null,Object? humanSummary = null,Object? status = null,Object? groupId = freezed,}) {
   return _then(_ChangeItem(
 toolName: null == toolName ? _self.toolName : toolName // ignore: cast_nullable_to_non_nullable
 as String,args: null == args ? _self._args : args // ignore: cast_nullable_to_non_nullable
 as Map<String, dynamic>,humanSummary: null == humanSummary ? _self.humanSummary : humanSummary // ignore: cast_nullable_to_non_nullable
 as String,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as ChangeItemStatus,
+as ChangeItemStatus,groupId: freezed == groupId ? _self.groupId : groupId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

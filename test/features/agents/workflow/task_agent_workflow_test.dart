@@ -21,6 +21,8 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -233,6 +235,11 @@ void main() {
 
     registerAllFallbackValues();
 
+    if (getIt.isRegistered<PersistenceLogic>()) {
+      getIt.unregister<PersistenceLogic>();
+    }
+    getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     when(
       () => mockAgentRepository.updateWakeRunTemplate(any(), any(), any()),
@@ -285,6 +292,8 @@ void main() {
         ..enabledDomains.add(LogDomains.agentWorkflow),
     );
   });
+
+  tearDownAll(() async => getIt.reset());
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {

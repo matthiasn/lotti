@@ -13,6 +13,7 @@ _ChangeItem _$ChangeItemFromJson(Map<String, dynamic> json) => _ChangeItem(
   status:
       $enumDecodeNullable(_$ChangeItemStatusEnumMap, json['status']) ??
       ChangeItemStatus.pending,
+  groupId: json['groupId'] as String?,
 );
 
 Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
@@ -21,6 +22,7 @@ Map<String, dynamic> _$ChangeItemToJson(_ChangeItem instance) =>
       'args': instance.args,
       'humanSummary': instance.humanSummary,
       'status': _$ChangeItemStatusEnumMap[instance.status]!,
+      'groupId': instance.groupId,
     };
 
 const _$ChangeItemStatusEnumMap = {

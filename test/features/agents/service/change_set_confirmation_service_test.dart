@@ -495,6 +495,240 @@ void main() {
       });
     });
 
+    group('placeholder ID resolution', () {
+      test(
+        'confirmItem resolves placeholder targetTaskId for migration items',
+        () async {
+          // Create a change set with a create_follow_up_task item followed by
+          // a migrate_checklist_item that references a placeholder.
+          const placeholderId = 'placeholder-uuid-001';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Follow-Up',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-001',
+                  'title': 'Buy milk',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Buy milk"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          // First call: create_follow_up_task succeeds with actual ID.
+          when(
+            () => mockToolDispatcher.dispatch(
+              'create_follow_up_task',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created follow-up',
+              mutatedEntityId: 'actual-task-id-999',
+            ),
+          );
+
+          // Second call: migrate_checklist_item with resolved targetTaskId.
+          when(
+            () => mockToolDispatcher.dispatch(
+              'migrate_checklist_item',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Migrated item',
+            ),
+          );
+
+          // confirmAll re-reads: return updated change set after each confirm.
+          var callCount = 0;
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async {
+            callCount++;
+            // First few calls return original, later calls return
+            // partially resolved.
+            if (callCount <= 2) return changeSet;
+            return changeSet.copyWith(
+              items: [
+                changeSet.items[0].copyWith(
+                  status: ChangeItemStatus.confirmed,
+                ),
+                changeSet.items[1],
+              ],
+              status: ChangeSetStatus.partiallyResolved,
+            );
+          });
+
+          await withClock(testClock, () async {
+            final results = await service.confirmAll(changeSet);
+
+            expect(results, hasLength(2));
+            expect(results[0].success, isTrue);
+            expect(results[1].success, isTrue);
+
+            // Verify the migration dispatch received the resolved ID.
+            final migrateCapture = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final migrateArgs = migrateCapture[0] as Map<String, dynamic>;
+            expect(migrateArgs['targetTaskId'], 'actual-task-id-999');
+          });
+        },
+      );
+
+      test(
+        'confirmItem returns failure for unresolved migration placeholder',
+        () async {
+          // Migration item without a preceding create_follow_up_task confirm.
+          // The placeholder is not in _resolvedIds, so it should be dispatched
+          // with the original args (which may fail downstream).
+          const placeholderId = 'unresolved-placeholder';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-002',
+                  'title': 'Walk dog',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Walk dog"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          // The dispatch will receive the unresolved placeholder as-is.
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Target task not found',
+              errorMessage: 'Task lookup failed',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, 0);
+
+            // The dispatch happens with the unresolved placeholder and fails.
+            expect(result.success, isFalse);
+          });
+        },
+      );
+
+      test(
+        'captureResolvedId stores mapping from placeholder to actual ID',
+        () async {
+          const placeholderId = 'placeholder-002';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Task B',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task B',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'resolved-id-002',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            // Now confirm a migration item that references the placeholder.
+            final migrationSet = makeTestChangeSet(
+              id: 'cs-002',
+              items: const [
+                ChangeItem(
+                  toolName: 'migrate_checklist_item',
+                  args: {
+                    'id': 'item-005',
+                    'title': 'Test item',
+                    'targetTaskId': placeholderId,
+                  },
+                  humanSummary: 'Migrate test item',
+                ),
+              ],
+            );
+
+            when(
+              () => mockRepository.getEntity('cs-002'),
+            ).thenAnswer((_) async => null);
+
+            when(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                any(),
+                any(),
+              ),
+            ).thenAnswer(
+              (_) async => const ToolExecutionResult(
+                success: true,
+                output: 'Migrated',
+              ),
+            );
+
+            await service.confirmItem(migrationSet, 0);
+
+            // Verify the resolved ID was used.
+            final captured = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final args = captured[0] as Map<String, dynamic>;
+            expect(args['targetTaskId'], 'resolved-id-002');
+          });
+        },
+      );
+    });
+
     group('rejectItem - edge cases', () {
       test('returns false for out-of-bounds item index', () async {
         final changeSet = makeChangeSetWith();
