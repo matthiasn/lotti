@@ -4797,6 +4797,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Afficher la date de création sur les cartes';
 
   @override
+  String get tasksShowDistances => 'Afficher les distances sur les cartes';
+
+  @override
   String get tasksShowDueDate => 'Afficher la date d\'échéance sur les cartes';
 
   @override

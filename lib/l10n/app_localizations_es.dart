@@ -4792,6 +4792,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksShowCreationDate => 'Mostrar fecha de creación en tarjetas';
 
   @override
+  String get tasksShowDistances => 'Mostrar distancias en tarjetas';
+
+  @override
   String get tasksShowDueDate => 'Mostrar fecha de vencimiento en tarjetas';
 
   @override

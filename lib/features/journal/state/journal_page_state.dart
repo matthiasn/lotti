@@ -56,10 +56,12 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
     @Default(SearchMode.fullText) SearchMode searchMode,
+    @Default(false) bool showDistances,
     @Default(false) bool enableVectorSearch,
     @Default(false) bool vectorSearchInFlight,
     Duration? vectorSearchElapsed,
     @Default(0) int vectorSearchResultCount,
+    @Default(<String, double>{}) Map<String, double> vectorSearchDistances,
   }) = _JournalPageState;
 }
 
@@ -79,6 +81,7 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(false) bool showCreationDate,
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
+    @Default(false) bool showDistances,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>

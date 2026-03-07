@@ -2953,6 +2953,7 @@ void main() {
             (_) async => VectorSearchResult(
               entities: [testTask],
               elapsed: const Duration(milliseconds: 42),
+              distances: const {'vector-task-1': 0.35},
             ),
           );
 
@@ -2976,6 +2977,7 @@ void main() {
           expect(state.vectorSearchInFlight, isFalse);
           expect(state.vectorSearchElapsed, const Duration(milliseconds: 42));
           expect(state.vectorSearchResultCount, 1);
+          expect(state.vectorSearchDistances, {'vector-task-1': 0.35});
 
           // Verify the results appear in the paging controller
           final items = state.pagingController?.value.items ?? [];
@@ -3010,6 +3012,7 @@ void main() {
             expect(state.vectorSearchInFlight, isFalse);
             expect(state.vectorSearchElapsed, Duration.zero);
             expect(state.vectorSearchResultCount, 0);
+            expect(state.vectorSearchDistances, isEmpty);
 
             // Paging controller should have no items from vector search
             final items = state.pagingController?.value.items ?? [];
@@ -3053,6 +3056,7 @@ void main() {
             expect(state.vectorSearchInFlight, isFalse);
             expect(state.vectorSearchElapsed, Duration.zero);
             expect(state.vectorSearchResultCount, 0);
+            expect(state.vectorSearchDistances, isEmpty);
 
             final items = state.pagingController?.value.items ?? [];
             expect(items, isEmpty);
@@ -3141,6 +3145,7 @@ void main() {
             (_) async => VectorSearchResult(
               entities: [testEntry],
               elapsed: const Duration(milliseconds: 55),
+              distances: const {'journal-entry-1': 0.42},
             ),
           );
 
@@ -3165,6 +3170,7 @@ void main() {
           expect(state.vectorSearchInFlight, isFalse);
           expect(state.vectorSearchElapsed, const Duration(milliseconds: 55));
           expect(state.vectorSearchResultCount, 1);
+          expect(state.vectorSearchDistances, {'journal-entry-1': 0.42});
 
           // Verify searchRelatedEntries (not searchRelatedTasks) was called
           verify(

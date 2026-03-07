@@ -4702,6 +4702,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksShowCreationDate => 'Zobrazit datum vytvoření na kartách';
 
   @override
+  String get tasksShowDistances => 'Zobrazit vzdálenosti na kartách';
+
+  @override
   String get tasksShowDueDate => 'Zobrazit datum splnění na kartách';
 
   @override

@@ -13,10 +13,15 @@ class VectorSearchResult {
   VectorSearchResult({
     required this.entities,
     required this.elapsed,
+    this.distances = const {},
   });
 
   final List<JournalEntity> entities;
   final Duration elapsed;
+
+  /// Entity ID → best (lowest) cosine distance from search.
+  /// Empty when not from vector search.
+  final Map<String, double> distances;
 }
 
 /// Orchestrates vector-based semantic search for tasks.
@@ -81,11 +86,19 @@ class VectorSearchRepository {
     // Resolve all deduplicated results, then trim to k — resolution can
     // collapse multiple entities to the same task, so trimming before
     // resolution would lose unique results.
-    final resolvedTasks = await _resolveToTasks(deduped);
+    final (resolvedTasks, distances) = await _resolveToTasks(deduped);
     final tasks = resolvedTasks.take(k).toList();
 
+    // Trim distance map to only include tasks in the final result.
+    final taskIds = tasks.map((t) => t.meta.id).toSet();
+    distances.removeWhere((id, _) => !taskIds.contains(id));
+
     stopwatch.stop();
-    return VectorSearchResult(entities: tasks, elapsed: stopwatch.elapsed);
+    return VectorSearchResult(
+      entities: tasks,
+      elapsed: stopwatch.elapsed,
+      distances: distances,
+    );
   }
 
   /// Searches for journal entries semantically related to [query].
@@ -125,21 +138,27 @@ class VectorSearchRepository {
     final entityIds = deduped.map((r) => r.entityId).toSet();
     final entities = await _journalDb.getJournalEntitiesForIds(entityIds);
 
-    // Preserve distance ordering, trim to k.
+    // Preserve distance ordering, trim to k, and build distance map.
     final entityMap = <String, JournalEntity>{
       for (final e in entities) e.meta.id: e,
     };
     final ordered = <JournalEntity>[];
+    final distances = <String, double>{};
     for (final result in deduped) {
       final entity = entityMap[result.entityId];
       if (entity != null) {
         ordered.add(entity);
+        distances[entity.meta.id] = result.distance;
       }
       if (ordered.length >= k) break;
     }
 
     stopwatch.stop();
-    return VectorSearchResult(entities: ordered, elapsed: stopwatch.elapsed);
+    return VectorSearchResult(
+      entities: ordered,
+      elapsed: stopwatch.elapsed,
+      distances: distances,
+    );
   }
 
   /// Embeds [query] and searches the vector database, returning the raw
@@ -184,19 +203,36 @@ class VectorSearchRepository {
       categoryIds: categoryIds,
     );
 
+    // Log distance distribution for threshold calibration.
+    if (rawResults.isNotEmpty) {
+      final distances = rawResults.map((r) => r.distance).toList()..sort();
+      final min = distances.first.toStringAsFixed(3);
+      final max = distances.last.toStringAsFixed(3);
+      final median = distances[distances.length ~/ 2].toStringAsFixed(3);
+      DevLogger.log(
+        name: 'VectorSearch',
+        message:
+            'Distance distribution: '
+            'count=${distances.length}, '
+            'min=$min, median=$median, max=$max',
+      );
+    }
+
     return (stopwatch, rawResults);
   }
 
   /// Resolves search results to unique tasks, preserving distance ordering.
   ///
+  /// Returns the resolved tasks and a map of task ID → best (lowest) distance.
   /// If a result is already a Task, it is fetched directly. Otherwise, the
   /// parent task is resolved via linked entries. Both direct and linked
   /// entities are bulk-fetched to avoid N+1 queries.
-  Future<List<JournalEntity>> _resolveToTasks(
+  Future<(List<JournalEntity>, Map<String, double>)> _resolveToTasks(
     List<EmbeddingSearchResult> results,
   ) async {
     final seenIds = <String>{};
     final tasks = <JournalEntity>[];
+    final distances = <String, double>{};
 
     // 1. Bulk-fetch all direct task entities in one query.
     final directTaskIds = results
@@ -251,12 +287,14 @@ class VectorSearchRepository {
         : <String, JournalEntity>{};
 
     // 4. Iterate original ranked results to preserve global ordering.
+    // Track best distance for each resolved task ID.
     for (final result in results) {
       if (result.entityType == kEntityTypeTask) {
         final entity = directEntities[result.entityId];
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
+        _recordBestDistance(distances, result.entityId, result.distance);
         continue;
       }
 
@@ -267,6 +305,7 @@ class VectorSearchRepository {
           if (entity is Task && seenIds.add(entity.meta.id)) {
             tasks.add(entity);
           }
+          _recordBestDistance(distances, result.taskId, result.distance);
         }
         continue;
       }
@@ -277,9 +316,22 @@ class VectorSearchRepository {
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
+        _recordBestDistance(distances, parentId, result.distance);
       }
     }
 
-    return tasks;
+    return (tasks, distances);
+  }
+
+  /// Records the best (lowest) distance for a given entity ID.
+  static void _recordBestDistance(
+    Map<String, double> distances,
+    String entityId,
+    double distance,
+  ) {
+    final existing = distances[entityId];
+    if (existing == null || distance < existing) {
+      distances[entityId] = distance;
+    }
   }
 }

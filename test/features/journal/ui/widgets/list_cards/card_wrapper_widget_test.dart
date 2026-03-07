@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -349,6 +350,79 @@ void main() {
         find.byType(AnimatedModernTaskCard),
       );
       expect(animatedCard.showCreationDate, isFalse);
+    });
+
+    testWidgets('shows distance badge when vectorDistance is provided', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(
+            item: testTask,
+            vectorDistance: 0.42,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Badge is present and shows the formatted distance
+      expect(find.byKey(const Key('distanceBadge')), findsOneWidget);
+      expect(find.text('0.42'), findsOneWidget);
+      // Badge is wrapped in IgnorePointer so taps pass through to the card
+      final ignorePointers = tester
+          .widgetList<IgnorePointer>(
+            find.ancestor(
+              of: find.byKey(const Key('distanceBadge')),
+              matching: find.byType(IgnorePointer),
+            ),
+          )
+          .where((ip) => ip.ignoring)
+          .toList();
+      expect(ignorePointers, hasLength(1));
+      // The card is still rendered
+      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+    });
+
+    testWidgets('does not show distance badge when vectorDistance is null', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(item: testTask),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Badge widget should not be in the tree
+      expect(find.byKey(const Key('distanceBadge')), findsNothing);
+      // Card still renders
+      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+    });
+
+    testWidgets('distance badge uses green color for strong matches', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: CardWrapperWidget(
+            item: testTask,
+            vectorDistance: 0.15,
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final badgeFinder = find.byKey(const Key('distanceBadge'));
+      expect(badgeFinder, findsOneWidget);
+      expect(find.text('0.15'), findsOneWidget);
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: badgeFinder,
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.color, Colors.green);
     });
   });
 }

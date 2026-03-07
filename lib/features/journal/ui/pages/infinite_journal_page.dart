@@ -140,11 +140,15 @@ class _InfiniteJournalPageBodyState
                       animateTransitions: true,
                       invisibleItemsThreshold: 10,
                       itemBuilder: (context, item, index) {
+                        final distance = state.showDistances
+                            ? state.vectorSearchDistances[item.meta.id]
+                            : null;
                         return CardWrapperWidget(
                           item: item,
                           showCreationDate: state.showCreationDate,
                           showDueDate: state.showDueDate,
                           showCoverArt: state.showCoverArt,
+                          vectorDistance: distance,
                           key: ValueKey(item.meta.id),
                         );
                       },

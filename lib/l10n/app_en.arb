@@ -2054,6 +2054,7 @@
   "tasksQuickFilterUnassignedLabel": "Unassigned",
   "tasksShowCoverArt": "Show cover art on cards",
   "tasksShowCreationDate": "Show creation date on cards",
+  "tasksShowDistances": "Show distances on cards",
   "tasksShowDueDate": "Show due date on cards",
   "tasksSortByCreationDate": "Created",
   "tasksSortByDate": "Date",

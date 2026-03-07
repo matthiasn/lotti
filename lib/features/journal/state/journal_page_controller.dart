@@ -71,6 +71,7 @@ class JournalPageController extends _$JournalPageController {
   bool _showCreationDate = false;
   bool _showDueDate = true;
   bool _showCoverArt = true;
+  bool _showDistances = false;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -141,6 +142,7 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showCreationDate,
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
+      showDistances: _showDistances,
     );
   }
 
@@ -311,6 +313,7 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showCreationDate,
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
+      showDistances: _showDistances,
       searchMode: _searchMode,
       enableVectorSearch: _enableVectorSearch,
     );
@@ -460,6 +463,13 @@ class JournalPageController extends _$JournalPageController {
     await _persistTasksFilterWithoutRefresh();
   }
 
+  // Distance display toggle (visual only, no query refresh needed)
+  Future<void> setShowDistances({required bool show}) async {
+    _showDistances = show;
+    _emitState();
+    await _persistTasksFilterWithoutRefresh();
+  }
+
   // Persistence methods
 
   /// Loads persisted filters with migration from legacy key
@@ -488,6 +498,7 @@ class JournalPageController extends _$JournalPageController {
         _showCreationDate = tasksFilter.showCreationDate;
         _showDueDate = tasksFilter.showDueDate;
         _showCoverArt = tasksFilter.showCoverArt;
+        _showDistances = tasksFilter.showDistances;
       } else {
         _selectedLabelIds = {};
         _selectedPriorities = {};
@@ -534,6 +545,7 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showTasks && _showCreationDate,
       showDueDate: _showTasks && _showDueDate,
       showCoverArt: _showTasks && _showCoverArt,
+      showDistances: _showTasks && _showDistances,
     );
     final encodedFilter = jsonEncode(filter);
 
@@ -716,6 +728,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: Duration.zero,
         vectorSearchResultCount: 0,
+        vectorSearchDistances: const {},
       );
       return [];
     }
@@ -724,6 +737,7 @@ class JournalPageController extends _$JournalPageController {
       vectorSearchInFlight: true,
       vectorSearchElapsed: Duration.zero,
       vectorSearchResultCount: 0,
+      vectorSearchDistances: const {},
     );
 
     try {
@@ -746,6 +760,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: result.elapsed,
         vectorSearchResultCount: result.entities.length,
+        vectorSearchDistances: result.distances,
       );
 
       return result.entities;
@@ -758,6 +773,7 @@ class JournalPageController extends _$JournalPageController {
         vectorSearchInFlight: false,
         vectorSearchElapsed: Duration.zero,
         vectorSearchResultCount: 0,
+        vectorSearchDistances: const {},
       );
       return [];
     }
