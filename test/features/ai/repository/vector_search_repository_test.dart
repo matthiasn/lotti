@@ -141,8 +141,9 @@ void main() {
 
         expect(result.entities, hasLength(1));
         expect(result.entities.first, isA<Task>());
-        // Non-task result resolved to parent task — distance not mapped
-        // because parent was resolved via link, not direct match.
+        // Non-task result resolved to parent task via link — distance
+        // should be mapped to the resolved task ID.
+        expect(result.distances, {taskId: 0.3});
       },
     );
 

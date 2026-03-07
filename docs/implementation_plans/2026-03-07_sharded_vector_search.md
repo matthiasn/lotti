@@ -373,13 +373,18 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   }) async {
     final shardsToQuery = await _resolveShardsToQuery(categoryIds);
 
-    // Fan-out: query each shard for top k×2 results.
+    // Fan-out: query each shard for top k×N results.
     // Oversampling is still required WITHIN each shard because HNSW returns
     // chunks, not unique entities. A single long entity can produce multiple
     // chunks that dominate the top-k. VectorSearchRepository deduplicates
     // chunks → entities after this call, so we need headroom.
-    // We use k×2 (not k×3) because category filtering is no longer needed.
-    final perShardLimit = k * 2;
+    //
+    // When entityTypeFilter is set, the leaf store applies the filter AFTER
+    // the HNSW query, which can discard a large fraction of results. We
+    // increase the multiplier to k×3 to compensate for the post-HNSW
+    // filtering. Without entityTypeFilter, k×2 suffices since category
+    // filtering is no longer needed (the shard IS the category).
+    final perShardLimit = entityTypeFilter != null ? k * 3 : k * 2;
     final allResults = <EmbeddingSearchResult>[];
     for (final shard in shardsToQuery) {
       final results = shard.search(
@@ -713,6 +718,40 @@ static Future<void> migrateFromSingleStore({
 }
 ```
 
+#### Startup Sequence (Critical Ordering)
+
+The following steps must execute in order at app startup. Step 3 **must** complete
+before step 5 — `replaceEntityEmbeddings()` depends on the in-memory indexes
+populated by `_rebuildIndexes()`.
+
+```
+Step 1: migrateFromSingleStore()
+        ├─ Checks .migrated marker — no-op if already migrated
+        ├─ Opens old single store, reads all entities
+        ├─ Groups by categoryId, writes to per-category shards via putMany
+        └─ Writes .migrated marker after ALL shards are written
+
+Step 2: Instantiate ShardedEmbeddingStore (constructor)
+        └─ Calls _rebuildIndexes():
+            ├─ _ensureAllShardsOpen() — scans shard directories (sorted
+            │   by basename for determinism), opens each ObjectBox store
+            └─ For each shard: _rebuildIndexForShard()
+                ├─ queryAllEntityMetadata() per shard
+                ├─ Populates _primaryIndex (entityId → shardKey)
+                └─ Populates _reverseTaskIndex (taskId → {entityIds})
+            └─ _cleanupInterruptedMoves() — resolves any duplicates
+               left by crashes during cross-shard moves
+
+Step 3: Register ShardedEmbeddingStore in GetIt as EmbeddingStore
+        ├─ Now available for injection into VectorSearchRepository,
+        │   EmbeddingProcessor, etc.
+
+Step 4: Register EmbeddingService in GetIt and start background processing
+        ├─ CRITICAL: Must happen AFTER step 3 — EmbeddingService calls
+        │   replaceEntityEmbeddings() which needs the indexes from step 2
+        └─ Background embedding pipeline can now safely write to shards
+```
+
 ### Phase 2: Update Embedding Pipeline
 
 **Goal:** Route new embeddings to the correct shard.
@@ -869,7 +908,7 @@ flowchart TD
 
         M1["<b>findEntitiesByEntityId(entityId)</b><br/>Returns: List&lt;EmbeddingChunkEntity&gt;<br/>Query: entityId.equals(entityId)<br/>Used by: moveEntityToShard() — load all chunks<br/>for lossless copy to new shard"]
 
-        M2["<b>queryAllEntityMetadata()</b><br/>Returns: List&lt;EntityMetadataRow&gt;<br/>Uses: ObjectBox property query<br/>Fields: entityId, taskId (no embedding vector)<br/>Used by: startup index rebuild"]
+        M2["<b>queryAllEntityMetadata()</b><br/>Returns: List&lt;EntityMetadataRow&gt;<br/>Uses: full entity load (property queries have undefined ordering)<br/>Fields: entityId, taskId extracted from loaded entities<br/>Used by: startup index rebuild"]
     end
 
     style M1 fill:#ffd43b,stroke:#f59f00
@@ -991,10 +1030,10 @@ graph TD
 
     subgraph "Startup: Rebuild Both Indexes (metadata-only)"
         SCAN["Scan all shard directories"]
-        SCAN --> ITER["For each shard:<br/>queryAllEntityMetadata()<br/>(property query — no vectors loaded)"]
+        SCAN --> ITER["For each shard:<br/>queryAllEntityMetadata()<br/>(full entity load — extracts metadata only)"]
         ITER --> BUILD1["Populate Map entityId → shardKey"]
         ITER --> BUILD2["For rows with non-empty taskId:<br/>Populate Map taskId → Set of entityIds"]
-        ITER --> NOTE["~2MB for 30k rows<br/>(vs ~120MB with getAll)"]
+        ITER --> NOTE["Transient memory spike per shard<br/>(entities GC'd after metadata extraction)"]
     end
 
     subgraph "Write Path: O(1) Lookup"
@@ -1318,7 +1357,7 @@ Add a visual relevance indicator to search results:
    | Layer | Current | After |
    |-------|---------|-------|
    | `VectorSearchRepository._prepareSearch()` | `k: k * 3` | `k: k` (pass through, no multiplication) |
-   | `ShardedEmbeddingStore.search()` | N/A (new) | `perShardLimit = k * 2` (owns oversampling) |
+   | `ShardedEmbeddingStore.search()` | N/A (new) | `perShardLimit = k * 3` when `entityTypeFilter` set, `k * 2` otherwise (owns oversampling) |
    | `ObjectBoxEmbeddingStore.search()` | `hasFilter ? k * 3 : k` | Always use `k` as-is (no internal multiplication) |
 
    The existing `ObjectBoxEmbeddingStore.search()` (line 140-142) internally multiplies `k` by 3
@@ -1337,8 +1376,8 @@ Add a visual relevance indicator to search results:
                                    │
                                    ▼
    ┌─────────────────────────┐
-   │ ShardedEmbeddingStore   │  expands to k×2 = 40 per shard
-   │ search(k=20)            │──→ each shard.search(k=40)
+   │ ShardedEmbeddingStore   │  expands to k×2=40 (or k×3=60 with entityTypeFilter)
+   │ search(k=20)            │──→ each shard.search(k=40 or 60)
    └─────────────────────────┘
                                    │
                                    ▼

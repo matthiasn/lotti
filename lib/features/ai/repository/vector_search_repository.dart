@@ -83,43 +83,15 @@ class VectorSearchRepository {
     final deduped = bestByEntity.values.toList()
       ..sort((a, b) => a.distance.compareTo(b.distance));
 
-    // Build distance map: dedup key → best distance.
-    // After task resolution, remap to resolved task ID.
-    final dedupDistances = <String, double>{
-      for (final entry in bestByEntity.entries) entry.key: entry.value.distance,
-    };
-
     // Resolve all deduplicated results, then trim to k — resolution can
     // collapse multiple entities to the same task, so trimming before
     // resolution would lose unique results.
-    final resolvedTasks = await _resolveToTasks(deduped);
+    final (resolvedTasks, distances) = await _resolveToTasks(deduped);
     final tasks = resolvedTasks.take(k).toList();
 
-    // Map distances to resolved task IDs.
-    final distances = <String, double>{};
-    for (final result in deduped) {
-      final key = result.entityType == kEntityTypeAgentReport
-          ? 'agent:${result.taskId}'
-          : result.entityId;
-      final distance = dedupDistances[key];
-      if (distance == null) continue;
-
-      // Determine which task ID this result resolved to.
-      String? resolvedId;
-      if (result.entityType == kEntityTypeTask) {
-        resolvedId = result.entityId;
-      } else if (result.entityType == kEntityTypeAgentReport) {
-        resolvedId = result.taskId;
-      }
-      if (resolvedId != null &&
-          resolvedId.isNotEmpty &&
-          tasks.any((t) => t.meta.id == resolvedId)) {
-        final existing = distances[resolvedId];
-        if (existing == null || distance < existing) {
-          distances[resolvedId] = distance;
-        }
-      }
-    }
+    // Trim distance map to only include tasks in the final result.
+    final taskIds = tasks.map((t) => t.meta.id).toSet();
+    distances.removeWhere((id, _) => !taskIds.contains(id));
 
     stopwatch.stop();
     return VectorSearchResult(
@@ -251,14 +223,16 @@ class VectorSearchRepository {
 
   /// Resolves search results to unique tasks, preserving distance ordering.
   ///
+  /// Returns the resolved tasks and a map of task ID → best (lowest) distance.
   /// If a result is already a Task, it is fetched directly. Otherwise, the
   /// parent task is resolved via linked entries. Both direct and linked
   /// entities are bulk-fetched to avoid N+1 queries.
-  Future<List<JournalEntity>> _resolveToTasks(
+  Future<(List<JournalEntity>, Map<String, double>)> _resolveToTasks(
     List<EmbeddingSearchResult> results,
   ) async {
     final seenIds = <String>{};
     final tasks = <JournalEntity>[];
+    final distances = <String, double>{};
 
     // 1. Bulk-fetch all direct task entities in one query.
     final directTaskIds = results
@@ -313,12 +287,14 @@ class VectorSearchRepository {
         : <String, JournalEntity>{};
 
     // 4. Iterate original ranked results to preserve global ordering.
+    // Track best distance for each resolved task ID.
     for (final result in results) {
       if (result.entityType == kEntityTypeTask) {
         final entity = directEntities[result.entityId];
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
+        _recordBestDistance(distances, result.entityId, result.distance);
         continue;
       }
 
@@ -329,6 +305,7 @@ class VectorSearchRepository {
           if (entity is Task && seenIds.add(entity.meta.id)) {
             tasks.add(entity);
           }
+          _recordBestDistance(distances, result.taskId, result.distance);
         }
         continue;
       }
@@ -339,9 +316,22 @@ class VectorSearchRepository {
         if (entity is Task && seenIds.add(entity.meta.id)) {
           tasks.add(entity);
         }
+        _recordBestDistance(distances, parentId, result.distance);
       }
     }
 
-    return tasks;
+    return (tasks, distances);
+  }
+
+  /// Records the best (lowest) distance for a given entity ID.
+  static void _recordBestDistance(
+    Map<String, double> distances,
+    String entityId,
+    double distance,
+  ) {
+    final existing = distances[entityId];
+    if (existing == null || distance < existing) {
+      distances[entityId] = distance;
+    }
   }
 }
