@@ -741,7 +741,7 @@ Future<List<AgentDomainEntity>> evolutionNotes(
 @Riverpod(keepAlive: true)
 TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   // Embedding dependencies are optional — the pipeline may not be available
-  // (e.g. missing native sqlite-vec library on CI).
+  // (e.g. ObjectBox initialization failure).
   final embeddingStore = getIt.isRegistered<EmbeddingStore>()
       ? getIt<EmbeddingStore>()
       : null;

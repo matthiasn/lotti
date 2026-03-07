@@ -15,10 +15,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
-import 'package:lotti/features/ai/database/embeddings_init.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store_loader.dart';
-import 'package:lotti/features/ai/database/sqlite_embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -395,35 +392,18 @@ Future<void> registerSingletons() async {
   );
 
   // Embedding generation pipeline (Ollama-based, local).
-  // The SQLite backend depends on sqlite-vec which requires a native extension.
-  // If the selected backend fails to initialize, the pipeline is non-essential
+  // If the backend fails to initialize, the pipeline is non-essential
   // and the app should still start.
   // coverage:ignore-start
   try {
-    final EmbeddingStore embeddingStore;
-
-    if (useObjectBoxEmbeddings) {
-      embeddingStore = await openObjectBoxEmbeddingStore(
-        documentsPath: getIt<Directory>().path,
-      );
-      getIt.registerSingleton<EmbeddingStore>(
+    final embeddingStore = await openObjectBoxEmbeddingStore(
+      documentsPath: getIt<Directory>().path,
+    );
+    getIt
+      ..registerSingleton<EmbeddingStore>(
         embeddingStore,
         dispose: (store) => store.close(),
-      );
-    } else {
-      final sqliteEmbeddingsDb = initProductionEmbeddingsDb(
-        documentsPath: getIt<Directory>().path,
-      );
-      embeddingStore = SqliteEmbeddingStore(sqliteEmbeddingsDb);
-      getIt
-        ..registerSingleton<EmbeddingsDb>(
-          sqliteEmbeddingsDb,
-          dispose: (db) => db.close(),
-        )
-        ..registerSingleton<EmbeddingStore>(embeddingStore);
-    }
-
-    getIt
+      )
       ..registerSingleton<OllamaEmbeddingRepository>(
         OllamaEmbeddingRepository(),
         dispose: (repo) => repo.close(),

@@ -7,7 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -34,7 +34,7 @@ const _longText = 'This is a sufficiently long text for embedding generation.';
 Float32List _fakeEmbedding() => Float32List(kEmbeddingDimensions);
 
 void main() {
-  late MockEmbeddingsDb mockEmbeddingsDb;
+  late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
   late MockAiConfigRepository mockAiConfigRepo;
@@ -46,14 +46,14 @@ void main() {
   });
 
   setUp(() {
-    mockEmbeddingsDb = MockEmbeddingsDb();
+    mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockJournalDb = MockJournalDb();
     mockAiConfigRepo = MockAiConfigRepository();
     updateNotifications = UpdateNotifications();
 
     service = EmbeddingService(
-      embeddingStore: mockEmbeddingsDb,
+      embeddingStore: mockEmbeddingStore,
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       updateNotifications: updateNotifications,
@@ -71,11 +71,11 @@ void main() {
     ).thenAnswer((_) async => 'http://localhost:11434');
 
     // Default: no existing content hash
-    when(() => mockEmbeddingsDb.getContentHash(any())).thenReturn(null);
+    when(() => mockEmbeddingStore.getContentHash(any())).thenReturn(null);
 
     // Default: store swap succeeds
     when(
-      () => mockEmbeddingsDb.replaceEntityEmbeddings(
+      () => mockEmbeddingStore.replaceEntityEmbeddings(
         entityId: any(named: 'entityId'),
         entityType: any(named: 'entityType'),
         modelId: any(named: 'modelId'),
@@ -153,7 +153,7 @@ void main() {
         ).called(1);
 
         verify(
-          () => mockEmbeddingsDb.replaceEntityEmbeddings(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: _entityId,
             entityType: kEntityTypeJournalText,
             modelId: ollamaEmbedDefaultModel,
@@ -177,7 +177,7 @@ void main() {
 
         // Simulate existing hash that matches current content.
         when(
-          () => mockEmbeddingsDb.getContentHash(_entityId),
+          () => mockEmbeddingStore.getContentHash(_entityId),
         ).thenReturn(EmbeddingContentExtractor.contentHash(_longText));
 
         service.start();
@@ -371,7 +371,7 @@ void main() {
 
         // Only second entity was stored (first failed)
         verify(
-          () => mockEmbeddingsDb.replaceEntityEmbeddings(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: entityId2,
             entityType: any(named: 'entityType'),
             modelId: any(named: 'modelId'),
@@ -409,7 +409,7 @@ void main() {
         sendAndProcess(async, {_entityId, taskNotification});
 
         verify(
-          () => mockEmbeddingsDb.replaceEntityEmbeddings(
+          () => mockEmbeddingStore.replaceEntityEmbeddings(
             entityId: _entityId,
             entityType: kEntityTypeTask,
             modelId: any(named: 'modelId'),

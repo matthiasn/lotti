@@ -87,8 +87,9 @@ class ToxiproxyController {
 
   /// Delete a proxy
   Future<void> deleteProxy(String name) async {
-    final request =
-        await _client.deleteUrl(Uri.parse('$baseUrl/proxies/$name'));
+    final request = await _client.deleteUrl(
+      Uri.parse('$baseUrl/proxies/$name'),
+    );
     final response = await request.close();
     await response.drain<void>();
   }
@@ -112,8 +113,9 @@ class ToxiproxyController {
       'attributes': attributes,
     });
 
-    final request =
-        await _client.postUrl(Uri.parse('$baseUrl/proxies/$proxyName/toxics'));
+    final request = await _client.postUrl(
+      Uri.parse('$baseUrl/proxies/$proxyName/toxics'),
+    );
     request.headers.contentType = ContentType.json;
     request.write(body);
     final response = await request.close();
@@ -132,16 +134,18 @@ class ToxiproxyController {
     required String proxyName,
     required String toxicName,
   }) async {
-    final request = await _client
-        .deleteUrl(Uri.parse('$baseUrl/proxies/$proxyName/toxics/$toxicName'));
+    final request = await _client.deleteUrl(
+      Uri.parse('$baseUrl/proxies/$proxyName/toxics/$toxicName'),
+    );
     final response = await request.close();
     await response.drain<void>();
   }
 
   /// Remove all toxics from a proxy
   Future<void> removeAllToxics(String proxyName) async {
-    final request =
-        await _client.getUrl(Uri.parse('$baseUrl/proxies/$proxyName/toxics'));
+    final request = await _client.getUrl(
+      Uri.parse('$baseUrl/proxies/$proxyName/toxics'),
+    );
     final response = await request.close();
     final body = await response.transform(utf8.decoder).join();
     final toxics = jsonDecode(body) as List<dynamic>;

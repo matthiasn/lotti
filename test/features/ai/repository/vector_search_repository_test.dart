@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/database/embeddings_db.dart';
+import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:mocktail/mocktail.dart';
@@ -12,7 +12,7 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
 void main() {
-  late MockEmbeddingsDb mockEmbeddingsDb;
+  late MockEmbeddingStore mockEmbeddingStore;
   late MockOllamaEmbeddingRepository mockEmbeddingRepo;
   late MockJournalDb mockJournalDb;
   late MockAiConfigRepository mockAiConfigRepo;
@@ -27,13 +27,13 @@ void main() {
   });
 
   setUp(() {
-    mockEmbeddingsDb = MockEmbeddingsDb();
+    mockEmbeddingStore = MockEmbeddingStore();
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
     mockJournalDb = MockJournalDb();
     mockAiConfigRepo = MockAiConfigRepository();
 
     sut = VectorSearchRepository(
-      embeddingStore: mockEmbeddingsDb,
+      embeddingStore: mockEmbeddingStore,
       embeddingRepository: mockEmbeddingRepo,
       journalDb: mockJournalDb,
       aiConfigRepository: mockAiConfigRepo,
@@ -62,7 +62,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -97,7 +97,7 @@ void main() {
         ).thenAnswer((_) async => fakeVector);
 
         when(
-          () => mockEmbeddingsDb.search(
+          () => mockEmbeddingStore.search(
             queryVector: any(named: 'queryVector'),
             k: any(named: 'k'),
             categoryIds: any(named: 'categoryIds'),
@@ -147,7 +147,7 @@ void main() {
 
       final taskId = testTask.meta.id;
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -216,7 +216,7 @@ void main() {
 
       expect(result.entities, isEmpty);
       verifyNever(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -233,7 +233,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -254,7 +254,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -301,7 +301,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -312,7 +312,7 @@ void main() {
 
       // k is inflated by 3× to account for multiple chunks per entity
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: 15,
           categoryIds: any(named: 'categoryIds'),
@@ -332,7 +332,7 @@ void main() {
 
         final taskId = testTask.meta.id;
         when(
-          () => mockEmbeddingsDb.search(
+          () => mockEmbeddingStore.search(
             queryVector: any(named: 'queryVector'),
             k: any(named: 'k'),
             categoryIds: any(named: 'categoryIds'),
@@ -368,7 +368,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -397,7 +397,7 @@ void main() {
 
       final taskId = testTask.meta.id;
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -435,7 +435,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -448,7 +448,7 @@ void main() {
       );
 
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: {'cat-1'},
@@ -467,7 +467,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -500,7 +500,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -565,7 +565,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -604,7 +604,7 @@ void main() {
       ).thenAnswer((_) async => fakeVector);
 
       when(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: any(named: 'categoryIds'),
@@ -617,7 +617,7 @@ void main() {
       );
 
       verify(
-        () => mockEmbeddingsDb.search(
+        () => mockEmbeddingStore.search(
           queryVector: any(named: 'queryVector'),
           k: any(named: 'k'),
           categoryIds: {'cat-1', 'cat-2'},
