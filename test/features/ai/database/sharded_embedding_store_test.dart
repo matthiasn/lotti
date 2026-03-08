@@ -574,13 +574,13 @@ void main() {
         when(getShardOps('cat-a').count).thenReturn(10);
         when(getShardOps('cat-b').count).thenReturn(25);
 
-        expect(await store.count, 35);
+        expect(store.count, 35);
       });
 
       test('returns 0 with no shards', () async {
         await openStore();
 
-        expect(await store.count, 0);
+        expect(store.count, 0);
       });
     });
 

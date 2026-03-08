@@ -30,10 +30,11 @@ abstract class ObjectBoxOps {
   /// vectors). Used for shard-to-shard moves.
   List<EmbeddingChunkEntity> findEntitiesByEntityId(String entityId);
 
-  /// Returns lightweight entityId+taskId metadata for every stored entity.
+  /// Returns entityId+taskId metadata for every stored entity.
   ///
-  /// Uses property queries to avoid loading the full embedding vectors,
-  /// keeping memory usage low during startup index rebuilds.
+  /// Note: loads full entities because ObjectBox property queries do not
+  /// guarantee consistent ordering across separate calls, making it unsafe
+  /// to zip results from multiple property queries by index.
   List<EntityMetadataRow> queryAllEntityMetadata();
 
   /// Returns all stored entities (full objects including vectors).

@@ -165,12 +165,10 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final shardKey = sanitizeShardKey(categoryId);
     final targetShard = await _getOrCreateShard(shardKey);
 
-    // Check if entity exists in a different shard — cross-shard move.
-    final oldShardKey = _primaryIndex[entityId];
-    if (oldShardKey != null && oldShardKey != shardKey) {
-      _shards[oldShardKey]?.store.deleteEntityEmbeddings(entityId);
-    }
-
+    // Write to the new shard first, then delete from the old one.
+    // This write-then-delete order ensures that a crash between the two
+    // operations leaves a duplicate (cleaned up on next startup by
+    // _rebuildIndexes) rather than losing the entity's embeddings entirely.
     targetShard.store.replaceEntityEmbeddings(
       entityId: entityId,
       entityType: entityType,
@@ -181,6 +179,12 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       taskId: taskId,
       subtype: subtype,
     );
+
+    // Now safe to delete from the old shard (data exists in the new one).
+    final oldShardKey = _primaryIndex[entityId];
+    if (oldShardKey != null && oldShardKey != shardKey) {
+      _shards[oldShardKey]?.store.deleteEntityEmbeddings(entityId);
+    }
 
     // Update indexes.
     _primaryIndex[entityId] = shardKey;
@@ -216,7 +220,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   }
 
   @override
-  Future<int> get count async {
+  int get count {
     var total = 0;
     for (final shard in _shards.values) {
       total += shard.store.count;
