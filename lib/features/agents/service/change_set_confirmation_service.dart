@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -10,6 +8,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
 /// Handles user confirmation and rejection of individual change items
@@ -22,20 +21,34 @@ import 'package:uuid/uuid.dart';
 /// After each item resolution, the change set's status is updated:
 /// - All items resolved → [ChangeSetStatus.resolved]
 /// - Some items resolved → [ChangeSetStatus.partiallyResolved]
+///
+/// For task-split workflows, manages cross-item ID resolution:
+/// when `create_follow_up_task` succeeds, the placeholder→actual mapping
+/// is stored in [_resolvedIds] so subsequent `migrate_checklist_item`
+/// items can resolve the target task ID.
 class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required AgentSyncService syncService,
     required TaskToolDispatcher toolDispatcher,
     required LabelsRepository labelsRepository,
+    DomainLogger? domainLogger,
   }) : _syncService = syncService,
        _toolDispatcher = toolDispatcher,
-       _labelsRepository = labelsRepository;
+       _labelsRepository = labelsRepository,
+       _domainLogger = domainLogger;
 
   final AgentSyncService _syncService;
   final TaskToolDispatcher _toolDispatcher;
   final LabelsRepository _labelsRepository;
+  final DomainLogger? _domainLogger;
 
   static const _uuid = Uuid();
+  static const _sub = 'ChangeSetConfirmation';
+
+  /// Maps placeholder task IDs (from `create_follow_up_task`) to actual
+  /// task IDs after successful dispatch. Persists across calls within the
+  /// same service instance.
+  final Map<String, String> _resolvedIds = {};
 
   /// Confirms a single change item at [itemIndex], dispatching its tool call
   /// and persisting the decision.
@@ -60,10 +73,11 @@ class ChangeSetConfirmationService {
     final item = current.items[itemIndex];
 
     if (item.status != ChangeItemStatus.pending) {
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Skipping item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       return ToolExecutionResult(
         success: false,
@@ -72,10 +86,25 @@ class ChangeSetConfirmationService {
       );
     }
 
-    developer.log(
+    // For migration items, resolve the placeholder targetTaskId before
+    // dispatch.
+    final dispatchArgs = _resolveArgsIfNeeded(item, current);
+    if (dispatchArgs == null) {
+      // Resolution failed — target task not yet created.
+      return const ToolExecutionResult(
+        success: false,
+        output:
+            'Error: target task has not been created yet. '
+            'Confirm the follow-up task first.',
+        errorMessage: 'Unresolved placeholder targetTaskId',
+      );
+    }
+
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Confirming item $itemIndex (${item.toolName}) in change set '
-      '${current.id}',
-      name: 'ChangeSetConfirmationService',
+      '${current.id}, dispatchArgs: $dispatchArgs',
+      subDomain: _sub,
     );
 
     // 1. Mark the item as confirmed and persist the decision BEFORE
@@ -100,15 +129,16 @@ class ChangeSetConfirmationService {
     //    to pending so the user can retry.
     final result = await _toolDispatcher.dispatch(
       item.toolName,
-      item.args,
+      dispatchArgs,
       current.taskId,
     );
 
     if (!result.success) {
-      developer.log(
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
         'Tool dispatch failed for item $itemIndex (${item.toolName}): '
         '${result.errorMessage ?? result.output} — reverting to pending',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       await _updateChangeSetItemStatus(
         current,
@@ -117,6 +147,12 @@ class ChangeSetConfirmationService {
       );
       return result;
     }
+
+    // 3. After successful create_follow_up_task, store the placeholder→actual
+    //    mapping for subsequent migration items and persist the resolved ID
+    //    into sibling migration items so a service restart doesn't lose it.
+    _captureResolvedId(item, result);
+    await _persistResolvedIdToSiblings(item, result, current);
 
     return result;
   }
@@ -141,18 +177,20 @@ class ChangeSetConfirmationService {
     final item = current.items[itemIndex];
 
     if (item.status != ChangeItemStatus.pending) {
-      developer.log(
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
         'Skipping reject for item $itemIndex (${item.toolName}) — already '
         '${item.status.name}',
-        name: 'ChangeSetConfirmationService',
+        subDomain: _sub,
       );
       return false;
     }
 
-    developer.log(
+    _domainLogger?.log(
+      LogDomains.agentWorkflow,
       'Rejecting item $itemIndex (${item.toolName}) in change set '
       '${current.id}',
-      name: 'ChangeSetConfirmationService',
+      subDomain: _sub,
     );
 
     // 1. Persist the decision (no tool dispatch for rejections).
@@ -185,6 +223,16 @@ class ChangeSetConfirmationService {
       }
     }
 
+    // 4. For rejected follow-up tasks, cascade-reject sibling migration
+    //    items that reference this task's placeholder — they can never
+    //    succeed without the target task.
+    if (item.toolName == TaskAgentToolNames.createFollowUpTask) {
+      final placeholderId = item.args['_placeholderTaskId'];
+      if (placeholderId is String) {
+        await _cascadeRejectMigrationItems(current, placeholderId, reason);
+      }
+    }
+
     return true;
   }
 
@@ -214,6 +262,153 @@ class ChangeSetConfirmationService {
     }
 
     return results;
+  }
+
+  /// Resolves args for migration items that reference a placeholder
+  /// targetTaskId.
+  ///
+  /// Returns the (possibly modified) args map, or `null` if the placeholder
+  /// cannot be resolved (target task not yet created).
+  ///
+  /// Distinguishes three cases for targetTaskId:
+  /// 1. In-memory resolved → substitute with actual ID.
+  /// 2. Known placeholder (a matching create_follow_up_task exists in the
+  ///    change set) but not yet resolved → return `null` to block dispatch.
+  /// 3. Already a real ID (e.g. persisted by [_persistResolvedIdToSiblings]
+  ///    in a prior service instance) → return args as-is.
+  Map<String, dynamic>? _resolveArgsIfNeeded(
+    ChangeItem item,
+    ChangeSetEntity changeSet,
+  ) {
+    if (item.toolName != TaskAgentToolNames.migrateChecklistItem) {
+      return item.args;
+    }
+
+    final targetTaskId = item.args['targetTaskId'];
+    if (targetTaskId is! String || targetTaskId.isEmpty) {
+      return item.args;
+    }
+
+    // Case 1: in-memory resolution from this service instance.
+    final resolved = _resolvedIds[targetTaskId];
+    if (resolved != null) {
+      return {...item.args, 'targetTaskId': resolved};
+    }
+
+    // Case 2: check if targetTaskId is a known placeholder in this change set.
+    final isPlaceholder = changeSet.items.any(
+      (i) =>
+          i.toolName == TaskAgentToolNames.createFollowUpTask &&
+          i.args['_placeholderTaskId'] == targetTaskId,
+    );
+    if (isPlaceholder) {
+      // Block: the follow-up task must be confirmed first.
+      return null;
+    }
+
+    // Case 3: targetTaskId is a real ID (already resolved by a prior
+    // service instance via _persistResolvedIdToSiblings).
+    return item.args;
+  }
+
+  /// After a successful `create_follow_up_task` dispatch, updates sibling
+  /// `migrate_checklist_item` items in the same change set so that their
+  /// `targetTaskId` args point to the actual task ID instead of the
+  /// placeholder. This persists the mapping into the DB so it survives
+  /// service disposal / app restart.
+  Future<void> _persistResolvedIdToSiblings(
+    ChangeItem item,
+    ToolExecutionResult result,
+    ChangeSetEntity changeSet,
+  ) async {
+    if (item.toolName != TaskAgentToolNames.createFollowUpTask) return;
+    if (!result.success) return;
+
+    final placeholderId = item.args['_placeholderTaskId'];
+    final actualId = result.mutatedEntityId;
+    if (placeholderId is! String || actualId == null || actualId.isEmpty) {
+      return;
+    }
+
+    // Re-read the change set to get the latest item statuses.
+    final fresh = await _freshChangeSet(changeSet);
+    var changed = false;
+    final updatedItems = fresh.items.map((i) {
+      if (i.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          i.args['targetTaskId'] == placeholderId) {
+        changed = true;
+        return i.copyWith(args: {...i.args, 'targetTaskId': actualId});
+      }
+      return i;
+    }).toList();
+
+    if (changed) {
+      await _syncService.upsertEntity(fresh.copyWith(items: updatedItems));
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
+        'Persisted resolved targetTaskId ($actualId) to sibling '
+        'migration items in change set ${fresh.id}',
+        subDomain: _sub,
+      );
+    }
+  }
+
+  /// When a `create_follow_up_task` item is rejected, cascade-rejects all
+  /// pending `migrate_checklist_item` siblings whose `targetTaskId` matches
+  /// the placeholder. Without the target task, those migrations can never
+  /// succeed.
+  Future<void> _cascadeRejectMigrationItems(
+    ChangeSetEntity changeSet,
+    String placeholderId,
+    String? reason,
+  ) async {
+    final fresh = await _freshChangeSet(changeSet);
+    for (var i = 0; i < fresh.items.length; i++) {
+      final sibling = fresh.items[i];
+      if (sibling.toolName == TaskAgentToolNames.migrateChecklistItem &&
+          sibling.status == ChangeItemStatus.pending &&
+          sibling.args['targetTaskId'] == placeholderId) {
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'Cascade-rejecting migration item $i — target task rejected',
+          subDomain: _sub,
+        );
+
+        await _persistDecision(
+          changeSet: fresh,
+          itemIndex: i,
+          toolName: sibling.toolName,
+          verdict: ChangeDecisionVerdict.rejected,
+          rejectionReason: reason ?? 'Target follow-up task was rejected',
+          humanSummary: sibling.humanSummary,
+          args: sibling.args,
+        );
+
+        await _updateChangeSetItemStatus(
+          fresh,
+          i,
+          ChangeItemStatus.rejected,
+        );
+      }
+    }
+  }
+
+  /// After a successful `create_follow_up_task` dispatch, captures the
+  /// placeholder→actual ID mapping.
+  void _captureResolvedId(ChangeItem item, ToolExecutionResult result) {
+    if (item.toolName != TaskAgentToolNames.createFollowUpTask) return;
+    if (!result.success) return;
+
+    final placeholderId = item.args['_placeholderTaskId'];
+    final actualId = result.mutatedEntityId;
+    if (placeholderId is String && actualId != null && actualId.isNotEmpty) {
+      _resolvedIds[placeholderId] = actualId;
+      _domainLogger?.log(
+        LogDomains.agentWorkflow,
+        'Captured placeholder resolution: $placeholderId → $actualId',
+        subDomain: _sub,
+      );
+    }
   }
 
   /// Re-reads the change set from the repository to get the latest persisted

@@ -847,6 +847,14 @@
   "changeSetConfirmAll": "Confirm all",
   "changeSetConfirmError": "Failed to apply change",
   "changeSetItemConfirmed": "Change applied",
+  "changeSetItemConfirmedWithWarning": "Applied with warning: {warning}",
+  "@changeSetItemConfirmedWithWarning": {
+    "placeholders": {
+      "warning": {
+        "type": "String"
+      }
+    }
+  },
   "changeSetItemRejected": "Change rejected",
   "changeSetPendingCount": "{count} pending",
   "@changeSetPendingCount": {

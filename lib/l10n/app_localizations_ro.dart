@@ -1591,6 +1591,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get changeSetItemConfirmed => 'Modificare aplicată';
 
   @override
+  String changeSetItemConfirmedWithWarning(String warning) {
+    return 'Aplicată cu avertisment: $warning';
+  }
+
+  @override
   String get changeSetItemRejected => 'Modificare respinsă';
 
   @override

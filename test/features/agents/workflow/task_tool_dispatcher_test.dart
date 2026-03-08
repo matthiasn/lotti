@@ -19,6 +19,7 @@ void main() {
   late MockJournalRepository mockJournalRepository;
   late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
+  late MockPersistenceLogic mockPersistenceLogic;
   late TaskToolDispatcher dispatcher;
 
   const taskId = 'task-001';
@@ -28,12 +29,14 @@ void main() {
     mockJournalRepository = MockJournalRepository();
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
+    mockPersistenceLogic = MockPersistenceLogic();
 
     dispatcher = TaskToolDispatcher(
       journalDb: mockJournalDb,
       journalRepository: mockJournalRepository,
       checklistRepository: mockChecklistRepository,
       labelsRepository: mockLabelsRepository,
+      persistenceLogic: mockPersistenceLogic,
     );
   });
 
@@ -549,6 +552,70 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.output, isNotEmpty);
+        },
+      );
+
+      test(
+        'create_follow_up_task delegates to FollowUpTaskHandler',
+        () async {
+          final newTask = _makeTestTask('new-task-001');
+
+          // FollowUpTaskHandler needs a source task to inherit category.
+          when(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => newTask);
+
+          // Stub verify-lookup after task creation.
+          when(
+            () => mockJournalDb.journalEntityById('new-task-001'),
+          ).thenAnswer((_) async => newTask);
+
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final result = await dispatcher.dispatch(
+            'create_follow_up_task',
+            {'title': 'Follow-Up Task'},
+            taskId,
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('Follow-Up Task'));
+        },
+      );
+
+      test(
+        'migrate_checklist_item delegates to ChecklistMigrationHandler',
+        () async {
+          // The handler needs the checklist item, source task, and target task.
+          // Since the task has no checklists and item won't be found, it
+          // will fail at the item lookup step — but this proves dispatch
+          // routing works.
+          when(
+            () => mockJournalDb.journalEntityById('item-x'),
+          ).thenAnswer((_) async => null);
+
+          final result = await dispatcher.dispatch(
+            'migrate_checklist_item',
+            {
+              'id': 'item-x',
+              'title': 'Migrate me',
+              'targetTaskId': 'target-001',
+            },
+            taskId,
+          );
+
+          // Handler returns failure because item is not found.
+          expect(result.success, isFalse);
+          expect(result.output, contains('checklist item item-x not found'));
         },
       );
     });

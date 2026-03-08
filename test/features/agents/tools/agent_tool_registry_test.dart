@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 11 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(11));
+    test('contains exactly 13 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(13));
     });
 
     test('all tools have non-empty name and description', () {

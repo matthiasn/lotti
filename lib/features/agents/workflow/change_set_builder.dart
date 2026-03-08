@@ -175,6 +175,7 @@ class ChangeSetBuilder {
     required String toolName,
     required Map<String, dynamic> args,
     required String summaryPrefix,
+    String? groupId,
   }) async {
     final arrayKey = AgentToolRegistry.explodedBatchTools[toolName];
     if (arrayKey == null) {
@@ -208,12 +209,24 @@ class ChangeSetBuilder {
         ? await _resolveExistingLabelIds()
         : null;
 
+    // For migration batch tools, inject top-level keys (targetTaskId) into
+    // copies of each child element so singular items are self-contained and
+    // dispatchable after explosion. We copy to avoid mutating caller data.
+    final isMigrateBatch = toolName == TaskAgentToolNames.migrateChecklistItems;
+    final targetTaskIdForMigration = isMigrateBatch
+        ? args['targetTaskId']
+        : null;
+
     var added = 0;
     var skipped = 0;
     var redundant = 0;
     final redundantDetails = <String>[];
-    for (final element in array) {
+    for (var element in array) {
       if (element is Map<String, dynamic>) {
+        // Inject targetTaskId into a copy for migration items.
+        if (targetTaskIdForMigration is String) {
+          element = {...element, 'targetTaskId': targetTaskIdForMigration};
+        }
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
         if (existingTitles != null) {
@@ -274,6 +287,7 @@ class ChangeSetBuilder {
             toolName: singularToolName,
             args: element,
             humanSummary: summary,
+            groupId: groupId,
           ),
         );
 
@@ -358,9 +372,18 @@ class ChangeSetBuilder {
       // Consolidate: pick the newest set as the survivor, collect all
       // items from every set, append the new deduplicated items, and
       // mark all other sets as resolved so the UI shows exactly one card.
-      final survivor = existingPendingSets.reduce(
+      final staleWinner = existingPendingSets.reduce(
         (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
       );
+
+      // Re-read the survivor from DB so we pick up any mid-wake
+      // confirmations (user tapping items while the agent is running).
+      final freshEntity = await syncService.repository.getEntity(
+        staleWinner.id,
+      );
+      final survivor = freshEntity is ChangeSetEntity
+          ? freshEntity
+          : staleWinner;
 
       // Gather items from non-survivor sets that aren't already in the
       // survivor or in the new deduped items.
@@ -368,11 +391,20 @@ class ChangeSetBuilder {
         ...survivor.items.map(ChangeItem.fingerprint),
         ...deduped.map(ChangeItem.fingerprint),
       };
-      final otherItems = existingPendingSets
-          .where((cs) => cs.id != survivor.id)
-          .expand((cs) => cs.items)
-          .where((i) => knownFingerprints.add(ChangeItem.fingerprint(i)))
-          .toList();
+
+      final otherItems = <ChangeItem>[];
+      for (final cs in existingPendingSets) {
+        if (cs.id != survivor.id) {
+          // Re-read each non-survivor to preserve mid-wake confirmations.
+          final freshCs = await syncService.repository.getEntity(cs.id);
+          final current = freshCs is ChangeSetEntity ? freshCs : cs;
+          for (final item in current.items) {
+            if (knownFingerprints.add(ChangeItem.fingerprint(item))) {
+              otherItems.add(item);
+            }
+          }
+        }
+      }
 
       final merged = survivor.copyWith(
         items: [...survivor.items, ...otherItems, ...deduped],
@@ -383,8 +415,12 @@ class ChangeSetBuilder {
       // pending queries and the UI.
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
+          // Re-read before marking resolved to avoid overwriting
+          // mid-wake status changes.
+          final freshCs = await syncService.repository.getEntity(cs.id);
+          final current = freshCs is ChangeSetEntity ? freshCs : cs;
           await syncService.upsertEntity(
-            cs.copyWith(
+            current.copyWith(
               status: ChangeSetStatus.resolved,
               resolvedAt: clock.now(),
             ),
@@ -441,6 +477,8 @@ class ChangeSetBuilder {
     TaskAgentToolNames.updateChecklistItems =>
       TaskAgentToolNames.updateChecklistItem,
     TaskAgentToolNames.assignTaskLabels => TaskAgentToolNames.assignTaskLabel,
+    TaskAgentToolNames.migrateChecklistItems =>
+      TaskAgentToolNames.migrateChecklistItem,
     _ => throw ArgumentError(
       'Unsupported batch tool for singularization: $toolName. '
       'Add an explicit mapping.',
@@ -707,6 +745,79 @@ class ChangeSetBuilder {
       );
       return null;
     }
+  }
+
+  /// Adds a `create_follow_up_task` item with a deterministic placeholder ID
+  /// and returns the placeholder so callers can reference it in subsequent
+  /// `migrate_checklist_items` calls.
+  Future<String> addFollowUpTask({
+    required Map<String, dynamic> args,
+    required String humanSummary,
+    String? groupId,
+  }) async {
+    final title = args['title'];
+    final dueDate = args['dueDate'];
+    final priority = args['priority'];
+    // Canonicalize: trim whitespace, uppercase priority so trivial
+    // formatting differences don't produce different placeholders.
+    final canonTitle = title is String ? title.trim() : '';
+    final canonDueDate = dueDate is String ? dueDate.trim() : '';
+    final canonPriority = priority is String
+        ? priority.trim().toUpperCase()
+        : '';
+    final placeholderId = deterministicPlaceholder(
+      taskId,
+      '$canonTitle|$canonDueDate|$canonPriority',
+    );
+
+    final enrichedArgs = {
+      ...args,
+      '_placeholderTaskId': placeholderId,
+    };
+
+    _items.add(
+      ChangeItem(
+        toolName: TaskAgentToolNames.createFollowUpTask,
+        args: enrichedArgs,
+        humanSummary: humanSummary,
+        groupId: groupId ?? placeholderId,
+      ),
+    );
+
+    return placeholderId;
+  }
+
+  /// Returns the `_placeholderTaskId` from the most recently added
+  /// `create_follow_up_task` item, or `null` if none exists.
+  ///
+  /// Used by the strategy to override the LLM's `targetTaskId` in
+  /// `migrate_checklist_items` calls — the LLM may hallucinate a different
+  /// string than the placeholder we returned.
+  String? get followUpPlaceholderId {
+    for (var i = _items.length - 1; i >= 0; i--) {
+      final item = _items[i];
+      if (item.toolName == TaskAgentToolNames.createFollowUpTask) {
+        final pid = item.args['_placeholderTaskId'];
+        if (pid is String) return pid;
+      }
+    }
+    return null;
+  }
+
+  /// Generates a deterministic placeholder UUID for a follow-up task.
+  ///
+  /// Uses UUID v5 seeded from the source task ID and a distinguishing key
+  /// (typically `title|dueDate|priority`) so that identical split proposals
+  /// across wakes produce the same placeholder, preserving cross-wake dedup
+  /// via [ChangeItem.fingerprint].
+  static String deterministicPlaceholder(
+    String sourceTaskId,
+    String distinguishingKey,
+  ) {
+    return _uuid.v5(
+      Namespace.url.value,
+      'follow-up:$sourceTaskId:$distinguishingKey',
+    );
   }
 
   /// Truncate a UUID to a short prefix for display as a fallback.

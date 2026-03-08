@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.910" date="2026-03-08">
+      <description>
+          <p>Task agent follow-up task creation with deferred confirmation. Fixed checklist migration placeholder resolution, copy-before-archive ordering, and cascade rejection of dependent items. Added structured domain logging for production diagnostics.</p>
+      </description>
+    </release>
     <release version="0.9.909" date="2026-03-08">
       <description>
           <p>Vector search distance telemetry: search result cards now show a color-coded cosine distance badge during vector search mode, and distance distribution is logged for threshold calibration.</p>

@@ -443,13 +443,48 @@ class TaskAgentStrategy extends ConversationStrategy {
     String toolName,
     Map<String, dynamic> args,
   ) async {
+    // Route create_follow_up_task to the dedicated builder method that
+    // injects a placeholder ID and returns it for migrate_checklist_items.
+    if (toolName == TaskAgentToolNames.createFollowUpTask) {
+      final placeholderId = await csBuilder.addFollowUpTask(
+        args: args,
+        humanSummary: _generateHumanSummary(toolName, args),
+      );
+
+      developer.log(
+        'Deferred tool $toolName to change set '
+        '(${csBuilder.items.length} items total)',
+        name: 'TaskAgentStrategy',
+      );
+
+      return 'Proposal queued for user review. '
+          'Use targetTaskId: "$placeholderId" for migrate_checklist_items.';
+    }
+
     final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
     String response;
     if (batchKey != null) {
+      var effectiveArgs = args;
+
+      // For migrate_checklist_items, replace the LLM's targetTaskId with the
+      // real placeholder from the builder. The LLM often hallucinate its own
+      // placeholder string (e.g. "placeholder_targetTaskId_1") instead of
+      // using the UUID v5 we returned.
+      if (toolName == TaskAgentToolNames.migrateChecklistItems) {
+        final realPlaceholder = csBuilder.followUpPlaceholderId;
+        if (realPlaceholder != null) {
+          effectiveArgs = {...args, 'targetTaskId': realPlaceholder};
+        }
+      }
+
+      final groupId = toolName == TaskAgentToolNames.migrateChecklistItems
+          ? effectiveArgs['targetTaskId'] as String?
+          : null;
       final result = await csBuilder.addBatchItem(
         toolName: toolName,
-        args: args,
+        args: effectiveArgs,
         summaryPrefix: _humanToolPrefix(toolName),
+        groupId: groupId,
       );
       response = ChangeProposalFilter.formatBatchResponse(result);
     } else {
@@ -494,6 +529,13 @@ class TaskAgentStrategy extends ConversationStrategy {
         'Set priority to ${args['priority'] ?? '?'}',
       TaskAgentToolNames.setTaskStatus =>
         'Set status to ${args['status'] ?? '?'}',
+      TaskAgentToolNames.assignTaskLabels => () {
+        final labels = args['labels'];
+        final count = labels is List ? labels.length : 0;
+        return 'Assign $count label(s)';
+      }(),
+      TaskAgentToolNames.createFollowUpTask =>
+        'Create follow-up task: "${args['title'] ?? ''}"',
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }
@@ -504,6 +546,7 @@ class TaskAgentStrategy extends ConversationStrategy {
       TaskAgentToolNames.addMultipleChecklistItems => 'Checklist',
       TaskAgentToolNames.updateChecklistItems => 'Checklist update',
       TaskAgentToolNames.assignTaskLabels => 'Label',
+      TaskAgentToolNames.migrateChecklistItems => 'Migrate to follow-up',
       _ => toolName,
     };
   }

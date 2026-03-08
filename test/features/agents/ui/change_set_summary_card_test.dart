@@ -414,6 +414,126 @@ void main() {
       ).called(1);
     });
 
+    testWidgets('Confirm All shows warning snackbar when items have warnings', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Item with warning',
+          ),
+          ChangeItem(
+            toolName: 'set_task_title',
+            args: {'title': 'OK'},
+            humanSummary: 'Clean item',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.confirmAll(any()),
+      ).thenAnswer(
+        (_) async => [
+          const ToolExecutionResult(
+            success: true,
+            output: 'Done',
+            errorMessage: 'Source item archival failed',
+          ),
+          const ToolExecutionResult(success: true, output: 'Done'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        buildWidget(changeSets: [changeSet]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Confirm all'));
+      await tester.pumpAndSettle();
+
+      // Should show the warning snackbar, not the error one.
+      expect(find.text('Failed to apply change'), findsNothing);
+      expect(
+        find.textContaining('1 item(s) had partial issues'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'confirm item shows warning snackbar when result has errorMessage',
+      (tester) async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Has warning',
+            ),
+          ],
+        );
+
+        when(
+          () => mockConfirmationService.confirmItem(any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'Migrated item',
+            errorMessage: 'Source item archival failed',
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildWidget(changeSets: [changeSet]),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.check_circle_outline));
+        await tester.pumpAndSettle();
+
+        // Should show the warning message, not the generic error.
+        expect(find.text('Failed to apply change'), findsNothing);
+        expect(
+          find.textContaining('Source item archival failed'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('reject shows error snackbar when rejectItem returns false', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_estimate',
+            args: {'minutes': 120},
+            humanSummary: 'Reject returns false',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.rejectItem(
+          any(),
+          any(),
+          reason: any(named: 'reason'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      await tester.pumpWidget(
+        buildWidget(changeSets: [changeSet]),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.cancel_outlined));
+      await tester.pumpAndSettle();
+
+      // When applied is false, the error snackbar is shown.
+      expect(find.text('Failed to apply change'), findsOneWidget);
+    });
+
     testWidgets('Confirm All shows error snackbar on partial failure', (
       tester,
     ) async {

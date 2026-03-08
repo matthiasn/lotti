@@ -1499,6 +1499,155 @@ void main() {
           );
         },
       );
+
+      test(
+        'routes create_follow_up_task to addFollowUpTask and returns '
+        'placeholder ID',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-split',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({'title': 'Design v2'}),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          // Should be routed to addFollowUpTask (has _placeholderTaskId).
+          expect(csBuilder.items, hasLength(1));
+          expect(
+            csBuilder.items.first.toolName,
+            'create_follow_up_task',
+          );
+          expect(
+            csBuilder.items.first.args['_placeholderTaskId'],
+            isNotNull,
+          );
+          expect(
+            csBuilder.items.first.humanSummary,
+            'Create follow-up task: "Design v2"',
+          );
+
+          // Response should contain the placeholder ID.
+          final captured = verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-split',
+              response: captureAny(named: 'response'),
+            ),
+          ).captured;
+          final response = captured.last as String;
+          expect(response, contains('Proposal queued for user review'));
+          expect(response, contains('targetTaskId'));
+        },
+      );
+
+      test(
+        'migrate_checklist_items passes targetTaskId as groupId',
+        () async {
+          final toolCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-migrate',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'migrate_checklist_items',
+                arguments: jsonEncode({
+                  'targetTaskId': 'placeholder-123',
+                  'items': [
+                    {'id': 'item-1', 'title': 'Buy milk'},
+                    {'id': 'item-2', 'title': 'Walk dog'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
+
+          expect(csBuilder.items, hasLength(2));
+          // Each exploded item should have the groupId set.
+          for (final item in csBuilder.items) {
+            expect(item.toolName, 'migrate_checklist_item');
+            expect(item.groupId, 'placeholder-123');
+            expect(item.args['targetTaskId'], 'placeholder-123');
+          }
+        },
+      );
+
+      test(
+        'migrate_checklist_items overrides LLM targetTaskId with real '
+        'placeholder from create_follow_up_task',
+        () async {
+          // First, the LLM calls create_follow_up_task.
+          final createCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-create',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'create_follow_up_task',
+                arguments: jsonEncode({
+                  'title': 'Release Task',
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: createCalls,
+            manager: mockManager,
+          );
+
+          // The builder should now have a follow-up task with a real
+          // placeholder UUID.
+          final realPlaceholder = csBuilder.followUpPlaceholderId;
+          expect(realPlaceholder, isNotNull);
+          expect(realPlaceholder, isNot('hallucinated_id'));
+
+          // Then the LLM calls migrate_checklist_items with a hallucinated
+          // targetTaskId that doesn't match the real placeholder.
+          final migrateCalls = [
+            ChatCompletionMessageToolCall(
+              id: 'call-migrate',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'migrate_checklist_items',
+                arguments: jsonEncode({
+                  'targetTaskId': 'hallucinated_id',
+                  'items': [
+                    {'id': 'item-1', 'title': 'Do thing'},
+                  ],
+                }),
+              ),
+            ),
+          ];
+
+          await deferredStrategy.processToolCalls(
+            toolCalls: migrateCalls,
+            manager: mockManager,
+          );
+
+          // The migration item should have the REAL placeholder, not the
+          // LLM's hallucinated one.
+          final migrateItems = csBuilder.items.where(
+            (i) => i.toolName == 'migrate_checklist_item',
+          );
+          expect(migrateItems, hasLength(1));
+          expect(
+            migrateItems.first.args['targetTaskId'],
+            realPlaceholder,
+          );
+          expect(migrateItems.first.groupId, realPlaceholder);
+        },
+      );
     });
   });
 }

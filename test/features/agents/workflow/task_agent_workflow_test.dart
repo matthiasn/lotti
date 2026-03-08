@@ -21,6 +21,8 @@ import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -28,6 +30,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 /// Minimal mock of [ConversationRepository] that avoids Riverpod build().
@@ -215,7 +218,7 @@ void main() {
           )
           as AiConfigModel;
 
-  setUp(() {
+  setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
@@ -232,6 +235,12 @@ void main() {
     mockTemplateService = MockAgentTemplateService();
 
     registerAllFallbackValues();
+
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+      },
+    );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     when(
@@ -285,6 +294,8 @@ void main() {
         ..enabledDomains.add(LogDomains.agentWorkflow),
     );
   });
+
+  tearDownAll(tearDownTestGetIt);
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {

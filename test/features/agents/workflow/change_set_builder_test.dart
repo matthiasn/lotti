@@ -11,6 +11,7 @@ import '../test_utils.dart';
 void main() {
   late ChangeSetBuilder builder;
   late MockAgentSyncService mockSyncService;
+  late MockAgentRepository mockRepository;
 
   setUpAll(() {
     registerFallbackValue(
@@ -24,6 +25,7 @@ void main() {
 
   setUp(() {
     mockSyncService = MockAgentSyncService();
+    mockRepository = MockAgentRepository();
     builder = ChangeSetBuilder(
       agentId: 'agent-001',
       taskId: 'task-001',
@@ -32,6 +34,11 @@ void main() {
     );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => mockSyncService.repository).thenReturn(mockRepository);
+
+    // Default: getEntity returns null so build() falls back to the
+    // passed-in entity.
+    when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
   });
 
   group('addItem', () {
@@ -1057,6 +1064,73 @@ void main() {
         expect(resolved.resolvedAt, isNotNull);
       },
     );
+
+    test(
+      'build uses fresh items from DB, not stale snapshot',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 90},
+          humanSummary: 'Set estimate to 90 min',
+        );
+
+        // The stale snapshot passed to build() has both items pending.
+        final staleSet = makeTestChangeSet(
+          id: 'cs-stale',
+          createdAt: DateTime(2024, 3, 15, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_title',
+              args: {'title': 'Old title'},
+              humanSummary: 'Set title',
+            ),
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'OPEN'},
+              humanSummary: 'Set status',
+            ),
+          ],
+        );
+
+        // Simulate a mid-wake confirmation: the DB has item 0 confirmed.
+        final freshSet = staleSet.copyWith(
+          items: [
+            staleSet.items[0].copyWith(status: ChangeItemStatus.confirmed),
+            staleSet.items[1],
+          ],
+          status: ChangeSetStatus.partiallyResolved,
+        );
+
+        when(
+          () => mockRepository.getEntity('cs-stale'),
+        ).thenAnswer((_) async => freshSet);
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [staleSet],
+        );
+
+        expect(result, isNotNull);
+
+        // The merged set should use the fresh items (with confirmed status)
+        // not the stale snapshot's items.
+        final confirmedItems = result!.items
+            .where((i) => i.status == ChangeItemStatus.confirmed)
+            .toList();
+        expect(
+          confirmedItems,
+          hasLength(1),
+          reason: 'Mid-wake confirmation should be preserved',
+        );
+        expect(confirmedItems.first.args, {'title': 'Old title'});
+
+        // The new item should still be appended.
+        expect(
+          result.items.last.toolName,
+          'update_task_estimate',
+        );
+      },
+    );
   });
 
   group('addBatchItem redundancy filtering', () {
@@ -1631,6 +1705,186 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.items, hasLength(1));
+    });
+  });
+
+  group('task splitting — addFollowUpTask', () {
+    test(
+      'generates deterministic placeholder from sourceTaskId + title',
+      () async {
+        final placeholder1 = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up A'},
+          humanSummary: 'Create follow-up task A',
+        );
+
+        // Same source task and title should produce the same placeholder.
+        // The compound key includes title|dueDate|priority (empty when absent).
+        final placeholder2 = ChangeSetBuilder.deterministicPlaceholder(
+          'task-001',
+          'Follow-Up A||',
+        );
+
+        expect(placeholder1, placeholder2);
+        expect(placeholder1, isNotEmpty);
+      },
+    );
+
+    test('adds item with _placeholderTaskId in args', () async {
+      final placeholder = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up B'},
+        humanSummary: 'Create follow-up task B',
+      );
+
+      expect(builder.items, hasLength(1));
+      final item = builder.items.first;
+      expect(item.toolName, 'create_follow_up_task');
+      expect(item.args['title'], 'Follow-Up B');
+      expect(item.args['_placeholderTaskId'], placeholder);
+    });
+
+    test('uses placeholder as default groupId', () async {
+      final placeholder = await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up C'},
+        humanSummary: 'Create follow-up task C',
+      );
+
+      expect(builder.items.first.groupId, placeholder);
+    });
+
+    test('uses provided groupId over default', () async {
+      await builder.addFollowUpTask(
+        args: {'title': 'Follow-Up D'},
+        humanSummary: 'Create follow-up task D',
+        groupId: 'custom-group',
+      );
+
+      expect(builder.items.first.groupId, 'custom-group');
+    });
+
+    test('deterministic placeholder is stable across wakes', () {
+      // Two different builder instances with the same task ID should
+      // produce the same placeholder for the same title.
+      final builder2 = ChangeSetBuilder(
+        agentId: 'agent-002',
+        taskId: 'task-001',
+        threadId: 'thread-002',
+        runKey: 'run-key-002',
+      );
+
+      final p1 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Refactor login',
+      );
+      final p2 = ChangeSetBuilder.deterministicPlaceholder(
+        builder2.taskId,
+        'Refactor login',
+      );
+
+      expect(p1, p2);
+    });
+
+    test('different titles produce different placeholders', () {
+      final p1 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Follow-Up A',
+      );
+      final p2 = ChangeSetBuilder.deterministicPlaceholder(
+        'task-001',
+        'Follow-Up B',
+      );
+
+      expect(p1, isNot(p2));
+    });
+
+    test('followUpPlaceholderId returns null when no follow-up exists', () {
+      expect(builder.followUpPlaceholderId, isNull);
+    });
+
+    test(
+      'followUpPlaceholderId returns placeholder after addFollowUpTask',
+      () async {
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Follow-Up X'},
+          humanSummary: 'Create follow-up task X',
+        );
+
+        expect(builder.followUpPlaceholderId, placeholder);
+      },
+    );
+  });
+
+  group('task splitting — migrate batch explosion', () {
+    test(
+      'singularizes migrate_checklist_items to migrate_checklist_item',
+      () async {
+        final result = await builder.addBatchItem(
+          toolName: 'migrate_checklist_items',
+          args: {
+            'items': [
+              {'id': 'item-1', 'title': 'Buy milk'},
+            ],
+            'targetTaskId': 'target-001',
+          },
+          summaryPrefix: 'Migrate',
+        );
+
+        expect(result.added, 1);
+        expect(builder.items.first.toolName, 'migrate_checklist_item');
+      },
+    );
+
+    test('injects targetTaskId into each child element', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Buy milk'},
+            {'id': 'item-2', 'title': 'Walk dog'},
+          ],
+          'targetTaskId': 'target-task-xyz',
+        },
+        summaryPrefix: 'Migrate',
+      );
+
+      expect(builder.items, hasLength(2));
+      for (final item in builder.items) {
+        expect(item.args['targetTaskId'], 'target-task-xyz');
+      }
+    });
+
+    test('assigns groupId to all exploded items', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Item A'},
+            {'id': 'item-2', 'title': 'Item B'},
+          ],
+          'targetTaskId': 'target-001',
+        },
+        summaryPrefix: 'Migrate',
+        groupId: 'split-group-001',
+      );
+
+      expect(builder.items, hasLength(2));
+      expect(builder.items[0].groupId, 'split-group-001');
+      expect(builder.items[1].groupId, 'split-group-001');
+    });
+
+    test('handles missing targetTaskId gracefully', () async {
+      await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'id': 'item-1', 'title': 'Buy milk'},
+          ],
+        },
+        summaryPrefix: 'Migrate',
+      );
+
+      // Item is still added, just without targetTaskId injection.
+      expect(builder.items, hasLength(1));
+      expect(builder.items.first.args.containsKey('targetTaskId'), isFalse);
     });
   });
 }

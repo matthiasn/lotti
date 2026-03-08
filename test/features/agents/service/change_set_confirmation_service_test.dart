@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -18,6 +19,7 @@ void main() {
   late MockTaskToolDispatcher mockToolDispatcher;
   late MockAgentRepository mockRepository;
   late MockLabelsRepository mockLabelsRepository;
+  late MockDomainLogger mockDomainLogger;
   late ChangeSetConfirmationService service;
 
   final testClock = Clock.fixed(DateTime(2024, 6, 15, 12));
@@ -27,6 +29,7 @@ void main() {
     mockToolDispatcher = MockTaskToolDispatcher();
     mockRepository = MockAgentRepository();
     mockLabelsRepository = MockLabelsRepository();
+    mockDomainLogger = MockDomainLogger();
 
     when(() => mockSyncService.repository).thenReturn(mockRepository);
 
@@ -35,10 +38,29 @@ void main() {
     // when testing the re-read behavior.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
 
+    // Stub DomainLogger methods.
+    when(
+      () => mockDomainLogger.log(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenReturn(null);
+    when(
+      () => mockDomainLogger.error(
+        any(),
+        any(),
+        subDomain: any(named: 'subDomain'),
+        error: any(named: 'error'),
+        stackTrace: any(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+
     service = ChangeSetConfirmationService(
       syncService: mockSyncService,
       toolDispatcher: mockToolDispatcher,
       labelsRepository: mockLabelsRepository,
+      domainLogger: mockDomainLogger,
     );
   });
 
@@ -495,6 +517,393 @@ void main() {
       });
     });
 
+    group('placeholder ID resolution', () {
+      test(
+        'confirmItem resolves placeholder targetTaskId for migration items',
+        () async {
+          // Create a change set with a create_follow_up_task item followed by
+          // a migrate_checklist_item that references a placeholder.
+          const placeholderId = 'placeholder-uuid-001';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Follow-Up',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-001',
+                  'title': 'Buy milk',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Buy milk"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          // First call: create_follow_up_task succeeds with actual ID.
+          when(
+            () => mockToolDispatcher.dispatch(
+              'create_follow_up_task',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created follow-up',
+              mutatedEntityId: 'actual-task-id-999',
+            ),
+          );
+
+          // Second call: migrate_checklist_item with resolved targetTaskId.
+          when(
+            () => mockToolDispatcher.dispatch(
+              'migrate_checklist_item',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Migrated item',
+            ),
+          );
+
+          // confirmAll re-reads: return updated change set after each confirm.
+          var callCount = 0;
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async {
+            callCount++;
+            // First few calls return original, later calls return
+            // partially resolved.
+            if (callCount <= 2) return changeSet;
+            return changeSet.copyWith(
+              items: [
+                changeSet.items[0].copyWith(
+                  status: ChangeItemStatus.confirmed,
+                ),
+                changeSet.items[1],
+              ],
+              status: ChangeSetStatus.partiallyResolved,
+            );
+          });
+
+          await withClock(testClock, () async {
+            final results = await service.confirmAll(changeSet);
+
+            expect(results, hasLength(2));
+            expect(results[0].success, isTrue);
+            expect(results[1].success, isTrue);
+
+            // Verify the migration dispatch received the resolved ID.
+            final migrateCapture = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final migrateArgs = migrateCapture[0] as Map<String, dynamic>;
+            expect(migrateArgs['targetTaskId'], 'actual-task-id-999');
+          });
+        },
+      );
+
+      test(
+        'confirmItem returns failure for unresolved migration placeholder',
+        () async {
+          // Migration item with a create_follow_up_task that hasn't been
+          // confirmed yet. The placeholder is in _resolvedIds = {}, so
+          // confirmItem should return a clear error without dispatching.
+          const placeholderId = 'unresolved-placeholder';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Pending Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create pending task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-002',
+                  'title': 'Walk dog',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Walk dog"',
+              ),
+            ],
+          );
+
+          await withClock(testClock, () async {
+            // Confirm the migration item (index 1), not the create item.
+            final result = await service.confirmItem(changeSet, 1);
+
+            expect(result.success, isFalse);
+            expect(
+              result.output,
+              contains('target task has not been created yet'),
+            );
+            expect(
+              result.errorMessage,
+              'Unresolved placeholder targetTaskId',
+            );
+
+            // No dispatch should have been attempted.
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
+          });
+        },
+      );
+
+      test(
+        'captureResolvedId stores mapping from placeholder to actual ID',
+        () async {
+          const placeholderId = 'placeholder-002';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Task B',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task B',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'resolved-id-002',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            // Now confirm a migration item that references the placeholder.
+            final migrationSet = makeTestChangeSet(
+              id: 'cs-002',
+              items: const [
+                ChangeItem(
+                  toolName: 'migrate_checklist_item',
+                  args: {
+                    'id': 'item-005',
+                    'title': 'Test item',
+                    'targetTaskId': placeholderId,
+                  },
+                  humanSummary: 'Migrate test item',
+                ),
+              ],
+            );
+
+            when(
+              () => mockRepository.getEntity('cs-002'),
+            ).thenAnswer((_) async => null);
+
+            when(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                any(),
+                any(),
+              ),
+            ).thenAnswer(
+              (_) async => const ToolExecutionResult(
+                success: true,
+                output: 'Migrated',
+              ),
+            );
+
+            await service.confirmItem(migrationSet, 0);
+
+            // Verify the resolved ID was used.
+            final captured = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final args = captured[0] as Map<String, dynamic>;
+            expect(args['targetTaskId'], 'resolved-id-002');
+          });
+        },
+      );
+
+      test(
+        'persists resolved targetTaskId to sibling migration items',
+        () async {
+          const placeholderId = 'placeholder-persist';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Persist Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create persist task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-010',
+                  'title': 'Migrate me',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate "Migrate me"',
+              ),
+            ],
+          );
+
+          final upsertedEntities = <AgentDomainEntity>[];
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((invocation) async {
+            upsertedEntities.add(
+              invocation.positionalArguments[0] as AgentDomainEntity,
+            );
+          });
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created follow-up',
+              mutatedEntityId: 'actual-persist-id',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+          });
+
+          // Find the change set upsert that updated sibling args.
+          final persistedSets = upsertedEntities
+              .whereType<ChangeSetEntity>()
+              .toList();
+
+          // The last change set upsert should have the migration item's
+          // targetTaskId resolved.
+          final lastSet = persistedSets.last;
+          final migrationItem = lastSet.items.firstWhere(
+            (i) => i.toolName == 'migrate_checklist_item',
+          );
+          expect(
+            migrationItem.args['targetTaskId'],
+            'actual-persist-id',
+            reason:
+                'Sibling migration items should be updated with '
+                'the actual task ID',
+          );
+        },
+      );
+
+      test(
+        'new service instance confirms migration items with '
+        'already-resolved args',
+        () async {
+          // Simulate a service restart: migration items have already been
+          // updated with the real targetTaskId by _persistResolvedIdToSiblings.
+          const realTaskId = 'real-task-id-999';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Already Created',
+                  '_placeholderTaskId': 'old-placeholder',
+                },
+                humanSummary: 'Create task',
+                status: ChangeItemStatus.confirmed,
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-020',
+                  'title': 'Already resolved',
+                  'targetTaskId': realTaskId,
+                },
+                humanSummary: 'Migrate "Already resolved"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(
+              'migrate_checklist_item',
+              any(),
+              any(),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Migrated',
+            ),
+          );
+
+          // Fresh service instance — _resolvedIds is empty.
+          final freshService = ChangeSetConfirmationService(
+            syncService: mockSyncService,
+            toolDispatcher: mockToolDispatcher,
+            labelsRepository: mockLabelsRepository,
+          );
+
+          await withClock(testClock, () async {
+            final result = await freshService.confirmItem(changeSet, 1);
+
+            expect(
+              result.success,
+              isTrue,
+              reason: 'Should dispatch with the already-resolved real ID',
+            );
+
+            final captured = verify(
+              () => mockToolDispatcher.dispatch(
+                'migrate_checklist_item',
+                captureAny(),
+                any(),
+              ),
+            ).captured;
+
+            final args = captured[0] as Map<String, dynamic>;
+            expect(args['targetTaskId'], realTaskId);
+          });
+        },
+      );
+    });
+
     group('rejectItem - edge cases', () {
       test('returns false for out-of-bounds item index', () async {
         final changeSet = makeChangeSetWith();
@@ -599,6 +1008,420 @@ void main() {
                 labelId: any(named: 'labelId'),
               ),
             );
+          });
+        },
+      );
+    });
+
+    group('rejectItem - cascade rejection of migration items', () {
+      test(
+        'rejecting create_follow_up_task cascade-rejects sibling migrations',
+        () async {
+          const placeholderId = 'placeholder-cascade-001';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Split Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task: "Split Task"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-1',
+                  'title': 'Buy milk',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate to follow-up: "Buy milk"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-2',
+                  'title': 'Walk dog',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate to follow-up: "Walk dog"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          // _freshChangeSet and _cascadeRejectMigrationItems both call
+          // getEntity — return the change set (then progressively updated
+          // versions as items are rejected).
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 0);
+
+            expect(applied, isTrue);
+
+            // The create item + 2 migration siblings = 3 decisions + 3 status
+            // updates = 6 upserts total.
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            // Count rejected decisions.
+            final decisions = captured.whereType<ChangeDecisionEntity>();
+            expect(
+              decisions.length,
+              3,
+              reason: 'One decision per rejected item (create + 2 migrations)',
+            );
+            for (final d in decisions) {
+              expect(d.verdict, ChangeDecisionVerdict.rejected);
+            }
+          });
+        },
+      );
+
+      test(
+        'rejecting create_follow_up_task does not reject unrelated items',
+        () async {
+          const placeholderId = 'placeholder-cascade-002';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Split Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create follow-up task: "Split Task"',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-1',
+                  'title': 'Buy milk',
+                  'targetTaskId': 'other-placeholder',
+                },
+                humanSummary: 'Migrate to different task',
+              ),
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 60},
+                humanSummary: 'Set estimate',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            await service.rejectItem(changeSet, 0);
+
+            final captured = verify(
+              () => mockSyncService.upsertEntity(captureAny()),
+            ).captured;
+
+            // Only 1 decision (the create item) — no cascade because
+            // the migration targets a different placeholder.
+            final decisions = captured.whereType<ChangeDecisionEntity>();
+            expect(decisions.length, 1);
+
+            // The change set update should only reject item 0.
+            final changeSets = captured.whereType<ChangeSetEntity>();
+            final lastCS = changeSets.last;
+            expect(lastCS.items[0].status, ChangeItemStatus.rejected);
+            expect(lastCS.items[1].status, ChangeItemStatus.pending);
+            expect(lastCS.items[2].status, ChangeItemStatus.pending);
+          });
+        },
+      );
+    });
+
+    group('domain logging', () {
+      test('logs skip message for already-confirmed item', () async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Already done',
+              status: ChangeItemStatus.confirmed,
+            ),
+          ],
+        );
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Skipping item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs confirming message before dispatch', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: true,
+            output: 'Done',
+          ),
+        );
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Confirming item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs error when tool dispatch fails', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: false,
+            output: 'Task not found',
+            errorMessage: 'Task lookup failed',
+          ),
+        );
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.confirmItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.error(
+              LogDomains.agentWorkflow,
+              any(that: contains('Tool dispatch failed for item 0')),
+              subDomain: any(named: 'subDomain'),
+              error: any(named: 'error'),
+              stackTrace: any(named: 'stackTrace'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs skip message for already-rejected item on reject', () async {
+        final changeSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 120},
+              humanSummary: 'Already rejected',
+              status: ChangeItemStatus.rejected,
+            ),
+          ],
+        );
+
+        await withClock(testClock, () async {
+          await service.rejectItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Skipping reject for item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test('logs rejecting message', () async {
+        final changeSet = makeChangeSetWith();
+
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(testClock, () async {
+          await service.rejectItem(changeSet, 0);
+
+          verify(
+            () => mockDomainLogger.log(
+              LogDomains.agentWorkflow,
+              any(that: contains('Rejecting item 0')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).called(1);
+        });
+      });
+
+      test(
+        'logs placeholder resolution on successful create_follow_up_task',
+        () async {
+          const placeholderId = 'placeholder-log-test';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Log Task',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'actual-id-log',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Captured placeholder resolution')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'logs cascade-reject for sibling migration items',
+        () async {
+          const placeholderId = 'placeholder-cascade-log';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Cascade Log',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-cascade',
+                  'title': 'Migrate me',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate item',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockRepository.getEntity(changeSet.id),
+          ).thenAnswer((_) async => changeSet);
+
+          await withClock(testClock, () async {
+            await service.rejectItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Cascade-rejecting migration item')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
+          });
+        },
+      );
+
+      test(
+        'logs persisted resolved targetTaskId to siblings',
+        () async {
+          const placeholderId = 'placeholder-persist-log';
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'create_follow_up_task',
+                args: {
+                  'title': 'Persist Log',
+                  '_placeholderTaskId': placeholderId,
+                },
+                humanSummary: 'Create task',
+              ),
+              ChangeItem(
+                toolName: 'migrate_checklist_item',
+                args: {
+                  'id': 'item-persist',
+                  'title': 'Persist item',
+                  'targetTaskId': placeholderId,
+                },
+                humanSummary: 'Migrate item',
+              ),
+            ],
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created',
+              mutatedEntityId: 'actual-persist-log-id',
+            ),
+          );
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.log(
+                LogDomains.agentWorkflow,
+                any(that: contains('Persisted resolved targetTaskId')),
+                subDomain: any(named: 'subDomain'),
+              ),
+            ).called(1);
           });
         },
       );
