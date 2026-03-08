@@ -42,6 +42,26 @@ class EmbeddingSearchResult {
 abstract class EmbeddingStore {
   FutureOr<String?> getContentHash(String entityId);
 
+  /// Returns the category ID stored for [entityId], or `null` if the entity
+  /// is not in the store.
+  FutureOr<String?> getCategoryId(String entityId);
+
+  /// Moves all embedding chunks for [entityId] to the shard for
+  /// [newCategoryId].
+  ///
+  /// Implementations that do not use sharding may simply update the stored
+  /// `categoryId` field (or no-op).
+  FutureOr<void> moveEntityToShard(String entityId, String newCategoryId);
+
+  /// Moves embeddings for all agent reports linked to [taskId] to the shard
+  /// for [newCategoryId].
+  ///
+  /// This cascades a category change from a task to its related reports.
+  FutureOr<void> moveRelatedReportEmbeddings(
+    String taskId,
+    String newCategoryId,
+  );
+
   FutureOr<bool> hasEmbedding(String entityId);
 
   FutureOr<int> get count;

@@ -1318,7 +1318,7 @@ semantic matches found" is more useful than showing irrelevant content.
 /// Distance cutoff configuration.
 class DistanceCutoffConfig {
   const DistanceCutoffConfig({
-    this.absoluteThreshold = 0.8,
+    this.absoluteThreshold = 0.7,
     this.relativeMultiplier = 2.0,
   });
 

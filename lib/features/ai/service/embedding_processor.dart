@@ -55,12 +55,28 @@ class EmbeddingProcessor {
     final text = await _extractText(entity, labelNameResolver);
     if (text == null) return false;
 
-    // Skip if content hash unchanged.
+    final categoryId = entity.meta.categoryId ?? '';
+    final storedCategoryId = await embeddingStore.getCategoryId(entityId);
+    final categoryChanged =
+        storedCategoryId != null && storedCategoryId != categoryId;
+
+    // Skip if content hash unchanged — but check for category changes.
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = await embeddingStore.getContentHash(entityId);
-    if (existingHash == hash) return false;
+    if (existingHash == hash) {
+      if (categoryChanged) {
+        await embeddingStore.moveEntityToShard(entityId, categoryId);
+        if (entity is Task) {
+          await embeddingStore.moveRelatedReportEmbeddings(
+            entityId,
+            categoryId,
+          );
+        }
+        return true;
+      }
+      return false;
+    }
 
-    final categoryId = entity.meta.categoryId ?? '';
     await _embedChunks(
       text: text,
       entityId: entityId,
@@ -71,6 +87,13 @@ class EmbeddingProcessor {
       embeddingRepository: embeddingRepository,
       baseUrl: baseUrl,
     );
+
+    // When both content and category changed, the task embedding is already
+    // written to the correct shard by _embedChunks. But related report
+    // embeddings still live in the old shard and must be moved.
+    if (categoryChanged && entity is Task) {
+      await embeddingStore.moveRelatedReportEmbeddings(entityId, categoryId);
+    }
 
     return true;
   }

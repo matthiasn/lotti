@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/database/entity_metadata_row.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
@@ -429,6 +430,90 @@ void main() {
         expect(entities[0].embeddingKey, 'my-entity:0');
         expect(entities[1].embeddingKey, 'my-entity:1');
         expect(entities[2].embeddingKey, 'my-entity:2');
+      });
+    });
+
+    group('getCategoryId', () {
+      test('returns categoryId from stored entity', () {
+        when(
+          () => mockOps.findFirstByEntityId('entity-1'),
+        ).thenReturn(makeEntity(categoryId: 'cat-work'));
+
+        expect(store.getCategoryId('entity-1'), 'cat-work');
+      });
+
+      test('returns null for missing entity', () {
+        when(() => mockOps.findFirstByEntityId('missing')).thenReturn(null);
+
+        expect(store.getCategoryId('missing'), isNull);
+      });
+    });
+
+    group('moveEntityToShard', () {
+      test('updates categoryId on all chunks', () {
+        final chunks = [
+          makeEntity(categoryId: 'old'),
+          makeEntity(chunkIndex: 1, categoryId: 'old'),
+        ];
+        when(
+          () => mockOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn(chunks);
+        stubWriteTransaction();
+        when(() => mockOps.putMany(any())).thenReturn(null);
+
+        store.moveEntityToShard('entity-1', 'new-cat');
+
+        expect(chunks[0].categoryId, 'new-cat');
+        expect(chunks[1].categoryId, 'new-cat');
+        verify(() => mockOps.putMany(chunks)).called(1);
+      });
+
+      test('no-op when no chunks found', () {
+        when(
+          () => mockOps.findEntitiesByEntityId('missing'),
+        ).thenReturn([]);
+
+        store.moveEntityToShard('missing', 'cat');
+
+        verifyNever(() => mockOps.putMany(any()));
+      });
+    });
+
+    group('moveRelatedReportEmbeddings', () {
+      test('updates categoryId on all report chunks for taskId', () {
+        final reportChunks = [
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'old-cat',
+            taskId: 'task-1',
+          ),
+        ];
+        when(mockOps.queryAllEntityMetadata).thenReturn([
+          const EntityMetadataRow(entityId: 'report-1', taskId: 'task-1'),
+          const EntityMetadataRow(entityId: 'other-entry', taskId: ''),
+        ]);
+        when(
+          () => mockOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn(reportChunks);
+        stubWriteTransaction();
+        when(() => mockOps.putMany(any())).thenReturn(null);
+
+        store.moveRelatedReportEmbeddings('task-1', 'new-cat');
+
+        expect(reportChunks[0].categoryId, 'new-cat');
+        verify(() => mockOps.putMany(reportChunks)).called(1);
+        // Should not touch 'other-entry' which has a different taskId.
+        verifyNever(() => mockOps.findEntitiesByEntityId('other-entry'));
+      });
+
+      test('no-op when no reports match taskId', () {
+        when(mockOps.queryAllEntityMetadata).thenReturn([
+          const EntityMetadataRow(entityId: 'entry-1', taskId: ''),
+        ]);
+
+        store.moveRelatedReportEmbeddings('task-1', 'new-cat');
+
+        verifyNever(() => mockOps.findEntitiesByEntityId(any()));
       });
     });
 
