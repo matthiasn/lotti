@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -15,7 +14,10 @@ class WindowService implements WindowListener {
     if (isDesktop) {
       windowManager.setPreventClose(true);
     }
+    _disposer = ServiceDisposer(getIt, _logDisposalError);
   }
+
+  late final ServiceDisposer _disposer;
 
   final sizeKey = 'WINDOW_SIZE';
   final offsetKey = 'WINDOW_OFFSET';
@@ -103,48 +105,24 @@ class WindowService implements WindowListener {
 
   Future<void> _handleClose() async {
     try {
-      await _disposeServices();
+      await _disposer.disposeAll();
     } catch (e, s) {
-      // Best-effort cleanup — log but don't block exit.
-      try {
-        getIt<LoggingService>().captureException(
-          e,
-          domain: 'WINDOW_SERVICE',
-          subDomain: 'onWindowClose',
-          stackTrace: s,
-        );
-      } catch (_) {
-        // LoggingService itself may already be torn down.
-      }
-    } finally {
-      await windowManager.destroy();
+      _logDisposalError(e, s, 'disposeAll');
     }
+
+    // Allow any remaining FFI callbacks (e.g. sqflite message-port replies)
+    // to drain before the Dart VM is torn down. Without this grace period
+    // the native sqflite worker isolate may fire a callback into an already-
+    // deleted Dart closure, triggering a fatal assertion in runtime_entry.cc.
+    await Future<void>.delayed(ffiDrainGracePeriod);
+    await windowManager.destroy();
   }
 
-  /// Disposes long-running services in dependency-safe order.
-  ///
-  /// Each disposal is guarded independently so a failure in one does not
-  /// prevent the next service from being torn down.
-  Future<void> _disposeServices() async {
-    // Dispose OutboxService first (depends on MatrixService).
-    if (getIt.isRegistered<OutboxService>()) {
-      try {
-        await getIt<OutboxService>().dispose();
-      } catch (e, s) {
-        _logDisposalError(e, s, 'OutboxService');
-      }
-    }
-    // Then MatrixService (owns sync engine, streams, connectivity sub).
-    if (getIt.isRegistered<MatrixService>()) {
-      try {
-        await getIt<MatrixService>().dispose();
-      } catch (e, s) {
-        _logDisposalError(e, s, 'MatrixService');
-      }
-    }
-  }
-
-  void _logDisposalError(dynamic error, StackTrace stackTrace, String service) {
+  void _logDisposalError(
+    dynamic error,
+    StackTrace stackTrace,
+    String service,
+  ) {
     try {
       getIt<LoggingService>().captureException(
         error,

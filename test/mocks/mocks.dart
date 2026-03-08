@@ -41,6 +41,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
+import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -402,3 +403,5 @@ class MockAutoChecklistService extends Mock implements AutoChecklistService {}
 class FakeBaseRequest extends Fake implements http.BaseRequest {}
 
 class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
+
+class MockEmbeddingService extends Mock implements EmbeddingService {}
