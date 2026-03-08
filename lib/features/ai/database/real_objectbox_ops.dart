@@ -72,16 +72,17 @@ class RealObjectBoxOps implements ObjectBoxOps {
 
   @override
   List<EntityMetadataRow> queryAllEntityMetadata() {
-    // Use property queries to avoid loading 4KB embedding vectors per entity.
     final query = _box.query().build();
     try {
-      final entityIds = query.property(EmbeddingChunkEntity_.entityId).find();
-      final taskIds = query.property(EmbeddingChunkEntity_.taskId).find();
-
-      return [
-        for (var i = 0; i < entityIds.length; i++)
-          EntityMetadataRow(entityId: entityIds[i], taskId: taskIds[i]),
-      ];
+      return query
+          .find()
+          .map(
+            (entity) => EntityMetadataRow(
+              entityId: entity.entityId,
+              taskId: entity.taskId,
+            ),
+          )
+          .toList(growable: false);
     } finally {
       query.close();
     }

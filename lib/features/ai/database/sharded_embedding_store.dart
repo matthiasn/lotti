@@ -18,6 +18,20 @@ const _migratedMarkerFileName = '.migrated';
 /// Default shard key for entities with no category.
 const kDefaultShardKey = '_default';
 
+/// Pattern matching only safe shard-key characters (alphanumeric, hyphen,
+/// underscore). Everything else is replaced to prevent path traversal.
+final _unsafeShardKeyChars = RegExp('[^a-zA-Z0-9_-]');
+
+/// Sanitises a shard key so it can never escape the base path via path
+/// traversal.
+///
+/// Replaces any character that is not alphanumeric, hyphen, or underscore with
+/// an underscore. This prevents `../` and similar sequences from being used.
+String sanitizeShardKey(String raw) {
+  if (raw.isEmpty) return kDefaultShardKey;
+  return raw.replaceAll(_unsafeShardKeyChars, '_');
+}
+
 /// Factory for creating [ObjectBoxOps] instances per shard directory.
 ///
 /// Production code creates [RealObjectBoxOps]; tests inject mocks.
@@ -106,7 +120,14 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final shardsToQuery = await _resolveShardsToQuery(categoryIds);
     if (shardsToQuery.isEmpty) return const [];
 
-    final perShardLimit = entityTypeFilter != null ? k * 3 : k * 2;
+    // Over-fetch from each shard to get a good global top-K after merging.
+    // With an entity-type filter, more candidates are needed because many
+    // near-neighbours may be filtered out.
+    const unfilteredOverfetchFactor = 2;
+    const filteredOverfetchFactor = 3;
+    final perShardLimit = entityTypeFilter != null
+        ? k * filteredOverfetchFactor
+        : k * unfilteredOverfetchFactor;
 
     final allResults = <EmbeddingSearchResult>[];
     for (final shard in shardsToQuery) {
@@ -141,7 +162,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     String taskId = '',
     String subtype = '',
   }) async {
-    final shardKey = categoryId.isEmpty ? kDefaultShardKey : categoryId;
+    final shardKey = sanitizeShardKey(categoryId);
     final targetShard = await _getOrCreateShard(shardKey);
 
     // Check if entity exists in a different shard — cross-shard move.
@@ -267,7 +288,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     if (categoryIds != null && categoryIds.isNotEmpty) {
       final shards = <_Shard>[];
       for (final catId in categoryIds) {
-        final shardKey = catId.isEmpty ? kDefaultShardKey : catId;
+        final shardKey = sanitizeShardKey(catId);
         final shard = await _openExistingShard(shardKey);
         if (shard != null) shards.add(shard);
       }
@@ -339,10 +360,16 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final markerFile = File(p.join(shardedBasePath, _migratedMarkerFileName));
     if (markerFile.existsSync()) return;
 
+    // Clean up any partial state from a previously interrupted migration.
+    final shardedBaseDir = Directory(shardedBasePath);
+    if (shardedBaseDir.existsSync()) {
+      await shardedBaseDir.delete(recursive: true);
+    }
+
     final oldPath = p.join(documentsPath, kObjectBoxEmbeddingsDirectoryName);
     if (!Directory(oldPath).existsSync()) {
       // No old store — write marker and return.
-      await Directory(shardedBasePath).create(recursive: true);
+      await shardedBaseDir.create(recursive: true);
       await markerFile.writeAsString(
         'Migrated at ${DateTime.now().toUtc().toIso8601String()}',
       );
@@ -361,32 +388,39 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       final allEntities = oldOps.findAllEntities();
       final groups = <String, List<EmbeddingChunkEntity>>{};
       for (final entity in allEntities) {
-        final key = entity.categoryId.isEmpty
-            ? kDefaultShardKey
-            : entity.categoryId;
+        final key = sanitizeShardKey(entity.categoryId);
         (groups[key] ??= []).add(entity);
       }
 
-      // Write each group to its shard.
-      await Directory(shardedBasePath).create(recursive: true);
-      for (final entry in groups.entries) {
-        final shardDir = p.join(shardedBasePath, entry.key);
-        await Directory(shardDir).create(recursive: true);
-        final shardStore = await openStore(
-          directory: shardDir,
-          macosApplicationGroup: macosApplicationGroup,
-        );
-        final shardOps = RealObjectBoxOps(shardStore);
-        // Reset IDs so ObjectBox assigns new ones in the shard store.
-        for (final entity in entry.value) {
-          entity.id = 0;
+      // Open all shard stores first, write data, then close all in finally.
+      await shardedBaseDir.create(recursive: true);
+      final shardOpsMap = <String, RealObjectBoxOps>{};
+      try {
+        for (final shardKey in groups.keys) {
+          final shardDir = p.join(shardedBasePath, shardKey);
+          await Directory(shardDir).create(recursive: true);
+          final shardStore = await openStore(
+            directory: shardDir,
+            macosApplicationGroup: macosApplicationGroup,
+          );
+          shardOpsMap[shardKey] = RealObjectBoxOps(shardStore);
         }
-        shardOps
-          ..putMany(entry.value)
-          ..close();
+
+        for (final entry in groups.entries) {
+          final shardOps = shardOpsMap[entry.key]!;
+          // Reset IDs so ObjectBox assigns new ones in the shard store.
+          for (final entity in entry.value) {
+            entity.id = 0;
+          }
+          shardOps.putMany(entry.value);
+        }
+      } finally {
+        for (final ops in shardOpsMap.values) {
+          ops.close();
+        }
       }
 
-      // Write marker.
+      // Write marker only after successful migration.
       await markerFile.writeAsString(
         'Migrated at ${DateTime.now().toUtc().toIso8601String()}',
       );

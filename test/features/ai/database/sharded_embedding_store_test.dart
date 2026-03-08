@@ -8,7 +8,9 @@ import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/database/sharded_embedding_store.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -19,12 +21,7 @@ void main() {
 
     final testDate = DateTime.utc(2024, 3, 15);
 
-    setUpAll(() {
-      registerFallbackValue(Float32List(0));
-      registerFallbackValue(<EmbeddingChunkEntity>[]);
-      registerFallbackValue(<int>[]);
-      registerFallbackValue(<String>[]);
-    });
+    setUpAll(registerAllFallbackValues);
 
     setUp(() async {
       tempDir = await Directory.systemTemp.createTemp('sharded_test_');
@@ -113,7 +110,7 @@ void main() {
     }) async {
       // Create shard directories before opening.
       for (final key in shardKeys) {
-        await Directory('${tempDir.path}/$key').create(recursive: true);
+        await Directory(p.join(tempDir.path, key)).create(recursive: true);
       }
 
       return store = await ShardedEmbeddingStore.open(
@@ -121,7 +118,7 @@ void main() {
         distanceCutoff: distanceCutoff,
         opsFactory: (directory) async {
           final mock = createMockOps(directory);
-          final key = directory.split('/').last;
+          final key = p.basename(directory);
           if (metadata != null && metadata.containsKey(key)) {
             when(mock.queryAllEntityMetadata).thenReturn(metadata[key]!);
           }
@@ -131,7 +128,7 @@ void main() {
     }
 
     MockObjectBoxOps getShardOps(String shardKey) {
-      final key = '${tempDir.path}/$shardKey';
+      final key = p.join(tempDir.path, shardKey);
       return mockOpsMap[key]!;
     }
 
