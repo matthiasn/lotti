@@ -54,7 +54,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   ShardedEmbeddingStore._({
     required String basePath,
     required ObjectBoxOpsFactory opsFactory,
-    this.distanceCutoff = 0.8,
+    this.distanceCutoff = 0.7,
   }) : _basePath = basePath,
        _opsFactory = opsFactory;
 
@@ -80,7 +80,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   static Future<ShardedEmbeddingStore> open({
     required String basePath,
     String? macosApplicationGroup,
-    double distanceCutoff = 0.8,
+    double distanceCutoff = 0.7,
     ObjectBoxOpsFactory? opsFactory,
   }) async {
     final store = ShardedEmbeddingStore._(
@@ -237,6 +237,62 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final shardKey = _primaryIndex[entityId];
     if (shardKey == null) return null;
     return _shards[shardKey]?.store.getContentHash(entityId);
+  }
+
+  @override
+  Future<String?> getCategoryId(String entityId) async {
+    final shardKey = _primaryIndex[entityId];
+    if (shardKey == null) return null;
+    // Map the internal default shard key back to empty categoryId.
+    return shardKey == kDefaultShardKey ? '' : shardKey;
+  }
+
+  @override
+  Future<void> moveEntityToShard(
+    String entityId,
+    String newCategoryId,
+  ) async {
+    final newShardKey = sanitizeShardKey(newCategoryId);
+    final oldShardKey = _primaryIndex[entityId];
+
+    // Nothing to do if entity is unknown or already in the right shard.
+    if (oldShardKey == null || oldShardKey == newShardKey) return;
+
+    final oldShard = _shards[oldShardKey];
+    if (oldShard == null) return;
+
+    // Load all chunks from the old shard.
+    final chunks = oldShard.ops.findEntitiesByEntityId(entityId);
+    if (chunks.isEmpty) return;
+
+    // Prepare chunks for the new shard: update categoryId and reset IDs.
+    for (final chunk in chunks) {
+      chunk
+        ..categoryId = newCategoryId
+        ..id = 0;
+    }
+
+    // Write-first strategy: insert into new shard, then delete from old.
+    final newShard = await _getOrCreateShard(newShardKey);
+    newShard.ops.putMany(chunks);
+    oldShard.store.deleteEntityEmbeddings(entityId);
+
+    // Update primary index.
+    _primaryIndex[entityId] = newShardKey;
+  }
+
+  @override
+  Future<void> moveRelatedReportEmbeddings(
+    String taskId,
+    String newCategoryId,
+  ) async {
+    final reportIds = _reverseTaskIndex[taskId];
+    if (reportIds == null || reportIds.isEmpty) return;
+
+    // Copy to avoid concurrent modification during iteration.
+    for (final reportId in reportIds.toList()) {
+      await moveEntityToShard(reportId, newCategoryId);
+    }
   }
 
   @override
