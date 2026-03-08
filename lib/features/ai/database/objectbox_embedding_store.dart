@@ -91,8 +91,14 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
 
   @override
   void moveRelatedReportEmbeddings(String taskId, String newCategoryId) {
-    // No-op in single-store mode — no efficient reverse task index.
-    // The next backfill pass will correct report categoryIds.
+    final reportEntityIds = _ops
+        .queryAllEntityMetadata()
+        .where((row) => row.taskId == taskId)
+        .map((row) => row.entityId)
+        .toSet();
+    for (final reportId in reportEntityIds) {
+      moveEntityToShard(reportId, newCategoryId);
+    }
   }
 
   @override

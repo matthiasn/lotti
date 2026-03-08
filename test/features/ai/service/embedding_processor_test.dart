@@ -60,6 +60,10 @@ void _stubNoExistingHash(MockEmbeddingStore db) {
   when(() => db.getContentHash(any())).thenReturn(null);
 }
 
+void _stubNoCategoryId(MockEmbeddingStore db) {
+  when(() => db.getCategoryId(any())).thenReturn(null);
+}
+
 void _stubReplaceEntityEmbeddings(MockEmbeddingStore db) {
   when(
     () => db.replaceEntityEmbeddings(
@@ -108,6 +112,7 @@ void main() {
     mockEmbeddingRepo = MockOllamaEmbeddingRepository();
 
     _stubNoExistingHash(mockEmbeddingStore);
+    _stubNoCategoryId(mockEmbeddingStore);
     _stubReplaceEntityEmbeddings(mockEmbeddingStore);
     _stubEmbed(mockEmbeddingRepo);
   });
@@ -434,6 +439,59 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'cascades report moves when task content AND category both change',
+        () async {
+          final task = Task(
+            meta: _meta(categoryId: 'cat-new'),
+            data: _taskData('Updated task title that is long enough'),
+            entryText: const EntryText(plainText: _longText),
+          );
+          _stubEntity(mockJournalDb, task);
+          // Content hash differs — task will be re-embedded.
+          when(
+            () => mockEmbeddingStore.getContentHash(task.id),
+          ).thenReturn('old-hash-that-no-longer-matches');
+          // Category also changed.
+          when(
+            () => mockEmbeddingStore.getCategoryId(task.id),
+          ).thenReturn('cat-old');
+          when(
+            () => mockEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+          ).thenReturn(null);
+
+          final result = await EmbeddingProcessor.processEntity(
+            entityId: task.id,
+            journalDb: mockJournalDb,
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepo,
+            baseUrl: _baseUrl,
+          );
+
+          expect(result, isTrue);
+          // Task itself is re-embedded to the correct shard via _embedChunks.
+          verify(
+            () => mockEmbeddingStore.replaceEntityEmbeddings(
+              entityId: task.id,
+              entityType: any(named: 'entityType'),
+              modelId: any(named: 'modelId'),
+              contentHash: any(named: 'contentHash'),
+              embeddings: any(named: 'embeddings'),
+              categoryId: 'cat-new',
+              taskId: any(named: 'taskId'),
+              subtype: any(named: 'subtype'),
+            ),
+          ).called(1);
+          // Reports must also be moved to the new category.
+          verify(
+            () => mockEmbeddingStore.moveRelatedReportEmbeddings(
+              task.id,
+              'cat-new',
+            ),
+          ).called(1);
+        },
+      );
 
       test('returns false when hash and category both unchanged', () async {
         final entry = JournalEntry(
