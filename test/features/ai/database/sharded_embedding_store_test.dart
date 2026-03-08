@@ -470,6 +470,32 @@ void main() {
         expect(await store.hasEmbedding('entity-1'), isTrue);
       });
 
+      test('empty embeddings list removes entity from index', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: 'task-1'),
+            ],
+          },
+        );
+
+        expect(await store.hasEmbedding('entity-1'), isTrue);
+
+        // Calling with empty embeddings means "delete only" in the wrapped
+        // store. The sharded wrapper must remove the entity from its index.
+        await store.replaceEntityEmbeddings(
+          entityId: 'entity-1',
+          entityType: 'journalEntry',
+          modelId: 'nomic-embed-text',
+          contentHash: 'hash-2',
+          embeddings: [],
+          categoryId: 'cat-a',
+        );
+
+        expect(await store.hasEmbedding('entity-1'), isFalse);
+      });
+
       test('updates reverseTaskIndex for taskId', () async {
         await openStoreWithShards(
           ['cat-a'],

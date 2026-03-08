@@ -186,10 +186,18 @@ class ShardedEmbeddingStore implements EmbeddingStore {
       _shards[oldShardKey]?.store.deleteEntityEmbeddings(entityId);
     }
 
-    // Update indexes.
-    _primaryIndex[entityId] = shardKey;
-    if (taskId.isNotEmpty) {
-      (_reverseTaskIndex[taskId] ??= {}).add(entityId);
+    // Update indexes. An empty embeddings list means "delete only" — the
+    // wrapped store removes existing chunks without inserting new ones.
+    if (embeddings.isEmpty) {
+      _primaryIndex.remove(entityId);
+      _reverseTaskIndex
+        ..forEach((_, entityIds) => entityIds.remove(entityId))
+        ..removeWhere((_, entityIds) => entityIds.isEmpty);
+    } else {
+      _primaryIndex[entityId] = shardKey;
+      if (taskId.isNotEmpty) {
+        (_reverseTaskIndex[taskId] ??= {}).add(entityId);
+      }
     }
   }
 
