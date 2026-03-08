@@ -73,6 +73,9 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   /// taskId → set of report entityIds for reverse lookup.
   final Map<String, Set<String>> _reverseTaskIndex = {};
 
+  /// entityId → taskId for efficient reverse-index cleanup.
+  final Map<String, String> _entityTaskIndex = {};
+
   /// Opens a [ShardedEmbeddingStore] and rebuilds in-memory indexes.
   static Future<ShardedEmbeddingStore> open({
     required String basePath,
@@ -115,6 +118,14 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     String? entityTypeFilter,
     Set<String>? categoryIds,
   }) async {
+    if (queryVector.length != kEmbeddingDimensions) {
+      throw ArgumentError(
+        'ShardedEmbeddingStore.search(): vector.length '
+        '(${queryVector.length}) does not match '
+        'kEmbeddingDimensions ($kEmbeddingDimensions)',
+      );
+    }
+
     if (k <= 0) return const [];
 
     final shardsToQuery = await _resolveShardsToQuery(categoryIds);
@@ -189,13 +200,11 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     // Update indexes. An empty embeddings list means "delete only" — the
     // wrapped store removes existing chunks without inserting new ones.
     if (embeddings.isEmpty) {
-      _primaryIndex.remove(entityId);
-      _reverseTaskIndex
-        ..forEach((_, entityIds) => entityIds.remove(entityId))
-        ..removeWhere((_, entityIds) => entityIds.isEmpty);
+      _removeFromIndexes(entityId);
     } else {
       _primaryIndex[entityId] = shardKey;
       if (taskId.isNotEmpty) {
+        _entityTaskIndex[entityId] = taskId;
         (_reverseTaskIndex[taskId] ??= {}).add(entityId);
       }
     }
@@ -207,12 +216,20 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     if (shardKey == null) return;
 
     _shards[shardKey]?.store.deleteEntityEmbeddings(entityId);
-    _primaryIndex.remove(entityId);
+    _removeFromIndexes(entityId);
+  }
 
-    // Clean up reverse task index.
-    _reverseTaskIndex
-      ..forEach((_, entityIds) => entityIds.remove(entityId))
-      ..removeWhere((_, entityIds) => entityIds.isEmpty);
+  /// Removes an entity from all in-memory indexes.
+  void _removeFromIndexes(String entityId) {
+    _primaryIndex.remove(entityId);
+    final taskId = _entityTaskIndex.remove(entityId);
+    if (taskId != null) {
+      final entityIds = _reverseTaskIndex[taskId];
+      if (entityIds != null) {
+        entityIds.remove(entityId);
+        if (entityIds.isEmpty) _reverseTaskIndex.remove(taskId);
+      }
+    }
   }
 
   @override
@@ -243,6 +260,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     }
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
+    _entityTaskIndex.clear();
   }
 
   @override
@@ -253,6 +271,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     _shards.clear();
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
+    _entityTaskIndex.clear();
   }
 
   // ---------------------------------------------------------------------------
@@ -298,13 +317,12 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     Set<String>? categoryIds,
   ) async {
     if (categoryIds != null && categoryIds.isNotEmpty) {
-      final shards = <_Shard>[];
-      for (final catId in categoryIds) {
+      final futures = categoryIds.map((catId) {
         final shardKey = sanitizeShardKey(catId);
-        final shard = await _openExistingShard(shardKey);
-        if (shard != null) shards.add(shard);
-      }
-      return shards;
+        return _openExistingShard(shardKey);
+      });
+      final results = await Future.wait(futures);
+      return results.whereType<_Shard>().toList();
     }
 
     // No category filter — query all shards.
@@ -317,8 +335,14 @@ class ShardedEmbeddingStore implements EmbeddingStore {
     final baseDir = Directory(_basePath);
     if (!baseDir.existsSync()) return;
 
-    final entries = baseDir.listSync().whereType<Directory>().toList()
-      ..sort((a, b) => p.basename(a.path).compareTo(p.basename(b.path)));
+    final entries = await baseDir
+        .list()
+        .where((e) => e is Directory)
+        .cast<Directory>()
+        .toList();
+    entries.sort(
+      (a, b) => p.basename(a.path).compareTo(p.basename(b.path)),
+    );
 
     for (final dir in entries) {
       final shardKey = p.basename(dir.path);
@@ -332,6 +356,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
   void _rebuildIndexes() {
     _primaryIndex.clear();
     _reverseTaskIndex.clear();
+    _entityTaskIndex.clear();
 
     for (final entry in _shards.entries) {
       final shardKey = entry.key;
@@ -349,6 +374,7 @@ class ShardedEmbeddingStore implements EmbeddingStore {
         _primaryIndex[row.entityId] = shardKey;
 
         if (row.taskId.isNotEmpty) {
+          _entityTaskIndex[row.entityId] = row.taskId;
           (_reverseTaskIndex[row.taskId] ??= {}).add(row.entityId);
         }
       }
