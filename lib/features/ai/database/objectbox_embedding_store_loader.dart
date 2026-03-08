@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_store.dart'
     deferred as objectbox_store;
+import 'package:lotti/features/ai/database/sharded_embedding_store.dart'
+    deferred as sharded_store;
 import 'package:path/path.dart' as p;
 
 Future<void>? _loadObjectBoxStoreLibraryFuture;
@@ -19,9 +21,36 @@ Future<EmbeddingStore> openObjectBoxEmbeddingStore({
   );
 }
 
+Future<EmbeddingStore> openShardedEmbeddingStore({
+  required String documentsPath,
+}) async {
+  await (_loadObjectBoxStoreLibraryFuture ??= _loadObjectBoxStoreLibrary());
+
+  final shardedBasePath = p.join(
+    documentsPath,
+    sharded_store.kObjectBoxShardedEmbeddingsDirectoryName,
+  );
+
+  final macosGroup = Platform.isMacOS
+      ? objectbox_store.kMacOsObjectBoxApplicationGroup
+      : null;
+
+  await sharded_store.ShardedEmbeddingStore.migrateFromSingleStore(
+    documentsPath: documentsPath,
+    shardedBasePath: shardedBasePath,
+    macosApplicationGroup: macosGroup,
+  );
+
+  return sharded_store.ShardedEmbeddingStore.open(
+    basePath: shardedBasePath,
+    macosApplicationGroup: macosGroup,
+  );
+}
+
 Future<void> _loadObjectBoxStoreLibrary() async {
   _preloadObjectBoxNativeLibrary();
   await objectbox_store.loadLibrary();
+  await sharded_store.loadLibrary();
 }
 
 void _preloadObjectBoxNativeLibrary() {

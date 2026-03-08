@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
@@ -222,4 +224,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(Uri());
   registerFallbackValue(<String>{});
   registerFallbackValue(DateTime(2024));
+  registerFallbackValue(Float32List(0));
+  registerFallbackValue(<int>[]);
+  registerFallbackValue(<String>[]);
 }
