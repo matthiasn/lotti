@@ -94,7 +94,7 @@ void main() {
     }
 
     Future<ShardedEmbeddingStore> openStore({
-      double distanceCutoff = 0.8,
+      double distanceCutoff = 0.7,
     }) async => store = await ShardedEmbeddingStore.open(
       basePath: tempDir.path,
       distanceCutoff: distanceCutoff,
@@ -105,7 +105,7 @@ void main() {
     /// _ensureAllShardsOpen discovers them.
     Future<ShardedEmbeddingStore> openStoreWithShards(
       List<String> shardKeys, {
-      double distanceCutoff = 0.8,
+      double distanceCutoff = 0.7,
       Map<String, List<EntityMetadataRow>>? metadata,
     }) async {
       // Create shard directories before opening.
@@ -716,6 +716,286 @@ void main() {
         expect(await store.hasEmbedding('report-1'), isTrue);
         expect(await store.hasEmbedding('report-2'), isTrue);
         expect(await store.hasEmbedding('entry-1'), isTrue);
+      });
+    });
+
+    group('getCategoryId', () {
+      test('returns shard key mapped back from default', () async {
+        await openStoreWithShards(
+          [kDefaultShardKey],
+          metadata: {
+            kDefaultShardKey: [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final categoryId = await store.getCategoryId('entity-1');
+        expect(categoryId, '');
+      });
+
+      test('returns category ID for non-default shard', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final categoryId = await store.getCategoryId('entity-1');
+        expect(categoryId, 'cat-a');
+      });
+
+      test('returns null for unknown entity', () async {
+        await openStore();
+
+        final categoryId = await store.getCategoryId('unknown');
+        expect(categoryId, isNull);
+      });
+    });
+
+    group('moveEntityToShard', () {
+      test('moves chunks between shards', () async {
+        final chunks = [
+          makeEntity(
+            categoryId: 'cat-a',
+          ),
+          makeEntity(
+            chunkIndex: 1,
+            categoryId: 'cat-a',
+          ),
+        ];
+
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn(chunks);
+
+        await store.moveEntityToShard('entity-1', 'cat-b');
+
+        // Chunks should have updated categoryId and reset id.
+        expect(chunks[0].categoryId, 'cat-b');
+        expect(chunks[0].id, 0);
+        expect(chunks[1].categoryId, 'cat-b');
+        expect(chunks[1].id, 0);
+
+        // New shard should have putMany called.
+        final newOps = getShardOps('cat-b');
+        verify(() => newOps.putMany(chunks)).called(1);
+
+        // Old shard should have delete called.
+        verify(() => oldOps.findIdsByEntityId('entity-1')).called(1);
+      });
+
+      test('is no-op when already in correct shard', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        await store.moveEntityToShard('entity-1', 'cat-a');
+
+        // No findEntitiesByEntityId should be called.
+        final ops = getShardOps('cat-a');
+        verifyNever(() => ops.findEntitiesByEntityId(any()));
+      });
+
+      test('is no-op for unknown entity', () async {
+        await openStore();
+
+        // Should not throw.
+        await store.moveEntityToShard('unknown', 'cat-a');
+      });
+
+      test('updates primary index after move', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn([makeEntity(categoryId: 'cat-a')]);
+
+        await store.moveEntityToShard('entity-1', 'cat-b');
+
+        // After move, getCategoryId should return new category.
+        final categoryId = await store.getCategoryId('entity-1');
+        expect(categoryId, 'cat-b');
+      });
+
+      test('moves entity to default shard when categoryId is empty', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn([makeEntity(categoryId: 'cat-a')]);
+
+        await store.moveEntityToShard('entity-1', '');
+
+        // Should be in the default shard now.
+        final categoryId = await store.getCategoryId('entity-1');
+        expect(categoryId, '');
+
+        // New shard should be the default shard.
+        final defaultOps = getShardOps(kDefaultShardKey);
+        verify(() => defaultOps.putMany(any())).called(1);
+      });
+
+      test('moves entity from default shard to named shard', () async {
+        await openStoreWithShards(
+          [kDefaultShardKey],
+          metadata: {
+            kDefaultShardKey: [
+              const EntityMetadataRow(entityId: 'entity-1', taskId: ''),
+            ],
+          },
+        );
+
+        final defaultOps = getShardOps(kDefaultShardKey);
+        when(
+          () => defaultOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn([makeEntity()]);
+
+        await store.moveEntityToShard('entity-1', 'cat-b');
+
+        final categoryId = await store.getCategoryId('entity-1');
+        expect(categoryId, 'cat-b');
+
+        final newOps = getShardOps('cat-b');
+        verify(() => newOps.putMany(any())).called(1);
+      });
+
+      test('preserves reverse task index after moving a report', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-1',
+              ),
+            ],
+          },
+        );
+
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-a',
+            taskId: 'task-1',
+          ),
+        ]);
+
+        // Move the report to a new shard.
+        await store.moveEntityToShard('report-1', 'cat-b');
+
+        // The reverse task index should still work: calling
+        // moveRelatedReportEmbeddings for task-1 should find report-1.
+        final catBOps = getShardOps('cat-b');
+        when(
+          () => catBOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-b',
+            taskId: 'task-1',
+          ),
+        ]);
+
+        await store.moveRelatedReportEmbeddings('task-1', 'cat-c');
+
+        // report-1 should now be in cat-c.
+        final categoryId = await store.getCategoryId('report-1');
+        expect(categoryId, 'cat-c');
+      });
+    });
+
+    group('moveRelatedReportEmbeddings', () {
+      test('cascades to all reports for a task', () async {
+        await openStoreWithShards(
+          ['cat-a'],
+          metadata: {
+            'cat-a': [
+              const EntityMetadataRow(
+                entityId: 'report-1',
+                taskId: 'task-1',
+              ),
+              const EntityMetadataRow(
+                entityId: 'report-2',
+                taskId: 'task-1',
+              ),
+            ],
+          },
+        );
+
+        final oldOps = getShardOps('cat-a');
+        when(
+          () => oldOps.findEntitiesByEntityId('report-1'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-1',
+            categoryId: 'cat-a',
+            taskId: 'task-1',
+          ),
+        ]);
+        when(
+          () => oldOps.findEntitiesByEntityId('report-2'),
+        ).thenReturn([
+          makeEntity(
+            entityId: 'report-2',
+            categoryId: 'cat-a',
+            taskId: 'task-1',
+          ),
+        ]);
+
+        await store.moveRelatedReportEmbeddings('task-1', 'cat-b');
+
+        // Both reports should be moved to cat-b.
+        final newOps = getShardOps('cat-b');
+        verify(() => newOps.putMany(any())).called(2);
+
+        // Both should be deleted from old shard.
+        verify(() => oldOps.findIdsByEntityId('report-1')).called(1);
+        verify(() => oldOps.findIdsByEntityId('report-2')).called(1);
+      });
+
+      test('is no-op when no reports exist for task', () async {
+        await openStore();
+
+        // Should not throw.
+        await store.moveRelatedReportEmbeddings('unknown-task', 'cat-b');
       });
     });
 

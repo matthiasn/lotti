@@ -74,6 +74,28 @@ class ObjectBoxEmbeddingStore implements EmbeddingStore {
   }
 
   @override
+  String? getCategoryId(String entityId) {
+    return _ops.findFirstByEntityId(entityId)?.categoryId;
+  }
+
+  @override
+  void moveEntityToShard(String entityId, String newCategoryId) {
+    final chunks = _ops.findEntitiesByEntityId(entityId);
+    if (chunks.isEmpty) return;
+
+    for (final chunk in chunks) {
+      chunk.categoryId = newCategoryId;
+    }
+    _ops.runInWriteTransaction(() => _ops.putMany(chunks));
+  }
+
+  @override
+  void moveRelatedReportEmbeddings(String taskId, String newCategoryId) {
+    // No-op in single-store mode — no efficient reverse task index.
+    // The next backfill pass will correct report categoryIds.
+  }
+
+  @override
   bool hasEmbedding(String entityId) {
     return _ops.findFirstByEntityId(entityId) != null;
   }

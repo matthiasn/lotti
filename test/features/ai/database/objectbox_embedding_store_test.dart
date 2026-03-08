@@ -432,6 +432,61 @@ void main() {
       });
     });
 
+    group('getCategoryId', () {
+      test('returns categoryId from stored entity', () {
+        when(
+          () => mockOps.findFirstByEntityId('entity-1'),
+        ).thenReturn(makeEntity(categoryId: 'cat-work'));
+
+        expect(store.getCategoryId('entity-1'), 'cat-work');
+      });
+
+      test('returns null for missing entity', () {
+        when(() => mockOps.findFirstByEntityId('missing')).thenReturn(null);
+
+        expect(store.getCategoryId('missing'), isNull);
+      });
+    });
+
+    group('moveEntityToShard', () {
+      test('updates categoryId on all chunks', () {
+        final chunks = [
+          makeEntity(categoryId: 'old'),
+          makeEntity(chunkIndex: 1, categoryId: 'old'),
+        ];
+        when(
+          () => mockOps.findEntitiesByEntityId('entity-1'),
+        ).thenReturn(chunks);
+        stubWriteTransaction();
+        when(() => mockOps.putMany(any())).thenReturn(null);
+
+        store.moveEntityToShard('entity-1', 'new-cat');
+
+        expect(chunks[0].categoryId, 'new-cat');
+        expect(chunks[1].categoryId, 'new-cat');
+        verify(() => mockOps.putMany(chunks)).called(1);
+      });
+
+      test('no-op when no chunks found', () {
+        when(
+          () => mockOps.findEntitiesByEntityId('missing'),
+        ).thenReturn([]);
+
+        store.moveEntityToShard('missing', 'cat');
+
+        verifyNever(() => mockOps.putMany(any()));
+      });
+    });
+
+    group('moveRelatedReportEmbeddings', () {
+      test('is a no-op in single-store mode', () {
+        // Should not throw or do anything.
+        store.moveRelatedReportEmbeddings('task-1', 'new-cat');
+
+        verifyZeroInteractions(mockOps);
+      });
+    });
+
     group('getContentHash uses embedding key format', () {
       test('looks up entityId:0 for the content hash', () {
         when(

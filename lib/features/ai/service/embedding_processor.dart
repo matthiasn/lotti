@@ -55,12 +55,26 @@ class EmbeddingProcessor {
     final text = await _extractText(entity, labelNameResolver);
     if (text == null) return false;
 
-    // Skip if content hash unchanged.
+    final categoryId = entity.meta.categoryId ?? '';
+
+    // Skip if content hash unchanged — but check for category changes.
     final hash = EmbeddingContentExtractor.contentHash(text);
     final existingHash = await embeddingStore.getContentHash(entityId);
-    if (existingHash == hash) return false;
+    if (existingHash == hash) {
+      final storedCategoryId = await embeddingStore.getCategoryId(entityId);
+      if (storedCategoryId != null && storedCategoryId != categoryId) {
+        await embeddingStore.moveEntityToShard(entityId, categoryId);
+        if (entity is Task) {
+          await embeddingStore.moveRelatedReportEmbeddings(
+            entityId,
+            categoryId,
+          );
+        }
+        return true;
+      }
+      return false;
+    }
 
-    final categoryId = entity.meta.categoryId ?? '';
     await _embedChunks(
       text: text,
       entityId: entityId,

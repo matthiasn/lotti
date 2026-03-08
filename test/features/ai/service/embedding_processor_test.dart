@@ -209,6 +209,9 @@ void main() {
       when(
         () => mockEmbeddingStore.getContentHash(entry.id),
       ).thenReturn(_hashOf(_longText));
+      when(
+        () => mockEmbeddingStore.getCategoryId(entry.id),
+      ).thenReturn('');
 
       final result = await EmbeddingProcessor.processEntity(
         entityId: entry.id,
@@ -347,6 +350,207 @@ void main() {
           baseUrl: _baseUrl,
         ),
       ).called(1);
+    });
+
+    group('category-change detection', () {
+      test('moves entity to new shard when category changed', () async {
+        final entry = JournalEntry(
+          meta: _meta(categoryId: 'cat-new'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, entry);
+        // Content hash matches — no re-embedding needed.
+        when(
+          () => mockEmbeddingStore.getContentHash(entry.id),
+        ).thenReturn(_hashOf(_longText));
+        // But stored category differs.
+        when(
+          () => mockEmbeddingStore.getCategoryId(entry.id),
+        ).thenReturn('cat-old');
+        when(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: entry.id,
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockEmbeddingStore.moveEntityToShard(entry.id, 'cat-new'),
+        ).called(1);
+        // Not a task, so no report cascade.
+        verifyNever(
+          () => mockEmbeddingStore.moveRelatedReportEmbeddings(
+            any(),
+            any(),
+          ),
+        );
+      });
+
+      test('cascades to reports when task category changes', () async {
+        final task = Task(
+          meta: _meta(categoryId: 'cat-new'),
+          data: _taskData('A task title that is long enough for embedding'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, task);
+        const taskText =
+            'A task title that is long enough for embedding'
+            '\n$_longText';
+        when(
+          () => mockEmbeddingStore.getContentHash(task.id),
+        ).thenReturn(_hashOf(taskText));
+        when(
+          () => mockEmbeddingStore.getCategoryId(task.id),
+        ).thenReturn('cat-old');
+        when(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+        when(
+          () => mockEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
+        ).thenReturn(null);
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: task.id,
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockEmbeddingStore.moveEntityToShard(task.id, 'cat-new'),
+        ).called(1);
+        verify(
+          () => mockEmbeddingStore.moveRelatedReportEmbeddings(
+            task.id,
+            'cat-new',
+          ),
+        ).called(1);
+      });
+
+      test('returns false when hash and category both unchanged', () async {
+        final entry = JournalEntry(
+          meta: _meta(categoryId: 'cat-same'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, entry);
+        when(
+          () => mockEmbeddingStore.getContentHash(entry.id),
+        ).thenReturn(_hashOf(_longText));
+        when(
+          () => mockEmbeddingStore.getCategoryId(entry.id),
+        ).thenReturn('cat-same');
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: entry.id,
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isFalse);
+        verifyNever(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        );
+      });
+
+      test(
+        'returns false when stored categoryId is null (not yet stored)',
+        () async {
+          final entry = JournalEntry(
+            meta: _meta(categoryId: 'cat-1'),
+            entryText: const EntryText(plainText: _longText),
+          );
+          _stubEntity(mockJournalDb, entry);
+          when(
+            () => mockEmbeddingStore.getContentHash(entry.id),
+          ).thenReturn(_hashOf(_longText));
+          when(
+            () => mockEmbeddingStore.getCategoryId(entry.id),
+          ).thenReturn(null);
+
+          final result = await EmbeddingProcessor.processEntity(
+            entityId: entry.id,
+            journalDb: mockJournalDb,
+            embeddingStore: mockEmbeddingStore,
+            embeddingRepository: mockEmbeddingRepo,
+            baseUrl: _baseUrl,
+          );
+
+          expect(result, isFalse);
+        },
+      );
+
+      test('moves from named category to default (empty) category', () async {
+        // Entity has no categoryId (null → '') but stored as 'cat-old'.
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, entry);
+        when(
+          () => mockEmbeddingStore.getContentHash(entry.id),
+        ).thenReturn(_hashOf(_longText));
+        when(
+          () => mockEmbeddingStore.getCategoryId(entry.id),
+        ).thenReturn('cat-old');
+        when(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: entry.id,
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isTrue);
+        // Should move to empty string categoryId (default).
+        verify(
+          () => mockEmbeddingStore.moveEntityToShard(entry.id, ''),
+        ).called(1);
+      });
+
+      test('moves from default (empty) category to named category', () async {
+        final entry = JournalEntry(
+          meta: _meta(categoryId: 'cat-new'),
+          entryText: const EntryText(plainText: _longText),
+        );
+        _stubEntity(mockJournalDb, entry);
+        when(
+          () => mockEmbeddingStore.getContentHash(entry.id),
+        ).thenReturn(_hashOf(_longText));
+        // Stored as empty string (default category).
+        when(
+          () => mockEmbeddingStore.getCategoryId(entry.id),
+        ).thenReturn('');
+        when(
+          () => mockEmbeddingStore.moveEntityToShard(any(), any()),
+        ).thenReturn(null);
+
+        final result = await EmbeddingProcessor.processEntity(
+          entityId: entry.id,
+          journalDb: mockJournalDb,
+          embeddingStore: mockEmbeddingStore,
+          embeddingRepository: mockEmbeddingRepo,
+          baseUrl: _baseUrl,
+        );
+
+        expect(result, isTrue);
+        verify(
+          () => mockEmbeddingStore.moveEntityToShard(entry.id, 'cat-new'),
+        ).called(1);
+      });
     });
 
     test('propagates embedding repository exceptions to caller', () async {
