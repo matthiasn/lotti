@@ -396,7 +396,7 @@ Future<void> registerSingletons() async {
   // and the app should still start.
   // coverage:ignore-start
   try {
-    final embeddingStore = await openObjectBoxEmbeddingStore(
+    final embeddingStore = await openShardedEmbeddingStore(
       documentsPath: getIt<Directory>().path,
     );
     getIt

@@ -1,6 +1,7 @@
 // coverage:ignore-file
 import 'dart:typed_data';
 
+import 'package:lotti/features/ai/database/entity_metadata_row.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/objectbox.g.dart';
@@ -56,6 +57,38 @@ class RealObjectBoxOps implements ObjectBoxOps {
       query.close();
     }
   }
+
+  @override
+  List<EmbeddingChunkEntity> findEntitiesByEntityId(String entityId) {
+    final query = _box
+        .query(EmbeddingChunkEntity_.entityId.equals(entityId))
+        .build();
+    try {
+      return query.find();
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<EntityMetadataRow> queryAllEntityMetadata() {
+    // Use property queries to avoid loading 4KB embedding vectors per entity.
+    final query = _box.query().build();
+    try {
+      final entityIds = query.property(EmbeddingChunkEntity_.entityId).find();
+      final taskIds = query.property(EmbeddingChunkEntity_.taskId).find();
+
+      return [
+        for (var i = 0; i < entityIds.length; i++)
+          EntityMetadataRow(entityId: entityIds[i], taskId: taskIds[i]),
+      ];
+    } finally {
+      query.close();
+    }
+  }
+
+  @override
+  List<EmbeddingChunkEntity> findAllEntities() => _box.getAll();
 
   @override
   void putMany(List<EmbeddingChunkEntity> entities) => _box.putMany(entities);

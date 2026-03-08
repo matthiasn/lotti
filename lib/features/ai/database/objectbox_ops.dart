@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:lotti/features/ai/database/entity_metadata_row.dart';
 import 'package:lotti/features/ai/database/objectbox_embedding_entity.dart';
 
 /// Thin abstraction over ObjectBox Store/Box/Query operations.
@@ -24,6 +25,22 @@ abstract class ObjectBoxOps {
 
   /// Returns the first entity matching [entityId], or null.
   EmbeddingChunkEntity? findFirstByEntityId(String entityId);
+
+  /// Returns all chunk entities matching [entityId] (full objects including
+  /// vectors). Used for shard-to-shard moves.
+  List<EmbeddingChunkEntity> findEntitiesByEntityId(String entityId);
+
+  /// Returns lightweight entityId+taskId metadata for every stored entity.
+  ///
+  /// Uses property queries to avoid loading the full embedding vectors,
+  /// keeping memory usage low during startup index rebuilds.
+  List<EntityMetadataRow> queryAllEntityMetadata();
+
+  /// Returns all stored entities (full objects including vectors).
+  ///
+  /// Used for one-time migration. Prefer [queryAllEntityMetadata] for
+  /// lightweight index rebuilds.
+  List<EmbeddingChunkEntity> findAllEntities();
 
   /// Inserts or updates multiple entities.
   void putMany(List<EmbeddingChunkEntity> entities);
