@@ -147,6 +147,24 @@ void main() {
       // Should not throw.
     });
 
+    test('disposeServicesOnly skips database close calls', () async {
+      await disposer.disposeServicesOnly();
+
+      verify(mockBackfill.dispose).called(1);
+      verify(mockEmbeddingService.stop).called(1);
+      verify(mockOutbox.dispose).called(1);
+      verify(mockMatrix.dispose).called(1);
+
+      verifyNever(mockJournalDb.close);
+      verifyNever(mockSyncDb.close);
+      verifyNever(mockAgentDb.close);
+      verifyNever(mockEditorDb.close);
+      verifyNever(mockFts5Db.close);
+      verifyNever(mockLoggingDb.close);
+      verifyNever(mockSettingsDb.close);
+      verifyNever(mockEmbeddingStore.close);
+    });
+
     test('logs errors via the provided callback', () async {
       final loggedErrors = <String>[];
       final loggingDisposer = ServiceDisposer(

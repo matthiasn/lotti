@@ -10,10 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.911] - 2026-03-09
 ### Fixed
-- macOS crash on close: replaced `windowManager.destroy()` with `exit(0)`
-  after service disposal to prevent a race between native SQLite worker
-  threads and the Dart VM teardown path that caused a fatal FFI assertion
-  failure (SIGABRT in `DLRT_GetFfiCallbackMetadata`).
+- macOS crash on close: skip SQLite database close entirely on macOS
+  before calling `exit(0)`. The previous fix still crashed because the
+  SIGABRT occurred during `db.close()` itself (`sqlite3_close_v2` →
+  `functionDestroy` → `DLRT_GetFfiCallbackMetadata`). SQLite WAL mode
+  guarantees data integrity without explicit close.
 
 ## [0.9.910] - 2026-03-08
 ### Added
