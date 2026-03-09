@@ -1,16 +1,10 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/change_source.dart';
+
+export 'package:lotti/classes/change_source.dart';
 
 part 'checklist_item_data.freezed.dart';
 part 'checklist_item_data.g.dart';
-
-/// Who last changed the `isChecked` field on a checklist item.
-enum CheckedBySource {
-  /// Set by the user via the UI.
-  user,
-
-  /// Set by an AI agent tool call.
-  agent,
-}
 
 @freezed
 abstract class ChecklistItemData with _$ChecklistItemData {
@@ -20,9 +14,9 @@ abstract class ChecklistItemData with _$ChecklistItemData {
     required List<String> linkedChecklists,
     @Default(false) bool isArchived,
     String? id,
-    @Default(CheckedBySource.user)
-    @JsonKey(unknownEnumValue: CheckedBySource.user)
-    CheckedBySource checkedBy,
+    @Default(ChangeSource.user)
+    @JsonKey(unknownEnumValue: ChangeSource.user)
+    ChangeSource checkedBy,
     DateTime? checkedAt,
   }) = _ChecklistItemData;
 

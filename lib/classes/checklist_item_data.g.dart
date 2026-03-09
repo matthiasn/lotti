@@ -17,11 +17,11 @@ _ChecklistItemData _$ChecklistItemDataFromJson(Map<String, dynamic> json) =>
       id: json['id'] as String?,
       checkedBy:
           $enumDecodeNullable(
-            _$CheckedBySourceEnumMap,
+            _$ChangeSourceEnumMap,
             json['checkedBy'],
-            unknownValue: CheckedBySource.user,
+            unknownValue: ChangeSource.user,
           ) ??
-          CheckedBySource.user,
+          ChangeSource.user,
       checkedAt: json['checkedAt'] == null
           ? null
           : DateTime.parse(json['checkedAt'] as String),
@@ -34,11 +34,11 @@ Map<String, dynamic> _$ChecklistItemDataToJson(_ChecklistItemData instance) =>
       'linkedChecklists': instance.linkedChecklists,
       'isArchived': instance.isArchived,
       'id': instance.id,
-      'checkedBy': _$CheckedBySourceEnumMap[instance.checkedBy]!,
+      'checkedBy': _$ChangeSourceEnumMap[instance.checkedBy]!,
       'checkedAt': instance.checkedAt?.toIso8601String(),
     };
 
-const _$CheckedBySourceEnumMap = {
-  CheckedBySource.user: 'user',
-  CheckedBySource.agent: 'agent',
+const _$ChangeSourceEnumMap = {
+  ChangeSource.user: 'user',
+  ChangeSource.agent: 'agent',
 };

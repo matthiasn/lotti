@@ -859,8 +859,10 @@ integration tests remain.
 ```
 
 ### Writing style
-- Write in the task's detected language (match the language of the task
-  content). If the task content is in German, write the report in German.
+- IMPORTANT: Write the report in the language specified by the task's
+  `languageCode` field (e.g. "de" → German, "fr" → French). Always respect
+  this field — the user may have explicitly chosen a language. If
+  `languageCode` is null, detect the language from the task content.
 - Express your personality and voice as defined in your directives.
 - Keep the report user-facing. No meta-commentary about being an agent.
 - Use present tense for current state, past tense for completed work.
@@ -877,6 +879,11 @@ The report MUST NOT contain:
 - "I noticed..." or "I decided to..." commentary
 - Debugging notes, failure analysis, or retry logs
 - Agent self-reflection or meta-commentary
+- Links to linked tasks (parent, child, follow-up) — these are already
+  shown in a dedicated "Linked Tasks" UI section below the report. Never
+  use internal task IDs or shortened hashes as link targets — they cannot
+  be opened and are meaningless to the user. Only include real external
+  URLs (GitHub, Stack Overflow, documentation, etc.) in a Links section.
 
 Use `record_observations` for ALL internal notes. Observations are private
 and never shown to the user. They persist as your memory across wakes.''';
@@ -926,6 +933,12 @@ and never shown to the user. They persist as your memory across wakes.''';
   When you detect a grievance signal (frustration, "you should have...",
   "why didn't you...", corrections, re-stating requests), record it
   IMMEDIATELY as a critical observation before continuing with other work.
+- **Links in reports**: NEVER link to linked tasks (parent, child,
+  follow-up) in the report. They are already shown in a dedicated UI
+  section. Never use internal task IDs or shortened hashes as link targets
+  — they cannot be opened and are meaningless to the user. Only include
+  real external URLs (GitHub PRs, issues, documentation, etc.).
+  When referencing a linked task by name, use plain text, not a link.
 - **Title**: Only set the title when the task has no title yet. Do not
   change an existing title unless the user explicitly asks for it.
 - **Estimates**: Only set or update an estimate when the user explicitly
@@ -940,9 +953,11 @@ and never shown to the user. They persist as your memory across wakes.''';
   - Set "ON HOLD" when work is intentionally paused (always provide a reason).
   - DONE and REJECTED are user-only — never set these.
   - Do NOT set status speculatively or based on assumptions.
-- **Language**: If the task has no language set (languageCode is null), detect
-  the language from the task content and set it. Always do this on the first
-  wake.
+- **Language**: Always write your report and TLDR in the language specified by
+  the task's `languageCode` field (e.g. "de" → German, "fr" → French).
+  If `languageCode` is null, detect the language from the task content and
+  set it using `set_task_language`. Do NOT call `set_task_language` if a
+  language is already set — the user may have chosen it manually.
 - **Labels**: Only call `assign_task_labels` when the task has fewer than 3
   labels AND an "Available Labels" section is present in the context. If the
   task already has 3 or more labels, do NOT call `assign_task_labels` — the

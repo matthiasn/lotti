@@ -148,7 +148,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(SyncSequencePayloadType.journalEntity);
 
   // Enum fallbacks
-  registerFallbackValue(CheckedBySource.user);
+  registerFallbackValue(ChangeSource.user);
   registerFallbackValue(AiConfigType.inferenceProvider);
 
   registerFallbackValue(

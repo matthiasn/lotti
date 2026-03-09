@@ -709,7 +709,7 @@ void main() {
           title: 'new item',
           isChecked: false,
           categoryId: any(named: 'categoryId'),
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         ),
       ).thenAnswer((_) async {
         final itemId = _uuid.v4();
@@ -726,7 +726,7 @@ void main() {
             title: 'new item',
             isChecked: false,
             linkedChecklists: [],
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         );
       });
@@ -766,7 +766,7 @@ void main() {
           title: 'new item',
           isChecked: false,
           categoryId: any(named: 'categoryId'),
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         ),
       ).called(1);
 

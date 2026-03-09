@@ -258,7 +258,7 @@ void main() {
             title: 'Buy milk',
             isChecked: false,
             categoryId: testTask.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         ).thenAnswer(
           (_) async => ChecklistItem(
@@ -274,7 +274,7 @@ void main() {
               title: 'Buy milk',
               isChecked: false,
               linkedChecklists: ['existing-checklist'],
-              checkedBy: CheckedBySource.agent,
+              checkedBy: ChangeSource.agent,
             ),
           ),
         );
@@ -297,7 +297,7 @@ void main() {
             title: 'Buy milk',
             isChecked: false,
             categoryId: testTask.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         ).called(1);
       });

@@ -172,6 +172,13 @@ _TaskData _$TaskDataFromJson(Map<String, dynamic> json) => _TaskData(
       ?.map((e) => e as String)
       .toList(),
   languageCode: json['languageCode'] as String?,
+  languageSource:
+      $enumDecodeNullable(
+        _$ChangeSourceEnumMap,
+        json['languageSource'],
+        unknownValue: ChangeSource.user,
+      ) ??
+      ChangeSource.user,
   aiSuppressedLabelIds: (json['aiSuppressedLabelIds'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toSet(),
@@ -192,10 +199,16 @@ Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
   'estimate': instance.estimate?.inMicroseconds,
   'checklistIds': instance.checklistIds,
   'languageCode': instance.languageCode,
+  'languageSource': _$ChangeSourceEnumMap[instance.languageSource]!,
   'aiSuppressedLabelIds': instance.aiSuppressedLabelIds?.toList(),
   'priority': _$TaskPriorityEnumMap[instance.priority]!,
   'coverArtId': instance.coverArtId,
   'coverArtCropX': instance.coverArtCropX,
+};
+
+const _$ChangeSourceEnumMap = {
+  ChangeSource.user: 'user',
+  ChangeSource.agent: 'agent',
 };
 
 const _$TaskPriorityEnumMap = {

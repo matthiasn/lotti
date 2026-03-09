@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
@@ -94,10 +95,13 @@ void main() {
       });
 
       test(
-        'returns no-op when language is already set to same value',
+        'returns no-op when agent-set language already matches',
         () async {
           final taskWithLang = task.copyWith(
-            data: task.data.copyWith(languageCode: 'fr'),
+            data: task.data.copyWith(
+              languageCode: 'fr',
+              languageSource: ChangeSource.agent,
+            ),
           );
 
           final handler = TaskLanguageHandler(
@@ -116,13 +120,16 @@ void main() {
         },
       );
 
-      test('allows changing from one language to another', () async {
+      test('allows changing agent-set language to another', () async {
         when(
           () => mockJournalRepo.updateJournalEntity(any()),
         ).thenAnswer((_) async => true);
 
         final taskWithLang = task.copyWith(
-          data: task.data.copyWith(languageCode: 'en'),
+          data: task.data.copyWith(
+            languageCode: 'en',
+            languageSource: ChangeSource.agent,
+          ),
         );
 
         final handler = TaskLanguageHandler(
@@ -135,6 +142,7 @@ void main() {
         expect(result.success, isTrue);
         expect(result.didWrite, isTrue);
         expect(result.updatedTask!.data.languageCode, 'de');
+        expect(result.updatedTask!.data.languageSource, ChangeSource.agent);
       });
 
       test('returns error when repository returns false', () async {
@@ -186,6 +194,73 @@ void main() {
         await handler.handle('es');
 
         expect(handler.task.data.languageCode, 'es');
+      });
+
+      test('rejects overwriting user-set language', () async {
+        final taskWithUserLang = task.copyWith(
+          data: task.data.copyWith(
+            languageCode: 'de',
+            languageSource: ChangeSource.user,
+          ),
+        );
+
+        final handler = TaskLanguageHandler(
+          task: taskWithUserLang,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('en');
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isFalse);
+        expect(result.wasNoOp, isTrue);
+        expect(result.message, contains('manually set by user'));
+        expect(result.message, contains('de'));
+
+        verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+      });
+
+      test(
+        'returns no-op for user-set language with same code',
+        () async {
+          final taskWithUserLang = task.copyWith(
+            data: task.data.copyWith(
+              languageCode: 'en',
+              languageSource: ChangeSource.user,
+            ),
+          );
+
+          final handler = TaskLanguageHandler(
+            task: taskWithUserLang,
+            journalRepository: mockJournalRepo,
+          );
+
+          final result = await handler.handle('en');
+
+          expect(result.success, isTrue);
+          expect(result.didWrite, isFalse);
+          expect(result.wasNoOp, isTrue);
+          expect(result.message, contains('already'));
+
+          verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
+        },
+      );
+
+      test('sets languageSource to agent on successful write', () async {
+        when(
+          () => mockJournalRepo.updateJournalEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        final handler = TaskLanguageHandler(
+          task: task,
+          journalRepository: mockJournalRepo,
+        );
+
+        final result = await handler.handle('en');
+
+        expect(result.success, isTrue);
+        expect(result.didWrite, isTrue);
+        expect(result.updatedTask!.data.languageSource, ChangeSource.agent);
       });
 
       test('does not update local task field when write fails', () async {

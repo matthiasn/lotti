@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
@@ -138,6 +139,14 @@ abstract class TaskData with _$TaskData {
     Duration? estimate,
     List<String>? checklistIds,
     String? languageCode,
+
+    /// Who last set the language — `user` (via UI) or `agent` (tool call).
+    ///
+    /// Defaults to [ChangeSource.user] so that existing tasks with a language
+    /// already set are treated as user-set (safe default — never overwrite).
+    @Default(ChangeSource.user)
+    @JsonKey(unknownEnumValue: ChangeSource.user)
+    ChangeSource languageSource,
 
     /// Set of label IDs the user explicitly removed and does not want suggested by AI.
     /// Stored as a Set in memory; serialized as an array in JSON.

@@ -530,12 +530,12 @@ void main() {
         title: title,
         isChecked: false,
         categoryId: categoryId,
-        checkedBy: CheckedBySource.agent,
+        checkedBy: ChangeSource.agent,
         checkedAt: checkedAt,
       );
 
       expect(result, isNotNull);
-      expect(result!.data.checkedBy, CheckedBySource.agent);
+      expect(result!.data.checkedBy, ChangeSource.agent);
       expect(result.data.checkedAt, checkedAt);
 
       // Verify the entity persisted has the correct provenance
@@ -544,7 +544,7 @@ void main() {
                 () => mockPersistenceLogic.createDbEntity(captureAny()),
               ).captured.single
               as ChecklistItem;
-      expect(captured.data.checkedBy, CheckedBySource.agent);
+      expect(captured.data.checkedBy, ChangeSource.agent);
       expect(captured.data.checkedAt, checkedAt);
     });
   });

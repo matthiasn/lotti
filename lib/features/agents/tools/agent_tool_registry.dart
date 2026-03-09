@@ -75,6 +75,7 @@ class AgentToolRegistry {
     TaskAgentToolNames.setTaskStatus,
     TaskAgentToolNames.addMultipleChecklistItems,
     TaskAgentToolNames.updateChecklistItems,
+    TaskAgentToolNames.setTaskLanguage,
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.migrateChecklistItems,
   };
@@ -464,8 +465,10 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.setTaskLanguage,
       description:
           'Set the detected language for the task. '
-          'Only set when the task has no language yet (languageCode is null). '
-          'Detect based on the task content (title, transcripts, notes).',
+          'Only call when the task has NO language set. '
+          'Never override a language the user has already set — the handler '
+          'will reject it. Detect based on the task content (title, '
+          'transcripts, notes).',
       parameters: {
         'type': 'object',
         'properties': {

@@ -1182,7 +1182,7 @@ class UnifiedAiInferenceRepository {
                     title: item.title,
                     isChecked: item.isChecked,
                     linkedChecklists: [],
-                    checkedBy: CheckedBySource.agent,
+                    checkedBy: ChangeSource.agent,
                   ),
                 ],
                 title: 'TODOs',
@@ -1235,7 +1235,7 @@ class UnifiedAiInferenceRepository {
                 title: item.title,
                 isChecked: item.isChecked,
                 categoryId: currentTask.meta.categoryId,
-                checkedBy: CheckedBySource.agent,
+                checkedBy: ChangeSource.agent,
               );
 
               if (newItem != null) {
@@ -1486,7 +1486,7 @@ class UnifiedAiInferenceRepository {
                   'Skipping auto-check for item ${suggestion.checklistItemId} - already checked',
                   name: 'UnifiedAiInferenceRepository',
                 );
-              } else if (checklistItem.data.checkedBy == CheckedBySource.user) {
+              } else if (checklistItem.data.checkedBy == ChangeSource.user) {
                 // User sovereignty: do not auto-check items the user
                 // explicitly unchecked. The agent tool path requires a
                 // reason; auto-check has no reason to provide, so skip.
@@ -1501,7 +1501,7 @@ class UnifiedAiInferenceRepository {
                   checklistItemId: suggestion.checklistItemId,
                   data: checklistItem.data.copyWith(
                     isChecked: true,
-                    checkedBy: CheckedBySource.agent,
+                    checkedBy: ChangeSource.agent,
                     checkedAt: _clock(),
                   ),
                   taskId: currentTask.id,

@@ -8,7 +8,7 @@ void main() {
         title: 'Deploy to prod',
         isChecked: true,
         linkedChecklists: ['cl-1'],
-        checkedBy: CheckedBySource.agent,
+        checkedBy: ChangeSource.agent,
         checkedAt: DateTime.utc(2026, 2, 28, 22),
       );
 
@@ -18,7 +18,7 @@ void main() {
       expect(restored.title, 'Deploy to prod');
       expect(restored.isChecked, true);
       expect(restored.linkedChecklists, ['cl-1']);
-      expect(restored.checkedBy, CheckedBySource.agent);
+      expect(restored.checkedBy, ChangeSource.agent);
       expect(restored.checkedAt, DateTime.utc(2026, 2, 28, 22));
     });
 
@@ -34,7 +34,7 @@ void main() {
 
       expect(data.title, 'Old task');
       expect(data.isChecked, true);
-      expect(data.checkedBy, CheckedBySource.user);
+      expect(data.checkedBy, ChangeSource.user);
       expect(data.checkedAt, isNull);
     });
 
@@ -43,7 +43,7 @@ void main() {
         title: 'Test',
         isChecked: false,
         linkedChecklists: [],
-        checkedBy: CheckedBySource.agent,
+        checkedBy: ChangeSource.agent,
       );
 
       final json = data.toJson();
@@ -83,13 +83,13 @@ void main() {
         linkedChecklists: [],
       );
 
-      expect(data.checkedBy, CheckedBySource.user);
+      expect(data.checkedBy, ChangeSource.user);
     });
 
-    test('CheckedBySource enum has expected values', () {
-      expect(CheckedBySource.values.length, 2);
-      expect(CheckedBySource.values, contains(CheckedBySource.user));
-      expect(CheckedBySource.values, contains(CheckedBySource.agent));
+    test('ChangeSource enum has expected values', () {
+      expect(ChangeSource.values.length, 2);
+      expect(ChangeSource.values, contains(ChangeSource.user));
+      expect(ChangeSource.values, contains(ChangeSource.agent));
     });
 
     test('deserializes unknown checkedBy value as user', () {
@@ -102,7 +102,7 @@ void main() {
 
       final data = ChecklistItemData.fromJson(json);
 
-      expect(data.checkedBy, CheckedBySource.user);
+      expect(data.checkedBy, ChangeSource.user);
     });
   });
 }

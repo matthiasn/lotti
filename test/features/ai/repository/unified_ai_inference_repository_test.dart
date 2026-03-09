@@ -6276,7 +6276,7 @@ Take into account the following task context:
           title: 'New checklist item',
           isChecked: false,
           categoryId: taskEntity.meta.categoryId,
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         ),
       ).thenAnswer((_) async => newChecklistItem);
 
@@ -6323,7 +6323,7 @@ Take into account the following task context:
           title: 'New checklist item',
           isChecked: false,
           categoryId: taskEntity.meta.categoryId,
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         ),
       ).called(1);
     });
@@ -6412,7 +6412,7 @@ Take into account the following task context:
             title: any(named: 'title'),
             isChecked: false,
             categoryId: any(named: 'categoryId'),
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         ).thenAnswer(
           (_) async => ChecklistItem(
@@ -6421,7 +6421,7 @@ Take into account the following task context:
               title: 'Test Item',
               isChecked: false,
               linkedChecklists: [newChecklistId],
-              checkedBy: CheckedBySource.agent,
+              checkedBy: ChangeSource.agent,
             ),
           ),
         );
@@ -6494,7 +6494,7 @@ Take into account the following task context:
             title: 'Second item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         ).called(1);
 
@@ -6504,7 +6504,7 @@ Take into account the following task context:
             title: 'Third item',
             isChecked: false,
             categoryId: taskEntity.meta.categoryId,
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         ).called(1);
       },
@@ -6542,7 +6542,7 @@ Take into account the following task context:
           isChecked: false,
           linkedChecklists: ['checklist-1'],
           // Agent-owned so auto-check is allowed by sovereignty guard
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         ),
       );
 
@@ -6644,7 +6644,7 @@ Take into account the following task context:
                 .having(
                   (d) => d.checkedBy,
                   'checkedBy',
-                  CheckedBySource.agent,
+                  ChangeSource.agent,
                 )
                 .having(
                   (d) => d.checkedAt,
@@ -6895,7 +6895,7 @@ Take into account the following task context:
           title: 'User unchecked item',
           isChecked: false,
           linkedChecklists: ['checklist-1'],
-          checkedBy: CheckedBySource.user,
+          checkedBy: ChangeSource.user,
         ),
       );
 

@@ -29,6 +29,7 @@ const kTestTaskMetadataSnapshot =
           priority: 'P1',
           estimateMinutes: 120,
           dueDate: '2026-03-15',
+          languageCode: 'en',
         )
         as TaskMetadataSnapshot;
 

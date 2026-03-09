@@ -183,7 +183,7 @@ class TestDataFactory {
     String? title,
     bool isChecked = false,
     List<String>? linkedChecklists,
-    CheckedBySource? checkedBy,
+    ChangeSource? checkedBy,
   }) {
     final itemId = id ?? _uuid.v4();
     return ChecklistItem(
@@ -199,7 +199,7 @@ class TestDataFactory {
         title: title ?? 'Test Item',
         isChecked: isChecked,
         linkedChecklists: linkedChecklists ?? ['checklist-1'],
-        checkedBy: checkedBy ?? CheckedBySource.user,
+        checkedBy: checkedBy ?? ChangeSource.user,
       ),
     );
   }
@@ -891,7 +891,7 @@ void main() {
         title: 'Buy groceries',
         linkedChecklists: [checklistId],
         // Agent-owned so sovereignty guard allows isChecked update
-        checkedBy: CheckedBySource.agent,
+        checkedBy: ChangeSource.agent,
       );
       final promptConfig = TestDataFactory.createPromptConfig();
       final model = TestDataFactory.createModel();
@@ -970,7 +970,7 @@ void main() {
         title: 'mac OS settings', // Typo: should be macOS
         linkedChecklists: [checklistId],
         // Agent-owned so sovereignty guard allows isChecked update
-        checkedBy: CheckedBySource.agent,
+        checkedBy: ChangeSource.agent,
       );
       final promptConfig = TestDataFactory.createPromptConfig();
       final model = TestDataFactory.createModel();

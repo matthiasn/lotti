@@ -141,7 +141,7 @@ class ChecklistRepository {
     required String title,
     required bool isChecked,
     required String? categoryId,
-    CheckedBySource? checkedBy,
+    ChangeSource? checkedBy,
     DateTime? checkedAt,
   }) async {
     try {
@@ -152,7 +152,7 @@ class ChecklistRepository {
           title: title,
           isChecked: isChecked,
           linkedChecklists: [checklistId],
-          checkedBy: checkedBy ?? CheckedBySource.user,
+          checkedBy: checkedBy ?? ChangeSource.user,
           checkedAt: checkedAt,
         ),
       );
@@ -256,7 +256,7 @@ class ChecklistRepository {
     required String title,
     required bool isChecked,
     required String? categoryId,
-    CheckedBySource? checkedBy,
+    ChangeSource? checkedBy,
     DateTime? checkedAt,
   }) async {
     try {

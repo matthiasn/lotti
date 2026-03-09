@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
@@ -124,6 +125,27 @@ void main() {
             as Task;
 
     expect(updatedTask.data.languageCode, 'es');
+  });
+
+  testWidgets('sets languageSource to user when language changes', (
+    tester,
+  ) async {
+    when(
+      () => mockJournalRepository.updateJournalEntity(any()),
+    ).thenAnswer((_) async => true);
+
+    final callback = await pumpWrapper(tester, task: baseTask);
+
+    await callback(SupportedLanguage.de);
+
+    final updatedTask =
+        verify(
+              () => mockJournalRepository.updateJournalEntity(captureAny()),
+            ).captured.single
+            as Task;
+
+    expect(updatedTask.data.languageCode, 'de');
+    expect(updatedTask.data.languageSource, ChangeSource.user);
   });
 
   testWidgets('does nothing when the selected language matches current value', (
