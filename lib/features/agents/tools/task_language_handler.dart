@@ -40,6 +40,8 @@ class TaskLanguageHandler {
   /// Sets the task language to [languageCode].
   ///
   /// Returns a no-op success if the task already has the requested language.
+  /// Returns a success with no change if the task has a user-set language
+  /// (agent cannot override user-set languages).
   /// Returns an error if the language code is not in [SupportedLanguage].
   Future<TaskLanguageResult> handle(String languageCode) async {
     final trimmed = languageCode.trim().toLowerCase();

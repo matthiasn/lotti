@@ -459,9 +459,10 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.setTaskLanguage,
       description:
           'Set the detected language for the task. '
-          'Only call when the task has NO language set. '
-          'Never override a language the user has already set — the handler '
-          'will reject it. Detect based on the task content (title, '
+          'Only call when the task has no language set, or when correcting a '
+          'previous agent-set language. Never override a different language '
+          'the user has already set — the handler will leave it unchanged and '
+          'return a message instead. Detect based on the task content (title, '
           'transcripts, notes).',
       parameters: {
         'type': 'object',

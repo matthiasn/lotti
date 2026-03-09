@@ -118,10 +118,9 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       await sub.cancel();
 
-      // Even if persistence fails, current behavior publishes event and records rate limit
+      // Even if persistence fails, current behavior still publishes an event
       expect(result.assigned, ['a']);
       expect(received.length, 1);
-      expect(result.assigned, ['a']);
     },
   );
 

@@ -1444,18 +1444,20 @@ class JournalDb extends _$JournalDb {
       // Guard against secondary UNIQUE(from_id, to_id, type) constraint.
       // insertOnConflictUpdate only handles primary key conflicts, so a
       // duplicate (from_id, to_id, type) with a different id would throw.
+      final dbLink = linkedDbEntity(link);
       final existingByTriple =
           await (select(linkedEntries)..where(
-                (t) => t.fromId.equals(link.fromId) & t.toId.equals(link.toId),
+                (t) =>
+                    t.fromId.equals(dbLink.fromId) &
+                    t.toId.equals(dbLink.toId) &
+                    t.type.equals(dbLink.type),
               ))
               .getSingleOrNull();
-      if (existingByTriple != null) {
-        return 0; // link already exists
+      if (existingByTriple != null && existingByTriple.id != dbLink.id) {
+        return 0; // duplicate secondary key
       }
 
-      final res = into(linkedEntries).insertOnConflictUpdate(
-        linkedDbEntity(link),
-      );
+      final res = into(linkedEntries).insertOnConflictUpdate(dbLink);
       return res;
     } else {
       return 0;
