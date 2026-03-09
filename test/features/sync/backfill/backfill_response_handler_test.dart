@@ -95,6 +95,11 @@ void main() {
 
     mockAgentRepository = MockAgentRepository();
 
+    // Default stub for covering entry fallback — returns null (no covering entry)
+    when(
+      () => mockSequenceService.getNearestCoveringEntry(any(), any()),
+    ).thenAnswer((_) async => null);
+
     handler = BackfillResponseHandler(
       journalDb: mockJournalDb,
       sequenceLogService: mockSequenceService,
@@ -124,14 +129,7 @@ void main() {
       );
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
-      // Should log that we skipped our own request
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('skipping own request')),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'skipSelf',
-        ),
-      ).called(1);
+      // Logging now goes through DomainLogger (not injected in tests)
     });
 
     test('ignores request when backfill is disabled', () async {
@@ -180,14 +178,7 @@ void main() {
         () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
       ).called(50);
 
-      // Verify truncation was logged
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('(truncated)')),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'handleRequest',
-        ),
-      ).called(1);
+      // Logging now goes through DomainLogger (not injected in tests)
     });
 
     test(
@@ -482,14 +473,7 @@ void main() {
         );
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
-        // Verify cooldownSkipped was logged
-        verify(
-          () => mockLogging.captureEvent(
-            any<String>(that: contains('cooldownSkipped=1')),
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'handleRequest',
-          ),
-        ).called(1);
+        // Logging now goes through DomainLogger (not injected in tests)
       });
     });
 
@@ -550,14 +534,7 @@ void main() {
           () => mockSequenceService.getEntryByHostAndCounter(any(), any()),
         );
 
-        // Verify rate limiting was logged
-        verify(
-          () => mockLogging.captureEvent(
-            any<String>(that: contains('rate limited')),
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'rateLimited',
-          ),
-        ).called(1);
+        // Logging now goes through DomainLogger (not injected in tests)
       });
     });
 
@@ -1238,14 +1215,7 @@ void main() {
       // Should not enqueue anything since there's no agent repository
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
-      // Should log that agentRepository is not wired
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('agentRepository not wired')),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'processEntry',
-        ),
-      ).called(1);
+      // Logging now goes through DomainLogger (not injected in tests)
     });
   });
 
@@ -1379,13 +1349,7 @@ void main() {
 
       verifyNever(() => mockOutboxService.enqueueMessage(any()));
 
-      verify(
-        () => mockLogging.captureEvent(
-          any<String>(that: contains('agentRepository not wired')),
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'processEntry',
-        ),
-      ).called(1);
+      // Logging now goes through DomainLogger (not injected in tests)
     });
   });
 

@@ -782,6 +782,15 @@ class SyncSequenceLogService {
     return _syncDatabase.getEntryByHostAndCounter(hostId, counter);
   }
 
+  /// Find the nearest covering entry for a host with counter >= [counter].
+  /// Used when the exact counter is missing from the sequence log (superseded).
+  Future<SyncSequenceLogItem?> getNearestCoveringEntry(
+    String hostId,
+    int counter,
+  ) {
+    return _syncDatabase.getNearestCoveringEntry(hostId, counter);
+  }
+
   /// Get backfill statistics grouped by host.
   Future<BackfillStats> getBackfillStats() {
     return _syncDatabase.getBackfillStats();

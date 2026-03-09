@@ -847,6 +847,31 @@ class SyncEventProcessor {
     final entryLinks = syncMessage.entryLinks;
 
     if (_isDuplicateJournalEntity(syncMessage.id, syncMessage.vectorClock)) {
+      // Even for duplicates, record in the sequence log so that
+      // resolvePendingHints runs. Without this, backfill hints (from
+      // BackfillResponse messages) are never resolved because the entity
+      // already exists locally with the same VC, but the pending
+      // (hostId, counter) → payloadId mapping was never verified.
+      if (_sequenceLogService != null &&
+          syncMessage.vectorClock != null &&
+          syncMessage.originatingHostId != null) {
+        try {
+          await _sequenceLogService.recordReceivedEntry(
+            entryId: syncMessage.id,
+            vectorClock: syncMessage.vectorClock!,
+            originatingHostId: syncMessage.originatingHostId!,
+            coveredVectorClocks: syncMessage.coveredVectorClocks,
+          );
+        } catch (e, st) {
+          _loggingService.captureException(
+            e,
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'duplicateRecord',
+            stackTrace: st,
+          );
+        }
+      }
+
       final diag = SyncApplyDiagnostics(
         eventId: event.eventId,
         payloadType: 'journalEntity',

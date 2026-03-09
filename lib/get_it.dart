@@ -310,6 +310,7 @@ Future<void> registerSingletons() async {
     outboxService: outboxService,
     loggingService: loggingService,
     vectorClockService: vectorClockService,
+    domainLogger: domainLogger,
   );
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
@@ -317,6 +318,7 @@ Future<void> registerSingletons() async {
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
+    domainLogger: domainLogger,
   );
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)

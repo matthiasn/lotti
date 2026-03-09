@@ -416,6 +416,25 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
+  /// Find the nearest sequence log entry for a host with a counter >= [counter]
+  /// that has an entryId (i.e., a resolved payload). Used to find covering
+  /// entries when the exact counter is not in the sequence log (superseded).
+  Future<SyncSequenceLogItem?> getNearestCoveringEntry(
+    String hostId,
+    int counter,
+  ) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) =>
+                t.hostId.equals(hostId) &
+                t.counter.isBiggerOrEqualValue(counter) &
+                t.entryId.isNotNull(),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.counter)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Get all pending (missing/requested) sequence log entries for a given payload.
   /// Used to resolve pending backfill hints when a payload arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({

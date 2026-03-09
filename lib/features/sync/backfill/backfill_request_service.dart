@@ -6,6 +6,7 @@ import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 
@@ -21,6 +22,7 @@ class BackfillRequestService {
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
+    DomainLogger? domainLogger,
     Duration? requestInterval,
     int? maxBatchSize,
     int? maxRequestCount,
@@ -31,6 +33,7 @@ class BackfillRequestService {
        _outboxService = outboxService,
        _vectorClockService = vectorClockService,
        _loggingService = loggingService,
+       _domainLogger = domainLogger,
        _requestInterval = requestInterval ?? SyncTuning.backfillRequestInterval,
        // Use processing batch size for per-cycle limits (smaller to avoid
        // overwhelming the network). backfillBatchSize is for DB fetch limits.
@@ -44,6 +47,7 @@ class BackfillRequestService {
   final OutboxService _outboxService;
   final VectorClockService _vectorClockService;
   final LoggingService _loggingService;
+  final DomainLogger? _domainLogger;
   final Duration _requestInterval;
   final int _maxBatchSize;
   final int _maxRequestCount;
@@ -53,6 +57,15 @@ class BackfillRequestService {
   Timer? _timer;
   bool _isProcessing = false;
   bool _isDisposed = false;
+
+  /// Log a backfill trace message to the sync domain logger (separate file).
+  void _trace(String message, {String? subDomain}) {
+    _domainLogger?.log(
+      LogDomains.sync,
+      message,
+      subDomain: subDomain ?? 'backfill',
+    );
+  }
 
   /// Start the periodic backfill request processing.
   /// Uses bounded limits (age and per-host) for automatic backfill.
@@ -65,10 +78,9 @@ class BackfillRequestService {
       (_) => _processBackfillRequests(useLimits: true),
     );
 
-    _loggingService.captureEvent(
+    _trace(
       'start interval=${_requestInterval.inSeconds}s batchSize=$_maxBatchSize maxRetries=$_maxRequestCount',
-      domain: 'SYNC_BACKFILL',
-      subDomain: 'start',
+      subDomain: 'backfill.start',
     );
   }
 
@@ -91,10 +103,9 @@ class BackfillRequestService {
     try {
       final requesterId = await _vectorClockService.getHost();
       if (requesterId == null) {
-        _loggingService.captureEvent(
+        _trace(
           'processReRequest: no host ID available, skipping',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'reRequest',
+          subDomain: 'backfill.reRequest',
         );
         return 0;
       }
@@ -152,17 +163,15 @@ class BackfillRequestService {
 
         totalProcessed += requested.length;
 
-        _loggingService.captureEvent(
+        _trace(
           'processReRequest: sent ${requested.length} re-requests (total: $totalProcessed)',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'reRequest',
+          subDomain: 'backfill.reRequest',
         );
       }
 
-      _loggingService.captureEvent(
+      _trace(
         'processReRequest: completed, total $totalProcessed entries re-requested',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'reRequest',
+        subDomain: 'backfill.reRequest',
       );
 
       return totalProcessed;
@@ -192,10 +201,9 @@ class BackfillRequestService {
     if (!ignoreEnabledFlag) {
       final enabled = await isBackfillEnabled();
       if (!enabled) {
-        _loggingService.captureEvent(
+        _trace(
           'processBackfillRequests: backfill is disabled, skipping',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'process',
+          subDomain: 'backfill.process',
         );
         return 0;
       }
@@ -220,10 +228,9 @@ class BackfillRequestService {
             );
 
       if (missing.isEmpty) {
-        _loggingService.captureEvent(
+        _trace(
           'processBackfillRequests: no missing entries (useLimits=$useLimits)',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'process',
+          subDomain: 'backfill.process',
         );
         return 0;
       }
@@ -242,29 +249,26 @@ class BackfillRequestService {
             .toList();
         final filtered = beforeCount - missing.length;
         if (filtered > 0) {
-          _loggingService.captureEvent(
+          _trace(
             'processBackfillRequests: filtered $filtered already-queued entries',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'process',
+            subDomain: 'backfill.process',
           );
         }
       }
 
       if (missing.isEmpty) {
-        _loggingService.captureEvent(
+        _trace(
           'processBackfillRequests: all entries already queued (useLimits=$useLimits)',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'process',
+          subDomain: 'backfill.process',
         );
         return 0;
       }
 
       final requesterId = await _vectorClockService.getHost();
       if (requesterId == null) {
-        _loggingService.captureEvent(
+        _trace(
           'processBackfillRequests: no host ID available, skipping',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'process',
+          subDomain: 'backfill.process',
         );
         return 0;
       }
@@ -292,10 +296,9 @@ class BackfillRequestService {
         missing.map((m) => (hostId: m.hostId, counter: m.counter)).toList(),
       );
 
-      _loggingService.captureEvent(
+      _trace(
         'processBackfillRequests: sent ${missing.length} requests (useLimits=$useLimits)',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'process',
+        subDomain: 'backfill.process',
       );
 
       return missing.length;
