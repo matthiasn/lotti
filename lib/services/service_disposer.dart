@@ -36,7 +36,20 @@ class ServiceDisposer {
   final void Function(dynamic error, StackTrace stackTrace, String service)
   _logError;
 
+  /// Disposes all services and databases. Used on non-macOS platforms.
   Future<void> disposeAll() async {
+    await _disposeServices();
+    await _disposeDatabases();
+  }
+
+  /// Disposes only non-database services. Used on macOS where calling
+  /// sqlite3_close_v2 triggers a fatal FFI assertion (SIGABRT) during
+  /// VM teardown — see window_service.dart for details.
+  Future<void> disposeServicesOnly() async {
+    await _disposeServices();
+  }
+
+  Future<void> _disposeServices() async {
     // 1. Stop periodic background services.
     _disposeSyncSafely<BackfillRequestService>(
       (s) => s.dispose(),
@@ -59,7 +72,9 @@ class ServiceDisposer {
       (s) => s.dispose(),
       'MatrixService',
     );
+  }
 
+  Future<void> _disposeDatabases() async {
     // 4. Close Drift databases so no WAL/lock files are left dangling.
     await _disposeAsyncSafely<JournalDb>((db) => db.close(), 'JournalDb');
     await _disposeAsyncSafely<SyncDatabase>((db) => db.close(), 'SyncDatabase');
