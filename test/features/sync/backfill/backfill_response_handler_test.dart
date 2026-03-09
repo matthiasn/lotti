@@ -336,13 +336,32 @@ void main() {
         () => mockOutboxService.enqueueMessage(any()),
       ).thenAnswer((_) async {});
 
+      final captured = <SyncMessage>[];
+      when(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).thenAnswer((inv) async {
+        captured.add(inv.positionalArguments.first as SyncMessage);
+      });
+
       await handler.handleBackfillRequest(request);
 
       // Two enqueues: (1) re-sync the journal entity, (2) backfill hint
       // because the VC counter 5 != requested counter 3
-      verify(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).called(2);
+      expect(captured, hasLength(2));
+
+      // First: re-send the journal entity
+      final entityMsg = captured[0];
+      expect(entityMsg, isA<SyncJournalEntity>());
+      expect((entityMsg as SyncJournalEntity).id, entryId);
+
+      // Second: backfill response hint mapping counter 3 → entryId
+      final hintMsg = captured[1];
+      expect(hintMsg, isA<SyncBackfillResponse>());
+      final hint = hintMsg as SyncBackfillResponse;
+      expect(hint.hostId, bobHostId);
+      expect(hint.counter, 3);
+      expect(hint.payloadId, entryId);
+      expect(hint.deleted, isFalse);
     });
 
     test('sends deleted response when journal entry was deleted', () async {

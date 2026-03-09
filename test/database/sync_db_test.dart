@@ -2287,7 +2287,7 @@ void main() {
       expect(result, isNull);
     });
 
-    test('prefers resolved row over hint-only row at same counter', () async {
+    test('skips lower requested row and returns higher received row', () async {
       await database.batchInsertSequenceEntries([
         SyncSequenceLogCompanion(
           hostId: const Value('host-1'),

@@ -627,6 +627,8 @@ void main() {
         journalEntityLoader: journalEntityLoader,
         sequenceLogService: mockSeqService,
       );
+      final diags = <SyncApplyDiagnostics>[];
+      processorWithSeq.applyObserver = diags.add;
 
       final entryId = fallbackJournalEntity.meta.id;
       final vc = fallbackJournalEntity.meta.vectorClock!;
@@ -653,6 +655,12 @@ void main() {
       // First call applies, second is duplicate
       await processorWithSeq.process(event: event, journalDb: journalDb);
       await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // Entity is only written once — duplicate is skipped
+      verify(
+        () => journalDb.updateJournalEntity(fallbackJournalEntity),
+      ).called(1);
+      expect(diags.last.skipReason, JournalUpdateSkipReason.olderOrEqual);
 
       // recordReceivedEntry called once for the applied entry, once for the
       // duplicate (so hints can be resolved even for duplicates)
