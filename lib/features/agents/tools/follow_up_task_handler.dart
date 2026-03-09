@@ -12,10 +12,7 @@ import 'package:uuid/uuid.dart';
 ///
 /// Used by the task agent's split workflow: the agent identifies a new task
 /// from user audio/notes, calls `create_follow_up_task`, and the handler
-/// creates the task entity plus `BasicLink`s.
-///
-/// Automatically links the most recent audio entry from the source task to
-/// the new task (the audio that triggered the split).
+/// creates the task entity plus a `BasicLink` from source to new task.
 ///
 /// The new task inherits the source task's category. Priority defaults to P2
 /// if not specified.
@@ -152,40 +149,6 @@ class FollowUpTaskHandler {
         subDomain: _sub,
       );
       warnings.add('Warning: failed to link source task');
-    }
-
-    // Link the most recent audio entry from the source task to the new task.
-    // The handler resolves this automatically — the LLM cannot know audio IDs.
-    try {
-      final children = await _journalDb.getLinkedEntities(sourceTaskId);
-      final audioEntries = children
-          .whereType<JournalAudio>()
-          .toList()
-        ..sort((a, b) => b.meta.createdAt.compareTo(a.meta.createdAt));
-      if (audioEntries.isNotEmpty) {
-        final audioId = audioEntries.first.meta.id;
-        try {
-          await _persistenceLogic.createLink(
-            fromId: audioId,
-            toId: newTaskId,
-          );
-        } catch (e) {
-          _domainLogger?.error(
-            LogDomains.agentWorkflow,
-            'Failed to link audio $audioId → $newTaskId',
-            error: e,
-            subDomain: _sub,
-          );
-          warnings.add('Warning: failed to link audio entry');
-        }
-      }
-    } catch (e) {
-      _domainLogger?.error(
-        LogDomains.agentWorkflow,
-        'Failed to resolve audio entries for $sourceTaskId',
-        error: e,
-        subDomain: _sub,
-      );
     }
 
     final output = StringBuffer('Created follow-up task "$title" ($newTaskId)');

@@ -368,96 +368,7 @@ void main() {
         });
       });
 
-      test('creates audio link when sourceAudioId is provided', () async {
-        final sourceTask = makeSourceTask();
-        final newTask = makeNewTask('new-task-004');
-
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
-
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
-
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        await withClock(Clock.fixed(testDate), () async {
-          await handler.handle(
-            sourceTaskId,
-            {
-              'title': 'Audio Follow-Up',
-              'sourceAudioId': 'audio-001',
-            },
-          );
-
-          // Two links: source→task and audio→task.
-          verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: sourceTaskId,
-              toId: 'new-task-004',
-            ),
-          ).called(1);
-          verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: 'audio-001',
-              toId: 'new-task-004',
-            ),
-          ).called(1);
-        });
-      });
-
-      test('skips audio link when sourceAudioId is empty', () async {
-        final sourceTask = makeSourceTask();
-        final newTask = makeNewTask('new-task-005');
-
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
-
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
-
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        await withClock(Clock.fixed(testDate), () async {
-          await handler.handle(
-            sourceTaskId,
-            {
-              'title': 'No Audio',
-              'sourceAudioId': '',
-            },
-          );
-
-          // Only one link: source→task.
-          verify(
-            () => mockPersistenceLogic.createLink(
-              fromId: any(named: 'fromId'),
-              toId: any(named: 'toId'),
-            ),
-          ).called(1);
-        });
-      });
-    });
+});
 
     group('link failure warnings', () {
       test('surfaces link failure warning in output', () async {
@@ -534,57 +445,7 @@ void main() {
         });
       });
 
-      test('surfaces audio link failure warning in output', () async {
-        final sourceTask = makeSourceTask();
-        final newTask = makeNewTask('new-task-audio-fail');
-        var linkCallCount = 0;
-
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
-
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
-
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async {
-          linkCallCount++;
-          if (linkCallCount == 2) {
-            throw Exception('Audio link failed');
-          }
-          return true;
-        });
-
-        await withClock(Clock.fixed(testDate), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'title': 'Audio Fail Task',
-              'sourceAudioId': 'audio-fail-001',
-            },
-          );
-
-          expect(result.success, isTrue);
-          expect(result.mutatedEntityId, 'new-task-audio-fail');
-          expect(result.output, contains('Warning'));
-          expect(result.output, contains('failed to link audio entry'));
-          // Source link should have succeeded — no source warning.
-          expect(
-            result.output,
-            isNot(contains('failed to link source task')),
-          );
-        });
-      });
-    });
+});
 
     group('domain logging', () {
       test('logs verify-lookup after task creation', () async {
@@ -671,57 +532,7 @@ void main() {
         });
       });
 
-      test('logs error when audio link throws exception', () async {
-        final sourceTask = makeSourceTask();
-        final newTask = makeNewTask('new-task-audio-err');
-        var linkCallCount = 0;
-
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
-
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
-
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async {
-          linkCallCount++;
-          if (linkCallCount == 2) {
-            throw Exception('Audio link error');
-          }
-          return true;
-        });
-
-        await withClock(Clock.fixed(testDate), () async {
-          await handler.handle(
-            sourceTaskId,
-            {
-              'title': 'Audio Error Task',
-              'sourceAudioId': 'audio-err-001',
-            },
-          );
-
-          verify(
-            () => mockDomainLogger.error(
-              LogDomains.agentWorkflow,
-              any(that: contains('Failed to link audio')),
-              error: any(named: 'error'),
-              subDomain: any(named: 'subDomain'),
-              stackTrace: any(named: 'stackTrace'),
-            ),
-          ).called(1);
-        });
-      });
-    });
+});
 
     group('category inheritance', () {
       test('inherits null category when source has none', () async {

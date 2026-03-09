@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   jumpiness when items are confirmed or rejected.
 - Label assignment: removed unnecessary rate limiter that blocked
   subsequent label confirmations in exploded change set batches.
+- Follow-up task handler: removed `sourceAudioId` parameter that the LLM
+  could not reliably provide, eliminating UNIQUE constraint errors from
+  hallucinated IDs.
+- Database: `upsertEntryLink` now guards against duplicate
+  `(from_id, to_id, type)` links instead of crashing with UNIQUE constraint
+  violation.
 
 ### Improved
 - Checklist dedup diagnostics: added logging of resolved title count
