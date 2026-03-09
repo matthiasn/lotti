@@ -574,31 +574,25 @@ class SyncEventProcessor {
         return;
       }
 
-      // Skip old backfill requests. For responses, only skip when the sequence
-      // log shows no outstanding missing/requested entry for that counter.
-      if (syncMessage is SyncBackfillRequest ||
-          syncMessage is SyncBackfillResponse) {
+      // For old backfill responses, only skip when the sequence log shows no
+      // outstanding missing/requested entry for that counter.
+      // Old backfill requests are NOT skipped — they are still valid and the
+      // response handler's cooldown cache + rate limiter prevent amplification.
+      // Skipping old requests caused a bidirectional deadlock: if both devices
+      // restart, each would skip the other's pre-restart requests, and neither
+      // would ever respond.
+      if (syncMessage is SyncBackfillResponse) {
         final eventTs = event.originServerTs;
         final startupTs = startupTimestamp;
         if (startupTs != null && eventTs.millisecondsSinceEpoch < startupTs) {
-          if (syncMessage is SyncBackfillRequest) {
-            _loggingService.captureEvent(
-              'skipping old backfill request eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=${event.eventId}',
-              domain: 'SYNC_BACKFILL',
-              subDomain: 'skipOld',
-            );
+          final shouldSkip = await _shouldSkipOldBackfillResponse(
+            response: syncMessage,
+            eventTs: eventTs,
+            startupTs: startupTs,
+            eventId: event.eventId,
+          );
+          if (shouldSkip) {
             return;
-          }
-          if (syncMessage is SyncBackfillResponse) {
-            final shouldSkip = await _shouldSkipOldBackfillResponse(
-              response: syncMessage,
-              eventTs: eventTs,
-              startupTs: startupTs,
-              eventId: event.eventId,
-            );
-            if (shouldSkip) {
-              return;
-            }
           }
         }
       }

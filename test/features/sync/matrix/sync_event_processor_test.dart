@@ -4993,7 +4993,7 @@ void main() {
     );
 
     test(
-      'skips old SyncBackfillRequest when startupTimestamp is set',
+      'processes old SyncBackfillRequest even when startupTimestamp is set',
       () async {
         const message = SyncBackfillRequest(
           entries: [BackfillRequestEntry(hostId: 'host-1', counter: 5)],
@@ -5024,17 +5024,10 @@ void main() {
 
         await processorWithStartup.process(event: event, journalDb: journalDb);
 
-        // Handler should NOT be called - event is older than startup
-        verifyNever(() => mockHandler.handleBackfillRequest(any()));
-
-        // Should log the skip
-        verify(
-          () => loggingService.captureEvent(
-            any<String>(that: contains('skipping old backfill')),
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'skipOld',
-          ),
-        ).called(1);
+        // Handler SHOULD be called — old backfill requests are still valid
+        // and the response handler's cooldown + rate limiter prevent
+        // amplification. Skipping them caused a bidirectional deadlock.
+        verify(() => mockHandler.handleBackfillRequest(message)).called(1);
       },
     );
 
