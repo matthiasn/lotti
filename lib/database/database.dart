@@ -1441,6 +1441,20 @@ class JournalDb extends _$JournalDb {
         // Best-effort precheck only; fall through to UPSERT on failure.
       }
 
+      // Guard against secondary UNIQUE(from_id, to_id, type) constraint.
+      // insertOnConflictUpdate only handles primary key conflicts, so a
+      // duplicate (from_id, to_id, type) with a different id would throw.
+      final existingByTriple = await (select(linkedEntries)
+            ..where(
+              (t) =>
+                  t.fromId.equals(link.fromId) &
+                  t.toId.equals(link.toId),
+            ))
+          .getSingleOrNull();
+      if (existingByTriple != null) {
+        return 0; // link already exists
+      }
+
       final res = into(linkedEntries).insertOnConflictUpdate(
         linkedDbEntity(link),
       );

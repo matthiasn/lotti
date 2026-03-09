@@ -981,8 +981,8 @@ and never shown to the user. They persist as your memory across wakes.''';
   especially when referencing specific checklist items to move — use the split
   workflow:
   1. Call `create_follow_up_task` with the identified title, due date (if
-     mentioned), and `sourceAudioId` (the audio entry that triggered the split).
-     The system returns a placeholder `targetTaskId`.
+     mentioned), and priority. The system automatically links the most recent
+     audio entry and returns a placeholder `targetTaskId`.
   2. Call `migrate_checklist_items` with the checklist item IDs and titles to
      move, plus the `targetTaskId` from step 1.
   3. Record an observation about the split rationale.

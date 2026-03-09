@@ -284,12 +284,6 @@ class AgentToolRegistry {
                 'Optional description text for the new task. '
                 "Becomes the task's entry text.",
           },
-          'sourceAudioId': {
-            'type': 'string',
-            'description':
-                'Optional ID of the audio entry that triggered this split. '
-                'Creates an additional link from the audio to the new task.',
-          },
         },
         'required': ['title'],
         'additionalProperties': false,
