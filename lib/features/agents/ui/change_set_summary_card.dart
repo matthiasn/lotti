@@ -28,6 +28,8 @@ class ChangeSetSummaryCard extends ConsumerWidget {
     final changeSetsAsync = ref.watch(pendingChangeSetsProvider(taskId));
 
     return changeSetsAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       data: (entities) {
         final changeSets = entities.whereType<ChangeSetEntity>().toList();
         if (changeSets.isEmpty) return const SizedBox.shrink();

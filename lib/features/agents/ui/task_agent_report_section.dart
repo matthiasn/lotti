@@ -111,6 +111,8 @@ class _TaskAgentReportSectionState
     final taskAgentAsync = ref.watch(taskAgentProvider(widget.taskId));
 
     return taskAgentAsync.when(
+      skipLoadingOnReload: true,
+      skipLoadingOnRefresh: true,
       loading: SizedBox.shrink,
       error: (_, _) => const SizedBox.shrink(),
       data: (agentEntity) {
