@@ -8,7 +8,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/task_agent_report_section.dart';
-import 'package:lotti/features/ai/ui/latest_ai_response_summary.dart';
+
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
@@ -149,7 +149,6 @@ void main() {
 
       expect(find.byType(TaskHeaderMetaCard), findsOneWidget);
       expect(find.byType(TaskLabelsWrapper), findsOneWidget);
-      expect(find.byType(LatestAiResponseSummary), findsOneWidget);
       expect(find.byType(TaskAgentReportSection), findsOneWidget);
       expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       expect(find.byType(LinkedTasksWidget), findsOneWidget);

@@ -18,6 +18,7 @@ void main() {
           useReasoning: true,
           requiredInputData: [InputDataType.task],
           aiResponseType: const PromptAiResponseType.dirty(
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
           ),
           trackPreconfigured: true,
@@ -61,6 +62,7 @@ void main() {
         defaultModelId: 'model-123',
         modelIds: ['model-123'],
         aiResponseType: const PromptAiResponseType.dirty(
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
         ),
         trackPreconfigured: true,

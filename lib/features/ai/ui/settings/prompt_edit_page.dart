@@ -421,7 +421,7 @@ class _PromptEditPageState extends ConsumerState<PromptEditPage> {
       useReasoning: formState.useReasoning,
       requiredInputData: formState.requiredInputData,
       aiResponseType:
-          formState.aiResponseType.value ?? AiResponseType.taskSummary,
+          formState.aiResponseType.value ?? AiResponseType.audioTranscription,
     );
 
     return Column(

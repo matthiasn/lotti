@@ -35,12 +35,22 @@ const httpStatusNotFound = 404;
 const httpStatusRequestTimeout = 408;
 
 enum AiResponseType {
+  @Deprecated(
+    'Legacy type superseded by the agent system. '
+    'Kept only for JSON/DB backwards-compatibility. '
+    'Remove once a DB migration drops persisted taskSummary rows.',
+  )
   @JsonValue(taskSummaryConst)
   taskSummary,
   @JsonValue(imageAnalysisConst)
   imageAnalysis,
   @JsonValue(audioTranscriptionConst)
   audioTranscription,
+  @Deprecated(
+    'Legacy type superseded by the agent system. '
+    'Kept only for JSON/DB backwards-compatibility. '
+    'Remove once a DB migration drops persisted checklistUpdates rows.',
+  )
   @JsonValue(checklistUpdatesConst)
   checklistUpdates,
   @JsonValue(promptGenerationConst)
@@ -55,12 +65,14 @@ extension AiResponseTypeDisplay on AiResponseType {
   String localizedName(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     switch (this) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
         return l10n.aiResponseTypeTaskSummary;
       case AiResponseType.imageAnalysis:
         return l10n.aiResponseTypeImageAnalysis;
       case AiResponseType.audioTranscription:
         return l10n.aiResponseTypeAudioTranscription;
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.checklistUpdates:
         return l10n.aiResponseTypeChecklistUpdates;
       case AiResponseType.promptGeneration:
@@ -75,12 +87,14 @@ extension AiResponseTypeDisplay on AiResponseType {
   /// Returns the appropriate icon for this response type
   IconData get icon {
     switch (this) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
         return Icons.summarize_outlined;
       case AiResponseType.imageAnalysis:
         return Icons.image_outlined;
       case AiResponseType.audioTranscription:
         return Icons.mic_outlined;
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.checklistUpdates:
         return Icons.checklist_rtl_outlined;
       case AiResponseType.promptGeneration:
@@ -91,6 +105,15 @@ extension AiResponseTypeDisplay on AiResponseType {
         return Icons.auto_awesome_outlined;
     }
   }
+
+  /// Returns true if this is a legacy type superseded by the agent system.
+  /// Legacy types are kept only for JSON/DB backwards-compatibility and
+  /// should not be used for new prompts or automatic execution.
+  bool get isLegacyType =>
+      // ignore: deprecated_member_use_from_same_package
+      this == AiResponseType.taskSummary ||
+      // ignore: deprecated_member_use_from_same_package
+      this == AiResponseType.checklistUpdates;
 
   /// Returns true if this is a prompt generation type (coding or image).
   /// These types share common behavior:

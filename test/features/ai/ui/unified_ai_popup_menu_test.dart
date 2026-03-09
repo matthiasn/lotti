@@ -190,6 +190,7 @@ void main() {
             createdAt: now,
             useReasoning: false,
             requiredInputData: [InputDataType.tasksList],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
             description: 'Creates a summary of the task',
           )
@@ -218,6 +219,7 @@ void main() {
             createdAt: now,
             useReasoning: false,
             requiredInputData: [InputDataType.audioFiles],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           )
           as AiConfigPrompt,
@@ -231,6 +233,7 @@ void main() {
             createdAt: now,
             useReasoning: false,
             requiredInputData: [],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           )
           as AiConfigPrompt,
@@ -501,6 +504,7 @@ void main() {
                 createdAt: DateTime.now(),
                 useReasoning: false,
                 requiredInputData: [],
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
               )
               as AiConfigPrompt;
@@ -599,6 +603,7 @@ void main() {
                 createdAt: DateTime.now(),
                 useReasoning: false,
                 requiredInputData: [],
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
                 description:
                     'This is a very long description that should be truncated '

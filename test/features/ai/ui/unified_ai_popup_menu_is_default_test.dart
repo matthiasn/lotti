@@ -186,6 +186,7 @@ void main() {
         private: false,
         active: true,
         automaticPrompts: {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: [
             promptId,
             'other-prompt',
@@ -208,6 +209,7 @@ void main() {
                 createdAt: DateTime(2024),
                 useReasoning: false,
                 requiredInputData: const [],
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.checklistUpdates,
               )
               as AiConfigPrompt;
@@ -233,6 +235,7 @@ void main() {
         private: false,
         active: true,
         automaticPrompts: {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary: [
             promptId,
           ],
@@ -254,6 +257,7 @@ void main() {
                 createdAt: DateTime(2024),
                 useReasoning: false,
                 requiredInputData: const [],
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
               )
               as AiConfigPrompt;
@@ -328,7 +332,9 @@ void main() {
         active: true,
         automaticPrompts: {
           AiResponseType.audioTranscription: ['prompt-1', 'prompt-2'],
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: ['prompt-3', 'prompt-4'],
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary: ['prompt-5'],
         },
       );
@@ -395,6 +401,7 @@ void main() {
             promptId, // First here
             'other-prompt',
           ],
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: [
             'different-prompt', // Not first here
             promptId,
@@ -444,6 +451,7 @@ void main() {
         active: true,
         automaticPrompts: {
           AiResponseType.audioTranscription: [], // Empty list
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: ['some-prompt'],
         },
       );

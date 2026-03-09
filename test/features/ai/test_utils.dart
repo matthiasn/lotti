@@ -32,7 +32,6 @@ export '../../mocks/mocks.dart' show MockAiConfigRepository;
 /// ```dart
 /// final container = ProviderContainer(overrides: [...]);
 /// final ref = container.read(testRefProvider);
-/// final processor = LottiConversationProcessor(ref: ref);
 /// ```
 final testRefProvider = Provider<Ref>((ref) => ref);
 
@@ -111,6 +110,7 @@ class AiTestDataFactory {
     List<String> modelIds = const ['test-model'],
     bool useReasoning = false,
     List<InputDataType> requiredInputData = const [InputDataType.task],
+    // ignore: deprecated_member_use_from_same_package
     AiResponseType aiResponseType = AiResponseType.taskSummary,
   }) {
     return AiConfig.prompt(

@@ -70,6 +70,7 @@ void main() {
         createdAt: DateTime.fromMillisecondsSinceEpoch(0),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -551,6 +552,7 @@ void main() {
             createdAt: DateTime.fromMillisecondsSinceEpoch(0),
             useReasoning: false,
             requiredInputData: test.$1,
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           );
 

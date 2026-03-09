@@ -4,61 +4,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
-  test('Checklist updates prompt instructs array-of-objects format', () {
-    final prompt = checklistUpdatesPrompt.systemMessage;
-    expect(prompt, contains('add_multiple_checklist_items'));
-    expect(prompt, contains('single JSON array'));
-    expect(prompt, contains('ONE CALL ONLY'));
-    expect(prompt, isNot(contains('actionItemDescription')));
-  });
-
-  test(
-    'Checklist updates prompt user message includes Assigned Labels section',
-    () {
-      final user = checklistUpdatesPrompt.userMessage;
-      expect(user, contains('Assigned Labels'));
-      expect(user, contains('{{assigned_labels}}'));
-    },
-  );
-
-  test('Checklist updates prompt includes entry-scoped directive guidance', () {
-    final sys = checklistUpdatesPrompt.systemMessage;
-    expect(sys, contains('ENTRY-SCOPED DIRECTIVES'));
-    expect(sys, contains("Don't consider this for checklist items"));
-    expect(sys, contains('Single checklist item'));
-
-    final user = checklistUpdatesPrompt.userMessage;
-    expect(user, contains('Directive reminder'));
-    expect(user, contains('Ignore for checklist'));
-    expect(user, contains('The rest is an implementation plan'));
-  });
-
-  test('Checklist updates prompt includes update_checklist_items guidance', () {
-    final sys = checklistUpdatesPrompt.systemMessage;
-    expect(sys, contains('update_checklist_items'));
-    expect(sys, contains('Update existing checklist items by ID'));
-    expect(sys, contains('isChecked'));
-    expect(sys, contains('title'));
-    // Check for reactive behavior guidance
-    expect(sys, contains('REACTIVE'));
-    // Check for title correction examples (multiple common cases)
-    expect(sys, contains('macOS'));
-    expect(sys, contains('iPhone'));
-    expect(sys, contains('GitHub'));
-    expect(sys, contains('TestFlight'));
-    // Check for error guidance
-    expect(sys, contains('invalid'));
-    expect(sys, contains('skipped'));
-  });
-
-  test('Checklist updates prompt includes negative examples', () {
-    final sys = checklistUpdatesPrompt.systemMessage;
-    // Check for DON'T examples to prevent misuse
-    expect(sys, contains("Examples (DON'T)"));
-    expect(sys, contains('proactively fix'));
-    expect(sys, contains('INVALID'));
-  });
-
   group('Image analysis URL formatting rules', () {
     test('image analysis prompt contains URL formatting rules', () {
       final user = imageAnalysisPrompt.userMessage;
@@ -93,12 +38,6 @@ void main() {
       expect(user, contains('only ONE speaker'));
       expect(user, contains('do NOT use any speaker labels'));
     });
-  });
-
-  test('Checklist updates prompt forbids multiple batch calls', () {
-    final sys = checklistUpdatesPrompt.systemMessage;
-    expect(sys, contains('NEVER split across multiple calls'));
-    expect(sys, contains('NEVER make multiple add_multiple_checklist_items'));
   });
 
   group('Image Prompt Generation Template', () {

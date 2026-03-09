@@ -68,6 +68,7 @@ final testDeletedAiResponseEntry = AiResponseEntry(
     prompt: 'Deleted prompt',
     thoughts: 'Deleted thoughts',
     response: 'Deleted response',
+    // ignore: deprecated_member_use_from_same_package
     type: AiResponseType.taskSummary,
   ),
 );

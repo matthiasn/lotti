@@ -456,6 +456,7 @@ void main() {
           defaultLanguageCode: 'en',
           allowedPromptIds: ['prompt1', 'prompt2'],
           automaticPrompts: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary: ['prompt1'],
           },
         );
@@ -490,6 +491,7 @@ void main() {
         expect(
           captured.automaticPrompts,
           equals({
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary: ['prompt1'],
           }),
         );

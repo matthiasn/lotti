@@ -37,6 +37,7 @@ void main() {
 
   group('AiRunningAnimationWrapper', () {
     const testId = 'test-id';
+    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
@@ -233,6 +234,7 @@ void main() {
     testWidgets('should handle multiple response types', (tester) async {
       // Test with multiple response types in the set
       final multipleTypes = {
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.audioTranscription,
         AiResponseType.imageAnalysis,
@@ -276,6 +278,7 @@ void main() {
 
   group('AiRunningAnimationWrapperCard', () {
     const testId = 'test-id';
+    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testSet = {testType};
 
@@ -390,6 +393,7 @@ void main() {
     ) async {
       // Test with multiple response types
       final multipleTypes = {
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.audioTranscription,
       };
@@ -402,6 +406,7 @@ void main() {
           .read(
             inferenceStatusControllerProvider(
               id: testId,
+              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
             ).notifier,
           )

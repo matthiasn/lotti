@@ -177,6 +177,7 @@ void main() {
         thoughts: 'User wants task summary',
         response: 'AI generated task summary',
         promptId: 'prompt-123',
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
       ),
     );
@@ -196,6 +197,7 @@ void main() {
         thoughts: 'User wants task summary',
         response: 'Older AI summary',
         promptId: 'prompt-old',
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
       ),
     );
@@ -1108,6 +1110,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'Second task summary',
             promptId: 'prompt-456',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
         );

@@ -16,7 +16,6 @@ void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
   late MockJournalRepository mockJournalRepository;
-  late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
   late MockEntitiesCacheService mockEntitiesCacheService;
 
@@ -100,6 +99,7 @@ void main() {
       ),
       data: AiResponseData(
         response: response,
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
         model: 'test-model',
         systemMessage: 'System message',
@@ -117,7 +117,6 @@ void main() {
   setUp(() {
     mockAiInputRepository = MockAiInputRepository();
     mockJournalRepository = MockJournalRepository();
-    mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -144,8 +143,6 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: mockJournalRepository,
-      checklistRepository: mockChecklistRepository,
-      labelsRepository: mockLabelsRepository,
     );
   });
 

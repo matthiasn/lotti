@@ -41,6 +41,7 @@ void main() {
           '# Thinking Process\nThis is a philosophical question that has been debated for centuries.',
       response:
           '# Response\nThe meaning of life is subjective and varies from person to person.',
+      // ignore: deprecated_member_use_from_same_package
       type: AiResponseType.taskSummary,
     ),
   );

@@ -9,8 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 ///
 /// Parses the markdown produced by the agent via the `update_report` tool call
 /// to extract the TLDR section (always visible) and additional content
-/// (shown on expand). Uses the same expandable pattern as
-/// `ExpandableAiResponseSummary`.
+/// (shown on expand).
 class AgentReportSection extends StatefulWidget {
   const AgentReportSection({
     required this.content,

@@ -147,10 +147,6 @@ The repository layer has been refactored for better separation of concerns:
   - Centralized skip tracking via `_skip` helper
 - **`task_functions.dart`**: Function definitions for task operations
   - `set_task_language`: Automatically detects and sets task language
-- **`lotti_conversation_processor.dart`**: Conversation-based processing for better batching
-  - Handles multiple checklist items efficiently
-  - Provides error recovery and retry mechanisms
-  - Supports batch operations with `add_multiple_checklist_items`
 - **`lotti_batch_checklist_handler.dart`**: Batch checklist item creation handler
 - **`function_handler.dart`**: Abstract base class for extensible function handling
   - Provides common interface for processing function calls
@@ -311,7 +307,6 @@ To integrate a new handler:
   - Uses helper methods (`_updateInferenceStatus`, `_startActiveInference`, etc.) for consistent state updates
   - Handles both primary and linked entity status updates symmetrically
 - **`inference_status_controller.dart`**: Tracks inference progress and status
-- **`latest_summary_controller.dart`**: Manages the latest AI response for a task
 - **`active_inference_controller.dart`**: Tracks active inferences with linked entity support
   - **Dual-Entry System**: Creates symmetric entries for both primary and linked entities
   - **ActiveInferenceByEntity**: Finds active inferences for any entity (primary or linked)
@@ -630,34 +625,21 @@ Usage statistics are displayed in the AI Response Summary Modal when available:
 
 ## Response Types
 
-The system supports seven AI response types:
+The system supports five active AI response types (two legacy types — `taskSummary` and `checklistUpdates` — are retained in the enum for DB backwards-compatibility but are now handled by the agent system):
 
-1. **Task Summary** (`AiResponseType.taskSummary`)
-   - Generates comprehensive task overviews
-   - Response is markdown text
-   - Automatic title extraction for tasks with short titles
-   - Language-aware generation based on task content
-
-2. **Checklist Updates** (`AiResponseType.checklistUpdates`)
-   - Processes task updates through function calls only
-   - Creates new checklist items from audio/text content
-   - Updates existing items (mark complete, fix transcription errors)
-   - Assigns task labels based on content analysis
-   - Detects and sets task language
-
-3. **Image Analysis** (`AiResponseType.imageAnalysis`)
+1. **Image Analysis** (`AiResponseType.imageAnalysis`)
    - Analyzes attached images in task context
    - When linked to a task, extracts only task-relevant information
    - Provides humorous dismissal for off-topic images
    - Response is descriptive text without AI disclaimer
 
-4. **Audio Transcription** (`AiResponseType.audioTranscription`)
+2. **Audio Transcription** (`AiResponseType.audioTranscription`)
    - Transcribes audio recordings
    - When linked to a task, uses task context for better accuracy with names and concepts
    - Response is transcribed text
    - Supports automatic language detection
 
-5. **Coding Prompt Generation** (`AiResponseType.promptGeneration`)
+3. **Coding Prompt Generation** (`AiResponseType.promptGeneration`)
    - Transforms audio recording + task context into a detailed coding prompt
    - Triggered from audio entries linked to tasks
    - Uses `{{audioTranscript}}` placeholder for user's verbal description
@@ -665,7 +647,7 @@ The system supports seven AI response types:
    - Designed for copy-paste into AI coding assistants (Claude Code, GitHub Copilot)
    - Uses `GeneratedPromptCard` UI with prominent copy button
 
-6. **Image Prompt Generation** (`AiResponseType.imagePromptGeneration`)
+4. **Image Prompt Generation** (`AiResponseType.imagePromptGeneration`)
    - Transforms audio recording + task context into a detailed image generation prompt
    - Triggered from audio entries linked to tasks (same as coding prompt)
    - Uses `{{audioTranscript}}` placeholder for user's visual description
@@ -674,7 +656,7 @@ The system supports seven AI response types:
    - Includes visual metaphor guidelines, style options, and technical parameters
    - Uses `GeneratedPromptCard` UI with prominent copy button
 
-7. **Image Generation** (`AiResponseType.imageGeneration`)
+5. **Image Generation** (`AiResponseType.imageGeneration`)
    - Generates cover art images directly using AI (Gemini Nano Banana Pro model)
    - Triggered from audio entries linked to tasks via action menu
    - Uses task context and audio transcript to build image prompts
@@ -929,8 +911,6 @@ The system supports tracking updates from preconfigured prompt templates, ensuri
 
 ### Response Display
 - **`ai_response_summary.dart`**: Markdown rendering with H1 filtering
-- **`latest_ai_response_summary.dart`**: Animated response updates
-- **`expandable_ai_response_summary.dart`**: Interactive TLDR with accordion expansion
 - **`ai_response_summary_modal.dart`**: Full-screen view
 
 ### Progress Indicators
@@ -1030,25 +1010,6 @@ Comprehensive test coverage includes:
 - Whisper: Transcription, error handling, response formatting
 - Cloud providers: Streaming, function calls, authentication
 
-### Deterministic Conversation Tests
-
-Conversation tests that validate `LottiChecklistStrategy` and handlers should avoid brittle
-streaming mocks. Instead, stub `ConversationRepository.sendMessage` to directly invoke
-`strategy.processToolCalls(...)` with predefined `ChatCompletionMessageToolCall` objects. This
-preserves the real strategy/handler execution while removing chunk‑assembly fragility.
-
-- Reference: `test/features/ai/functions/lotti_conversation_processor_via_repo_test.dart`
-- Helper pattern used in tests:
-  - `stubSendMessageToInvokeStrategy({ repo, manager, toolCalls })` → stubs
-    `sendMessage(...)` and synchronously calls `strategy.processToolCalls(toolCalls, manager)`.
-- Register mocktail fallbacks for types passed via `any<T>()`:
-  - `Task`, `InferenceRepositoryInterface`, `AiConfigInferenceProvider`,
-    `List<ChatCompletionMessage>`, `List<ChatCompletionTool>`.
-- Use repo/db mocks to reflect state transitions (e.g., task acquires `checklistIds` after create).
-
-Use full streaming only when you explicitly want to exercise chunk accumulation and tool‑call ID
-stitching across providers; keep those focused and deterministic (stable tool‑call ids/indices).
-
 ## Security Considerations
 
 - API keys stored via OS secure storage (`flutter_secure_storage`): Keychain (iOS/macOS), Android Keystore, Windows Credential Locker (DPAPI), Linux Secret Service (libsecret)
@@ -1080,141 +1041,32 @@ A: AI analyzes task content (especially audio transcripts) and calls `set_task_l
 ### Q: What happens during concurrent modifications?
 A: The Read-Current-Write pattern ensures AI reads fresh state before updates, preserving user changes made during processing.
 
-## Conversation-Based Processing
-
-### Overview
-
-The AI system uses a conversation-based approach for checklist updates to improve efficiency and handle complex scenarios better. This approach is particularly effective for models that may not process all items in a single function call.
-
-### Benefits
-
-1. **Efficient Batching**: The system includes a batch function `add_multiple_checklist_items` that can create multiple items at once
-2. **Error Recovery**: If function calls fail, the system automatically retries with helpful prompts
-3. **Duplicate Prevention**: Intelligently prevents creating duplicate items across single and batch operations
-4. **Better Model Support**: Works well with models that may only process one item at a time (like some open-source models)
-
-### How It Works
-
-1. **Initial Request**: User's prompt is sent with available function tools
-2. **Function Calls**: AI makes function calls to create checklist items (single or batch)
-3. **Error Handling**: If calls fail, system provides corrective prompts automatically
-4. **Continuation**: System can ask AI to continue if more items are needed
-5. **Completion**: Process ends when all items are created or max turns reached
-
-### Implementation Details
-
-The conversation-based approach uses several key components:
-- **ConversationManager**: Maintains message history and handles tool responses
-- **ConversationRepository**: Manages conversation lifecycle and routes to providers
-- **LottiConversationProcessor**: Orchestrates the checklist creation flow
-- **Event Streaming**: Provides real-time updates via `ConversationEvent` stream
-
-### Safe JSON Accumulation for Streaming Tool Calls
-
-The conversation repository implements a robust mechanism for accumulating streaming JSON arguments in tool calls, preventing corruption that can occur with naive string concatenation.
-
-#### The Problem
-
-When AI providers stream tool call responses, JSON arguments often arrive in multiple chunks:
-- Chunks may split UTF-8 characters across boundaries
-- Network delays can cause out-of-order arrival
-- Simple concatenation can create invalid JSON
-
-Example of the issue:
-```
-Chunk 1: {"items": ["cheese", "pep
-Chunk 2: peroni", "mushrooms"]}
-Naive concatenation: {"items": ["cheese", "pepperoni", "mushrooms"]}  // Corrupted!
-```
-
-#### The Solution
-
-The repository uses `StringBuffer` instances to safely accumulate arguments:
-
-```dart
-// Safe accumulation using StringBuffer for each tool call
-final toolCallArgumentBuffers = <String, StringBuffer>{};
-
-// When processing chunks:
-if (existingIndex >= 0) {
-  final existing = toolCalls[existingIndex];
-  final toolCallKey = existing.id;
-
-  // Get or create buffer for this tool call
-  final buffer = toolCallArgumentBuffers[toolCallKey] ??
-      StringBuffer(existing.function.arguments);
-  toolCallArgumentBuffers[toolCallKey] = buffer;
-
-  // Append new chunk to buffer
-  buffer.write(toolCallChunk.function?.arguments ?? '');
-
-  // Update the tool call with buffered arguments
-  toolCalls[existingIndex] = ChatCompletionMessageToolCall(
-    id: existing.id,
-    type: existing.type,
-    function: ChatCompletionMessageFunctionCall(
-      name: existing.function.name,
-      arguments: buffer.toString(),
-    ),
-  );
-}
-```
-
-#### Technical Benefits
-
-1. **Thread-Safe Accumulation**: StringBuffer handles proper character encoding
-2. **Preserves Chunk Order**: Each tool call has its own buffer indexed by ID
-3. **Memory Efficient**: Buffers are created only when needed
-4. **Handles Edge Cases**:
-   - Empty chunks are safely ignored
-   - Missing arguments default to empty strings
-   - Split UTF-8 sequences are preserved correctly
-
-#### Provider-Specific Handling
-
-The system also includes special handling for providers like Gemini that send multiple complete tool calls in a single chunk:
-
-```dart
-// Detect Gemini-style batched tool calls
-final isGeminiStyle = delta!.toolCalls!.length > 1 &&
-    delta.toolCalls!.every((tc) =>
-        (tc.id == null || tc.id!.isEmpty) &&
-        tc.index == null &&
-        tc.function?.arguments != null &&
-        tc.function!.arguments!.isNotEmpty);
-```
-
-This ensures compatibility across different AI provider implementations while maintaining data integrity.
-
-### Provider Support
-
-The conversation-based approach now works with all providers:
-- **Ollama**: Full support with local model execution
-- **Gemini**: Native multi-turn API with thought signature support
-- **OpenAI, Anthropic, OpenRouter**: Full conversation history support via `CloudInferenceWrapper`
-
-All providers use the unified `InferenceRepositoryInterface` for consistent behavior.
-
 ## Category-Based AI Settings
 
 The AI system integrates with the Categories feature for fine-grained control over which prompts are available for different content types. See the [Categories Feature README](../categories/README.md#ai-powered-category-settings) for details.
 
 ## TODO / Future Work
 
+### Legacy Enum Removal (`AiResponseType.taskSummary` / `AiResponseType.checklistUpdates`)
+
+Both enum values carry `@Deprecated` annotations and are excluded from
+automatic prompt execution (`getActivePromptsForContext`) and the response-type
+picker UI. They are retained solely for JSON/DB backwards-compatibility.
+
+**Steps to fully remove them:**
+
+1. Write a DB migration that deletes or re-maps any persisted rows whose
+   `aiResponseType` equals `TaskSummary` or `ChecklistUpdates`.
+2. Remove the two enum members and their `@JsonValue` constants from
+   `lib/features/ai/state/consts.dart`.
+3. Remove the corresponding `case` branches in `localizedName`, `icon`,
+   `_handlePostProcessing`, and `_getTypeIcon`.
+4. Delete the `isLegacyType` extension getter.
+5. Run `make build_runner` to regenerate Freezed/JSON code.
+6. Search the codebase for any remaining references and clean them up.
+
 ### Future Improvements
 
-- **Streaming UI Updates**: Show checklist items as they're created in real-time
-- **Progress Indicators**: Better visual feedback during batch operations
-- **Undo/Redo**: Support for undoing batch checklist operations
-- **Template Support**: Predefined checklist templates for common tasks
-- **Smart Grouping**: Automatically group related checklist items
-- **Priority Detection**: AI-suggested priority levels for checklist items
-- **Non-Streaming Response Option**: Add support for non-streaming API responses to handle providers (like Gemini) that return malformed streaming tool calls. This would:
-  - Add a `preferNonStreaming` flag to `AiConfigInferenceProvider`
-  - Use `createChatCompletion` instead of `createChatCompletionStream` for flagged providers
-  - Convert non-streaming responses to streams for API consistency
-  - Solve issues with concatenated JSON in tool call arguments
-  - Provide cleaner tool call parsing without accumulation complexity
 ##### How Gemini ties into chat
 
 - Provider routing: `cloud_inference_repository.dart` selects `GeminiInferenceRepository` when `InferenceProviderType.gemini` is active. The repository streams OpenAI-compatible deltas.

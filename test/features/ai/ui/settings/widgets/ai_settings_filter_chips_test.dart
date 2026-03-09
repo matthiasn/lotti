@@ -555,6 +555,7 @@ void main() {
 
         expect(filterChanges, hasLength(1));
         expect(filterChanges.first.selectedResponseTypes, {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
         });
       });
@@ -586,6 +587,7 @@ void main() {
 
         expect(filterChanges, hasLength(2));
         expect(filterChanges.last.selectedResponseTypes, {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
           AiResponseType.imageAnalysis,
         });
@@ -595,6 +597,7 @@ void main() {
         WidgetTester tester,
       ) async {
         final filterState = promptsTabState.copyWith(
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 
@@ -619,6 +622,7 @@ void main() {
       ) async {
         final filterState = promptsTabState.copyWith(
           selectedResponseTypes: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
             AiResponseType.imageAnalysis,
           },
@@ -657,6 +661,7 @@ void main() {
         WidgetTester tester,
       ) async {
         final filterState = promptsTabState.copyWith(
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 
@@ -676,6 +681,7 @@ void main() {
           searchQuery: 'test query',
           selectedProviders: {'provider1'},
           selectedResponseTypes: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
             AiResponseType.imageAnalysis,
           },
@@ -1000,6 +1006,7 @@ void main() {
         final withFiltersAndSelection = promptsTabState.copyWith(
           selectionMode: true,
           selectedPromptIds: {'prompt-1'},
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 

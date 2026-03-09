@@ -46,6 +46,7 @@ void main() {
       defaultVariables: {'var1': 'val1'},
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
+      // ignore: deprecated_member_use_from_same_package
       aiResponseType: AiResponseType.taskSummary,
     );
 

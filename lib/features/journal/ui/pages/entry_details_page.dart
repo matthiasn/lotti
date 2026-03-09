@@ -174,7 +174,6 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                 height: 50,
                 isInteractive: true,
                 responseTypes: const {
-                  AiResponseType.taskSummary,
                   AiResponseType.imageAnalysis,
                   AiResponseType.audioTranscription,
                 },

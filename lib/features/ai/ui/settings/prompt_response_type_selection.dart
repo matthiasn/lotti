@@ -56,7 +56,11 @@ class _ResponseTypeSelectionModalState
   @override
   void initState() {
     super.initState();
-    _selectedType = widget.selectedType;
+    final selected = widget.selectedType;
+    // Normalize legacy types that are no longer shown in the picker
+    _selectedType = (selected != null && selected.isLegacyType)
+        ? null
+        : selected;
   }
 
   void _selectType(AiResponseType type) {
@@ -74,7 +78,16 @@ class _ResponseTypeSelectionModalState
 
   @override
   Widget build(BuildContext context) {
-    const options = AiResponseType.values;
+    // Filter out legacy response types that are now handled by the agent system
+    final options = AiResponseType.values
+        .where(
+          (t) =>
+              // ignore: deprecated_member_use_from_same_package
+              t != AiResponseType.taskSummary &&
+              // ignore: deprecated_member_use_from_same_package
+              t != AiResponseType.checklistUpdates,
+        )
+        .toList();
 
     return SelectionModalContent(
       children: [
@@ -110,12 +123,14 @@ class _ResponseTypeSelectionModalState
   /// Returns appropriate icon for each response type
   IconData _getTypeIcon(AiResponseType type) {
     switch (type) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.taskSummary:
         return Icons.summarize_rounded;
       case AiResponseType.imageAnalysis:
         return Icons.image_search_rounded;
       case AiResponseType.audioTranscription:
         return Icons.transcribe_rounded;
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.checklistUpdates:
         return Icons.checklist_rtl_rounded;
       case AiResponseType.promptGeneration:

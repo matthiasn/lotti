@@ -138,6 +138,7 @@ class TaskSummaryRepository {
       for (final linkedEntity in linkedEntitiesForTask) {
         if (linkedEntity is AiResponseEntry) {
           final aiData = linkedEntity.data;
+          // ignore: deprecated_member_use_from_same_package
           if (aiData.type == AiResponseType.taskSummary) {
             aiResponses.add(linkedEntity);
           }

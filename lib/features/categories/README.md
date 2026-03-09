@@ -80,9 +80,9 @@ class CategoryDefinition {
   final Map<String, List<String>>? automaticPrompts;
   // Example:
   // {
-  //   'audioTranscription': ['task-summary'],      // Currently limited to 1 prompt
-  //   'imageAnalysis': ['extract-text'],           // Future: may support multiple
-  //   'taskSummary': ['weekly-report']             // prompts running in sequence
+  //   'audioTranscription': ['audio_transcription'],  // Currently limited to 1 prompt
+  //   'imageAnalysis': ['extract-text'],               // Future: may support multiple
+  //   'imageAnalysis': ['weekly-report']                // prompts running in sequence
   // }
 }
 ```
@@ -91,15 +91,11 @@ class CategoryDefinition {
 
 **Automatic Triggers:**
 1. **Audio Transcription**: ✅ After transcribing audio, automatically runs configured prompts
-2. **Task Summary (Audio-linked)**: ✅ After audio transcription completes for tasks, automatically generates summary
-3. **Image Analysis**: 🚧 When images are attached, automatically analyze them (planned)
-4. **Periodic Task Summary**: 🚧 Periodically generate summaries for tasks in the category (planned)
+2. **Image Analysis**: 🚧 When images are attached, automatically analyze them (planned)
 
 **Current Capabilities:**
 - Audio recordings trigger automatic transcription when configured in category
-- Task summaries run automatically after transcription for audio linked to tasks
 - Users can control automatic execution via checkboxes in recording modal
-- Manual task summary can be triggered from AI popup menu on any task
 - Warning messages appear when no automatic prompt is configured
 
 ### Implementation Roadmap
@@ -117,10 +113,8 @@ class CategoryDefinition {
 
 #### Phase 3: Automatic Execution 🚧
 - [x] Implement triggers for audio transcription response type
-- [x] Implement triggers for task summary (after audio transcription)
 - [ ] Create background service for queue management
 - [ ] Implement triggers for image analysis
-- [ ] Implement periodic/scheduled task summary triggers
 - [ ] Add queue management for multiple automatic prompts
 - [ ] Link generated responses to source entries
 
@@ -246,7 +240,6 @@ Corrections are captured automatically when:
 ### Prompt Integration
 
 Examples are injected into prompts for:
-- `AiResponseType.checklistUpdates` - Improves checklist item suggestions
 - `AiResponseType.audioTranscription` - Helps with domain-specific transcription
 
 Format in prompt:
@@ -271,7 +264,7 @@ final workCategory = CategoryDefinition(
   color: Colors.blue,
   isPrivate: false,
   allowedPromptIds: [
-    'task-summary',
+    'audio_transcription',
     'action-item-suggestions',
     'meeting-notes'
   ],
@@ -289,14 +282,14 @@ final projectCategory = CategoryDefinition(
   name: 'App Development',
   color: Colors.green,
   allowedPromptIds: [
-    'task-summary',
+    'audio_transcription',
     'action-item-suggestions',
     'extract-code',
     'ui-feedback',
     // ... other allowed prompts
   ],
   automaticPrompts: {
-    'audioTranscription': ['task-summary'],   // Single prompt per type (v1)
+    'audioTranscription': ['audio_transcription'],  // Single prompt per type (v1)
     'imageAnalysis': ['extract-code'],        // Future versions may support
     // multiple prompts in sequence
   },

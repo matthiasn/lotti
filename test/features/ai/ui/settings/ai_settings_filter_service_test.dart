@@ -88,6 +88,7 @@ void main() {
               createdAt: DateTime.now(),
               useReasoning: false,
               requiredInputData: [InputDataType.task],
+              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
             )
             as AiConfigPrompt,
@@ -333,6 +334,7 @@ void main() {
                   createdAt: DateTime.now(),
                   useReasoning: false,
                   requiredInputData: [InputDataType.task],
+                  // ignore: deprecated_member_use_from_same_package
                   aiResponseType: AiResponseType.taskSummary,
                 )
                 as AiConfigPrompt;
@@ -367,6 +369,7 @@ void main() {
                   createdAt: DateTime.now(),
                   useReasoning: false,
                   requiredInputData: [InputDataType.task],
+                  // ignore: deprecated_member_use_from_same_package
                   aiResponseType: AiResponseType.taskSummary,
                 )
                 as AiConfigPrompt;
@@ -427,6 +430,7 @@ void main() {
                   createdAt: DateTime.now(),
                   useReasoning: false,
                   requiredInputData: [InputDataType.task],
+                  // ignore: deprecated_member_use_from_same_package
                   aiResponseType: AiResponseType.taskSummary,
                 )
                 as AiConfigPrompt;
@@ -477,6 +481,7 @@ void main() {
                     createdAt: DateTime.now(),
                     useReasoning: false,
                     requiredInputData: [InputDataType.task],
+                    // ignore: deprecated_member_use_from_same_package
                     aiResponseType: AiResponseType.taskSummary,
                   )
                   as AiConfigPrompt,
@@ -505,17 +510,20 @@ void main() {
 
       test('filters prompts by response type', () {
         final filterState = AiSettingsFilterState.initial().copyWith(
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
         final result = service.filterPrompts(testPrompts, filterState);
 
         expect(result, hasLength(1));
+        // ignore: deprecated_member_use_from_same_package
         expect(result.first.aiResponseType, AiResponseType.taskSummary);
       });
 
       test('filters prompts by multiple response types', () {
         final filterState = AiSettingsFilterState.initial().copyWith(
           selectedResponseTypes: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
             AiResponseType.imageAnalysis,
           },
@@ -549,6 +557,7 @@ void main() {
                   createdAt: DateTime.now(),
                   useReasoning: false,
                   requiredInputData: [InputDataType.task],
+                  // ignore: deprecated_member_use_from_same_package
                   aiResponseType: AiResponseType.taskSummary,
                 )
                 as AiConfigPrompt;
@@ -558,6 +567,7 @@ void main() {
         // Filter by both anthropic provider AND taskSummary response type
         final filterState = AiSettingsFilterState.initial().copyWith(
           selectedProviders: {'anthropic-provider'},
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
         );
 

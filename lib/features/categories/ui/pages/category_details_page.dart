@@ -616,23 +616,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           _buildAutomaticPromptConfig(
             category,
             promptList,
-            AiResponseType.checklistUpdates,
-            context.messages.checklistUpdates,
-            Icons.checklist_rtl_outlined,
-          ),
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
             AiResponseType.imageAnalysis,
             context.messages.images,
             Icons.image_outlined,
-          ),
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
-            AiResponseType.taskSummary,
-            context.messages.taskSummaries,
-            Icons.summarize_outlined,
           ),
         ];
 

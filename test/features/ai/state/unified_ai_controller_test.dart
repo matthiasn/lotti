@@ -159,6 +159,7 @@ void main() {
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -185,7 +186,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -246,7 +246,6 @@ void main() {
             promptConfig: promptConfig,
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).called(1);
@@ -284,6 +283,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -308,7 +308,6 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
           linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
@@ -349,7 +348,6 @@ void main() {
           promptConfig: promptConfig,
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
           linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).called(1);
@@ -368,6 +366,7 @@ void main() {
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -391,7 +390,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -482,6 +480,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         ),
       ];
@@ -576,6 +575,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -703,6 +703,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: [InputDataType.task],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -727,7 +728,6 @@ void main() {
           promptConfig: any(named: 'promptConfig'),
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
           linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).thenAnswer((invocation) async {
@@ -752,7 +752,6 @@ void main() {
           promptConfig: promptConfig,
           onProgress: any(named: 'onProgress'),
           onStatusChange: any(named: 'onStatusChange'),
-          useConversationApproach: any(named: 'useConversationApproach'),
           linkedEntityId: any(named: 'linkedEntityId'),
         ),
       ).called(1);
@@ -820,7 +819,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -919,7 +917,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -1030,6 +1027,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         ),
       ];
@@ -1148,6 +1146,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         ),
       ];

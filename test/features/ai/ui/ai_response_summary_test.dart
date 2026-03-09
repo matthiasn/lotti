@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
-import 'package:lotti/features/ai/ui/expandable_ai_response_summary.dart';
 import 'package:lotti/features/ai/ui/generated_prompt_card.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -38,31 +37,18 @@ void main() {
         prompt: 'User prompt',
         thoughts: '',
         response: 'AI response',
-        type: AiResponseType.taskSummary,
+        type: AiResponseType.imageAnalysis,
       ),
     );
-    testWidgets('uses ExpandableAiResponseSummary for task summaries', (
+    testWidgets('renders GptMarkdown for standard responses', (
       tester,
     ) async {
-      const responseWithTitle = '''
-# Implement user authentication system
-
-**TLDR:** Authentication setup in progress.
-Database and login API are complete.
-Next: password reset and session management. 💪
-
-Achieved results:
-✅ Set up database schema for users
-✅ Created login API endpoint
-
-Remaining steps:
-1. Implement password reset functionality
-2. Add session management''';
+      const responseText = 'The image shows a beautiful landscape.';
 
       final aiResponse = testAiResponseEntry.copyWith(
         data: testAiResponseEntry.data.copyWith(
-          response: responseWithTitle,
-          type: AiResponseType.taskSummary,
+          response: responseText,
+          type: AiResponseType.imageAnalysis,
         ),
       );
 
@@ -76,10 +62,6 @@ Remaining steps:
         ),
       );
 
-      // Should use ExpandableAiResponseSummary for task summaries
-      expect(find.byType(ExpandableAiResponseSummary), findsOneWidget);
-
-      // GptMarkdown should be rendered inside ExpandableAiResponseSummary
       expect(find.byType(GptMarkdown), findsOneWidget);
     });
 
@@ -212,8 +194,8 @@ Help me implement OAuth 2.0 authentication in my Flutter app.
       // Should use GeneratedPromptCard for prompt generation
       expect(find.byType(GeneratedPromptCard), findsOneWidget);
 
-      // Should not use ExpandableAiResponseSummary
-      expect(find.byType(ExpandableAiResponseSummary), findsNothing);
+      // Should not use GptMarkdown directly (it's inside GeneratedPromptCard)
+      expect(find.byType(GptMarkdown), findsNothing);
     });
 
     testWidgets(
@@ -248,8 +230,8 @@ Style: isometric digital art. --ar 16:9
         // Should use GeneratedPromptCard for image prompt generation
         expect(find.byType(GeneratedPromptCard), findsOneWidget);
 
-        // Should not use ExpandableAiResponseSummary
-        expect(find.byType(ExpandableAiResponseSummary), findsNothing);
+        // Should not use GptMarkdown directly (it's inside GeneratedPromptCard)
+        expect(find.byType(GptMarkdown), findsNothing);
       },
     );
 

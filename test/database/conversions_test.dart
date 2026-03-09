@@ -186,6 +186,7 @@ void main() {
       ),
       'AiResponse': _aiResponseEntry(
         'ai',
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
       ),
       'Checklist': JournalEntity.checklist(

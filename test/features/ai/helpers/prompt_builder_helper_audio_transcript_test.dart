@@ -16,7 +16,6 @@ void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
   late MockJournalRepository mockJournalRepository;
-  late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
   late MockEntitiesCacheService mockEntitiesCacheService;
 
@@ -139,7 +138,6 @@ void main() {
   setUp(() {
     mockAiInputRepository = MockAiInputRepository();
     mockJournalRepository = MockJournalRepository();
-    mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -166,8 +164,6 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: mockJournalRepository,
-      checklistRepository: mockChecklistRepository,
-      labelsRepository: mockLabelsRepository,
     );
   });
 

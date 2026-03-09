@@ -291,6 +291,7 @@ class AiInputRepository {
   /// For each task, the method:
   /// 1. Calculates time spent by summing durations of non-Task, non-AiResponse
   ///    linked entities
+  // ignore: deprecated_member_use_from_same_package
   /// 2. Finds the latest [AiResponseType.taskSummary] from linked AI responses
   /// 3. Resolves labels via O(1) cache lookups
   Future<List<AiLinkedTaskContext>> _buildLinkedTaskContextsBatched(
@@ -355,6 +356,7 @@ class AiInputRepository {
   /// Part of the batched query strategy: operates on entities already fetched
   /// by [_buildLinkedTaskContextsBatched], avoiding additional database calls.
   ///
+  // ignore: deprecated_member_use_from_same_package
   /// Filters for [AiResponseEntry] items with [AiResponseType.taskSummary],
   /// sorts by date descending, and returns the response text from the most
   /// recent one. Returns `null` if no summaries exist.
@@ -362,6 +364,7 @@ class AiInputRepository {
     final summaries =
         entities
             .whereType<AiResponseEntry>()
+            // ignore: deprecated_member_use_from_same_package
             .where((e) => e.data.type == AiResponseType.taskSummary)
             .toList()
           ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));

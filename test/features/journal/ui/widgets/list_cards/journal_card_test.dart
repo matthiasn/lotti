@@ -627,6 +627,7 @@ void main() {
                 completed: false,
               ),
             ],
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: entryText,

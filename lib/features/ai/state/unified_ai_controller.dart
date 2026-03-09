@@ -292,7 +292,6 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
             );
           }
         },
-        useConversationApproach: true,
         linkedEntityId: linkedEntityId,
       );
     } catch (e, stackTrace) {

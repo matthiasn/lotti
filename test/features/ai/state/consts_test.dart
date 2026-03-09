@@ -9,12 +9,14 @@ void main() {
   group('AiResponseType', () {
     test('should have all expected enum values', () {
       expect(AiResponseType.values.length, equals(7));
+      // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.values, contains(AiResponseType.taskSummary));
       expect(AiResponseType.values, contains(AiResponseType.imageAnalysis));
       expect(
         AiResponseType.values,
         contains(AiResponseType.audioTranscription),
       );
+      // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.values, contains(AiResponseType.checklistUpdates));
       expect(AiResponseType.values, contains(AiResponseType.promptGeneration));
       expect(
@@ -59,6 +61,7 @@ void main() {
     });
 
     test('icon returns correct icons for each type', () {
+      // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.taskSummary.icon, equals(Icons.summarize_outlined));
       expect(AiResponseType.imageAnalysis.icon, equals(Icons.image_outlined));
       expect(
@@ -66,6 +69,7 @@ void main() {
         equals(Icons.mic_outlined),
       );
       expect(
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.checklistUpdates.icon,
         equals(Icons.checklist_rtl_outlined),
       );
@@ -111,6 +115,7 @@ void main() {
 
       // Test all enum values with actual BuildContext
       expect(
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary.localizedName(capturedContext),
         equals('Task Summary'),
       );
@@ -123,6 +128,7 @@ void main() {
         equals('Audio Transcription'),
       );
       expect(
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.checklistUpdates.localizedName(capturedContext),
         equals('Checklist Updates'),
       );
@@ -146,9 +152,11 @@ void main() {
     });
 
     test('isPromptGenerationType returns false for non-prompt types', () {
+      // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.taskSummary.isPromptGenerationType, false);
       expect(AiResponseType.imageAnalysis.isPromptGenerationType, false);
       expect(AiResponseType.audioTranscription.isPromptGenerationType, false);
+      // ignore: deprecated_member_use_from_same_package
       expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
       expect(AiResponseType.imageGeneration.isPromptGenerationType, false);
     });

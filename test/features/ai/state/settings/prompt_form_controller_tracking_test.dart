@@ -48,8 +48,8 @@ void main() {
           promptFormControllerProvider(configId: null).future,
         );
 
-        // Get the checklist updates template
-        final template = preconfiguredPrompts['checklist_updates']!;
+        // Get the audio transcription template
+        final template = preconfiguredPrompts['audio_transcription']!;
 
         // Act
         controller.populateFromPreconfiguredPrompt(template);
@@ -70,7 +70,7 @@ void main() {
         expect(state.requiredInputData, equals(template.requiredInputData));
         expect(state.aiResponseType.value, equals(template.aiResponseType));
         expect(state.trackPreconfigured, isTrue);
-        expect(state.preconfiguredPromptId, equals('checklist_updates'));
+        expect(state.preconfiguredPromptId, equals('audio_transcription'));
 
         // Check that text controllers were updated
         expect(controller.nameController.text, equals(template.name));
@@ -109,7 +109,7 @@ void main() {
           systemMessage: 'System',
           userMessage: 'User',
           requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
+          aiResponseType: AiResponseType.audioTranscription,
           useReasoning: false,
           description: 'Description',
           defaultVariables: {'key1': 'value1', 'key2': 'value2'},
@@ -148,9 +148,9 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
-            preconfiguredPromptId: 'checklist_updates', // But has the ID
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+            preconfiguredPromptId: 'audio_transcription', // But has the ID
           );
 
           when(
@@ -176,10 +176,10 @@ void main() {
               .value;
 
           expect(state!.trackPreconfigured, isTrue);
-          expect(state.preconfiguredPromptId, equals('checklist_updates'));
+          expect(state.preconfiguredPromptId, equals('audio_transcription'));
 
           // Should update messages from the preconfigured prompt
-          final template = preconfiguredPrompts['checklist_updates']!;
+          final template = preconfiguredPrompts['audio_transcription']!;
           expect(state.systemMessage.value, equals(template.systemMessage));
           expect(state.userMessage.value, equals(template.userMessage));
 
@@ -202,18 +202,18 @@ void main() {
           const testConfigId = 'test-prompt-id';
           final testConfig = AiConfigPrompt(
             id: testConfigId,
-            name: 'Checklist Updates',
-            systemMessage: checklistUpdatesPrompt.systemMessage,
-            userMessage: checklistUpdatesPrompt.userMessage,
+            name: 'Audio Transcription',
+            systemMessage: audioTranscriptionPrompt.systemMessage,
+            userMessage: audioTranscriptionPrompt.userMessage,
             description: 'Description',
             defaultModelId: 'model-1',
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'checklist_updates',
+            preconfiguredPromptId: 'audio_transcription',
           );
 
           when(
@@ -240,7 +240,7 @@ void main() {
 
           expect(state!.trackPreconfigured, isFalse);
           // preconfiguredPromptId should still be present
-          expect(state.preconfiguredPromptId, equals('checklist_updates'));
+          expect(state.preconfiguredPromptId, equals('audio_transcription'));
 
           // Messages should not change when disabling
           expect(state.systemMessage.value, equals(testConfig.systemMessage));
@@ -261,8 +261,8 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           preconfiguredPromptId: 'invalid_id', // This ID doesn't exist
         );
 
@@ -310,8 +310,8 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
           );
 
           when(
@@ -351,18 +351,18 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final testConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Checklist Updates',
-          systemMessage: checklistUpdatesPrompt.systemMessage,
-          userMessage: checklistUpdatesPrompt.userMessage,
+          name: 'Audio Transcription',
+          systemMessage: audioTranscriptionPrompt.systemMessage,
+          userMessage: audioTranscriptionPrompt.userMessage,
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         when(
@@ -417,7 +417,7 @@ void main() {
         );
 
         // Populate from template
-        final template = preconfiguredPrompts['checklist_updates']!;
+        final template = preconfiguredPrompts['audio_transcription']!;
         controller
           ..populateFromPreconfiguredPrompt(template)
           // Set required fields for valid form
@@ -444,7 +444,7 @@ void main() {
         expect(capturedConfig.trackPreconfigured, isTrue);
         expect(
           capturedConfig.preconfiguredPromptId,
-          equals('checklist_updates'),
+          equals('audio_transcription'),
         );
       });
 
@@ -455,7 +455,7 @@ void main() {
           const testConfigId = 'test-prompt-id';
           final existingConfig = AiConfigPrompt(
             id: testConfigId,
-            name: 'Checklist Updates',
+            name: 'Audio Transcription',
             systemMessage: 'System',
             userMessage: 'User',
             description: 'Description',
@@ -463,10 +463,10 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 14),
             useReasoning: false,
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'checklist_updates',
+            preconfiguredPromptId: 'audio_transcription',
           );
 
           when(
@@ -505,7 +505,7 @@ void main() {
           expect(capturedConfig.trackPreconfigured, isTrue);
           expect(
             capturedConfig.preconfiguredPromptId,
-            equals('checklist_updates'),
+            equals('audio_transcription'),
           );
           expect(capturedConfig.name, equals('Updated Name'));
           expect(capturedConfig.id, equals(testConfigId));

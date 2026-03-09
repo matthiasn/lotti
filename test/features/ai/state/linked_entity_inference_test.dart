@@ -85,6 +85,7 @@ void main() {
               createdAt: now,
               useReasoning: false,
               requiredInputData: [InputDataType.task],
+              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
               description: 'Generates task summaries',
             )
@@ -126,7 +127,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -245,7 +245,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -343,7 +342,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenThrow(Exception('Network error'));
@@ -399,7 +397,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -420,6 +417,7 @@ void main() {
             onStatusChange(InferenceStatus.idle);
             executionOrder.add('ASR_COMPLETE');
           } else if (promptConfig.aiResponseType ==
+              // ignore: deprecated_member_use_from_same_package
               AiResponseType.taskSummary) {
             executionOrder.add('TASK_SUMMARY_START');
             onStatusChange(InferenceStatus.running);
@@ -505,7 +503,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -522,6 +519,7 @@ void main() {
             onStatusChange(InferenceStatus.idle);
             executionOrder.add('ASR_END');
           } else if (promptConfig.aiResponseType ==
+              // ignore: deprecated_member_use_from_same_package
               AiResponseType.taskSummary) {
             executionOrder.add('TASK_SUMMARY_START');
             onStatusChange(InferenceStatus.running);
@@ -625,6 +623,7 @@ void main() {
           ..listen(
             inferenceStatusControllerProvider(
               id: taskId,
+              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
             ),
             (previous, next) {
@@ -641,7 +640,6 @@ void main() {
             promptConfig: any(named: 'promptConfig'),
             onProgress: any(named: 'onProgress'),
             onStatusChange: any(named: 'onStatusChange'),
-            useConversationApproach: any(named: 'useConversationApproach'),
             linkedEntityId: any(named: 'linkedEntityId'),
           ),
         ).thenAnswer((invocation) async {
@@ -656,6 +654,7 @@ void main() {
             onStatusChange(InferenceStatus.running);
             onStatusChange(InferenceStatus.idle);
           } else if (promptConfig.aiResponseType ==
+              // ignore: deprecated_member_use_from_same_package
               AiResponseType.taskSummary) {
             onStatusChange(InferenceStatus.running);
             onStatusChange(InferenceStatus.idle);
