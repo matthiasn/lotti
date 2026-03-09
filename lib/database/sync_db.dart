@@ -417,8 +417,12 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   /// Find the nearest sequence log entry for a host with a counter >= [counter]
-  /// that has an entryId (i.e., a resolved payload). Used to find covering
-  /// entries when the exact counter is not in the sequence log (superseded).
+  /// that has a locally resolved payload. Used to find covering entries when
+  /// the exact counter is not in the sequence log (superseded).
+  ///
+  /// Only returns rows with `received` or `backfilled` status to avoid
+  /// returning hint-only rows (where `entryId` is set but the payload may
+  /// not exist locally yet).
   Future<SyncSequenceLogItem?> getNearestCoveringEntry(
     String hostId,
     int counter,
@@ -428,7 +432,9 @@ class SyncDatabase extends _$SyncDatabase {
             (t) =>
                 t.hostId.equals(hostId) &
                 t.counter.isBiggerOrEqualValue(counter) &
-                t.entryId.isNotNull(),
+                t.entryId.isNotNull() &
+                (t.status.equals(SyncSequenceStatus.received.index) |
+                    t.status.equals(SyncSequenceStatus.backfilled.index)),
           )
           ..orderBy([(t) => OrderingTerm.asc(t.counter)])
           ..limit(1))

@@ -606,6 +606,69 @@ void main() {
   });
 
   test(
+    'duplicate entity records in sequence log when sequenceLogService is set',
+    () async {
+      final mockSeqService = MockSyncSequenceLogService();
+      when(
+        () => mockSeqService.recordReceivedEntry(
+          entryId: any(named: 'entryId'),
+          vectorClock: any(named: 'vectorClock'),
+          originatingHostId: any(named: 'originatingHostId'),
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).thenAnswer((_) async => <({int counter, String hostId})>[]);
+
+      final processorWithSeq = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: journalEntityLoader,
+        sequenceLogService: mockSeqService,
+      );
+
+      final entryId = fallbackJournalEntity.meta.id;
+      final vc = fallbackJournalEntity.meta.vectorClock!;
+      final message = SyncMessage.journalEntity(
+        id: entryId,
+        jsonPath: '/entity.json',
+        vectorClock: vc,
+        status: SyncEntryStatus.initial,
+        originatingHostId: 'originator-host',
+      );
+      when(() => event.text).thenReturn(encodeMessage(message));
+      when(() => event.eventId).thenReturn('event-id');
+      when(() => event.originServerTs).thenReturn(DateTime(2024));
+      when(
+        () => journalEntityLoader.load(
+          jsonPath: '/entity.json',
+          incomingVectorClock: vc,
+        ),
+      ).thenAnswer((_) async => fallbackJournalEntity);
+      when(
+        () => journalDb.updateJournalEntity(fallbackJournalEntity),
+      ).thenAnswer((_) async => JournalUpdateResult.applied());
+
+      // First call applies, second is duplicate
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+      await processorWithSeq.process(event: event, journalDb: journalDb);
+
+      // recordReceivedEntry called once for the applied entry, once for the
+      // duplicate (so hints can be resolved even for duplicates)
+      verify(
+        () => mockSeqService.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vc,
+          originatingHostId: 'originator-host',
+          coveredVectorClocks: any(named: 'coveredVectorClocks'),
+          payloadType: any(named: 'payloadType'),
+        ),
+      ).called(2);
+    },
+  );
+
+  test(
     'invokes applyObserver with diagnostics and logs vclock prediction failure',
     () async {
       // Arrange a journal entity message

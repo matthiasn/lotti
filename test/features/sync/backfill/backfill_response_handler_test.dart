@@ -296,6 +296,55 @@ void main() {
       },
     );
 
+    test('uses covering entry when exact counter not found', () async {
+      // Request for Bob's counter 3, which is not in our log directly.
+      // But we have a covering entry at counter 5 with the same host.
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: bobHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      // Exact counter returns null
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3),
+      ).thenAnswer((_) async => null);
+
+      // Covering entry returns a resolved entry at counter 5
+      when(
+        () => mockSequenceService.getNearestCoveringEntry(bobHostId, 3),
+      ).thenAnswer(
+        (_) async => _createLogItem(
+          bobHostId,
+          5,
+          entryId: entryId,
+          originatingHostId: bobHostId,
+        ),
+      );
+
+      // The journal entry exists locally
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer(
+        (_) async => _createJournalEntry(
+          entryId,
+          vectorClock: const VectorClock({bobHostId: 5}),
+        ),
+      );
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      // Two enqueues: (1) re-sync the journal entity, (2) backfill hint
+      // because the VC counter 5 != requested counter 3
+      verify(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).called(2);
+    });
+
     test('sends deleted response when journal entry was deleted', () async {
       const request = SyncBackfillRequest(
         entries: [
