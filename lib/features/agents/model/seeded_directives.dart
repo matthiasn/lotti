@@ -5,6 +5,60 @@
 /// `directives` field.
 library;
 
+import 'package:lotti/features/agents/model/agent_enums.dart';
+
+// ── Seed Directive Changelog ─────────────────────────────────────────────────
+
+/// A dated record of a change to the seed directives.
+///
+/// The evolution context builder includes entries newer than the active
+/// version's `createdAt` so the evolution agent can incorporate them.
+/// Each entry is scoped to a [kind] so that task-agent-specific changes
+/// are not surfaced during improver/meta-improver rituals.
+class SeedDirectiveChange {
+  const SeedDirectiveChange({
+    required this.date,
+    required this.kind,
+    required this.description,
+  });
+
+  /// ISO date string, e.g. '2026-03-09'.
+  final String date;
+
+  /// The template kind this change applies to.
+  final AgentTemplateKind kind;
+
+  /// Human-readable description of what changed.
+  final String description;
+
+  /// The date parsed to midnight. The evolution context builder compares
+  /// date-only to avoid missing same-day entries.
+  DateTime get dateTime => DateTime.parse(date);
+}
+
+/// Chronological log of seed directive changes.
+///
+/// Add new entries at the bottom with the date the change was made.
+const seedDirectiveChangelog = <SeedDirectiveChange>[
+  SeedDirectiveChange(
+    date: '2026-03-09',
+    kind: AgentTemplateKind.taskAgent,
+    description:
+        'Report language: Write in the language specified by the '
+        "task's `languageCode` field, not the content language. "
+        'Respect user-set language choices.',
+  ),
+  SeedDirectiveChange(
+    date: '2026-03-09',
+    kind: AgentTemplateKind.taskAgent,
+    description:
+        'Links section: NEVER link to linked tasks (parent, child, '
+        'follow-up) — they are shown in a dedicated UI section. Never use '
+        'internal task IDs or hashes as link targets. Only include real '
+        'external URLs (GitHub, docs, etc.).',
+  ),
+];
+
 // ── Task Agent: General Directive ──────────────────────────────────────────
 
 /// Default general directive for task agent templates.

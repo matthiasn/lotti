@@ -1,4 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 
@@ -176,6 +178,10 @@ again. The conversation should always be driving toward an approved proposal.
         ..writeln();
     }
 
+    // Seed directive changelog — show entries newer than the active version,
+    // filtered to the template's kind.
+    _writeSeedChangelog(buf, currentVersion.createdAt, template.kind);
+
     // Performance metrics
     _writeMetrics(buf, metrics);
 
@@ -221,6 +227,42 @@ again. The conversation should always be driving toward an approved proposal.
     );
 
     return buf.toString();
+  }
+
+  static void _writeSeedChangelog(
+    StringBuffer buf,
+    DateTime versionCreatedAt,
+    AgentTemplateKind templateKind,
+  ) {
+    // Compare date-only so that a version created at e.g. 10:30 on
+    // 2026-03-09 still sees changelog entries added that same day
+    // (whose dateTime is midnight 2026-03-09).
+    final versionDate = DateTime(
+      versionCreatedAt.year,
+      versionCreatedAt.month,
+      versionCreatedAt.day,
+    );
+    final recent = seedDirectiveChangelog
+        .where(
+          (e) => e.kind == templateKind && !e.dateTime.isBefore(versionDate),
+        )
+        .toList();
+    if (recent.isEmpty) return;
+
+    buf
+      ..writeln('## Seed Directive Updates Since Your Version')
+      ..writeln()
+      ..writeln(
+        'The following changes were made to the default seed directives '
+        'after your current version was created. Consider incorporating '
+        'these into your next proposal:',
+      )
+      ..writeln();
+
+    for (final entry in recent) {
+      buf.writeln('- **${entry.date}**: ${entry.description}');
+    }
+    buf.writeln();
   }
 
   void _writeMetrics(StringBuffer buf, TemplatePerformanceMetrics metrics) {
