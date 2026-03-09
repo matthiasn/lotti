@@ -203,38 +203,6 @@ void main() {
         expect(result.wasNoOp, isTrue);
       });
 
-      test('handles rate limited result', () async {
-        when(
-          () => mockProcessor.processAssignment(
-            taskId: any(named: 'taskId'),
-            proposedIds: any(named: 'proposedIds'),
-            existingIds: any(named: 'existingIds'),
-            categoryId: any(named: 'categoryId'),
-            droppedLow: any(named: 'droppedLow'),
-            legacyUsed: any(named: 'legacyUsed'),
-            confidenceBreakdown: any(named: 'confidenceBreakdown'),
-            totalCandidates: any(named: 'totalCandidates'),
-          ),
-        ).thenAnswer(
-          (_) async => LabelAssignmentResult.rateLimited(),
-        );
-
-        final handler = TaskLabelHandler(
-          task: task,
-          processor: mockProcessor,
-        );
-
-        final result = await handler.handle({
-          'labels': [
-            {'id': 'label-a', 'confidence': 'high'},
-          ],
-        });
-
-        expect(result.success, isFalse);
-        expect(result.didWrite, isFalse);
-        expect(result.error, contains('rate limited'));
-      });
-
       test('handles processor exception', () async {
         when(
           () => mockProcessor.processAssignment(

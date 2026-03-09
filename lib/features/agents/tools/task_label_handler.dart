@@ -93,16 +93,6 @@ class TaskLabelHandler {
         totalCandidates: parseResult.totalCandidates,
       );
 
-      if (result.rateLimited) {
-        const message = 'Label assignment rate limited. Try again later.';
-        developer.log(message, name: 'TaskLabelHandler');
-        return const TaskLabelResult(
-          success: false,
-          message: message,
-          error: message,
-        );
-      }
-
       final message = result.toStructuredJson(parseResult.selectedIds);
       final didAssign = result.assigned.isNotEmpty;
 

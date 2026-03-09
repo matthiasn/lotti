@@ -4,7 +4,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -340,10 +339,7 @@ void main() {
         // Register getIt dependencies needed by internal handlers.
         getIt
           ..registerSingleton<JournalDb>(mockJournalDb)
-          ..registerSingleton<LoggingService>(mockLoggingService)
-          ..registerSingleton<LabelAssignmentRateLimiter>(
-            LabelAssignmentRateLimiter(),
-          );
+          ..registerSingleton<LoggingService>(mockLoggingService);
 
         when(
           () => mockJournalDb.journalEntityById(taskId),
@@ -536,7 +532,6 @@ void main() {
             () => mockJournalDb.getLabelDefinitionById('label-bug'),
           ).thenAnswer((_) async => labelDef);
 
-          // Stub LabelAssignmentRateLimiter via getIt.
           when(
             () => mockLabelsRepository.addLabels(
               journalEntityId: any(named: 'journalEntityId'),

@@ -3,30 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
-class MockLimiter extends Mock implements LabelAssignmentRateLimiter {}
-
 void main() {
   late MockJournalDb mockDb;
   late MockLabelsRepository mockRepo;
   late MockLoggingService mockLogging;
-  late MockLimiter mockLimiter;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = MockLabelsRepository();
     mockLogging = MockLoggingService();
-    mockLimiter = MockLimiter();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );
-    when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
     when(
       () => mockRepo.addLabels(
         journalEntityId: any(named: 'journalEntityId'),
@@ -36,7 +30,6 @@ void main() {
     processor = LabelAssignmentProcessor(
       db: mockDb,
       repository: mockRepo,
-      rateLimiter: mockLimiter,
       logging: mockLogging,
     );
   });
@@ -90,31 +83,6 @@ void main() {
         addedLabelIds: any(named: 'addedLabelIds'),
       ),
     ).called(1);
-    verify(() => mockLimiter.recordAssignment('t1')).called(1);
-  });
-
-  test('rate limiting prevents persistence and returns rateLimited', () async {
-    when(() => mockLimiter.isRateLimited('t1')).thenReturn(true);
-
-    // Valid label but should not be persisted due to rate limit
-    when(
-      () => mockDb.getLabelDefinitionById('ok'),
-    ).thenAnswer((_) async => makeLabel('ok'));
-
-    final result = await processor.processAssignment(
-      taskId: 't1',
-      proposedIds: const ['ok'],
-      existingIds: const [],
-    );
-
-    expect(result.rateLimited, isTrue);
-    verifyNever(
-      () => mockRepo.addLabels(
-        journalEntityId: any(named: 'journalEntityId'),
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    );
-    verifyNever(() => mockLimiter.recordAssignment(any()));
   });
 
   test('caps at maximum labels per assignment', () async {

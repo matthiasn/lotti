@@ -22,7 +22,6 @@ import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -367,11 +366,6 @@ Future<void> registerSingletons() async {
 
   unawaited(getIt<MatrixService>().init());
   getIt<LoggingService>().listenToConfigFlag();
-
-  // Shared rate limiter for AI label assignment
-  getIt.registerSingleton<LabelAssignmentRateLimiter>(
-    LabelAssignmentRateLimiter(),
-  );
 
   // Label validator used by the assignment processor
   _registerLazyServiceSafely<LabelValidator>(

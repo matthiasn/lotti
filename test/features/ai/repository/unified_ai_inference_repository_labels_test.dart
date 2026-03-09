@@ -13,7 +13,6 @@ import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dar
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart'
     show labelsRepositoryProvider;
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -51,10 +50,7 @@ void main() {
 
     getIt
       ..registerSingleton<JournalDb>(mockDb)
-      ..registerSingleton<LoggingService>(mockLogging)
-      ..registerSingleton<LabelAssignmentRateLimiter>(
-        LabelAssignmentRateLimiter(),
-      );
+      ..registerSingleton<LoggingService>(mockLogging);
 
     container = ProviderContainer(
       overrides: [

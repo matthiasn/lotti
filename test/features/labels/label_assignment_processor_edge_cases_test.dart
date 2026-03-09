@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -20,21 +19,18 @@ void main() {
   late MockJournalDb mockDb;
   late _MockLabelsRepository mockRepo;
   late _MockLoggingService mockLogging;
-  late LabelAssignmentRateLimiter limiter;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = _MockLabelsRepository();
     mockLogging = _MockLoggingService();
-    limiter = LabelAssignmentRateLimiter();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );
     processor = LabelAssignmentProcessor(
       db: mockDb,
       repository: mockRepo,
-      rateLimiter: limiter,
       logging: mockLogging,
     );
   });
@@ -125,39 +121,9 @@ void main() {
       // Even if persistence fails, current behavior publishes event and records rate limit
       expect(result.assigned, ['a']);
       expect(received.length, 1);
-      expect(limiter.isRateLimited('t1'), isTrue);
+      expect(result.assigned, ['a']);
     },
   );
-
-  test('rate limiter clear allows subsequent assignments', () async {
-    when(
-      () => mockDb.getLabelDefinitionById('a'),
-    ).thenAnswer((_) async => makeLabel('a'));
-    when(
-      () => mockRepo.addLabels(
-        journalEntityId: any(named: 'journalEntityId'),
-        addedLabelIds: any(named: 'addedLabelIds'),
-      ),
-    ).thenAnswer((_) async => true);
-
-    // First assignment records in limiter
-    final first = await processor.processAssignment(
-      taskId: 't2',
-      proposedIds: const ['a'],
-      existingIds: const [],
-    );
-    expect(first.assigned, ['a']);
-    expect(limiter.isRateLimited('t2'), isTrue);
-
-    // Clear while pending (simulated): allow next assignment
-    limiter.clearHistory();
-    final second = await processor.processAssignment(
-      taskId: 't2',
-      proposedIds: const ['a'],
-      existingIds: const [],
-    );
-    expect(second.assigned, ['a']);
-  });
 
   test('supports special characters in label IDs (spaces, unicode)', () async {
     for (final id in const ['with space', 'ünicode', 'emoji😀']) {

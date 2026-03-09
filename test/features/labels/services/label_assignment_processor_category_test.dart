@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -125,7 +124,6 @@ void main() {
       db: db,
       repository: repo,
       logging: logging,
-      rateLimiter: LabelAssignmentRateLimiter(),
       validator: validator,
     );
 
