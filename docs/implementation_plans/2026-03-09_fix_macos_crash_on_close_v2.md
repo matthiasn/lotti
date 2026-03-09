@@ -73,11 +73,12 @@ same mutexes, 150ms is not nearly enough.
 
 ## Solution
 
-**Do not use a fixed grace period.** Instead, prevent `windowManager.destroy()`
-from being called until the Flutter engine's own shutdown path handles
-isolate teardown naturally.
+**Do not use a fixed grace period.** Instead, avoid
+`windowManager.destroy()` on macOS entirely. After Dart-level disposal
+completes, terminate the process with `exit(0)` so the Flutter engine
+teardown sequence that triggers the FFI race is skipped.
 
-### Approach: Use `exit(0)` instead of `windowManager.destroy()`
+### Approach: Use `exit(0)` instead of `windowManager.destroy()` (macOS only)
 
 After `disposeAll()` closes all databases at the Dart level, call
 `exit(0)` to terminate the process cleanly. This bypasses the Flutter
