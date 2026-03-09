@@ -4712,6 +4712,113 @@ void main() {
     );
 
     test(
+      'SyncAgentEntity merge inserts fresh row when original no longer pending',
+      () async {
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldEntity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Old',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: oldVc,
+        );
+
+        final oldMessage = SyncMessage.agentEntity(
+          agentEntity: oldEntity,
+          status: SyncEntryStatus.update,
+        );
+
+        when(() => syncDatabase.findPendingByEntryId('agent-xyz')).thenAnswer(
+          (_) async => OutboxItem(
+            id: 42,
+            message: json.encode(oldMessage.toJson()),
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentEntity:agent-xyz',
+            priority: OutboxPriority.low.index,
+          ),
+        );
+
+        // Simulate row no longer pending (already sent)
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((_) async => 0);
+
+        final newEntity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Updated',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
+
+        final newMessage = SyncMessage.agentEntity(
+          agentEntity: newEntity,
+          status: SyncEntryStatus.update,
+        );
+
+        await service.enqueueMessage(newMessage);
+
+        // updateOutboxMessage was attempted but returned 0
+        verify(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: 42,
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).called(1);
+
+        // Fresh row inserted as fallback
+        final captured = verify(
+          () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
+        ).captured;
+        expect(captured, hasLength(1));
+        final companion = captured.first as OutboxCompanion;
+        expect(companion.outboxEntryId.value, 'agent-xyz');
+        expect(companion.subject.value, 'agentEntity:agent-xyz');
+
+        // Verify the inserted message has coveredVectorClocks
+        final decoded = SyncMessage.fromJson(
+          json.decode(companion.message.value) as Map<String, dynamic>,
+        );
+        expect(decoded, isA<SyncAgentEntity>());
+        final agentMsg = decoded as SyncAgentEntity;
+        expect(agentMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = agentMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([3, 5]));
+      },
+    );
+
+    test(
       'SyncAgentLink merge preserves coveredVectorClocks',
       () async {
         const oldVc = VectorClock({'hostA': 10});

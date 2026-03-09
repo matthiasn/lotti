@@ -805,16 +805,36 @@ class OutboxService {
 
           final mergedJson = json.encode(mergedMessage.toJson());
           final mergedPayloadSize = utf8.encode(mergedJson).length + fileLength;
-          await _syncDatabase.updateOutboxMessage(
+          final mergedPriority = math.min(
+            existingItem.priority,
+            commonFields.priority.value,
+          );
+          final affectedRows = await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
             newMessage: mergedJson,
             newSubject: '$hostHash:$localCounter',
             payloadSize: mergedPayloadSize,
-            priority: math.min(
-              existingItem.priority,
-              commonFields.priority.value,
-            ),
+            priority: mergedPriority,
           );
+
+          if (affectedRows == 0) {
+            // Row was no longer pending — insert fresh row with merged data
+            _loggingService.captureEvent(
+              'enqueue MERGE-MISS type=SyncJournalEntity id=${msg.id} '
+              '(row no longer pending, inserting fresh)',
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage',
+            );
+            await _syncDatabase.addOutboxItem(
+              commonFields.copyWith(
+                subject: Value('$hostHash:$localCounter'),
+                message: Value(mergedJson),
+                payloadSize: Value(mergedPayloadSize),
+                outboxEntryId: Value(msg.id),
+                priority: Value(mergedPriority),
+              ),
+            );
+          }
 
           // Log covered clocks for debugging
           final coveredVcStrings = coveredClocks
@@ -941,16 +961,37 @@ class OutboxService {
           );
 
           final mergedJson = json.encode(mergedMessage.toJson());
-          await _syncDatabase.updateOutboxMessage(
+          final mergedSize = utf8.encode(mergedJson).length;
+          final mergedPriority = math.min(
+            existingItem.priority,
+            commonFields.priority.value,
+          );
+          final affectedRows = await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
             newMessage: mergedJson,
             newSubject: subject,
-            payloadSize: utf8.encode(mergedJson).length,
-            priority: math.min(
-              existingItem.priority,
-              commonFields.priority.value,
-            ),
+            payloadSize: mergedSize,
+            priority: mergedPriority,
           );
+
+          if (affectedRows == 0) {
+            // Row was no longer pending — insert fresh row with merged data
+            _loggingService.captureEvent(
+              'enqueue MERGE-MISS type=SyncEntryLink id=$linkId '
+              '(row no longer pending, inserting fresh)',
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage',
+            );
+            await _syncDatabase.addOutboxItem(
+              commonFields.copyWith(
+                subject: Value(subject),
+                message: Value(mergedJson),
+                payloadSize: Value(mergedSize),
+                outboxEntryId: Value(linkId),
+                priority: Value(mergedPriority),
+              ),
+            );
+          }
 
           // Log covered clocks for debugging
           final coveredVcStrings = coveredClocks
@@ -1319,16 +1360,38 @@ class OutboxService {
 
       final mergedJson = json.encode(mergedMessage.toJson());
       final mergedSize = utf8.encode(mergedJson).length;
-      await _syncDatabase.updateOutboxMessage(
+      final mergedPriority = math.min(
+        existingItem.priority,
+        commonFields.priority.value,
+      );
+      final affectedRows = await _syncDatabase.updateOutboxMessage(
         itemId: existingItem.id,
         newMessage: mergedJson,
         newSubject: subject,
         payloadSize: mergedSize,
-        priority: math.min(
-          existingItem.priority,
-          commonFields.priority.value,
-        ),
+        priority: mergedPriority,
       );
+
+      if (affectedRows == 0) {
+        // Row was no longer pending (sent or in-flight between lookup and
+        // update). Insert a fresh row with the merged message so nothing is
+        // lost.
+        _loggingService.captureEvent(
+          'enqueue MERGE-MISS type=$typeName id=$id '
+          '(row no longer pending, inserting fresh)',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(
+            subject: Value(subject),
+            message: Value(mergedJson),
+            payloadSize: Value(mergedSize),
+            priority: Value(mergedPriority),
+            outboxEntryId: Value(id),
+          ),
+        );
+      }
 
       // Still record in sequence log for the new counter
       await _recordAgentSent(
