@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -1650,6 +1651,45 @@ void main() {
       expect(titledBuilder.items, hasLength(1));
       expect(result.added, 1);
       expect(result.redundant, 0);
+    });
+
+    test('logs resolved title count via domainLogger', () async {
+      final mockLogger = MockDomainLogger();
+      when(() => mockLogger.enabledDomains).thenReturn({'agent_workflow'});
+      when(
+        () => mockLogger.log(
+          any(),
+          any(),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+
+      final titledBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        existingChecklistTitlesResolver: () async => {'item a', 'item b'},
+        domainLogger: mockLogger,
+      );
+
+      await titledBuilder.addBatchItem(
+        toolName: 'add_multiple_checklist_items',
+        args: {
+          'items': [
+            {'title': 'Novel item'},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      verify(
+        () => mockLogger.log(
+          LogDomains.agentWorkflow,
+          any(that: contains('resolved 2 existing checklist')),
+          subDomain: any(named: 'subDomain'),
+        ),
+      ).called(1);
     });
   });
 

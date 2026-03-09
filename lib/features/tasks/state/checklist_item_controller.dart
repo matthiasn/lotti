@@ -104,7 +104,7 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
       final updated = current.copyWith(
         data: data.copyWith(
           isChecked: checked,
-          checkedBy: CheckedBySource.user,
+          checkedBy: ChangeSource.user,
           checkedAt: ref.read(clockProvider)(),
         ),
       );

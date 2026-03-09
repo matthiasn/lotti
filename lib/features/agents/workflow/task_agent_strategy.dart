@@ -529,6 +529,8 @@ class TaskAgentStrategy extends ConversationStrategy {
         'Set priority to ${args['priority'] ?? '?'}',
       TaskAgentToolNames.setTaskStatus =>
         'Set status to ${args['status'] ?? '?'}',
+      TaskAgentToolNames.setTaskLanguage =>
+        'Set language to "${args['languageCode'] ?? '?'}"',
       TaskAgentToolNames.assignTaskLabels => () {
         final labels = args['labels'];
         final count = labels is List ? labels.length : 0;

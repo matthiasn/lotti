@@ -953,7 +953,11 @@ $GeolocationCopyWith<$Res>? get geolocation {
 /// @nodoc
 mixin _$TaskData {
 
- TaskStatus get status; DateTime get dateFrom; DateTime get dateTo; List<TaskStatus> get statusHistory; String get title; DateTime? get due; Duration? get estimate; List<String>? get checklistIds; String? get languageCode;/// Set of label IDs the user explicitly removed and does not want suggested by AI.
+ TaskStatus get status; DateTime get dateFrom; DateTime get dateTo; List<TaskStatus> get statusHistory; String get title; DateTime? get due; Duration? get estimate; List<String>? get checklistIds; String? get languageCode;/// Who last set the language — `user` (via UI) or `agent` (tool call).
+///
+/// Defaults to [ChangeSource.user] so that existing tasks with a language
+/// already set are treated as user-set (safe default — never overwrite).
+@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource get languageSource;/// Set of label IDs the user explicitly removed and does not want suggested by AI.
 /// Stored as a Set in memory; serialized as an array in JSON.
  Set<String>? get aiSuppressedLabelIds; TaskPriority get priority;/// ID of a linked JournalImage to use as visual mnemonic / cover art.
 /// Displayed in task list thumbnails and detail view SliverAppBar.
@@ -972,16 +976,16 @@ $TaskDataCopyWith<TaskData> get copyWith => _$TaskDataCopyWithImpl<TaskData>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other.checklistIds, checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&const DeepCollectionEquality().equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other.statusHistory, statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other.checklistIds, checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other.aiSuppressedLabelIds, aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(statusHistory),title,due,estimate,const DeepCollectionEquality().hash(checklistIds),languageCode,const DeepCollectionEquality().hash(aiSuppressedLabelIds),priority,coverArtId,coverArtCropX);
+int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(statusHistory),title,due,estimate,const DeepCollectionEquality().hash(checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(aiSuppressedLabelIds),priority,coverArtId,coverArtCropX);
 
 @override
 String toString() {
-  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
+  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
 }
 
 
@@ -992,7 +996,7 @@ abstract mixin class $TaskDataCopyWith<$Res>  {
   factory $TaskDataCopyWith(TaskData value, $Res Function(TaskData) _then) = _$TaskDataCopyWithImpl;
 @useResult
 $Res call({
- TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX
+ TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX
 });
 
 
@@ -1009,7 +1013,7 @@ class _$TaskDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
   return _then(_self.copyWith(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -1020,7 +1024,8 @@ as String,due: freezed == due ? _self.due : due // ignore: cast_nullable_to_non_
 as DateTime?,estimate: freezed == estimate ? _self.estimate : estimate // ignore: cast_nullable_to_non_nullable
 as Duration?,checklistIds: freezed == checklistIds ? _self.checklistIds : checklistIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
-as String?,aiSuppressedLabelIds: freezed == aiSuppressedLabelIds ? _self.aiSuppressedLabelIds : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
+as String?,languageSource: null == languageSource ? _self.languageSource : languageSource // ignore: cast_nullable_to_non_nullable
+as ChangeSource,aiSuppressedLabelIds: freezed == aiSuppressedLabelIds ? _self.aiSuppressedLabelIds : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
 as Set<String>?,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as TaskPriority,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
@@ -1118,10 +1123,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _TaskData() when $default != null:
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
   return orElse();
 
 }
@@ -1139,10 +1144,10 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)  $default,) {final _that = this;
 switch (_that) {
 case _TaskData():
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1159,10 +1164,10 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( TaskStatus status,  DateTime dateFrom,  DateTime dateTo,  List<TaskStatus> statusHistory,  String title,  DateTime? due,  Duration? estimate,  List<String>? checklistIds,  String? languageCode, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource languageSource,  Set<String>? aiSuppressedLabelIds,  TaskPriority priority,  String? coverArtId,  double coverArtCropX)?  $default,) {final _that = this;
 switch (_that) {
 case _TaskData() when $default != null:
-return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
+return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_that.title,_that.due,_that.estimate,_that.checklistIds,_that.languageCode,_that.languageSource,_that.aiSuppressedLabelIds,_that.priority,_that.coverArtId,_that.coverArtCropX);case _:
   return null;
 
 }
@@ -1174,7 +1179,7 @@ return $default(_that.status,_that.dateFrom,_that.dateTo,_that.statusHistory,_th
 @JsonSerializable()
 
 class _TaskData implements TaskData {
-  const _TaskData({required this.status, required this.dateFrom, required this.dateTo, required final  List<TaskStatus> statusHistory, required this.title, this.due, this.estimate, final  List<String>? checklistIds, this.languageCode, final  Set<String>? aiSuppressedLabelIds, this.priority = TaskPriority.p2Medium, this.coverArtId, this.coverArtCropX = 0.5}): _statusHistory = statusHistory,_checklistIds = checklistIds,_aiSuppressedLabelIds = aiSuppressedLabelIds;
+  const _TaskData({required this.status, required this.dateFrom, required this.dateTo, required final  List<TaskStatus> statusHistory, required this.title, this.due, this.estimate, final  List<String>? checklistIds, this.languageCode, @JsonKey(unknownEnumValue: ChangeSource.user) this.languageSource = ChangeSource.user, final  Set<String>? aiSuppressedLabelIds, this.priority = TaskPriority.p2Medium, this.coverArtId, this.coverArtCropX = 0.5}): _statusHistory = statusHistory,_checklistIds = checklistIds,_aiSuppressedLabelIds = aiSuppressedLabelIds;
   factory _TaskData.fromJson(Map<String, dynamic> json) => _$TaskDataFromJson(json);
 
 @override final  TaskStatus status;
@@ -1200,6 +1205,11 @@ class _TaskData implements TaskData {
 }
 
 @override final  String? languageCode;
+/// Who last set the language — `user` (via UI) or `agent` (tool call).
+///
+/// Defaults to [ChangeSource.user] so that existing tasks with a language
+/// already set are treated as user-set (safe default — never overwrite).
+@override@JsonKey(unknownEnumValue: ChangeSource.user) final  ChangeSource languageSource;
 /// Set of label IDs the user explicitly removed and does not want suggested by AI.
 /// Stored as a Set in memory; serialized as an array in JSON.
  final  Set<String>? _aiSuppressedLabelIds;
@@ -1234,16 +1244,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other._checklistIds, _checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&const DeepCollectionEquality().equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TaskData&&(identical(other.status, status) || other.status == status)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&const DeepCollectionEquality().equals(other._statusHistory, _statusHistory)&&(identical(other.title, title) || other.title == title)&&(identical(other.due, due) || other.due == due)&&(identical(other.estimate, estimate) || other.estimate == estimate)&&const DeepCollectionEquality().equals(other._checklistIds, _checklistIds)&&(identical(other.languageCode, languageCode) || other.languageCode == languageCode)&&(identical(other.languageSource, languageSource) || other.languageSource == languageSource)&&const DeepCollectionEquality().equals(other._aiSuppressedLabelIds, _aiSuppressedLabelIds)&&(identical(other.priority, priority) || other.priority == priority)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(_statusHistory),title,due,estimate,const DeepCollectionEquality().hash(_checklistIds),languageCode,const DeepCollectionEquality().hash(_aiSuppressedLabelIds),priority,coverArtId,coverArtCropX);
+int get hashCode => Object.hash(runtimeType,status,dateFrom,dateTo,const DeepCollectionEquality().hash(_statusHistory),title,due,estimate,const DeepCollectionEquality().hash(_checklistIds),languageCode,languageSource,const DeepCollectionEquality().hash(_aiSuppressedLabelIds),priority,coverArtId,coverArtCropX);
 
 @override
 String toString() {
-  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
+  return 'TaskData(status: $status, dateFrom: $dateFrom, dateTo: $dateTo, statusHistory: $statusHistory, title: $title, due: $due, estimate: $estimate, checklistIds: $checklistIds, languageCode: $languageCode, languageSource: $languageSource, aiSuppressedLabelIds: $aiSuppressedLabelIds, priority: $priority, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
 }
 
 
@@ -1254,7 +1264,7 @@ abstract mixin class _$TaskDataCopyWith<$Res> implements $TaskDataCopyWith<$Res>
   factory _$TaskDataCopyWith(_TaskData value, $Res Function(_TaskData) _then) = __$TaskDataCopyWithImpl;
 @override @useResult
 $Res call({
- TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX
+ TaskStatus status, DateTime dateFrom, DateTime dateTo, List<TaskStatus> statusHistory, String title, DateTime? due, Duration? estimate, List<String>? checklistIds, String? languageCode,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource languageSource, Set<String>? aiSuppressedLabelIds, TaskPriority priority, String? coverArtId, double coverArtCropX
 });
 
 
@@ -1271,7 +1281,7 @@ class __$TaskDataCopyWithImpl<$Res>
 
 /// Create a copy of TaskData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? status = null,Object? dateFrom = null,Object? dateTo = null,Object? statusHistory = null,Object? title = null,Object? due = freezed,Object? estimate = freezed,Object? checklistIds = freezed,Object? languageCode = freezed,Object? languageSource = null,Object? aiSuppressedLabelIds = freezed,Object? priority = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
   return _then(_TaskData(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as TaskStatus,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
@@ -1282,7 +1292,8 @@ as String,due: freezed == due ? _self.due : due // ignore: cast_nullable_to_non_
 as DateTime?,estimate: freezed == estimate ? _self.estimate : estimate // ignore: cast_nullable_to_non_nullable
 as Duration?,checklistIds: freezed == checklistIds ? _self._checklistIds : checklistIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,languageCode: freezed == languageCode ? _self.languageCode : languageCode // ignore: cast_nullable_to_non_nullable
-as String?,aiSuppressedLabelIds: freezed == aiSuppressedLabelIds ? _self._aiSuppressedLabelIds : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
+as String?,languageSource: null == languageSource ? _self.languageSource : languageSource // ignore: cast_nullable_to_non_nullable
+as ChangeSource,aiSuppressedLabelIds: freezed == aiSuppressedLabelIds ? _self._aiSuppressedLabelIds : aiSuppressedLabelIds // ignore: cast_nullable_to_non_nullable
 as Set<String>?,priority: null == priority ? _self.priority : priority // ignore: cast_nullable_to_non_nullable
 as TaskPriority,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
 as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable

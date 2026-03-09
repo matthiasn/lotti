@@ -330,7 +330,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       // When the user last toggled isChecked, the agent needs a substantive
       // reason citing post-dated evidence to override it. We enforce a
       // minimum length to prevent trivial/hallucinated justifications.
-      if (isCheckedChanged && entity.data.checkedBy == CheckedBySource.user) {
+      if (isCheckedChanged && entity.data.checkedBy == ChangeSource.user) {
         final checkedAtStr =
             entity.data.checkedAt?.toIso8601String() ?? 'unknown';
         final trimmedReason = reason?.trim() ?? '';
@@ -375,7 +375,7 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
         isChecked: newIsChecked ?? currentIsChecked,
         title: newTitle ?? currentTitle,
         checkedBy: isCheckedChanged
-            ? CheckedBySource.agent
+            ? ChangeSource.agent
             : entity.data.checkedBy,
         checkedAt: isCheckedChanged ? _clock() : entity.data.checkedAt,
       );

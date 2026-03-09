@@ -240,6 +240,10 @@ void main() {
       expect(find.text('Confirmed item'), findsOneWidget);
       expect(find.text('Rejected item'), findsOneWidget);
 
+      // Resolved tiles show tool name as subtitle (matching pending tiles).
+      expect(find.text('update_task_estimate'), findsOneWidget);
+      expect(find.text('set_task_title'), findsOneWidget);
+
       // Check icons: check_circle for confirmed, cancel for rejected.
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
       expect(find.byIcon(Icons.cancel), findsOneWidget);

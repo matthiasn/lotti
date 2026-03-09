@@ -372,7 +372,7 @@ void main() {
         expect(updatedState.value?.data.isChecked, isTrue);
         expect(
           updatedState.value?.data.checkedBy,
-          CheckedBySource.user,
+          ChangeSource.user,
         );
         expect(updatedState.value?.data.checkedAt, fixedTime);
 
@@ -400,7 +400,7 @@ void main() {
             title: 'Checked Item',
             isChecked: true,
             linkedChecklists: ['checklist-1'],
-            checkedBy: CheckedBySource.agent,
+            checkedBy: ChangeSource.agent,
           ),
         );
 
@@ -445,7 +445,7 @@ void main() {
         // Provenance flips from agent to user
         expect(
           updatedState.value?.data.checkedBy,
-          CheckedBySource.user,
+          ChangeSource.user,
         );
         expect(updatedState.value?.data.checkedAt, fixedTime);
       });

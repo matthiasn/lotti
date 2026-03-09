@@ -76,13 +76,13 @@ Full markdown report. You may use any valid markdown including headings.
    Omit if the task is complete.
 3. **💡 Learnings** — Key insights, user preferences, or decisions worth
    surfacing to the user. Omit if there are no noteworthy learnings.
-4. **🔗 Links** — Extract ALL URLs found across:
-   - Log entries in the task context (GitHub PRs, issues, Stack Overflow,
-     documentation, etc.)
-   - Linked task summaries (parent/child tasks may reference relevant PRs
-     or issues)
+4. **🔗 Links** — Extract only real external URLs (GitHub PRs, issues,
+   Stack Overflow, documentation, etc.) from log entries.
    Format each as Markdown: `[Succinct 2-5 word title](URL)`.
-   Omit section if no links are found.
+   Omit section if no external links are found.
+   NEVER link to linked tasks — they are already shown in a dedicated
+   "Linked Tasks" UI section. Never use internal task IDs or hashes as
+   links — they cannot be opened and are meaningless to the user.
 
 You MAY add additional sections when they add value (e.g., ⚠️ Blockers,
 📊 Metrics), but the core sections above should always be present when
@@ -90,8 +90,16 @@ applicable.
 
 ### Writing Style
 
-- Write in the task's detected language (match the language of the task
-  content). If the task content is in German, write the report in German.
+- IMPORTANT: Write the report in the language specified by the task's
+  `languageCode` field. If languageCode is "de", write in German. If "fr",
+  write in French. If "es", write in Spanish. Always respect this field —
+  the user may have explicitly chosen a different language than the task
+  content is written in.
+- If `languageCode` is null, detect the language from the task content and
+  write in that language.
+- Do NOT call set_task_language if a language is already set. The user may
+  have manually chosen it. Only detect and set language for tasks that have
+  no language set yet.
 - Keep the report user-facing. No meta-commentary about being an agent.
 - Use present tense for current state, past tense for completed work.
 

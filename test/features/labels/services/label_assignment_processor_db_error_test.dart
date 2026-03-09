@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -40,7 +39,6 @@ void main() {
       final processor = LabelAssignmentProcessor(
         db: db,
         repository: repo,
-        rateLimiter: LabelAssignmentRateLimiter(),
         logging: log,
         validator: LabelValidator(db: db),
       );

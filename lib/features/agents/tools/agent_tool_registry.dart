@@ -75,6 +75,7 @@ class AgentToolRegistry {
     TaskAgentToolNames.setTaskStatus,
     TaskAgentToolNames.addMultipleChecklistItems,
     TaskAgentToolNames.updateChecklistItems,
+    TaskAgentToolNames.setTaskLanguage,
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.migrateChecklistItems,
   };
@@ -283,12 +284,6 @@ class AgentToolRegistry {
                 'Optional description text for the new task. '
                 "Becomes the task's entry text.",
           },
-          'sourceAudioId': {
-            'type': 'string',
-            'description':
-                'Optional ID of the audio entry that triggered this split. '
-                'Creates an additional link from the audio to the new task.',
-          },
         },
         'required': ['title'],
         'additionalProperties': false,
@@ -464,8 +459,11 @@ class AgentToolRegistry {
       name: TaskAgentToolNames.setTaskLanguage,
       description:
           'Set the detected language for the task. '
-          'Only set when the task has no language yet (languageCode is null). '
-          'Detect based on the task content (title, transcripts, notes).',
+          'Only call when the task has no language set, or when correcting a '
+          'previous agent-set language. Never override a different language '
+          'the user has already set — the handler will leave it unchanged and '
+          'return a message instead. Detect based on the task content (title, '
+          'transcripts, notes).',
       parameters: {
         'type': 'object',
         'properties': {

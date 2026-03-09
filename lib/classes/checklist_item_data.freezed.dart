@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ChecklistItemData {
 
- String get title; bool get isChecked; List<String> get linkedChecklists; bool get isArchived; String? get id;@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource get checkedBy; DateTime? get checkedAt;
+ String get title; bool get isChecked; List<String> get linkedChecklists; bool get isArchived; String? get id;@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource get checkedBy; DateTime? get checkedAt;
 /// Create a copy of ChecklistItemData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -48,7 +48,7 @@ abstract mixin class $ChecklistItemDataCopyWith<$Res>  {
   factory $ChecklistItemDataCopyWith(ChecklistItemData value, $Res Function(ChecklistItemData) _then) = _$ChecklistItemDataCopyWithImpl;
 @useResult
 $Res call({
- String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource checkedBy, DateTime? checkedAt
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt
 });
 
 
@@ -73,7 +73,7 @@ as bool,linkedChecklists: null == linkedChecklists ? _self.linkedChecklists : li
 as List<String>,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
-as CheckedBySource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
+as ChangeSource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }
@@ -159,7 +159,7 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ChecklistItemData() when $default != null:
 return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
@@ -180,7 +180,7 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt)  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemData():
 return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
@@ -200,7 +200,7 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: CheckedBySource.user)  CheckedBySource checkedBy,  DateTime? checkedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  bool isChecked,  List<String> linkedChecklists,  bool isArchived,  String? id, @JsonKey(unknownEnumValue: ChangeSource.user)  ChangeSource checkedBy,  DateTime? checkedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _ChecklistItemData() when $default != null:
 return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchived,_that.id,_that.checkedBy,_that.checkedAt);case _:
@@ -215,7 +215,7 @@ return $default(_that.title,_that.isChecked,_that.linkedChecklists,_that.isArchi
 @JsonSerializable()
 
 class _ChecklistItemData implements ChecklistItemData {
-  const _ChecklistItemData({required this.title, required this.isChecked, required final  List<String> linkedChecklists, this.isArchived = false, this.id, @JsonKey(unknownEnumValue: CheckedBySource.user) this.checkedBy = CheckedBySource.user, this.checkedAt}): _linkedChecklists = linkedChecklists;
+  const _ChecklistItemData({required this.title, required this.isChecked, required final  List<String> linkedChecklists, this.isArchived = false, this.id, @JsonKey(unknownEnumValue: ChangeSource.user) this.checkedBy = ChangeSource.user, this.checkedAt}): _linkedChecklists = linkedChecklists;
   factory _ChecklistItemData.fromJson(Map<String, dynamic> json) => _$ChecklistItemDataFromJson(json);
 
 @override final  String title;
@@ -229,7 +229,7 @@ class _ChecklistItemData implements ChecklistItemData {
 
 @override@JsonKey() final  bool isArchived;
 @override final  String? id;
-@override@JsonKey(unknownEnumValue: CheckedBySource.user) final  CheckedBySource checkedBy;
+@override@JsonKey(unknownEnumValue: ChangeSource.user) final  ChangeSource checkedBy;
 @override final  DateTime? checkedAt;
 
 /// Create a copy of ChecklistItemData
@@ -265,7 +265,7 @@ abstract mixin class _$ChecklistItemDataCopyWith<$Res> implements $ChecklistItem
   factory _$ChecklistItemDataCopyWith(_ChecklistItemData value, $Res Function(_ChecklistItemData) _then) = __$ChecklistItemDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: CheckedBySource.user) CheckedBySource checkedBy, DateTime? checkedAt
+ String title, bool isChecked, List<String> linkedChecklists, bool isArchived, String? id,@JsonKey(unknownEnumValue: ChangeSource.user) ChangeSource checkedBy, DateTime? checkedAt
 });
 
 
@@ -290,7 +290,7 @@ as bool,linkedChecklists: null == linkedChecklists ? _self._linkedChecklists : l
 as List<String>,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,id: freezed == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String?,checkedBy: null == checkedBy ? _self.checkedBy : checkedBy // ignore: cast_nullable_to_non_nullable
-as CheckedBySource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
+as ChangeSource,checkedAt: freezed == checkedAt ? _self.checkedAt : checkedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
 }

@@ -257,7 +257,7 @@ Do NOT recreate the items that were already successful.''';
               title: description,
               isChecked: false,
               linkedChecklists: [],
-              checkedBy: CheckedBySource.agent,
+              checkedBy: ChangeSource.agent,
             ),
           ],
           title: 'TODOs',
@@ -288,7 +288,7 @@ Do NOT recreate the items that were already successful.''';
           title: description,
           isChecked: false,
           categoryId: currentTask.meta.categoryId,
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         );
 
         if (newItem != null) {

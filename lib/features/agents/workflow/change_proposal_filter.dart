@@ -14,6 +14,7 @@ typedef TaskMetadataSnapshot = ({
   String? priority,
   int? estimateMinutes,
   String? dueDate,
+  String? languageCode,
 });
 
 /// Callback that resolves the current metadata of the task being operated on.
@@ -58,6 +59,7 @@ class ChangeProposalFilter {
       priority: data.priority.short,
       estimateMinutes: data.estimate?.inMinutes,
       dueDate: formatIsoDate(data.due),
+      languageCode: data.languageCode,
     );
   }
 
@@ -124,6 +126,13 @@ class ChangeProposalFilter {
         final title = args['title'];
         if (title is String && snapshot.title == title) {
           return 'Skipped: title is already "$title".';
+        }
+      case TaskAgentToolNames.setTaskLanguage:
+        final languageCode = args['languageCode'];
+        if (languageCode is String &&
+            snapshot.languageCode?.toLowerCase() ==
+                languageCode.trim().toLowerCase()) {
+          return 'Skipped: language is already "$languageCode".';
         }
     }
     return null;

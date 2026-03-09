@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -39,6 +40,8 @@ class TaskLanguageHandler {
   /// Sets the task language to [languageCode].
   ///
   /// Returns a no-op success if the task already has the requested language.
+  /// Returns a success with no change if the task has a user-set language
+  /// (agent cannot override user-set languages).
   /// Returns an error if the language code is not in [SupportedLanguage].
   Future<TaskLanguageResult> handle(String languageCode) async {
     final trimmed = languageCode.trim().toLowerCase();
@@ -71,7 +74,7 @@ class TaskLanguageHandler {
       );
     }
 
-    // No-op if language already matches.
+    // No-op if language already matches (regardless of source).
     if (task.data.languageCode == trimmed) {
       final message = 'Language is already "$trimmed". No change needed.';
       developer.log(
@@ -85,8 +88,25 @@ class TaskLanguageHandler {
       );
     }
 
+    // Guard: never overwrite a user-set language with a different value.
+    if (task.data.languageCode != null &&
+        task.data.languageSource == ChangeSource.user) {
+      final message =
+          'Language was manually set by user to "${task.data.languageCode}". '
+          'Agent cannot override user-set language.';
+      developer.log(message, name: 'TaskLanguageHandler');
+      return TaskLanguageResult(
+        success: true,
+        message: message,
+        updatedTask: task,
+      );
+    }
+
     final updatedTask = task.copyWith(
-      data: task.data.copyWith(languageCode: trimmed),
+      data: task.data.copyWith(
+        languageCode: trimmed,
+        languageSource: ChangeSource.agent,
+      ),
     );
 
     try {

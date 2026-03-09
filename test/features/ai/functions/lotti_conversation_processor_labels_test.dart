@@ -16,7 +16,6 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -152,18 +151,12 @@ void main() {
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<LoggingService>(mockLoggingService)
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<LabelAssignmentRateLimiter>(
-        LabelAssignmentRateLimiter(),
-      )
       // Also register mock LabelsRepository for processor fallback
       ..registerSingleton<LabelsRepository>(mockLabelsRepo);
     // Event service needed by LabelAssignmentProcessor for UI notifications
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );
-    // Ensure no cross-test rate limiting state persists
-    getIt<LabelAssignmentRateLimiter>().clearHistory();
-
     // Set up container with provider overrides
     container = ProviderContainer(
       overrides: [
@@ -746,9 +739,6 @@ void main() {
     // With Phase 2 cap (≤3) and selection order, only 'valid-1' is assigned.
     expect(firstAssigned, equals(['valid-1']));
     expect(firstInvalid, containsAll(['typo-id', 'deleted-id']));
-
-    // Clear rate limiter before retry to allow second assignment
-    getIt<LabelAssignmentRateLimiter>().clearHistory();
 
     // Second attempt with corrected IDs - MockConversationRepository provides createConversation and getConversation
 

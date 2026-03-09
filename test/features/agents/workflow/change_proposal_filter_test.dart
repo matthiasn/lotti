@@ -116,6 +116,7 @@ void main() {
           priority: 'P2',
           estimateMinutes: null as int?,
           dueDate: null as String?,
+          languageCode: null as String?,
         );
         final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
           'update_task_estimate',
@@ -161,6 +162,7 @@ void main() {
           priority: null as String?,
           estimateMinutes: null as int?,
           dueDate: null as String?,
+          languageCode: null as String?,
         );
         final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
           'update_task_priority',
@@ -197,6 +199,7 @@ void main() {
           priority: 'P2',
           estimateMinutes: null as int?,
           dueDate: null as String?,
+          languageCode: null as String?,
         );
         final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
           'update_task_due_date',
@@ -244,6 +247,52 @@ void main() {
           baseSnapshot,
         );
         expect(result, isNull);
+      });
+    });
+
+    group('set_task_language', () {
+      test('returns skip message when language matches', () {
+        final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
+          'set_task_language',
+          {'languageCode': 'en', 'confidence': 'high'},
+          baseSnapshot,
+        );
+        expect(result, 'Skipped: language is already "en".');
+      });
+
+      test('returns null when language differs', () {
+        final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
+          'set_task_language',
+          {'languageCode': 'de', 'confidence': 'high'},
+          baseSnapshot,
+        );
+        expect(result, isNull);
+      });
+
+      test('returns null when current language is null', () {
+        const snapshot = (
+          title: 'Test',
+          status: 'OPEN',
+          priority: 'P2',
+          estimateMinutes: null as int?,
+          dueDate: null as String?,
+          languageCode: null as String?,
+        );
+        final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
+          'set_task_language',
+          {'languageCode': 'en', 'confidence': 'high'},
+          snapshot,
+        );
+        expect(result, isNull);
+      });
+
+      test('normalizes case when comparing language codes', () {
+        final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
+          'set_task_language',
+          {'languageCode': 'EN', 'confidence': 'high'},
+          baseSnapshot,
+        );
+        expect(result, 'Skipped: language is already "EN".');
       });
     });
 
@@ -313,6 +362,7 @@ void main() {
       expect(snapshot.priority, 'P1');
       expect(snapshot.estimateMinutes, 120);
       expect(snapshot.dueDate, '2026-03-15');
+      expect(snapshot.languageCode, isNull);
     });
 
     test('returns null for non-Task entity', () async {

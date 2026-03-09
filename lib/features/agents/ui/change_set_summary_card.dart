@@ -348,10 +348,21 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
           decoration: TextDecoration.lineThrough,
         ),
       ),
-      trailing: Icon(
-        isConfirmed ? Icons.check_circle : Icons.cancel,
-        size: 20,
-        color: isConfirmed ? Colors.green.shade700 : context.colorScheme.error,
+      subtitle: Text(
+        _item.toolName,
+        style: context.textTheme.bodySmall?.copyWith(
+          color: context.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: SizedBox(
+        height: 48,
+        child: Icon(
+          isConfirmed ? Icons.check_circle : Icons.cancel,
+          size: 24,
+          color: isConfirmed
+              ? Colors.green.shade700
+              : context.colorScheme.error,
+        ),
       ),
     );
   }

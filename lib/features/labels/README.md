@@ -126,8 +126,6 @@ AI label suggestions respect task categories to prevent inappropriate assignment
 - Function tool: The model calls `assign_task_labels` with `labelIds: string[]`. The system
   enforces add‑only semantics (no removal) and caps assignments per call using
   `kMaxLabelsPerAssignment` (default 5).
-- Rate limiting: A shared `LabelAssignmentRateLimiter` prevents repeated assignments for the same
-  task within a 5‑minute window.
 - Shadow mode: When `ai_label_assignment_shadow` is true, assignments are computed and reported to
   the model but not persisted.
 - UI feedback: After successful persistence, a non‑blocking SnackBar appears in Task Details listing
@@ -152,7 +150,7 @@ AI label suggestions respect task categories to prevent inappropriate assignment
 
 ### Testing
 
-- Unit tests cover processor logic (caps, rate limiting, shadow mode) and helper
+- Unit tests cover processor logic (caps, shadow mode) and helper
   prompt injection (caps, escaping, flag gating). Conversation and unified repo tests exercise the
   function call path end‑to‑end.
 

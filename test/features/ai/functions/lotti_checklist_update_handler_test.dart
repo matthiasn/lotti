@@ -57,7 +57,7 @@ class TestDataFactory {
     String? title,
     bool isChecked = false,
     List<String>? linkedChecklists,
-    CheckedBySource checkedBy = CheckedBySource.user,
+    ChangeSource checkedBy = ChangeSource.user,
     DateTime? checkedAt,
   }) {
     final itemId = id ?? _uuid.v4();
@@ -449,7 +449,7 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Buy groceries',
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -643,7 +643,7 @@ void main() {
         final validItem = TestDataFactory.createChecklistItem(
           id: 'valid-item',
           title: 'Valid',
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -740,7 +740,7 @@ void main() {
 
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         );
 
         final refreshedTask = TestDataFactory.createTask(
@@ -880,7 +880,7 @@ void main() {
         final item = TestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Original',
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
         );
 
         final mockSelectable = MockSelectable<JournalDbEntity>();
@@ -1038,7 +1038,7 @@ void main() {
           title: 'Write tests',
           isChecked: true,
           checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+              ChangeSource.user, // ignore: avoid_redundant_argument_values
           checkedAt: DateTime(2026, 2, 28, 22),
         );
         stubSingleItem(item);
@@ -1090,7 +1090,7 @@ void main() {
             id: 'item-1',
             title: 'Not done yet',
             checkedBy:
-                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+                ChangeSource.user, // ignore: avoid_redundant_argument_values
             checkedAt: DateTime(2026, 2, 28, 22),
           );
           stubSingleItem(item);
@@ -1132,7 +1132,7 @@ void main() {
             title: 'Deploy to prod',
             isChecked: true,
             checkedBy:
-                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+                ChangeSource.user, // ignore: avoid_redundant_argument_values
             checkedAt: DateTime(2026, 2, 28, 22),
           );
           stubSingleItem(item);
@@ -1176,7 +1176,7 @@ void main() {
                   as ChecklistItemData;
 
           expect(captured.isChecked, false);
-          expect(captured.checkedBy, CheckedBySource.agent);
+          expect(captured.checkedBy, ChangeSource.agent);
           expect(captured.checkedAt, clockTime);
         },
       );
@@ -1186,7 +1186,7 @@ void main() {
           id: 'item-1',
           title: 'Auto-detected task',
           isChecked: true,
-          checkedBy: CheckedBySource.agent,
+          checkedBy: ChangeSource.agent,
           checkedAt: DateTime(2026, 2, 28, 21),
         );
         stubSingleItem(item);
@@ -1226,7 +1226,7 @@ void main() {
                 as ChecklistItemData;
 
         expect(captured.isChecked, false);
-        expect(captured.checkedBy, CheckedBySource.agent);
+        expect(captured.checkedBy, ChangeSource.agent);
         expect(captured.checkedAt, clockTime);
       });
 
@@ -1238,7 +1238,7 @@ void main() {
             title: 'mac OS setup',
             isChecked: true,
             checkedBy:
-                CheckedBySource.user, // ignore: avoid_redundant_argument_values
+                ChangeSource.user, // ignore: avoid_redundant_argument_values
             checkedAt: DateTime(2026, 2, 28, 22),
           );
           stubSingleItem(item);
@@ -1289,7 +1289,7 @@ void main() {
           // isChecked should remain unchanged (user's value)
           expect(captured.isChecked, true);
           // checkedBy should remain user since isChecked wasn't changed
-          expect(captured.checkedBy, CheckedBySource.user);
+          expect(captured.checkedBy, ChangeSource.user);
         },
       );
 
@@ -1337,7 +1337,7 @@ void main() {
           title: 'Task item',
           isChecked: true,
           checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+              ChangeSource.user, // ignore: avoid_redundant_argument_values
           checkedAt: DateTime(2026, 2, 28, 22),
         );
         stubSingleItem(item);
@@ -1377,7 +1377,7 @@ void main() {
           title: 'mac OS',
           isChecked: true,
           checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+              ChangeSource.user, // ignore: avoid_redundant_argument_values
           checkedAt: DateTime(2026, 2, 28, 22),
         );
         stubSingleItem(item);
@@ -1415,7 +1415,7 @@ void main() {
                 as ChecklistItemData;
 
         // Provenance should be preserved (no isChecked change)
-        expect(captured.checkedBy, CheckedBySource.user);
+        expect(captured.checkedBy, ChangeSource.user);
         expect(captured.checkedAt, DateTime(2026, 2, 28, 22));
       });
 
@@ -1425,7 +1425,7 @@ void main() {
           title: 'Task item',
           isChecked: true,
           checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+              ChangeSource.user, // ignore: avoid_redundant_argument_values
           checkedAt: DateTime(2026, 2, 28, 22),
         );
         stubSingleItem(item);
@@ -1468,7 +1468,7 @@ void main() {
           title: 'mac OS setup',
           isChecked: true,
           checkedBy:
-              CheckedBySource.user, // ignore: avoid_redundant_argument_values
+              ChangeSource.user, // ignore: avoid_redundant_argument_values
           checkedAt: DateTime(2026, 2, 28, 22),
         );
         stubSingleItem(item);

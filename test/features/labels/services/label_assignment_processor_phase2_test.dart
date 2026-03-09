@@ -2,13 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockLimiter extends Mock implements LabelAssignmentRateLimiter {}
 
 void main() {
   setUpAll(() {
@@ -17,23 +14,19 @@ void main() {
   });
   late MockLabelsRepository mockRepo;
   late MockLoggingService mockLogging;
-  late MockLimiter mockLimiter;
   late MockJournalDb mockDb;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockRepo = MockLabelsRepository();
     mockLogging = MockLoggingService();
-    mockLimiter = MockLimiter();
     mockDb = MockJournalDb();
-    when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );
     processor = LabelAssignmentProcessor(
       db: mockDb,
       repository: mockRepo,
-      rateLimiter: mockLimiter,
       logging: mockLogging,
     );
   });

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/change_source.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -38,6 +39,7 @@ class TaskLanguageWrapper extends ConsumerWidget {
         final updatedTask = task.copyWith(
           data: task.data.copyWith(
             languageCode: newLanguageCode,
+            languageSource: ChangeSource.user,
           ),
         );
         final updateSucceeded = await ref

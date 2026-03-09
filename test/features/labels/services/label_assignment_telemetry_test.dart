@@ -6,14 +6,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockLimiter extends Mock implements LabelAssignmentRateLimiter {}
 
 void main() {
   setUpAll(() {
@@ -25,16 +22,13 @@ void main() {
   late MockJournalDb mockDb;
   late MockLabelsRepository mockRepo;
   late MockLoggingService mockLogging;
-  late MockLimiter mockLimiter;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = MockLabelsRepository();
     mockLogging = MockLoggingService();
-    mockLimiter = MockLimiter();
 
-    when(() => mockLimiter.isRateLimited(any())).thenReturn(false);
     when(
       () => mockRepo.addLabels(
         journalEntityId: any(named: 'journalEntityId'),
@@ -60,14 +54,12 @@ void main() {
 
     // Register mocks that LabelAssignmentProcessor may access indirectly
     getIt
-      ..registerSingleton<LabelAssignmentRateLimiter>(mockLimiter)
       ..registerSingleton<LoggingService>(mockLogging)
       ..registerSingleton<JournalDb>(mockDb);
 
     processor = LabelAssignmentProcessor(
       db: mockDb,
       repository: mockRepo,
-      rateLimiter: mockLimiter,
       logging: mockLogging,
     );
   });

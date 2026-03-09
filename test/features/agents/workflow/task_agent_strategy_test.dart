@@ -1243,6 +1243,7 @@ void main() {
           'update_task_due_date': {'dueDate': '2024-06-30'},
           'update_task_priority': {'priority': 'P1'},
           'set_task_status': {'status': 'GROOMED'},
+          'set_task_language': {'languageCode': 'de'},
           'assign_task_labels': {
             'labels': [
               {'id': 'l1', 'confidence': 'high'},
@@ -1268,18 +1269,19 @@ void main() {
           );
         }
 
-        expect(csBuilder.items, hasLength(6));
+        expect(csBuilder.items, hasLength(7));
         expect(csBuilder.items[0].humanSummary, 'Set title to "Fix login bug"');
         expect(csBuilder.items[1].humanSummary, 'Set estimate to 60 minutes');
         expect(csBuilder.items[2].humanSummary, 'Set due date to 2024-06-30');
         expect(csBuilder.items[3].humanSummary, 'Set priority to P1');
         expect(csBuilder.items[4].humanSummary, 'Set status to GROOMED');
+        expect(csBuilder.items[5].humanSummary, 'Set language to "de"');
         // Labels are now exploded into individual items via batch path.
         expect(
-          csBuilder.items[5].humanSummary,
+          csBuilder.items[6].humanSummary,
           contains('Assign label:'),
         );
-        expect(csBuilder.items[5].toolName, 'assign_task_label');
+        expect(csBuilder.items[6].toolName, 'assign_task_label');
       });
 
       test('handles malformed labels arg without crashing', () async {

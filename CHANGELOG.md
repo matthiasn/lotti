@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.913] - 2026-03-09
+### Fixed
+- Change set UI stability: resolved tiles now match pending tile height
+  (added tool name subtitle and matched icon size) to prevent vertical
+  jumpiness when items are confirmed or rejected.
+- Label assignment: removed unnecessary rate limiter that blocked
+  subsequent label confirmations in exploded change set batches.
+- Follow-up task handler: removed `sourceAudioId` parameter that the LLM
+  could not reliably provide, eliminating UNIQUE constraint errors from
+  hallucinated IDs.
+- Database: `upsertEntryLink` now guards against duplicate
+  `(from_id, to_id, type)` links instead of crashing with UNIQUE constraint
+  violation.
+
+### Improved
+- Checklist dedup diagnostics: added logging of resolved title count
+  in the change set builder for easier troubleshooting.
+
 ## [0.9.912] - 2026-03-09
 ### Fixed
 - Flicker on task details page.

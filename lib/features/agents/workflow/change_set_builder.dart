@@ -568,6 +568,11 @@ class ChangeSetBuilder {
       try {
         // Copy to a mutable set so callers can add in-wake titles.
         _cachedExistingTitles = {...await resolver()};
+        domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'resolved ${_cachedExistingTitles!.length} existing checklist '
+          'title(s) for dedup',
+        );
       } catch (e, s) {
         domainLogger?.error(
           LogDomains.agentWorkflow,

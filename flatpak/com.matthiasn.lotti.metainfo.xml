@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.913" date="2026-03-09">
+      <description>
+          <p>Fixed change set UI stability: resolved tiles now match pending tile height to prevent jumpiness. Removed unnecessary label assignment rate limiter that blocked batch confirmations. Fixed follow-up task handler: removed unreliable sourceAudioId parameter that caused UNIQUE constraint errors. Fixed database UNIQUE constraint crash when creating duplicate entry links.</p>
+      </description>
+    </release>
     <release version="0.9.911" date="2026-03-09">
       <description>
           <p>Fixed macOS crash on close: skip SQLite database close entirely before exit(0) to avoid SIGABRT in sqlite3_close_v2 during VM teardown. SQLite WAL mode ensures data integrity without explicit close.</p>

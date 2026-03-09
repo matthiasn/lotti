@@ -6,7 +6,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/labels/constants/label_assignment_constants.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
-import 'package:lotti/features/labels/services/label_assignment_rate_limiter.dart';
 import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -16,20 +15,11 @@ class LabelAssignmentResult {
     required this.assigned,
     required this.invalid,
     required this.skipped,
-    this.rateLimited = false,
   });
-
-  factory LabelAssignmentResult.rateLimited() => LabelAssignmentResult(
-    assigned: const [],
-    invalid: const [],
-    skipped: const [],
-    rateLimited: true,
-  );
 
   final List<String> assigned;
   final List<String> invalid;
   final List<Map<String, String>> skipped;
-  final bool rateLimited;
 
   /// Returns a structured JSON summary suitable for returning to the model.
   ///
@@ -66,17 +56,14 @@ class LabelAssignmentProcessor {
   LabelAssignmentProcessor({
     JournalDb? db,
     LabelsRepository? repository,
-    LabelAssignmentRateLimiter? rateLimiter,
     LoggingService? logging,
     LabelValidator? validator,
   }) : _repository = repository ?? getIt<LabelsRepository>(),
-       _rateLimiter = rateLimiter ?? getIt<LabelAssignmentRateLimiter>(),
        _logging = logging ?? getIt<LoggingService>(),
        _validator = validator ?? LabelValidator(db: db),
        _db = db;
 
   final LabelsRepository _repository;
-  final LabelAssignmentRateLimiter _rateLimiter;
   final LoggingService _logging;
   final LabelValidator _validator;
   final JournalDb? _db;
@@ -142,15 +129,6 @@ class LabelAssignmentProcessor {
         skipped: const [],
       );
     }
-    if (_rateLimiter.isRateLimited(taskId)) {
-      _logging.captureEvent(
-        'Rate limited label assignment for task $taskId',
-        domain: 'labels_ai_assignment',
-        subDomain: 'processor',
-      );
-      return LabelAssignmentResult.rateLimited();
-    }
-
     final assigned = <String>[];
     final invalid = <String>[];
     final skipped = <Map<String, String>>[];
@@ -277,7 +255,6 @@ class LabelAssignmentProcessor {
         journalEntityId: taskId,
         addedLabelIds: assigned,
       );
-      _rateLimiter.recordAssignment(taskId);
       // Publish event for UI (toast + undo) when event bus is available
       try {
         if (getIt.isRegistered<LabelAssignmentEventService>()) {
