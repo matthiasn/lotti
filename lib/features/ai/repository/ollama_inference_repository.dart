@@ -426,9 +426,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                     i;
                 toolCallsList.add({
                   'index': ollamaIndex,
-                  'id':
-                      toolCall['id'] ??
-                      'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
+                  if (toolCall['id'] != null) 'id': toolCall['id'],
                   'type': 'function',
                   'function': {
                     'name': functionCall['name'],

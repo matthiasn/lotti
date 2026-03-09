@@ -115,24 +115,34 @@ class ModelPrepopulationService {
     if (providers.isEmpty) return;
 
     final allModels = await _repository.getConfigsByType(AiConfigType.model);
-    final existingModels = allModels.whereType<AiConfigModel>().toList();
+
+    // Group models by provider ID for O(Providers + Models) lookup.
+    final modelsByProviderId = <String, List<AiConfigModel>>{};
+    for (final model in allModels.whereType<AiConfigModel>()) {
+      (modelsByProviderId[model.inferenceProviderId] ??= []).add(model);
+    }
 
     var totalRemoved = 0;
 
     for (final provider in providers) {
-      final knownModels =
-          knownModelsByProvider[provider.inferenceProviderType] ?? [];
+      // Skip providers whose type has no catalog entry — pruning with an
+      // empty valid set would incorrectly delete all auto-generated models.
+      final knownModels = knownModelsByProvider[provider.inferenceProviderType];
+      if (knownModels == null) continue;
+
       final validIds = knownModels
           .map((m) => generateModelId(provider.id, m.providerModelId))
           .toSet();
 
-      for (final model in existingModels) {
-        if (model.inferenceProviderId != provider.id) continue;
-
-        // Only remove if the ID was auto-generated (matches the pattern)
-        // and the providerModelId is no longer known.
+      final existingProviderModels = modelsByProviderId[provider.id] ?? [];
+      for (final model in existingProviderModels) {
+        // Only remove if the ID was auto-generated (matches the pattern),
+        // the providerModelId is no longer known, and the user hasn't
+        // manually edited the model (UI edits set updatedAt).
         final expectedId = generateModelId(provider.id, model.providerModelId);
-        if (model.id == expectedId && !validIds.contains(model.id)) {
+        if (model.updatedAt == null &&
+            model.id == expectedId &&
+            !validIds.contains(model.id)) {
           await _repository.deleteConfig(model.id);
           totalRemoved++;
         }

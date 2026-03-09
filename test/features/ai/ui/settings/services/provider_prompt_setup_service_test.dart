@@ -71,18 +71,12 @@ void main() {
 
       ollamaModels = [
         AiTestDataFactory.createTestModel(
-          id: 'ollama-provider-id_deepseek_r1_8b',
-          name: 'DeepSeek R1 8B',
-          inferenceProviderId: ollamaProvider.id,
-          inputModalities: [Modality.text],
-          isReasoningModel: true,
-          supportsFunctionCalling: true,
-        ),
-        AiTestDataFactory.createTestModel(
-          id: 'ollama-provider-id_gemma3_12b',
-          name: 'Gemma 3 12B',
+          id: 'ollama-provider-id_qwen3_5_9b',
+          name: 'Qwen 3.5 9B',
           inferenceProviderId: ollamaProvider.id,
           inputModalities: [Modality.text, Modality.image],
+          isReasoningModel: true,
+          supportsFunctionCalling: true,
         ),
       ];
 
@@ -314,9 +308,8 @@ void main() {
         expect(find.text('Checklist Updates'), findsOneWidget);
         expect(find.text('Task Summary'), findsOneWidget);
 
-        // Model assignments - DeepSeek for reasoning, Gemma for images
-        expect(find.text('Uses DeepSeek R1 8B'), findsNWidgets(2));
-        expect(find.text('Uses Gemma 3 12B'), findsOneWidget);
+        // Model assignments - Qwen 3.5 for all tasks
+        expect(find.text('Uses Qwen 3.5 9B'), findsNWidgets(3));
       });
 
       testWidgets('should display correct icons for Ollama prompts', (
@@ -558,12 +551,12 @@ void main() {
         expect(promptNames.any((n) => n.contains('Audio')), isFalse);
         expect(
           promptNames,
-          contains('Image Analysis in Task Context - Gemma 3 12B'),
+          contains('Image Analysis in Task Context - Qwen 3.5 9B'),
         );
-        expect(promptNames, contains('Checklist Updates - DeepSeek R1 8B'));
+        expect(promptNames, contains('Checklist Updates - Qwen 3.5 9B'));
       });
 
-      testWidgets('should assign DeepSeek to reasoning prompts', (
+      testWidgets('should assign Qwen to reasoning prompts', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -598,17 +591,17 @@ void main() {
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
 
-        final deepSeekModelId = ollamaModels
-            .firstWhere((m) => m.name.contains('DeepSeek'))
+        final qwenModelId = ollamaModels
+            .firstWhere((m) => m.name.contains('Qwen'))
             .id;
 
         final checklistPrompt = savedConfigs
             .whereType<AiConfigPrompt>()
             .firstWhere((p) => p.name.contains('Checklist'));
-        expect(checklistPrompt.defaultModelId, deepSeekModelId);
+        expect(checklistPrompt.defaultModelId, qwenModelId);
       });
 
-      testWidgets('should assign Gemma to image analysis prompt', (
+      testWidgets('should assign Qwen to image analysis prompt', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -643,14 +636,14 @@ void main() {
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
 
-        final gemmaModelId = ollamaModels
-            .firstWhere((m) => m.name.contains('Gemma'))
+        final qwenModelId = ollamaModels
+            .firstWhere((m) => m.name.contains('Qwen'))
             .id;
 
         final imagePrompt = savedConfigs.whereType<AiConfigPrompt>().firstWhere(
           (p) => p.name.contains('Image Analysis'),
         );
-        expect(imagePrompt.defaultModelId, gemmaModelId);
+        expect(imagePrompt.defaultModelId, qwenModelId);
       });
     });
 
@@ -810,16 +803,16 @@ void main() {
         }
       });
 
-      testWidgets('should fallback to first model when DeepSeek not found', (
+      testWidgets('should fallback to first model when Qwen not found', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        final gemmaOnlyModels = [
+        final fallbackModels = [
           AiTestDataFactory.createTestModel(
-            id: 'ollama-gemma-only',
-            name: 'Gemma 3 12B',
+            id: 'ollama-fallback-only',
+            name: 'Some Other Model',
             inferenceProviderId: ollamaProvider.id,
             inputModalities: [Modality.text, Modality.image],
           ),
@@ -827,7 +820,7 @@ void main() {
 
         when(
           () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => gemmaOnlyModels);
+        ).thenAnswer((_) async => fallbackModels);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -852,13 +845,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // All prompts should use the only available model
-        expect(find.text('Uses Gemma 3 12B'), findsNWidgets(3));
+        expect(find.text('Uses Some Other Model'), findsNWidgets(3));
 
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
 
         for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
-          expect(config.defaultModelId, 'ollama-gemma-only');
+          expect(config.defaultModelId, 'ollama-fallback-only');
         }
       });
     });

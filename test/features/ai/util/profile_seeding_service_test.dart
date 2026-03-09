@@ -37,12 +37,16 @@ void main() {
     });
 
     test('skips profiles that already exist', () async {
-      // Gemini Flash already exists.
+      // Gemini Flash already exists with all fields matching the seed target.
       when(() => mockRepo.getConfigById(profileGeminiFlashId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileGeminiFlashId,
           name: 'Gemini Flash',
           thinkingModelId: 'models/gemini-3-flash-preview',
+          imageRecognitionModelId: 'models/gemini-3-flash-preview',
+          transcriptionModelId: 'models/gemini-3-flash-preview',
+          imageGenerationModelId: 'models/gemini-3-pro-image-preview',
+          isDefault: true,
           createdAt: DateTime(2026),
         ),
       );
@@ -54,13 +58,16 @@ void main() {
     });
 
     test('is fully idempotent — no saves when all exist and match', () async {
-      // All profiles already exist with non-default flag, so no drift check.
+      // Return a profile that matches the seed target for each ID so no
+      // drift is detected. Use updatedAt != null to simulate user ownership
+      // which also blocks updates.
       when(() => mockRepo.getConfigById(any())).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: 'existing',
           name: 'Existing',
           thinkingModelId: 'some-model',
           createdAt: DateTime(2026),
+          updatedAt: DateTime(2026, 2), // user-edited → never overwritten
         ),
       );
 
@@ -76,7 +83,7 @@ void main() {
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3:8b', // old model
-          imageRecognitionModelId: 'gemma3:4b',
+          imageRecognitionModelId: 'qwen3.5:9b',
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -98,7 +105,7 @@ void main() {
             id: profileLocalId,
             name: 'Local (Ollama)',
             thinkingModelId: 'qwen3:8b', // old model, drifted
-            imageRecognitionModelId: 'gemma3:4b',
+            imageRecognitionModelId: 'qwen3.5:9b',
             isDefault: true,
             desktopOnly: true,
             createdAt: DateTime(2026),
@@ -113,22 +120,25 @@ void main() {
       },
     );
 
-    test('does not update non-default profiles even if drifted', () async {
-      // Profile exists with different model but isDefault is false.
+    test('updates non-default profile when flags have drifted', () async {
+      // Profile exists with isDefault false but seed target has isDefault true,
+      // and updatedAt is null (not user-edited) → should be updated.
       when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileLocalId,
           name: 'Local (Ollama)',
-          thinkingModelId: 'old-model',
+          thinkingModelId: 'qwen3.5:9b',
+          imageRecognitionModelId: 'qwen3.5:9b',
+          desktopOnly: true,
           createdAt: DateTime(2026),
-          // isDefault defaults to false
+          // isDefault defaults to false — differs from seed target
         ),
       );
 
       await service.seedDefaults();
 
-      // 6 new profiles saved (local skipped because it exists and isn't default).
-      verify(() => mockRepo.saveConfig(any())).called(6);
+      // 6 new profiles + 1 updated local profile.
+      verify(() => mockRepo.saveConfig(any())).called(7);
     });
 
     test('seeds profiles with correct IDs', () async {
@@ -155,7 +165,7 @@ void main() {
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3.5:9b',
-          imageRecognitionModelId: 'gemma3:4b',
+          imageRecognitionModelId: 'qwen3.5:9b',
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -207,8 +217,8 @@ void main() {
       expect(powerProfile.desktopOnly, isTrue);
       expect(powerProfile.name, 'Local Power (Ollama)');
       expect(powerProfile.thinkingModelId, 'qwen3.5:27b');
-      expect(powerProfile.imageRecognitionModelId, 'gemma3:12b');
-      expect(powerProfile.isDefault, isTrue);
+      expect(powerProfile.imageRecognitionModelId, 'qwen3.5:27b');
+      expect(powerProfile.isDefault, isFalse);
     });
 
     test('local profile is marked as desktopOnly', () async {
@@ -233,22 +243,38 @@ void main() {
       expect(localProfile.thinkingModelId, 'qwen3.5:9b');
     });
 
-    test('all default profiles are marked as isDefault', () async {
-      final capturedConfigs = <AiConfig>[];
-      when(
-        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
-      ).thenAnswer((invocation) async {
-        capturedConfigs.add(
-          invocation.positionalArguments.first as AiConfig,
-        );
-      });
+    test(
+      'all default profiles are marked as isDefault except opt-in ones',
+      () async {
+        final capturedConfigs = <AiConfig>[];
+        when(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).thenAnswer((invocation) async {
+          capturedConfigs.add(
+            invocation.positionalArguments.first as AiConfig,
+          );
+        });
 
-      await service.seedDefaults();
+        await service.seedDefaults();
 
-      for (final config in capturedConfigs) {
-        final profile = config as AiConfigInferenceProfile;
-        expect(profile.isDefault, isTrue, reason: '${profile.name} isDefault');
-      }
-    });
+        for (final config in capturedConfigs) {
+          final profile = config as AiConfigInferenceProfile;
+          if (profile.id == profileLocalPowerId) {
+            // Local Power is opt-in until Qwen3.5:27b tool-calling stabilises.
+            expect(
+              profile.isDefault,
+              isFalse,
+              reason: '${profile.name} should be opt-in',
+            );
+          } else {
+            expect(
+              profile.isDefault,
+              isTrue,
+              reason: '${profile.name} isDefault',
+            );
+          }
+        }
+      },
+    );
   });
 }

@@ -644,6 +644,44 @@ void main() {
       },
     );
 
+    test('does not remove user-edited stale models', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      // Stale model whose providerModelId was removed from knownModels,
+      // but the user has edited it (updatedAt is set).
+      final staleModelId = generateModelId('ollama-1', 'qwen3:8b');
+      final editedStaleModel = AiConfigModel(
+        id: staleModelId,
+        name: 'My Tuned Qwen3',
+        providerModelId: 'qwen3:8b',
+        inferenceProviderId: 'ollama-1',
+        createdAt: DateTime(2026, 3, 15),
+        updatedAt: DateTime(2026, 3, 20), // user edited
+        inputModalities: [Modality.text],
+        outputModalities: [Modality.text],
+        isReasoningModel: true,
+      );
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [editedStaleModel]);
+
+      await service.removeStaleKnownModels();
+
+      verifyNever(() => mockRepository.deleteConfig(any()));
+    });
+
     test('handles no providers gracefully', () async {
       when(
         () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),

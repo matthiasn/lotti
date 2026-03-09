@@ -914,10 +914,24 @@ Future<void> agentInitialization(Ref ref) async {
     ProfileSeedingService(aiConfigRepository: aiConfigRepo).seedDefaults(),
   ]);
   final modelService = ModelPrepopulationService(repository: aiConfigRepo);
-  await Future.wait([
-    modelService.backfillNewModels(),
-    modelService.removeStaleKnownModels(),
-  ]);
+  try {
+    await modelService.backfillNewModels();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to backfill known models: $error',
+      name: 'agentInitialization',
+      stackTrace: stackTrace,
+    );
+  }
+  try {
+    await modelService.removeStaleKnownModels();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to prune stale known models: $error',
+      name: 'agentInitialization',
+      stackTrace: stackTrace,
+    );
+  }
   await taskAgentService.restoreSubscriptions();
 }
 

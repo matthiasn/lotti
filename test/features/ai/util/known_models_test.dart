@@ -384,12 +384,12 @@ void main() {
         expect(modelIds, isNot(contains('gpt-oss:20b')));
         expect(modelIds, isNot(contains('gpt-oss:120b')));
         expect(modelIds, isNot(contains('gemma3:12b-it-qat')));
+        expect(modelIds, isNot(contains('gemma3:4b')));
+        expect(modelIds, isNot(contains('gemma3:12b')));
       });
 
-      test('should still contain Gemma and embedding models', () {
+      test('should still contain embedding model', () {
         final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
-        expect(modelIds, contains('gemma3:4b'));
-        expect(modelIds, contains('gemma3:12b'));
         expect(modelIds, contains('mxbai-embed-large'));
       });
 

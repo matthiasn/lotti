@@ -1346,51 +1346,50 @@ void main() {
         final futureList = stream.toList();
 
         // Chunk 1: first tool call with index at tool-call level
-        streamController..add(
-          utf8.encode(
-            '${jsonEncode({
-              'message': {
-                'tool_calls': [
-                  {
-                    'index': 0,
-                    'id': 'call_abc',
-                    'function': {
-                      'name': 'set_task_title',
-                      'arguments': {'title': 'Test'},
+        streamController
+          ..add(
+            utf8.encode(
+              '${jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'index': 0,
+                      'id': 'call_abc',
+                      'function': {
+                        'name': 'set_task_title',
+                        'arguments': {'title': 'Test'},
+                      },
                     },
-                  },
-                ],
-              },
-              'done': false,
-            })}\n',
-          ),
-        )
-
-        // Chunk 2: second tool call with index at tool-call level
-        ..add(
-          utf8.encode(
-            '${jsonEncode({
-              'message': {
-                'tool_calls': [
-                  {
-                    'index': 1,
-                    'id': 'call_def',
-                    'function': {
-                      'name': 'set_task_language',
-                      'arguments': {'languageCode': 'en'},
+                  ],
+                },
+                'done': false,
+              })}\n',
+            ),
+          )
+          // Chunk 2: second tool call with index at tool-call level
+          ..add(
+            utf8.encode(
+              '${jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'index': 1,
+                      'id': 'call_def',
+                      'function': {
+                        'name': 'set_task_language',
+                        'arguments': {'languageCode': 'en'},
+                      },
                     },
-                  },
-                ],
-              },
-              'done': false,
-            })}\n',
-          ),
-        )
-
-        // Done
-        ..add(
-          utf8.encode('${jsonEncode({'done': true})}\n'),
-        );
+                  ],
+                },
+                'done': false,
+              })}\n',
+            ),
+          )
+          // Done
+          ..add(
+            utf8.encode('${jsonEncode({'done': true})}\n'),
+          );
 
         await streamController.close();
 
@@ -1421,7 +1420,8 @@ void main() {
       final mockResponse = MockStreamedResponse();
       when(() => mockResponse.statusCode).thenReturn(200);
 
-      // Tool call without index field in function
+      // Two tool calls without index field — verifies the loop index
+      // is used (not a hardcoded 0).
       when(() => mockResponse.stream).thenAnswer(
         (_) => http.ByteStream(
           Stream.fromIterable([
@@ -1434,6 +1434,13 @@ void main() {
                       'function': {
                         'name': 'test_fn',
                         'arguments': {'key': 'value'},
+                      },
+                    },
+                    {
+                      'id': 'call_abc',
+                      'function': {
+                        'name': 'test_fn',
+                        'arguments': {'other': 'value'},
                       },
                     },
                   ],
@@ -1479,9 +1486,10 @@ void main() {
 
       expect(responses.length, 1);
       final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
-      expect(toolCalls.length, 1);
-      // Falls back to loop index 0
-      expect(toolCalls.first.index, 0);
+      expect(toolCalls.length, 2);
+      // Falls back to loop indices 0 and 1
+      expect(toolCalls[0].index, 0);
+      expect(toolCalls[1].index, 1);
     });
 
     test(
@@ -1694,7 +1702,9 @@ void main() {
       final responses = await stream.toList();
       expect(responses.length, 1);
       final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
-      expect(toolCall?.id, startsWith('tool-'));
+      // When Ollama omits the ID, we preserve null so that
+      // ToolCallAccumulator can merge continuation chunks by index.
+      expect(toolCall?.id, isNull);
     });
 
     test(

@@ -42,13 +42,12 @@ class ProfileSeedingService {
         continue;
       }
 
-      // Update existing default profiles if model IDs have drifted,
+      // Update existing seeded profiles if any field has drifted,
       // but only when the user hasn't manually edited the profile
       // (UI edits set updatedAt; seeded profiles leave it null).
       if (existing is AiConfigInferenceProfile &&
-          existing.isDefault &&
           existing.updatedAt == null &&
-          _hasModelIdDrift(existing, profile)) {
+          _hasProfileDrift(existing, profile)) {
         await _repo.saveConfig(profile);
         updatedCount++;
       }
@@ -62,15 +61,18 @@ class ProfileSeedingService {
     }
   }
 
-  /// Returns true when any model slot in [existing] differs from [target].
-  static bool _hasModelIdDrift(
+  /// Returns true when any seeded field in [existing] differs from [target].
+  static bool _hasProfileDrift(
     AiConfigInferenceProfile existing,
     AiConfigInferenceProfile target,
   ) {
-    return existing.thinkingModelId != target.thinkingModelId ||
+    return existing.name != target.name ||
+        existing.thinkingModelId != target.thinkingModelId ||
         existing.imageRecognitionModelId != target.imageRecognitionModelId ||
         existing.transcriptionModelId != target.transcriptionModelId ||
-        existing.imageGenerationModelId != target.imageGenerationModelId;
+        existing.imageGenerationModelId != target.imageGenerationModelId ||
+        existing.isDefault != target.isDefault ||
+        existing.desktopOnly != target.desktopOnly;
   }
 
   static final _defaultProfiles = <AiConfigInferenceProfile>[
@@ -127,7 +129,7 @@ class ProfileSeedingService {
       id: profileLocalId,
       name: 'Local (Ollama)',
       thinkingModelId: 'qwen3.5:9b',
-      imageRecognitionModelId: 'gemma3:4b',
+      imageRecognitionModelId: 'qwen3.5:9b',
       isDefault: true,
       desktopOnly: true,
       createdAt: DateTime(2026),
@@ -136,8 +138,7 @@ class ProfileSeedingService {
       id: profileLocalPowerId,
       name: 'Local Power (Ollama)',
       thinkingModelId: 'qwen3.5:27b',
-      imageRecognitionModelId: 'gemma3:12b',
-      isDefault: true,
+      imageRecognitionModelId: 'qwen3.5:27b',
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

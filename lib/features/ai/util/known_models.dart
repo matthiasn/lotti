@@ -290,29 +290,6 @@ const List<KnownModel> ollamaModels = [
         'Best local model for higher-end devices (22GB+ RAM).',
   ),
 
-  // Gemma 3 — vision-capable models, useful as fallback for image analysis
-  KnownModel(
-    providerModelId: 'gemma3:4b',
-    name: 'Gemma 3 4B',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        'Efficient local text & image model, great for image analysis. '
-        'Requires approximately 4GB RAM and provides good performance '
-        'for most tasks.',
-  ),
-  KnownModel(
-    providerModelId: 'gemma3:12b',
-    name: 'Gemma 3 12B',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        'Larger local text & image model with improved capabilities. '
-        'Requires approximately 12GB RAM for optimal performance.',
-  ),
-
   // Embeddings
   KnownModel(
     providerModelId: 'mxbai-embed-large',

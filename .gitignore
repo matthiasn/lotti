@@ -13,6 +13,7 @@
 
 #.claude/
 .claude/settings.local.json
+.claude/worktrees/
 tmp/
 
 # Flatpak generated files
