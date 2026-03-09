@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.911" date="2026-03-09">
       <description>
-          <p>Fixed macOS crash on close: replaced windowManager.destroy() with exit(0) after service disposal to prevent a race between native SQLite worker threads and the Dart VM teardown path.</p>
+          <p>Fixed macOS crash on close: skip SQLite database close entirely before exit(0) to avoid SIGABRT in sqlite3_close_v2 during VM teardown. SQLite WAL mode ensures data integrity without explicit close.</p>
       </description>
     </release>
     <release version="0.9.910" date="2026-03-08">

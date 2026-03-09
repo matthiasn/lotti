@@ -105,36 +105,40 @@ class WindowService implements WindowListener {
   }
 
   Future<void> _handleClose() async {
-    try {
-      await _disposer.disposeAll();
-    } catch (e, s) {
-      _logDisposalError(e, s, 'disposeAll');
-    }
-
     if (isMacOS) {
-      // On macOS, terminate the process immediately after Dart-level disposal.
+      // On macOS, dispose only non-database services, then exit(0).
       //
-      // We intentionally avoid `windowManager.destroy()` here because it
-      // triggers the Flutter engine teardown path:
-      //   Shell::~Shell() → DartVM::~DartVM() → Dart::Cleanup()
-      //     → WaitForIsolateShutdown()
+      // We must NOT call Drift's db.close() because sqlite3_close_v2
+      // triggers functionDestroy for registered custom SQL functions,
+      // which invokes DLRT_GetFfiCallbackMetadata — a Dart FFI runtime
+      // lookup that hits a fatal assertion (SIGABRT) during VM teardown.
       //
-      // That path races with native SQLite worker threads that are still
-      // executing sqlite3Close / WAL checkpoint / btree cleanup inside
-      // Drift's background isolates. When those native threads call
-      // `functionDestroy`, the FFI callback metadata lookup
-      // (DLRT_GetFfiCallbackMetadata) hits a fatal assertion because the
-      // Dart VM is already partially torn down → SIGABRT.
+      // We also skip windowManager.destroy() because it triggers the
+      // Flutter engine teardown (Shell::~Shell → DartVM::~DartVM) which
+      // races with native SQLite threads still running.
       //
-      // exit(0) is safe here because:
-      // - All Dart-level resources have been disposed (streams, timers,
-      //   outbox).
-      // - Drift databases have acknowledged their close commands.
-      // - SQLite WAL mode guarantees data integrity even if the process
-      //   exits during a WAL checkpoint; the WAL is replayed on next open.
+      // This is safe because:
+      // - Non-database services (outbox, sync, timers) are stopped first.
+      // - SQLite WAL mode guarantees data integrity on abrupt exit;
+      //   the WAL is replayed on next open.
+      // - The OS reclaims all file handles and memory.
+      try {
+        await _disposer.disposeServicesOnly();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'disposeServicesOnly');
+      }
       exit(0);
     } else {
-      await windowManager.destroy();
+      try {
+        await _disposer.disposeAll();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'disposeAll');
+      }
+      try {
+        await windowManager.destroy();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'windowManager.destroy');
+      }
     }
   }
 
