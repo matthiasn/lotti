@@ -4621,6 +4621,176 @@ void main() {
     });
 
     test(
+      'SyncAgentEntity merge preserves coveredVectorClocks',
+      () async {
+        const oldVc = VectorClock({'hostA': 3});
+        const newVc = VectorClock({'hostA': 5});
+
+        final oldEntity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Old',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: oldVc,
+        );
+
+        final oldMessage = SyncMessage.agentEntity(
+          agentEntity: oldEntity,
+          status: SyncEntryStatus.update,
+        );
+
+        when(() => syncDatabase.findPendingByEntryId('agent-xyz')).thenAnswer(
+          (_) async => OutboxItem(
+            id: 42,
+            message: json.encode(oldMessage.toJson()),
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentEntity:agent-xyz',
+            priority: OutboxPriority.low.index,
+          ),
+        );
+
+        String? capturedMessage;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          return 1;
+        });
+
+        final newEntity = AgentDomainEntity.agent(
+          id: 'agent-xyz',
+          agentId: 'agent-xyz',
+          kind: 'task_agent',
+          displayName: 'Updated',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
+
+        final newMessage = SyncMessage.agentEntity(
+          agentEntity: newEntity,
+          status: SyncEntryStatus.update,
+        );
+
+        await service.enqueueMessage(newMessage);
+
+        expect(capturedMessage, isNotNull);
+        final decoded = SyncMessage.fromJson(
+          json.decode(capturedMessage!) as Map<String, dynamic>,
+        );
+        expect(decoded, isA<SyncAgentEntity>());
+        final agentMsg = decoded as SyncAgentEntity;
+        expect(agentMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = agentMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([3, 5]));
+        expect(coveredCounters, hasLength(2));
+      },
+    );
+
+    test(
+      'SyncAgentLink merge preserves coveredVectorClocks',
+      () async {
+        const oldVc = VectorClock({'hostA': 10});
+        const newVc = VectorClock({'hostA': 12});
+
+        final oldLink = AgentLink.agentTask(
+          id: 'link-abc',
+          fromId: 'agent-1',
+          toId: 'task-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: oldVc,
+        );
+
+        final oldMessage = SyncMessage.agentLink(
+          agentLink: oldLink,
+          status: SyncEntryStatus.update,
+        );
+
+        when(() => syncDatabase.findPendingByEntryId('link-abc')).thenAnswer(
+          (_) async => OutboxItem(
+            id: 43,
+            message: json.encode(oldMessage.toJson()),
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentLink:link-abc',
+            priority: OutboxPriority.low.index,
+          ),
+        );
+
+        String? capturedMessage;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((invocation) async {
+          capturedMessage = invocation.namedArguments[#newMessage] as String?;
+          return 1;
+        });
+
+        final newLink = AgentLink.agentTask(
+          id: 'link-abc',
+          fromId: 'agent-1',
+          toId: 'task-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
+
+        final newMessage = SyncMessage.agentLink(
+          agentLink: newLink,
+          status: SyncEntryStatus.update,
+        );
+
+        await service.enqueueMessage(newMessage);
+
+        expect(capturedMessage, isNotNull);
+        final decoded = SyncMessage.fromJson(
+          json.decode(capturedMessage!) as Map<String, dynamic>,
+        );
+        expect(decoded, isA<SyncAgentLink>());
+        final linkMsg = decoded as SyncAgentLink;
+        expect(linkMsg.coveredVectorClocks, isNotNull);
+        final coveredCounters = linkMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        expect(coveredCounters, containsAll([10, 12]));
+        expect(coveredCounters, hasLength(2));
+      },
+    );
+
+    test(
       'SyncAgentLink enqueues with correct subject and saves JSON',
       () async {
         final link = AgentLink.agentTask(

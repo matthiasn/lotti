@@ -1246,20 +1246,88 @@ class OutboxService {
     final existingItem = await _syncDatabase.findPendingByEntryId(id);
 
     if (existingItem != null) {
+      // Merge: extract old VC and add to coveredVectorClocks so receivers
+      // can mark the old counter as covered instead of creating a gap.
+      var mergedMessage = enrichedMessage;
+      try {
+        final oldMessage = SyncMessage.fromJson(
+          json.decode(existingItem.message) as Map<String, dynamic>,
+        );
+
+        final VectorClock? oldVc;
+        final List<VectorClock>? oldCovered;
+        if (oldMessage is SyncAgentEntity) {
+          oldVc = oldMessage.agentEntity?.vectorClock;
+          oldCovered = oldMessage.coveredVectorClocks;
+        } else if (oldMessage is SyncAgentLink) {
+          oldVc = oldMessage.agentLink?.vectorClock;
+          oldCovered = oldMessage.coveredVectorClocks;
+        } else {
+          oldVc = null;
+          oldCovered = null;
+        }
+
+        final List<VectorClock>? newCovered;
+        if (mergedMessage case final SyncAgentEntity entity) {
+          newCovered = entity.coveredVectorClocks;
+        } else if (mergedMessage case final SyncAgentLink link) {
+          newCovered = link.coveredVectorClocks;
+        } else {
+          newCovered = null;
+        }
+
+        final coveredClocks = VectorClock.mergeUniqueClocks([
+          ...?oldCovered,
+          ...?newCovered,
+          oldVc,
+          vectorClock,
+        ]);
+
+        if (mergedMessage case final SyncAgentEntity entity) {
+          mergedMessage = entity.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
+        } else if (mergedMessage case final SyncAgentLink link) {
+          mergedMessage = link.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
+        }
+
+        final coveredVcStrings = coveredClocks?.map((vc) => vc.vclock).toList();
+        _loggingService.captureEvent(
+          'enqueue MERGED type=$typeName id=$id '
+          'coveredClocks=${coveredClocks?.length ?? 0} '
+          'covered=$coveredVcStrings',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+      } catch (e, st) {
+        _loggingService
+          ..captureException(
+            e,
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.agentMerge',
+            stackTrace: st,
+          )
+          // Fallback: proceed without merging covered clocks
+          ..captureEvent(
+            'enqueue MERGED type=$typeName id=$id (no VC merge)',
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          );
+      }
+
+      final mergedJson = json.encode(mergedMessage.toJson());
+      final mergedSize = utf8.encode(mergedJson).length;
       await _syncDatabase.updateOutboxMessage(
         itemId: existingItem.id,
-        newMessage: enrichedJson,
+        newMessage: mergedJson,
         newSubject: subject,
-        payloadSize: enrichedSize,
+        payloadSize: mergedSize,
         priority: math.min(
           existingItem.priority,
           commonFields.priority.value,
         ),
-      );
-      _loggingService.captureEvent(
-        'enqueue MERGED type=$typeName id=$id',
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage',
       );
 
       // Still record in sequence log for the new counter
