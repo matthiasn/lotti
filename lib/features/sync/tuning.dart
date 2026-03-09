@@ -127,6 +127,12 @@ class SyncTuning {
   static const Duration backfillResponseRateWindow = Duration(minutes: 1);
   static const int backfillResponseRateLimit = 100;
 
+  // Maximum number of entry links to embed inline in a SyncJournalEntity
+  // envelope. Links beyond this cap are omitted from the envelope — they sync
+  // independently as SyncEntryLink messages. This prevents entries with many
+  // links from creating oversized Matrix messages.
+  static const int maxEmbeddedEntryLinks = 25;
+
   // Default limits for automatic backfill (prevents unbounded historical sync)
   // Only request entries from the last day OR 250 entries per host, whichever
   // is more restrictive. Deeper historical backfill requires manual trigger.

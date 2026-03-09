@@ -416,6 +416,31 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
+  /// Find the nearest sequence log entry for a host with a counter >= [counter]
+  /// that has a locally resolved payload. Used to find covering entries when
+  /// the exact counter is not in the sequence log (superseded).
+  ///
+  /// Only returns rows with `received` or `backfilled` status to avoid
+  /// returning hint-only rows (where `entryId` is set but the payload may
+  /// not exist locally yet).
+  Future<SyncSequenceLogItem?> getNearestCoveringEntry(
+    String hostId,
+    int counter,
+  ) {
+    return (select(syncSequenceLog)
+          ..where(
+            (t) =>
+                t.hostId.equals(hostId) &
+                t.counter.isBiggerOrEqualValue(counter) &
+                t.entryId.isNotNull() &
+                (t.status.equals(SyncSequenceStatus.received.index) |
+                    t.status.equals(SyncSequenceStatus.backfilled.index)),
+          )
+          ..orderBy([(t) => OrderingTerm.asc(t.counter)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   /// Get all pending (missing/requested) sequence log entries for a given payload.
   /// Used to resolve pending backfill hints when a payload arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({
@@ -638,8 +663,12 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
-  /// Update an existing outbox item's message and subject.
-  /// Used when merging superseded entries into an existing pending item.
+  /// Update an existing pending outbox item's message and subject.
+  ///
+  /// Only updates rows that are still [OutboxStatus.pending] to avoid
+  /// overwriting in-flight or already-sent items (compare-and-swap on
+  /// status). Returns the number of affected rows — 0 means the row was
+  /// no longer pending and the caller should insert a fresh row instead.
   Future<int> updateOutboxMessage({
     required int itemId,
     required String newMessage,
@@ -647,17 +676,21 @@ class SyncDatabase extends _$SyncDatabase {
     int? payloadSize,
     int? priority,
   }) {
-    return (update(outbox)..where((t) => t.id.equals(itemId))).write(
-      OutboxCompanion(
-        message: Value(newMessage),
-        subject: Value(newSubject),
-        updatedAt: Value(DateTime.now()),
-        payloadSize: payloadSize != null
-            ? Value(payloadSize)
-            : const Value.absent(),
-        priority: priority != null ? Value(priority) : const Value.absent(),
-      ),
-    );
+    return (update(outbox)..where(
+          (t) =>
+              t.id.equals(itemId) & t.status.equals(OutboxStatus.pending.index),
+        ))
+        .write(
+          OutboxCompanion(
+            message: Value(newMessage),
+            subject: Value(newSubject),
+            updatedAt: Value(DateTime.now()),
+            payloadSize: payloadSize != null
+                ? Value(payloadSize)
+                : const Value.absent(),
+            priority: priority != null ? Value(priority) : const Value.absent(),
+          ),
+        );
   }
 
   /// Get aggregated outbox volume per day for sent items.

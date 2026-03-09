@@ -593,13 +593,19 @@ class OutboxService {
         final toCount = links
             .where((link) => link.toId == journalMsg.id)
             .length;
+        // Cap embedded links to prevent oversized envelopes. Remaining
+        // links still sync independently as SyncEntryLink messages.
+        final capped = links.length > SyncTuning.maxEmbeddedEntryLinks
+            ? links.sublist(links.length - SyncTuning.maxEmbeddedEntryLinks)
+            : links;
         _loggingService.captureEvent(
           'enqueueMessage.attachedLinks id=${journalMsg.id} '
-          'count=${links.length} from=$fromCount to=$toCount',
+          'count=${links.length} embedded=${capped.length} '
+          'from=$fromCount to=$toCount',
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',
         );
-        journalMsg = journalMsg.copyWith(entryLinks: links);
+        journalMsg = journalMsg.copyWith(entryLinks: capped);
       } else {
         _loggingService.captureEvent(
           'enqueueMessage.noLinks id=${journalMsg.id}',
@@ -799,16 +805,36 @@ class OutboxService {
 
           final mergedJson = json.encode(mergedMessage.toJson());
           final mergedPayloadSize = utf8.encode(mergedJson).length + fileLength;
-          await _syncDatabase.updateOutboxMessage(
+          final mergedPriority = math.min(
+            existingItem.priority,
+            commonFields.priority.value,
+          );
+          final affectedRows = await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
             newMessage: mergedJson,
             newSubject: '$hostHash:$localCounter',
             payloadSize: mergedPayloadSize,
-            priority: math.min(
-              existingItem.priority,
-              commonFields.priority.value,
-            ),
+            priority: mergedPriority,
           );
+
+          if (affectedRows == 0) {
+            // Row was no longer pending — insert fresh row with merged data
+            _loggingService.captureEvent(
+              'enqueue MERGE-MISS type=SyncJournalEntity id=${msg.id} '
+              '(row no longer pending, inserting fresh)',
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage',
+            );
+            await _syncDatabase.addOutboxItem(
+              commonFields.copyWith(
+                subject: Value('$hostHash:$localCounter'),
+                message: Value(mergedJson),
+                payloadSize: Value(mergedPayloadSize),
+                outboxEntryId: Value(msg.id),
+                priority: Value(mergedPriority),
+              ),
+            );
+          }
 
           // Log covered clocks for debugging
           final coveredVcStrings = coveredClocks
@@ -935,16 +961,37 @@ class OutboxService {
           );
 
           final mergedJson = json.encode(mergedMessage.toJson());
-          await _syncDatabase.updateOutboxMessage(
+          final mergedSize = utf8.encode(mergedJson).length;
+          final mergedPriority = math.min(
+            existingItem.priority,
+            commonFields.priority.value,
+          );
+          final affectedRows = await _syncDatabase.updateOutboxMessage(
             itemId: existingItem.id,
             newMessage: mergedJson,
             newSubject: subject,
-            payloadSize: utf8.encode(mergedJson).length,
-            priority: math.min(
-              existingItem.priority,
-              commonFields.priority.value,
-            ),
+            payloadSize: mergedSize,
+            priority: mergedPriority,
           );
+
+          if (affectedRows == 0) {
+            // Row was no longer pending — insert fresh row with merged data
+            _loggingService.captureEvent(
+              'enqueue MERGE-MISS type=SyncEntryLink id=$linkId '
+              '(row no longer pending, inserting fresh)',
+              domain: 'OUTBOX',
+              subDomain: 'enqueueMessage',
+            );
+            await _syncDatabase.addOutboxItem(
+              commonFields.copyWith(
+                subject: Value(subject),
+                message: Value(mergedJson),
+                payloadSize: Value(mergedSize),
+                outboxEntryId: Value(linkId),
+                priority: Value(mergedPriority),
+              ),
+            );
+          }
 
           // Log covered clocks for debugging
           final coveredVcStrings = coveredClocks
@@ -1240,21 +1287,111 @@ class OutboxService {
     final existingItem = await _syncDatabase.findPendingByEntryId(id);
 
     if (existingItem != null) {
-      await _syncDatabase.updateOutboxMessage(
+      // Merge: extract old VC and add to coveredVectorClocks so receivers
+      // can mark the old counter as covered instead of creating a gap.
+      var mergedMessage = enrichedMessage;
+      try {
+        final oldMessage = SyncMessage.fromJson(
+          json.decode(existingItem.message) as Map<String, dynamic>,
+        );
+
+        final VectorClock? oldVc;
+        final List<VectorClock>? oldCovered;
+        if (oldMessage is SyncAgentEntity) {
+          oldVc = oldMessage.agentEntity?.vectorClock;
+          oldCovered = oldMessage.coveredVectorClocks;
+        } else if (oldMessage is SyncAgentLink) {
+          oldVc = oldMessage.agentLink?.vectorClock;
+          oldCovered = oldMessage.coveredVectorClocks;
+        } else {
+          oldVc = null;
+          oldCovered = null;
+        }
+
+        final List<VectorClock>? newCovered;
+        if (mergedMessage case final SyncAgentEntity entity) {
+          newCovered = entity.coveredVectorClocks;
+        } else if (mergedMessage case final SyncAgentLink link) {
+          newCovered = link.coveredVectorClocks;
+        } else {
+          newCovered = null;
+        }
+
+        final coveredClocks = VectorClock.mergeUniqueClocks([
+          ...?oldCovered,
+          ...?newCovered,
+          oldVc,
+          vectorClock,
+        ]);
+
+        if (mergedMessage case final SyncAgentEntity entity) {
+          mergedMessage = entity.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
+        } else if (mergedMessage case final SyncAgentLink link) {
+          mergedMessage = link.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
+        }
+
+        final coveredVcStrings = coveredClocks?.map((vc) => vc.vclock).toList();
+        _loggingService.captureEvent(
+          'enqueue MERGED type=$typeName id=$id '
+          'coveredClocks=${coveredClocks?.length ?? 0} '
+          'covered=$coveredVcStrings',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+      } catch (e, st) {
+        _loggingService
+          ..captureException(
+            e,
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage.agentMerge',
+            stackTrace: st,
+          )
+          // Fallback: proceed without merging covered clocks
+          ..captureEvent(
+            'enqueue MERGED type=$typeName id=$id (no VC merge)',
+            domain: 'OUTBOX',
+            subDomain: 'enqueueMessage',
+          );
+      }
+
+      final mergedJson = json.encode(mergedMessage.toJson());
+      final mergedSize = utf8.encode(mergedJson).length;
+      final mergedPriority = math.min(
+        existingItem.priority,
+        commonFields.priority.value,
+      );
+      final affectedRows = await _syncDatabase.updateOutboxMessage(
         itemId: existingItem.id,
-        newMessage: enrichedJson,
+        newMessage: mergedJson,
         newSubject: subject,
-        payloadSize: enrichedSize,
-        priority: math.min(
-          existingItem.priority,
-          commonFields.priority.value,
-        ),
+        payloadSize: mergedSize,
+        priority: mergedPriority,
       );
-      _loggingService.captureEvent(
-        'enqueue MERGED type=$typeName id=$id',
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage',
-      );
+
+      if (affectedRows == 0) {
+        // Row was no longer pending (sent or in-flight between lookup and
+        // update). Insert a fresh row with the merged message so nothing is
+        // lost.
+        _loggingService.captureEvent(
+          'enqueue MERGE-MISS type=$typeName id=$id '
+          '(row no longer pending, inserting fresh)',
+          domain: 'OUTBOX',
+          subDomain: 'enqueueMessage',
+        );
+        await _syncDatabase.addOutboxItem(
+          commonFields.copyWith(
+            subject: Value(subject),
+            message: Value(mergedJson),
+            payloadSize: Value(mergedSize),
+            priority: Value(mergedPriority),
+            outboxEntryId: Value(id),
+          ),
+        );
+      }
 
       // Still record in sequence log for the new counter
       await _recordAgentSent(

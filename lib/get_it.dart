@@ -217,6 +217,7 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     sentEventRegistry: sentEventRegistry,
     vectorClockService: vectorClockService,
+    domainLogger: domainLogger,
   );
   // Shared in-memory index of latest attachment events keyed by relativePath.
   final attachmentIndex = AttachmentIndex(logging: loggingService);
@@ -230,6 +231,7 @@ Future<void> registerSingletons() async {
     syncDatabase: syncDatabase,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
+    domainLogger: domainLogger,
   );
 
   // Note: SyncEventProcessor is created here but BackfillResponseHandler
@@ -237,6 +239,7 @@ Future<void> registerSingletons() async {
   // the handler later and inject it after OutboxService is available.
   final syncEventProcessor = SyncEventProcessor(
     loggingService: loggingService,
+    domainLogger: domainLogger,
     updateNotifications: getIt<UpdateNotifications>(),
     aiConfigRepository: aiConfigRepository,
     settingsDb: settingsDb,
@@ -310,6 +313,7 @@ Future<void> registerSingletons() async {
     outboxService: outboxService,
     loggingService: loggingService,
     vectorClockService: vectorClockService,
+    domainLogger: domainLogger,
   );
   final backfillRequestService = BackfillRequestService(
     sequenceLogService: syncSequenceLogService,
@@ -317,6 +321,7 @@ Future<void> registerSingletons() async {
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
+    domainLogger: domainLogger,
   );
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)

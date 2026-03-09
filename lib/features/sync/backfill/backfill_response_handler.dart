@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -28,12 +29,14 @@ class BackfillResponseHandler {
     required OutboxService outboxService,
     required LoggingService loggingService,
     required VectorClockService vectorClockService,
+    DomainLogger? domainLogger,
     @visibleForTesting Duration? responseCooldown,
   }) : _journalDb = journalDb,
        _sequenceLogService = sequenceLogService,
        _outboxService = outboxService,
        _loggingService = loggingService,
        _vectorClockService = vectorClockService,
+       _domainLogger = domainLogger,
        _responseCooldown =
            responseCooldown ?? SyncTuning.backfillResponseCooldown;
 
@@ -42,6 +45,7 @@ class BackfillResponseHandler {
   final OutboxService _outboxService;
   final LoggingService _loggingService;
   final VectorClockService _vectorClockService;
+  final DomainLogger? _domainLogger;
   final Duration _responseCooldown;
 
   /// Agent repository, injected after construction to avoid circular
@@ -58,6 +62,15 @@ class BackfillResponseHandler {
   int responsesInWindow = 0;
   @visibleForTesting
   DateTime? windowStart;
+
+  /// Log a backfill trace message to the sync domain logger (separate file).
+  void _trace(String message, {String? subDomain}) {
+    _domainLogger?.log(
+      LogDomains.sync,
+      message,
+      subDomain: subDomain ?? 'backfill',
+    );
+  }
 
   /// Build the cooldown cache key for a (hostId, counter) pair.
   static String _cooldownKey(String hostId, int counter) => '$hostId:$counter';
@@ -130,10 +143,9 @@ class BackfillResponseHandler {
       ),
     );
 
-    _loggingService.captureEvent(
+    _trace(
       'sendUnresolvableResponse hostId=$hostId counter=$counter payloadType=$payloadType',
-      domain: 'SYNC_BACKFILL',
-      subDomain: 'unresolvable',
+      subDomain: 'backfill.unresolvable',
     );
   }
 
@@ -163,10 +175,9 @@ class BackfillResponseHandler {
         );
       }
     } else {
-      _loggingService.captureEvent(
-        'handleBackfillResponse: $payloadTypeName $payloadId not found locally, hint stored for when payload arrives',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleResponse',
+      _trace(
+        '$payloadTypeName $payloadId not found locally, hint stored for when payload arrives',
+        subDomain: 'backfill.response',
       );
     }
   }
@@ -187,10 +198,9 @@ class BackfillResponseHandler {
       await _vectorClockService.initialized;
       final myHost = await _vectorClockService.getHost();
       if (myHost != null && request.requesterId == myHost) {
-        _loggingService.captureEvent(
-          'handleBackfillRequest: skipping own request (${request.entries.length} entries)',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'skipSelf',
+        _trace(
+          'skipping own request (${request.entries.length} entries)',
+          subDomain: 'backfill.skipSelf',
         );
         return;
       }
@@ -198,10 +208,9 @@ class BackfillResponseHandler {
       // Check if backfill is enabled
       final enabled = await isBackfillEnabled();
       if (!enabled) {
-        _loggingService.captureEvent(
-          'handleBackfillRequest: backfill disabled, ignoring ${request.entries.length} entries from=${request.requesterId}',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'handleRequest',
+        _trace(
+          'backfill disabled, ignoring ${request.entries.length} entries from=${request.requesterId}',
+          subDomain: 'backfill.disabled',
         );
         return;
       }
@@ -211,10 +220,9 @@ class BackfillResponseHandler {
 
       // Check rate limit before processing
       if (_isRateLimited()) {
-        _loggingService.captureEvent(
-          'handleBackfillRequest: rate limited, ignoring ${request.entries.length} entries from=${request.requesterId} ($responsesInWindow responses in current window)',
-          domain: 'SYNC_BACKFILL',
-          subDomain: 'rateLimited',
+        _trace(
+          'rate limited, ignoring ${request.entries.length} entries from=${request.requesterId} ($responsesInWindow responses in current window)',
+          subDomain: 'backfill.rateLimited',
         );
         return;
       }
@@ -230,10 +238,9 @@ class BackfillResponseHandler {
       final truncated =
           request.entries.length > SyncTuning.maxBackfillResponseBatchSize;
 
-      _loggingService.captureEvent(
-        'handleBackfillRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''} cooldownCache=${recentlyResponded.length}',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleRequest',
+      _trace(
+        'handleRequest: processing ${entriesToProcess.length} of ${request.entries.length} entries from=${request.requesterId}${truncated ? ' (truncated)' : ''} cooldownCache=${recentlyResponded.length}',
+        subDomain: 'backfill.request',
       );
 
       var responded = 0;
@@ -248,6 +255,10 @@ class BackfillResponseHandler {
         // Skip if recently responded to this (hostId, counter)
         if (_isRecentlyResponded(entry.hostId, entry.counter)) {
           cooldownSkipped++;
+          _trace(
+            'cooldown skip hostId=${entry.hostId} counter=${entry.counter}',
+            subDomain: 'backfill.cooldownSkip',
+          );
           continue;
         }
 
@@ -255,6 +266,10 @@ class BackfillResponseHandler {
         if (_isRateLimited()) {
           rateLimitSkipped =
               entriesToProcess.length - responded - skipped - cooldownSkipped;
+          _trace(
+            'rate limited, stopping batch. rateLimitSkipped=$rateLimitSkipped',
+            subDomain: 'backfill.rateLimitStop',
+          );
           break;
         }
 
@@ -272,10 +287,9 @@ class BackfillResponseHandler {
         }
       }
 
-      _loggingService.captureEvent(
-        'handleBackfillRequest: responded=$responded skipped=$skipped cooldownSkipped=$cooldownSkipped rateLimitSkipped=$rateLimitSkipped of ${request.entries.length} dedupedPayloads=${sentPayloads.length}',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleRequest',
+      _trace(
+        'handleRequest: responded=$responded skipped=$skipped cooldownSkipped=$cooldownSkipped rateLimitSkipped=$rateLimitSkipped of ${request.entries.length} dedupedPayloads=${sentPayloads.length}',
+        subDomain: 'backfill.request',
       );
     } catch (e, st) {
       _loggingService.captureException(
@@ -299,22 +313,50 @@ class BackfillResponseHandler {
     required Set<String> sentPayloads,
   }) async {
     // Look up in our sequence log
-    final logEntry = await _sequenceLogService.getEntryByHostAndCounter(
+    var logEntry = await _sequenceLogService.getEntryByHostAndCounter(
       hostId,
       counter,
     );
 
     if (logEntry == null || logEntry.entryId == null) {
-      // We don't have this entry in our log
-      // Check if we're the originator - if so, respond with unresolvable
-      // since no one else can answer for our own counters
-      final myHost = await _vectorClockService.getHost();
-      if (myHost != null && hostId == myHost) {
-        await _sendUnresolvableResponse(hostId: hostId, counter: counter);
-        return true;
+      // Exact counter not found — try to find a covering entry (a higher
+      // counter for the same host that has a resolved payload). This handles
+      // the superseded scenario: counter 5 was superseded by counter 7, so
+      // we only have (host, 7) in our log, not (host, 5).
+      final covering = await _sequenceLogService.getNearestCoveringEntry(
+        hostId,
+        counter,
+      );
+
+      if (covering != null && covering.entryId != null) {
+        _trace(
+          'exact counter not found, using covering entry '
+          'hostId=$hostId requestedCounter=$counter '
+          'coveringCounter=${covering.counter} '
+          'payloadId=${covering.entryId}',
+          subDomain: 'backfill.coveringFallback',
+        );
+        logEntry = covering;
+      } else {
+        // No covering entry found either
+        final myHost = await _vectorClockService.getHost();
+        if (myHost != null && hostId == myHost) {
+          _trace(
+            'own counter not found, sending unresolvable '
+            'hostId=$hostId counter=$counter',
+            subDomain: 'backfill.unresolvable',
+          );
+          await _sendUnresolvableResponse(hostId: hostId, counter: counter);
+          return true;
+        }
+        // Not our counter - ignore, another device might have it
+        _trace(
+          'counter not found and not our host, skipping '
+          'hostId=$hostId counter=$counter myHost=$myHost',
+          subDomain: 'backfill.notFound',
+        );
+        return false;
       }
-      // Not our counter - ignore, another device might have it
-      return false;
     }
 
     final payloadId = logEntry.entryId!;
@@ -326,12 +368,24 @@ class BackfillResponseHandler {
     // the requested hostId.
     final originatingHostId = logEntry.originatingHostId ?? hostId;
 
+    _trace(
+      'found logEntry hostId=$hostId counter=$counter '
+      'payloadId=$payloadId payloadType=$payloadType '
+      'logCounter=${logEntry.counter} origHost=$originatingHostId',
+      subDomain: 'backfill.found',
+    );
+
     switch (payloadType) {
       case SyncSequencePayloadType.journalEntity:
         // Check if entry exists in journal
         final journalEntry = await _journalDb.journalEntityById(payloadId);
 
         if (journalEntry == null) {
+          _trace(
+            'journal entry deleted '
+            'hostId=$hostId counter=$counter payloadId=$payloadId',
+            subDomain: 'backfill.deleted',
+          );
           await _sendDeletedResponse(
             hostId: hostId,
             counter: counter,
@@ -435,10 +489,9 @@ class BackfillResponseHandler {
         return true;
       case SyncSequencePayloadType.agentEntity:
         if (agentRepository == null) {
-          _loggingService.captureEvent(
-            'backfill: agentRepository not wired, skipping agentEntity $payloadId',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'processEntry',
+          _trace(
+            'agentRepository not wired, skipping agentEntity $payloadId',
+            subDomain: 'backfill.processEntry',
           );
           return false;
         }
@@ -460,10 +513,9 @@ class BackfillResponseHandler {
         );
       case SyncSequencePayloadType.agentLink:
         if (agentRepository == null) {
-          _loggingService.captureEvent(
-            'backfill: agentRepository not wired, skipping agentLink $payloadId',
-            domain: 'SYNC_BACKFILL',
-            subDomain: 'processEntry',
+          _trace(
+            'agentRepository not wired, skipping agentLink $payloadId',
+            subDomain: 'backfill.processEntry',
           );
           return false;
         }
@@ -549,10 +601,9 @@ class BackfillResponseHandler {
           response.payloadType ?? SyncSequencePayloadType.journalEntity;
       final payloadId = response.payloadId ?? response.entryId;
 
-      _loggingService.captureEvent(
-        'handleBackfillResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} unresolvable=${response.unresolvable} payloadType=$payloadType payloadId=$payloadId entryId=${response.entryId}',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'handleResponse',
+      _trace(
+        'handleResponse hostId=${response.hostId} counter=${response.counter} deleted=${response.deleted} unresolvable=${response.unresolvable} payloadType=$payloadType payloadId=$payloadId entryId=${response.entryId}',
+        subDomain: 'backfill.response',
       );
 
       // First, store the hint (or mark as deleted/unresolvable for those responses)

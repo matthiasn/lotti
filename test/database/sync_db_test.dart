@@ -2116,6 +2116,206 @@ void main() {
     });
   });
 
+  group('getNearestCoveringEntry Tests', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+      database = db!;
+    });
+
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test('returns null when no entries exist', () async {
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test(
+      'returns entry with counter >= requested and received status',
+      () async {
+        await database.batchInsertSequenceEntries([
+          SyncSequenceLogCompanion(
+            hostId: const Value('host-1'),
+            counter: const Value(7),
+            status: Value(SyncSequenceStatus.received.index),
+            entryId: const Value('entry-7'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            createdAt: Value(DateTime(2024, 3, 15)),
+            updatedAt: Value(DateTime(2024, 3, 15)),
+          ),
+        ]);
+
+        final result = await database.getNearestCoveringEntry('host-1', 5);
+        expect(result, isNotNull);
+        expect(result!.counter, 7);
+        expect(result.entryId, 'entry-7');
+      },
+    );
+
+    test('returns entry with backfilled status', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(10),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          entryId: const Value('entry-10'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNotNull);
+      expect(result!.counter, 10);
+      expect(result.entryId, 'entry-10');
+    });
+
+    test('skips hint-only requested rows', () async {
+      // A requested row with entryId is a hint — payload may not exist locally
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.requested.index),
+          entryId: const Value('hint-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test('skips missing rows with entryId', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.missing.index),
+          entryId: const Value('hint-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test('skips rows without entryId', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.received.index),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test('returns nearest (lowest counter) covering entry', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(10),
+          status: Value(SyncSequenceStatus.received.index),
+          entryId: const Value('entry-10'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.received.index),
+          entryId: const Value('entry-7'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNotNull);
+      expect(result!.counter, 7);
+      expect(result.entryId, 'entry-7');
+    });
+
+    test('does not return entry for different host', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-2'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.received.index),
+          entryId: const Value('entry-7'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test('does not return entry with counter below requested', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(3),
+          status: Value(SyncSequenceStatus.received.index),
+          entryId: const Value('entry-3'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNull);
+    });
+
+    test('skips lower requested row and returns higher received row', () async {
+      await database.batchInsertSequenceEntries([
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(7),
+          status: Value(SyncSequenceStatus.requested.index),
+          entryId: const Value('hint-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+        SyncSequenceLogCompanion(
+          hostId: const Value('host-1'),
+          counter: const Value(10),
+          status: Value(SyncSequenceStatus.received.index),
+          entryId: const Value('real-entry'),
+          payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+          createdAt: Value(DateTime(2024, 3, 15)),
+          updatedAt: Value(DateTime(2024, 3, 15)),
+        ),
+      ]);
+
+      final result = await database.getNearestCoveringEntry('host-1', 5);
+      expect(result, isNotNull);
+      expect(result!.counter, 10);
+      expect(result.entryId, 'real-entry');
+    });
+  });
+
   group('getPendingEntriesByPayloadId Tests', () {
     setUp(() async {
       db = SyncDatabase(inMemoryDatabase: true);
