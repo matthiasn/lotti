@@ -415,8 +415,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   name: 'OllamaInferenceRepository',
                 );
 
+                // Use the index from the Ollama response (not the loop
+                // variable) so that tool calls streamed in separate chunks
+                // get distinct indices and aren't merged by the accumulator.
+                // Check both the tool-call level and the function sub-object
+                // to handle varying Ollama response formats.
+                final ollamaIndex =
+                    (toolCall['index'] as int?) ??
+                    (functionCall['index'] as int?) ??
+                    i;
                 toolCallsList.add({
-                  'index': i,
+                  'index': ollamaIndex,
                   'id':
                       toolCall['id'] ??
                       'tool-${DateTime.now().millisecondsSinceEpoch}-$i',

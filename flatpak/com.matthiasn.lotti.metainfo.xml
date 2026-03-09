@@ -41,6 +41,11 @@
           <p>Fixed macOS crash on quit: use POSIX _exit(0) via FFI instead of Dart exit(0) to prevent VM teardown racing with native threads (mpv, SQLite). Explicitly dispose media_kit Player before exiting. Added 35 new category icons. Polished the icon picker with Material 3 styling. Fixed change set UI stability, label assignment rate limiter, follow-up task handler, and database UNIQUE constraint crash.</p>
       </description>
     </release>
+    <release version="0.9.912" date="2026-03-09">
+      <description>
+          <p>Qwen 3.5 local inference: added 9B and 27B models via Ollama with native multimodal, reasoning, and tool calling. New "Local Power" profile for higher-end devices. Updated default local profile to Qwen 3.5 9B. Removed superseded local models. Fixed Ollama streaming tool call index bug that merged multiple tool calls into one. Added automatic model backfill and profile drift detection on startup.</p>
+      </description>
+    </release>
     <release version="0.9.911" date="2026-03-09">
       <description>
           <p>Fixed macOS crash on close: skip SQLite database close entirely before exit(0) to avoid SIGABRT in sqlite3_close_v2 during VM teardown. SQLite WAL mode ensures data integrity without explicit close.</p>

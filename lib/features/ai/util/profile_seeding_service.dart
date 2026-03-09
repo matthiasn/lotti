@@ -10,6 +10,7 @@ const profileOpenAiId = 'profile-openai-001';
 const profileMistralEuId = 'profile-mistral-eu-001';
 const profileAlibabaId = 'profile-alibaba-001';
 const profileLocalId = 'profile-local-001';
+const profileLocalPowerId = 'profile-local-power-001';
 
 const _logTag = 'ProfileSeedingService';
 
@@ -25,28 +26,51 @@ class ProfileSeedingService {
   final AiConfigRepository _repo;
 
   /// Seeds all default profiles. Safe to call multiple times.
+  ///
+  /// For new profiles, creates them. For existing default profiles whose
+  /// model IDs have changed in code, updates them to match.
   Future<void> seedDefaults() async {
     var seededCount = 0;
+    var updatedCount = 0;
 
     for (final profile in _defaultProfiles) {
       final existing = await _repo.getConfigById(profile.id);
-      if (existing != null) continue;
 
-      await _repo.saveConfig(profile);
-      seededCount++;
+      if (existing == null) {
+        await _repo.saveConfig(profile);
+        seededCount++;
+        continue;
+      }
+
+      // Update existing default profiles if model IDs have drifted,
+      // but only when the user hasn't manually edited the profile
+      // (UI edits set updatedAt; seeded profiles leave it null).
+      if (existing is AiConfigInferenceProfile &&
+          existing.isDefault &&
+          existing.updatedAt == null &&
+          _hasModelIdDrift(existing, profile)) {
+        await _repo.saveConfig(profile);
+        updatedCount++;
+      }
     }
 
-    if (seededCount > 0) {
+    if (seededCount > 0 || updatedCount > 0) {
       developer.log(
-        'Seeded $seededCount default inference profiles',
-        name: _logTag,
-      );
-    } else {
-      developer.log(
-        'Default inference profiles already seeded, skipping',
+        'Profiles: seeded $seededCount, updated $updatedCount',
         name: _logTag,
       );
     }
+  }
+
+  /// Returns true when any model slot in [existing] differs from [target].
+  static bool _hasModelIdDrift(
+    AiConfigInferenceProfile existing,
+    AiConfigInferenceProfile target,
+  ) {
+    return existing.thinkingModelId != target.thinkingModelId ||
+        existing.imageRecognitionModelId != target.imageRecognitionModelId ||
+        existing.transcriptionModelId != target.transcriptionModelId ||
+        existing.imageGenerationModelId != target.imageGenerationModelId;
   }
 
   static final _defaultProfiles = <AiConfigInferenceProfile>[
@@ -102,8 +126,17 @@ class ProfileSeedingService {
     AiConfigInferenceProfile(
       id: profileLocalId,
       name: 'Local (Ollama)',
-      thinkingModelId: 'qwen3:8b',
+      thinkingModelId: 'qwen3.5:9b',
       imageRecognitionModelId: 'gemma3:4b',
+      isDefault: true,
+      desktopOnly: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileLocalPowerId,
+      name: 'Local Power (Ollama)',
+      thinkingModelId: 'qwen3.5:27b',
+      imageRecognitionModelId: 'gemma3:12b',
       isDefault: true,
       desktopOnly: true,
       createdAt: DateTime(2026),

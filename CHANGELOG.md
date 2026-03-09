@@ -67,7 +67,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in the change set builder for easier troubleshooting.
 
 ## [0.9.912] - 2026-03-09
+### Added
+- Qwen 3.5 local inference: added Qwen 3.5 9B and 27B models for local
+  inference via Ollama with native multimodal, reasoning, and tool calling
+  capabilities.
+- New "Local Power (Ollama)" inference profile for higher-end devices
+  using Qwen 3.5 27B for thinking and Gemma 3 12B for image recognition.
+
+### Changed
+- Updated "Local (Ollama)" inference profile to use Qwen 3.5 9B instead
+  of Qwen3 8B.
+- Removed superseded local models: DeepSeek R1 8B, GPT-OSS 20B/120B,
+  Qwen3 8B, and Gemma 3 12B QAT.
+- Default inference profiles now auto-update when upstream model IDs
+  change, ensuring users always get the latest model assignments.
+- New known models are automatically backfilled for existing inference
+  providers on app startup.
+
 ### Fixed
+- Ollama streaming tool call index: multiple tool calls streamed in
+  separate chunks were merged into one malformed call because the loop
+  index was used instead of the response's actual tool call index.
 - Flicker on task details page.
 
 ## [0.9.911] - 2026-03-09
