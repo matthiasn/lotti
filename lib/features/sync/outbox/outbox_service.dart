@@ -593,13 +593,19 @@ class OutboxService {
         final toCount = links
             .where((link) => link.toId == journalMsg.id)
             .length;
+        // Cap embedded links to prevent oversized envelopes. Remaining
+        // links still sync independently as SyncEntryLink messages.
+        final capped = links.length > SyncTuning.maxEmbeddedEntryLinks
+            ? links.sublist(links.length - SyncTuning.maxEmbeddedEntryLinks)
+            : links;
         _loggingService.captureEvent(
           'enqueueMessage.attachedLinks id=${journalMsg.id} '
-          'count=${links.length} from=$fromCount to=$toCount',
+          'count=${links.length} embedded=${capped.length} '
+          'from=$fromCount to=$toCount',
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',
         );
-        journalMsg = journalMsg.copyWith(entryLinks: links);
+        journalMsg = journalMsg.copyWith(entryLinks: capped);
       } else {
         _loggingService.captureEvent(
           'enqueueMessage.noLinks id=${journalMsg.id}',

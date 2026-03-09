@@ -3,6 +3,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
@@ -14,13 +15,24 @@ class SyncSequenceLogService {
     required SyncDatabase syncDatabase,
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
+    DomainLogger? domainLogger,
   }) : _syncDatabase = syncDatabase,
        _vectorClockService = vectorClockService,
-       _loggingService = loggingService;
+       _loggingService = loggingService,
+       _domainLogger = domainLogger;
 
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
   final LoggingService _loggingService;
+  final DomainLogger? _domainLogger;
+
+  void _trace(String message, {String? subDomain}) {
+    _domainLogger?.log(
+      LogDomains.sync,
+      message,
+      subDomain: subDomain ?? 'sequence',
+    );
+  }
 
   // ============ Host Activity Cache ============
   // Reduces O(hosts_in_VC) DB queries per incoming entry by caching
@@ -111,6 +123,10 @@ class SyncSequenceLogService {
         ),
       );
 
+      _trace(
+        'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
+        subDomain: 'sequence.recordSent',
+      );
       _loggingService.captureEvent(
         'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
         domain: 'SYNC_SEQUENCE',
@@ -204,6 +220,10 @@ class SyncSequenceLogService {
           hostLastOnline != null || hostId == originatingHostId;
 
       if (!shouldDetectGaps) {
+        _trace(
+          'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
+          subDomain: 'sequence.skipGap',
+        );
         _loggingService.captureEvent(
           'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
           domain: 'SYNC_SEQUENCE',
@@ -220,6 +240,10 @@ class SyncSequenceLogService {
         // Limit gap size to prevent explosion of missing entries
         // when sequence log is corrupted or entries are deleted
         if (gapSize > SyncTuning.maxGapSize) {
+          _trace(
+            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
+            subDomain: 'sequence.largeGap',
+          );
           _loggingService.captureEvent(
             'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
             domain: 'SYNC_SEQUENCE',
@@ -253,6 +277,10 @@ class SyncSequenceLogService {
               ),
             );
 
+            _trace(
+              'gapDetected hostId=$hostId counter=$i (last seen: $lastSeen, observed: $counter) from=$originatingHostId',
+              subDomain: 'sequence.gapDetected',
+            );
             _loggingService.captureEvent(
               'gapDetected hostId=$hostId counter=$i (last seen: $lastSeen, observed: $counter) from=$originatingHostId',
               domain: 'SYNC_SEQUENCE',
@@ -304,6 +332,14 @@ class SyncSequenceLogService {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
+          _trace(
+            'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
+            subDomain: 'sequence.backfillArrived',
+          );
+          _trace(
+            'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+            subDomain: 'sequence.requestedResolved',
+          );
           _loggingService
             ..captureEvent(
               'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
@@ -359,6 +395,14 @@ class SyncSequenceLogService {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
+          _trace(
+            'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
+            subDomain: 'sequence.backfillArrived',
+          );
+          _trace(
+            'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+            subDomain: 'sequence.requestedResolved',
+          );
           _loggingService
             ..captureEvent(
               'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
@@ -378,6 +422,10 @@ class SyncSequenceLogService {
     }
 
     if (gaps.isNotEmpty) {
+      _trace(
+        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.length} gaps',
+        subDomain: 'sequence.recordReceived',
+      );
       _loggingService.captureEvent(
         'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.length} gaps',
         domain: 'SYNC_SEQUENCE',
@@ -499,6 +547,10 @@ class SyncSequenceLogService {
           );
           markedCount++;
           if (existing.status == SyncSequenceStatus.requested.index) {
+            _trace(
+              'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              subDomain: 'sequence.requestedResolved',
+            );
             _loggingService.captureEvent(
               'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
               domain: 'SYNC_SEQUENCE',
@@ -511,6 +563,10 @@ class SyncSequenceLogService {
     }
 
     if (markedCount > 0) {
+      _trace(
+        'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
+        subDomain: 'sequence.coveredClocks',
+      );
       _loggingService.captureEvent(
         'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
         domain: 'SYNC_SEQUENCE',
@@ -570,6 +626,10 @@ class SyncSequenceLogService {
         SyncSequenceStatus.deleted,
       );
 
+      _trace(
+        'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
+        subDomain: 'sequence.backfillResponse',
+      );
       _loggingService.captureEvent(
         'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
         domain: 'SYNC_SEQUENCE',
@@ -587,6 +647,10 @@ class SyncSequenceLogService {
         SyncSequenceStatus.unresolvable,
       );
 
+      _trace(
+        'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
+        subDomain: 'sequence.backfillResponse',
+      );
       _loggingService.captureEvent(
         'handleBackfillResponse hostId=$hostId counter=$counter unresolvable=true',
         domain: 'SYNC_SEQUENCE',
@@ -619,6 +683,10 @@ class SyncSequenceLogService {
         ),
       );
 
+      _trace(
+        'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
+        subDomain: 'sequence.backfillHint',
+      );
       _loggingService.captureEvent(
         'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
         domain: 'SYNC_SEQUENCE',
@@ -631,6 +699,10 @@ class SyncSequenceLogService {
     if (existing.status == SyncSequenceStatus.received.index ||
         existing.status == SyncSequenceStatus.backfilled.index ||
         existing.status == SyncSequenceStatus.deleted.index) {
+      _trace(
+        'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
+        subDomain: 'sequence.backfillResponse',
+      );
       _loggingService.captureEvent(
         'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
         domain: 'SYNC_SEQUENCE',
@@ -655,6 +727,10 @@ class SyncSequenceLogService {
       ),
     );
 
+    _trace(
+      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[existing.status]})',
+      subDomain: 'sequence.backfillHint',
+    );
     _loggingService.captureEvent(
       'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[existing.status]})',
       domain: 'SYNC_SEQUENCE',
@@ -676,6 +752,10 @@ class SyncSequenceLogService {
     // Verify the entry's VC covers the requested (hostId, counter)
     final vcCounter = entryVectorClock.vclock[hostId];
     if (vcCounter == null || vcCounter < counter) {
+      _trace(
+        'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
+        subDomain: 'sequence.backfillVerify',
+      );
       _loggingService.captureEvent(
         'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
         domain: 'SYNC_SEQUENCE',
@@ -711,6 +791,10 @@ class SyncSequenceLogService {
       ),
     );
 
+    _trace(
+      'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
+      subDomain: 'sequence.backfillVerified',
+    );
     _loggingService.captureEvent(
       'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
       domain: 'SYNC_SEQUENCE',
@@ -747,6 +831,10 @@ class SyncSequenceLogService {
     }
 
     if (resolved > 0) {
+      _trace(
+        'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
+        subDomain: 'sequence.backfillResolved',
+      );
       _loggingService.captureEvent(
         'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
         domain: 'SYNC_SEQUENCE',
@@ -764,6 +852,10 @@ class SyncSequenceLogService {
     final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
 
     if (count > 0) {
+      _trace(
+        'resetUnresolvableEntries: reset $count entries back to missing',
+        subDomain: 'sequence.resetUnresolvable',
+      );
       _loggingService.captureEvent(
         'resetUnresolvableEntries: reset $count entries back to missing',
         domain: 'SYNC_SEQUENCE',
@@ -826,6 +918,10 @@ class SyncSequenceLogService {
   ) async {
     await _syncDatabase.resetRequestCounts(entries);
 
+    _trace(
+      'resetRequestCounts: reset ${entries.length} entries for re-request',
+      subDomain: 'sequence.reRequest',
+    );
     _loggingService.captureEvent(
       'resetRequestCounts: reset ${entries.length} entries for re-request',
       domain: 'SYNC_SEQUENCE',
@@ -989,6 +1085,10 @@ class SyncSequenceLogService {
     }
 
     if (populated > 0) {
+      _trace(
+        '$label: added $populated sequence log entries',
+        subDomain: 'sequence.populate',
+      );
       _loggingService.captureEvent(
         '$label: added $populated sequence log entries',
         domain: 'SYNC_SEQUENCE',

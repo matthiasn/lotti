@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -32,19 +33,30 @@ class MatrixMessageSender {
     required Directory documentsDirectory,
     required SentEventRegistry sentEventRegistry,
     VectorClockService? vectorClockService,
+    DomainLogger? domainLogger,
   }) : _loggingService = loggingService,
        _journalDb = journalDb,
        _documentsDirectory = documentsDirectory,
        _sentEventRegistry = sentEventRegistry,
-       _vectorClockService = vectorClockService;
+       _vectorClockService = vectorClockService,
+       _domainLogger = domainLogger;
 
   final LoggingService _loggingService;
   final JournalDb _journalDb;
   final Directory _documentsDirectory;
   final SentEventRegistry _sentEventRegistry;
   final VectorClockService? _vectorClockService;
+  final DomainLogger? _domainLogger;
 
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
+
+  void _trace(String message, {String? subDomain}) {
+    _domainLogger?.log(
+      LogDomains.sync,
+      message,
+      subDomain: subDomain ?? 'matrix.send',
+    );
+  }
 
   Future<SyncMessage> _ensureOriginatingHostId(
     SyncMessage message,
@@ -84,6 +96,11 @@ class MatrixMessageSender {
     required MatrixMessageSentCallback onSent,
   }) async {
     if (context.unverifiedDevices.isNotEmpty) {
+      _trace(
+        'FAIL unverifiedDevices=${context.unverifiedDevices.length} '
+        'type=${message.runtimeType}',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureException(
         'Unverified devices found',
         domain: 'MATRIX_SERVICE',
@@ -96,6 +113,10 @@ class MatrixMessageSender {
     final roomId = context.syncRoomId ?? room?.id;
 
     if (roomId == null) {
+      _trace(
+        'FAIL noRoomId type=${message.runtimeType}',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureEvent(
         configNotFound,
         domain: 'MATRIX_SERVICE',
@@ -105,6 +126,10 @@ class MatrixMessageSender {
     }
 
     if (room == null) {
+      _trace(
+        'FAIL noRoom roomId=$roomId type=${message.runtimeType}',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureEvent(
         'Unable to send message: no room instance available for $roomId',
         domain: 'MATRIX_SERVICE',
@@ -132,6 +157,11 @@ class MatrixMessageSender {
           message: outboundMessage,
         );
         if (normalized == null) {
+          _trace(
+            'FAIL journalEntityPayload jsonPath=${outboundMessage.jsonPath} '
+            'id=${outboundMessage.id}',
+            subDomain: 'matrix.send.error',
+          );
           return false;
         }
         outboundMessage = normalized;
@@ -151,18 +181,32 @@ class MatrixMessageSender {
         room: room,
         message: outboundMessage,
       );
-      if (agentResult == null) return false;
+      if (agentResult == null) {
+        _trace(
+          'FAIL agentPayload type=${outboundMessage.runtimeType}',
+          subDomain: 'matrix.send.error',
+        );
+        return false;
+      }
       outboundMessage = agentResult;
 
       final encodedMessage = json.encode(outboundMessage);
+      final encodedBytes = utf8.encode(encodedMessage);
+      final b64Message = base64.encode(encodedBytes);
       final eventId = await room.sendTextEvent(
-        base64.encode(utf8.encode(encodedMessage)),
+        b64Message,
         msgtype: syncMessageType,
         parseCommands: false,
         parseMarkdown: false,
       );
 
       if (eventId == null) {
+        _trace(
+          'FAIL sendTextEvent returned null '
+          'type=${outboundMessage.runtimeType} '
+          'jsonBytes=${encodedBytes.length} b64Bytes=${b64Message.length}',
+          subDomain: 'matrix.send.error',
+        );
         _loggingService.captureEvent(
           'Failed sending text message to $room',
           domain: 'MATRIX_SERVICE',
@@ -201,6 +245,11 @@ class MatrixMessageSender {
       }
       return true;
     } catch (error, stackTrace) {
+      _trace(
+        'EXCEPTION type=${message.runtimeType} '
+        'error=${error.runtimeType}: $error',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
@@ -245,6 +294,11 @@ class MatrixMessageSender {
       );
 
       if (eventId == null) {
+        _trace(
+          'FAIL sendFileEvent returned null path=$relativePath '
+          'bytes=${fileBytes.length}',
+          subDomain: 'matrix.send.error',
+        );
         _loggingService.captureEvent(
           'Failed sending $relativePath file message to $room',
           domain: 'MATRIX_SERVICE',
@@ -265,6 +319,11 @@ class MatrixMessageSender {
       );
       return true;
     } catch (error, stackTrace) {
+      _trace(
+        'EXCEPTION sendFile path=$relativePath '
+        'error=${error.runtimeType}: $error',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',
@@ -288,6 +347,11 @@ class MatrixMessageSender {
     try {
       jsonBytes = await File(jsonFullPath).readAsBytes();
     } catch (error, stackTrace) {
+      _trace(
+        'EXCEPTION readJsonFile path=$jsonFullPath '
+        'error=${error.runtimeType}: $error',
+        subDomain: 'matrix.send.error',
+      );
       _loggingService.captureException(
         error,
         domain: 'MATRIX_SERVICE',

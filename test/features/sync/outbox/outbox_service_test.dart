@@ -3356,7 +3356,7 @@ void main() {
       verify(
         () => loggingService.captureEvent(
           contains(
-            'enqueueMessage.attachedLinks id=$entryId count=2 from=1 to=1',
+            'enqueueMessage.attachedLinks id=$entryId count=2 embedded=2 from=1 to=1',
           ),
           domain: 'OUTBOX',
           subDomain: 'enqueueMessage.attachLinks',

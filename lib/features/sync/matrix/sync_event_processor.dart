@@ -12,7 +12,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -28,6 +27,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -494,11 +494,13 @@ class SyncEventProcessor {
     required UpdateNotifications updateNotifications,
     required AiConfigRepository aiConfigRepository,
     required SettingsDb settingsDb,
+    DomainLogger? domainLogger,
     SyncJournalEntityLoader? journalEntityLoader,
     SyncSequenceLogService? sequenceLogService,
     AttachmentIndex? attachmentIndex,
     this.backfillResponseHandler,
   }) : _loggingService = loggingService,
+       _domainLogger = domainLogger,
        _updateNotifications = updateNotifications,
        _aiConfigRepository = aiConfigRepository,
        _settingsDb = settingsDb,
@@ -508,6 +510,7 @@ class SyncEventProcessor {
        _attachmentIndex = attachmentIndex;
 
   final LoggingService _loggingService;
+  final DomainLogger? _domainLogger;
   final UpdateNotifications _updateNotifications;
   final AiConfigRepository _aiConfigRepository;
   final SettingsDb _settingsDb;
@@ -540,6 +543,14 @@ class SyncEventProcessor {
   /// Set this to the read marker timestamp at app startup.
   num? startupTimestamp;
 
+  void _trace(String message, {String? subDomain}) {
+    _domainLogger?.log(
+      LogDomains.sync,
+      message,
+      subDomain: subDomain ?? 'processor',
+    );
+  }
+
   set cachePurgeListener(void Function()? listener) {
     final loader = _journalEntityLoader;
     if (loader is SmartJournalEntityLoader) {
@@ -565,6 +576,11 @@ class SyncEventProcessor {
         if (e is! ArgumentError && e is! FormatException) {
           rethrow;
         }
+        _trace(
+          'skipping undeserializable sync message: $e '
+          'eventId=${event.eventId}',
+          subDomain: 'processor.skipUnrecoverable',
+        );
         _loggingService.captureEvent(
           'skipping undeserializable sync message: $e '
           'eventId=${event.eventId}',
@@ -574,29 +590,20 @@ class SyncEventProcessor {
         return;
       }
 
-      // For old backfill responses, only skip when the sequence log shows no
-      // outstanding missing/requested entry for that counter.
-      // Old backfill requests are NOT skipped — they are still valid and the
-      // response handler's cooldown cache + rate limiter prevent amplification.
-      // Skipping old requests caused a bidirectional deadlock: if both devices
-      // restart, each would skip the other's pre-restart requests, and neither
-      // would ever respond.
-      if (syncMessage is SyncBackfillResponse) {
-        final eventTs = event.originServerTs;
-        final startupTs = startupTimestamp;
-        if (startupTs != null && eventTs.millisecondsSinceEpoch < startupTs) {
-          final shouldSkip = await _shouldSkipOldBackfillResponse(
-            response: syncMessage,
-            eventTs: eventTs,
-            startupTs: startupTs,
-            eventId: event.eventId,
-          );
-          if (shouldSkip) {
-            return;
-          }
-        }
-      }
+      // Old backfill responses are NEVER skipped. The handleBackfillResponse
+      // method is idempotent — at worst it stores a hint and does a no-op
+      // verification. Skipping responses when the counter doesn't exist in
+      // the local sequence log caused a deadlock: device A requests counter X,
+      // device B responds, but A's sequence log doesn't have counter X for
+      // its own hostId (gap detection skips own host), so A drops the response
+      // and the counter stays in "requested" state forever.
+      //
+      // Old backfill requests are also not skipped (see above).
 
+      _trace(
+        'processing ${event.originServerTs} ${event.eventId}',
+        subDomain: 'processor.SyncEventProcessor',
+      );
       _loggingService.captureEvent(
         'processing ${event.originServerTs} ${event.eventId}',
         domain: 'MATRIX_SERVICE',
@@ -623,51 +630,6 @@ class SyncEventProcessor {
       }
       rethrow;
     }
-  }
-
-  Future<bool> _shouldSkipOldBackfillResponse({
-    required SyncBackfillResponse response,
-    required DateTime eventTs,
-    required num startupTs,
-    required String eventId,
-  }) async {
-    final sequenceLogService = _sequenceLogService;
-    if (sequenceLogService == null) {
-      _loggingService.captureEvent(
-        'skipping old backfill response hostId=${response.hostId} counter=${response.counter} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=noSequenceLog',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'skipOld',
-      );
-      return true;
-    }
-
-    final existing = await sequenceLogService.getEntryByHostAndCounter(
-      response.hostId,
-      response.counter,
-    );
-    if (existing == null) {
-      _loggingService.captureEvent(
-        'skipping old backfill response hostId=${response.hostId} counter=${response.counter} eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=noSequenceEntry',
-        domain: 'SYNC_BACKFILL',
-        subDomain: 'skipOld',
-      );
-      return true;
-    }
-
-    final status = SyncSequenceStatus.values[existing.status];
-    final shouldProcess =
-        status == SyncSequenceStatus.missing ||
-        status == SyncSequenceStatus.requested;
-    final action = shouldProcess ? 'allowing' : 'skipping';
-    final reason = shouldProcess ? 'pending' : 'resolved';
-
-    _loggingService.captureEvent(
-      '$action old backfill response hostId=${response.hostId} counter=${response.counter} status=$status eventTs=${eventTs.millisecondsSinceEpoch} startupTs=$startupTs eventId=$eventId reason=$reason',
-      domain: 'SYNC_BACKFILL',
-      subDomain: 'skipOld',
-    );
-
-    return !shouldProcess;
   }
 
   bool _isStaleDescriptorError(FileSystemException error) {
@@ -719,6 +681,10 @@ class SyncEventProcessor {
         final linkRows = await journalDb.upsertEntryLink(link);
         if (linkRows > 0) {
           processedLinksCount++;
+          _trace(
+            'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
+            subDomain: 'processor.apply.entryLink.embedded',
+          );
           _loggingService.captureEvent(
             'apply entryLink.embedded from=${link.fromId} to=${link.toId} rows=$linkRows',
             domain: 'MATRIX_SERVICE',
@@ -796,6 +762,10 @@ class SyncEventProcessor {
       applied: false,
       skipReason: JournalUpdateSkipReason.olderOrEqual,
     );
+    _trace(
+      'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
+      subDomain: 'processor.apply',
+    );
     _loggingService.captureEvent(
       'apply journalEntity skipped staleDescriptor eventId=${event.eventId} id=${syncMessage.id} status=${diag.conflictStatus} embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
       domain: 'MATRIX_SERVICE',
@@ -811,6 +781,10 @@ class SyncEventProcessor {
           coveredVectorClocks: syncMessage.coveredVectorClocks,
         );
         if (gaps.isNotEmpty) {
+          _trace(
+            'apply.gapsDetected count=${gaps.length} for entity=${syncMessage.id}',
+            subDomain: 'processor.gapDetection',
+          );
           _loggingService.captureEvent(
             'apply.gapsDetected count=${gaps.length} for entity=${syncMessage.id}',
             domain: 'SYNC_SEQUENCE',
@@ -880,6 +854,11 @@ class SyncEventProcessor {
         applied: false,
         skipReason: JournalUpdateSkipReason.olderOrEqual,
       );
+      _trace(
+        'apply journalEntity skipped duplicate eventId=${event.eventId} '
+        'id=${syncMessage.id}',
+        subDomain: 'processor.apply',
+      );
       _loggingService.captureEvent(
         'apply journalEntity skipped duplicate eventId=${event.eventId} '
         'id=${syncMessage.id}',
@@ -937,6 +916,14 @@ class SyncEventProcessor {
       applied: updateResult.applied,
       skipReason: updateResult.skipReason,
     );
+    _trace(
+      'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} '
+      'rowsWritten=$rows applied=${updateResult.applied} '
+      'skip=${updateResult.skipReason?.label ?? 'none'} '
+      'status=${diag.conflictStatus} '
+      'embeddedLinks=$processedLinksCount/${entryLinks?.length ?? 0}',
+      subDomain: 'processor.apply',
+    );
     _loggingService.captureEvent(
       'apply journalEntity eventId=${event.eventId} id=${journalEntity.meta.id} '
       'rowsWritten=$rows applied=${updateResult.applied} '
@@ -971,6 +958,11 @@ class SyncEventProcessor {
             coveredVectorClocks: syncMessage.coveredVectorClocks,
           );
           if (gaps.isNotEmpty) {
+            _trace(
+              'apply.gapsDetected count=${gaps.length} '
+              'for entity=${journalEntity.meta.id}',
+              subDomain: 'processor.gapDetection',
+            );
             _loggingService.captureEvent(
               'apply.gapsDetected count=${gaps.length} '
               'for entity=${journalEntity.meta.id}',
@@ -1005,6 +997,11 @@ class SyncEventProcessor {
     final rows = await journalDb.upsertEntryLink(entryLink);
     try {
       if (rows > 0) {
+        _trace(
+          'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} '
+          'rows=$rows',
+          subDomain: 'processor.apply.entryLink',
+        );
         _loggingService.captureEvent(
           'apply entryLink from=${entryLink.fromId} to=${entryLink.toId} '
           'rows=$rows',
@@ -1052,6 +1049,11 @@ class SyncEventProcessor {
             coveredVectorClocks: coveredVectorClocks,
           );
           if (gaps.isNotEmpty) {
+            _trace(
+              'apply.entryLink.gapsDetected count=${gaps.length} '
+              'for link=${entryLink.id}',
+              subDomain: 'processor.gapDetection',
+            );
             _loggingService.captureEvent(
               'apply.entryLink.gapsDetected count=${gaps.length} '
               'for link=${entryLink.id}',
@@ -1095,6 +1097,10 @@ class SyncEventProcessor {
     if (inline != null) return inline;
     final jp = jsonPath;
     if (jp == null) {
+      _trace(
+        '$typeName.skipped no payload and no jsonPath',
+        subDomain: 'processor.resolve',
+      );
       _loggingService.captureEvent(
         '$typeName.skipped no payload and no jsonPath',
         domain: 'AGENT_SYNC',
@@ -1177,6 +1183,10 @@ class SyncEventProcessor {
     final indexKey = _buildAgentIndexKey(jsonPath);
     final descriptorEvent = index.find(indexKey);
     if (descriptorEvent == null) {
+      _trace(
+        '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
+        subDomain: 'processor.resolve',
+      );
       _loggingService.captureEvent(
         '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
         domain: 'AGENT_SYNC',
@@ -1193,6 +1203,10 @@ class SyncEventProcessor {
       }
       final jsonString = utf8.decode(bytes);
       await saveJson(targetFile.path, jsonString);
+      _trace(
+        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
+        subDomain: 'processor.resolve',
+      );
       _loggingService.captureEvent(
         '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
         domain: 'AGENT_SYNC',
@@ -1326,6 +1340,10 @@ class SyncEventProcessor {
               : 0;
 
           if (updatedAt < (localUpdatedAt ?? 0)) {
+            _trace(
+              'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
+              subDomain: 'processor.apply',
+            );
             _loggingService.captureEvent(
               'themingSync.ignored.stale incoming=$updatedAt local=$localUpdatedAt',
               domain: 'THEMING_SYNC',
@@ -1365,6 +1383,10 @@ class SyncEventProcessor {
             fromSync: true,
           );
 
+          _trace(
+            'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'apply themingSelection light=$lightThemeName dark=$darkThemeName mode=$themeMode',
             domain: 'THEMING_SYNC',
@@ -1384,6 +1406,10 @@ class SyncEventProcessor {
         if (backfillResponseHandler != null) {
           await backfillResponseHandler!.handleBackfillRequest(syncMessage);
         } else {
+          _trace(
+            'backfillRequest.ignored no handler configured',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'backfillRequest.ignored no handler configured',
             domain: 'SYNC_BACKFILL',
@@ -1396,6 +1422,10 @@ class SyncEventProcessor {
         if (backfillResponseHandler != null) {
           await backfillResponseHandler!.handleBackfillResponse(syncMessage);
         } else {
+          _trace(
+            'backfillResponse.ignored no handler configured',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'backfillResponse.ignored no handler configured',
             domain: 'SYNC_BACKFILL',
@@ -1456,6 +1486,10 @@ class SyncEventProcessor {
             },
             fromSync: true,
           );
+          _trace(
+            'apply agentEntity id=${resolvedEntity.id}',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'apply agentEntity id=${resolvedEntity.id}',
             domain: 'AGENT_SYNC',
@@ -1475,6 +1509,11 @@ class SyncEventProcessor {
                 payloadType: SyncSequencePayloadType.agentEntity,
               );
               if (gaps.isNotEmpty) {
+                _trace(
+                  'apply.agentEntity.gapsDetected count=${gaps.length} '
+                  'for entity=${resolvedEntity.id}',
+                  subDomain: 'processor.gapDetection',
+                );
                 _loggingService.captureEvent(
                   'apply.agentEntity.gapsDetected count=${gaps.length} '
                   'for entity=${resolvedEntity.id}',
@@ -1492,6 +1531,10 @@ class SyncEventProcessor {
             }
           }
         } else {
+          _trace(
+            'agentEntity.ignored no repository',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'agentEntity.ignored no repository',
             domain: 'AGENT_SYNC',
@@ -1532,6 +1575,10 @@ class SyncEventProcessor {
             {resolvedLink.fromId, resolvedLink.toId, agentNotification},
             fromSync: true,
           );
+          _trace(
+            'apply agentLink id=${resolvedLink.id}',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'apply agentLink id=${resolvedLink.id}',
             domain: 'AGENT_SYNC',
@@ -1551,6 +1598,11 @@ class SyncEventProcessor {
                 payloadType: SyncSequencePayloadType.agentLink,
               );
               if (gaps.isNotEmpty) {
+                _trace(
+                  'apply.agentLink.gapsDetected count=${gaps.length} '
+                  'for link=${resolvedLink.id}',
+                  subDomain: 'processor.gapDetection',
+                );
                 _loggingService.captureEvent(
                   'apply.agentLink.gapsDetected count=${gaps.length} '
                   'for link=${resolvedLink.id}',
@@ -1568,6 +1620,10 @@ class SyncEventProcessor {
             }
           }
         } else {
+          _trace(
+            'agentLink.ignored no repository',
+            subDomain: 'processor.apply',
+          );
           _loggingService.captureEvent(
             'agentLink.ignored no repository',
             domain: 'AGENT_SYNC',
