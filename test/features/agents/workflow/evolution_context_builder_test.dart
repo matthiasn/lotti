@@ -386,4 +386,106 @@ void main() {
       expect(ctx.initialUserMessage.contains('A' * 600), isFalse);
     });
   });
+
+  group('seed directive changelog', () {
+    test('includes changelog entries newer than version createdAt', () {
+      // Default kAgentTestDate is 2024-03-15, and changelog entries are
+      // dated 2026-03-09, so they should appear for a taskAgent template.
+      final ctx = buildWithDefaults();
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Seed Directive Updates Since Your Version'),
+      );
+      expect(ctx.initialUserMessage, contains('Report language'));
+      expect(ctx.initialUserMessage, contains('Links section'));
+    });
+
+    test('omits changelog when version is newer than all entries', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          createdAt: DateTime(2027),
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('Seed Directive Updates')),
+      );
+    });
+
+    test('includes same-day entries for versions created later that day', () {
+      // Changelog entries are dated 2026-03-09 (midnight). A version
+      // created at 10:30 on that same day should still see them.
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          createdAt: DateTime(2026, 3, 9, 10, 30),
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Seed Directive Updates Since Your Version'),
+      );
+    });
+
+    test('omits entries for a different template kind', () {
+      // All current changelog entries are for taskAgent. An improver
+      // template should not see them.
+      final ctx = builder.build(
+        template: makeTestTemplate(
+          displayName: 'Improver',
+          kind: AgentTemplateKind.templateImprover,
+        ),
+        currentVersion: makeTestTemplateVersion(),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('Seed Directive Updates')),
+      );
+    });
+
+    test('omits section when version predates entries by one day', () {
+      // Version created the day after all changelog entries — no entries
+      // should be shown.
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          createdAt: DateTime(2026, 3, 10),
+        ),
+        recentVersions: [makeTestTemplateVersion()],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('Seed Directive Updates')),
+      );
+    });
+  });
 }
