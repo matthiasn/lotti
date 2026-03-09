@@ -14,12 +14,6 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 
-/// Time to wait for FFI callbacks (e.g. sqflite message-port replies) to drain
-/// before the Dart VM is torn down. Without this grace period the native
-/// sqflite worker isolate may fire a callback into an already-deleted Dart
-/// closure, triggering a fatal assertion in runtime_entry.cc.
-const ffiDrainGracePeriod = Duration(milliseconds: 150);
-
 /// Per-operation deadline so a single hung service cannot block the entire
 /// shutdown sequence.
 const _perOperationTimeout = Duration(seconds: 3);

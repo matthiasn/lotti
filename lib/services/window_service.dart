@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
@@ -110,12 +111,31 @@ class WindowService implements WindowListener {
       _logDisposalError(e, s, 'disposeAll');
     }
 
-    // Allow any remaining FFI callbacks (e.g. sqflite message-port replies)
-    // to drain before the Dart VM is torn down. Without this grace period
-    // the native sqflite worker isolate may fire a callback into an already-
-    // deleted Dart closure, triggering a fatal assertion in runtime_entry.cc.
-    await Future<void>.delayed(ffiDrainGracePeriod);
-    await windowManager.destroy();
+    if (isMacOS) {
+      // On macOS, terminate the process immediately after Dart-level disposal.
+      //
+      // We intentionally avoid `windowManager.destroy()` here because it
+      // triggers the Flutter engine teardown path:
+      //   Shell::~Shell() → DartVM::~DartVM() → Dart::Cleanup()
+      //     → WaitForIsolateShutdown()
+      //
+      // That path races with native SQLite worker threads that are still
+      // executing sqlite3Close / WAL checkpoint / btree cleanup inside
+      // Drift's background isolates. When those native threads call
+      // `functionDestroy`, the FFI callback metadata lookup
+      // (DLRT_GetFfiCallbackMetadata) hits a fatal assertion because the
+      // Dart VM is already partially torn down → SIGABRT.
+      //
+      // exit(0) is safe here because:
+      // - All Dart-level resources have been disposed (streams, timers,
+      //   outbox).
+      // - Drift databases have acknowledged their close commands.
+      // - SQLite WAL mode guarantees data integrity even if the process
+      //   exits during a WAL checkpoint; the WAL is replayed on next open.
+      exit(0);
+    } else {
+      await windowManager.destroy();
+    }
   }
 
   void _logDisposalError(
