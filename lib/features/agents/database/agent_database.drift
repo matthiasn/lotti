@@ -51,6 +51,7 @@ CREATE TABLE wake_run_log (
   error_message TEXT,
   template_id TEXT,
   template_version_id TEXT,
+  resolved_model_id TEXT,
   user_rating REAL,
   rated_at DATETIME
 );

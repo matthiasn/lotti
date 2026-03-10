@@ -220,17 +220,23 @@ class AgentRepository {
   }
 
   /// Update the template-related columns on a wake-run log entry.
+  ///
+  /// When [resolvedModelId] is provided, it is persisted alongside the
+  /// template provenance so that `modelIdForThread` can return the actual
+  /// model used even for failed/incomplete wakes.
   Future<void> updateWakeRunTemplate(
     String runKey,
     String templateId,
-    String templateVersionId,
-  ) async {
+    String templateVersionId, {
+    String? resolvedModelId,
+  }) async {
     await (_db.update(
       _db.wakeRunLog,
     )..where((t) => t.runKey.equals(runKey))).write(
       WakeRunLogCompanion(
         templateId: Value(templateId),
         templateVersionId: Value(templateVersionId),
+        resolvedModelId: Value(resolvedModelId),
       ),
     );
   }

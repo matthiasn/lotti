@@ -320,6 +320,7 @@ WakeRunLogData makeTestWakeRun({
   String? errorMessage,
   String? templateId,
   String? templateVersionId,
+  String? resolvedModelId,
   double? userRating,
   DateTime? ratedAt,
 }) {
@@ -335,6 +336,7 @@ WakeRunLogData makeTestWakeRun({
     errorMessage: errorMessage,
     templateId: templateId,
     templateVersionId: templateVersionId,
+    resolvedModelId: resolvedModelId,
     userRating: userRating,
     ratedAt: ratedAt,
   );
