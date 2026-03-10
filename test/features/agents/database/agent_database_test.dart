@@ -109,13 +109,13 @@ void main() {
           tempDirectoryProvider: () async => testDirectory,
         );
 
-        // Verify schema version is now 3 (latest).
+        // Verify schema version is now 4 (latest).
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          3,
+          4,
         );
 
         // Verify the new columns exist by querying them
@@ -226,11 +226,11 @@ void main() {
         tempDirectoryProvider: () async => testDirectory,
       );
 
-      // Verify schema version is now 3.
+      // Verify schema version is now 4.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        3,
+        4,
       );
 
       // Verify the partial unique index exists.
@@ -397,6 +397,100 @@ void main() {
           .where((r) => r.readNullable<String>('deleted_at') != null)
           .toList();
       expect(softDeleted, hasLength(1));
+
+      await db.close();
+    });
+
+    test('v3 to v4 adds resolved_model_id column to wake_run_log', () async {
+      final dbFile = path.join(testDirectory.path, agentDbFileName);
+      final rawDb = sqlite3.open(dbFile);
+
+      // Create v3 schema (without resolved_model_id).
+      rawDb
+        ..execute('''
+          CREATE TABLE agent_entities (
+            id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            subtype TEXT,
+            thread_id TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE agent_links (
+            id TEXT NOT NULL PRIMARY KEY,
+            from_id TEXT NOT NULL,
+            to_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL,
+            deleted_at DATETIME,
+            serialized TEXT NOT NULL,
+            schema_version INTEGER NOT NULL DEFAULT 1,
+            UNIQUE(from_id, to_id, type)
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE wake_run_log (
+            run_key TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            reason_id TEXT,
+            thread_id TEXT NOT NULL,
+            status TEXT NOT NULL,
+            logical_change_key TEXT,
+            created_at DATETIME NOT NULL,
+            started_at DATETIME,
+            completed_at DATETIME,
+            error_message TEXT,
+            template_id TEXT,
+            template_version_id TEXT,
+            user_rating REAL,
+            rated_at DATETIME
+          )
+        ''')
+        ..execute('''
+          CREATE TABLE saga_log (
+            operation_id TEXT NOT NULL PRIMARY KEY,
+            agent_id TEXT NOT NULL,
+            run_key TEXT NOT NULL,
+            phase TEXT NOT NULL,
+            status TEXT NOT NULL,
+            tool_name TEXT NOT NULL,
+            last_error TEXT,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+          )
+        ''');
+
+      rawDb.execute('PRAGMA user_version = 3');
+      rawDb.dispose();
+
+      final db = AgentDatabase(
+        background: false,
+        documentsDirectoryProvider: () async => testDirectory,
+        tempDirectoryProvider: () async => testDirectory,
+      );
+
+      // Verify schema version is now 4.
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
+      expect(
+        versionResult.first.read<int>('user_version'),
+        4,
+      );
+
+      // Verify the column exists by selecting it.
+      final rows = await db
+          .customSelect(
+            'SELECT run_key, resolved_model_id FROM wake_run_log',
+          )
+          .get();
+      expect(rows, isEmpty);
 
       await db.close();
     });

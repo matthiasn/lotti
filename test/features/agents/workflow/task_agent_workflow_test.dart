@@ -244,7 +244,12 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     when(
-      () => mockAgentRepository.updateWakeRunTemplate(any(), any(), any()),
+      () => mockAgentRepository.updateWakeRunTemplate(
+        any(),
+        any(),
+        any(),
+        resolvedModelId: any(named: 'resolvedModelId'),
+      ),
     ).thenAnswer((_) async {});
     when(
       () => mockAgentRepository.getLinksTo(any(), type: 'agent_task'),
@@ -748,6 +753,7 @@ void main() {
             runKey,
             testTemplate.id,
             testTemplateVersion.id,
+            resolvedModelId: any(named: 'resolvedModelId'),
           ),
         ).called(1);
       });
@@ -758,6 +764,7 @@ void main() {
             any(),
             any(),
             any(),
+            resolvedModelId: any(named: 'resolvedModelId'),
           ),
         ).thenThrow(Exception('DB error'));
 

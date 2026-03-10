@@ -339,11 +339,14 @@ Future<AgentDomainEntity?> templateForAgent(
 /// Resolution order:
 /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
 ///    when the wake completes. Authoritative for completed threads.
-/// 2. Wake-run template version — the `profileId` or `modelId` snapshot
-///    captured when the wake started. Accurate for failed/incomplete wakes
-///    where token usage was never recorded.
-/// 3. Live agent config — `profile.thinkingModelId` or `config.modelId` from
-///    the agent instance's current `AgentConfig`. Only used for in-flight
+/// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+///    wake start after profile resolution. Accurate for failed/incomplete
+///    wakes that never recorded token usage.
+/// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+///    captured when the wake started. Fallback for older wake runs that
+///    predate the `resolvedModelId` column.
+/// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+///    the agent instance's current config. Only used for in-flight
 ///    threads where the wake run hasn't been created yet.
 @riverpod
 Future<String?> modelIdForThread(
@@ -366,8 +369,14 @@ Future<String?> modelIdForThread(
     return threadTokenRecords.first.modelId;
   }
 
-  // Tier 2: wake-run template version — snapshot from when the wake started.
+  // Tier 2: resolvedModelId persisted on the wake run at wake start.
   final wakeRun = await repository.getWakeRunByThreadId(agentId, threadId);
+  if (wakeRun?.resolvedModelId != null) {
+    return wakeRun!.resolvedModelId;
+  }
+
+  // Tier 3: wake-run template version — for older runs without
+  // resolvedModelId.
   if (wakeRun?.templateVersionId != null) {
     final versionEntity = await repository.getEntity(
       wakeRun!.templateVersionId!,
@@ -387,7 +396,7 @@ Future<String?> modelIdForThread(
     if (version?.modelId != null) return version!.modelId;
   }
 
-  // Tier 3: live agent config — for in-flight threads with no wake run yet.
+  // Tier 4: live agent config — for in-flight threads with no wake run yet.
   final identity = await repository.getEntity(agentId);
   final config = identity?.mapOrNull(agent: (a) => a.config);
   final profileId = config?.profileId;

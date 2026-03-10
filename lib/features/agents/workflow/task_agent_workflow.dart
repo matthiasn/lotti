@@ -376,12 +376,15 @@ class TaskAgentWorkflow {
         cloudRepository: cloudInferenceRepository,
       );
 
-      // Record template provenance on the wake run log entry.
+      // Record template provenance and the resolved model on the wake run
+      // log entry so that modelIdForThread can return an accurate model even
+      // for failed/incomplete wakes that never persist token usage.
       try {
         await agentRepository.updateWakeRunTemplate(
           runKey,
           templateCtx.template.id,
           templateCtx.version.id,
+          resolvedModelId: modelId,
         );
       } catch (e) {
         _logError('failed to record template provenance', error: e);

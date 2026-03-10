@@ -1330,6 +1330,17 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         requiredDuringInsert: false,
         $customConstraints: '',
       );
+  static const VerificationMeta _resolvedModelIdMeta = const VerificationMeta(
+    'resolvedModelId',
+  );
+  late final GeneratedColumn<String> resolvedModelId = GeneratedColumn<String>(
+    'resolved_model_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    $customConstraints: '',
+  );
   static const VerificationMeta _userRatingMeta = const VerificationMeta(
     'userRating',
   );
@@ -1367,6 +1378,7 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
     errorMessage,
     templateId,
     templateVersionId,
+    resolvedModelId,
     userRating,
     ratedAt,
   ];
@@ -1484,6 +1496,15 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         ),
       );
     }
+    if (data.containsKey('resolved_model_id')) {
+      context.handle(
+        _resolvedModelIdMeta,
+        resolvedModelId.isAcceptableOrUnknown(
+          data['resolved_model_id']!,
+          _resolvedModelIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('user_rating')) {
       context.handle(
         _userRatingMeta,
@@ -1557,6 +1578,10 @@ class WakeRunLog extends Table with TableInfo<WakeRunLog, WakeRunLogData> {
         DriftSqlType.string,
         data['${effectivePrefix}template_version_id'],
       ),
+      resolvedModelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}resolved_model_id'],
+      ),
       userRating: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}user_rating'],
@@ -1591,6 +1616,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
   final String? errorMessage;
   final String? templateId;
   final String? templateVersionId;
+  final String? resolvedModelId;
   final double? userRating;
   final DateTime? ratedAt;
   const WakeRunLogData({
@@ -1607,6 +1633,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     this.errorMessage,
     this.templateId,
     this.templateVersionId,
+    this.resolvedModelId,
     this.userRating,
     this.ratedAt,
   });
@@ -1639,6 +1666,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     }
     if (!nullToAbsent || templateVersionId != null) {
       map['template_version_id'] = Variable<String>(templateVersionId);
+    }
+    if (!nullToAbsent || resolvedModelId != null) {
+      map['resolved_model_id'] = Variable<String>(resolvedModelId);
     }
     if (!nullToAbsent || userRating != null) {
       map['user_rating'] = Variable<double>(userRating);
@@ -1678,6 +1708,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       templateVersionId: templateVersionId == null && nullToAbsent
           ? const Value.absent()
           : Value(templateVersionId),
+      resolvedModelId: resolvedModelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(resolvedModelId),
       userRating: userRating == null && nullToAbsent
           ? const Value.absent()
           : Value(userRating),
@@ -1710,6 +1743,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       templateVersionId: serializer.fromJson<String?>(
         json['template_version_id'],
       ),
+      resolvedModelId: serializer.fromJson<String?>(json['resolved_model_id']),
       userRating: serializer.fromJson<double?>(json['user_rating']),
       ratedAt: serializer.fromJson<DateTime?>(json['rated_at']),
     );
@@ -1731,6 +1765,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       'error_message': serializer.toJson<String?>(errorMessage),
       'template_id': serializer.toJson<String?>(templateId),
       'template_version_id': serializer.toJson<String?>(templateVersionId),
+      'resolved_model_id': serializer.toJson<String?>(resolvedModelId),
       'user_rating': serializer.toJson<double?>(userRating),
       'rated_at': serializer.toJson<DateTime?>(ratedAt),
     };
@@ -1750,6 +1785,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     Value<String?> errorMessage = const Value.absent(),
     Value<String?> templateId = const Value.absent(),
     Value<String?> templateVersionId = const Value.absent(),
+    Value<String?> resolvedModelId = const Value.absent(),
     Value<double?> userRating = const Value.absent(),
     Value<DateTime?> ratedAt = const Value.absent(),
   }) => WakeRunLogData(
@@ -1770,6 +1806,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     templateVersionId: templateVersionId.present
         ? templateVersionId.value
         : this.templateVersionId,
+    resolvedModelId: resolvedModelId.present
+        ? resolvedModelId.value
+        : this.resolvedModelId,
     userRating: userRating.present ? userRating.value : this.userRating,
     ratedAt: ratedAt.present ? ratedAt.value : this.ratedAt,
   );
@@ -1798,6 +1837,9 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
       templateVersionId: data.templateVersionId.present
           ? data.templateVersionId.value
           : this.templateVersionId,
+      resolvedModelId: data.resolvedModelId.present
+          ? data.resolvedModelId.value
+          : this.resolvedModelId,
       userRating: data.userRating.present
           ? data.userRating.value
           : this.userRating,
@@ -1821,6 +1863,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           ..write('errorMessage: $errorMessage, ')
           ..write('templateId: $templateId, ')
           ..write('templateVersionId: $templateVersionId, ')
+          ..write('resolvedModelId: $resolvedModelId, ')
           ..write('userRating: $userRating, ')
           ..write('ratedAt: $ratedAt')
           ..write(')'))
@@ -1842,6 +1885,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
     errorMessage,
     templateId,
     templateVersionId,
+    resolvedModelId,
     userRating,
     ratedAt,
   );
@@ -1862,6 +1906,7 @@ class WakeRunLogData extends DataClass implements Insertable<WakeRunLogData> {
           other.errorMessage == this.errorMessage &&
           other.templateId == this.templateId &&
           other.templateVersionId == this.templateVersionId &&
+          other.resolvedModelId == this.resolvedModelId &&
           other.userRating == this.userRating &&
           other.ratedAt == this.ratedAt);
 }
@@ -1880,6 +1925,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
   final Value<String?> errorMessage;
   final Value<String?> templateId;
   final Value<String?> templateVersionId;
+  final Value<String?> resolvedModelId;
   final Value<double?> userRating;
   final Value<DateTime?> ratedAt;
   final Value<int> rowid;
@@ -1897,6 +1943,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.errorMessage = const Value.absent(),
     this.templateId = const Value.absent(),
     this.templateVersionId = const Value.absent(),
+    this.resolvedModelId = const Value.absent(),
     this.userRating = const Value.absent(),
     this.ratedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1915,6 +1962,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     this.errorMessage = const Value.absent(),
     this.templateId = const Value.absent(),
     this.templateVersionId = const Value.absent(),
+    this.resolvedModelId = const Value.absent(),
     this.userRating = const Value.absent(),
     this.ratedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -1938,6 +1986,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     Expression<String>? errorMessage,
     Expression<String>? templateId,
     Expression<String>? templateVersionId,
+    Expression<String>? resolvedModelId,
     Expression<double>? userRating,
     Expression<DateTime>? ratedAt,
     Expression<int>? rowid,
@@ -1956,6 +2005,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       if (errorMessage != null) 'error_message': errorMessage,
       if (templateId != null) 'template_id': templateId,
       if (templateVersionId != null) 'template_version_id': templateVersionId,
+      if (resolvedModelId != null) 'resolved_model_id': resolvedModelId,
       if (userRating != null) 'user_rating': userRating,
       if (ratedAt != null) 'rated_at': ratedAt,
       if (rowid != null) 'rowid': rowid,
@@ -1976,6 +2026,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     Value<String?>? errorMessage,
     Value<String?>? templateId,
     Value<String?>? templateVersionId,
+    Value<String?>? resolvedModelId,
     Value<double?>? userRating,
     Value<DateTime?>? ratedAt,
     Value<int>? rowid,
@@ -1994,6 +2045,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
       errorMessage: errorMessage ?? this.errorMessage,
       templateId: templateId ?? this.templateId,
       templateVersionId: templateVersionId ?? this.templateVersionId,
+      resolvedModelId: resolvedModelId ?? this.resolvedModelId,
       userRating: userRating ?? this.userRating,
       ratedAt: ratedAt ?? this.ratedAt,
       rowid: rowid ?? this.rowid,
@@ -2042,6 +2094,9 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
     if (templateVersionId.present) {
       map['template_version_id'] = Variable<String>(templateVersionId.value);
     }
+    if (resolvedModelId.present) {
+      map['resolved_model_id'] = Variable<String>(resolvedModelId.value);
+    }
     if (userRating.present) {
       map['user_rating'] = Variable<double>(userRating.value);
     }
@@ -2070,6 +2125,7 @@ class WakeRunLogCompanion extends UpdateCompanion<WakeRunLogData> {
           ..write('errorMessage: $errorMessage, ')
           ..write('templateId: $templateId, ')
           ..write('templateVersionId: $templateVersionId, ')
+          ..write('resolvedModelId: $resolvedModelId, ')
           ..write('userRating: $userRating, ')
           ..write('ratedAt: $ratedAt, ')
           ..write('rowid: $rowid')
@@ -3764,6 +3820,7 @@ typedef $WakeRunLogCreateCompanionBuilder =
       Value<String?> errorMessage,
       Value<String?> templateId,
       Value<String?> templateVersionId,
+      Value<String?> resolvedModelId,
       Value<double?> userRating,
       Value<DateTime?> ratedAt,
       Value<int> rowid,
@@ -3783,6 +3840,7 @@ typedef $WakeRunLogUpdateCompanionBuilder =
       Value<String?> errorMessage,
       Value<String?> templateId,
       Value<String?> templateVersionId,
+      Value<String?> resolvedModelId,
       Value<double?> userRating,
       Value<DateTime?> ratedAt,
       Value<int> rowid,
@@ -3858,6 +3916,11 @@ class $WakeRunLogFilterComposer extends Composer<_$AgentDatabase, WakeRunLog> {
 
   ColumnFilters<String> get templateVersionId => $composableBuilder(
     column: $table.templateVersionId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get resolvedModelId => $composableBuilder(
+    column: $table.resolvedModelId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3946,6 +4009,11 @@ class $WakeRunLogOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get resolvedModelId => $composableBuilder(
+    column: $table.resolvedModelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get userRating => $composableBuilder(
     column: $table.userRating,
     builder: (column) => ColumnOrderings(column),
@@ -4015,6 +4083,11 @@ class $WakeRunLogAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get resolvedModelId => $composableBuilder(
+    column: $table.resolvedModelId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<double> get userRating => $composableBuilder(
     column: $table.userRating,
     builder: (column) => column,
@@ -4068,6 +4141,7 @@ class $WakeRunLogTableManager
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String?> templateId = const Value.absent(),
                 Value<String?> templateVersionId = const Value.absent(),
+                Value<String?> resolvedModelId = const Value.absent(),
                 Value<double?> userRating = const Value.absent(),
                 Value<DateTime?> ratedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4085,6 +4159,7 @@ class $WakeRunLogTableManager
                 errorMessage: errorMessage,
                 templateId: templateId,
                 templateVersionId: templateVersionId,
+                resolvedModelId: resolvedModelId,
                 userRating: userRating,
                 ratedAt: ratedAt,
                 rowid: rowid,
@@ -4104,6 +4179,7 @@ class $WakeRunLogTableManager
                 Value<String?> errorMessage = const Value.absent(),
                 Value<String?> templateId = const Value.absent(),
                 Value<String?> templateVersionId = const Value.absent(),
+                Value<String?> resolvedModelId = const Value.absent(),
                 Value<double?> userRating = const Value.absent(),
                 Value<DateTime?> ratedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -4121,6 +4197,7 @@ class $WakeRunLogTableManager
                 errorMessage: errorMessage,
                 templateId: templateId,
                 templateVersionId: templateVersionId,
+                resolvedModelId: resolvedModelId,
                 userRating: userRating,
                 ratedAt: ratedAt,
                 rowid: rowid,

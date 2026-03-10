@@ -2735,7 +2735,35 @@ void main() {
       expect(result, 'qwen3:8b');
     });
 
-    test('tier 2: falls back to wake-run template version profile', () async {
+    test('tier 2: returns resolvedModelId from wake run', () async {
+      stubDefaults();
+
+      final wakeRun = makeTestWakeRun(
+        threadId: 'thread-abc',
+        resolvedModelId: 'qwen3.5:9b',
+        templateVersionId: 'ver-1',
+      );
+      when(
+        () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'thread-abc'),
+      ).thenAnswer((_) async => wakeRun);
+      when(
+        () => mockRepository.getEntity('ver-1'),
+      ).thenAnswer(
+        (_) async => makeTestTemplateVersion(
+          id: 'ver-1',
+          modelId: 'models/gemini-3-pro',
+        ),
+      );
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'qwen3.5:9b');
+    });
+
+    test('tier 3: falls back to wake-run template version profile', () async {
       stubDefaults();
 
       final wakeRun = makeTestWakeRun(
@@ -2772,7 +2800,7 @@ void main() {
       expect(result, 'qwen3.5:9b');
     });
 
-    test('tier 2: falls back to wake-run template version modelId', () async {
+    test('tier 3: falls back to wake-run template version modelId', () async {
       stubDefaults();
 
       final wakeRun = makeTestWakeRun(
@@ -2799,7 +2827,7 @@ void main() {
       expect(result, 'models/gemini-3-pro');
     });
 
-    test('tier 3: falls back to live agent config profile', () async {
+    test('tier 4: falls back to live agent config profile', () async {
       stubDefaults();
 
       final agent = makeTestIdentity(
@@ -2827,7 +2855,7 @@ void main() {
       expect(result, 'qwen3.5:9b');
     });
 
-    test('tier 3: falls back to live agent config modelId', () async {
+    test('tier 4: falls back to live agent config modelId', () async {
       stubDefaults();
 
       final agent = makeTestIdentity(

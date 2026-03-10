@@ -1580,16 +1580,16 @@ final class TemplateForAgentFamily extends $Family
 ///
 /// Resolution order:
 /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-///    when the wake completes. This is the authoritative source for completed
-///    threads.
-/// 2. `profile.thinkingModelId` — resolved from the agent instance's
-///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-///    that haven't persisted token usage yet.
-/// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-///
-/// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-/// profile, not a historical snapshot. For completed threads, tier 1 always
-/// applies because token usage is persisted at wake completion.
+///    when the wake completes. Authoritative for completed threads.
+/// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+///    wake start after profile resolution. Accurate for failed/incomplete
+///    wakes that never recorded token usage.
+/// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+///    captured when the wake started. Fallback for older wake runs that
+///    predate the `resolvedModelId` column.
+/// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+///    the agent instance's current config. Only used for in-flight
+///    threads where the wake run hasn't been created yet.
 
 @ProviderFor(modelIdForThread)
 final modelIdForThreadProvider = ModelIdForThreadFamily._();
@@ -1598,16 +1598,16 @@ final modelIdForThreadProvider = ModelIdForThreadFamily._();
 ///
 /// Resolution order:
 /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-///    when the wake completes. This is the authoritative source for completed
-///    threads.
-/// 2. `profile.thinkingModelId` — resolved from the agent instance's
-///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-///    that haven't persisted token usage yet.
-/// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-///
-/// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-/// profile, not a historical snapshot. For completed threads, tier 1 always
-/// applies because token usage is persisted at wake completion.
+///    when the wake completes. Authoritative for completed threads.
+/// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+///    wake start after profile resolution. Accurate for failed/incomplete
+///    wakes that never recorded token usage.
+/// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+///    captured when the wake started. Fallback for older wake runs that
+///    predate the `resolvedModelId` column.
+/// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+///    the agent instance's current config. Only used for in-flight
+///    threads where the wake run hasn't been created yet.
 
 final class ModelIdForThreadProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
@@ -1616,16 +1616,16 @@ final class ModelIdForThreadProvider
   ///
   /// Resolution order:
   /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-  ///    when the wake completes. This is the authoritative source for completed
-  ///    threads.
-  /// 2. `profile.thinkingModelId` — resolved from the agent instance's
-  ///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-  ///    that haven't persisted token usage yet.
-  /// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-  ///
-  /// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-  /// profile, not a historical snapshot. For completed threads, tier 1 always
-  /// applies because token usage is persisted at wake completion.
+  ///    when the wake completes. Authoritative for completed threads.
+  /// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+  ///    wake start after profile resolution. Accurate for failed/incomplete
+  ///    wakes that never recorded token usage.
+  /// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+  ///    captured when the wake started. Fallback for older wake runs that
+  ///    predate the `resolvedModelId` column.
+  /// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+  ///    the agent instance's current config. Only used for in-flight
+  ///    threads where the wake run hasn't been created yet.
   ModelIdForThreadProvider._({
     required ModelIdForThreadFamily super.from,
     required (String, String) super.argument,
@@ -1669,22 +1669,22 @@ final class ModelIdForThreadProvider
   }
 }
 
-String _$modelIdForThreadHash() => r'2ca8902f2cb149a24afc62453d591dd6bc8d079f';
+String _$modelIdForThreadHash() => r'52b5a54c860d7ceee7102634afece192f094a606';
 
 /// Resolve the model ID used for a specific wake thread.
 ///
 /// Resolution order:
 /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-///    when the wake completes. This is the authoritative source for completed
-///    threads.
-/// 2. `profile.thinkingModelId` — resolved from the agent instance's
-///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-///    that haven't persisted token usage yet.
-/// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-///
-/// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-/// profile, not a historical snapshot. For completed threads, tier 1 always
-/// applies because token usage is persisted at wake completion.
+///    when the wake completes. Authoritative for completed threads.
+/// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+///    wake start after profile resolution. Accurate for failed/incomplete
+///    wakes that never recorded token usage.
+/// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+///    captured when the wake started. Fallback for older wake runs that
+///    predate the `resolvedModelId` column.
+/// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+///    the agent instance's current config. Only used for in-flight
+///    threads where the wake run hasn't been created yet.
 
 final class ModelIdForThreadFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, (String, String)> {
@@ -1701,16 +1701,16 @@ final class ModelIdForThreadFamily extends $Family
   ///
   /// Resolution order:
   /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-  ///    when the wake completes. This is the authoritative source for completed
-  ///    threads.
-  /// 2. `profile.thinkingModelId` — resolved from the agent instance's
-  ///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-  ///    that haven't persisted token usage yet.
-  /// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-  ///
-  /// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-  /// profile, not a historical snapshot. For completed threads, tier 1 always
-  /// applies because token usage is persisted at wake completion.
+  ///    when the wake completes. Authoritative for completed threads.
+  /// 2. `resolvedModelId` on the wake-run log — the model ID persisted at
+  ///    wake start after profile resolution. Accurate for failed/incomplete
+  ///    wakes that never recorded token usage.
+  /// 3. Wake-run template version — the `profileId` or `modelId` snapshot
+  ///    captured when the wake started. Fallback for older wake runs that
+  ///    predate the `resolvedModelId` column.
+  /// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+  ///    the agent instance's current config. Only used for in-flight
+  ///    threads where the wake run hasn't been created yet.
 
   ModelIdForThreadProvider call(String agentId, String threadId) =>
       ModelIdForThreadProvider._(argument: (agentId, threadId), from: this);

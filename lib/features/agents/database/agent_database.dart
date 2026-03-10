@@ -28,7 +28,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration {
@@ -65,6 +65,11 @@ class AgentDatabase extends _$AgentDatabase {
             'idx_unique_improver_per_template '
             "ON agent_links(to_id) WHERE type = 'improver_target' "
             'AND deleted_at IS NULL',
+          );
+        }
+        if (from < 4) {
+          await customStatement(
+            'ALTER TABLE wake_run_log ADD COLUMN resolved_model_id TEXT',
           );
         }
       },
