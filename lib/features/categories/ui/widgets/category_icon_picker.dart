@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/themes/gamey/glows.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// Modal dialog for selecting category icons from the available set.
 ///
@@ -79,20 +81,37 @@ class CategoryIconPicker extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Theme.of(context).colorScheme.primary.withValues(
+                            ? context.colorScheme.primaryContainer.withValues(
                                 alpha: CategoryIconConstants
                                     .selectedBackgroundAlpha,
                               )
-                            : Colors.transparent,
+                            : context.colorScheme.surfaceContainerHighest
+                                  .withValues(alpha: 0.6),
                         border: Border.all(
                           color: isSelected
-                              ? Theme.of(context).colorScheme.primary
-                              : Colors.grey.shade300,
-                          width: isSelected
-                              ? CategoryIconConstants.selectedBorderWidth
-                              : CategoryIconConstants.unselectedBorderWidth,
+                              ? context.colorScheme.primary.withValues(
+                                  alpha: 0.6,
+                                )
+                              : context.colorScheme.outline.withValues(
+                                  alpha: 0.1,
+                                ),
+                          width: CategoryIconConstants.pickerBorderWidth,
                         ),
                         borderRadius: BorderRadius.circular(12),
+                        boxShadow: isSelected
+                            ? GameyGlows.iconGlow(
+                                context.colorScheme.primary,
+                                isActive: true,
+                              )
+                            : [
+                                BoxShadow(
+                                  color: context.colorScheme.shadow.withValues(
+                                    alpha: 0.08,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -101,8 +120,10 @@ class CategoryIconPicker extends StatelessWidget {
                             icon.iconData,
                             size: CategoryIconConstants.pickerIconSize,
                             color: isSelected
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.shade700,
+                                ? context.colorScheme.primary
+                                : context.colorScheme.onSurface.withValues(
+                                    alpha: 0.8,
+                                  ),
                           ),
                           const SizedBox(
                             height: CategoryIconConstants.iconTextSpacing,
@@ -112,8 +133,10 @@ class CategoryIconPicker extends StatelessWidget {
                             style: TextStyle(
                               fontSize: CategoryIconConstants.pickerTextSize,
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.grey.shade700,
+                                  ? context.colorScheme.primary
+                                  : context.colorScheme.onSurface.withValues(
+                                      alpha: 0.8,
+                                    ),
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,

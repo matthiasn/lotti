@@ -33,7 +33,7 @@
   <releases>
     <release version="0.9.913" date="2026-03-09">
       <description>
-          <p>Fixed change set UI stability: resolved tiles now match pending tile height to prevent jumpiness. Removed unnecessary label assignment rate limiter that blocked batch confirmations. Fixed follow-up task handler: removed unreliable sourceAudioId parameter that caused UNIQUE constraint errors. Fixed database UNIQUE constraint crash when creating duplicate entry links.</p>
+          <p>Added 35 new category icons covering outdoor activities, pets, cooking, entertainment, communication, creative skills, finance, celebrations, education, spiritual well-being, and more. Polished the icon picker with Material 3 styling, subtle shadows, and dark-mode support. Fixed change set UI stability, label assignment rate limiter, follow-up task handler, and database UNIQUE constraint crash.</p>
       </description>
     </release>
     <release version="0.9.911" date="2026-03-09">
