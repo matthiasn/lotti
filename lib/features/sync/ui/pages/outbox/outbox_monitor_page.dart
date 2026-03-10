@@ -124,8 +124,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     final filters = <_OutboxListFilter, SyncFilterOption<OutboxItem>>{
       _OutboxListFilter.pending: SyncFilterOption<OutboxItem>(
         labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
-        predicate: (OutboxItem item) =>
-            _statusFromIndex(item.status) == OutboxStatus.pending,
+        predicate: (OutboxItem item) {
+          final status = _statusFromIndex(item.status);
+          return status == OutboxStatus.pending ||
+              status == OutboxStatus.sending;
+        },
         icon: Icons.schedule_rounded,
         selectedColor: syncPendingAccentColor,
         selectedForegroundColor: syncPendingForegroundColor,

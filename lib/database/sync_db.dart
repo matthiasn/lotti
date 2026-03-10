@@ -251,6 +251,7 @@ class SyncDatabase extends _$SyncDatabase {
     int limit = 1000,
     List<OutboxStatus> statuses = const [
       OutboxStatus.pending,
+      OutboxStatus.sending,
       OutboxStatus.error,
       OutboxStatus.sent,
     ],
@@ -262,6 +263,16 @@ class SyncDatabase extends _$SyncDatabase {
             ),
           )
           ..orderBy([
+            // Actionable items (pending/sending) appear before completed ones
+            // so they are never pushed outside the query limit by old sent rows.
+            (t) => OrderingTerm(
+              expression: CustomExpression<int>(
+                'CASE WHEN status IN '
+                '(${OutboxStatus.pending.index}, $_outboxSendingStatus) THEN 0 '
+                'WHEN status = ${OutboxStatus.error.index} THEN 1 '
+                'ELSE 2 END',
+              ),
+            ),
             (t) => OrderingTerm(expression: t.priority),
             (t) => OrderingTerm(
               expression: t.createdAt,
@@ -272,9 +283,14 @@ class SyncDatabase extends _$SyncDatabase {
         .watch();
   }
 
+  /// Watches the count of actionable (pending + in-flight) outbox items.
+  /// Used by the badge to show how many items still need to be sent.
   Stream<int> watchOutboxCount() {
     return (select(outbox)..where(
-          (t) => t.status.equals(OutboxStatus.pending.index),
+          (t) => t.status.isIn([
+            OutboxStatus.pending.index,
+            _outboxSendingStatus,
+          ]),
         ))
         .watch()
         .map((res) => res.length);
