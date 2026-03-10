@@ -1278,6 +1278,35 @@ void main() {
     });
   });
 
+  group('AudioPlayerController - disposeActivePlayer', () {
+    test('disposes the active player', () async {
+      // Initialize controller — sets _activePlayer
+      container.read(audioPlayerControllerProvider);
+
+      await AudioPlayerController.disposeActivePlayer();
+
+      verify(() => mockPlayer.dispose()).called(1);
+    });
+
+    test('is idempotent — second call is a no-op', () async {
+      container.read(audioPlayerControllerProvider);
+
+      await AudioPlayerController.disposeActivePlayer();
+      await AudioPlayerController.disposeActivePlayer();
+
+      // Only one dispose call — the second is a no-op
+      verify(() => mockPlayer.dispose()).called(1);
+    });
+
+    test('is safe when no player has been created', () async {
+      // Clear any leftover static state
+      await AudioPlayerController.disposeActivePlayer();
+
+      // Should not throw
+      await AudioPlayerController.disposeActivePlayer();
+    });
+  });
+
   group('AudioPlayerController - Riverpod Integration', () {
     test('provider is properly managed by container', () {
       final testContainer = ProviderContainer(

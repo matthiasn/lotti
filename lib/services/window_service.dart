@@ -1,24 +1,48 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui';
 
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/utils/immediate_exit.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:meta/meta.dart';
 import 'package:window_manager/window_manager.dart';
 
+/// Function signature for process exit.
+typedef ExitCallback = void Function(int code);
+
+/// Function signature for async disposal (e.g. player shutdown).
+typedef AsyncDisposer = Future<void> Function();
+
+/// Function signature for platform checks (e.g. macOS detection).
+typedef PlatformCheck = bool Function();
+
 class WindowService implements WindowListener {
-  WindowService() {
-    windowManager.addListener(this);
-    if (isDesktop) {
-      windowManager.setPreventClose(true);
+  WindowService({
+    @visibleForTesting ExitCallback? exitOverride,
+    @visibleForTesting AsyncDisposer? playerDisposerOverride,
+    @visibleForTesting PlatformCheck? isMacOSOverride,
+    @visibleForTesting bool skipWindowManagerSetup = false,
+  }) : _exitFn = exitOverride ?? immediateExit,
+       _playerDisposer =
+           playerDisposerOverride ?? AudioPlayerController.disposeActivePlayer,
+       _isMacOS = isMacOSOverride ?? (() => isMacOS) {
+    if (!skipWindowManagerSetup) {
+      windowManager.addListener(this);
+      if (isDesktop) {
+        windowManager.setPreventClose(true);
+      }
     }
     _disposer = ServiceDisposer(getIt, _logDisposalError);
   }
 
   late final ServiceDisposer _disposer;
+  final ExitCallback _exitFn;
+  final AsyncDisposer _playerDisposer;
+  final PlatformCheck _isMacOS;
 
   final sizeKey = 'WINDOW_SIZE';
   final offsetKey = 'WINDOW_OFFSET';
@@ -58,9 +82,7 @@ class WindowService implements WindowListener {
   void onWindowEvent(String eventName) {}
 
   @override
-  void onWindowFocus() {
-    //getIt<OutboxService>().restartRunner();
-  }
+  void onWindowFocus() {}
 
   @override
   void onWindowLeaveFullScreen() {}
@@ -105,29 +127,34 @@ class WindowService implements WindowListener {
   }
 
   Future<void> _handleClose() async {
-    if (isMacOS) {
-      // On macOS, dispose only non-database services, then exit(0).
+    if (_isMacOS()) {
+      // macOS shutdown sequence — three steps, all while the Dart VM is alive:
       //
-      // We must NOT call Drift's db.close() because sqlite3_close_v2
-      // triggers functionDestroy for registered custom SQL functions,
-      // which invokes DLRT_GetFfiCallbackMetadata — a Dart FFI runtime
-      // lookup that hits a fatal assertion (SIGABRT) during VM teardown.
+      // 1. Stop non-database services (outbox, sync, timers).
+      // 2. Dispose the media_kit Player so mpv's native core thread stops
+      //    cleanly and won't try to invoke FFI callbacks during VM teardown.
+      // 3. Call POSIX _exit(0) via FFI. Unlike Dart's exit() (which calls
+      //    C exit() → atexit handlers → Dart VM teardown → GC finalizers),
+      //    _exit() terminates immediately. This prevents:
+      //    - NativeFinalizer on FinalizableDatabase triggering sqlite3_close_v2
+      //      → functionDestroy → DLRT_GetFfiCallbackMetadata → SIGABRT
+      //    - Any remaining native threads invoking Dart FFI callbacks
       //
-      // We also skip windowManager.destroy() because it triggers the
-      // Flutter engine teardown (Shell::~Shell → DartVM::~DartVM) which
-      // races with native SQLite threads still running.
-      //
-      // This is safe because:
-      // - Non-database services (outbox, sync, timers) are stopped first.
-      // - SQLite WAL mode guarantees data integrity on abrupt exit;
-      //   the WAL is replayed on next open.
-      // - The OS reclaims all file handles and memory.
+      // Safety: SQLite WAL mode guarantees data integrity on abrupt exit;
+      // the WAL is replayed on next open. The OS reclaims all resources.
       try {
         await _disposer.disposeServicesOnly();
       } catch (e, s) {
         _logDisposalError(e, s, 'disposeServicesOnly');
       }
-      exit(0);
+
+      try {
+        await _playerDisposer();
+      } catch (e, s) {
+        _logDisposalError(e, s, 'audioPlayer');
+      }
+
+      _exitFn(0);
     } else {
       try {
         await _disposer.disposeAll();

@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.913] - 2026-03-09
+## [0.9.913] - 2026-03-10
 ### Added
 - 35 new category icons: cycling, hiking, camping, pets, gardening, cooking,
   coffee, email, chat, video call, movies, podcast, theater, coding, crafts,
@@ -12,12 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   birthday, language, science, presentation, prayer, gratitude, self-care,
   stretching, weather, nature, volunteering, and recycling.
 
-### Improved
-- Category icon picker: replaced flat gray styling with Material 3 semantic
-  colors, subtle shadows, and selected-state glow for a more polished,
-  dark-mode-friendly appearance.
-
 ### Fixed
+- macOS crash on quit: replaced Dart `exit(0)` (which calls C `exit()` and
+  triggers VM teardown/GC finalizers) with POSIX `_exit(0)` via FFI that
+  terminates immediately. Also explicitly dispose media_kit Player before
+  exiting so mpv's native core thread stops cleanly. Fixes SIGABRT from
+  both mpv FFI callbacks and SQLite `NativeFinalizer` during VM teardown.
 - Change set UI stability: resolved tiles now match pending tile height
   (added tool name subtitle and matched icon size) to prevent vertical
   jumpiness when items are confirmed or rejected.
@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   violation.
 
 ### Improved
+- Category icon picker: replaced flat gray styling with Material 3 semantic
+  colors, subtle shadows, and selected-state glow for a more polished,
+  dark-mode-friendly appearance.
 - Checklist dedup diagnostics: added logging of resolved title count
   in the change set builder for easier troubleshooting.
 
