@@ -203,14 +203,15 @@ class TaskAgentStrategy extends ConversationStrategy {
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
-        // Reject repeat calls to the same non-batch deferred tool name
+        // Reject repeat calls to the same single-use deferred tool name
         // (even with different args). Smaller models tend to burn all
         // turns on one tool (e.g. calling set_task_title 4 times).
-        // Batch tools are excluded — they may legitimately be called again.
-        final isBatch = AgentToolRegistry.explodedBatchTools.containsKey(
-          toolName,
-        );
-        if (!isBatch && _usedDeferredTools.contains(toolName)) {
+        // Batch tools and create_follow_up_task are excluded — they may
+        // legitimately be called multiple times in one wake.
+        final isSingleUse =
+            !AgentToolRegistry.explodedBatchTools.containsKey(toolName) &&
+            toolName != TaskAgentToolNames.createFollowUpTask;
+        if (isSingleUse && _usedDeferredTools.contains(toolName)) {
           await _recordActionMessage(toolName: toolName, args: args);
           manager.addToolResponse(
             toolCallId: call.id,
@@ -228,7 +229,7 @@ class TaskAgentStrategy extends ConversationStrategy {
         // Only mark as used when an item was actually queued. If metadata
         // redundancy or dedup skipped it, allow the model to retry with
         // different args.
-        if (!isBatch && csBuilder.items.length > itemCountBefore) {
+        if (isSingleUse && csBuilder.items.length > itemCountBefore) {
           _usedDeferredTools.add(toolName);
         }
         manager.addToolResponse(

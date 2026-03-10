@@ -57,18 +57,21 @@ void main() {
 
   late MockAgentService mockService;
   late MockAgentRepository mockRepository;
+  late MockAiConfigRepository mockAiConfigRepo;
 
   setUp(() {
     mockService = MockAgentService();
     mockRepository = MockAgentRepository();
+    mockAiConfigRepo = MockAiConfigRepository();
   });
 
-  /// Helper to create a [ProviderContainer] with both mocks overridden.
+  /// Helper to create a [ProviderContainer] with common mocks overridden.
   ProviderContainer createContainer() {
     final container = ProviderContainer(
       overrides: [
         agentServiceProvider.overrideWithValue(mockService),
         agentRepositoryProvider.overrideWithValue(mockRepository),
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
       ],
     );
     addTearDown(container.dispose);
@@ -2688,18 +2691,23 @@ void main() {
   });
 
   group('modelIdForThreadProvider', () {
-    /// Stub token usage to return empty by default so the provider can
-    /// fall through to the template version lookup.
-    void stubEmptyTokenUsage() {
+    /// Stub common defaults so tests only need to override what they vary.
+    void stubDefaults() {
       when(
         () => mockRepository.getTokenUsageForAgent(
           any(),
           limit: any(named: 'limit'),
         ),
       ).thenAnswer((_) async => <WakeTokenUsageEntity>[]);
+      when(
+        () => mockRepository.getWakeRunByThreadId(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockRepository.getEntity(kTestAgentId),
+      ).thenAnswer((_) async => null);
     }
 
-    test('returns model ID from token usage record', () async {
+    test('tier 1: returns model ID from token usage record', () async {
       when(
         () => mockRepository.getTokenUsageForAgent(
           any(),
@@ -2727,8 +2735,100 @@ void main() {
       expect(result, 'qwen3:8b');
     });
 
-    test('falls back to agent config modelId when no token usage', () async {
-      stubEmptyTokenUsage();
+    test('tier 2: falls back to wake-run template version profile', () async {
+      stubDefaults();
+
+      final wakeRun = makeTestWakeRun(
+        threadId: 'thread-abc',
+        templateVersionId: 'ver-1',
+      );
+      when(
+        () => mockRepository.getWakeRunByThreadId('thread-abc'),
+      ).thenAnswer((_) async => wakeRun);
+
+      final version = makeTestTemplateVersion(
+        id: 'ver-1',
+        profileId: 'profile-1',
+      );
+      when(
+        () => mockRepository.getEntity('ver-1'),
+      ).thenAnswer((_) async => version);
+      when(
+        () => mockAiConfigRepo.getConfigById('profile-1'),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Local Ollama',
+          thinkingModelId: 'qwen3.5:9b',
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      );
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'qwen3.5:9b');
+    });
+
+    test('tier 2: falls back to wake-run template version modelId', () async {
+      stubDefaults();
+
+      final wakeRun = makeTestWakeRun(
+        threadId: 'thread-abc',
+        templateVersionId: 'ver-1',
+      );
+      when(
+        () => mockRepository.getWakeRunByThreadId('thread-abc'),
+      ).thenAnswer((_) async => wakeRun);
+
+      final version = makeTestTemplateVersion(
+        id: 'ver-1',
+        modelId: 'models/gemini-3-pro',
+      );
+      when(
+        () => mockRepository.getEntity('ver-1'),
+      ).thenAnswer((_) async => version);
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'models/gemini-3-pro');
+    });
+
+    test('tier 3: falls back to live agent config profile', () async {
+      stubDefaults();
+
+      final agent = makeTestIdentity(
+        config: const AgentConfig(profileId: 'profile-1'),
+      );
+      when(
+        () => mockRepository.getEntity(kTestAgentId),
+      ).thenAnswer((_) async => agent);
+      when(
+        () => mockAiConfigRepo.getConfigById('profile-1'),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: 'profile-1',
+          name: 'Local Ollama',
+          thinkingModelId: 'qwen3.5:9b',
+          createdAt: DateTime(2024, 3, 15),
+        ),
+      );
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'qwen3.5:9b');
+    });
+
+    test('tier 3: falls back to live agent config modelId', () async {
+      stubDefaults();
 
       final agent = makeTestIdentity(
         config: const AgentConfig(modelId: 'models/gemini-3-pro'),
@@ -2745,52 +2845,8 @@ void main() {
       expect(result, 'models/gemini-3-pro');
     });
 
-    test(
-      'falls back to profile thinkingModelId when config has profileId',
-      () async {
-        stubEmptyTokenUsage();
-
-        final mockAiConfigRepo = MockAiConfigRepository();
-        final agent = makeTestIdentity(
-          config: const AgentConfig(profileId: 'profile-1'),
-        );
-        when(
-          () => mockRepository.getEntity(kTestAgentId),
-        ).thenAnswer((_) async => agent);
-        when(
-          () => mockAiConfigRepo.getConfigById('profile-1'),
-        ).thenAnswer(
-          (_) async => AiConfig.inferenceProfile(
-            id: 'profile-1',
-            name: 'Local Ollama',
-            thinkingModelId: 'qwen3.5:9b',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-
-        final container = ProviderContainer(
-          overrides: [
-            agentServiceProvider.overrideWithValue(mockService),
-            agentRepositoryProvider.overrideWithValue(mockRepository),
-            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
-          ],
-        );
-        addTearDown(container.dispose);
-        final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
-        );
-
-        expect(result, 'qwen3.5:9b');
-      },
-    );
-
-    test('returns null when agent identity not found', () async {
-      stubEmptyTokenUsage();
-
-      when(
-        () => mockRepository.getEntity(kTestAgentId),
-      ).thenAnswer((_) async => null);
+    test('returns null when nothing resolves', () async {
+      stubDefaults();
 
       final container = createContainer();
       final result = await container.read(
@@ -2799,26 +2855,6 @@ void main() {
 
       expect(result, isNull);
     });
-
-    test(
-      'returns null when agent config has no modelId or profileId',
-      () async {
-        stubEmptyTokenUsage();
-
-        final agent = makeTestIdentity();
-        when(
-          () => mockRepository.getEntity(kTestAgentId),
-        ).thenAnswer((_) async => agent);
-
-        final container = createContainer();
-        final result = await container.read(
-          modelIdForThreadProvider(kTestAgentId, 'thread-no-ver').future,
-        );
-
-        // Falls back to the default AgentConfig.modelId.
-        expect(result, 'models/gemini-3-flash-preview');
-      },
-    );
   });
 
   group('agentInitializationProvider — orphan cleanup', () {

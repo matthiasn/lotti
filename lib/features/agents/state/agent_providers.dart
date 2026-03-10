@@ -338,23 +338,23 @@ Future<AgentDomainEntity?> templateForAgent(
 ///
 /// Resolution order:
 /// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
-///    when the wake completes. This is the authoritative source for completed
-///    threads.
-/// 2. `profile.thinkingModelId` — resolved from the agent instance's
-///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
-///    that haven't persisted token usage yet.
-/// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
-///
-/// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
-/// profile, not a historical snapshot. For completed threads, tier 1 always
-/// applies because token usage is persisted at wake completion.
+///    when the wake completes. Authoritative for completed threads.
+/// 2. Wake-run template version — the `profileId` or `modelId` snapshot
+///    captured when the wake started. Accurate for failed/incomplete wakes
+///    where token usage was never recorded.
+/// 3. Live agent config — `profile.thinkingModelId` or `config.modelId` from
+///    the agent instance's current `AgentConfig`. Only used for in-flight
+///    threads where the wake run hasn't been created yet.
 @riverpod
 Future<String?> modelIdForThread(
   Ref ref,
   String agentId,
   String threadId,
 ) async {
-  // First, check token usage records — these record the actual model used.
+  final repository = ref.watch(agentRepositoryProvider);
+  final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
+
+  // Tier 1: token usage records — the actual model used at runtime.
   final tokenEntities = await ref.watch(
     agentTokenUsageRecordsProvider(agentId).future,
   );
@@ -366,14 +366,32 @@ Future<String?> modelIdForThread(
     return threadTokenRecords.first.modelId;
   }
 
-  // Fall back to the agent instance's config profile — this is available
-  // immediately, even while the conversation is still running.
-  final repository = ref.watch(agentRepositoryProvider);
+  // Tier 2: wake-run template version — snapshot from when the wake started.
+  final wakeRun = await repository.getWakeRunByThreadId(threadId);
+  if (wakeRun?.templateVersionId != null) {
+    final versionEntity = await repository.getEntity(
+      wakeRun!.templateVersionId!,
+    );
+    final version = versionEntity?.mapOrNull(agentTemplateVersion: (v) => v);
+
+    // Prefer the version's profile (reflects the model at wake time).
+    final versionProfileId = version?.profileId;
+    if (versionProfileId != null) {
+      final profile = await aiConfigRepo.getConfigById(versionProfileId);
+      if (profile is AiConfigInferenceProfile) {
+        return profile.thinkingModelId;
+      }
+    }
+
+    // Legacy: use the version's modelId directly.
+    if (version?.modelId != null) return version!.modelId;
+  }
+
+  // Tier 3: live agent config — for in-flight threads with no wake run yet.
   final identity = await repository.getEntity(agentId);
   final config = identity?.mapOrNull(agent: (a) => a.config);
   final profileId = config?.profileId;
   if (profileId != null) {
-    final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
     final profile = await aiConfigRepo.getConfigById(profileId);
     if (profile is AiConfigInferenceProfile) {
       return profile.thinkingModelId;
