@@ -31,9 +31,9 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.913" date="2026-03-09">
+    <release version="0.9.913" date="2026-03-10">
       <description>
-          <p>Added 35 new category icons covering outdoor activities, pets, cooking, entertainment, communication, creative skills, finance, celebrations, education, spiritual well-being, and more. Polished the icon picker with Material 3 styling, subtle shadows, and dark-mode support. Fixed change set UI stability, label assignment rate limiter, follow-up task handler, and database UNIQUE constraint crash.</p>
+          <p>Fixed macOS crash on quit: use POSIX _exit(0) via FFI instead of Dart exit(0) to prevent VM teardown racing with native threads (mpv, SQLite). Explicitly dispose media_kit Player before exiting. Added 35 new category icons. Polished the icon picker with Material 3 styling. Fixed change set UI stability, label assignment rate limiter, follow-up task handler, and database UNIQUE constraint crash.</p>
       </description>
     </release>
     <release version="0.9.911" date="2026-03-09">

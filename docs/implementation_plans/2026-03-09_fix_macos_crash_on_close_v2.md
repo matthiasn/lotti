@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-09
 **Branch:** `fix/macos-crash-on-close-v2`
-**Status:** In progress
+**Status:** Superseded by v3
 
 ## Problem
 
@@ -86,8 +86,10 @@ engine's `Shell::~Shell()` destructor which triggers the problematic
 `DartVM::~DartVM()` → `WaitForIsolateShutdown()` path that races with
 native SQLite threads.
 
-`exit(0)` calls C `_exit()` which terminates all threads immediately
-without running destructors that race with in-flight FFI callbacks.
+**CORRECTION (v3):** The claim below is wrong. Dart's `exit(0)` calls
+C `exit()`, **not** `_exit()`. C `exit()` runs atexit handlers, which
+trigger Dart VM teardown, GC finalizers, and the same FFI assertion
+failures. See v3 plan for the actual fix using POSIX `_exit()` via FFI.
 
 ### Why this is safe
 

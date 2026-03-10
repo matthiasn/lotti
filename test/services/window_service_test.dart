@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -12,7 +14,9 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
@@ -179,6 +183,117 @@ void main() {
 
       expect(loggedErrors, contains('OutboxService'));
       expect(loggedErrors, contains('JournalDb'));
+    });
+  });
+
+  group('WindowService shutdown sequence', () {
+    setUp(() async {
+      await getIt.reset();
+
+      final mockLoggingService = MockLoggingService();
+      final mockSettingsDb = MockSettingsDb();
+      final mockBackfill = MockBackfillRequestService();
+      final mockEmbeddingService = MockEmbeddingService();
+      final mockOutbox = MockOutboxService();
+      final mockMatrix = MockMatrixService();
+
+      when(mockBackfill.dispose).thenReturn(null);
+      when(mockEmbeddingService.stop).thenAnswer((_) async {});
+      when(mockOutbox.dispose).thenAnswer((_) async {});
+      when(mockMatrix.dispose).thenAnswer((_) async {});
+
+      getIt
+        ..registerSingleton<LoggingService>(mockLoggingService)
+        ..registerSingleton<SettingsDb>(mockSettingsDb)
+        ..registerSingleton<BackfillRequestService>(mockBackfill)
+        ..registerSingleton<EmbeddingService>(mockEmbeddingService)
+        ..registerSingleton<OutboxService>(mockOutbox)
+        ..registerSingleton<MatrixService>(mockMatrix);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    test('macOS shutdown disposes player then calls exit', () async {
+      final callOrder = <String>[];
+      final exitCompleter = Completer<int>();
+
+      WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: (code) {
+          callOrder.add('exit');
+          exitCompleter.complete(code);
+        },
+        playerDisposerOverride: () async {
+          callOrder.add('playerDispose');
+        },
+      ).onWindowClose();
+
+      // Deterministically wait for exit to be called
+      final exitCode = await exitCompleter.future;
+
+      expect(callOrder, equals(['playerDispose', 'exit']));
+      expect(exitCode, equals(0));
+    });
+
+    test('macOS shutdown calls exit even if player disposal throws', () async {
+      final exitCompleter = Completer<int>();
+
+      WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: exitCompleter.complete,
+        playerDisposerOverride: () async {
+          throw Exception('player disposal failed');
+        },
+      ).onWindowClose();
+
+      final exitCode = await exitCompleter.future;
+      expect(exitCode, equals(0));
+    });
+
+    test('macOS shutdown calls exit even if service disposal throws', () async {
+      // Make service disposal throw
+      when(() => getIt<OutboxService>().dispose()).thenThrow(Exception('boom'));
+
+      final exitCompleter = Completer<int>();
+
+      WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => true,
+        exitOverride: exitCompleter.complete,
+        playerDisposerOverride: () async {},
+      ).onWindowClose();
+
+      final exitCode = await exitCompleter.future;
+      expect(exitCode, equals(0));
+    });
+
+    test('non-macOS shutdown calls disposeAll', () async {
+      // Track when the last service disposal completes so we can
+      // deterministically await the async chain.
+      final matrixDisposed = Completer<void>();
+      when(
+        () => (getIt<MatrixService>() as MockMatrixService).dispose(),
+      ).thenAnswer((_) async {
+        matrixDisposed.complete();
+      });
+
+      WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => false,
+      ).onWindowClose();
+
+      // MatrixService.dispose() is the last service in disposeAll's chain
+      // (databases aren't registered here so _disposeAsyncSafely skips them).
+      await matrixDisposed.future;
+
+      verify(() => getIt<BackfillRequestService>().dispose()).called(1);
+      verify(() => getIt<EmbeddingService>().stop()).called(1);
+      verify(() => getIt<OutboxService>().dispose()).called(1);
+      verify(() => getIt<MatrixService>().dispose()).called(1);
     });
   });
 }

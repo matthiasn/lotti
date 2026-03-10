@@ -6,6 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/model/audio_player_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:meta/meta.dart';
@@ -36,6 +37,11 @@ PlayerFactory playerFactory(Ref ref) {
 /// lifecycle.
 @Riverpod(keepAlive: true)
 class AudioPlayerController extends _$AudioPlayerController {
+  /// Tracks the active Player instance so the shutdown path can dispose it
+  /// without going through Riverpod (which doesn't run disposal on
+  /// `exit()`/`_exit()`).
+  static Player? _activePlayer;
+
   Player? _audioPlayer;
   LoggingService? _loggingService;
   Duration _completionDelay = const Duration(
@@ -61,6 +67,7 @@ class AudioPlayerController extends _$AudioPlayerController {
     try {
       final factory = ref.read(playerFactoryProvider);
       _audioPlayer = factory();
+      _activePlayer = _audioPlayer;
       _loggingService = getIt<LoggingService>();
       _setupSubscriptions();
     } catch (exception, stackTrace) {
@@ -90,7 +97,25 @@ class AudioPlayerController extends _$AudioPlayerController {
     _positionSubscription?.cancel();
     _bufferSubscription?.cancel();
     _completedSubscription?.cancel();
+    // Only clear the static pointer if we own it — a newer controller may
+    // have already replaced it, and nulling would break the shutdown path.
+    if (identical(_activePlayer, _audioPlayer)) {
+      _activePlayer = null;
+    }
     _audioPlayer?.dispose();
+  }
+
+  /// Disposes the active media_kit Player for graceful shutdown.
+  ///
+  /// Called by [WindowService] before process exit to stop mpv's native
+  /// core thread while the Dart VM is still alive. This prevents mpv from
+  /// invoking FFI callbacks during VM teardown (which causes SIGABRT).
+  ///
+  /// Idempotent: safe to call even if no Player is active or already disposed.
+  static Future<void> disposeActivePlayer() async {
+    final player = _activePlayer;
+    _activePlayer = null;
+    await player?.dispose();
   }
 
   /// Updates the progress from the player's position stream.
