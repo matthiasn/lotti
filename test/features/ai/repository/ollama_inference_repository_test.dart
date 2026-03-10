@@ -1493,6 +1493,107 @@ void main() {
     });
 
     test(
+      'assigns distinct indices for tool calls across separate chunks',
+      () async {
+        // Two separate stream chunks each with one tool call, both missing
+        // id and index. The counter must assign 0 and 1, not 0 and 0.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': {'a': 1},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'function': {
+                          'name': 'fn_b',
+                          'arguments': {'b': 2},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'Test A',
+                  ),
+                ),
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_b',
+                    description: 'Test B',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        // Two separate chunks → two separate responses
+        expect(responses.length, 2);
+        final firstToolCalls =
+            responses[0].choices!.first.delta!.toolCalls!;
+        final secondToolCalls =
+            responses[1].choices!.first.delta!.toolCalls!;
+        expect(firstToolCalls.first.index, 0);
+        expect(secondToolCalls.first.index, 1);
+      },
+    );
+
+    test(
       'reads index from function sub-object as secondary fallback',
       () async {
         // Some Ollama versions put index inside the function object rather

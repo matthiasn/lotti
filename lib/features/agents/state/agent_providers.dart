@@ -923,15 +923,6 @@ Future<void> agentInitialization(Ref ref) async {
       stackTrace: stackTrace,
     );
   }
-  try {
-    await modelService.removeStaleKnownModels();
-  } catch (error, stackTrace) {
-    developer.log(
-      'Failed to prune stale known models: $error',
-      name: 'agentInitialization',
-      stackTrace: stackTrace,
-    );
-  }
   await taskAgentService.restoreSubscriptions();
 }
 

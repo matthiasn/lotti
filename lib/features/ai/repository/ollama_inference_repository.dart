@@ -363,6 +363,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         );
       }
 
+      // Running counter across all chunks so that tool calls arriving in
+      // separate stream chunks get distinct indices even when Ollama omits
+      // both `id` and `index` fields.
+      var toolCallCounter = 0;
+
       // Process streaming response
       await for (final chunk
           in request.stream
@@ -423,7 +428,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 final ollamaIndex =
                     (toolCall['index'] as int?) ??
                     (functionCall['index'] as int?) ??
-                    i;
+                    toolCallCounter;
+                toolCallCounter++;
                 toolCallsList.add({
                   'index': ollamaIndex,
                   if (toolCall['id'] != null) 'id': toolCall['id'],

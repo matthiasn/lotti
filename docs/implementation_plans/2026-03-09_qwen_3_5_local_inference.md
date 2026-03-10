@@ -14,10 +14,11 @@ Key Qwen 3.5 advantages:
 - **256K context**: All sizes support 256K tokens natively
 - **Efficient**: Gated Delta Networks architecture
 
-### Known Ollama Limitations (as of March 2026)
-- **Vision not working**: Ollama doesn't support Qwen 3.5's mmproj vision files yet
-- **Tool calling bug on 27B**: [Issue #14493](https://github.com/ollama/ollama/issues/14493) —
-  format mismatch (Hermes JSON vs Qwen3-Coder XML) and broken thinking + tool call rendering
+### Ollama Status (as of March 2026)
+- **Vision**: Working — Qwen 3.5 multimodal is supported in Ollama
+- **Tool calling on 27B**: [Issue #14493](https://github.com/ollama/ollama/issues/14493) —
+  format mismatch (Hermes JSON vs Qwen3-Coder XML) and broken thinking + tool call rendering;
+  partially fixed in Ollama v0.17.6
 - **9B tool calling**: Reportedly more stable than 27B
 
 ## Changes
@@ -32,26 +33,31 @@ Key Qwen 3.5 advantages:
 - `gpt-oss:20b` / `gpt-oss:120b` — niche, superseded by Qwen 3.5 for local use
 - `deepseek-r1:8b` — superseded by qwen3.5:9b (better reasoning + multimodal)
 - `qwen3:8b` — superseded by qwen3.5:9b
+- `gemma3:4b` / `gemma3:12b` / `gemma3:12b-it-qat` — superseded by Qwen 3.5 for both
+  text and vision now that Ollama supports Qwen 3.5 multimodal
 
 **Keep:**
-- `gemma3:4b` — still useful as lightweight vision fallback (until Ollama fixes Qwen vision)
-- `gemma3:12b` / `gemma3:12b-it-qat` — keep as alternatives
 - `mxbai-embed-large` — embeddings model, different purpose
 
 ### 2. Update Seeded Inference Profiles (`profile_seeding_service.dart`)
 
 **Update existing "Local (Ollama)" profile:**
 - Thinking: `qwen3:8b` → `qwen3.5:9b`
-- Image recognition: keep `gemma3:4b` (Qwen 3.5 vision broken in Ollama)
+- Image recognition: `qwen3.5:9b` (Qwen 3.5 vision now works in Ollama)
 
 **Add new "Local Power (Ollama)" profile:**
 - ID: `profile-local-power-001`
 - Thinking: `qwen3.5:27b`
-- Image recognition: `gemma3:12b` (larger Gemma for better vision on powerful hardware)
+- Image recognition: `qwen3.5:27b`
 - `desktopOnly: true`
 
-### 3. Testing Plan
+### 3. Model Lifecycle
+- New models are backfilled on startup via `ModelPrepopulationService.backfillNewModels()`
+- Removed models are **not** automatically deleted — existing user configs and references
+  are preserved
+
+### 4. Testing Plan
 - Pull `qwen3.5:9b` via Ollama and test with task agents (Laura/Tom)
 - Verify tool calling works for checklist operations
 - Test thinking mode produces valid reasoning
-- If Ollama fixes vision, update profiles to use Qwen 3.5 for image recognition too
+- Verify vision/image recognition works with Qwen 3.5
