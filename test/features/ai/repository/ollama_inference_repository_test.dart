@@ -1594,6 +1594,99 @@ void main() {
     );
 
     test(
+      'remaps sparse Ollama indices to dense 0-based sequence',
+      () async {
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        // Ollama returns sparse indices 5 and 7 in a single chunk.
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'index': 5,
+                        'id': 'call_a',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': {'a': 1},
+                        },
+                      },
+                      {
+                        'index': 7,
+                        'id': 'call_b',
+                        'function': {
+                          'name': 'fn_b',
+                          'arguments': {'b': 2},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'A',
+                  ),
+                ),
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_b',
+                    description: 'B',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        expect(responses.length, 1);
+        final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+        expect(toolCalls.length, 2);
+        // Sparse 5,7 → dense 0,1
+        expect(toolCalls[0].index, 0);
+        expect(toolCalls[1].index, 1);
+      },
+    );
+
+    test(
       'reads index from function sub-object as secondary fallback',
       () async {
         // Some Ollama versions put index inside the function object rather
@@ -1666,8 +1759,8 @@ void main() {
         expect(responses.length, 1);
         final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
         expect(toolCalls.length, 1);
-        // Uses index from function sub-object (5), not loop index (0)
-        expect(toolCalls.first.index, 5);
+        // Raw index 5 from function sub-object is remapped to dense 0
+        expect(toolCalls.first.index, 0);
       },
     );
 

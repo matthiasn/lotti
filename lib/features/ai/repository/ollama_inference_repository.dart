@@ -368,6 +368,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       // both `id` and `index` fields.
       var toolCallCounter = 0;
 
+      // Maps raw Ollama indices to dense 0-based indices. Downstream code
+      // treats the index as an array position, so sparse values (e.g. 5, 7)
+      // would break merging.
+      final indexRemap = <int, int>{};
+
       // Process streaming response
       await for (final chunk
           in request.stream
@@ -425,13 +430,16 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 // get distinct indices and aren't merged by the accumulator.
                 // Check both the tool-call level and the function sub-object
                 // to handle varying Ollama response formats.
-                final ollamaIndex =
+                final rawIndex =
                     (toolCall['index'] as int?) ??
                     (functionCall['index'] as int?) ??
                     toolCallCounter;
                 toolCallCounter++;
+                // Remap to dense 0-based sequence for downstream consumers.
+                final denseIndex =
+                    indexRemap.putIfAbsent(rawIndex, () => indexRemap.length);
                 toolCallsList.add({
-                  'index': ollamaIndex,
+                  'index': denseIndex,
                   if (toolCall['id'] != null) 'id': toolCall['id'],
                   'type': 'function',
                   'function': {
