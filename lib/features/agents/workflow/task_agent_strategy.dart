@@ -223,8 +223,14 @@ class TaskAgentStrategy extends ConversationStrategy {
         }
 
         await _recordActionMessage(toolName: toolName, args: args);
+        final itemCountBefore = csBuilder.items.length;
         final response = await _addToChangeSet(csBuilder, toolName, args);
-        if (!isBatch) _usedDeferredTools.add(toolName);
+        // Only mark as used when an item was actually queued. If metadata
+        // redundancy or dedup skipped it, allow the model to retry with
+        // different args.
+        if (!isBatch && csBuilder.items.length > itemCountBefore) {
+          _usedDeferredTools.add(toolName);
+        }
         manager.addToolResponse(
           toolCallId: call.id,
           response: response,

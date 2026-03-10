@@ -336,10 +336,18 @@ Future<AgentDomainEntity?> templateForAgent(
 
 /// Resolve the model ID used for a specific wake thread.
 ///
-/// Prefers the model ID recorded in the token usage entity (which reflects the
-/// *actually resolved* inference model at runtime) over the template version's
-/// `modelId` field (which may be stale when an inference profile overrides the
-/// model). Falls back to the version field when no token usage exists.
+/// Resolution order:
+/// 1. [WakeTokenUsageEntity] — the actual model used at runtime, persisted
+///    when the wake completes. This is the authoritative source for completed
+///    threads.
+/// 2. `profile.thinkingModelId` — resolved from the agent instance's
+///    [AgentConfig.profileId]. Used as a live fallback for in-flight threads
+///    that haven't persisted token usage yet.
+/// 3. `config.modelId` — legacy fallback from [AgentConfig.modelId].
+///
+/// Note: the live-config fallback (tiers 2–3) reflects the agent's *current*
+/// profile, not a historical snapshot. For completed threads, tier 1 always
+/// applies because token usage is persisted at wake completion.
 @riverpod
 Future<String?> modelIdForThread(
   Ref ref,
