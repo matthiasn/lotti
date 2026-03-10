@@ -8,7 +8,7 @@ part 'agent_config.g.dart';
 abstract class AgentConfig with _$AgentConfig {
   const factory AgentConfig({
     /// Maximum number of tool-call turns per wake.
-    @Default(5) int maxTurnsPerWake,
+    @Default(10) int maxTurnsPerWake,
 
     /// Model identifier to use for inference.
     @Default('models/gemini-3-flash-preview') String modelId,

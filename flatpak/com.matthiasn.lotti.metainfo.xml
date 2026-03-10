@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.914" date="2026-03-10">
+      <description>
+          <p>Local inference fixes: conversation headers now show the actual model name during and after runs. Tool call counts are accurate for all tool types. Resilient JSON parsing for local models. Token usage recorded for Ollama. Prevented tool repetition loops — non-batch deferred tools can only be called once per wake, with guided responses listing remaining tools. Raised default max turns from 5 to 10.</p>
+      </description>
+    </release>
     <release version="0.9.913" date="2026-03-10">
       <description>
           <p>Fixed macOS crash on quit: use POSIX _exit(0) via FFI instead of Dart exit(0) to prevent VM teardown racing with native threads (mpv, SQLite). Explicitly dispose media_kit Player before exiting. Added 35 new category icons. Polished the icon picker with Material 3 styling. Fixed change set UI stability, label assignment rate limiter, follow-up task handler, and database UNIQUE constraint crash.</p>

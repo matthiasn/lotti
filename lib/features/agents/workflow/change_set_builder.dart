@@ -135,6 +135,15 @@ class ChangeSetBuilder {
     required Map<String, dynamic> args,
     required String humanSummary,
   }) async {
+    // Within-wake fingerprint dedup: skip if an identical item is already
+    // queued in this builder (e.g. model calling update_task_priority twice).
+    final fingerprint = ChangeItem.fingerprintFromParts(toolName, args);
+    if (_items.any((item) => ChangeItem.fingerprint(item) == fingerprint)) {
+      return 'Already queued — this exact $toolName proposal was already '
+          'recorded. Do NOT call this tool again with the same arguments. '
+          'Proceed to the next tool or finish your analysis.';
+    }
+
     // Check for title-based redundancy on add_checklist_item.
     if (toolName == TaskAgentToolNames.addChecklistItem) {
       final existingTitles = await _resolveExistingTitles();

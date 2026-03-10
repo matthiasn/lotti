@@ -1578,27 +1578,30 @@ final class TemplateForAgentFamily extends $Family
 
 /// Resolve the model ID used for a specific wake thread.
 ///
-/// Looks up the wake run by [threadId] (which equals the run key), then
-/// resolves the template version to read the `modelId` that was configured
-/// when that version was created.
+/// Prefers the model ID recorded in the token usage entity (which reflects the
+/// *actually resolved* inference model at runtime) over the template version's
+/// `modelId` field (which may be stale when an inference profile overrides the
+/// model). Falls back to the version field when no token usage exists.
 
 @ProviderFor(modelIdForThread)
 final modelIdForThreadProvider = ModelIdForThreadFamily._();
 
 /// Resolve the model ID used for a specific wake thread.
 ///
-/// Looks up the wake run by [threadId] (which equals the run key), then
-/// resolves the template version to read the `modelId` that was configured
-/// when that version was created.
+/// Prefers the model ID recorded in the token usage entity (which reflects the
+/// *actually resolved* inference model at runtime) over the template version's
+/// `modelId` field (which may be stale when an inference profile overrides the
+/// model). Falls back to the version field when no token usage exists.
 
 final class ModelIdForThreadProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
     with $FutureModifier<String?>, $FutureProvider<String?> {
   /// Resolve the model ID used for a specific wake thread.
   ///
-  /// Looks up the wake run by [threadId] (which equals the run key), then
-  /// resolves the template version to read the `modelId` that was configured
-  /// when that version was created.
+  /// Prefers the model ID recorded in the token usage entity (which reflects the
+  /// *actually resolved* inference model at runtime) over the template version's
+  /// `modelId` field (which may be stale when an inference profile overrides the
+  /// model). Falls back to the version field when no token usage exists.
   ModelIdForThreadProvider._({
     required ModelIdForThreadFamily super.from,
     required (String, String) super.argument,
@@ -1642,13 +1645,14 @@ final class ModelIdForThreadProvider
   }
 }
 
-String _$modelIdForThreadHash() => r'486d16169ec92f86045907fc9c4a6c564009b17d';
+String _$modelIdForThreadHash() => r'2ca8902f2cb149a24afc62453d591dd6bc8d079f';
 
 /// Resolve the model ID used for a specific wake thread.
 ///
-/// Looks up the wake run by [threadId] (which equals the run key), then
-/// resolves the template version to read the `modelId` that was configured
-/// when that version was created.
+/// Prefers the model ID recorded in the token usage entity (which reflects the
+/// *actually resolved* inference model at runtime) over the template version's
+/// `modelId` field (which may be stale when an inference profile overrides the
+/// model). Falls back to the version field when no token usage exists.
 
 final class ModelIdForThreadFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, (String, String)> {
@@ -1663,9 +1667,10 @@ final class ModelIdForThreadFamily extends $Family
 
   /// Resolve the model ID used for a specific wake thread.
   ///
-  /// Looks up the wake run by [threadId] (which equals the run key), then
-  /// resolves the template version to read the `modelId` that was configured
-  /// when that version was created.
+  /// Prefers the model ID recorded in the token usage entity (which reflects the
+  /// *actually resolved* inference model at runtime) over the template version's
+  /// `modelId` field (which may be stale when an inference profile overrides the
+  /// model). Falls back to the version field when no token usage exists.
 
   ModelIdForThreadProvider call(String agentId, String threadId) =>
       ModelIdForThreadProvider._(argument: (agentId, threadId), from: this);

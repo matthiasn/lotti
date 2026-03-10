@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -23,6 +24,7 @@ import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -2725,24 +2727,15 @@ void main() {
       expect(result, 'qwen3:8b');
     });
 
-    test('falls back to template version when no token usage', () async {
+    test('falls back to agent config modelId when no token usage', () async {
       stubEmptyTokenUsage();
 
-      final wakeRun = makeTestWakeRun(
-        runKey: 'thread-abc',
-        templateVersionId: 'ver-1',
+      final agent = makeTestIdentity(
+        config: const AgentConfig(modelId: 'models/gemini-3-pro'),
       );
       when(
-        () => mockRepository.getWakeRun('thread-abc'),
-      ).thenAnswer((_) async => wakeRun);
-
-      final version = makeTestTemplateVersion(
-        id: 'ver-1',
-        modelId: 'models/gemini-3-pro',
-      );
-      when(
-        () => mockRepository.getEntity('ver-1'),
-      ).thenAnswer((_) async => version);
+        () => mockRepository.getEntity(kTestAgentId),
+      ).thenAnswer((_) async => agent);
 
       final container = createContainer();
       final result = await container.read(
@@ -2752,11 +2745,51 @@ void main() {
       expect(result, 'models/gemini-3-pro');
     });
 
-    test('returns null when wake run not found', () async {
+    test(
+      'falls back to profile thinkingModelId when config has profileId',
+      () async {
+        stubEmptyTokenUsage();
+
+        final mockAiConfigRepo = MockAiConfigRepository();
+        final agent = makeTestIdentity(
+          config: const AgentConfig(profileId: 'profile-1'),
+        );
+        when(
+          () => mockRepository.getEntity(kTestAgentId),
+        ).thenAnswer((_) async => agent);
+        when(
+          () => mockAiConfigRepo.getConfigById('profile-1'),
+        ).thenAnswer(
+          (_) async => AiConfig.inferenceProfile(
+            id: 'profile-1',
+            name: 'Local Ollama',
+            thinkingModelId: 'qwen3.5:9b',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+          ),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepo),
+          ],
+        );
+        addTearDown(container.dispose);
+        final result = await container.read(
+          modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+        );
+
+        expect(result, 'qwen3.5:9b');
+      },
+    );
+
+    test('returns null when agent identity not found', () async {
       stubEmptyTokenUsage();
 
       when(
-        () => mockRepository.getWakeRun('missing'),
+        () => mockRepository.getEntity(kTestAgentId),
       ).thenAnswer((_) async => null);
 
       final container = createContainer();
@@ -2767,45 +2800,25 @@ void main() {
       expect(result, isNull);
     });
 
-    test('returns null when template version has no modelId', () async {
-      stubEmptyTokenUsage();
+    test(
+      'returns null when agent config has no modelId or profileId',
+      () async {
+        stubEmptyTokenUsage();
 
-      final wakeRun = makeTestWakeRun(
-        runKey: 'thread-no-model',
-        templateVersionId: 'ver-2',
-      );
-      when(
-        () => mockRepository.getWakeRun('thread-no-model'),
-      ).thenAnswer((_) async => wakeRun);
+        final agent = makeTestIdentity();
+        when(
+          () => mockRepository.getEntity(kTestAgentId),
+        ).thenAnswer((_) async => agent);
 
-      final version = makeTestTemplateVersion(id: 'ver-2');
-      when(
-        () => mockRepository.getEntity('ver-2'),
-      ).thenAnswer((_) async => version);
+        final container = createContainer();
+        final result = await container.read(
+          modelIdForThreadProvider(kTestAgentId, 'thread-no-ver').future,
+        );
 
-      final container = createContainer();
-      final result = await container.read(
-        modelIdForThreadProvider(kTestAgentId, 'thread-no-model').future,
-      );
-
-      expect(result, isNull);
-    });
-
-    test('returns null when wake run has no templateVersionId', () async {
-      stubEmptyTokenUsage();
-
-      final wakeRun = makeTestWakeRun(runKey: 'thread-no-ver');
-      when(
-        () => mockRepository.getWakeRun('thread-no-ver'),
-      ).thenAnswer((_) async => wakeRun);
-
-      final container = createContainer();
-      final result = await container.read(
-        modelIdForThreadProvider(kTestAgentId, 'thread-no-ver').future,
-      );
-
-      expect(result, isNull);
-    });
+        // Falls back to the default AgentConfig.modelId.
+        expect(result, 'models/gemini-3-flash-preview');
+      },
+    );
   });
 
   group('agentInitializationProvider — orphan cleanup', () {

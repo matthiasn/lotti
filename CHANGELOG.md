@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.914] - 2026-03-10
+### Fixed
+- Local inference model display: conversation headers now show the actual
+  model name (e.g. qwen3.5:9b) instead of the stale template default
+  (gemini-3-flash-preview), even while a conversation is still running.
+  Resolved by reading the agent instance's inference profile directly.
+- Tool call count: deferred tools (set_task_title, update_task_priority, etc.)
+  and locally-handled tools (update_report, record_observations) now correctly
+  create action messages, so the conversation log shows accurate tool call
+  counts instead of "0 tool calls".
+- Ollama JSON parsing: added resilient argument parser that handles markdown
+  code fences, trailing text, and brace extraction from malformed JSON that
+  smaller local models sometimes produce.
+- Ollama token usage: extract prompt_eval_count and eval_count from Ollama's
+  final streaming chunk so token usage is recorded for local inference.
+
+### Improved
+- Local model tool loop prevention: non-batch deferred tools can now only be
+  called once per wake. Repeat calls are rejected with an explicit error,
+  preventing smaller models from burning all turns on the same tool.
+- Guided tool responses: after a successful deferred tool call, the response
+  lists remaining available tools, helping local models progress through
+  title, priority, estimate, due date, etc. instead of repeating one tool.
+- Raised default maxTurnsPerWake from 5 to 10, giving agents more room to
+  call multiple different tools in a single wake cycle.
+- Within-wake dedup for change set proposals: identical non-batch proposals
+  are caught and skipped even before cross-wake dedup runs.
+- Ollama logging: full response chunks are now logged for easier debugging.
+
 ## [0.9.913] - 2026-03-10
 ### Added
 - 35 new category icons: cycling, hiking, camping, pets, gardening, cooking,

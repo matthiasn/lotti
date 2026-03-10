@@ -133,6 +133,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   final _observations = <ObservationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
+
+  /// Tracks deferred tool names that have already been successfully queued
+  /// in this wake. Prevents smaller models from burning all turns on a
+  /// single tool (e.g. calling `set_task_title` 4 times).
+  final _usedDeferredTools = <String>{};
+
   static const _uuid = Uuid();
 
   /// Tool name for the report publishing tool.
@@ -197,7 +203,28 @@ class TaskAgentStrategy extends ConversationStrategy {
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
+        // Reject repeat calls to the same non-batch deferred tool name
+        // (even with different args). Smaller models tend to burn all
+        // turns on one tool (e.g. calling set_task_title 4 times).
+        // Batch tools are excluded — they may legitimately be called again.
+        final isBatch = AgentToolRegistry.explodedBatchTools.containsKey(
+          toolName,
+        );
+        if (!isBatch && _usedDeferredTools.contains(toolName)) {
+          await _recordActionMessage(toolName: toolName, args: args);
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response:
+                'ERROR: $toolName was already called this session. '
+                'You MUST NOT call the same tool twice. '
+                'Use a DIFFERENT tool or call update_report to finish.',
+          );
+          continue;
+        }
+
+        await _recordActionMessage(toolName: toolName, args: args);
         final response = await _addToChangeSet(csBuilder, toolName, args);
+        if (!isBatch) _usedDeferredTools.add(toolName);
         manager.addToolResponse(
           toolCallId: call.id,
           response: response,
@@ -575,9 +602,14 @@ class TaskAgentStrategy extends ConversationStrategy {
           args: args,
           humanSummary: _generateHumanSummary(toolName, args),
         );
-        response = addRedundancy != null
-            ? 'Skipped: $addRedundancy'
-            : 'Proposal queued for user review.';
+        if (addRedundancy != null) {
+          response = 'Skipped: $addRedundancy';
+        } else {
+          final remaining = _remainingDeferredToolHint(toolName);
+          response =
+              'OK — $toolName proposal recorded successfully. '
+              'Do NOT call $toolName again.$remaining';
+        }
       }
     }
 
@@ -664,6 +696,34 @@ class TaskAgentStrategy extends ConversationStrategy {
       args,
       snapshot,
     );
+  }
+
+  /// Builds a hint string listing remaining non-batch deferred tools that
+  /// haven't been used yet, guiding the model to call different tools.
+  String _remainingDeferredToolHint(String justUsed) {
+    // Non-batch deferred tools that can only be called once per wake.
+    const singleUseTools = <String>{
+      TaskAgentToolNames.setTaskTitle,
+      TaskAgentToolNames.updateTaskEstimate,
+      TaskAgentToolNames.updateTaskDueDate,
+      TaskAgentToolNames.updateTaskPriority,
+      TaskAgentToolNames.setTaskStatus,
+      TaskAgentToolNames.setTaskLanguage,
+      TaskAgentToolNames.assignTaskLabels,
+      TaskAgentToolNames.createFollowUpTask,
+    };
+
+    final remaining = singleUseTools.difference(_usedDeferredTools).difference({
+      justUsed,
+    });
+
+    if (remaining.isEmpty) {
+      return ' Call update_report when your analysis is complete.';
+    }
+
+    final toolList = remaining.toList()..sort();
+    return ' Consider using: ${toolList.join(', ')} — '
+        'or call update_report when done.';
   }
 
   // ── Persistence helpers ──────────────────────────────────────────────────

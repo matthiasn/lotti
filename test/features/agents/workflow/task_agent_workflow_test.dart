@@ -3130,7 +3130,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3147,7 +3150,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3164,7 +3170,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3181,7 +3190,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3198,7 +3210,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3223,7 +3238,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3242,7 +3260,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3260,7 +3281,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3277,7 +3301,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3296,7 +3323,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3338,7 +3368,10 @@ void main() {
             toolCallId: 'tc-1',
             response: any(
               named: 'response',
-              that: contains('Proposal queued for user review'),
+              that: anyOf(
+                contains('proposal recorded'),
+                contains('Proposal queued'),
+              ),
             ),
           ),
         ).called(1);
@@ -3470,7 +3503,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3491,7 +3527,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3512,7 +3551,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3554,7 +3596,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3574,7 +3619,10 @@ void main() {
                 toolCallId: 'tc-1',
                 response: any(
                   named: 'response',
-                  that: contains('Proposal queued for user review'),
+                  that: anyOf(
+                    contains('proposal recorded'),
+                    contains('Proposal queued'),
+                  ),
                 ),
               ),
             ).called(1);
@@ -3599,7 +3647,10 @@ void main() {
                 toolCallId: 'tc-1',
                 response: any(
                   named: 'response',
-                  that: contains('Proposal queued for user review'),
+                  that: anyOf(
+                    contains('proposal recorded'),
+                    contains('Proposal queued'),
+                  ),
                 ),
               ),
             ).called(1);
@@ -3632,7 +3683,10 @@ void main() {
                 toolCallId: 'tc-1',
                 response: any(
                   named: 'response',
-                  that: contains('Proposal queued for user review'),
+                  that: anyOf(
+                    contains('proposal recorded'),
+                    contains('Proposal queued'),
+                  ),
                 ),
               ),
             ).called(1);
@@ -3651,7 +3705,10 @@ void main() {
               toolCallId: 'tc-1',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
@@ -3768,7 +3825,10 @@ void main() {
               toolCallId: 'tc-2',
               response: any(
                 named: 'response',
-                that: contains('Proposal queued for user review'),
+                that: anyOf(
+                  contains('proposal recorded'),
+                  contains('Proposal queued'),
+                ),
               ),
             ),
           ).called(1);
