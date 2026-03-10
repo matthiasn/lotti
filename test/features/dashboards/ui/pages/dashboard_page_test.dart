@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -59,7 +58,6 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))

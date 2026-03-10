@@ -14,7 +14,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -145,7 +144,6 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)
@@ -1163,6 +1161,78 @@ void main() {
       );
 
       expect(result, false);
+    });
+
+    test('updateTask logs when entity is not a task', () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create a journal entry (not a task)
+      final entry = JournalEntity.journalEntry(
+        entryText: const EntryText(plainText: 'Not a task'),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: DateTime(2024, 3, 15),
+        ),
+      );
+      await persistenceLogic.createDbEntity(entry);
+
+      final taskData = TaskData(
+        status: TaskStatus.open(
+          id: uuid.v1(),
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 60,
+        ),
+        title: 'test',
+        statusHistory: [],
+        dateTo: DateTime(2024, 3, 15),
+        dateFrom: DateTime(2024, 3, 15),
+      );
+
+      // Should succeed (returns true) and hit the orElse branch which logs
+      final result = await persistenceLogic.updateTask(
+        journalEntityId: entry.meta.id,
+        taskData: taskData,
+      );
+
+      expect(result, true);
+
+      // The entity should remain a journal entry (not converted to a task)
+      final unchanged = await getIt<JournalDb>().journalEntityById(
+        entry.meta.id,
+      );
+      expect(unchanged, isA<JournalEntry>());
+    });
+
+    test('updateEvent logs when entity is not an event', () async {
+      final persistenceLogic = getIt<PersistenceLogic>();
+
+      // Create a journal entry (not an event)
+      final entry = JournalEntity.journalEntry(
+        entryText: const EntryText(plainText: 'Not an event'),
+        meta: await persistenceLogic.createMetadata(
+          dateFrom: DateTime(2024, 3, 15),
+        ),
+      );
+      await persistenceLogic.createDbEntity(entry);
+
+      const eventData = EventData(
+        status: EventStatus.tentative,
+        title: 'Test',
+        stars: 0,
+      );
+
+      // Should succeed (returns true) and hit the orElse branch which logs
+      final result = await persistenceLogic.updateEvent(
+        journalEntityId: entry.meta.id,
+        data: eventData,
+      );
+
+      expect(result, true);
+
+      // The entity should remain a journal entry (not converted to an event)
+      final unchanged = await getIt<JournalDb>().journalEntityById(
+        entry.meta.id,
+      );
+      expect(unchanged, isA<JournalEntry>());
     });
 
     test(

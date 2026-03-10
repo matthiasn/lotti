@@ -1376,9 +1376,25 @@
   "linkedTasksTitle": "Linked Tasks",
   "linkedToLabel": "LINKED TO",
   "linkExistingTask": "Link existing task...",
-  "loggingFailedToLoad": "Failed to load logs. Please try again.",
-  "loggingFailedToLoadMore": "Failed to load more results. Please try again.",
-  "loggingSearchFailed": "Search failed. Please try again.",
+  "logsFoundCount": "Found {count} matching {count, plural, =1{log} other{logs}}",
+  "@logsFoundCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "logsLineCopied": "Log line copied",
+  "logsNoLogsForDate": "No logs for {date}",
+  "@logsNoLogsForDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "logsNoMatch": "No logs match your search",
+  "logsReload": "Reload",
   "logsSearchHint": "Search all logs...",
   "maintenanceDeleteAgentDb": "Delete Agents Database",
   "maintenanceDeleteAgentDbDescription": "Delete agents database and restart app",
@@ -1393,8 +1409,6 @@
   },
   "maintenanceDeleteEditorDb": "Delete Editor Database",
   "maintenanceDeleteEditorDbDescription": "Delete editor drafts database",
-  "maintenanceDeleteLoggingDb": "Delete Logging Database",
-  "maintenanceDeleteLoggingDbDescription": "Delete logging database",
   "maintenanceDeleteSyncDb": "Delete Sync Database",
   "maintenanceDeleteSyncDbDescription": "Delete sync database",
   "maintenanceGenerateEmbeddings": "Generate Embeddings",

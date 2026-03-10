@@ -100,24 +100,6 @@ class MaintenancePage extends ConsumerWidget {
                     },
                   ),
                   AdaptiveSettingsCard(
-                    title: context.messages.maintenanceDeleteLoggingDb,
-                    subtitle:
-                        context.messages.maintenanceDeleteLoggingDbDescription,
-                    icon: Icons.article_rounded,
-                    onTap: () async {
-                      final confirmed = await showConfirmationModal(
-                        context: context,
-                        message: context.messages
-                            .maintenanceDeleteDatabaseQuestion('Logging'),
-                        confirmLabel:
-                            context.messages.maintenanceDeleteDatabaseConfirm,
-                      );
-                      if (confirmed && context.mounted) {
-                        await maintenance.deleteLoggingDb();
-                      }
-                    },
-                  ),
-                  AdaptiveSettingsCard(
                     title: context.messages.maintenanceDeleteAgentDb,
                     subtitle:
                         context.messages.maintenanceDeleteAgentDbDescription,

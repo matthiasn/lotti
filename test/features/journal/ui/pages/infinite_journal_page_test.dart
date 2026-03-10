@@ -8,7 +8,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
@@ -118,7 +117,6 @@ void main() {
       getIt
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(mockSettingsDb)

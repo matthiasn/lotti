@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:intl/intl.dart';
-import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';

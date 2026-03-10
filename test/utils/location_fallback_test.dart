@@ -15,7 +15,20 @@ class MockLocation extends Mock implements Location {}
 
 class MockJournalDb extends Mock implements JournalDb {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockLocationData extends Mock implements LocationData {}
 
@@ -70,7 +83,7 @@ void main() {
         domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);
@@ -361,7 +374,7 @@ void main() {
             domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         deviceLocation = DeviceLocation(
           locationService: mockLocation,

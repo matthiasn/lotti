@@ -83,7 +83,7 @@ void main() {
   }
 
   group('LoggingSettingsPage', () {
-    testWidgets('renders all toggle cards and view-logs card', (tester) async {
+    testWidgets('renders all toggle cards', (tester) async {
       await pumpPage(tester, overrides: allEnabledOverrides());
 
       final context = tester.element(find.byType(LoggingSettingsPage));
@@ -102,10 +102,6 @@ void main() {
       );
       expect(
         find.text(context.messages.settingsLoggingSync),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.settingsLogsTitle),
         findsOneWidget,
       );
     });
@@ -129,10 +125,6 @@ void main() {
       );
       expect(
         find.text(context.messages.settingsLoggingSyncSubtitle),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.settingsLoggingViewLogsSubtitle),
         findsOneWidget,
       );
     });
@@ -245,7 +237,6 @@ void main() {
       expect(find.byIcon(Icons.memory_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.play_circle_outline_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.sync_rounded), findsAtLeast(1));
-      expect(find.byIcon(Icons.search_rounded), findsAtLeast(1));
     });
   });
 }

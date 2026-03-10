@@ -110,7 +110,7 @@ void main() {
           subDomain: any(named: 'subDomain'),
           stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => mockDBusClient.close()).thenAnswer((_) async {});
     });

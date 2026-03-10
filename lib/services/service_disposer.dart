@@ -4,7 +4,6 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -84,7 +83,6 @@ class ServiceDisposer {
     );
     await _disposeAsyncSafely<EditorDb>((db) => db.close(), 'EditorDb');
     await _disposeAsyncSafely<Fts5Db>((db) => db.close(), 'Fts5Db');
-    await _disposeAsyncSafely<LoggingDb>((db) => db.close(), 'LoggingDb');
     await _disposeAsyncSafely<SettingsDb>((db) => db.close(), 'SettingsDb');
 
     // 5. Close the ObjectBox embedding store.

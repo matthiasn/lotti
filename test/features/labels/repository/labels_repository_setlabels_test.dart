@@ -16,7 +16,20 @@ class MockPersistenceLogic extends Mock implements PersistenceLogic {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
@@ -230,7 +243,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       expect(
         await repo.addLabels(journalEntityId: 'bad', addedLabelIds: ['x']),

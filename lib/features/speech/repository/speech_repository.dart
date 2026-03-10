@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/classes/audio_note.dart';
@@ -71,11 +72,13 @@ class SpeechRepository {
             ),
           );
         },
-        orElse: () async => getIt<LoggingService>().captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'updateLanguage',
-        ),
+        orElse: () async {
+          getIt<LoggingService>().captureException(
+            'not an audio entry',
+            domain: 'persistence_logic',
+            subDomain: 'updateLanguage',
+          );
+        },
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(
@@ -118,11 +121,13 @@ class SpeechRepository {
             ),
           );
         },
-        orElse: () async => getIt<LoggingService>().captureException(
-          'not an audio entry',
-          domain: 'persistence_logic',
-          subDomain: 'removeAudioTranscript',
-        ),
+        orElse: () async {
+          getIt<LoggingService>().captureException(
+            'not an audio entry',
+            domain: 'persistence_logic',
+            subDomain: 'removeAudioTranscript',
+          );
+        },
       );
     } catch (exception, stackTrace) {
       getIt<LoggingService>().captureException(

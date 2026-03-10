@@ -53,7 +53,6 @@ void main() {
       final context = tester.element(find.byType(AdvancedSettingsPage));
 
       // Verify advanced-only cards are present
-      expect(find.text(context.messages.settingsLogsTitle), findsOneWidget);
       expect(
         find.text(context.messages.settingsLoggingDomainsTitle),
         findsOneWidget,

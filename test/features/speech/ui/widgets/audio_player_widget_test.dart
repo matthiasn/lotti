@@ -13,6 +13,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
+
 class MockAudioPlayerController extends AudioPlayerController {
   MockAudioPlayerController(this._state);
 
@@ -61,8 +63,6 @@ class MockAudioPlayerController extends AudioPlayerController {
   }
 }
 
-class _MockLoggingService extends Mock implements LoggingService {}
-
 class _StubAudioWaveformService extends AudioWaveformService {
   _StubAudioWaveformService()
     : super(
@@ -100,7 +100,7 @@ void main() {
 
   setUp(() async {
     await getIt.reset();
-    getIt.registerSingleton<LoggingService>(_MockLoggingService());
+    getIt.registerSingleton<LoggingService>(MockLoggingService());
     waveformService = _StubAudioWaveformService();
     getIt.registerSingleton<AudioWaveformService>(waveformService);
   });

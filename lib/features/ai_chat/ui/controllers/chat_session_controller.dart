@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';

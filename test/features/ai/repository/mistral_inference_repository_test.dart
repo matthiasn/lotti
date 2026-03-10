@@ -12,7 +12,20 @@ import 'package:openai_dart/openai_dart.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -1432,7 +1445,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(
           () => mockHttpClient.send(any()),

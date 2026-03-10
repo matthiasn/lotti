@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -99,7 +98,6 @@ void main() {
 
       getIt
         ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -145,9 +143,6 @@ void main() {
     });
 
     tearDownAll(() async {
-      if (getIt.isRegistered<LoggingDb>()) {
-        await getIt<LoggingDb>().close();
-      }
       await getIt.reset();
     });
 

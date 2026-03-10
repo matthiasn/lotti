@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/client.dart';

@@ -8,7 +8,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -102,7 +101,6 @@ void main() {
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)

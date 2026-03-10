@@ -97,7 +97,6 @@ void main() {
       );
 
       final mockMaintenance = MockMaintenance();
-      when(mockMaintenance.deleteLoggingDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteEditorDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteSyncDb).thenAnswer((_) async {});
       when(mockMaintenance.deleteAgentDb).thenAnswer((_) async {});
@@ -118,7 +117,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Delete Logging Database'), findsOneWidget);
+      expect(find.text('Delete Logging Database'), findsNothing);
       expect(find.text('Delete Editor Database'), findsOneWidget);
       expect(find.text('Delete Agents Database'), findsOneWidget);
       expect(find.text('Delete Sync Database'), findsNothing);
@@ -132,43 +131,6 @@ void main() {
       expect(find.text('Recreate full-text index'), findsAtLeastNWidgets(1));
       expect(find.text('Re-sync messages'), findsNothing);
     });
-
-    testWidgets('delete logging database button shows confirmation dialog', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(_constrainedMaintenancePage()),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Delete Logging Database'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.text('Are you sure you want to delete Logging Database?'),
-        findsOneWidget,
-      );
-      expect(find.text('YES, DELETE DATABASE'), findsOneWidget);
-      expect(find.text('CANCEL'), findsOneWidget);
-    });
-
-    testWidgets(
-      'delete logging database button deletes database when confirmed',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidget(_constrainedMaintenancePage()),
-        );
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Delete Logging Database'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('YES, DELETE DATABASE'));
-        await tester.pumpAndSettle();
-
-        verify(() => getIt<Maintenance>().deleteLoggingDb()).called(1);
-      },
-    );
 
     testWidgets('delete editor database button shows confirmation dialog', (
       tester,

@@ -2828,14 +2828,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkExistingTask => 'Link existing task...';
 
   @override
-  String get loggingFailedToLoad => 'Failed to load logs. Please try again.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'logs',
+      one: 'log',
+    );
+    return 'Found $count matching $_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Failed to load more results. Please try again.';
+  String get logsLineCopied => 'Log line copied';
 
   @override
-  String get loggingSearchFailed => 'Search failed. Please try again.';
+  String logsNoLogsForDate(String date) {
+    return 'No logs for $date';
+  }
+
+  @override
+  String get logsNoMatch => 'No logs match your search';
+
+  @override
+  String get logsReload => 'Reload';
 
   @override
   String get logsSearchHint => 'Search all logs...';
@@ -2861,12 +2876,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Delete editor drafts database';
-
-  @override
-  String get maintenanceDeleteLoggingDb => 'Delete Logging Database';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription => 'Delete logging database';
 
   @override
   String get maintenanceDeleteSyncDb => 'Delete Sync Database';
@@ -5149,12 +5158,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Delete editor drafts database';
-
-  @override
-  String get maintenanceDeleteLoggingDb => 'Delete logging database';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription => 'Delete logging database';
 
   @override
   String get maintenanceDeleteSyncDb => 'Delete sync database';

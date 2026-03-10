@@ -11,7 +11,20 @@ import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockWindowManager extends Mock implements WindowManager {}
 
@@ -98,7 +111,7 @@ void main() {
             domain: screenshotDomain,
             subDomain: 'portal_fallback',
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // The screenshot will fail because we don't have the actual tools
         // but it should NOT log portal_fallback
@@ -156,7 +169,7 @@ void main() {
             domain: screenshotDomain,
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // The screenshot will fail because we don't have the actual screenshot tools
         await expectLater(

@@ -16,7 +16,20 @@ import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
 // Mocks
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockWindowManager extends Mock implements WindowManager {}
 
@@ -80,7 +93,7 @@ void main() {
           subDomain: any(named: 'subDomain'),
           stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
     });
 
     tearDown(getIt.reset);
@@ -164,7 +177,7 @@ void main() {
             domain: 'SCREENSHOTS',
             subDomain: 'portal_fallback',
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // Attempt screenshot which should handle fallback
         expect(() async {

@@ -2873,16 +2873,29 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkExistingTask => 'Leagă o sarcină existentă...';
 
   @override
-  String get loggingFailedToLoad =>
-      'Eșec la încărcarea jurnalelor. Vă rugăm să încercați din nou.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jurnale găsite',
+      one: '1 jurnal găsit',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Eșec la încărcarea mai multor rezultate. Vă rugăm să încercați din nou.';
+  String get logsLineCopied => 'Linie de jurnal copiată';
 
   @override
-  String get loggingSearchFailed =>
-      'Căutarea a eșuat. Vă rugăm să încercați din nou.';
+  String logsNoLogsForDate(String date) {
+    return 'Niciun jurnal pentru $date';
+  }
+
+  @override
+  String get logsNoMatch => 'Niciun jurnal nu corespunde căutării tale.';
+
+  @override
+  String get logsReload => 'Reîncarcă';
 
   @override
   String get logsSearchHint => 'Caută în toate jurnalele...';
@@ -2908,13 +2921,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Șterge baza de date a ciornelor editorului';
-
-  @override
-  String get maintenanceDeleteLoggingDb => 'Șterge log-urile din baza de date';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription =>
-      'Șterge baza de date de jurnalizare';
 
   @override
   String get maintenanceDeleteSyncDb => 'Ștergeți baza de date de sincronizare';

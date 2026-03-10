@@ -2,13 +2,12 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/pipeline/read_marker_manager.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockRoom extends Mock implements Room {}
+import '../../../../mocks/mocks.dart';
 
-class MockLogging extends Mock implements LoggingService {}
+class MockRoom extends Mock implements Room {}
 
 void main() {
   setUpAll(() {
@@ -18,7 +17,7 @@ void main() {
   test('schedules once with debounce and flushes latest id', () {
     fakeAsync((async) {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final calls = <String>[];
       final mgr = ReadMarkerManager(
         debounce: const Duration(milliseconds: 50),
@@ -41,7 +40,7 @@ void main() {
   test('captures exceptions from onFlush', () {
     fakeAsync((async) {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final mgr = ReadMarkerManager(
         debounce: const Duration(milliseconds: 10),
         onFlush: (r, id) async => throw Exception('x'),
@@ -55,7 +54,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       mgr.schedule(room, 'e');
       async.elapse(const Duration(milliseconds: 15));
@@ -74,7 +73,7 @@ void main() {
   test('dispose flushes pending marker immediately', () {
     fakeAsync((async) {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       var called = false;
       final mgr = ReadMarkerManager(
         debounce: const Duration(milliseconds: 50),

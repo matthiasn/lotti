@@ -59,7 +59,7 @@ void main() {
         subDomain: any<String?>(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
     when(
       () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
     ).thenAnswer((_) async => 1);

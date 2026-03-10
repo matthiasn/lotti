@@ -89,7 +89,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
     when(() => mockVcService.initialized).thenAnswer((_) async {});
     when(() => mockVcService.getHost()).thenAnswer((_) async => aliceHostId);
 

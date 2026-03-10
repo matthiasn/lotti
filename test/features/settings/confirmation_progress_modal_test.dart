@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -13,15 +12,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockLoggingService mockLoggingService;
-  late MockLoggingDb mockLoggingDb;
 
   setUp(() {
     mockLoggingService = MockLoggingService();
-    mockLoggingDb = MockLoggingDb();
 
-    getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<LoggingDb>(mockLoggingDb);
+    getIt.registerSingleton<LoggingService>(mockLoggingService);
   });
 
   tearDown(getIt.reset);

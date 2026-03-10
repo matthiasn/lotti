@@ -16,7 +16,20 @@ import 'package:mocktail/mocktail.dart';
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
@@ -80,7 +93,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() {

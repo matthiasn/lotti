@@ -1,39 +1,29 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class FakeLogEntry extends Fake implements LogEntry {}
-
 void main() {
   late MockJournalDb mockDb;
-  late MockLoggingDb mockLoggingDb;
   late ProviderContainer container;
   late PurgeController controller;
 
-  setUpAll(() {
-    registerFallbackValue(FakeLogEntry());
-  });
-
   setUp(() {
     mockDb = MockJournalDb();
-    mockLoggingDb = MockLoggingDb();
+
     container = ProviderContainer(
       overrides: [
         journalDbProvider.overrideWithValue(mockDb),
-        loggingDbProvider.overrideWithValue(mockLoggingDb),
+        loggingServiceProvider.overrideWithValue(MockLoggingService()),
       ],
     );
     controller = container.read(purgeControllerProvider.notifier);
   });
 
-  tearDown(() {
-    container.dispose();
-  });
+  tearDown(() => container.dispose());
 
   group('PurgeController', () {
     test('initial state should be correct', () {
@@ -69,12 +59,6 @@ void main() {
         (_) => Stream.error(Exception(testError)),
       );
 
-      LogEntry? capturedLogEntry;
-      when(() => mockLoggingDb.log(any())).thenAnswer((invocation) {
-        capturedLogEntry = invocation.positionalArguments.first as LogEntry;
-        return Future.value(1);
-      });
-
       final purgeFuture = controller.purgeDeleted();
 
       var state = container.read(purgeControllerProvider);
@@ -87,13 +71,6 @@ void main() {
       expect(state.isPurging, false);
       expect(state.progress, 0);
       expect(state.error, contains(testError));
-
-      expect(capturedLogEntry, isNotNull);
-      expect(capturedLogEntry!.message, contains(testError));
-      expect(capturedLogEntry!.domain, equals('PurgeController'));
-      expect(capturedLogEntry!.subDomain, equals('purgeDeleted'));
-      expect(capturedLogEntry!.level, equals('ERROR'));
-      expect(capturedLogEntry!.type, equals('EXCEPTION'));
     });
 
     test('purgeDeleted should update progress incrementally', () async {

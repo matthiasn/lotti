@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/features/sync/matrix/consts.dart';

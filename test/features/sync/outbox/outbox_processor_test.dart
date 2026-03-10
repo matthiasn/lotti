@@ -8,14 +8,13 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class MockOutboxRepository extends Mock implements OutboxRepository {}
 
 class MockMessageSender extends Mock implements OutboxMessageSender {}
-
-class MockLogging extends Mock implements LoggingService {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +40,7 @@ void main() {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final pending = OutboxItem(
         id: 1,
@@ -109,7 +108,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         final pending = OutboxItem(
           id: 1,
@@ -179,7 +178,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         final pending = OutboxItem(
           id: 2,
@@ -257,7 +256,7 @@ void main() {
       // First call returns item A at cap (retries=2, max=3), second call returns item B
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final a = OutboxItem(
         id: 11,
@@ -331,7 +330,7 @@ void main() {
       fakeAsync((async) {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         final pending = OutboxItem(
           id: 3,
@@ -391,7 +390,7 @@ void main() {
     test('fast failure logs timedOut=false', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final pending = OutboxItem(
         id: 4,
@@ -443,7 +442,7 @@ void main() {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final pending = OutboxItem(
         id: 99,
@@ -501,7 +500,7 @@ void main() {
   test('repeated failure counter handles large values', () async {
     final repo = MockOutboxRepository();
     final sender = MockMessageSender();
-    final log = MockLogging();
+    final log = MockLoggingService();
 
     final item = OutboxItem(
       id: 1000,
@@ -560,7 +559,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         // First failure: retries=0 → nextAttempts=1, repeats=1
         final item0 = OutboxItem(
@@ -647,7 +646,7 @@ void main() {
     test('repeated failure resets on different subject', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final a0 = OutboxItem(
         id: 31,
@@ -726,7 +725,7 @@ void main() {
     test('repeated failure resets on success for the same subject', () async {
       final repo = MockOutboxRepository();
       final sender = MockMessageSender();
-      final log = MockLogging();
+      final log = MockLoggingService();
 
       final s0 = OutboxItem(
         id: 41,
@@ -818,7 +817,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         // Initial fetch returns item with old message
         final oldItem = OutboxItem(
@@ -897,7 +896,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         final item = OutboxItem(
           id: 101,
@@ -953,7 +952,7 @@ void main() {
       () async {
         final repo = MockOutboxRepository();
         final sender = MockMessageSender();
-        final log = MockLogging();
+        final log = MockLoggingService();
 
         final item1 = OutboxItem(
           id: 102,

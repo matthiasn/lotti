@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
@@ -6,7 +7,6 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -157,19 +157,6 @@ class Maintenance {
         'Database file $editorDbFileName does not exist',
         domain: 'MAINTENANCE',
         subDomain: 'deleteEditorDb',
-      );
-    }
-  }
-
-  Future<void> deleteLoggingDb() async {
-    final file = await getDatabaseFile(loggingDbFileName);
-    if (file.existsSync()) {
-      file.deleteSync();
-    } else {
-      getIt<LoggingService>().captureEvent(
-        'Database file $loggingDbFileName does not exist',
-        domain: 'MAINTENANCE',
-        subDomain: 'deleteLoggingDb',
       );
     }
   }

@@ -5157,23 +5157,35 @@ abstract class AppLocalizations {
   /// **'Link existing task...'**
   String get linkExistingTask;
 
-  /// No description provided for @loggingFailedToLoad.
+  /// No description provided for @logsFoundCount.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load logs. Please try again.'**
-  String get loggingFailedToLoad;
+  /// **'Found {count} matching {count, plural, =1{log} other{logs}}'**
+  String logsFoundCount(int count);
 
-  /// No description provided for @loggingFailedToLoadMore.
+  /// No description provided for @logsLineCopied.
   ///
   /// In en, this message translates to:
-  /// **'Failed to load more results. Please try again.'**
-  String get loggingFailedToLoadMore;
+  /// **'Log line copied'**
+  String get logsLineCopied;
 
-  /// No description provided for @loggingSearchFailed.
+  /// No description provided for @logsNoLogsForDate.
   ///
   /// In en, this message translates to:
-  /// **'Search failed. Please try again.'**
-  String get loggingSearchFailed;
+  /// **'No logs for {date}'**
+  String logsNoLogsForDate(String date);
+
+  /// No description provided for @logsNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No logs match your search'**
+  String get logsNoMatch;
+
+  /// No description provided for @logsReload.
+  ///
+  /// In en, this message translates to:
+  /// **'Reload'**
+  String get logsReload;
 
   /// No description provided for @logsSearchHint.
   ///
@@ -5216,18 +5228,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete editor drafts database'**
   String get maintenanceDeleteEditorDbDescription;
-
-  /// No description provided for @maintenanceDeleteLoggingDb.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete Logging Database'**
-  String get maintenanceDeleteLoggingDb;
-
-  /// No description provided for @maintenanceDeleteLoggingDbDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete logging database'**
-  String get maintenanceDeleteLoggingDbDescription;
 
   /// No description provided for @maintenanceDeleteSyncDb.
   ///

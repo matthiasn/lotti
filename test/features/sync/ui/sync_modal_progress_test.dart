@@ -8,11 +8,9 @@ import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:mocktail/mocktail.dart';
 
-class _MockLoggingService extends Mock implements LoggingService {}
+import '../../../mocks/mocks.dart';
 
 class TestSyncController extends SyncMaintenanceController {
   TestSyncController(this._initialState);
@@ -113,7 +111,7 @@ void main() {
     );
 
     final controller = _PendingSyncController(pendingState);
-    final mockLoggingService = _MockLoggingService();
+    final mockLoggingService = MockLoggingService();
 
     await tester.pumpWidget(
       ProviderScope(

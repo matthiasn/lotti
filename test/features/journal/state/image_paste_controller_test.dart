@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/clipboard_repository.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
@@ -65,9 +64,6 @@ void main() {
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
     }
-    if (getIt.isRegistered<LoggingDb>()) {
-      getIt.unregister<LoggingDb>();
-    }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
@@ -106,7 +102,6 @@ void main() {
     // Register all required mock services
     getIt
       ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<Fts5Db>(MockFts5Db())
       ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
@@ -126,9 +121,6 @@ void main() {
     // Clean up GetIt registrations
     if (getIt.isRegistered<Directory>()) {
       getIt.unregister<Directory>();
-    }
-    if (getIt.isRegistered<LoggingDb>()) {
-      getIt.unregister<LoggingDb>();
     }
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();

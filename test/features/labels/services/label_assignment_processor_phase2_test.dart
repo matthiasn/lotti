@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/get_it.dart';

@@ -6,25 +6,22 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
 class _MockLabelsRepository extends Mock implements LabelsRepository {}
 
-class _MockLoggingService extends Mock implements LoggingService {}
-
 void main() {
   late MockJournalDb mockDb;
   late _MockLabelsRepository mockRepo;
-  late _MockLoggingService mockLogging;
+  late MockLoggingService mockLogging;
   late LabelAssignmentProcessor processor;
 
   setUp(() {
     mockDb = MockJournalDb();
     mockRepo = _MockLabelsRepository();
-    mockLogging = _MockLoggingService();
+    mockLogging = MockLoggingService();
     getIt.registerSingleton<LabelAssignmentEventService>(
       LabelAssignmentEventService(),
     );

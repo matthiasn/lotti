@@ -54,7 +54,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     // Set up test prompt configs
     final now = DateTime(2024, 3, 15);

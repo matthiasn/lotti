@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/nav_service.dart';
-import 'package:mocktail/mocktail.dart';
 
 void main() {
   group('AiErrorDisplay', () {
@@ -549,66 +546,6 @@ void main() {
         await tester.pump();
         expect(retried, isTrue);
       });
-
-      testWidgets('View Log button navigates to logs page', (
-        WidgetTester tester,
-      ) async {
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        // Register a mock NavService in GetIt
-        final getIt = GetIt.instance;
-        if (getIt.isRegistered<NavService>()) {
-          getIt.unregister<NavService>();
-        }
-        final mockNavService = MockNavService();
-        getIt.registerSingleton<NavService>(mockNavService);
-        addTearDown(() {
-          if (getIt.isRegistered<NavService>()) {
-            getIt.unregister<NavService>();
-          }
-        });
-        final error = InferenceError(
-          message: 'Server error',
-          type: InferenceErrorType
-              .serverError, // Use a type that shows log button
-        );
-        final navKey = GlobalKey<NavigatorState>();
-        await tester.pumpWidget(
-          MaterialApp(
-            navigatorKey: navKey,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            routes: {
-              '/settings/advanced/logging': (context) =>
-                  const Scaffold(body: Text('Logs Page')),
-            },
-            home: Scaffold(
-              body: AiErrorDisplay(error: error, onRetry: () {}),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-        final viewLogText = find.text('View Log');
-        expect(viewLogText, findsOneWidget);
-        final materialButton = find
-            .ancestor(of: viewLogText, matching: find.byType(Material))
-            .first;
-        await tester.tap(materialButton);
-        await tester.pump();
-        // Verify that beamToNamed was called with the correct route
-        verify(
-          () => mockNavService.beamToNamed('/settings/advanced/logging'),
-        ).called(1);
-        expect(viewLogText, findsOneWidget);
-      });
     });
   });
 }
-
-class MockNavService extends Mock implements NavService {}

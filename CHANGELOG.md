@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Legacy checklist updates prompt and task summary system — all conversation-
   based processing code, UI widgets, and associated tests have been removed.
   Task summaries are now handled exclusively by the agent system.
+- SQLite logging database (`LoggingDb`) — replaced by the existing file-based
+  logging in `LoggingService`. Log files are written to `{docs}/logs/lotti-YYYY-MM-DD.log`,
+  easily viewable with Console.app or any text editor. The in-app log viewer
+  page has been removed in favor of native log viewers.
 
 ### Improved
 - Task summary resolution: a new `TaskSummaryResolver` provides unified

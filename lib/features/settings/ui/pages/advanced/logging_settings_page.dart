@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
@@ -82,13 +81,6 @@ class LoggingSettingsPage extends ConsumerWidget {
                   ? (_) => getIt<JournalDb>().toggleConfigFlag(logSyncFlag)
                   : null,
             ),
-          ),
-          const Divider(height: 1),
-          AdaptiveSettingsCard(
-            title: context.messages.settingsLogsTitle,
-            subtitle: context.messages.settingsLoggingViewLogsSubtitle,
-            icon: Icons.search_rounded,
-            onTap: () => context.beamToNamed('/settings/advanced/logging'),
           ),
         ],
       ),

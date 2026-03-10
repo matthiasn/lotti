@@ -67,7 +67,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
   });
 
   group('BackfillRequestService', () {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';

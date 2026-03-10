@@ -17,12 +17,6 @@ class AdvancedSettingsPage extends ConsumerWidget {
       child: Column(
         children: [
           AdaptiveSettingsCard(
-            title: context.messages.settingsLogsTitle,
-            subtitle: context.messages.settingsAdvancedLogsSubtitle,
-            icon: Icons.article_rounded,
-            onTap: () => context.beamToNamed('/settings/advanced/logging'),
-          ),
-          AdaptiveSettingsCard(
             title: context.messages.settingsLoggingDomainsTitle,
             subtitle: context.messages.settingsLoggingDomainsSubtitle,
             icon: Icons.tune_rounded,

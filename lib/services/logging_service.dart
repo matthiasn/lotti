@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
@@ -131,64 +131,6 @@ class LoggingService {
       message: event.toString(),
     );
 
-    // DB sink (best-effort). Never throw from logging paths.
-    try {
-      await getIt<LoggingDb>().log(
-        LogEntry(
-          id: uuid.v1(),
-          createdAt: now.toIso8601String(),
-          domain: domain,
-          subDomain: subDomain,
-          message: event.toString(),
-          level: level.name.toUpperCase(),
-          type: type.name.toUpperCase(),
-        ),
-      );
-    } catch (e, st) {
-      // Swallow DB-sink errors to avoid interfering with app flows, but capture
-      // a compact breadcrumb to aid root-cause analysis of SQLITE_CANTOPEN (14)
-      try {
-        // Avoid path_provider during tests; prefer injected documents directory.
-        final doc = getDocumentsDirectory();
-        final tmp = Directory.systemTemp;
-        final diag =
-            'logging.db.write.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
-        final line = _formatLine(
-          ts: now,
-          level: InsightLevel.error.name.toUpperCase(),
-          domain: 'LOGGING_DB',
-          subDomain: 'event.write',
-          message: diag,
-        );
-        unawaited(_appendToFile(line, forceFlush: true));
-      } catch (fileErr, fileSt) {
-        // Last resort: surface both the original DB error and the fallback
-        // file error to the console so bootstrap failures are not invisible.
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'CRITICAL: Logging fallback failed!',
-        );
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'Original DB error',
-          error: e,
-        );
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'Fallback file error',
-          error: fileErr,
-          stackTrace: fileSt,
-        );
-      }
-      // Also log to DevLogger
-      DevLogger.error(
-        name: 'LoggingService',
-        message: 'LOGGING_DB event.write failed',
-        error: e,
-        stackTrace: st,
-      );
-    }
-
     // File sink (best-effort). Await to ensure ordering and determinism.
     await _appendToFile(
       line,
@@ -206,12 +148,14 @@ class LoggingService {
     if (!_enableLogging) {
       return;
     }
-    _captureEventAsync(
-      event,
-      domain: domain,
-      subDomain: subDomain,
-      level: level,
-      type: type,
+    unawaited(
+      _captureEventAsync(
+        event,
+        domain: domain,
+        subDomain: subDomain,
+        level: level,
+        type: type,
+      ),
     );
   }
 
@@ -232,59 +176,6 @@ class LoggingService {
       message: '$exception ${stackTrace ?? ''}'.trim(),
     );
 
-    // DB sink (best-effort). Never throw from logging paths.
-    try {
-      await getIt<LoggingDb>().log(
-        LogEntry(
-          id: uuid.v1(),
-          createdAt: now.toIso8601String(),
-          domain: domain,
-          subDomain: subDomain,
-          message: exception.toString(),
-          stacktrace: stackTrace?.toString(),
-          level: level.name.toUpperCase(),
-          type: type.name.toUpperCase(),
-        ),
-      );
-    } catch (e, st2) {
-      try {
-        final doc = getDocumentsDirectory();
-        final tmp = Directory.systemTemp;
-        final diag =
-            'logging.db.exception.failed err=$e docDir=${doc.path} tmpDir=${tmp.path}';
-        final line = _formatLine(
-          ts: now,
-          level: InsightLevel.error.name.toUpperCase(),
-          domain: 'LOGGING_DB',
-          subDomain: 'exception.write',
-          message: diag,
-        );
-        unawaited(_appendToFile(line, forceFlush: true));
-      } catch (fileErr, fileSt) {
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'CRITICAL: Logging fallback failed!',
-        );
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'Original DB error',
-          error: e,
-        );
-        DevLogger.error(
-          name: 'LoggingService',
-          message: 'Fallback file error',
-          error: fileErr,
-          stackTrace: fileSt,
-        );
-      }
-      DevLogger.error(
-        name: 'LoggingService',
-        message: 'LOGGING_DB exception.write failed',
-        error: e,
-        stackTrace: st2,
-      );
-    }
-
     // File sink (best-effort). Await to ensure ordering and determinism.
     await _appendToFile(line, forceFlush: true);
   }
@@ -303,13 +194,15 @@ class LoggingService {
       error: exception,
       stackTrace: stackTrace is StackTrace ? stackTrace : null,
     );
-    _captureExceptionAsync(
-      exception,
-      domain: domain,
-      subDomain: subDomain,
-      stackTrace: stackTrace,
-      level: level,
-      type: type,
+    unawaited(
+      _captureExceptionAsync(
+        exception,
+        domain: domain,
+        subDomain: subDomain,
+        stackTrace: stackTrace,
+        level: level,
+        type: type,
+      ),
     );
   }
 }

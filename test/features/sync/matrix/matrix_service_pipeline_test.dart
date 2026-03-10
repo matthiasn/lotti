@@ -21,17 +21,16 @@ import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class _MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
 class _MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 class _MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class _MockLoggingService extends Mock implements LoggingService {}
 
 class _MockJournalDb extends Mock implements JournalDb {}
 
@@ -72,7 +71,7 @@ void main() {
   });
 
   late _MockMatrixSyncGateway gateway;
-  late _MockLoggingService logging;
+  late MockLoggingService logging;
   late _MockJournalDb journalDb;
   late _MockSettingsDb settingsDb;
   late _MockSyncReadMarkerService readMarkerService;
@@ -146,7 +145,7 @@ void main() {
 
   setUp(() {
     gateway = _MockMatrixSyncGateway();
-    logging = _MockLoggingService();
+    logging = MockLoggingService();
     journalDb = _MockJournalDb();
     settingsDb = _MockSettingsDb();
     readMarkerService = _MockSyncReadMarkerService();

@@ -1,5 +1,7 @@
 // ignore_for_file: comment_references
 
+import 'dart:async';
+
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';

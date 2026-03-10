@@ -35,7 +35,7 @@ void main() {
             domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
         when(
           () => logging.captureException(
             any<Object>(),
@@ -43,7 +43,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final ev = MockEvent();
         when(() => ev.eventId).thenReturn('e1');
@@ -97,7 +97,7 @@ void main() {
             domain: any<String>(named: 'domain'),
             subDomain: any<String>(named: 'subDomain'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
         when(
           () => logging.captureException(
             any<Object>(),
@@ -105,7 +105,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final tmp = Directory.systemTemp.createTempSync('ingestor');
         addTearDown(() => tmp.deleteSync(recursive: true));
@@ -177,7 +177,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -185,7 +185,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_queue');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -243,7 +243,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -251,7 +251,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_eager');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -317,7 +317,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -325,7 +325,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_dedupe');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -373,7 +373,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -381,7 +381,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_empty');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -433,7 +433,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -441,7 +441,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_error');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -493,7 +493,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -501,7 +501,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_agent');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -558,7 +558,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -566,7 +566,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_agent_link');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -622,7 +622,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -630,7 +630,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_journal');
       addTearDown(() => tmp.deleteSync(recursive: true));
@@ -681,7 +681,7 @@ void main() {
           domain: any<String>(named: 'domain'),
           subDomain: any<String>(named: 'subDomain'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       when(
         () => logging.captureException(
           any<Object>(),
@@ -689,7 +689,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final tmp = Directory.systemTemp.createTempSync('ingestor_traversal');
       addTearDown(() => tmp.deleteSync(recursive: true));

@@ -7,7 +7,6 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -73,7 +72,6 @@ void main() {
         ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())
@@ -1040,7 +1038,7 @@ void main() {
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<dynamic>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         getIt.registerSingleton<LoggingService>(mockLoggingService);
 

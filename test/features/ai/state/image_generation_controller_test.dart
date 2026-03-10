@@ -478,7 +478,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final notifier = container.read(
         imageGenerationControllerProvider(entityId: entityId).notifier,
@@ -520,7 +520,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final notifier = container.read(
           imageGenerationControllerProvider(entityId: entityId).notifier,
@@ -558,7 +558,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final notifier = container.read(
         imageGenerationControllerProvider(entityId: entityId).notifier,
@@ -611,7 +611,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final notifier = container.read(
         imageGenerationControllerProvider(entityId: entityId).notifier,
@@ -1013,7 +1013,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       // Mock AI config returns provider so generation can proceed
       when(

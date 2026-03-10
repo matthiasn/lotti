@@ -11,7 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -231,9 +231,23 @@ class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
 
-class MockLoggingDb extends Mock implements LoggingDb {}
-
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    registerFallbackValue(InsightLevel.info);
+    registerFallbackValue(InsightType.log);
+    registerFallbackValue(StackTrace.empty);
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class MockDomainLogger extends Mock implements DomainLogger {}
 

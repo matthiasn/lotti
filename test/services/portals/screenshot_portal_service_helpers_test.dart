@@ -7,18 +7,18 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockLoggingService extends Mock implements LoggingService {}
+import '../../mocks/mocks.dart';
 
 void main() {
   group('ScreenshotPortalService helper functions', () {
-    late _MockLoggingService mockLogging;
+    late MockLoggingService mockLogging;
 
     setUpAll(() {
       registerFallbackValue(StackTrace.current);
     });
 
     setUp(() {
-      mockLogging = _MockLoggingService();
+      mockLogging = MockLoggingService();
       getIt.registerSingleton<LoggingService>(mockLogging);
       when(
         () => mockLogging.captureException(
@@ -27,7 +27,7 @@ void main() {
           subDomain: any(named: 'subDomain'),
           stackTrace: any<dynamic>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
     });
 
     tearDown(getIt.reset);

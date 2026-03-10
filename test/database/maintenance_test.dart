@@ -11,7 +11,6 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -652,16 +651,6 @@ void main() {
         expect(dbFile.existsSync(), isTrue);
 
         await maintenance.deleteEditorDb();
-
-        expect(dbFile.existsSync(), isFalse);
-      });
-
-      test('deleteLoggingDb removes existing database file', () async {
-        final dbFile = await getDatabaseFile(loggingDbFileName);
-        await dbFile.create(recursive: true);
-        expect(dbFile.existsSync(), isTrue);
-
-        await maintenance.deleteLoggingDb();
 
         expect(dbFile.existsSync(), isFalse);
       });

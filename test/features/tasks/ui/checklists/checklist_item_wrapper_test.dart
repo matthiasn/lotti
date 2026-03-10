@@ -164,7 +164,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() async {
