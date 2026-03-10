@@ -133,6 +133,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   final _observations = <ObservationRecord>[];
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
+
+  /// Tracks deferred tool names that have already been successfully queued
+  /// in this wake. Prevents smaller models from burning all turns on a
+  /// single tool (e.g. calling `set_task_title` 4 times).
+  final _usedDeferredTools = <String>{};
+
   static const _uuid = Uuid();
 
   /// Tool name for the report publishing tool.
@@ -155,26 +161,20 @@ class TaskAgentStrategy extends ConversationStrategy {
 
       Map<String, dynamic> args;
       try {
-        final decoded = jsonDecode(call.function.arguments);
-        if (decoded is Map<String, dynamic>) {
-          args = decoded;
-        } else {
-          // Handles null, arrays, and other non-object JSON values.
-          throw FormatException(
-            'Expected a JSON object, got ${decoded.runtimeType}',
-          );
-        }
+        args = _parseToolArguments(call.function.arguments);
       } catch (e) {
         developer.log(
-          'Failed to parse tool call arguments for $toolName: $e',
+          'Failed to parse tool call arguments for $toolName: $e\n'
+          'Raw arguments: ${call.function.arguments}',
           name: 'TaskAgentStrategy',
         );
-        const errorMsg =
-            'Error: invalid arguments format — expected a JSON object.';
+        final errorMsg =
+            'Error: invalid arguments format — expected a JSON object. '
+            'Detail: $e';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
         await _recordToolResultMessage(
           toolName: toolName,
-          errorMessage: '$errorMsg Detail: $e',
+          errorMessage: errorMsg,
         );
         continue;
       }
@@ -189,10 +189,12 @@ class TaskAgentStrategy extends ConversationStrategy {
       // modify journal entities so they don't need category enforcement,
       // but we still persist audit messages for completeness.
       if (toolName == reportToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
         await _handleUpdateReport(args, call.id, manager);
         continue;
       }
       if (toolName == observationToolName) {
+        await _recordActionMessage(toolName: toolName, args: args);
         await _handleRecordObservations(args, call.id, manager);
         continue;
       }
@@ -201,7 +203,40 @@ class TaskAgentStrategy extends ConversationStrategy {
       final csBuilder = changeSetBuilder;
       if (csBuilder != null &&
           AgentToolRegistry.deferredTools.contains(toolName)) {
+        // Reject repeat calls to the same single-use deferred tool name
+        // (even with different args). Smaller models tend to burn all
+        // turns on one tool (e.g. calling set_task_title 4 times).
+        // Batch tools and create_follow_up_task are excluded — they may
+        // legitimately be called multiple times in one wake.
+        final isSingleUse =
+            !AgentToolRegistry.explodedBatchTools.containsKey(toolName) &&
+            toolName != TaskAgentToolNames.createFollowUpTask;
+        if (isSingleUse && _usedDeferredTools.contains(toolName)) {
+          await _recordActionMessage(toolName: toolName, args: args);
+          final errorResponse =
+              'ERROR: $toolName was already called this session. '
+              'You MUST NOT call the same tool twice. '
+              'Use a DIFFERENT tool or call update_report to finish.';
+          manager.addToolResponse(
+            toolCallId: call.id,
+            response: errorResponse,
+          );
+          await _recordToolResultMessage(
+            toolName: toolName,
+            errorMessage: errorResponse,
+          );
+          continue;
+        }
+
+        await _recordActionMessage(toolName: toolName, args: args);
+        final itemCountBefore = csBuilder.items.length;
         final response = await _addToChangeSet(csBuilder, toolName, args);
+        // Only mark as used when an item was actually queued. If metadata
+        // redundancy or dedup skipped it, allow the model to retry with
+        // different args.
+        if (isSingleUse && csBuilder.items.length > itemCountBefore) {
+          _usedDeferredTools.add(toolName);
+        }
         manager.addToolResponse(
           toolCallId: call.id,
           response: response,
@@ -429,6 +464,82 @@ class TaskAgentStrategy extends ConversationStrategy {
     return null;
   }
 
+  // ── Argument parsing ───────────────────────────────────────────────────
+
+  /// Parses tool call arguments from raw JSON, with resilience for common
+  /// local model quirks (markdown fencing, trailing text, etc.).
+  static Map<String, dynamic> _parseToolArguments(String raw) {
+    // First, try direct parse.
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) return decoded;
+      throw FormatException(
+        'Expected a JSON object, got ${decoded.runtimeType}',
+      );
+    } on FormatException {
+      // Fall through to recovery attempts.
+    }
+
+    // Recovery: local models sometimes wrap JSON in markdown code fences
+    // or include trailing explanation text. Try to extract the JSON object.
+    final trimmed = raw.trim();
+
+    // Strip markdown code fences: ```json\n{...}\n```
+    final fencePattern = RegExp(r'```(?:json)?\s*\n?([\s\S]*?)\n?```');
+    final fenceMatch = fencePattern.firstMatch(trimmed);
+    if (fenceMatch != null) {
+      final inner = fenceMatch.group(1)!.trim();
+      try {
+        final decoded = jsonDecode(inner);
+        if (decoded is Map<String, dynamic>) return decoded;
+      } on FormatException {
+        // Continue to next recovery.
+      }
+    }
+
+    // Extract the first top-level JSON object by finding balanced braces.
+    final braceStart = trimmed.indexOf('{');
+    if (braceStart >= 0) {
+      var depth = 0;
+      var inString = false;
+      var escape = false;
+      for (var i = braceStart; i < trimmed.length; i++) {
+        final c = trimmed[i];
+        if (escape) {
+          escape = false;
+          continue;
+        }
+        if (c == r'\' && inString) {
+          escape = true;
+          continue;
+        }
+        if (c == '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (c == '{') depth++;
+          if (c == '}') {
+            depth--;
+            if (depth == 0) {
+              final candidate = trimmed.substring(braceStart, i + 1);
+              try {
+                final decoded = jsonDecode(candidate);
+                if (decoded is Map<String, dynamic>) return decoded;
+              } on FormatException {
+                // Candidate wasn't valid JSON; give up.
+              }
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // All recovery attempts failed — throw with the original raw value.
+    throw FormatException('Could not extract a JSON object from: $raw');
+  }
+
   // ── Change set helpers ──────────────────────────────────────────────────
 
   /// Route a deferred tool call to the change set builder.
@@ -498,9 +609,14 @@ class TaskAgentStrategy extends ConversationStrategy {
           args: args,
           humanSummary: _generateHumanSummary(toolName, args),
         );
-        response = addRedundancy != null
-            ? 'Skipped: $addRedundancy'
-            : 'Proposal queued for user review.';
+        if (addRedundancy != null) {
+          response = 'Skipped: $addRedundancy';
+        } else {
+          final remaining = _remainingDeferredToolHint(toolName);
+          response =
+              'OK — $toolName proposal recorded successfully. '
+              'Do NOT call $toolName again.$remaining';
+        }
       }
     }
 
@@ -589,7 +705,73 @@ class TaskAgentStrategy extends ConversationStrategy {
     );
   }
 
+  /// Builds a hint string listing remaining non-batch deferred tools that
+  /// haven't been used yet, guiding the model to call different tools.
+  String _remainingDeferredToolHint(String justUsed) {
+    // Derive single-use tools dynamically: all deferred tools minus batch
+    // ones and minus tools that legitimately support multiple calls.
+    final singleUseTools = AgentToolRegistry.deferredTools
+        .where(
+          (tool) =>
+              !AgentToolRegistry.explodedBatchTools.containsKey(tool) &&
+              tool != TaskAgentToolNames.createFollowUpTask,
+        )
+        .toSet();
+
+    final remaining = singleUseTools.difference(_usedDeferredTools).difference({
+      justUsed,
+    });
+
+    if (remaining.isEmpty) {
+      return ' Call update_report when your analysis is complete.';
+    }
+
+    final toolList = remaining.toList()..sort();
+    return ' Consider using: ${toolList.join(', ')} — '
+        'or call update_report when done.';
+  }
+
   // ── Persistence helpers ──────────────────────────────────────────────────
+
+  /// Records an action message for a locally-handled tool call.
+  ///
+  /// The [AgentToolExecutor] creates these automatically for tools it handles,
+  /// but locally-handled tools (update_report, record_observations) must
+  /// create their own action messages so the conversation log tool-call count
+  /// is accurate.
+  Future<void> _recordActionMessage({
+    required String toolName,
+    required Map<String, dynamic> args,
+  }) async {
+    final now = clock.now();
+    final payloadId = _uuid.v4();
+
+    await syncService.upsertEntity(
+      AgentDomainEntity.agentMessagePayload(
+        id: payloadId,
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: <String, Object?>{'text': jsonEncode(args)},
+      ),
+    );
+
+    await syncService.upsertEntity(
+      AgentDomainEntity.agentMessage(
+        id: _uuid.v4(),
+        agentId: agentId,
+        threadId: threadId,
+        kind: AgentMessageKind.action,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: payloadId,
+        metadata: AgentMessageMetadata(
+          runKey: runKey,
+          toolName: toolName,
+        ),
+      ),
+    );
+  }
 
   /// Records an assistant message (with or without tool calls) to the agent
   /// message log.

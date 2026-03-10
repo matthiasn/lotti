@@ -2830,6 +2830,17 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(wakeRunLog.mapFromRow);
   }
 
+  Selectable<WakeRunLogData> getWakeRunByThreadId(
+    String agentId,
+    String threadId,
+  ) {
+    return customSelect(
+      'SELECT * FROM wake_run_log WHERE agent_id = ?1 AND thread_id = ?2 ORDER BY created_at DESC LIMIT 1',
+      variables: [Variable<String>(agentId), Variable<String>(threadId)],
+      readsFrom: {wakeRunLog},
+    ).asyncMap(wakeRunLog.mapFromRow);
+  }
+
   Selectable<AgentEntity> getAllAgentIdentities() {
     return customSelect(
       'SELECT * FROM agent_entities WHERE type = \'agent\' AND deleted_at IS NULL ORDER BY created_at DESC',

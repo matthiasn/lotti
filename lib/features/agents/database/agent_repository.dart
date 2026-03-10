@@ -657,6 +657,17 @@ class AgentRepository {
     return rows.first;
   }
 
+  /// Fetch the most recent wake-run entry for [agentId] and [threadId],
+  /// or `null`.
+  Future<WakeRunLogData?> getWakeRunByThreadId(
+    String agentId,
+    String threadId,
+  ) async {
+    final rows = await _db.getWakeRunByThreadId(agentId, threadId).get();
+    if (rows.isEmpty) return null;
+    return rows.first;
+  }
+
   /// Fetch token usage records for [agentId], ordered most-recent first.
   ///
   /// Returns deserialized `WakeTokenUsageEntity` records from the

@@ -214,7 +214,7 @@ return $default(_that.maxTurnsPerWake,_that.modelId,_that.profileId);case _:
 @JsonSerializable()
 
 class _AgentConfig implements AgentConfig {
-  const _AgentConfig({this.maxTurnsPerWake = 5, this.modelId = 'models/gemini-3-flash-preview', this.profileId});
+  const _AgentConfig({this.maxTurnsPerWake = 10, this.modelId = 'models/gemini-3-flash-preview', this.profileId});
   factory _AgentConfig.fromJson(Map<String, dynamic> json) => _$AgentConfigFromJson(json);
 
 /// Maximum number of tool-call turns per wake.

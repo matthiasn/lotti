@@ -7,7 +7,7 @@ part of 'agent_config.dart';
 // **************************************************************************
 
 _AgentConfig _$AgentConfigFromJson(Map<String, dynamic> json) => _AgentConfig(
-  maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 5,
+  maxTurnsPerWake: (json['maxTurnsPerWake'] as num?)?.toInt() ?? 10,
   modelId: json['modelId'] as String? ?? 'models/gemini-3-flash-preview',
   profileId: json['profileId'] as String?,
 );

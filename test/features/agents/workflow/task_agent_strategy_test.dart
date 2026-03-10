@@ -272,8 +272,12 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-bad',
-            response:
+            response: any(
+              named: 'response',
+              that: startsWith(
                 'Error: invalid arguments format — expected a JSON object.',
+              ),
+            ),
           ),
         ).called(1);
 
@@ -513,8 +517,12 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-null-args',
-            response:
+            response: any(
+              named: 'response',
+              that: startsWith(
                 'Error: invalid arguments format — expected a JSON object.',
+              ),
+            ),
           ),
         ).called(1);
       });
@@ -1113,7 +1121,10 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-1',
-            response: 'Proposal queued for user review.',
+            response: any(
+              named: 'response',
+              that: contains('set_task_title proposal recorded'),
+            ),
           ),
         ).called(1);
 
@@ -1415,7 +1426,10 @@ void main() {
           verify(
             () => mockManager.addToolResponse(
               toolCallId: 'call-actual',
-              response: 'Proposal queued for user review.',
+              response: any(
+                named: 'response',
+                that: contains('update_task_priority proposal recorded'),
+              ),
             ),
           ).called(1);
         },
@@ -1448,7 +1462,10 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-err',
-            response: 'Proposal queued for user review.',
+            response: any(
+              named: 'response',
+              that: contains('update_task_estimate proposal recorded'),
+            ),
           ),
         ).called(1);
       });

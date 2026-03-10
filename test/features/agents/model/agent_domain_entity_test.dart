@@ -29,9 +29,7 @@ void main() {
           mode: AgentInteractionMode.autonomous,
           allowedCategoryIds: {'cat-001', 'cat-002'},
           currentStateId: 'state-001',
-          config: const AgentConfig(
-            maxTurnsPerWake: 10,
-          ),
+          config: const AgentConfig(),
           createdAt: createdAt,
           updatedAt: updatedAt,
           vectorClock: vectorClock,

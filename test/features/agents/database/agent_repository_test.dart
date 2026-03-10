@@ -285,7 +285,7 @@ void main() {
         mode: AgentInteractionMode.hybrid,
         allowedCategoryIds: const {'cat-99'},
         currentStateId: 'state-999',
-        config: const AgentConfig(maxTurnsPerWake: 10),
+        config: const AgentConfig(),
         createdAt: testDate,
         updatedAt: DateTime(2026, 2, 21),
         vectorClock: const VectorClock({'node-1': 2}),
