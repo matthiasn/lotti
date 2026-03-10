@@ -230,15 +230,21 @@ class AgentRepository {
     String templateVersionId, {
     String? resolvedModelId,
   }) async {
-    await (_db.update(
+    final updatedRows = await (_db.update(
       _db.wakeRunLog,
     )..where((t) => t.runKey.equals(runKey))).write(
       WakeRunLogCompanion(
         templateId: Value(templateId),
         templateVersionId: Value(templateVersionId),
-        resolvedModelId: Value(resolvedModelId),
+        resolvedModelId: resolvedModelId != null
+            ? Value(resolvedModelId)
+            : const Value.absent(),
       ),
     );
+
+    if (updatedRows == 0) {
+      throw StateError('No wake_run_log row found for runKey: $runKey');
+    }
   }
 
   /// Fetch agent states whose `scheduledWakeAt` is at or before [now].

@@ -2741,10 +2741,19 @@ void main() {
       final wakeRun = makeTestWakeRun(
         threadId: 'thread-abc',
         resolvedModelId: 'qwen3.5:9b',
+        templateVersionId: 'ver-1',
       );
       when(
         () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'thread-abc'),
       ).thenAnswer((_) async => wakeRun);
+      when(
+        () => mockRepository.getEntity('ver-1'),
+      ).thenAnswer(
+        (_) async => makeTestTemplateVersion(
+          id: 'ver-1',
+          modelId: 'models/gemini-3-pro',
+        ),
+      );
 
       final container = createContainer();
       final result = await container.read(

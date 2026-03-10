@@ -764,6 +764,7 @@ void main() {
             any(),
             any(),
             any(),
+            resolvedModelId: any(named: 'resolvedModelId'),
           ),
         ).thenThrow(Exception('DB error'));
 
