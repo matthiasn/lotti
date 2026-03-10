@@ -2700,7 +2700,7 @@ void main() {
         ),
       ).thenAnswer((_) async => <WakeTokenUsageEntity>[]);
       when(
-        () => mockRepository.getWakeRunByThreadId(any()),
+        () => mockRepository.getWakeRunByThreadId(any(), any()),
       ).thenAnswer((_) async => null);
       when(
         () => mockRepository.getEntity(kTestAgentId),
@@ -2743,7 +2743,7 @@ void main() {
         templateVersionId: 'ver-1',
       );
       when(
-        () => mockRepository.getWakeRunByThreadId('thread-abc'),
+        () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'thread-abc'),
       ).thenAnswer((_) async => wakeRun);
 
       final version = makeTestTemplateVersion(
@@ -2780,7 +2780,7 @@ void main() {
         templateVersionId: 'ver-1',
       );
       when(
-        () => mockRepository.getWakeRunByThreadId('thread-abc'),
+        () => mockRepository.getWakeRunByThreadId(kTestAgentId, 'thread-abc'),
       ).thenAnswer((_) async => wakeRun);
 
       final version = makeTestTemplateVersion(

@@ -473,17 +473,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             final promptEval = json['prompt_eval_count'];
             final evalCount = json['eval_count'];
             if (promptEval is int || evalCount is int) {
+              final prompt = promptEval is int ? promptEval : 0;
+              final completion = evalCount is int ? evalCount : 0;
               yield CreateChatCompletionStreamResponse(
                 id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
                 choices: const [],
                 object: 'chat.completion.chunk',
                 created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
                 usage: CompletionUsage(
-                  promptTokens: promptEval is int ? promptEval : 0,
-                  completionTokens: evalCount is int ? evalCount : 0,
-                  totalTokens:
-                      (promptEval is int ? promptEval : 0) +
-                      (evalCount is int ? evalCount : 0),
+                  promptTokens: prompt,
+                  completionTokens: completion,
+                  totalTokens: prompt + completion,
                 ),
               );
             }

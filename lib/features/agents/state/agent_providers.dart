@@ -367,7 +367,7 @@ Future<String?> modelIdForThread(
   }
 
   // Tier 2: wake-run template version — snapshot from when the wake started.
-  final wakeRun = await repository.getWakeRunByThreadId(threadId);
+  final wakeRun = await repository.getWakeRunByThreadId(agentId, threadId);
   if (wakeRun?.templateVersionId != null) {
     final versionEntity = await repository.getEntity(
       wakeRun!.templateVersionId!,

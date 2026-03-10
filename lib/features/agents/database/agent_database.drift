@@ -100,7 +100,7 @@ getWakeRunsByAgentId: SELECT * FROM wake_run_log WHERE agent_id = :agentId ORDER
 
 getWakeRunByKey: SELECT * FROM wake_run_log WHERE run_key = :runKey;
 
-getWakeRunByThreadId: SELECT * FROM wake_run_log WHERE thread_id = :threadId ORDER BY created_at DESC LIMIT 1;
+getWakeRunByThreadId: SELECT * FROM wake_run_log WHERE agent_id = :agentId AND thread_id = :threadId ORDER BY created_at DESC LIMIT 1;
 
 getAllAgentIdentities: SELECT * FROM agent_entities WHERE type = 'agent' AND deleted_at IS NULL ORDER BY created_at DESC;
 

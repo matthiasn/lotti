@@ -213,12 +213,17 @@ class TaskAgentStrategy extends ConversationStrategy {
             toolName != TaskAgentToolNames.createFollowUpTask;
         if (isSingleUse && _usedDeferredTools.contains(toolName)) {
           await _recordActionMessage(toolName: toolName, args: args);
+          final errorResponse =
+              'ERROR: $toolName was already called this session. '
+              'You MUST NOT call the same tool twice. '
+              'Use a DIFFERENT tool or call update_report to finish.';
           manager.addToolResponse(
             toolCallId: call.id,
-            response:
-                'ERROR: $toolName was already called this session. '
-                'You MUST NOT call the same tool twice. '
-                'Use a DIFFERENT tool or call update_report to finish.',
+            response: errorResponse,
+          );
+          await _recordToolResultMessage(
+            toolName: toolName,
+            errorMessage: errorResponse,
           );
           continue;
         }
@@ -532,12 +537,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     }
 
     // All recovery attempts failed — throw with the original raw value.
-    // Re-attempt the original parse to get the original FormatException.
-    final decoded = jsonDecode(raw);
-    if (decoded is Map<String, dynamic>) return decoded;
-    throw FormatException(
-      'Expected a JSON object, got ${decoded.runtimeType}',
-    );
+    throw FormatException('Could not extract a JSON object from: $raw');
   }
 
   // ── Change set helpers ──────────────────────────────────────────────────
@@ -708,10 +708,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Builds a hint string listing remaining non-batch deferred tools that
   /// haven't been used yet, guiding the model to call different tools.
   String _remainingDeferredToolHint(String justUsed) {
-    // Derive single-use tools dynamically: all deferred tools minus batch ones.
+    // Derive single-use tools dynamically: all deferred tools minus batch
+    // ones and minus tools that legitimately support multiple calls.
     final singleUseTools = AgentToolRegistry.deferredTools
         .where(
-          (tool) => !AgentToolRegistry.explodedBatchTools.containsKey(tool),
+          (tool) =>
+              !AgentToolRegistry.explodedBatchTools.containsKey(tool) &&
+              tool != TaskAgentToolNames.createFollowUpTask,
         )
         .toSet();
 
