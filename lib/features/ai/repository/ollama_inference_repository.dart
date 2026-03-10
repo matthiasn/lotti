@@ -377,7 +377,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           final message = json['message'] as Map<String, dynamic>?;
           if (kVerboseStreamLogging) {
             developer.log(
-              'Ollama response: ${chunk.substring(0, chunk.length > 500 ? 500 : chunk.length)}',
+              'Ollama response chunk: $chunk',
               name: 'OllamaInferenceRepository',
             );
           }
@@ -407,6 +407,13 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 final argumentsStr = arguments is String
                     ? arguments
                     : jsonEncode(arguments);
+
+                developer.log(
+                  'Tool call: ${functionCall['name']} '
+                  '(args type: ${arguments.runtimeType}, '
+                  '${argumentsStr.length} chars)',
+                  name: 'OllamaInferenceRepository',
+                );
 
                 toolCallsList.add({
                   'index': i,
@@ -455,8 +462,31 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
             }
           }
 
-          // Check if done
+          // Check if done — extract usage from the final chunk.
           if (json['done'] == true) {
+            developer.log(
+              'Ollama done response: $chunk',
+              name: 'OllamaInferenceRepository',
+            );
+            // Ollama reports token counts in the final response:
+            // prompt_eval_count → input tokens, eval_count → output tokens.
+            final promptEval = json['prompt_eval_count'];
+            final evalCount = json['eval_count'];
+            if (promptEval is int || evalCount is int) {
+              yield CreateChatCompletionStreamResponse(
+                id: '$ollamaResponseIdPrefix${DateTime.now().millisecondsSinceEpoch}',
+                choices: const [],
+                object: 'chat.completion.chunk',
+                created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+                usage: CompletionUsage(
+                  promptTokens: promptEval is int ? promptEval : 0,
+                  completionTokens: evalCount is int ? evalCount : 0,
+                  totalTokens:
+                      (promptEval is int ? promptEval : 0) +
+                      (evalCount is int ? evalCount : 0),
+                ),
+              );
+            }
             break;
           }
         } catch (e) {

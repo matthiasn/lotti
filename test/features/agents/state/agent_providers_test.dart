@@ -2686,7 +2686,48 @@ void main() {
   });
 
   group('modelIdForThreadProvider', () {
-    test('returns model ID from template version', () async {
+    /// Stub token usage to return empty by default so the provider can
+    /// fall through to the template version lookup.
+    void stubEmptyTokenUsage() {
+      when(
+        () => mockRepository.getTokenUsageForAgent(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => <WakeTokenUsageEntity>[]);
+    }
+
+    test('returns model ID from token usage record', () async {
+      when(
+        () => mockRepository.getTokenUsageForAgent(
+          any(),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          WakeTokenUsageEntity(
+            id: 'usage-1',
+            agentId: kTestAgentId,
+            runKey: 'run-1',
+            threadId: 'thread-abc',
+            modelId: 'qwen3:8b',
+            createdAt: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+        ],
+      );
+
+      final container = createContainer();
+      final result = await container.read(
+        modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+      );
+
+      expect(result, 'qwen3:8b');
+    });
+
+    test('falls back to template version when no token usage', () async {
+      stubEmptyTokenUsage();
+
       final wakeRun = makeTestWakeRun(
         runKey: 'thread-abc',
         templateVersionId: 'ver-1',
@@ -2712,6 +2753,8 @@ void main() {
     });
 
     test('returns null when wake run not found', () async {
+      stubEmptyTokenUsage();
+
       when(
         () => mockRepository.getWakeRun('missing'),
       ).thenAnswer((_) async => null);
@@ -2725,6 +2768,8 @@ void main() {
     });
 
     test('returns null when template version has no modelId', () async {
+      stubEmptyTokenUsage();
+
       final wakeRun = makeTestWakeRun(
         runKey: 'thread-no-model',
         templateVersionId: 'ver-2',
@@ -2747,6 +2792,8 @@ void main() {
     });
 
     test('returns null when wake run has no templateVersionId', () async {
+      stubEmptyTokenUsage();
+
       final wakeRun = makeTestWakeRun(runKey: 'thread-no-ver');
       when(
         () => mockRepository.getWakeRun('thread-no-ver'),

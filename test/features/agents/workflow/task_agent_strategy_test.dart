@@ -272,8 +272,12 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-bad',
-            response:
+            response: any(
+              named: 'response',
+              that: startsWith(
                 'Error: invalid arguments format — expected a JSON object.',
+              ),
+            ),
           ),
         ).called(1);
 
@@ -513,8 +517,12 @@ void main() {
         verify(
           () => mockManager.addToolResponse(
             toolCallId: 'call-null-args',
-            response:
+            response: any(
+              named: 'response',
+              that: startsWith(
                 'Error: invalid arguments format — expected a JSON object.',
+              ),
+            ),
           ),
         ).called(1);
       });

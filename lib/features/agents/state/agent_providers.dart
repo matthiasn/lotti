@@ -335,17 +335,30 @@ Future<AgentDomainEntity?> templateForAgent(
 
 /// Resolve the model ID used for a specific wake thread.
 ///
-/// Looks up the wake run by [threadId] (which equals the run key), then
-/// resolves the template version to read the `modelId` that was configured
-/// when that version was created.
+/// Prefers the model ID recorded in the token usage entity (which reflects the
+/// *actually resolved* inference model at runtime) over the template version's
+/// `modelId` field (which may be stale when an inference profile overrides the
+/// model). Falls back to the version field when no token usage exists.
 @riverpod
 Future<String?> modelIdForThread(
   Ref ref,
   String agentId,
   String threadId,
 ) async {
-  final repository = ref.watch(agentRepositoryProvider);
+  // First, check token usage records — these record the actual model used.
+  final tokenEntities = await ref.watch(
+    agentTokenUsageRecordsProvider(agentId).future,
+  );
+  final threadTokenRecords = tokenEntities
+      .whereType<WakeTokenUsageEntity>()
+      .where((r) => r.threadId == threadId)
+      .toList();
+  if (threadTokenRecords.isNotEmpty) {
+    return threadTokenRecords.first.modelId;
+  }
 
+  // Fall back to the template version's modelId.
+  final repository = ref.watch(agentRepositoryProvider);
   final wakeRun = await repository.getWakeRun(threadId);
   if (wakeRun?.templateVersionId != null) {
     final versionEntity = await repository.getEntity(
