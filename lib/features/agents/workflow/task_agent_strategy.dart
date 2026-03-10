@@ -701,17 +701,12 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Builds a hint string listing remaining non-batch deferred tools that
   /// haven't been used yet, guiding the model to call different tools.
   String _remainingDeferredToolHint(String justUsed) {
-    // Non-batch deferred tools that can only be called once per wake.
-    const singleUseTools = <String>{
-      TaskAgentToolNames.setTaskTitle,
-      TaskAgentToolNames.updateTaskEstimate,
-      TaskAgentToolNames.updateTaskDueDate,
-      TaskAgentToolNames.updateTaskPriority,
-      TaskAgentToolNames.setTaskStatus,
-      TaskAgentToolNames.setTaskLanguage,
-      TaskAgentToolNames.assignTaskLabels,
-      TaskAgentToolNames.createFollowUpTask,
-    };
+    // Derive single-use tools dynamically: all deferred tools minus batch ones.
+    final singleUseTools = AgentToolRegistry.deferredTools
+        .where(
+          (tool) => !AgentToolRegistry.explodedBatchTools.containsKey(tool),
+        )
+        .toSet();
 
     final remaining = singleUseTools.difference(_usedDeferredTools).difference({
       justUsed,
