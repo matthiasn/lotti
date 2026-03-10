@@ -302,5 +302,69 @@ void main() {
       // Should render without errors
       expect(find.byType(CategoryIconPicker), findsOneWidget);
     });
+
+    testWidgets('unselected items should have a visible surface background', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
+          ),
+        ),
+      );
+
+      // Find an unselected icon (running is not fitness, so it's unselected)
+      final runningIconFinder = find.byIcon(Icons.directions_run);
+      expect(runningIconFinder, findsOneWidget);
+
+      // Get the container wrapping the unselected icon
+      final containerWidget = tester.widget<Container>(
+        find
+            .ancestor(
+              of: runningIconFinder,
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+
+      final decoration = containerWidget.decoration! as BoxDecoration;
+
+      // Unselected items should NOT have a transparent background
+      expect(decoration.color, isNotNull);
+      expect(decoration.color, isNot(equals(Colors.transparent)));
+
+      // Should have a box shadow for subtle depth
+      expect(decoration.boxShadow, isNotNull);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
+
+    testWidgets('selected item should have a glow shadow', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
+          ),
+        ),
+      );
+
+      final fitnessIconFinder = find.byIcon(Icons.fitness_center);
+      expect(fitnessIconFinder, findsOneWidget);
+
+      final containerWidget = tester.widget<Container>(
+        find
+            .ancestor(
+              of: fitnessIconFinder,
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+
+      final decoration = containerWidget.decoration! as BoxDecoration;
+
+      // Selected item should have shadow (glow effect)
+      expect(decoration.boxShadow, isNotNull);
+      expect(decoration.boxShadow, isNotEmpty);
+    });
   });
 }

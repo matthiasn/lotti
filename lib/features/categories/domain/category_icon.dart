@@ -50,16 +50,13 @@ class CategoryIconConstants {
   static const double iconSizeExtraSmall = 16;
 
   /// Alpha values and other constants
-  static const double selectedBackgroundAlpha = 0.1;
+  static const double selectedBackgroundAlpha = 0.15;
   static const double fallbackIconAlpha = 51;
   static const double fallbackIconSizeMultiplier = 0.6;
   static const double luminanceThreshold = 0.5;
 
-  /// Selected border width in picker
-  static const double selectedBorderWidth = 2;
-
-  /// Unselected border width in picker
-  static const double unselectedBorderWidth = 1;
+  /// Border width in picker (same for selected and unselected to prevent breathing)
+  static const double pickerBorderWidth = 2;
 
   /// Default padding for icon picker
   static const double pickerPadding = 16;
@@ -199,6 +196,67 @@ enum CategoryIcon {
   phone,
   computer,
   connectivity,
+
+  // Nature & Outdoors
+  cycling,
+  hiking,
+  camping,
+  pets,
+  garden,
+
+  // Food & Drink
+  cooking,
+  coffee,
+
+  // Communication
+  email,
+  chat,
+  videoCall,
+
+  // Entertainment
+  movie,
+  podcast,
+  theater,
+
+  // Creative & Skills
+  coding,
+  crafts,
+  dance,
+
+  // Household & Maintenance
+  laundry,
+  repair,
+
+  // Finance & Career
+  banking,
+  investment,
+  receipt,
+
+  // Events & Celebrations
+  celebration,
+  gift,
+  cake,
+
+  // Education & Knowledge
+  language,
+  science,
+  presentation,
+
+  // Spiritual & Well-being
+  prayer,
+  gratitude,
+
+  // Self-care & Wellness
+  spa,
+  stretching,
+
+  // Weather & Nature
+  weather,
+  nature,
+
+  // Volunteering
+  volunteer,
+  recycling,
 }
 
 /// Extension to map CategoryIcon enum values to their corresponding IconData
@@ -332,6 +390,102 @@ extension CategoryIconExtension on CategoryIcon {
         return Icons.computer;
       case CategoryIcon.connectivity:
         return MdiIcons.wifi;
+
+      // Nature & Outdoors Icons
+      case CategoryIcon.cycling:
+        return Icons.directions_bike;
+      case CategoryIcon.hiking:
+        return Icons.hiking;
+      case CategoryIcon.camping:
+        return MdiIcons.tent;
+      case CategoryIcon.pets:
+        return Icons.pets;
+      case CategoryIcon.garden:
+        return MdiIcons.flower;
+
+      // Food & Drink Icons
+      case CategoryIcon.cooking:
+        return MdiIcons.chefHat;
+      case CategoryIcon.coffee:
+        return Icons.coffee;
+
+      // Communication Icons
+      case CategoryIcon.email:
+        return Icons.email;
+      case CategoryIcon.chat:
+        return Icons.chat;
+      case CategoryIcon.videoCall:
+        return Icons.videocam;
+
+      // Entertainment Icons
+      case CategoryIcon.movie:
+        return Icons.movie;
+      case CategoryIcon.podcast:
+        return Icons.podcasts;
+      case CategoryIcon.theater:
+        return Icons.theater_comedy;
+
+      // Creative & Skills Icons
+      case CategoryIcon.coding:
+        return Icons.code;
+      case CategoryIcon.crafts:
+        return Icons.handyman;
+      case CategoryIcon.dance:
+        return MdiIcons.danceBallroom;
+
+      // Household & Maintenance Icons
+      case CategoryIcon.laundry:
+        return MdiIcons.washingMachine;
+      case CategoryIcon.repair:
+        return Icons.build;
+
+      // Finance & Career Icons
+      case CategoryIcon.banking:
+        return Icons.account_balance;
+      case CategoryIcon.investment:
+        return Icons.trending_up;
+      case CategoryIcon.receipt:
+        return Icons.receipt_long;
+
+      // Events & Celebrations Icons
+      case CategoryIcon.celebration:
+        return Icons.celebration;
+      case CategoryIcon.gift:
+        return Icons.card_giftcard;
+      case CategoryIcon.cake:
+        return Icons.cake;
+
+      // Education & Knowledge Icons
+      case CategoryIcon.language:
+        return Icons.translate;
+      case CategoryIcon.science:
+        return Icons.science;
+      case CategoryIcon.presentation:
+        return MdiIcons.presentationPlay;
+
+      // Spiritual & Well-being Icons
+      case CategoryIcon.prayer:
+        return MdiIcons.handsPray;
+      case CategoryIcon.gratitude:
+        return MdiIcons.handHeart;
+
+      // Self-care & Wellness Icons
+      case CategoryIcon.spa:
+        return Icons.spa;
+      case CategoryIcon.stretching:
+        return MdiIcons.humanHandsup;
+
+      // Weather & Nature Icons
+      case CategoryIcon.weather:
+        return Icons.wb_sunny;
+      case CategoryIcon.nature:
+        return Icons.park;
+
+      // Volunteering Icons
+      case CategoryIcon.volunteer:
+        return Icons.volunteer_activism;
+      case CategoryIcon.recycling:
+        return Icons.recycling;
     }
   }
 
@@ -452,6 +606,76 @@ extension CategoryIconExtension on CategoryIcon {
         return 'Internet';
       case CategoryIcon.baby:
         return 'Baby';
+      case CategoryIcon.cycling:
+        return 'Cycling';
+      case CategoryIcon.hiking:
+        return 'Hiking';
+      case CategoryIcon.camping:
+        return 'Camping';
+      case CategoryIcon.pets:
+        return 'Pets';
+      case CategoryIcon.garden:
+        return 'Gardening';
+      case CategoryIcon.cooking:
+        return 'Cooking';
+      case CategoryIcon.coffee:
+        return 'Coffee';
+      case CategoryIcon.email:
+        return 'Email';
+      case CategoryIcon.chat:
+        return 'Chat';
+      case CategoryIcon.videoCall:
+        return 'Video Call';
+      case CategoryIcon.movie:
+        return 'Movies';
+      case CategoryIcon.podcast:
+        return 'Podcast';
+      case CategoryIcon.theater:
+        return 'Theater';
+      case CategoryIcon.coding:
+        return 'Coding';
+      case CategoryIcon.crafts:
+        return 'Crafts';
+      case CategoryIcon.dance:
+        return 'Dance';
+      case CategoryIcon.laundry:
+        return 'Laundry';
+      case CategoryIcon.repair:
+        return 'Repair';
+      case CategoryIcon.banking:
+        return 'Banking';
+      case CategoryIcon.investment:
+        return 'Investment';
+      case CategoryIcon.receipt:
+        return 'Receipt';
+      case CategoryIcon.celebration:
+        return 'Celebration';
+      case CategoryIcon.gift:
+        return 'Gift';
+      case CategoryIcon.cake:
+        return 'Birthday';
+      case CategoryIcon.language:
+        return 'Language';
+      case CategoryIcon.science:
+        return 'Science';
+      case CategoryIcon.presentation:
+        return 'Presentation';
+      case CategoryIcon.prayer:
+        return 'Prayer';
+      case CategoryIcon.gratitude:
+        return 'Gratitude';
+      case CategoryIcon.spa:
+        return 'Self-Care';
+      case CategoryIcon.stretching:
+        return 'Stretching';
+      case CategoryIcon.weather:
+        return 'Weather';
+      case CategoryIcon.nature:
+        return 'Nature';
+      case CategoryIcon.volunteer:
+        return 'Volunteering';
+      case CategoryIcon.recycling:
+        return 'Recycling';
     }
   }
 
@@ -569,6 +793,113 @@ extension CategoryIconExtension on CategoryIcon {
       'pc': CategoryIcon.computer,
       'internet': CategoryIcon.connectivity,
       'wifi': CategoryIcon.connectivity,
+      'bike': CategoryIcon.cycling,
+      'cycle': CategoryIcon.cycling,
+      'bicycle': CategoryIcon.cycling,
+      'hike': CategoryIcon.hiking,
+      'trail': CategoryIcon.hiking,
+      'trek': CategoryIcon.hiking,
+      'camp': CategoryIcon.camping,
+      'tent': CategoryIcon.camping,
+      'pet': CategoryIcon.pets,
+      'dog': CategoryIcon.pets,
+      'cat': CategoryIcon.pets,
+      'animal': CategoryIcon.pets,
+      'plant': CategoryIcon.garden,
+      'flower': CategoryIcon.garden,
+      'cook': CategoryIcon.cooking,
+      'kitchen': CategoryIcon.cooking,
+      'recipe': CategoryIcon.cooking,
+      'bake': CategoryIcon.cooking,
+      'coffee': CategoryIcon.coffee,
+      'tea': CategoryIcon.coffee,
+      'cafe': CategoryIcon.coffee,
+      'caffeine': CategoryIcon.coffee,
+      'email': CategoryIcon.email,
+      'mail': CategoryIcon.email,
+      'chat': CategoryIcon.chat,
+      'message': CategoryIcon.chat,
+      'videocall': CategoryIcon.videoCall,
+      'zoom': CategoryIcon.videoCall,
+      'facetime': CategoryIcon.videoCall,
+      'movie': CategoryIcon.movie,
+      'film': CategoryIcon.movie,
+      'cinema': CategoryIcon.movie,
+      'television': CategoryIcon.movie,
+      'podcast': CategoryIcon.podcast,
+      'radio': CategoryIcon.podcast,
+      'theater': CategoryIcon.theater,
+      'theatre': CategoryIcon.theater,
+      'drama': CategoryIcon.theater,
+      'code': CategoryIcon.coding,
+      'programming': CategoryIcon.coding,
+      'developer': CategoryIcon.coding,
+      'software': CategoryIcon.coding,
+      'craft': CategoryIcon.crafts,
+      'diy': CategoryIcon.crafts,
+      'sewing': CategoryIcon.crafts,
+      'knitting': CategoryIcon.crafts,
+      'dance': CategoryIcon.dance,
+      'dancing': CategoryIcon.dance,
+      'ballet': CategoryIcon.dance,
+      'laundry': CategoryIcon.laundry,
+      'wash': CategoryIcon.laundry,
+      'repair': CategoryIcon.repair,
+      'maintenance': CategoryIcon.repair,
+      'bank': CategoryIcon.banking,
+      'invest': CategoryIcon.investment,
+      'stocks': CategoryIcon.investment,
+      'portfolio': CategoryIcon.investment,
+      'trading': CategoryIcon.investment,
+      'receipt': CategoryIcon.receipt,
+      'expense': CategoryIcon.receipt,
+      'invoice': CategoryIcon.receipt,
+      'bill': CategoryIcon.receipt,
+      'party': CategoryIcon.celebration,
+      'celebrate': CategoryIcon.celebration,
+      'present': CategoryIcon.gift,
+      'cake': CategoryIcon.cake,
+      'anniversary': CategoryIcon.cake,
+      'translate': CategoryIcon.language,
+      'foreign': CategoryIcon.language,
+      'science': CategoryIcon.science,
+      'experiment': CategoryIcon.science,
+      'lab': CategoryIcon.science,
+      'chemistry': CategoryIcon.science,
+      'slides': CategoryIcon.presentation,
+      'lecture': CategoryIcon.presentation,
+      'conference': CategoryIcon.presentation,
+      'pray': CategoryIcon.prayer,
+      'church': CategoryIcon.prayer,
+      'worship': CategoryIcon.prayer,
+      'spiritual': CategoryIcon.prayer,
+      'faith': CategoryIcon.prayer,
+      'thankful': CategoryIcon.gratitude,
+      'grateful': CategoryIcon.gratitude,
+      'blessing': CategoryIcon.gratitude,
+      'spa': CategoryIcon.spa,
+      'relax': CategoryIcon.spa,
+      'pamper': CategoryIcon.spa,
+      'skincare': CategoryIcon.spa,
+      'beauty': CategoryIcon.spa,
+      'stretch': CategoryIcon.stretching,
+      'warmup': CategoryIcon.stretching,
+      'flexibility': CategoryIcon.stretching,
+      'sunny': CategoryIcon.weather,
+      'rain': CategoryIcon.weather,
+      'park': CategoryIcon.nature,
+      'forest': CategoryIcon.nature,
+      'tree': CategoryIcon.nature,
+      'outdoors': CategoryIcon.nature,
+      'volunteer': CategoryIcon.volunteer,
+      'charity': CategoryIcon.volunteer,
+      'donate': CategoryIcon.volunteer,
+      'community': CategoryIcon.volunteer,
+      'recycle': CategoryIcon.recycling,
+      'eco': CategoryIcon.recycling,
+      'green': CategoryIcon.recycling,
+      'environment': CategoryIcon.recycling,
+      'sustainability': CategoryIcon.recycling,
     };
 
     for (final entry in keywordMappings.entries) {

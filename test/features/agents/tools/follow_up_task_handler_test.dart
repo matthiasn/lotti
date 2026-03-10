@@ -367,8 +367,7 @@ void main() {
           ).called(1);
         });
       });
-
-});
+    });
 
     group('link failure warnings', () {
       test('surfaces link failure warning in output', () async {
@@ -444,8 +443,7 @@ void main() {
           expect(result.output, contains('failed to link source task'));
         });
       });
-
-});
+    });
 
     group('domain logging', () {
       test('logs verify-lookup after task creation', () async {
@@ -531,8 +529,7 @@ void main() {
           ).called(1);
         });
       });
-
-});
+    });
 
     group('category inheritance', () {
       test('inherits null category when source has none', () async {

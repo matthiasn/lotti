@@ -8,8 +8,8 @@ The Categories feature allows users to create, manage, and assign categories to 
 
 ### Key Features
 
-1. **Category Management**: Create, edit, and delete categories with custom names and colors
-2. **Visual Organization**: Assign colors to categories for easy visual identification
+1. **Category Management**: Create, edit, and delete categories with custom names, colors, and icons
+2. **Visual Organization**: Choose from 100 curated icons and assign colors for easy visual identification
 3. **Privacy Controls**: Mark categories as private to hide them when private mode is enabled
 4. **Favorites**: Mark frequently used categories as favorites for quick access
 5. **AI Integration**: Configure which AI prompts are available per category

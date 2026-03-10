@@ -64,7 +64,7 @@ but users frequently create categories for which no fitting icon exists:
 |---|---|---|---|
 | `coding` | Coding | `Icons.code` | code, programming, developer, software |
 | `crafts` | Crafts | `Icons.handyman` | craft, diy, maker, sewing, knitting |
-| `dance` | Dance | `MdiIcons.humanFemaleGirl` | dance, dancing, ballet |
+| `dance` | Dance | `MdiIcons.danceBallroom` | dance, dancing, ballet |
 
 ### Household & Maintenance (2)
 | Enum value | Display name | IconData | Keyword mappings |

@@ -20,6 +20,30 @@ void main() {
         expect(CategoryIcon.home.iconData, equals(Icons.home));
         expect(CategoryIcon.reading.iconData, equals(Icons.menu_book));
       });
+
+      test('should return correct icons for new category icons', () {
+        expect(CategoryIcon.cycling.iconData, equals(Icons.directions_bike));
+        expect(CategoryIcon.hiking.iconData, equals(Icons.hiking));
+        expect(CategoryIcon.pets.iconData, equals(Icons.pets));
+        expect(CategoryIcon.coffee.iconData, equals(Icons.coffee));
+        expect(CategoryIcon.email.iconData, equals(Icons.email));
+        expect(CategoryIcon.movie.iconData, equals(Icons.movie));
+        expect(CategoryIcon.podcast.iconData, equals(Icons.podcasts));
+        expect(CategoryIcon.coding.iconData, equals(Icons.code));
+        expect(CategoryIcon.banking.iconData, equals(Icons.account_balance));
+        expect(CategoryIcon.celebration.iconData, equals(Icons.celebration));
+        expect(CategoryIcon.science.iconData, equals(Icons.science));
+        expect(CategoryIcon.spa.iconData, equals(Icons.spa));
+        expect(CategoryIcon.nature.iconData, equals(Icons.park));
+        expect(
+          CategoryIcon.volunteer.iconData,
+          equals(Icons.volunteer_activism),
+        );
+        expect(CategoryIcon.camping.iconData, equals(MdiIcons.tent));
+        expect(CategoryIcon.cooking.iconData, equals(MdiIcons.chefHat));
+        expect(CategoryIcon.prayer.iconData, equals(MdiIcons.handsPray));
+        expect(CategoryIcon.gratitude.iconData, equals(MdiIcons.handHeart));
+      });
     });
 
     group('displayName', () {
@@ -36,6 +60,24 @@ void main() {
         expect(CategoryIcon.heartHealth.displayName, equals('Heart Health'));
         expect(CategoryIcon.laptop.displayName, equals('Computer Work'));
         expect(CategoryIcon.mentalHealth.displayName, equals('Mental Health'));
+      });
+
+      test('should return correct display names for new icons', () {
+        expect(CategoryIcon.cycling.displayName, equals('Cycling'));
+        expect(CategoryIcon.hiking.displayName, equals('Hiking'));
+        expect(CategoryIcon.pets.displayName, equals('Pets'));
+        expect(CategoryIcon.cooking.displayName, equals('Cooking'));
+        expect(CategoryIcon.coffee.displayName, equals('Coffee'));
+        expect(CategoryIcon.movie.displayName, equals('Movies'));
+        expect(CategoryIcon.podcast.displayName, equals('Podcast'));
+        expect(CategoryIcon.coding.displayName, equals('Coding'));
+        expect(CategoryIcon.videoCall.displayName, equals('Video Call'));
+        expect(CategoryIcon.prayer.displayName, equals('Prayer'));
+        expect(CategoryIcon.gratitude.displayName, equals('Gratitude'));
+        expect(CategoryIcon.spa.displayName, equals('Self-Care'));
+        expect(CategoryIcon.cake.displayName, equals('Birthday'));
+        expect(CategoryIcon.volunteer.displayName, equals('Volunteering'));
+        expect(CategoryIcon.recycling.displayName, equals('Recycling'));
       });
 
       test('should have unique display names', () {
@@ -173,6 +215,113 @@ void main() {
         expect(
           CategoryIconExtension.suggestFromName('diary'),
           equals(CategoryIcon.journal),
+        );
+      });
+
+      test('should find keyword mappings for new icons', () {
+        expect(
+          CategoryIconExtension.suggestFromName('bike'),
+          equals(CategoryIcon.cycling),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('hike'),
+          equals(CategoryIcon.hiking),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('tent'),
+          equals(CategoryIcon.camping),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('pet'),
+          equals(CategoryIcon.pets),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('dog'),
+          equals(CategoryIcon.pets),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('cook'),
+          equals(CategoryIcon.cooking),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('recipe'),
+          equals(CategoryIcon.cooking),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('coffee'),
+          equals(CategoryIcon.coffee),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('tea'),
+          equals(CategoryIcon.coffee),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('email'),
+          equals(CategoryIcon.email),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('movie'),
+          equals(CategoryIcon.movie),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('cinema'),
+          equals(CategoryIcon.movie),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('podcast'),
+          equals(CategoryIcon.podcast),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('code'),
+          equals(CategoryIcon.coding),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('programming'),
+          equals(CategoryIcon.coding),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('dance'),
+          equals(CategoryIcon.dance),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('pray'),
+          equals(CategoryIcon.prayer),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('church'),
+          equals(CategoryIcon.prayer),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('thankful'),
+          equals(CategoryIcon.gratitude),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('volunteer'),
+          equals(CategoryIcon.volunteer),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('recycle'),
+          equals(CategoryIcon.recycling),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('invest'),
+          equals(CategoryIcon.investment),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('party'),
+          equals(CategoryIcon.celebration),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('spa'),
+          equals(CategoryIcon.spa),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('stretch'),
+          equals(CategoryIcon.stretching),
+        );
+        expect(
+          CategoryIconExtension.suggestFromName('forest'),
+          equals(CategoryIcon.nature),
         );
       });
 
