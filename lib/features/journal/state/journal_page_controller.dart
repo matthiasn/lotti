@@ -75,6 +75,7 @@ class JournalPageController extends _$JournalPageController {
   bool _showCoverArt = true;
   bool _showDistances = false;
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
+  Set<String>? _cachedAgentLinkedIds;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -605,6 +606,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   Future<void> refreshQuery() async {
+    _cachedAgentLinkedIds = null;
     _emitState();
 
     if (state.pagingController == null) {
@@ -722,22 +724,19 @@ class JournalPageController extends _$JournalPageController {
 
       // Agent filter is active: fetch linked IDs and post-filter.
       final agentLinkedIds = await _getAgentLinkedTaskIds();
-      final filtered = res
-          .where((entity) {
-            final hasLink = agentLinkedIds.contains(entity.meta.id);
-            return _agentAssignmentFilter == AgentAssignmentFilter.hasAgent
-                ? hasLink
-                : !hasLink;
-          })
-          .take(pageSize)
-          .toList();
+      final filtered = res.where((entity) {
+        final hasLink = agentLinkedIds.contains(entity.meta.id);
+        return _agentAssignmentFilter == AgentAssignmentFilter.hasAgent
+            ? hasLink
+            : !hasLink;
+      }).toList();
 
-      // Apply in-memory due date sorting if needed
+      // Sort before truncating so the page contains the correct items.
       if (_sortOption == TaskSortOption.byDueDate) {
-        return _sortByDueDate(filtered);
+        return _sortByDueDate(filtered).take(pageSize).toList();
       }
 
-      return filtered;
+      return filtered.take(pageSize).toList();
     } else {
       return _db.getJournalEntities(
         types: types,
@@ -822,9 +821,13 @@ class JournalPageController extends _$JournalPageController {
 
   /// Fetches the set of task IDs that have an agent_task link.
   /// Only called when the agent assignment filter is active.
+  /// Cached per refresh cycle to avoid repeated DB hits during pagination.
   Future<Set<String>> _getAgentLinkedTaskIds() async {
+    if (_cachedAgentLinkedIds != null) return _cachedAgentLinkedIds!;
     final repo = AgentRepository(getIt<AgentDatabase>());
-    return repo.getTaskIdsWithAgentLink();
+    final ids = await repo.getTaskIdsWithAgentLink();
+    _cachedAgentLinkedIds = ids;
+    return ids;
   }
 
   /// Sorts tasks by due date (soonest first, tasks without due dates at end).

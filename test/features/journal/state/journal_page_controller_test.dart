@@ -872,6 +872,7 @@ void main() {
 
       tearDown(() async {
         await agentDbForFilter.close();
+        getIt.unregister<AgentDatabase>();
       });
 
       test('setAgentAssignmentFilter updates to hasAgent', () {
@@ -3039,6 +3040,7 @@ void main() {
 
       tearDown(() async {
         await agentDb.close();
+        getIt.unregister<AgentDatabase>();
       });
 
       test('hasAgent filter returns only tasks with agent links', () {
