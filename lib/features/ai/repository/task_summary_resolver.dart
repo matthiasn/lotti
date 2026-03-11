@@ -59,15 +59,21 @@ class TaskSummaryResolver {
         agentId,
         AgentReportScopes.current,
       );
-      if (report == null || report.content.isEmpty) return null;
+      if (report == null) return null;
+
+      final tldr = report.tldr?.trim();
+      final content = report.content.trim();
+      final summary =
+          (tldr != null && tldr.isNotEmpty) ? tldr : content;
+      if (summary.isEmpty) return null;
 
       developer.log(
         'Found agent report for task $taskId '
-        '(${(report.tldr ?? report.content).length} chars)',
+        '(${summary.length} chars)',
         name: 'TaskSummaryResolver',
       );
 
-      return report.tldr ?? report.content;
+      return summary;
     } catch (e) {
       developer.log(
         'Error fetching agent report for task $taskId: $e',

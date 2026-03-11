@@ -1056,7 +1056,8 @@ picker UI. They are retained solely for JSON/DB backwards-compatibility.
 **Steps to fully remove them:**
 
 1. Write a DB migration that deletes or re-maps any persisted rows whose
-   `aiResponseType` equals `TaskSummary` or `ChecklistUpdates`.
+   `aiResponseType` equals `'TaskSummary'` or `'ChecklistUpdates'` (the
+   serialized JSON values from `taskSummaryConst` / `checklistUpdatesConst`).
 2. Remove the two enum members and their `@JsonValue` constants from
    `lib/features/ai/state/consts.dart`.
 3. Remove the corresponding `case` branches in `localizedName`, `icon`,
