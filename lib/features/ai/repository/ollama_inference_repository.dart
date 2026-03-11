@@ -363,6 +363,18 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         );
       }
 
+      // Running counter for tool calls that have no explicit index.
+      var toolCallCounter = 0;
+
+      // Maps raw Ollama indices to dense 0-based indices. Downstream code
+      // treats the index as an array position, so sparse values (e.g. 5, 7)
+      // would break merging.
+      final indexRemap = <int, int>{};
+
+      // Maps tool-call IDs to their assigned dense index so that
+      // continuation chunks (which may omit `index`) merge correctly.
+      final idToIndex = <String, int>{};
+
       // Process streaming response
       await for (final chunk
           in request.stream
@@ -415,11 +427,41 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   name: 'OllamaInferenceRepository',
                 );
 
+                // Resolve a stable dense index for this tool call.
+                //
+                // Priority:
+                // 1. If we've seen this id before, reuse its dense index
+                //    (handles continuation chunks that omit index).
+                // 2. Explicit index from Ollama (tool-call or function level),
+                //    remapped to dense 0-based.
+                // 3. Running counter for calls with neither id nor index.
+                final toolId = toolCall['id'] as String?;
+                final explicitIndex =
+                    (toolCall['index'] as int?) ??
+                    (functionCall['index'] as int?);
+
+                int denseIndex;
+                if (toolId != null && idToIndex.containsKey(toolId)) {
+                  denseIndex = idToIndex[toolId]!;
+                } else if (explicitIndex != null) {
+                  denseIndex = indexRemap.putIfAbsent(
+                    explicitIndex,
+                    () => indexRemap.length,
+                  );
+                } else {
+                  denseIndex = indexRemap.putIfAbsent(
+                    toolCallCounter,
+                    () => indexRemap.length,
+                  );
+                  toolCallCounter++;
+                }
+
+                if (toolId != null) {
+                  idToIndex[toolId] = denseIndex;
+                }
                 toolCallsList.add({
-                  'index': i,
-                  'id':
-                      toolCall['id'] ??
-                      'tool-${DateTime.now().millisecondsSinceEpoch}-$i',
+                  'index': denseIndex,
+                  if (toolCall['id'] != null) 'id': toolCall['id'],
                   'type': 'function',
                   'function': {
                     'name': functionCall['name'],

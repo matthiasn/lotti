@@ -28,7 +28,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -904,14 +903,10 @@ Future<void> agentInitialization(Ref ref) async {
     syncEventProcessor,
   );
 
-  // 5. Seed default templates and profiles in parallel, then restore
-  //    subscriptions (which depends on templates being seeded).
-  await Future.wait([
-    templateService.seedDefaults(),
-    ProfileSeedingService(
-      aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-    ).seedDefaults(),
-  ]);
+  // 5. Seed default agent templates and restore subscriptions.
+  //    Profile seeding and model backfill are handled separately by
+  //    aiConfigInitializationProvider (not gated by the agents flag).
+  await templateService.seedDefaults();
   await taskAgentService.restoreSubscriptions();
 }
 

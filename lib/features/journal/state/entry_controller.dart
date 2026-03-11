@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/state/ai_config_initialization.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -132,6 +133,7 @@ class EntryController extends _$EntryController {
     // initialization provider resolves.
     ref
       ..listen(agentInitializationProvider, (_, _) {})
+      ..listen(aiConfigInitializationProvider, (_, _) {})
       ..onDispose(() {
         _updateSubscription?.cancel();
       })

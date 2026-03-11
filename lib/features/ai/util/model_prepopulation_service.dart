@@ -5,6 +5,8 @@
 /// same IDs already exist to avoid duplicates.
 library;
 
+import 'dart:developer' as developer;
+
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -71,5 +73,29 @@ class ModelPrepopulationService {
     }
 
     return modelsCreated;
+  }
+
+  /// Backfills newly added known models for all existing inference providers.
+  ///
+  /// This ensures that when new models are added to `knownModelsByProvider`,
+  /// existing users get them without having to re-create their providers.
+  /// Safe to call on every startup — skips models that already exist.
+  Future<void> backfillNewModels() async {
+    final allConfigs = await _repository.getConfigsByType(
+      AiConfigType.inferenceProvider,
+    );
+    final providers = allConfigs.whereType<AiConfigInferenceProvider>();
+
+    var totalCreated = 0;
+    for (final provider in providers) {
+      totalCreated += await prepopulateModelsForProvider(provider);
+    }
+
+    if (totalCreated > 0) {
+      developer.log(
+        'Backfilled $totalCreated new known models for existing providers',
+        name: 'ModelPrepopulationService',
+      );
+    }
   }
 }

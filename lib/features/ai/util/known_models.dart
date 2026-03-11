@@ -264,65 +264,33 @@ const List<KnownModel> nebiusModels = [
 /// Note: Users must install these models locally using `ollama pull <model_name>`
 /// before they can be used in the application.
 const List<KnownModel> ollamaModels = [
+  // Qwen 3.5 — native multimodal with reasoning and tool calling
   KnownModel(
-    providerModelId: 'gemma3:4b',
-    name: 'Gemma 3 4B',
+    providerModelId: 'qwen3.5:9b',
+    name: 'Qwen 3.5 9B',
     inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        'Efficient local text & image model, great for image analysis. '
-        'Requires approximately 4GB RAM and provides good performance for most tasks.',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-oss:20b',
-    name: 'Ollama gpt-oss 20B',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description:
-        'State-of-the-art open weights model from OpenAI, small variant.',
-  ),
-  KnownModel(
-    providerModelId: 'gpt-oss:120b',
-    name: 'Ollama gpt-oss 120B',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description:
-        'State-of-the-art open weights model from OpenAI, large variant.',
-  ),
-  KnownModel(
-    providerModelId: 'gemma3:12b',
-    name: 'Gemma 3 12B',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        'Larger local text & image model with improved capabilities. '
-        'Requires approximately 12GB RAM for optimal performance.',
-  ),
-  KnownModel(
-    providerModelId: 'gemma3:12b-it-qat',
-    name: 'Gemma 3 12B QAT',
-    inputModalities: [Modality.text, Modality.image],
-    outputModalities: [Modality.text],
-    isReasoningModel: false,
-    description:
-        'Quantized version of Gemma 3 12B with smaller memory footprint. '
-        'Requires approximately 8GB RAM while maintaining good performance.',
-  ),
-  KnownModel(
-    providerModelId: 'deepseek-r1:8b',
-    name: 'DeepSeek R1 8B',
-    inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: true,
     supportsFunctionCalling: true,
     description:
-        'Local reasoning model for complex analysis tasks. '
-        'Provides advanced reasoning capabilities.',
+        'Native multimodal model with reasoning and tool calling. '
+        '6.6GB download, ~10GB RAM. 256K context. '
+        'Best local model for lower-end devices.',
   ),
+  KnownModel(
+    providerModelId: 'qwen3.5:27b',
+    name: 'Qwen 3.5 27B',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Native multimodal model with reasoning and tool calling. '
+        '17GB download, ~22GB RAM. 256K context. '
+        'Best local model for higher-end devices (22GB+ RAM).',
+  ),
+
+  // Embeddings
   KnownModel(
     providerModelId: 'mxbai-embed-large',
     name: 'mxbai-embed-large (Embeddings)',
@@ -332,18 +300,6 @@ const List<KnownModel> ollamaModels = [
     description:
         'Text embedding model with 1024 dimensions for semantic search. '
         'Used for finding related entries and improving search results.',
-  ),
-  KnownModel(
-    providerModelId: 'qwen3:8b',
-    name: 'Qwen3 8B',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description:
-        'Qwen3 is the latest generation of large language models in Qwen '
-        'series, offering a comprehensive suite of dense and mixture-of-experts '
-        '(MoE) models.',
   ),
 ];
 

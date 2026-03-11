@@ -244,14 +244,14 @@ void main() {
     test('resolves local provider with empty API key', () async {
       final profile = testInferenceProfile(
         id: 'profile-local',
-        thinkingModelId: 'qwen3:8b',
+        thinkingModelId: 'qwen3.5:9b',
       );
       stubProfile(profile);
 
       when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
         (_) async => [
           testAiModel(
-            providerModelId: 'qwen3:8b',
+            providerModelId: 'qwen3.5:9b',
             inferenceProviderId: 'provider-local',
           ),
         ],
@@ -267,7 +267,7 @@ void main() {
       );
 
       expect(result, isNotNull);
-      expect(result!.thinkingModelId, 'qwen3:8b');
+      expect(result!.thinkingModelId, 'qwen3.5:9b');
       expect(
         result.thinkingProvider.inferenceProviderType,
         InferenceProviderType.ollama,

@@ -43,7 +43,7 @@ void main() {
         name: 'Ollama',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -98,7 +98,7 @@ void main() {
       test('should use /api/chat endpoint when tools are provided', () async {
         // Arrange
         const prompt = 'Test prompt';
-        const model = 'qwen3:8b';
+        const model = 'qwen3.5:9b';
         const temperature = 0.7;
 
         final tools = [
@@ -157,7 +157,7 @@ void main() {
       test('should handle tool calls in chat response', () async {
         // Arrange
         const prompt = 'Test prompt';
-        const model = 'qwen3:8b';
+        const model = 'qwen3.5:9b';
         const temperature = 0.7;
 
         final tools = [
@@ -345,7 +345,7 @@ void main() {
         name: 'Ollama',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -601,7 +601,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -650,7 +650,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -703,7 +703,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -760,7 +760,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -817,7 +817,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -865,7 +865,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -913,7 +913,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -966,7 +966,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1024,7 +1024,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1063,7 +1063,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1091,7 +1091,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1125,7 +1125,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1175,7 +1175,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1228,7 +1228,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1287,6 +1287,583 @@ void main() {
       expect(responses.first.choices?.first.delta?.toolCalls?.length, 1);
     });
 
+    test(
+      'preserves distinct indices for tool calls in separate chunks',
+      () async {
+        // Regression test: Ollama streams each tool call as a separate chunk.
+        // The repository must use the response's index (not the loop variable)
+        // so the downstream accumulator treats them as separate calls.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        final streamController = StreamController<List<int>>();
+        when(
+          () => mockResponse.stream,
+        ).thenAnswer((_) => http.ByteStream(streamController.stream));
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: 'qwen3.5:9b',
+          temperature: 0.7,
+          provider: provider,
+          tools: [
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'set_task_title',
+                description: 'Set title',
+              ),
+            ),
+            const ChatCompletionTool(
+              type: ChatCompletionToolType.function,
+              function: FunctionObject(
+                name: 'set_task_language',
+                description: 'Set language',
+              ),
+            ),
+          ],
+        );
+
+        final futureList = stream.toList();
+
+        // Chunk 1: first tool call with index at tool-call level
+        streamController
+          ..add(
+            utf8.encode(
+              '${jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'index': 0,
+                      'id': 'call_abc',
+                      'function': {
+                        'name': 'set_task_title',
+                        'arguments': {'title': 'Test'},
+                      },
+                    },
+                  ],
+                },
+                'done': false,
+              })}\n',
+            ),
+          )
+          // Chunk 2: second tool call with index at tool-call level
+          ..add(
+            utf8.encode(
+              '${jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'index': 1,
+                      'id': 'call_def',
+                      'function': {
+                        'name': 'set_task_language',
+                        'arguments': {'languageCode': 'en'},
+                      },
+                    },
+                  ],
+                },
+                'done': false,
+              })}\n',
+            ),
+          )
+          // Done
+          ..add(
+            utf8.encode('${jsonEncode({'done': true})}\n'),
+          );
+
+        await streamController.close();
+
+        final responses = await futureList;
+        expect(responses.length, 2);
+
+        // First response should have index 0
+        final firstToolCalls = responses[0].choices!.first.delta!.toolCalls!;
+        expect(firstToolCalls.length, 1);
+        expect(firstToolCalls.first.index, 0);
+        expect(firstToolCalls.first.function?.name, 'set_task_title');
+
+        // Second response should have index 1 (not 0!)
+        final secondToolCalls = responses[1].choices!.first.delta!.toolCalls!;
+        expect(secondToolCalls.length, 1);
+        expect(secondToolCalls.first.index, 1);
+        expect(secondToolCalls.first.function?.name, 'set_task_language');
+      },
+    );
+
+    test('falls back to loop index when response has no index field', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+
+      // Two tool calls without index field — verifies the loop index
+      // is used (not a hardcoded 0).
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable([
+            utf8.encode(
+              '${jsonEncode({
+                'message': {
+                  'tool_calls': [
+                    {
+                      'id': 'call_xyz',
+                      'function': {
+                        'name': 'test_fn',
+                        'arguments': {'key': 'value'},
+                      },
+                    },
+                    {
+                      'id': 'call_abc',
+                      'function': {
+                        'name': 'test_fn',
+                        'arguments': {'other': 'value'},
+                      },
+                    },
+                  ],
+                },
+                'done': false,
+              })}\n',
+            ),
+            utf8.encode('${jsonEncode({'done': true})}\n'),
+          ]),
+        ),
+      );
+
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final responses = await repository
+          .generateTextWithMessages(
+            messages: messages,
+            model: 'test-model',
+            temperature: 0.7,
+            provider: provider,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'test_fn',
+                  description: 'Test',
+                ),
+              ),
+            ],
+          )
+          .toList();
+
+      expect(responses.length, 1);
+      final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+      expect(toolCalls.length, 2);
+      // Falls back to loop indices 0 and 1
+      expect(toolCalls[0].index, 0);
+      expect(toolCalls[1].index, 1);
+    });
+
+    test(
+      'assigns distinct indices for tool calls across separate chunks',
+      () async {
+        // Two separate stream chunks each with one tool call, both missing
+        // id and index. The counter must assign 0 and 1, not 0 and 0.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': {'a': 1},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'function': {
+                          'name': 'fn_b',
+                          'arguments': {'b': 2},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'Test A',
+                  ),
+                ),
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_b',
+                    description: 'Test B',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        // Two separate chunks → two separate responses
+        expect(responses.length, 2);
+        final firstToolCalls =
+            responses[0].choices!.first.delta!.toolCalls!;
+        final secondToolCalls =
+            responses[1].choices!.first.delta!.toolCalls!;
+        expect(firstToolCalls.first.index, 0);
+        expect(secondToolCalls.first.index, 1);
+      },
+    );
+
+    test(
+      'continuation chunk without index merges with initial chunk by id',
+      () async {
+        // First chunk has id + index, second chunk has same id but no index.
+        // Both should get the same dense index so they merge downstream.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              // Initial chunk with index 3 and id
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'index': 3,
+                        'id': 'call_cont',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': '{"key":',
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              // Continuation chunk: same id, no index
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'id': 'call_cont',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': '"value"}',
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'A',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        // Two chunks emitted
+        expect(responses.length, 2);
+        final firstIndex =
+            responses[0].choices!.first.delta!.toolCalls!.first.index;
+        final secondIndex =
+            responses[1].choices!.first.delta!.toolCalls!.first.index;
+        // Both should have the same dense index (0) for merging
+        expect(firstIndex, 0);
+        expect(secondIndex, 0);
+      },
+    );
+
+    test(
+      'remaps sparse Ollama indices to dense 0-based sequence',
+      () async {
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        // Ollama returns sparse indices 5 and 7 in a single chunk.
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'index': 5,
+                        'id': 'call_a',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': {'a': 1},
+                        },
+                      },
+                      {
+                        'index': 7,
+                        'id': 'call_b',
+                        'function': {
+                          'name': 'fn_b',
+                          'arguments': {'b': 2},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'A',
+                  ),
+                ),
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_b',
+                    description: 'B',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        expect(responses.length, 1);
+        final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+        expect(toolCalls.length, 2);
+        // Sparse 5,7 → dense 0,1
+        expect(toolCalls[0].index, 0);
+        expect(toolCalls[1].index, 1);
+      },
+    );
+
+    test(
+      'reads index from function sub-object as secondary fallback',
+      () async {
+        // Some Ollama versions put index inside the function object rather
+        // than at the tool-call level. The parser should handle both.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'id': 'call_xyz',
+                        'function': {
+                          'index': 5,
+                          'name': 'test_fn',
+                          'arguments': {'key': 'value'},
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'test_fn',
+                    description: 'Test',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        expect(responses.length, 1);
+        final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+        expect(toolCalls.length, 1);
+        // Raw index 5 from function sub-object is remapped to dense 0
+        expect(toolCalls.first.index, 0);
+      },
+    );
+
     test('should handle tool calls with pre-encoded arguments', () async {
       final messages = [
         const ChatCompletionMessage.user(
@@ -1329,7 +1906,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1396,7 +1973,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1419,7 +1996,9 @@ void main() {
       final responses = await stream.toList();
       expect(responses.length, 1);
       final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
-      expect(toolCall?.id, startsWith('tool-'));
+      // When Ollama omits the ID, we preserve null so that
+      // ToolCallAccumulator can merge continuation chunks by index.
+      expect(toolCall?.id, isNull);
     });
 
     test(
@@ -1448,7 +2027,7 @@ void main() {
           name: 'Test',
           baseUrl: 'http://localhost:11434',
           apiKey: '',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.ollama,
         );
 
@@ -1500,7 +2079,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1545,7 +2124,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 
@@ -1592,7 +2171,7 @@ void main() {
         name: 'Test',
         baseUrl: 'http://localhost:11434',
         apiKey: '',
-        createdAt: DateTime.now(),
+        createdAt: DateTime(2026, 3, 15),
         inferenceProviderType: InferenceProviderType.ollama,
       );
 

@@ -1330,6 +1330,13 @@ void main() {
         () => mockAiConfigRepo.getConfigById(any()),
       ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
+      // Model prepopulation stubs (backfill + stale removal).
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepo.deleteConfig(any()),
+      ).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -2911,6 +2918,13 @@ void main() {
         () => mockAiConfigRepo.getConfigById(any()),
       ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
+      // Model prepopulation stubs (backfill + stale removal).
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepo.deleteConfig(any()),
+      ).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);
@@ -3116,6 +3130,13 @@ void main() {
         () => mockAiConfigRepo.getConfigById(any()),
       ).thenAnswer((_) async => null);
       when(() => mockAiConfigRepo.saveConfig(any())).thenAnswer((_) async {});
+      // Model prepopulation stubs (backfill + stale removal).
+      when(
+        () => mockAiConfigRepo.getConfigsByType(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockAiConfigRepo.deleteConfig(any()),
+      ).thenAnswer((_) async {});
     });
 
     tearDown(tearDownTestGetIt);

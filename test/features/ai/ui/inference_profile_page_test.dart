@@ -63,7 +63,7 @@ void main() {
         testInferenceProfile(
           id: 'p2',
           name: 'Local Ollama',
-          thinkingModelId: 'qwen3:8b',
+          thinkingModelId: 'qwen3.5:9b',
           desktopOnly: true,
         ),
       ];

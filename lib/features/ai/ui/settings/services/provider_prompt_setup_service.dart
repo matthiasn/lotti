@@ -203,25 +203,28 @@ class ProviderPromptSetupService {
     );
   }
 
-  /// Selects DeepSeek R1 8B for text tasks and Gemma 3 12B for image tasks.
-  _ModelSelection _selectOllamaModels(List<AiConfigModel> models) {
-    // Find DeepSeek R1 8B for reasoning/text tasks
+  /// Selects Qwen 3.5 for both text and image tasks.
+  ///
+  /// Qwen 3.5 is a native multimodal model with reasoning, tool calling,
+  /// and image understanding — one model covers all local Ollama needs.
+  _ModelSelection? _selectOllamaModels(List<AiConfigModel> models) {
+    if (models.isEmpty) return null;
+
+    // Pick the first available Qwen 3.5 variant, falling back to any
+    // model with function calling support, then the first model overall.
     final reasoningModel = models.firstWhere(
-      (m) =>
-          m.name.toLowerCase().contains('deepseek') &&
-          m.supportsFunctionCalling,
+      (m) => m.name.toLowerCase().contains('qwen') && m.supportsFunctionCalling,
       orElse: () => models.firstWhere(
         (m) => m.supportsFunctionCalling,
         orElse: () => models.first,
       ),
     );
 
-    // Find Gemma 3 12B for image analysis
+    // Use the same model for image analysis since Qwen 3.5 supports images.
     final imageModel =
         models.firstWhereOrNull(
           (m) =>
-              m.name.toLowerCase().contains('gemma') &&
-              m.name.contains('12') &&
+              m.name.toLowerCase().contains('qwen') &&
               m.inputModalities.contains(Modality.image),
         ) ??
         models.firstWhereOrNull(

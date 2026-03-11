@@ -148,7 +148,7 @@ void main() {
       final emptyDisposer = ServiceDisposer(getIt, _noOpLog);
 
       await emptyDisposer.disposeAll();
-      // Should not throw.
+      // Should not throw
     });
 
     test('disposeServicesOnly skips database close calls', () async {

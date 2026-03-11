@@ -355,6 +355,53 @@ void main() {
       });
     });
 
+    group('Ollama Models', () {
+      test('Qwen 3.5 9B should be a multimodal reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'qwen3.5:9b',
+        );
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.outputModalities, contains(Modality.text));
+      });
+
+      test('Qwen 3.5 27B should be a multimodal reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'qwen3.5:27b',
+        );
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+      });
+
+      test('should not contain removed models', () {
+        final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
+        expect(modelIds, isNot(contains('qwen3:8b')));
+        expect(modelIds, isNot(contains('deepseek-r1:8b')));
+        expect(modelIds, isNot(contains('gpt-oss:20b')));
+        expect(modelIds, isNot(contains('gpt-oss:120b')));
+        expect(modelIds, isNot(contains('gemma3:12b-it-qat')));
+        expect(modelIds, isNot(contains('gemma3:4b')));
+        expect(modelIds, isNot(contains('gemma3:12b')));
+      });
+
+      test('should still contain embedding model', () {
+        final modelIds = ollamaModels.map((m) => m.providerModelId).toSet();
+        expect(modelIds, contains('mxbai-embed-large'));
+      });
+
+      test('embedding model should not be a reasoning model', () {
+        final model = ollamaModels.firstWhere(
+          (m) => m.providerModelId == 'mxbai-embed-large',
+        );
+        expect(model.isReasoningModel, isFalse);
+        expect(model.supportsFunctionCalling, isFalse);
+      });
+    });
+
     group('Voxtral Models', () {
       test('should have both Mini and Small models', () {
         expect(voxtralModels.length, equals(2));

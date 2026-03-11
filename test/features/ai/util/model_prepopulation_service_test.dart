@@ -30,7 +30,7 @@ void main() {
           baseUrl: 'https://api.gemini.com',
           apiKey: 'test-key',
           name: 'Gemini',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
@@ -60,7 +60,7 @@ void main() {
           baseUrl: 'https://api.nebius.com',
           apiKey: 'test-key',
           name: 'Nebius',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.nebiusAiStudio,
         );
 
@@ -90,7 +90,7 @@ void main() {
           baseUrl: 'http://localhost:11434',
           apiKey: '',
           name: 'Ollama',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.ollama,
         );
 
@@ -120,7 +120,7 @@ void main() {
           baseUrl: 'https://api.anthropic.com/v1',
           apiKey: 'test-key',
           name: 'Anthropic',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.anthropic,
         );
 
@@ -150,7 +150,7 @@ void main() {
           baseUrl: 'https://openrouter.ai/api/v1',
           apiKey: 'test-key',
           name: 'OpenRouter',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.openRouter,
         );
 
@@ -180,7 +180,7 @@ void main() {
           baseUrl: 'https://api.openai.com/v1',
           apiKey: 'test-key',
           name: 'OpenAI',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.openAi,
         );
 
@@ -210,7 +210,7 @@ void main() {
           baseUrl: 'https://api.gemini.com',
           apiKey: 'test-key',
           name: 'Gemini',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
@@ -224,7 +224,7 @@ void main() {
           name: 'Existing Model',
           providerModelId: geminiModels.first.providerModelId,
           inferenceProviderId: providerId,
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inputModalities: [],
           outputModalities: [],
           isReasoningModel: false,
@@ -258,7 +258,7 @@ void main() {
             baseUrl: 'http://localhost:8002/v1',
             apiKey: '',
             name: 'AI Proxy (local)',
-            createdAt: DateTime.now(),
+            createdAt: DateTime(2026, 3, 15),
             inferenceProviderType: InferenceProviderType.genericOpenAi,
           );
 
@@ -289,7 +289,7 @@ void main() {
           baseUrl: 'https://api.gemini.com',
           apiKey: 'test-key',
           name: 'Gemini',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2026, 3, 15),
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
@@ -375,6 +375,159 @@ void main() {
       expect(aiConfigModel.createdAt, isNotNull);
     });
   });
+
+  group('backfillNewModels', () {
+    late MockAiConfigRepository mockRepository;
+    late ModelPrepopulationService service;
+
+    setUp(() {
+      mockRepository = MockAiConfigRepository();
+      service = ModelPrepopulationService(repository: mockRepository);
+    });
+
+    test('should backfill models for all existing providers', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
+
+      await service.backfillNewModels();
+
+      verify(
+        () => mockRepository.saveConfig(any()),
+      ).called(ollamaModels.length);
+    });
+
+    test('should skip already existing models during backfill', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      // Simulate all models already existing
+      final existingModels = ollamaModels.map((m) {
+        final modelId = generateModelId('ollama-1', m.providerModelId);
+        return m.toAiConfigModel(
+          id: modelId,
+          inferenceProviderId: 'ollama-1',
+        );
+      }).toList();
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => existingModels);
+
+      await service.backfillNewModels();
+
+      verifyNever(() => mockRepository.saveConfig(any()));
+    });
+
+    test('should backfill across multiple providers', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+      final geminiProvider = AiConfigInferenceProvider(
+        id: 'gemini-1',
+        baseUrl: 'https://api.gemini.com',
+        apiKey: 'key',
+        name: 'Gemini',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider, geminiProvider]);
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => []);
+
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
+
+      await service.backfillNewModels();
+
+      verify(
+        () => mockRepository.saveConfig(any()),
+      ).called(ollamaModels.length + geminiModels.length);
+    });
+
+    test('should only backfill missing models for a provider', () async {
+      final ollamaProvider = AiConfigInferenceProvider(
+        id: 'ollama-1',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        name: 'Ollama',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      // Only the first Ollama model exists
+      final firstModel = ollamaModels.first;
+      final existingModelId = generateModelId(
+        'ollama-1',
+        firstModel.providerModelId,
+      );
+      final existingModel = firstModel.toAiConfigModel(
+        id: existingModelId,
+        inferenceProviderId: 'ollama-1',
+      );
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => [ollamaProvider]);
+
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [existingModel]);
+
+      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async => {});
+
+      await service.backfillNewModels();
+
+      verify(
+        () => mockRepository.saveConfig(any()),
+      ).called(ollamaModels.length - 1);
+    });
+
+    test('should handle no existing providers gracefully', () async {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => []);
+
+      await service.backfillNewModels();
+
+      verifyNever(() => mockRepository.saveConfig(any()));
+    });
+  });
+
 
   group('Known Models Configuration', () {
     test('all known models should have valid configurations', () {
