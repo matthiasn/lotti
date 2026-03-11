@@ -278,14 +278,17 @@ The tests lock this in:
 - `test/features/sync/matrix/sync_event_processor_test.dart`
   contains `processes old SyncBackfillRequest even when startupTimestamp is set`
 
-#### Catch-up returns the whole snapshot if the marker cannot be found
+#### Catch-up falls back to a bounded tail if the marker cannot be found
 
 `CatchUpStrategy.collectEventsForCatchUp()` returns:
 
 - only events after `lastEventId` when the marker is found
-- the entire snapshot when `lastEventId` cannot be located
+- a bounded tail (capped by `missingMarkerFallbackLimit`, default 1000) when
+  `lastEventId` cannot be located
 
-That fallback is explicit in `catch_up_strategy.dart`.
+**Historical note (pre-fix):** before the stabilization fix, the fallback
+returned the entire snapshot, which could produce 10k+ event replay waves.
+The bounded-tail fallback was introduced to prevent this.
 
 #### Live scan cannot explain a 10k+ replay by itself
 
@@ -336,40 +339,32 @@ old requests. It is replaying large slices of old room history.
 
 ```mermaid
 flowchart TD
-  A["Stored lastEventId is not found in catch-up view"] --> B["CatchUpStrategy returns entire snapshot"]
-  B --> C["10k+ old events re-enter processor"]
-  C --> D["5k LRU dedupe rolls over"]
-  D --> E["Same old event IDs are processed again in the next replay wave"]
+  A["Stored lastEventId is not found in catch-up view"] --> B["CatchUpStrategy returns bounded tail (max 1000)"]
+  B --> C["Bounded set of recent events re-enter processor"]
+  C --> D["5k LRU dedupe is sufficient to suppress duplicates"]
 ```
 
-### Why it matters
+**Historical note (pre-fix):** Before the stabilization fix, this diagram
+showed "CatchUpStrategy returns entire snapshot" → "10k+ old events re-enter
+processor" → "5k LRU dedupe rolls over" → repeated replay waves. The
+bounded-tail fallback was introduced to break this cycle.
 
-The code-plus-log fit here is much tighter than "old backfill requests are
-expensive".
+### Why it mattered (pre-fix analysis)
 
-What is proven:
+The pre-fix code had a proven overhead source: when the catch-up marker was
+missing, the entire snapshot was returned. The log evidence showed:
 
-- old request traffic is intentionally still processed
-- the same old event IDs are replayed in large waves
-- those waves are too large to be explained by the live-scan tail fallback
-- those waves are too large for the `5000`-entry LRU dedupe to suppress
+- old request traffic was intentionally still processed
+- the same old event IDs were replayed in large waves (10k+)
+- those waves were too large for the `5000`-entry LRU dedupe to suppress
 
-What is still an inference:
-
-- the exact trigger is likely "catch-up marker missing, so full snapshot
-  fallback", but the combined log does not currently include a direct
-  `syncLoggingDomain` line saying that in plain words
-
-Even with that caveat, this is a real overhead source. It also creates the
-conditions for every downstream bug to be paid repeatedly.
+The bounded-tail fallback now caps the replay to `missingMarkerFallbackLimit`
+(default 1000), which is well within the dedupe window.
 
 ### Confidence
 
-High confidence that room history is being replayed in large waves.
-
-Moderate-to-high confidence that catch-up full-snapshot fallback is the
-mechanism, because it matches the code shape and the observed replay size far
-better than live scan does.
+High confidence that the bounded-tail fallback prevents the large replay waves
+observed in the pre-fix logs.
 
 ## Failure Surface 2: Agent Payload Resolution Can Mismatch Text Event Generation
 
@@ -750,12 +745,13 @@ The current tests cover important pieces, but there is still a notable hole.
 
 ### Not covered by focused invariant tests
 
-There is no targeted test that proves the room-history replay path end to end:
+There is no targeted test that proves the room-history replay path end to end
+(this was the pre-fix behavior; the bounded-tail fallback now prevents the
+large replay, but the scenario is documented for completeness):
 
 1. stored `lastEventId` is missing from catch-up
-2. catch-up returns a full snapshot
-3. more than `5000` old events re-enter processing
-4. the same old event IDs are seen again in a later wave
+2. catch-up returns a bounded tail (post-fix) instead of a full snapshot
+3. the bounded tail is small enough for the LRU dedupe to suppress duplicates
 
 There is also no targeted test that proves the exact sequence-mapping
 contradiction end to end:
@@ -790,9 +786,8 @@ Recommended order:
    - resend + `unresolvable` in the same handling pass
 2. Add a catch-up / stream pipeline test that simulates:
    - missing `lastEventId`
-   - full-snapshot fallback
-   - replay batch size above `5000`
-   - same old event IDs reprocessed in the next wave
+   - bounded-tail fallback
+   - verify the tail size is within `missingMarkerFallbackLimit`
 3. Add a focused test in `sync_event_processor_test.dart` or a pipeline test
    that simulates:
    - same agent entity path
@@ -828,19 +823,20 @@ The current sync system has three important truths at the same time:
    dominance plus backfill
 2. the actual implementation is a tightly coupled feedback loop where small
    causality mistakes get amplified into missing-counter storms
-3. there are now two proven runtime failures in the evidence:
-   large room-history replay waves, and exact backfill mappings whose current
-   payload VC is already behind the requested counter
+3. two runtime failures were identified and fixed in the stabilization work:
+   - **Large room-history replay waves** — the catch-up fallback now returns a
+     bounded tail instead of the entire snapshot, preventing replay storms.
+   - **Exact backfill mappings with stale VCs** — exact hits are now validated
+     against the payload's current vector clock before resend, and the covering
+     entry search now iterates past stale candidates.
 
 The agent path-based descriptor resolution model is still a strong candidate
 for one deeper source of false gaps, because it allows an older text event to
 be paired with a newer payload generation for the same `jsonPath`.
 
-But the combined log changed the investigation in an important way: there is
-now enough evidence to stop talking about a single hypothetical root cause.
-At minimum, the current implementation has:
+At minimum, the remaining known concerns are:
 
-- a replay mechanism that reprocesses large old room slices
-- a sequence/backfill integrity problem for some agent counters
+- a sequence/backfill integrity edge case for some agent counters (mitigated
+  by VC validation but not fully eliminated)
 - an agent attachment model that still looks structurally capable of creating
   synthetic gaps

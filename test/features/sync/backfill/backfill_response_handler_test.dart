@@ -364,12 +364,13 @@ void main() {
     });
 
     test(
-      'rejects covering entry when payload VC does not cover counter',
+      'rejects covering entry when payload VC does not cover counter '
+      'and no further candidates exist',
       () async {
         // Request for our own counter 100, not in the log directly.
         // Covering entry exists at counter 200 mapped to entryId, BUT
         // the entry's VC is {aliceHostId: 50} which is BEHIND counter 100.
-        // This is the bug that caused infinite backfill loops.
+        // No further covering entries exist after counter 200.
         const request = SyncBackfillRequest(
           entries: [
             BackfillRequestEntry(hostId: aliceHostId, counter: 100),
@@ -392,6 +393,11 @@ void main() {
           ),
         );
 
+        // No further covering entries after counter 200
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 201),
+        ).thenAnswer((_) async => null);
+
         // Entry exists but VC is behind the requested counter
         when(
           () => mockJournalDb.journalEntityById(entryId),
@@ -407,7 +413,8 @@ void main() {
 
         await handler.handleBackfillRequest(request);
 
-        // Should send unresolvable (our own counter, covering entry rejected)
+        // Should send unresolvable (our own counter, all covering entries
+        // exhausted)
         verify(
           () => mockOutboxService.enqueueMessage(
             any(
@@ -426,6 +433,92 @@ void main() {
             any(that: isA<SyncJournalEntity>()),
           ),
         );
+      },
+    );
+
+    test(
+      'skips stale covering entry and uses next valid covering entry',
+      () async {
+        // Request for our own counter 100. First covering entry at counter 200
+        // has a stale VC ({aliceHostId: 50}). Second covering entry at counter
+        // 300 has a valid VC ({aliceHostId: 100}).
+        const staleEntryId = 'stale-entry-id';
+        const validEntryId = 'valid-entry-id';
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 100),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 100),
+        ).thenAnswer((_) async => null);
+
+        // First covering entry at counter 200 — stale VC
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 100),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            200,
+            entryId: staleEntryId,
+            originatingHostId: aliceHostId,
+          ),
+        );
+
+        // Second covering entry at counter 300 — valid VC
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 201),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            300,
+            entryId: validEntryId,
+            originatingHostId: aliceHostId,
+          ),
+        );
+
+        // Stale entry: VC is behind
+        when(
+          () => mockJournalDb.journalEntityById(staleEntryId),
+        ).thenAnswer(
+          (_) async => _createJournalEntry(
+            staleEntryId,
+            vectorClock: const VectorClock({aliceHostId: 50}),
+          ),
+        );
+
+        // Valid entry: VC covers the requested counter
+        when(
+          () => mockJournalDb.journalEntityById(validEntryId),
+        ).thenAnswer(
+          (_) async => _createJournalEntry(
+            validEntryId,
+            vectorClock: const VectorClock({aliceHostId: 100}),
+          ),
+        );
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(request);
+
+        // Capture all enqueued messages and verify the valid entry was sent
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured.cast<SyncMessage>();
+
+        // The journal entity must reference the valid entry, not the stale one
+        final journalMsg = captured.whereType<SyncJournalEntity>().single;
+        expect(journalMsg.id, validEntryId);
+
+        // No unresolvable response should have been sent
+        final unresolvable = captured.whereType<SyncBackfillResponse>().where(
+              (r) => r.unresolvable ?? false,
+            );
+        expect(unresolvable, isEmpty);
       },
     );
 

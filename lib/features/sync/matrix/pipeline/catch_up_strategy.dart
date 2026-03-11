@@ -16,6 +16,10 @@ typedef BackfillFn =
       required LoggingService logging,
     });
 
+/// Default value for the [CatchUpStrategy.collectEventsForCatchUp]
+/// `missingMarkerFallbackLimit` parameter.
+const defaultMissingMarkerFallbackLimit = 1000;
+
 /// Catch‑up helper used at attach time by the stream consumer.
 ///
 /// Behaviour:
@@ -37,7 +41,7 @@ class CatchUpStrategy {
     required LoggingService logging,
     int initialLimit = 200,
     int maxLookback = 4000,
-    int missingMarkerFallbackLimit = 1000,
+    int missingMarkerFallbackLimit = defaultMissingMarkerFallbackLimit,
     num? preContextSinceTs,
     int preContextCount = 0,
   }) async {

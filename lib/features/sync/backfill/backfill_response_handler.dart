@@ -175,45 +175,50 @@ class BackfillResponseHandler {
     required int requestedCounter,
     required int searchFromCounter,
   }) async {
-    final covering = await _sequenceLogService.getNearestCoveringEntry(
-      hostId,
-      searchFromCounter,
-    );
+    var nextCounter = searchFromCounter;
 
-    if (covering == null || covering.entryId == null) {
-      return null;
-    }
+    while (true) {
+      final covering = await _sequenceLogService.getNearestCoveringEntry(
+        hostId,
+        nextCounter,
+      );
 
-    final payloadType = SyncSequencePayloadType.values.elementAt(
-      covering.payloadType,
-    );
-    final coveringVc = await _loadPayloadVectorClock(
-      payloadId: covering.entryId!,
-      payloadType: payloadType,
-    );
-    final coveringVcCounter = coveringVc?.vclock[hostId];
+      if (covering == null || covering.entryId == null) {
+        return null;
+      }
 
-    if (coveringVcCounter != null && coveringVcCounter >= requestedCounter) {
+      final payloadType = SyncSequencePayloadType.values.elementAt(
+        covering.payloadType,
+      );
+      final coveringVc = await _loadPayloadVectorClock(
+        payloadId: covering.entryId!,
+        payloadType: payloadType,
+      );
+      final coveringVcCounter = coveringVc?.vclock[hostId];
+
+      if (coveringVcCounter != null && coveringVcCounter >= requestedCounter) {
+        _trace(
+          'using verified covering entry '
+          'hostId=$hostId requestedCounter=$requestedCounter '
+          'coveringCounter=${covering.counter} '
+          'coveringVcCounter=$coveringVcCounter '
+          'payloadId=${covering.entryId}',
+          subDomain: 'backfill.coveringFallback',
+        );
+        return covering;
+      }
+
       _trace(
-        'using verified covering entry '
+        'covering entry VC does not cover counter, skipping to next '
         'hostId=$hostId requestedCounter=$requestedCounter '
         'coveringCounter=${covering.counter} '
-        'coveringVcCounter=$coveringVcCounter '
-        'payloadId=${covering.entryId}',
-        subDomain: 'backfill.coveringFallback',
+        'payloadId=${covering.entryId} '
+        'coveringVcCounter=$coveringVcCounter',
+        subDomain: 'backfill.coveringRejected',
       );
-      return covering;
-    }
 
-    _trace(
-      'covering entry VC does not cover counter, rejecting '
-      'hostId=$hostId requestedCounter=$requestedCounter '
-      'coveringCounter=${covering.counter} '
-      'payloadId=${covering.entryId} '
-      'coveringVcCounter=$coveringVcCounter',
-      subDomain: 'backfill.coveringRejected',
-    );
-    return null;
+      nextCounter = covering.counter + 1;
+    }
   }
 
   /// When the VC doesn't contain the exact counter, decide whether to send

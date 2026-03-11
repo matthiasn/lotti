@@ -61,7 +61,7 @@ For agent entities, `_processAgentBackfillEntry()` currently:
    counter
 
 This allows one handling pass to both resend the payload and emit
-`unresolvable` for the same exact counter.
+`unresolvable` for the same counter.
 
 ### Problem 2: Missing Catch-Up Marker Can Rewind To Full-Snapshot Replay
 
