@@ -1103,6 +1103,31 @@ void main() {
       // Should not update - entry is deleted (cannot be restored)
       verifyNever(() => mockDb.recordSequenceEntry(any()));
     });
+
+    test('reopens unresolvable entry when valid hint arrives', () async {
+      when(() => mockDb.getEntryByHostAndCounter(aliceHostId, 3)).thenAnswer(
+        (_) async => _createLogItem(
+          aliceHostId,
+          3,
+          status: SyncSequenceStatus.unresolvable,
+        ),
+      );
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.handleBackfillResponse(
+        hostId: aliceHostId,
+        counter: 3,
+        deleted: false,
+        entryId: 'valid-hint-entry',
+      );
+
+      // Should reset status to requested so hint can be verified
+      final captured =
+          verify(() => mockDb.recordSequenceEntry(captureAny())).captured.single
+              as SyncSequenceLogCompanion;
+      expect(captured.status.value, SyncSequenceStatus.requested.index);
+      expect(captured.entryId.value, 'valid-hint-entry');
+    });
   });
 
   group('markAsRequested', () {

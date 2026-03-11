@@ -188,6 +188,12 @@ class SyncSequenceLogService {
       vectorClock,
     );
     if (filteredCovered.isNotEmpty && myHost != null) {
+      _trace(
+        'recordReceivedEntry: coveredVCs count=${filteredCovered.length} '
+        'clocks=${filteredCovered.map((vc) => vc.vclock).toList()} '
+        'entryId=$entryId type=$payloadType',
+        subDomain: 'sequence.coveredClocks',
+      );
       await _markCoveredCountersAsReceived(
         coveredVectorClocks: filteredCovered,
         entryId: entryId,
@@ -711,8 +717,13 @@ class SyncSequenceLogService {
       return;
     }
 
-    // Store the entryId hint on the existing missing/requested entry.
-    // Don't change status yet - that happens when we verify the entry exists.
+    // When an unresolvable entry receives a valid hint, reset to requested
+    // so it can be verified. This handles the case where the first response
+    // incorrectly marked it unresolvable but a later response has the answer.
+    final newStatus = existing.status == SyncSequenceStatus.unresolvable.index
+        ? SyncSequenceStatus.requested.index
+        : existing.status;
+
     final now = DateTime.now();
     await _syncDatabase.recordSequenceEntry(
       SyncSequenceLogCompanion(
@@ -720,19 +731,25 @@ class SyncSequenceLogService {
         counter: Value(counter),
         entryId: Value(entryId),
         payloadType: Value(payloadType.index),
-        // Keep existing status - don't mark as backfilled yet
-        status: Value(existing.status),
+        status: Value(newStatus),
         createdAt: Value(now),
         updatedAt: Value(now),
       ),
     );
 
+    if (existing.status == SyncSequenceStatus.unresolvable.index) {
+      _trace(
+        'handleBackfillResponse: reopened unresolvable entry hostId=$hostId counter=$counter entryId=$entryId',
+        subDomain: 'sequence.backfillReopened',
+      );
+    }
+
     _trace(
-      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[existing.status]})',
+      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
       subDomain: 'sequence.backfillHint',
     );
     _loggingService.captureEvent(
-      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[existing.status]})',
+      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
       domain: 'SYNC_SEQUENCE',
       subDomain: 'backfillHint',
     );
