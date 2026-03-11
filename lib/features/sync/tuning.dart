@@ -103,7 +103,7 @@ class SyncTuning {
       10000; // Increased from 1000 to handle larger backlogs
 
   // Backfill tuning - self-healing sync for missing entries
-  static const Duration backfillRequestInterval = Duration(minutes: 5);
+  static const Duration backfillRequestInterval = Duration(minutes: 2);
   static const int backfillMaxRequestCount = 10;
 
   // Maximum gap size for gap detection - prevents explosion of missing entries
@@ -113,19 +113,19 @@ class SyncTuning {
 
   // Maximum entries to process from an incoming backfill request.
   // Prevents a single large request from flooding the outbox.
-  static const int maxBackfillResponseBatchSize = 50;
+  static const int maxBackfillResponseBatchSize = 100;
 
   // Maximum entries to process per processing cycle
-  static const int backfillProcessingBatchSize = 50;
+  static const int backfillProcessingBatchSize = 100;
 
   // Response deduplication - prevents responding to the same (hostId, counter)
   // pair multiple times across request cycles (N-device amplification prevention).
-  static const Duration backfillResponseCooldown = Duration(minutes: 10);
+  static const Duration backfillResponseCooldown = Duration(minutes: 5);
 
   // Rate limiting - caps total backfill responses per time window to prevent
   // outbox flooding during amplification storms.
   static const Duration backfillResponseRateWindow = Duration(minutes: 1);
-  static const int backfillResponseRateLimit = 100;
+  static const int backfillResponseRateLimit = 500;
 
   // Maximum number of entry links to embed inline in a SyncJournalEntity
   // envelope. Links beyond this cap are omitted from the envelope — they sync

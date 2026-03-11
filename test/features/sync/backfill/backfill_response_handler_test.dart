@@ -171,12 +171,11 @@ void main() {
 
       await handler.handleBackfillRequest(request);
 
-      // Should only process maxBackfillResponseBatchSize entries (50), not all 100
+      // Should process all 100 entries (maxBackfillResponseBatchSize is 100)
       // Since these are bob's counters (not ours), we skip them silently
-      // Verify it was called exactly 50 times (truncated), not 100
       verify(
         () => mockSequenceService.getEntryByHostAndCounter(bobHostId, any()),
-      ).called(50);
+      ).called(100);
 
       // Logging now goes through DomainLogger (not injected in tests)
     });
@@ -364,6 +363,72 @@ void main() {
       expect(hint.deleted, isFalse);
     });
 
+    test(
+      'rejects covering entry when payload VC does not cover counter',
+      () async {
+        // Request for our own counter 100, not in the log directly.
+        // Covering entry exists at counter 200 mapped to entryId, BUT
+        // the entry's VC is {aliceHostId: 50} which is BEHIND counter 100.
+        // This is the bug that caused infinite backfill loops.
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 100),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 100),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(aliceHostId, 100),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            200,
+            entryId: entryId,
+            originatingHostId: aliceHostId,
+          ),
+        );
+
+        // Entry exists but VC is behind the requested counter
+        when(
+          () => mockJournalDb.journalEntityById(entryId),
+        ).thenAnswer(
+          (_) async => _createJournalEntry(
+            entryId,
+            vectorClock: const VectorClock({aliceHostId: 50}),
+          ),
+        );
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(request);
+
+        // Should send unresolvable (our own counter, covering entry rejected)
+        verify(
+          () => mockOutboxService.enqueueMessage(
+            any(
+              that: isA<SyncBackfillResponse>()
+                  .having((r) => r.hostId, 'hostId', aliceHostId)
+                  .having((r) => r.counter, 'counter', 100)
+                  .having((r) => r.deleted, 'deleted', false)
+                  .having((r) => r.unresolvable, 'unresolvable', true),
+            ),
+          ),
+        ).called(1);
+
+        // Should NOT have sent the journal entity (wrong covering entry)
+        verifyNever(
+          () => mockOutboxService.enqueueMessage(
+            any(that: isA<SyncJournalEntity>()),
+          ),
+        );
+      },
+    );
+
     test('sends deleted response when journal entry was deleted', () async {
       const request = SyncBackfillRequest(
         entries: [
@@ -445,7 +510,10 @@ void main() {
       expect(syncEntity.status, SyncEntryStatus.update);
     });
 
-    test('sends hint when own counter not in entry VC', () async {
+    test('sends unresolvable when own counter VC is behind', () async {
+      // Entry VC is {'test-host': 1} but we request counter=3 for our own
+      // host (aliceHostId). VC doesn't contain aliceHostId at all, so this
+      // mapping is permanently wrong → send unresolvable.
       const request = SyncBackfillRequest(
         entries: [
           BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -476,8 +544,53 @@ void main() {
 
       expect(captured.length, 2);
       expect(captured[0], isA<SyncJournalEntity>());
-      // Should send a hint with payloadId (not unresolvable) so receivers
-      // can map (hostId, counter) → payloadId and resolve the gap.
+      expect(
+        captured[1],
+        isA<SyncBackfillResponse>()
+            .having((r) => r.hostId, 'hostId', aliceHostId)
+            .having((r) => r.counter, 'counter', 3)
+            .having((r) => r.deleted, 'deleted', false)
+            .having((r) => r.unresolvable, 'unresolvable', true),
+      );
+    });
+
+    test('sends hint when own counter VC is ahead (superseded)', () async {
+      // Entry VC is {aliceHostId: 10} and we request counter=3 for our own
+      // host. VC is ahead (10 >= 3), so this is a legitimate supersession
+      // → send a hint so the receiver can map counter 3 → this entry.
+      const request = SyncBackfillRequest(
+        entries: [
+          BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+        ],
+        requesterId: requesterId,
+      );
+
+      when(
+        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+      ).thenAnswer(
+        (_) async => _createLogItem(aliceHostId, 3, entryId: entryId),
+      );
+
+      final journalEntry = _createJournalEntry(
+        entryId,
+        vectorClock: const VectorClock({aliceHostId: 10}),
+      );
+      when(
+        () => mockJournalDb.journalEntityById(entryId),
+      ).thenAnswer((_) async => journalEntry);
+
+      when(
+        () => mockOutboxService.enqueueMessage(any()),
+      ).thenAnswer((_) async {});
+
+      await handler.handleBackfillRequest(request);
+
+      final captured = verify(
+        () => mockOutboxService.enqueueMessage(captureAny()),
+      ).captured;
+
+      expect(captured.length, 2);
+      expect(captured[0], isA<SyncJournalEntity>());
       expect(
         captured[1],
         isA<SyncBackfillResponse>()
@@ -584,7 +697,7 @@ void main() {
               // Set window to the fakeAsync clock's "now" so the rate window
               // is still active when _isRateLimited checks.
               ..windowStart = DateTime.now()
-              ..responsesInWindow = 100; // At the limit
+              ..responsesInWindow = 500; // At the limit
 
         const request = SyncBackfillRequest(
           entries: [
@@ -612,9 +725,9 @@ void main() {
         handler.recentlyResponded['$aliceHostId:99'] = DateTime.now().subtract(
           const Duration(hours: 2),
         );
-        // Add a non-expired entry (within 10-minute cooldown)
+        // Add a non-expired entry (within 5-minute cooldown)
         handler.recentlyResponded['$bobHostId:5'] = DateTime.now().subtract(
-          const Duration(minutes: 5),
+          const Duration(minutes: 2),
         );
 
         // Request for a different counter so processing is independent
@@ -960,56 +1073,112 @@ void main() {
       expect(captured[0], isA<SyncEntryLink>());
     });
 
-    test('sends hint for entry link when own counter not in VC', () async {
-      final logItem = _createLogItem(
-        aliceHostId,
-        20,
-        entryId: 'existing-link-id',
-        originatingHostId: aliceHostId,
-        payloadType: SyncSequencePayloadType.entryLink,
-      );
+    test(
+      'sends unresolvable for entry link when own counter VC is behind',
+      () async {
+        // Link VC is {'test-host': 1} — doesn't contain aliceHostId at all.
+        // Since aliceHostId is our own host, this is permanently wrong.
+        final logItem = _createLogItem(
+          aliceHostId,
+          20,
+          entryId: 'existing-link-id',
+          originatingHostId: aliceHostId,
+          payloadType: SyncSequencePayloadType.entryLink,
+        );
 
-      final link = _createEntryLink('existing-link-id');
+        final link = _createEntryLink('existing-link-id');
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
-      ).thenAnswer((_) async => logItem);
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+        ).thenAnswer((_) async => logItem);
 
-      when(
-        () => mockJournalDb.entryLinkById('existing-link-id'),
-      ).thenAnswer((_) async => link);
+        when(
+          () => mockJournalDb.entryLinkById('existing-link-id'),
+        ).thenAnswer((_) async => link);
 
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
 
-      const request = SyncBackfillRequest(
-        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
-        requesterId: requesterId,
-      );
+        const request = SyncBackfillRequest(
+          entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+          requesterId: requesterId,
+        );
 
-      await handler.handleBackfillRequest(request);
+        await handler.handleBackfillRequest(request);
 
-      final captured = verify(
-        () => mockOutboxService.enqueueMessage(captureAny()),
-      ).captured;
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
 
-      expect(captured.length, 2);
-      expect(captured[0], isA<SyncEntryLink>());
-      // Should send a hint with payloadId (not unresolvable)
-      expect(
-        captured[1],
-        isA<SyncBackfillResponse>()
-            .having((r) => r.deleted, 'deleted', false)
-            .having((r) => r.unresolvable, 'unresolvable', isNull)
-            .having((r) => r.payloadId, 'payloadId', 'existing-link-id')
-            .having(
-              (r) => r.payloadType,
-              'payloadType',
-              SyncSequencePayloadType.entryLink,
-            ),
-      );
-    });
+        expect(captured.length, 2);
+        expect(captured[0], isA<SyncEntryLink>());
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.deleted, 'deleted', false)
+              .having((r) => r.unresolvable, 'unresolvable', true),
+        );
+      },
+    );
+
+    test(
+      'sends hint for entry link when own counter VC is ahead',
+      () async {
+        // Link VC is {aliceHostId: 50} — ahead of counter 20 → legitimate
+        // supersession, send a hint.
+        final logItem = _createLogItem(
+          aliceHostId,
+          20,
+          entryId: 'existing-link-id',
+          originatingHostId: aliceHostId,
+          payloadType: SyncSequencePayloadType.entryLink,
+        );
+
+        final link = _createEntryLink(
+          'existing-link-id',
+          vectorClock: const VectorClock({aliceHostId: 50}),
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
+        ).thenAnswer((_) async => logItem);
+
+        when(
+          () => mockJournalDb.entryLinkById('existing-link-id'),
+        ).thenAnswer((_) async => link);
+
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        const request = SyncBackfillRequest(
+          entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
+          requesterId: requesterId,
+        );
+
+        await handler.handleBackfillRequest(request);
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+
+        expect(captured.length, 2);
+        expect(captured[0], isA<SyncEntryLink>());
+        expect(
+          captured[1],
+          isA<SyncBackfillResponse>()
+              .having((r) => r.deleted, 'deleted', false)
+              .having((r) => r.unresolvable, 'unresolvable', isNull)
+              .having((r) => r.payloadId, 'payloadId', 'existing-link-id')
+              .having(
+                (r) => r.payloadType,
+                'payloadType',
+                SyncSequencePayloadType.entryLink,
+              ),
+        );
+      },
+    );
   });
 
   group('handleBackfillResponse - EntryLink', () {

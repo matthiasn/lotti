@@ -149,6 +149,68 @@ class BackfillResponseHandler {
     );
   }
 
+  /// Load the vector clock for a payload by type and ID.
+  /// Used to verify covering entries before using them.
+  Future<VectorClock?> _loadPayloadVectorClock({
+    required String payloadId,
+    required SyncSequencePayloadType payloadType,
+  }) async {
+    switch (payloadType) {
+      case SyncSequencePayloadType.journalEntity:
+        final entry = await _journalDb.journalEntityById(payloadId);
+        return entry?.meta.vectorClock;
+      case SyncSequencePayloadType.entryLink:
+        final link = await _journalDb.entryLinkById(payloadId);
+        return link?.vectorClock;
+      case SyncSequencePayloadType.agentEntity:
+        return (await agentRepository?.getEntity(payloadId))?.vectorClock;
+      case SyncSequencePayloadType.agentLink:
+        return (await agentRepository?.getLinkById(payloadId))?.vectorClock;
+    }
+  }
+
+  /// When the VC doesn't contain the exact counter, decide whether to send
+  /// a hint (VC is ahead, so the entry supersedes the counter) or an
+  /// unresolvable response (VC is behind, so the mapping is permanently
+  /// wrong and will never self-heal).
+  Future<void> _sendHintOrUnresolvable({
+    required String hostId,
+    required int counter,
+    required String payloadId,
+    required SyncSequencePayloadType payloadType,
+    required int? vcCounter,
+    String? legacyEntryId,
+  }) async {
+    final myHost = await _vectorClockService.getHost();
+    if (myHost != null &&
+        hostId == myHost &&
+        (vcCounter == null || vcCounter < counter)) {
+      _trace(
+        'VC permanently behind counter, sending unresolvable '
+        'hostId=$hostId counter=$counter '
+        'payloadId=$payloadId vcCounter=$vcCounter',
+        subDomain: 'backfill.vcBehind',
+      );
+      await _sendUnresolvableResponse(
+        hostId: hostId,
+        counter: counter,
+        payloadType: payloadType,
+      );
+      return;
+    }
+
+    await _outboxService.enqueueMessage(
+      SyncMessage.backfillResponse(
+        hostId: hostId,
+        counter: counter,
+        deleted: false,
+        entryId: legacyEntryId,
+        payloadType: payloadType,
+        payloadId: payloadId,
+      ),
+    );
+  }
+
   /// Attempt to verify a payload exists locally and mark as backfilled.
   /// Loads the payload using [loadPayload], extracts its vector clock using
   /// [getVectorClock], and verifies/marks backfilled if found.
@@ -329,14 +391,51 @@ class BackfillResponseHandler {
       );
 
       if (covering != null && covering.entryId != null) {
-        _trace(
-          'exact counter not found, using covering entry '
-          'hostId=$hostId requestedCounter=$counter '
-          'coveringCounter=${covering.counter} '
-          'payloadId=${covering.entryId}',
-          subDomain: 'backfill.coveringFallback',
+        // Verify the covering entry's payload VC actually covers the
+        // requested counter. Without this, the nearest higher counter
+        // might map to a completely unrelated entity, creating a
+        // permanently unresolvable loop where the hint is stored but
+        // verification always fails.
+        final coveringVc = await _loadPayloadVectorClock(
+          payloadId: covering.entryId!,
+          payloadType: SyncSequencePayloadType.values.elementAt(
+            covering.payloadType,
+          ),
         );
-        logEntry = covering;
+        final coveringVcCounter = coveringVc?.vclock[hostId];
+
+        if (coveringVcCounter != null && coveringVcCounter >= counter) {
+          _trace(
+            'exact counter not found, using verified covering entry '
+            'hostId=$hostId requestedCounter=$counter '
+            'coveringCounter=${covering.counter} '
+            'coveringVcCounter=$coveringVcCounter '
+            'payloadId=${covering.entryId}',
+            subDomain: 'backfill.coveringFallback',
+          );
+          logEntry = covering;
+        } else {
+          _trace(
+            'covering entry VC does not cover counter, rejecting '
+            'hostId=$hostId requestedCounter=$counter '
+            'coveringCounter=${covering.counter} '
+            'payloadId=${covering.entryId} '
+            'coveringVcCounter=$coveringVcCounter',
+            subDomain: 'backfill.coveringRejected',
+          );
+          final myHost = await _vectorClockService.getHost();
+          if (myHost != null && hostId == myHost) {
+            await _sendUnresolvableResponse(
+              hostId: hostId,
+              counter: counter,
+              payloadType: SyncSequencePayloadType.values.elementAt(
+                covering.payloadType,
+              ),
+            );
+            return true;
+          }
+          return false;
+        }
       } else {
         // No covering entry found either
         final myHost = await _vectorClockService.getHost();
@@ -422,22 +521,13 @@ class BackfillResponseHandler {
         final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
         if (!vcContainsCounter) {
-          // VC doesn't contain the exact counter — the entry was modified
-          // since this counter was created (superseded by a later VC).
-          // Send a hint with payloadId so the receiver can map
-          // (hostId, counter) → payloadId and mark it as backfilled.
-          // This applies equally for own and foreign counters — previously
-          // own counters were incorrectly marked "unresolvable" which
-          // prevented resolution and caused amplification loops.
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
-              hostId: hostId,
-              counter: counter,
-              deleted: false,
-              entryId: payloadId, // legacy compatibility (journal only)
-              payloadType: payloadType,
-              payloadId: payloadId,
-            ),
+          await _sendHintOrUnresolvable(
+            hostId: hostId,
+            counter: counter,
+            payloadId: payloadId,
+            payloadType: payloadType,
+            vcCounter: vcCounter,
+            legacyEntryId: payloadId,
           );
         }
 
@@ -473,16 +563,12 @@ class BackfillResponseHandler {
         final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
         if (!vcContainsCounter) {
-          // Send hint — same logic as journalEntity above.
-          // No legacy entryId field — entryLink was added after payloadId.
-          await _outboxService.enqueueMessage(
-            SyncMessage.backfillResponse(
-              hostId: hostId,
-              counter: counter,
-              deleted: false,
-              payloadType: payloadType,
-              payloadId: payloadId,
-            ),
+          await _sendHintOrUnresolvable(
+            hostId: hostId,
+            counter: counter,
+            payloadId: payloadId,
+            payloadType: payloadType,
+            vcCounter: vcCounter,
           );
         }
 
@@ -573,14 +659,12 @@ class BackfillResponseHandler {
     final vcContainsCounter = vcCounter != null && vcCounter == counter;
 
     if (!vcContainsCounter) {
-      await _outboxService.enqueueMessage(
-        SyncMessage.backfillResponse(
-          hostId: hostId,
-          counter: counter,
-          deleted: false,
-          payloadType: payloadType,
-          payloadId: payloadId,
-        ),
+      await _sendHintOrUnresolvable(
+        hostId: hostId,
+        counter: counter,
+        payloadId: payloadId,
+        payloadType: payloadType,
+        vcCounter: vcCounter,
       );
     }
 
