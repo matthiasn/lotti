@@ -140,10 +140,10 @@ void main() {
       test('backfill constants have expected values', () {
         expect(
           SyncTuning.backfillRequestInterval,
-          const Duration(minutes: 5),
+          const Duration(minutes: 2),
         );
         expect(SyncTuning.backfillMaxRequestCount, 10);
-        expect(SyncTuning.backfillProcessingBatchSize, 50);
+        expect(SyncTuning.backfillProcessingBatchSize, 100);
       });
 
       test('default backfill limits have expected values', () {
