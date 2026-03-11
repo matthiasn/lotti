@@ -83,13 +83,22 @@ class AutomaticPromptTrigger {
             );
 
             unawaited(
-              ref.read(
-                triggerNewInferenceProvider((
-                  entityId: entryId,
-                  promptId: promptId,
-                  linkedEntityId: linkedTaskId,
-                )).future,
-              ),
+              ref
+                  .read(
+                    triggerNewInferenceProvider((
+                      entityId: entryId,
+                      promptId: promptId,
+                      linkedEntityId: linkedTaskId,
+                    )).future,
+                  )
+                  .catchError((Object error, StackTrace stackTrace) {
+                    loggingService.captureException(
+                      error,
+                      domain: 'automatic_prompt_trigger',
+                      subDomain: 'triggerAutomaticPrompts',
+                      stackTrace: stackTrace,
+                    );
+                  }),
             );
           }
         }

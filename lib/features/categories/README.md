@@ -80,9 +80,8 @@ class CategoryDefinition {
   final Map<String, List<String>>? automaticPrompts;
   // Example:
   // {
-  //   'audioTranscription': ['audio_transcription'],  // Currently limited to 1 prompt
-  //   'imageAnalysis': ['extract-text'],               // Future: may support multiple
-  //   'imageAnalysis': ['weekly-report']                // prompts running in sequence
+  //   'audioTranscription': ['audio_transcription'],        // Currently limited to 1 prompt
+  //   'imageAnalysis': ['extract-text', 'weekly-report']   // Future: prompts in sequence
   // }
 }
 ```
