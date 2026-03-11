@@ -363,15 +363,17 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         );
       }
 
-      // Running counter across all chunks so that tool calls arriving in
-      // separate stream chunks get distinct indices even when Ollama omits
-      // both `id` and `index` fields.
+      // Running counter for tool calls that have no explicit index.
       var toolCallCounter = 0;
 
       // Maps raw Ollama indices to dense 0-based indices. Downstream code
       // treats the index as an array position, so sparse values (e.g. 5, 7)
       // would break merging.
       final indexRemap = <int, int>{};
+
+      // Maps tool-call IDs to their assigned dense index so that
+      // continuation chunks (which may omit `index`) merge correctly.
+      final idToIndex = <String, int>{};
 
       // Process streaming response
       await for (final chunk
@@ -425,19 +427,38 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   name: 'OllamaInferenceRepository',
                 );
 
-                // Use the index from the Ollama response (not the loop
-                // variable) so that tool calls streamed in separate chunks
-                // get distinct indices and aren't merged by the accumulator.
-                // Check both the tool-call level and the function sub-object
-                // to handle varying Ollama response formats.
-                final rawIndex =
+                // Resolve a stable dense index for this tool call.
+                //
+                // Priority:
+                // 1. If we've seen this id before, reuse its dense index
+                //    (handles continuation chunks that omit index).
+                // 2. Explicit index from Ollama (tool-call or function level),
+                //    remapped to dense 0-based.
+                // 3. Running counter for calls with neither id nor index.
+                final toolId = toolCall['id'] as String?;
+                final explicitIndex =
                     (toolCall['index'] as int?) ??
-                    (functionCall['index'] as int?) ??
-                    toolCallCounter;
-                toolCallCounter++;
-                // Remap to dense 0-based sequence for downstream consumers.
-                final denseIndex =
-                    indexRemap.putIfAbsent(rawIndex, () => indexRemap.length);
+                    (functionCall['index'] as int?);
+
+                int denseIndex;
+                if (toolId != null && idToIndex.containsKey(toolId)) {
+                  denseIndex = idToIndex[toolId]!;
+                } else if (explicitIndex != null) {
+                  denseIndex = indexRemap.putIfAbsent(
+                    explicitIndex,
+                    () => indexRemap.length,
+                  );
+                } else {
+                  denseIndex = indexRemap.putIfAbsent(
+                    toolCallCounter,
+                    () => indexRemap.length,
+                  );
+                  toolCallCounter++;
+                }
+
+                if (toolId != null) {
+                  idToIndex[toolId] = denseIndex;
+                }
                 toolCallsList.add({
                   'index': denseIndex,
                   if (toolCall['id'] != null) 'id': toolCall['id'],

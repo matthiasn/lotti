@@ -1594,6 +1594,106 @@ void main() {
     );
 
     test(
+      'continuation chunk without index merges with initial chunk by id',
+      () async {
+        // First chunk has id + index, second chunk has same id but no index.
+        // Both should get the same dense index so they merge downstream.
+        final messages = [
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Test'),
+          ),
+        ];
+
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.fromIterable([
+              // Initial chunk with index 3 and id
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'index': 3,
+                        'id': 'call_cont',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': '{"key":',
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              // Continuation chunk: same id, no index
+              utf8.encode(
+                '${jsonEncode({
+                  'message': {
+                    'tool_calls': [
+                      {
+                        'id': 'call_cont',
+                        'function': {
+                          'name': 'fn_a',
+                          'arguments': '"value"}',
+                        },
+                      },
+                    ],
+                  },
+                  'done': false,
+                })}\n',
+              ),
+              utf8.encode('${jsonEncode({'done': true})}\n'),
+            ]),
+          ),
+        );
+
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        final responses = await repository
+            .generateTextWithMessages(
+              messages: messages,
+              model: 'test-model',
+              temperature: 0.7,
+              provider: provider,
+              tools: [
+                const ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(
+                    name: 'fn_a',
+                    description: 'A',
+                  ),
+                ),
+              ],
+            )
+            .toList();
+
+        // Two chunks emitted
+        expect(responses.length, 2);
+        final firstIndex =
+            responses[0].choices!.first.delta!.toolCalls!.first.index;
+        final secondIndex =
+            responses[1].choices!.first.delta!.toolCalls!.first.index;
+        // Both should have the same dense index (0) for merging
+        expect(firstIndex, 0);
+        expect(secondIndex, 0);
+      },
+    );
+
+    test(
       'remaps sparse Ollama indices to dense 0-based sequence',
       () async {
         final messages = [
