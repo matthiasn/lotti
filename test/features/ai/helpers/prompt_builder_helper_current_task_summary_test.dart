@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -11,6 +14,14 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+
+/// Agent repository that always returns empty links, so the resolver
+/// falls back to legacy AI response entries.
+class _EmptyAgentRepository extends Fake implements AgentRepository {
+  @override
+  Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) async =>
+      [];
+}
 
 void main() {
   late PromptBuilderHelper promptBuilder;
@@ -143,6 +154,7 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: mockJournalRepository,
+      taskSummaryResolver: TaskSummaryResolver(_EmptyAgentRepository()),
     );
   });
 

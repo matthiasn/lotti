@@ -11,6 +11,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
@@ -22,6 +24,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
@@ -65,9 +68,15 @@ class PreparedAudio {
 class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now {
+    final resolver = TaskSummaryResolver(
+      getIt.isRegistered<AgentDatabase>()
+          ? AgentRepository(getIt<AgentDatabase>())
+          : null,
+    );
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
+      taskSummaryResolver: resolver,
     );
   }
 

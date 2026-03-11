@@ -3,11 +3,14 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
@@ -286,6 +289,11 @@ class ImageGenerationController extends _$ImageGenerationController {
     return PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
+      taskSummaryResolver: TaskSummaryResolver(
+        getIt.isRegistered<AgentDatabase>()
+            ? AgentRepository(getIt<AgentDatabase>())
+            : null,
+      ),
     );
   }
 

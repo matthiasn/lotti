@@ -544,7 +544,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         final promptConfigs =
             prompts
                 .whereType<AiConfigPrompt>()
-                .where((p) => !p.archived)
+                .where(
+                  (p) => !p.archived && !p.aiResponseType.isLegacyType,
+                )
                 .toList()
               ..sort((a, b) => a.name.compareTo(b.name));
 

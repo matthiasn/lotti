@@ -5,6 +5,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -43,7 +44,10 @@ void main() {
     );
 
     final ref = container.read(testRefProvider);
-    repository = AiInputRepository(ref);
+    repository = AiInputRepository(
+      ref,
+      taskSummaryResolver: TaskSummaryResolver(null),
+    );
   });
 
   tearDown(() {

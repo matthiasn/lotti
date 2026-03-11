@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/get_it.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -14,15 +16,22 @@ part 'task_summary_repository.g.dart';
 TaskSummaryRepository taskSummaryRepository(Ref ref) {
   return TaskSummaryRepository(
     journalDb: getIt<JournalDb>(),
+    taskSummaryResolver: TaskSummaryResolver(
+      getIt.isRegistered<AgentDatabase>()
+          ? AgentRepository(getIt<AgentDatabase>())
+          : null,
+    ),
   );
 }
 
 class TaskSummaryRepository {
   TaskSummaryRepository({
     required this.journalDb,
+    required this.taskSummaryResolver,
   });
 
   final JournalDb journalDb;
+  final TaskSummaryResolver taskSummaryResolver;
 
   Future<List<TaskSummaryResult>> getTaskSummaries({
     required String categoryId,
@@ -129,62 +138,25 @@ class TaskSummaryRepository {
     // Bulk fetch linked entities for all tasks to avoid N+1 queries
     final bulkLinkedEntities = await journalDb.getBulkLinkedEntities(taskIds);
 
-    // Process each task with its pre-fetched linked entities
+    // Process each task: resolve summary via agent report → legacy fallback
     for (final task in tasksToProcess) {
       final linkedEntitiesForTask = bulkLinkedEntities[task.meta.id] ?? [];
+      final statusName = task.data.status.toDbString;
 
-      // Filter for AI response entries that are task summaries
-      final aiResponses = <JournalEntity>[];
-      for (final linkedEntity in linkedEntitiesForTask) {
-        if (linkedEntity is AiResponseEntry) {
-          final aiData = linkedEntity.data;
-          // ignore: deprecated_member_use_from_same_package
-          if (aiData.type == AiResponseType.taskSummary) {
-            aiResponses.add(linkedEntity);
-          }
-        }
-      }
+      final summary = await taskSummaryResolver.resolve(
+        task.meta.id,
+        linkedEntities: linkedEntitiesForTask,
+      );
 
-      if (aiResponses.isNotEmpty) {
-        // Sort by date to get the most recent
-        aiResponses.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
-
-        final latestSummary = aiResponses.first;
-        if (latestSummary is AiResponseEntry) {
-          final aiData = latestSummary.data;
-
-          // Get task status name
-          final statusName = task.data.status.toDbString;
-
-          results.add(
-            TaskSummaryResult(
-              taskId: task.meta.id,
-              taskTitle: task.data.title,
-              summary: aiData.response,
-              taskDate: task.meta.dateFrom,
-              status: statusName,
-              metadata: {
-                'model': aiData.model,
-                'promptId': aiData.promptId ?? '',
-                'generatedAt': latestSummary.meta.dateFrom.toIso8601String(),
-              },
-            ),
-          );
-        }
-      } else {
-        // No AI summary available, create a basic summary
-        final statusName = task.data.status.toDbString;
-
-        results.add(
-          TaskSummaryResult(
-            taskId: task.meta.id,
-            taskTitle: task.data.title,
-            summary: 'No AI summary available for this task.',
-            taskDate: task.meta.dateFrom,
-            status: statusName,
-          ),
-        );
-      }
+      results.add(
+        TaskSummaryResult(
+          taskId: task.meta.id,
+          taskTitle: task.data.title,
+          summary: summary ?? 'No AI summary available for this task.',
+          taskDate: task.meta.dateFrom,
+          status: statusName,
+        ),
+      );
     }
 
     return results;

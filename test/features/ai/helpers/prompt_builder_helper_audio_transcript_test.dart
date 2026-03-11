@@ -164,6 +164,7 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: mockJournalRepository,
+      taskSummaryResolver: MockTaskSummaryResolver(),
     );
   });
 

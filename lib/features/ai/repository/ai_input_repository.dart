@@ -6,8 +6,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
-import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
@@ -34,10 +36,14 @@ part 'ai_input_repository.g.dart';
 /// - Time spent and latest summaries are derived from this pre-fetched data
 /// - Labels are resolved via O(1) cache lookups from [EntitiesCacheService]
 class AiInputRepository {
-  AiInputRepository(this.ref);
+  AiInputRepository(
+    this.ref, {
+    required TaskSummaryResolver taskSummaryResolver,
+  }) : _taskSummaryResolver = taskSummaryResolver;
 
   final JournalDb _db = getIt<JournalDb>();
   final Ref ref;
+  final TaskSummaryResolver _taskSummaryResolver;
 
   Future<JournalEntity?> getEntity(String id) async {
     return _db.journalEntityById(id);
@@ -291,8 +297,7 @@ class AiInputRepository {
   /// For each task, the method:
   /// 1. Calculates time spent by summing durations of non-Task, non-AiResponse
   ///    linked entities
-  // ignore: deprecated_member_use_from_same_package
-  /// 2. Finds the latest [AiResponseType.taskSummary] from linked AI responses
+  /// 2. Finds the latest task summary (agent report or legacy AI response)
   /// 3. Resolves labels via O(1) cache lookups
   Future<List<AiLinkedTaskContext>> _buildLinkedTaskContextsBatched(
     List<Task> tasks,
@@ -313,8 +318,11 @@ class AiInputRepository {
       // Calculate time spent from linked entities (non-Task, non-AiResponseEntry)
       final timeSpent = _calculateTimeSpentFromEntities(linkedEntities);
 
-      // Get latest summary from linked AiResponseEntry items
-      final latestSummary = _getLatestSummaryFromEntities(linkedEntities);
+      // Get latest summary: tries agent report first, then legacy AI response
+      final latestSummary = await _taskSummaryResolver.resolve(
+        task.id,
+        linkedEntities: linkedEntities,
+      );
 
       // Get labels from cache (O(1) per label)
       final labelIds = task.meta.labelIds ?? const <String>[];
@@ -351,27 +359,8 @@ class AiInputRepository {
     return TaskProgressRepository.sumTimeSpentFromEntities(entities);
   }
 
-  /// Get the latest AI summary from a list of pre-fetched linked entities.
-  ///
-  /// Part of the batched query strategy: operates on entities already fetched
-  /// by [_buildLinkedTaskContextsBatched], avoiding additional database calls.
-  ///
-  // ignore: deprecated_member_use_from_same_package
-  /// Filters for [AiResponseEntry] items with [AiResponseType.taskSummary],
-  /// sorts by date descending, and returns the response text from the most
-  /// recent one. Returns `null` if no summaries exist.
-  String? _getLatestSummaryFromEntities(List<JournalEntity> entities) {
-    final summaries =
-        entities
-            .whereType<AiResponseEntry>()
-            // ignore: deprecated_member_use_from_same_package
-            .where((e) => e.data.type == AiResponseType.taskSummary)
-            .toList()
-          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
-
-    if (summaries.isEmpty) return null;
-    return summaries.first.data.response;
-  }
+  // Legacy `_getLatestSummaryFromEntities` removed — summary resolution
+  // (agent report → legacy AI response) is now handled by TaskSummaryResolver.
 
   /// Build the full linked tasks JSON for a task.
   ///
@@ -399,5 +388,12 @@ class AiInputRepository {
 
 @Riverpod(keepAlive: true)
 AiInputRepository aiInputRepository(Ref ref) {
-  return AiInputRepository(ref);
+  return AiInputRepository(
+    ref,
+    taskSummaryResolver: TaskSummaryResolver(
+      getIt.isRegistered<AgentDatabase>()
+          ? AgentRepository(getIt<AgentDatabase>())
+          : null,
+    ),
+  );
 }

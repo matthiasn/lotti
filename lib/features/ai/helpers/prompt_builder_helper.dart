@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -47,10 +48,12 @@ class PromptBuilderHelper {
   PromptBuilderHelper({
     required this.aiInputRepository,
     required this.journalRepository,
+    required this.taskSummaryResolver,
   });
 
   final AiInputRepository aiInputRepository;
   final JournalRepository journalRepository;
+  final TaskSummaryResolver taskSummaryResolver;
   LoggingService? get _loggingService =>
       getIt.isRegistered<LoggingService>() ? getIt<LoggingService>() : null;
 
@@ -296,21 +299,18 @@ class PromptBuilderHelper {
       return '[No task summary available]';
     }
 
-    // Get linked entities for the task to find AI summaries
+    // Get linked entities for legacy fallback
     final linkedEntities = await journalRepository.getLinkedToEntities(
       linkedTo: taskId,
     );
 
-    // Filter for AiResponseEntry items with taskSummary type, sort by date
-    final summaries =
-        linkedEntities
-            .whereType<AiResponseEntry>()
-            // ignore: deprecated_member_use_from_same_package
-            .where((e) => e.data.type == AiResponseType.taskSummary)
-            .toList()
-          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    // Use resolver: tries agent report first, then legacy AI summary
+    final summary = await taskSummaryResolver.resolve(
+      taskId,
+      linkedEntities: linkedEntities,
+    );
 
-    if (summaries.isEmpty) {
+    if (summary == null) {
       developer.log(
         'No task summary found for task $taskId',
         name: 'PromptBuilderHelper',
@@ -318,12 +318,11 @@ class PromptBuilderHelper {
       return '[No task summary available]';
     }
 
-    final latestSummary = summaries.first.data.response;
     developer.log(
-      'Found task summary for $taskId (${latestSummary.length} chars)',
+      'Found task summary for $taskId (${summary.length} chars)',
       name: 'PromptBuilderHelper',
     );
-    return latestSummary;
+    return summary;
   }
 
   /// Get task JSON for a given entity

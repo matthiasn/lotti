@@ -24,6 +24,7 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: MockJournalRepository(),
+      taskSummaryResolver: MockTaskSummaryResolver(),
     );
 
     // Default stub for task JSON calls
@@ -748,6 +749,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -844,6 +846,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -942,6 +945,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -1016,6 +1020,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           // No linked task found
@@ -1136,6 +1141,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
+          taskSummaryResolver: MockTaskSummaryResolver(),
         );
 
         when(
@@ -1234,6 +1240,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           // No linked task
@@ -1287,6 +1294,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
+          taskSummaryResolver: MockTaskSummaryResolver(),
         );
 
         // Simulate an error when finding linked task
