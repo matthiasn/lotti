@@ -8284,6 +8284,30 @@ abstract class AppLocalizations {
   /// **'Add Label'**
   String get tasksAddLabelButton;
 
+  /// No description provided for @tasksAgentFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tasksAgentFilterAll;
+
+  /// No description provided for @tasksAgentFilterHasAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Has Agent'**
+  String get tasksAgentFilterHasAgent;
+
+  /// No description provided for @tasksAgentFilterNoAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'No Agent'**
+  String get tasksAgentFilterNoAgent;
+
+  /// No description provided for @tasksAgentFilterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get tasksAgentFilterTitle;
+
   /// No description provided for @tasksFilterTitle.
   ///
   /// In en, this message translates to:

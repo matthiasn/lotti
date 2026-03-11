@@ -528,7 +528,6 @@ void main() {
     });
   });
 
-
   group('Known Models Configuration', () {
     test('all known models should have valid configurations', () {
       for (final providerType in InferenceProviderType.values) {

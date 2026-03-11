@@ -1886,6 +1886,10 @@
     }
   },
   "tasksAddLabelButton": "Label hinzufügen",
+  "tasksAgentFilterAll": "Alle",
+  "tasksAgentFilterHasAgent": "Hat Agent",
+  "tasksAgentFilterNoAgent": "Kein Agent",
+  "tasksAgentFilterTitle": "Agent",
   "tasksFilterTitle": "Aufgabenfilter",
   "tasksLabelFilterAll": "Alle",
   "tasksLabelFilterTitle": "Labels",

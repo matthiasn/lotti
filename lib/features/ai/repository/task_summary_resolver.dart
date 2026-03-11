@@ -66,8 +66,7 @@ class TaskSummaryResolver {
 
       final tldr = report.tldr?.trim();
       final content = report.content.trim();
-      final summary =
-          (tldr != null && tldr.isNotEmpty) ? tldr : content;
+      final summary = (tldr != null && tldr.isNotEmpty) ? tldr : content;
       if (summary.isEmpty) return null;
 
       developer.log(

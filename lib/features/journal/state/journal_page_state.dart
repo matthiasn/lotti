@@ -21,6 +21,18 @@ enum SearchMode {
   vector,
 }
 
+/// Filter for agent assignment on tasks.
+enum AgentAssignmentFilter {
+  /// No filtering — show all tasks regardless of agent assignment.
+  all,
+
+  /// Only tasks that have an agent_task link.
+  hasAgent,
+
+  /// Only tasks that do NOT have an agent_task link.
+  noAgent,
+}
+
 /// Sort order options for task lists.
 enum TaskSortOption {
   /// Sort by priority first (P0 > P1 > P2 > P3), then by date within each priority
@@ -57,6 +69,8 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(true) bool showCoverArt,
     @Default(SearchMode.fullText) SearchMode searchMode,
     @Default(false) bool showDistances,
+    @Default(AgentAssignmentFilter.all)
+    AgentAssignmentFilter agentAssignmentFilter,
     @Default(false) bool enableVectorSearch,
     @Default(false) bool vectorSearchInFlight,
     Duration? vectorSearchElapsed,
@@ -82,6 +96,8 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
     @Default(false) bool showDistances,
+    @Default(AgentAssignmentFilter.all)
+    AgentAssignmentFilter agentAssignmentFilter,
   }) = _TasksFilter;
 
   factory TasksFilter.fromJson(Map<String, dynamic> json) =>

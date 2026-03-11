@@ -4620,6 +4620,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksAddLabelButton => 'Přidat štítek';
 
   @override
+  String get tasksAgentFilterAll => 'Vše';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Má agenta';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Bez agenta';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
   String get tasksFilterTitle => 'Filtr úkolů';
 
   @override

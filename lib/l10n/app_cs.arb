@@ -1658,6 +1658,10 @@
     }
   },
   "tasksAddLabelButton": "Přidat štítek",
+  "tasksAgentFilterAll": "Vše",
+  "tasksAgentFilterHasAgent": "Má agenta",
+  "tasksAgentFilterNoAgent": "Bez agenta",
+  "tasksAgentFilterTitle": "Agent",
   "tasksFilterTitle": "Filtr úkolů",
   "tasksLabelFilterAll": "Vše",
   "tasksLabelFilterTitle": "Štítky",

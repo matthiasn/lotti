@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_agent_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_cover_art_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
@@ -34,6 +35,7 @@ class TaskFilterContent extends StatelessWidget {
         TaskPriorityFilter(),
         TaskCategoryFilter(),
         TaskLabelFilter(),
+        TaskAgentFilter(),
         SizedBox(height: 10),
         Divider(),
         SizedBox(height: 10),

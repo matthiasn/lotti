@@ -4709,6 +4709,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tasksAddLabelButton => 'Añadir etiqueta';
 
   @override
+  String get tasksAgentFilterAll => 'Todos';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Con agente';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Sin agente';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agente';
+
+  @override
   String get tasksFilterTitle => 'Filtro de tareas';
 
   @override

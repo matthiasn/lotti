@@ -55,4 +55,4 @@ final class TaskSummaryRepositoryProvider
 }
 
 String _$taskSummaryRepositoryHash() =>
-    r'05c285360a8a32659f6d08fbf8cc623dccb91250';
+    r'cc24e3cf1f46f2390ae59378d940127075e7d99d';

@@ -2048,6 +2048,95 @@ void main() {
     });
   });
 
+  group('getTaskIdsWithAgentLink', () {
+    test('returns task IDs that have agent_task links', () async {
+      await repo.upsertLink(
+        model.AgentLink.agentTask(
+          id: 'link-task-1',
+          fromId: testAgentId,
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+      await repo.upsertLink(
+        model.AgentLink.agentTask(
+          id: 'link-task-2',
+          fromId: otherAgentId,
+          toId: 'task-002',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      final ids = await repo.getTaskIdsWithAgentLink();
+
+      expect(ids, {'task-001', 'task-002'});
+    });
+
+    test('returns empty set when no agent_task links exist', () async {
+      // Insert a non-agent_task link
+      await repo.upsertLink(makeBasicLink());
+
+      final ids = await repo.getTaskIdsWithAgentLink();
+
+      expect(ids, isEmpty);
+    });
+
+    test('excludes soft-deleted agent_task links', () async {
+      await repo.upsertLink(
+        model.AgentLink.agentTask(
+          id: 'link-task-deleted',
+          fromId: testAgentId,
+          toId: 'task-deleted',
+          createdAt: testDate,
+          updatedAt: testDate,
+          deletedAt: testDate,
+          vectorClock: null,
+        ),
+      );
+
+      final ids = await repo.getTaskIdsWithAgentLink();
+
+      expect(ids, isEmpty);
+    });
+
+    test(
+      'returns distinct task IDs when multiple agents link to same task',
+      () async {
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'link-task-a1',
+            fromId: testAgentId,
+            toId: 'task-shared',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+        // Different agent linking to same task — unique constraint (from_id, to_id, type)
+        // means this must have a different fromId
+        await repo.upsertLink(
+          model.AgentLink.agentTask(
+            id: 'link-task-a2',
+            fromId: otherAgentId,
+            toId: 'task-shared',
+            createdAt: testDate,
+            updatedAt: testDate,
+            vectorClock: null,
+          ),
+        );
+
+        final ids = await repo.getTaskIdsWithAgentLink();
+
+        expect(ids, {'task-shared'});
+        expect(ids.length, 1);
+      },
+    );
+  });
+
   group('getTokenUsageForTemplate', () {
     const templateId = 'tpl-001';
     const agentA = 'agent-A';

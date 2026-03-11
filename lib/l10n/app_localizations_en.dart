@@ -4558,6 +4558,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksAddLabelButton => 'Add Label';
 
   @override
+  String get tasksAgentFilterAll => 'All';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Has Agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'No Agent';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
   String get tasksFilterTitle => 'Tasks Filter';
 
   @override

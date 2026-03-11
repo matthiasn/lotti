@@ -2033,6 +2033,10 @@
     }
   },
   "tasksAddLabelButton": "Add Label",
+  "tasksAgentFilterAll": "All",
+  "tasksAgentFilterHasAgent": "Has Agent",
+  "tasksAgentFilterNoAgent": "No Agent",
+  "tasksAgentFilterTitle": "Agent",
   "tasksFilterTitle": "Tasks Filter",
   "tasksLabelFilterAll": "All",
   "tasksLabelFilterTitle": "Labels",

@@ -166,3 +166,5 @@ countAgentEntitiesWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_entitie
 getAgentLinksWithNullVectorClock: SELECT * FROM agent_links WHERE json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
 
 countAgentLinksWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_links WHERE json_extract(serialized, '$.vectorClock') IS NULL;
+
+getAgentTaskLinkToIds: SELECT DISTINCT to_id FROM agent_links WHERE type = 'agent_task' AND deleted_at IS NULL;

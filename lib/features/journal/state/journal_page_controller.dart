@@ -9,6 +9,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
@@ -72,6 +74,8 @@ class JournalPageController extends _$JournalPageController {
   bool _showDueDate = true;
   bool _showCoverArt = true;
   bool _showDistances = false;
+  AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
+  Set<String>? _cachedAgentLinkedIds;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -314,6 +318,7 @@ class JournalPageController extends _$JournalPageController {
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
       showDistances: _showDistances,
+      agentAssignmentFilter: _agentAssignmentFilter,
       searchMode: _searchMode,
       enableVectorSearch: _enableVectorSearch,
     );
@@ -430,6 +435,12 @@ class JournalPageController extends _$JournalPageController {
     await persistTasksFilter();
   }
 
+  // Agent assignment filter handler
+  Future<void> setAgentAssignmentFilter(AgentAssignmentFilter filter) async {
+    _agentAssignmentFilter = filter;
+    await persistTasksFilter();
+  }
+
   // Sort option handlers
   Future<void> setSortOption(TaskSortOption option) async {
     _sortOption = option;
@@ -499,6 +510,7 @@ class JournalPageController extends _$JournalPageController {
         _showDueDate = tasksFilter.showDueDate;
         _showCoverArt = tasksFilter.showCoverArt;
         _showDistances = tasksFilter.showDistances;
+        _agentAssignmentFilter = tasksFilter.agentAssignmentFilter;
       } else {
         _selectedLabelIds = {};
         _selectedPriorities = {};
@@ -546,6 +558,9 @@ class JournalPageController extends _$JournalPageController {
       showDueDate: _showTasks && _showDueDate,
       showCoverArt: _showTasks && _showCoverArt,
       showDistances: _showTasks && _showDistances,
+      agentAssignmentFilter: _showTasks
+          ? _agentAssignmentFilter
+          : AgentAssignmentFilter.all,
     );
     final encodedFilter = jsonEncode(filter);
 
@@ -591,6 +606,7 @@ class JournalPageController extends _$JournalPageController {
   }
 
   Future<void> refreshQuery() async {
+    _cachedAgentLinkedIds = null;
     _emitState();
 
     if (state.pagingController == null) {
@@ -679,6 +695,13 @@ class JournalPageController extends _$JournalPageController {
           _sortOption == TaskSortOption.byDate ||
           _sortOption == TaskSortOption.byDueDate;
 
+      final agentFilterActive =
+          _agentAssignmentFilter != AgentAssignmentFilter.all;
+
+      // Over-fetch when agent filter is active since post-filtering
+      // will discard some results. When inactive, use normal page size.
+      final fetchLimit = agentFilterActive ? pageSize * 3 : pageSize;
+
       final res = await _db.getTasks(
         ids: ids,
         starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -687,16 +710,33 @@ class JournalPageController extends _$JournalPageController {
         labelIds: labelIds.toList(),
         priorities: priorities.toList(),
         sortByDate: sortByDateInDb,
-        limit: pageSize,
+        limit: fetchLimit,
         offset: pageKey,
       );
 
-      // Apply in-memory due date sorting if needed
-      if (_sortOption == TaskSortOption.byDueDate) {
-        return _sortByDueDate(res);
+      // When agent filter is inactive, skip agent DB entirely — zero overhead.
+      if (!agentFilterActive) {
+        if (_sortOption == TaskSortOption.byDueDate) {
+          return _sortByDueDate(res);
+        }
+        return res;
       }
 
-      return res;
+      // Agent filter is active: fetch linked IDs and post-filter.
+      final agentLinkedIds = await _getAgentLinkedTaskIds();
+      final filtered = res.where((entity) {
+        final hasLink = agentLinkedIds.contains(entity.meta.id);
+        return _agentAssignmentFilter == AgentAssignmentFilter.hasAgent
+            ? hasLink
+            : !hasLink;
+      }).toList();
+
+      // Sort before truncating so the page contains the correct items.
+      if (_sortOption == TaskSortOption.byDueDate) {
+        return _sortByDueDate(filtered).take(pageSize).toList();
+      }
+
+      return filtered.take(pageSize).toList();
     } else {
       return _db.getJournalEntities(
         types: types,
@@ -777,6 +817,17 @@ class JournalPageController extends _$JournalPageController {
       );
       return [];
     }
+  }
+
+  /// Fetches the set of task IDs that have an agent_task link.
+  /// Only called when the agent assignment filter is active.
+  /// Cached per refresh cycle to avoid repeated DB hits during pagination.
+  Future<Set<String>> _getAgentLinkedTaskIds() async {
+    if (_cachedAgentLinkedIds != null) return _cachedAgentLinkedIds!;
+    final repo = AgentRepository(getIt<AgentDatabase>());
+    final ids = await repo.getTaskIdsWithAgentLink();
+    _cachedAgentLinkedIds = ids;
+    return ids;
   }
 
   /// Sorts tasks by due date (soonest first, tasks without due dates at end).
