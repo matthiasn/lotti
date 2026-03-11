@@ -5,27 +5,48 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/ratings/state/session_ended_controller.dart';
+import 'package:lotti/features/ratings/ui/pulsating_rate_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
-class DurationWidget extends ConsumerWidget {
-  DurationWidget({
+class DurationWidget extends ConsumerStatefulWidget {
+  const DurationWidget({
     required this.item,
     required this.linkedFrom,
     super.key,
   });
 
-  final TimeService _timeService = getIt<TimeService>();
   final JournalEntity item;
   final JournalEntity? linkedFrom;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final provider = entryControllerProvider(id: item.meta.id);
+  ConsumerState<DurationWidget> createState() => _DurationWidgetState();
+}
+
+class _DurationWidgetState extends ConsumerState<DurationWidget> {
+  final TimeService _timeService = getIt<TimeService>();
+
+  /// Tracks whether this entry was actively recording in the previous
+  /// stream emission so we can detect the recording→stopped transition.
+  bool _wasRecording = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final entryId = item.meta.id;
+    final linkedFrom = widget.linkedFrom;
+    final provider = entryControllerProvider(id: entryId);
     final entry = ref.watch(provider).value?.entry;
+
+    final sessionJustEnded = ref.watch(
+      sessionEndedControllerProvider.select(
+        (ids) => ids.contains(entryId),
+      ),
+    );
 
     return StreamBuilder(
       stream: _timeService.getStream(),
@@ -54,6 +75,23 @@ class DurationWidget extends ConsumerWidget {
               displayed = recording;
               isRecording = true;
             }
+
+            // Detect recording→stopped transition and persist in provider
+            if (_wasRecording && !isRecording) {
+              final duration = DateTime.now().difference(item.meta.dateFrom);
+              if (duration >= const Duration(minutes: 1)) {
+                ref
+                    .read(sessionEndedControllerProvider.notifier)
+                    .markSessionEnded(entryId);
+              }
+            }
+            // Clear when a new recording starts on this entry
+            if (isRecording && !_wasRecording) {
+              ref
+                  .read(sessionEndedControllerProvider.notifier)
+                  .clearSessionEnded(entryId);
+            }
+            _wasRecording = isRecording;
 
             final labelColor = isRecording
                 ? context.colorScheme.error
@@ -89,6 +127,11 @@ class DurationWidget extends ConsumerWidget {
                         color: context.colorScheme.error,
                         onPressed: () {
                           if (entry != null) {
+                            // Clear immediately so the rate button hides
+                            // without waiting for the next stream tick
+                            ref
+                                .read(sessionEndedControllerProvider.notifier)
+                                .clearSessionEnded(entryId);
                             _timeService.start(entry, linkedFrom);
                           }
                         },
@@ -106,6 +149,13 @@ class DurationWidget extends ConsumerWidget {
                         },
                       ),
                     ),
+                    if (sessionJustEnded && !isRecording)
+                      Flexible(
+                        child: PulsatingRateButton(
+                          entryId: entryId,
+                          sessionJustEnded: sessionJustEnded,
+                        ),
+                      ),
                     const SizedBox(width: 15),
                   ],
                 ),

@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_event_service.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/labels/task_labels_wrapper.dart';
@@ -146,29 +145,6 @@ void main() {
     );
   }
 
-  testWidgets('ignores events for different taskId', (tester) async {
-    // Register event service for provider
-    final eventService = LabelAssignmentEventService();
-    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
-
-    final task = taskWithLabels(['existing']);
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pump();
-
-    // Publish assignment event for a DIFFERENT task
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'other-task-id', // Different task ID
-        assignedIds: ['label-1'],
-      ),
-    );
-
-    await tester.pump();
-
-    // No toast should be shown since taskId doesn't match
-    expect(find.text('Assigned:'), findsNothing);
-  });
-
   testWidgets('returns empty widget for non-Task entries', (tester) async {
     // Create a non-Task entry controller that returns null entry
     await tester.pumpWidget(
@@ -193,162 +169,6 @@ void main() {
     // Should render SizedBox.shrink() for non-Task
     expect(find.text('Add Label'), findsNothing);
     expect(find.byType(TaskLabelsWrapper), findsOneWidget);
-  });
-
-  testWidgets('shows toast and performs undo on AI assignment', (tester) async {
-    // Register event service for provider
-    final eventService = LabelAssignmentEventService();
-    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
-
-    // Ensure cache returns label definitions for names
-    when(() => cacheService.getLabelById('new-1')).thenReturn(
-      testLabelDefinition1.copyWith(id: 'new-1', name: 'New 1'),
-    );
-    when(() => cacheService.getLabelById('new-2')).thenReturn(
-      testLabelDefinition2.copyWith(id: 'new-2', name: 'New 2'),
-    );
-
-    // Stub removeLabel
-    when(
-      () => repository.removeLabel(
-        journalEntityId: any(named: 'journalEntityId'),
-        labelId: any(named: 'labelId'),
-      ),
-    ).thenAnswer((_) async => true);
-
-    final task = taskWithLabels(['existing']);
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pump();
-
-    // Publish assignment event
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'task-123',
-        assignedIds: ['new-1', 'new-2'],
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // Toast content uses chips; still shows prefix and individual labels
-    expect(find.text('Assigned:'), findsOneWidget);
-    expect(find.text('New 1'), findsOneWidget);
-    expect(find.text('New 2'), findsOneWidget);
-    expect(find.text('Undo'), findsOneWidget);
-
-    await tester.tap(find.text('Undo'));
-    await tester.pump();
-
-    verify(
-      () => repository.removeLabel(
-        journalEntityId: 'task-123',
-        labelId: 'new-1',
-      ),
-    ).called(1);
-    verify(
-      () => repository.removeLabel(
-        journalEntityId: 'task-123',
-        labelId: 'new-2',
-      ),
-    ).called(1);
-  });
-
-  testWidgets('snackbar uses primary color scheme with onPrimary text', (
-    tester,
-  ) async {
-    // Register event service for provider
-    final eventService = LabelAssignmentEventService();
-    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
-
-    // Ensure cache returns label definition
-    when(() => cacheService.getLabelById('label-1')).thenReturn(
-      testLabelDefinition1.copyWith(id: 'label-1', name: 'Test Label'),
-    );
-
-    final task = taskWithLabels([]);
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pump();
-
-    // Publish assignment event to trigger SnackBar
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'task-123',
-        assignedIds: ['label-1'],
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // Find the SnackBar widget
-    final snackBarFinder = find.byType(SnackBar);
-    expect(snackBarFinder, findsOneWidget);
-
-    // Verify "Assigned:" text is rendered with expected styling
-    final assignedTextFinder = find.text('Assigned:');
-    expect(assignedTextFinder, findsOneWidget);
-
-    // Get the Text widget and verify it uses onPrimary color
-    final textWidget = tester.widget<Text>(assignedTextFinder);
-    final theme = Theme.of(tester.element(assignedTextFinder));
-
-    expect(textWidget.style?.color, equals(theme.colorScheme.onPrimary));
-    expect(textWidget.style?.fontWeight, equals(FontWeight.w600));
-  });
-
-  testWidgets('handles rapid multiple assignments, showing latest toast', (
-    tester,
-  ) async {
-    // Register event service for provider
-    final eventService = LabelAssignmentEventService();
-    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
-
-    // Ensure cache returns label definitions
-    when(() => cacheService.getLabelById('label-1')).thenReturn(
-      testLabelDefinition1.copyWith(id: 'label-1', name: 'Label 1'),
-    );
-    when(() => cacheService.getLabelById('label-2')).thenReturn(
-      testLabelDefinition1.copyWith(id: 'label-2', name: 'Label 2'),
-    );
-    when(() => cacheService.getLabelById('label-3')).thenReturn(
-      testLabelDefinition2.copyWith(id: 'label-3', name: 'Label 3'),
-    );
-
-    final task = taskWithLabels(const []);
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pump();
-
-    // First event
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'task-123',
-        assignedIds: ['label-1'],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Verify first toast is showing
-    expect(find.text('Label 1'), findsOneWidget);
-
-    // Clear the first SnackBar to ensure clean state for second
-    ScaffoldMessenger.of(
-      tester.element(find.byType(Scaffold)),
-    ).clearSnackBars();
-    await tester.pump();
-
-    // Second event supersedes toast
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'task-123',
-        assignedIds: ['label-2', 'label-3'],
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    // Assert latest toast shows only the most recent assignment (via chip text)
-    expect(find.text('Assigned:'), findsOneWidget);
-    expect(find.text('Label 2'), findsOneWidget);
-    expect(find.text('Label 3'), findsOneWidget);
-    expect(find.text('Label 1'), findsNothing);
   });
 
   testWidgets('renders assigned labels as chips', (tester) async {
@@ -532,38 +352,6 @@ void main() {
     expect(find.text('Failed to update labels'), findsWidgets);
     // Modal should still be open
     expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
-  });
-
-  testWidgets('shows fallback toast text when cache misses label names', (
-    tester,
-  ) async {
-    // Register event service for provider
-    final eventService = LabelAssignmentEventService();
-    getIt.registerSingleton<LabelAssignmentEventService>(eventService);
-
-    // Cache returns null for these IDs (simulating cache miss)
-    when(() => cacheService.getLabelById('missing-1')).thenReturn(null);
-    when(() => cacheService.getLabelById('missing-2')).thenReturn(null);
-
-    final task = taskWithLabels(['existing']);
-    await tester.pumpWidget(buildWrapper(task));
-    await tester.pump();
-
-    // Publish assignment event with missing labels
-    eventService.publish(
-      const LabelAssignmentEvent(
-        taskId: 'task-123',
-        assignedIds: ['missing-1', 'missing-2'],
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // Should show fallback message (in Offstage for accessibility)
-    expect(
-      find.text('Assigned 2 label(s)', skipOffstage: false),
-      findsOneWidget,
-    );
   });
 
   testWidgets('search in selector filters labels', (tester) async {

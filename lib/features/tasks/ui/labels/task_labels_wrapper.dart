@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/state/label_assignment_event_provider.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
@@ -14,7 +12,6 @@ import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/cards/subtle_action_chip.dart';
 
 class TaskLabelsWrapper extends ConsumerWidget {
@@ -27,105 +24,8 @@ class TaskLabelsWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Listen for AI label assignment events to show toast with Undo
-    ref
-      ..listen(labelAssignmentEventsProvider, (previous, next) async {
-        final event = next.value;
-        if (event == null || event.taskId != taskId) return;
-        if (!context.mounted) return;
-        final cache = getIt<EntitiesCacheService>();
-        final messenger = ScaffoldMessenger.of(context);
-        final assignedLabelsForToast = event.assignedIds
-            .map(cache.getLabelById)
-            .whereType<LabelDefinition>()
-            .toList();
-
-        final assignedNames = assignedLabelsForToast
-            .map((l) => l.name)
-            .toList(growable: false);
-
-        final theme = Theme.of(context);
-        final colorScheme = theme.colorScheme;
-
-        // Build modern content: prefix + chips as in header
-        final content = Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                'Assigned:',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            // Allow chips to wrap on small screens
-            Expanded(
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: assignedLabelsForToast
-                    .map((label) => LabelChip(label: label))
-                    .toList(),
-              ),
-            ),
-          ],
-        );
-
-        // Fallback message when cache misses names (rare)
-        final fallbackText = assignedNames.isEmpty
-            ? 'Assigned ${event.assignedIds.length} label(s)'
-            : 'Assigned: ${assignedNames.join(', ')}';
-
-        messenger.showSnackBar(
-          SnackBar(
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            elevation: 6,
-            margin: EdgeInsets.only(
-              left: 12,
-              right: 12,
-              bottom: 12 + MediaQuery.of(context).padding.bottom,
-            ),
-            showCloseIcon: true,
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Primary visual content
-                content,
-                // Keep an accessible textual fallback to aid a11y and legacy tests
-                // while not visually prominent.
-                Offstage(
-                  child: Text(fallbackText),
-                ),
-              ],
-            ),
-            action: SnackBarAction(
-              label: 'Undo',
-              onPressed: () async {
-                final repo = ref.read(labelsRepositoryProvider);
-                for (final id in event.assignedIds) {
-                  await repo.removeLabel(journalEntityId: taskId, labelId: id);
-                }
-                // Log undo metrics
-                getIt<LoggingService>().captureEvent(
-                  'undo_triggered',
-                  domain: 'labels_ai_assignment',
-                  subDomain: 'ui',
-                );
-              },
-            ),
-          ),
-        );
-      })
-      // Watch label stream to rebuild when labels change
-      ..watch(labelsStreamProvider);
+    // Watch label stream to rebuild when labels change
+    ref.watch(labelsStreamProvider);
     final entryState = ref.watch(entryControllerProvider(id: taskId)).value;
     final task = entryState?.entry;
 

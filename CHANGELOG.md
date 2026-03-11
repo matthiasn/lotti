@@ -11,7 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   showing only unassigned tasks. Zero performance overhead when filter is off.
 
 ## [0.9.915] - 2026-03-11
+### Changed
+- Session rating: replaced the intrusive automatic rating modal (which popped
+  up when a timer stopped) with a non-blocking pulsating "Rate Session" outline
+  button next to the timer. The button pulses for ~10 seconds, then stays
+  visible until a rating is saved. Rating remains accessible from the
+  triple-dot menu.
+
 ### Removed
+- Label assignment snackbar/toaster — no longer needed since label assignments
+  are now confirmed individually via change sets.
+- Automatic rating modal trigger on timer stop — replaced by the pulsating
+  rate button (see Changed above).
 - Legacy checklist updates prompt and task summary system — all conversation-
   based processing code, UI widgets, and associated tests have been removed.
   Task summaries are now handled exclusively by the agent system.
