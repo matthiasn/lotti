@@ -15,6 +15,9 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -28,6 +31,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../mocks/mocks.dart';
+
+final _testDate = DateTime(2024, 3, 15);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -850,6 +855,103 @@ void main() {
           async.flushMicrotasks();
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byPriority));
+        });
+      });
+    });
+
+    group('Filter Management - Agent Assignment', () {
+      late AgentDatabase agentDbForFilter;
+
+      setUp(() {
+        agentDbForFilter = AgentDatabase(
+          inMemoryDatabase: true,
+          background: false,
+        );
+        getIt.registerSingleton<AgentDatabase>(agentDbForFilter);
+      });
+
+      tearDown(() async {
+        await agentDbForFilter.close();
+      });
+
+      test('setAgentAssignmentFilter updates to hasAgent', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(
+            state.agentAssignmentFilter,
+            equals(AgentAssignmentFilter.hasAgent),
+          );
+        });
+      });
+
+      test('setAgentAssignmentFilter updates to noAgent', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(
+            state.agentAssignmentFilter,
+            equals(AgentAssignmentFilter.noAgent),
+          );
+        });
+      });
+
+      test('setAgentAssignmentFilter cycles back to all', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent)
+            ..setAgentAssignmentFilter(AgentAssignmentFilter.all);
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(
+            state.agentAssignmentFilter,
+            equals(AgentAssignmentFilter.all),
+          );
+        });
+      });
+
+      test('default agentAssignmentFilter is all', () {
+        fakeAsync((async) {
+          final state = container.read(journalPageControllerProvider(true));
+          expect(
+            state.agentAssignmentFilter,
+            equals(AgentAssignmentFilter.all),
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
         });
       });
     });
@@ -2852,6 +2954,274 @@ void main() {
               any(that: contains('"sortOption":"byDueDate"')),
             ),
           ).called(greaterThan(0));
+        });
+      });
+    });
+
+    group('Agent Assignment Filter Query', () {
+      late AgentDatabase agentDb;
+      late AgentRepository agentRepo;
+
+      final taskWithAgent = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status_1',
+            createdAt: DateTime(2024, 1, 1),
+            utcOffset: 0,
+          ),
+          title: 'Task with agent',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 1, 1),
+          dateTo: DateTime(2024, 1, 1),
+        ),
+        meta: Metadata(
+          id: 'task-with-agent',
+          createdAt: DateTime(2024, 1, 1),
+          dateFrom: DateTime(2024, 1, 1),
+          dateTo: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+        ),
+      );
+
+      final taskWithoutAgent = Task(
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status_2',
+            createdAt: DateTime(2024, 1, 2),
+            utcOffset: 0,
+          ),
+          title: 'Task without agent',
+          statusHistory: const [],
+          dateFrom: DateTime(2024, 1, 2),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+        meta: Metadata(
+          id: 'task-without-agent',
+          createdAt: DateTime(2024, 1, 2),
+          dateFrom: DateTime(2024, 1, 2),
+          dateTo: DateTime(2024, 1, 2),
+          updatedAt: DateTime(2024, 1, 2),
+        ),
+      );
+
+      setUp(() async {
+        agentDb = AgentDatabase(inMemoryDatabase: true, background: false);
+        agentRepo = AgentRepository(agentDb);
+        getIt.registerSingleton<AgentDatabase>(agentDb);
+
+        // Insert an agent_task link for 'task-with-agent'
+        await agentRepo.upsertLink(
+          AgentTaskLink(
+            id: 'link-1',
+            fromId: 'agent-001',
+            toId: 'task-with-agent',
+            createdAt: _testDate,
+            updatedAt: _testDate,
+            vectorClock: null,
+          ),
+        );
+
+        // Return both tasks from the journal DB
+        when(
+          () => mockJournalDb.getTasks(
+            ids: any(named: 'ids'),
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            labelIds: any(named: 'labelIds'),
+            priorities: any(named: 'priorities'),
+            sortByDate: any(named: 'sortByDate'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => [taskWithAgent, taskWithoutAgent]);
+      });
+
+      tearDown(() async {
+        await agentDb.close();
+      });
+
+      test('hasAgent filter returns only tasks with agent links', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-with-agent'));
+        });
+      });
+
+      test('noAgent filter returns only tasks without agent links', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-without-agent'));
+        });
+      });
+
+      test('all filter returns all tasks without agent DB access', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Default is 'all' — should return both tasks
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.all);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(2));
+        });
+      });
+
+      test(
+        'hasAgent with byDueDate sort applies both filter and sort',
+        () {
+          fakeAsync((async) {
+            final taskWithAgentAndDue = Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_3',
+                  createdAt: DateTime(2024, 1, 3),
+                  utcOffset: 0,
+                ),
+                title: 'Agent task with due',
+                statusHistory: const [],
+                dateFrom: DateTime(2024, 1, 3),
+                dateTo: DateTime(2024, 1, 3),
+                due: DateTime(2024, 6, 15),
+              ),
+              meta: Metadata(
+                id: 'task-with-agent',
+                createdAt: DateTime(2024, 1, 3),
+                dateFrom: DateTime(2024, 1, 3),
+                dateTo: DateTime(2024, 1, 3),
+                updatedAt: DateTime(2024, 1, 3),
+              ),
+            );
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer(
+              (_) async => [taskWithAgentAndDue, taskWithoutAgent],
+            );
+
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            controller
+              ..setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent)
+              ..setSortOption(TaskSortOption.byDueDate);
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            final items = container
+                .read(journalPageControllerProvider(true))
+                .pagingController
+                ?.value
+                .items;
+
+            expect(items, isNotNull);
+            expect(items!.length, equals(1));
+            expect(items.first.meta.id, equals('task-with-agent'));
+          });
+        },
+      );
+
+      test('over-fetches when agent filter is active', () {
+        fakeAsync((async) {
+          int? capturedLimit;
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((invocation) async {
+            capturedLimit = invocation.namedArguments[#limit] as int?;
+            return <JournalEntity>[];
+          });
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          // Over-fetch multiplier is 3x
+          expect(capturedLimit, equals(150));
         });
       });
     });
