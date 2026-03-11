@@ -54,6 +54,9 @@ class TaskSummaryResolver {
       );
       if (links.isEmpty) return null;
 
+      // Sort newest-first so we pick the most recently assigned agent
+      // (the drift query has no ORDER BY, so row order is undefined).
+      links.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       final agentId = links.first.fromId;
       final report = await repo.getLatestReport(
         agentId,
