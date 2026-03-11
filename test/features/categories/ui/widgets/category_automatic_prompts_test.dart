@@ -66,6 +66,7 @@ void main() {
             updatedAt: DateTime(2024, 1, 2),
             useReasoning: false,
             requiredInputData: const [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           )
           as AiConfigPrompt,
@@ -87,6 +88,7 @@ void main() {
         selectedPromptIds: const [],
       ),
       AutomaticPromptConfig(
+        // ignore: deprecated_member_use_from_same_package
         responseType: AiResponseType.taskSummary,
         title: 'Task Summary',
         icon: Icons.summarize_outlined,

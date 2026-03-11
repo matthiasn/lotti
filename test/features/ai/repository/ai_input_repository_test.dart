@@ -12,6 +12,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
@@ -171,7 +172,10 @@ void main() {
       // Build container and get ref
       container = containerBuilder.build();
       final ref = containerBuilder.getRef(container);
-      repository = AiInputRepository(ref);
+      repository = AiInputRepository(
+        ref,
+        taskSummaryResolver: TaskSummaryResolver(null),
+      );
 
       // Set default mock for taskProgressRepository if not overridden in tests
       when(

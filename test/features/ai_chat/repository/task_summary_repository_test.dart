@@ -8,6 +8,9 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -19,6 +22,19 @@ import 'package:mocktail/mocktail.dart';
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockSelectable<T> extends Mock implements Selectable<T> {}
+
+class _NoAgentResolver extends TaskSummaryResolver {
+  _NoAgentResolver() : super(_EmptyAgentRepository());
+}
+
+/// An [AgentRepository] that always returns empty results, simulating the
+/// case where no agent is assigned to a task (so the resolver falls back to
+/// legacy AI response entries).
+class _EmptyAgentRepository extends Fake implements AgentRepository {
+  @override
+  Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) async =>
+      [];
+}
 
 void main() {
   group('TaskSummaryRepository', () {
@@ -177,6 +193,7 @@ void main() {
         thoughts: 'User wants task summary',
         response: 'AI generated task summary',
         promptId: 'prompt-123',
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
       ),
     );
@@ -196,6 +213,7 @@ void main() {
         thoughts: 'User wants task summary',
         response: 'Older AI summary',
         promptId: 'prompt-old',
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
       ),
     );
@@ -218,7 +236,10 @@ void main() {
       }
       getIt.registerSingleton<JournalDb>(mockJournalDb);
 
-      repository = TaskSummaryRepository(journalDb: mockJournalDb);
+      repository = TaskSummaryRepository(
+        journalDb: mockJournalDb,
+        taskSummaryResolver: _NoAgentResolver(),
+      );
     });
 
     tearDown(getIt.reset);
@@ -291,8 +312,6 @@ void main() {
         expect(result.first.taskTitle, 'Test Task');
         expect(result.first.summary, 'AI generated task summary');
         expect(result.first.status, 'IN PROGRESS');
-        expect(result.first.metadata?['model'], 'gpt-4');
-        expect(result.first.metadata?['promptId'], 'prompt-123');
       });
 
       test('filters out journal entries with duration < 15 seconds', () async {
@@ -773,7 +792,6 @@ void main() {
           result.first.summary,
           'AI generated task summary',
         ); // Latest, not older
-        expect(result.first.metadata?['model'], 'gpt-4'); // Latest model
       });
 
       test('respects limit parameter', () async {
@@ -1108,6 +1126,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'Second task summary',
             promptId: 'prompt-456',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
         );
@@ -1203,11 +1222,9 @@ void main() {
 
         expect(task1Result.summary, 'AI generated task summary');
         expect(task1Result.status, 'IN PROGRESS');
-        expect(task1Result.metadata?['model'], 'gpt-4');
 
         expect(task2Result.summary, 'Second task summary');
         expect(task2Result.status, 'DONE');
-        expect(task2Result.metadata?['model'], 'claude-3');
       });
     });
 

@@ -22,6 +22,7 @@ void main() {
             updatedAt: DateTime(2024, 1, 2),
             useReasoning: false,
             requiredInputData: [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           )
           as AiConfigPrompt,
@@ -37,6 +38,7 @@ void main() {
             updatedAt: DateTime(2024, 1, 2),
             useReasoning: false,
             requiredInputData: [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.checklistUpdates,
           )
           as AiConfigPrompt,
@@ -266,6 +268,7 @@ void main() {
                     updatedAt: DateTime(2024, 1, 2),
                     useReasoning: false,
                     requiredInputData: [],
+                    // ignore: deprecated_member_use_from_same_package
                     aiResponseType: AiResponseType.taskSummary,
                   )
                   as AiConfigPrompt,
@@ -309,6 +312,7 @@ void main() {
                     updatedAt: DateTime(2024, 1, 2),
                     useReasoning: false,
                     requiredInputData: [],
+                    // ignore: deprecated_member_use_from_same_package
                     aiResponseType: AiResponseType.taskSummary,
                   )
                   as AiConfigPrompt,

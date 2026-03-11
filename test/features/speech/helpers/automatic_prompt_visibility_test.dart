@@ -26,7 +26,9 @@ void main() {
     test('speech hidden when no transcription prompts', () {
       final v = deriveAutomaticPromptVisibility(
         automaticPrompts: {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: ['c1'],
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary: ['s1'],
         },
       );
@@ -38,6 +40,7 @@ void main() {
       final v = deriveAutomaticPromptVisibility(
         automaticPrompts: {
           AiResponseType.audioTranscription: [], // empty list should not count
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.checklistUpdates: ['c1'],
         },
       );

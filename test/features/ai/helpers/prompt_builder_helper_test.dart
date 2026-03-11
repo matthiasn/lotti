@@ -1,24 +1,13 @@
 // ignore_for_file: avoid_redundant_argument_values
 
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/checklist_data.dart';
-import 'package:lotti/classes/checklist_item_data.dart';
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/conversions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -27,27 +16,15 @@ import '../../../mocks/mocks.dart';
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
-  late MockLabelsRepository mockLabelsRepository;
 
   setUpAll(() {
     registerFallbackValue(fallbackJournalEntity);
     mockAiInputRepository = MockAiInputRepository();
-    mockLabelsRepository = MockLabelsRepository();
-
-    // Stub labels repository to return empty lists by default
-    when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(
-      () => mockLabelsRepository.getLabelUsageCounts(),
-    ).thenAnswer((_) async => {});
-    when(
-      () => mockLabelsRepository.buildLabelTuples(any()),
-    ).thenAnswer((_) async => []);
 
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
-      checklistRepository: MockChecklistRepository(),
       journalRepository: MockJournalRepository(),
-      labelsRepository: mockLabelsRepository,
+      taskSummaryResolver: MockTaskSummaryResolver(),
     );
 
     // Default stub for task JSON calls
@@ -65,19 +42,11 @@ void main() {
     ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
   });
 
-  tearDown(() async {
+  tearDown(() {
     // Reset mocks to clear call history between tests
     reset(mockAiInputRepository);
-    reset(mockLabelsRepository);
 
     // Re-stub after reset
-    when(() => mockLabelsRepository.getAllLabels()).thenAnswer((_) async => []);
-    when(
-      () => mockLabelsRepository.getLabelUsageCounts(),
-    ).thenAnswer((_) async => {});
-    when(
-      () => mockLabelsRepository.buildLabelTuples(any()),
-    ).thenAnswer((_) async => []);
     when(
       () => mockAiInputRepository.buildTaskDetailsJson(
         id: any<String>(named: 'id'),
@@ -88,12 +57,6 @@ void main() {
         any<String>(),
       ),
     ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
-
-    if (getIt.isRegistered<JournalDb>()) {
-      final db = getIt<JournalDb>();
-      await db.close();
-      await getIt.reset();
-    }
   });
 
   group('PromptBuilderHelper', () {
@@ -109,9 +72,9 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
-          preconfiguredPromptId: 'checklist_updates',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         // Act
@@ -140,10 +103,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         // Act
@@ -157,7 +120,7 @@ void main() {
         );
 
         // Assert
-        final template = preconfiguredPrompts['checklist_updates']!;
+        final template = preconfiguredPrompts['audio_transcription']!;
         expect(systemMessage, equals(template.systemMessage));
         expect(userMessage, equals(template.userMessage));
       });
@@ -174,6 +137,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
           trackPreconfigured: true,
         );
@@ -202,6 +166,7 @@ void main() {
             createdAt: DateTime.now(),
             useReasoning: false,
             requiredInputData: [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
             trackPreconfigured: true,
             preconfiguredPromptId: 'non_existent_id',
@@ -219,386 +184,7 @@ void main() {
       );
     });
 
-    group('current entry injection', () {
-      test('injects JSON when linkedEntityId provided', () async {
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'),
-          ),
-        ).thenAnswer((_) async => null);
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-
-        final audioEntry = JournalAudio(
-          meta: Metadata(
-            id: 'audio-1',
-            createdAt: DateTime(2025, 1, 2, 3, 4, 5),
-            dateFrom: DateTime(2025, 1, 2, 3, 4, 5),
-            dateTo: DateTime(2025, 1, 2, 3, 4, 5),
-            updatedAt: DateTime(2025, 1, 2, 3, 4, 5),
-          ),
-          data: AudioData(
-            audioFile: 'file.m4a',
-            audioDirectory: '/tmp',
-            dateFrom: DateTime(2025, 1, 2, 3, 4, 5),
-            dateTo: DateTime(2025, 1, 2, 3, 4, 5),
-            duration: const Duration(seconds: 5),
-          ),
-          entryText: const EntryText(plainText: 'Edited transcript'),
-        );
-
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
-
-        when(
-          () => mockJournalRepository.getJournalEntityById('audio-1'),
-        ).thenAnswer((_) async => audioEntry);
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Entry: {{current_entry}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await builderWithJournal.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-          linkedEntityId: 'audio-1',
-        );
-
-        expect(result, isNotNull);
-        final jsonString = _extractFirstJsonObject(result!);
-        final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-        expect(decoded['id'], equals('audio-1'));
-        expect(decoded['entryType'], equals('audio'));
-        expect(decoded['text'], equals('Edited transcript'));
-      });
-
-      test('falls back to latest transcript when entry text missing', () async {
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'),
-          ),
-        ).thenAnswer((_) async => null);
-
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-
-        final audioEntry = JournalAudio(
-          meta: Metadata(
-            id: 'audio-2',
-            createdAt: DateTime(2025, 1, 2, 3, 4, 5),
-            dateFrom: DateTime(2025, 1, 2, 3, 4, 5),
-            dateTo: DateTime(2025, 1, 2, 3, 4, 5),
-            updatedAt: DateTime(2025, 1, 2, 3, 4, 5),
-          ),
-          data: AudioData(
-            audioFile: 'file.m4a',
-            audioDirectory: '/tmp',
-            dateFrom: DateTime(2025, 1, 2, 3, 4, 5),
-            dateTo: DateTime(2025, 1, 2, 3, 4, 5),
-            duration: const Duration(seconds: 5),
-            transcripts: [
-              AudioTranscript(
-                created: DateTime(2025, 1, 3),
-                library: 'whisper',
-                model: 'base',
-                detectedLanguage: 'en',
-                transcript: 'older transcript',
-              ),
-              AudioTranscript(
-                created: DateTime(2025, 1, 4),
-                library: 'whisper',
-                model: 'base',
-                detectedLanguage: 'en',
-                transcript: ' latest transcript ',
-              ),
-            ],
-          ),
-        );
-
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
-
-        when(
-          () => mockJournalRepository.getJournalEntityById('audio-2'),
-        ).thenAnswer((_) async => audioEntry);
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Entry: {{current_entry}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await builderWithJournal.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-          linkedEntityId: 'audio-2',
-        );
-
-        expect(result, isNotNull);
-        final jsonString = _extractFirstJsonObject(result!);
-        final decoded = jsonDecode(jsonString) as Map<String, dynamic>;
-        expect(decoded['text'], equals('latest transcript'));
-      });
-
-      test(
-        'replaces placeholder with empty string when no entry available',
-        () async {
-          when(
-            () => mockAiInputRepository.buildTaskDetailsJson(
-              id: any<String>(named: 'id'),
-            ),
-          ).thenAnswer((_) async => null);
-          final task = Task(
-            data: TaskData(
-              title: 'Task',
-              checklistIds: const [],
-              status: TaskStatus.open(
-                id: 'status',
-                createdAt: DateTime.now(),
-                utcOffset: 0,
-              ),
-              statusHistory: const [],
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
-            ),
-            meta: Metadata(
-              id: 'task-1',
-              createdAt: DateTime.now(),
-              dateFrom: DateTime.now(),
-              dateTo: DateTime.now(),
-              updatedAt: DateTime.now(),
-            ),
-          );
-
-          final config = AiConfigPrompt(
-            id: 'prompt',
-            name: 'Checklist',
-            systemMessage: 'System',
-            userMessage: 'Entry: {{current_entry}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime.now(),
-            useReasoning: false,
-            requiredInputData: const [],
-            aiResponseType: AiResponseType.checklistUpdates,
-          );
-
-          final result = await promptBuilder.buildPromptWithData(
-            promptConfig: config,
-            entity: task,
-          );
-
-          expect(result, equals('Entry: '));
-        },
-      );
-    });
-
-    group('deleted checklist items injection', () {
-      late JournalDb journalDb;
-      late Task task;
-      late ChecklistRepository checklistRepository;
-
-      setUp(() async {
-        journalDb = JournalDb(inMemoryDatabase: true);
-        getIt.registerSingleton<JournalDb>(journalDb);
-
-        // Set up additional dependencies for ChecklistRepository
-        final mockPersistenceLogic = MockPersistenceLogic();
-        final mockLoggingService = MockLoggingService();
-
-        getIt
-          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-          ..registerSingleton<LoggingService>(mockLoggingService);
-
-        // Create a real ChecklistRepository
-        checklistRepository = ChecklistRepository();
-
-        // Override the promptBuilder for this test group to use the real repository
-        promptBuilder = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          checklistRepository: checklistRepository,
-          journalRepository: MockJournalRepository(),
-          labelsRepository: MockLabelsRepository(),
-        );
-
-        task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const ['checklist-1'],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime.now(),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            updatedAt: DateTime.now(),
-          ),
-        );
-
-        final checklist = Checklist(
-          meta: Metadata(
-            id: 'checklist-1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-          ),
-          data: const ChecklistData(
-            title: 'Todo',
-            linkedChecklistItems: [],
-            linkedTasks: ['task-1'],
-          ),
-        );
-
-        final deletedItem = ChecklistItem(
-          meta: Metadata(
-            id: 'item-1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
-            deletedAt: DateTime.now(),
-          ),
-          data: const ChecklistItemData(
-            title: 'Refine terminology',
-            isChecked: false,
-            linkedChecklists: ['checklist-1'],
-          ),
-        );
-
-        await journalDb.upsertJournalDbEntity(toDbEntity(checklist));
-        await journalDb.upsertJournalDbEntity(toDbEntity(deletedItem));
-        await journalDb.upsertEntryLink(
-          EntryLink.basic(
-            id: 'link-1',
-            fromId: 'checklist-1',
-            toId: 'item-1',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            vectorClock: null,
-            hidden: false,
-          ),
-        );
-      });
-
-      test('injects deleted checklist items JSON', () async {
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(
-            id: any<String>(named: 'id'),
-          ),
-        ).thenAnswer((_) async => null);
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Deleted: {{deleted_checklist_items}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
-
-        expect(result, isNotNull);
-        final jsonString = _extractFirstJsonArray(
-          result!.split('Deleted:').last,
-        );
-        final decoded = jsonDecode(jsonString) as List<dynamic>;
-        expect(decoded.length, equals(1));
-        final first = decoded.first as Map<String, dynamic>;
-        expect(first['title'], equals('Refine terminology'));
-        expect(first['deletedAt'], isNotEmpty);
-      });
-    });
     group('buildPromptWithData', () {
-      setUp(() {
-        // Restore the outer promptBuilder after the checklist group overrides it.
-        promptBuilder = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          checklistRepository: MockChecklistRepository(),
-          journalRepository: MockJournalRepository(),
-          labelsRepository: mockLabelsRepository,
-        );
-      });
-
       test(
         'should replace {{task}} placeholder with task JSON for task entity',
         () async {
@@ -636,6 +222,7 @@ void main() {
             createdAt: DateTime.now(),
             useReasoning: false,
             requiredInputData: [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           );
 
@@ -695,6 +282,7 @@ void main() {
             createdAt: DateTime.now(),
             useReasoning: false,
             requiredInputData: [InputDataType.task],
+            // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
           );
 
@@ -749,6 +337,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [], // No task data required
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -802,6 +391,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -856,16 +446,11 @@ void main() {
             modelIds: ['model-1'],
             createdAt: testDate,
             useReasoning: false,
-            requiredInputData: [InputDataType.task],
-            aiResponseType: AiResponseType.checklistUpdates,
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'checklist_updates',
+            preconfiguredPromptId: 'audio_transcription',
           );
-
-          const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
-          when(
-            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-          ).thenAnswer((_) async => mockTaskJson);
 
           // Act
           final prompt = await promptBuilder.buildPromptWithData(
@@ -875,10 +460,11 @@ void main() {
 
           // Assert - should use template message, not custom message
           expect(prompt, isNotNull);
-          expect(prompt, contains(mockTaskJson));
-          expect(prompt, isNot(contains('{{task}}')));
           // Verify it doesn't contain the custom message (template was used instead)
           expect(prompt, isNot(contains('Custom user message')));
+          // Verify it uses the preconfigured audio transcription prompt
+          final template = preconfiguredPrompts['audio_transcription']!;
+          expect(prompt, contains(template.userMessage.substring(0, 50)));
         },
       );
 
@@ -918,6 +504,7 @@ void main() {
           createdAt: testDate,
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -1027,6 +614,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -1075,6 +663,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -1160,8 +749,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
-            checklistRepository: MockChecklistRepository(),
-            labelsRepository: MockLabelsRepository(),
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -1258,8 +846,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
-            checklistRepository: MockChecklistRepository(),
-            labelsRepository: MockLabelsRepository(),
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -1358,8 +945,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
-            checklistRepository: MockChecklistRepository(),
-            labelsRepository: MockLabelsRepository(),
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           when(
@@ -1434,8 +1020,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
-            checklistRepository: MockChecklistRepository(),
-            labelsRepository: MockLabelsRepository(),
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           // No linked task found
@@ -1556,8 +1141,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
+          taskSummaryResolver: MockTaskSummaryResolver(),
         );
 
         when(
@@ -1656,8 +1240,7 @@ void main() {
           final builderWithJournal = PromptBuilderHelper(
             aiInputRepository: mockAiInputRepository,
             journalRepository: mockJournalRepository,
-            checklistRepository: MockChecklistRepository(),
-            labelsRepository: MockLabelsRepository(),
+            taskSummaryResolver: MockTaskSummaryResolver(),
           );
 
           // No linked task
@@ -1711,8 +1294,7 @@ void main() {
         final builderWithJournal = PromptBuilderHelper(
           aiInputRepository: mockAiInputRepository,
           journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: MockLabelsRepository(),
+          taskSummaryResolver: MockTaskSummaryResolver(),
         );
 
         // Simulate an error when finding linked task
@@ -1741,267 +1323,6 @@ void main() {
         // Should replace with empty string on error
         expect(result, equals('\n\nAnalyze the image.'));
       });
-
-      test('handles error when current_entry fetch fails', () async {
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
-
-        final mockJournalRepository = MockJournalRepository();
-        final builderWithJournal = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: mockJournalRepository,
-          checklistRepository: MockChecklistRepository(),
-          labelsRepository: mockLabelsRepository,
-        );
-
-        // Simulate an error when fetching the entry
-        when(
-          () => mockJournalRepository.getJournalEntityById('entry-1'),
-        ).thenThrow(Exception('Database error'));
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Entry: {{current_entry}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await builderWithJournal.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-          linkedEntityId: 'entry-1',
-        );
-
-        // Should replace with empty string on error
-        expect(result, equals('Entry: '));
-      });
-
-      test('handles error when assigned_labels fetch fails', () async {
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-            labelIds: ['label-1'],
-          ),
-        );
-
-        // Simulate error when building label tuples
-        when(
-          () => mockLabelsRepository.buildLabelTuples(['label-1']),
-        ).thenThrow(Exception('Label fetch error'));
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Labels: {{assigned_labels}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
-
-        // Should replace with empty array on error
-        expect(result, equals('Labels: []'));
-      });
-
-      test('handles error when suppressed_labels fetch fails', () async {
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const [],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            aiSuppressedLabelIds: {'label-1'},
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
-
-        // Simulate error when building label tuples
-        when(
-          () => mockLabelsRepository.buildLabelTuples(['label-1']),
-        ).thenThrow(Exception('Label fetch error'));
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Suppressed: {{suppressed_labels}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await promptBuilder.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
-
-        // Should replace with empty array on error
-        expect(result, equals('Suppressed: []'));
-      });
-
-      test('handles error when deleted_checklist_items fetch fails', () async {
-        getIt.registerSingleton<JournalDb>(
-          JournalDb(inMemoryDatabase: true),
-        );
-
-        final task = Task(
-          data: TaskData(
-            title: 'Task',
-            checklistIds: const ['checklist-1'],
-            status: TaskStatus.open(
-              id: 'status',
-              createdAt: DateTime(2025, 1, 1),
-              utcOffset: 0,
-            ),
-            statusHistory: const [],
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-          ),
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: DateTime(2025, 1, 1),
-            dateFrom: DateTime(2025, 1, 1),
-            dateTo: DateTime(2025, 1, 1),
-            updatedAt: DateTime(2025, 1, 1),
-          ),
-        );
-
-        final mockChecklistRepo = MockChecklistRepository();
-        when(
-          () => mockChecklistRepo.getChecklistItemsForTask(
-            task: task,
-            deletedOnly: true,
-          ),
-        ).thenThrow(Exception('Checklist fetch error'));
-
-        final builderWithChecklist = PromptBuilderHelper(
-          aiInputRepository: mockAiInputRepository,
-          journalRepository: MockJournalRepository(),
-          checklistRepository: mockChecklistRepo,
-          labelsRepository: mockLabelsRepository,
-        );
-
-        final config = AiConfigPrompt(
-          id: 'prompt',
-          name: 'Checklist',
-          systemMessage: 'System',
-          userMessage: 'Deleted: {{deleted_checklist_items}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.checklistUpdates,
-        );
-
-        final result = await builderWithChecklist.buildPromptWithData(
-          promptConfig: config,
-          entity: task,
-        );
-
-        // Should replace with empty array on error
-        expect(result, equals('Deleted: []'));
-      });
     });
   });
-}
-
-String _extractFirstJsonObject(String text) {
-  final start = text.indexOf('{');
-  if (start == -1) return '';
-  var depth = 0;
-  for (var i = start; i < text.length; i++) {
-    final char = text[i];
-    if (char == '{') {
-      depth++;
-    } else if (char == '}') {
-      depth--;
-      if (depth == 0) {
-        return text.substring(start, i + 1).trim();
-      }
-    }
-  }
-  return '';
-}
-
-String _extractFirstJsonArray(String text) {
-  final start = text.indexOf('[');
-  if (start == -1) return '[]';
-  var depth = 0;
-  for (var i = start; i < text.length; i++) {
-    final char = text[i];
-    if (char == '[') {
-      depth++;
-    } else if (char == ']') {
-      depth--;
-      if (depth == 0) {
-        return text.substring(start, i + 1).trim();
-      }
-    }
-  }
-  return '[]';
 }

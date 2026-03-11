@@ -65,19 +65,27 @@ void main() {
       testWidgets('displays prompt cards with icons', (tester) async {
         await showModal(tester);
 
-        // Each prompt type should have its icon (we have duplicates now)
-        expect(
-          find.byIcon(Icons.checklist_rtl_outlined),
-          findsOneWidget,
-        ); // 1 checklist prompt
+        // Each prompt type should have its icon based on response type
         expect(
           find.byIcon(Icons.image_outlined),
           findsNWidgets(2),
-        ); // 2 image prompts
+        ); // 2 image analysis prompts
         expect(
           find.byIcon(Icons.mic_outlined),
           findsNWidgets(2),
-        ); // 2 audio prompts
+        ); // 2 audio transcription prompts
+        expect(
+          find.byIcon(Icons.auto_fix_high_outlined),
+          findsOneWidget,
+        ); // 1 prompt generation prompt
+        expect(
+          find.byIcon(Icons.palette_outlined),
+          findsOneWidget,
+        ); // 1 image prompt generation prompt
+        expect(
+          find.byIcon(Icons.auto_awesome_outlined),
+          findsOneWidget,
+        ); // 1 cover art generation prompt
       });
 
       testWidgets('shows input and output type chips', (tester) async {

@@ -24,21 +24,28 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify all response types are displayed (using localized names from extension)
-      expect(find.text('Task Summary'), findsOneWidget);
+      // Verify selectable response types are displayed
+      // (taskSummary and checklistUpdates are filtered out as legacy types)
       expect(find.text('Image Analysis'), findsOneWidget);
       expect(find.text('Audio Transcription'), findsOneWidget);
-      expect(find.text('Checklist Updates'), findsOneWidget);
       expect(find.text('Generated Prompt'), findsOneWidget);
       expect(find.text('Image Prompt'), findsOneWidget);
+      expect(find.text('Generate Cover Art'), findsOneWidget);
+
+      // Verify legacy types are NOT displayed
+      expect(find.text('Task Summary'), findsNothing);
+      expect(find.text('Checklist Updates'), findsNothing);
 
       // Verify icons are displayed for each type
-      expect(find.byIcon(Icons.summarize_rounded), findsOneWidget);
       expect(find.byIcon(Icons.image_search_rounded), findsOneWidget);
       expect(find.byIcon(Icons.transcribe_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.checklist_rtl_rounded), findsOneWidget);
       expect(find.byIcon(Icons.auto_fix_high_outlined), findsOneWidget);
       expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.auto_awesome_outlined), findsOneWidget);
+
+      // Verify legacy icons are NOT displayed
+      expect(find.byIcon(Icons.summarize_rounded), findsNothing);
+      expect(find.byIcon(Icons.checklist_rtl_rounded), findsNothing);
     });
 
     testWidgets('imagePromptGeneration shows palette icon when selected', (
@@ -90,8 +97,8 @@ void main() {
       );
       expect(selectedIndicators, findsNothing);
 
-      // Tap on Task Summary option
-      await tester.tap(find.text('Task Summary'));
+      // Tap on Image Analysis option
+      await tester.tap(find.text('Image Analysis'));
       await tester.pump();
 
       // Now one selection indicator should show the inner circle

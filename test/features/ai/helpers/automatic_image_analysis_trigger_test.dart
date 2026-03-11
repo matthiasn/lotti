@@ -296,6 +296,7 @@ void main() {
           id: categoryId,
           name: 'Test Category',
           automaticPrompts: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary: ['summary-prompt'],
             AiResponseType.audioTranscription: ['transcription-prompt'],
           },

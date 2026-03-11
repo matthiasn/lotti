@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -27,11 +29,6 @@ class AutomaticPromptTrigger {
   /// For audio transcription:
   /// - Triggers if user preference is true, OR
   /// - Triggers if user preference is null AND category has automatic transcription configured
-  ///
-  /// For checklist updates:
-  /// - Only triggers if linked to a task
-  /// - Waits for transcription to complete first (if transcription is triggered)
-  /// - Triggered if category has automatic checklist updates configured
   Future<void> triggerAutomaticPrompts(
     String entryId,
     String categoryId,
@@ -55,20 +52,8 @@ class AutomaticPromptTrigger {
         final shouldTriggerTranscription =
             state.enableSpeechRecognition ?? hasAutomaticTranscription;
 
-        // Determine if checklist updates should be triggered
-        final hasAutomaticChecklistUpdates =
-            category.automaticPrompts!.containsKey(
-              AiResponseType.checklistUpdates,
-            ) &&
-            category
-                .automaticPrompts![AiResponseType.checklistUpdates]!
-                .isNotEmpty;
-        final shouldTriggerChecklistUpdates =
-            isLinkedToTask && hasAutomaticChecklistUpdates;
-
         // Trigger audio transcription if enabled (skip if realtime already
         // produced a transcript, e.g. from live transcription mode)
-        Future<void>? transcriptionFuture;
         if (shouldTriggerTranscription &&
             hasAutomaticTranscription &&
             !realtimeTranscriptProvided) {
@@ -88,7 +73,6 @@ class AutomaticPromptTrigger {
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );
-            // Continue with other prompts instead of returning early
           } else {
             final promptId = availablePrompt.id;
 
@@ -98,82 +82,23 @@ class AutomaticPromptTrigger {
               subDomain: 'triggerAutomaticPrompts',
             );
 
-            // Store the transcription future so we can wait for it if needed
-            transcriptionFuture = ref.read(
-              triggerNewInferenceProvider((
-                entityId: entryId,
-                promptId: promptId,
-                linkedEntityId: linkedTaskId,
-              )).future,
-            );
-
-            final shouldAwaitTranscriptionImmediately =
-                linkedTaskId == null || !shouldTriggerChecklistUpdates;
-            // If no follow-up prompts require the transcript, await it now to
-            // keep recorder state consistent. Otherwise subsequent steps will
-            // await before firing.
-            if (shouldAwaitTranscriptionImmediately) {
-              await transcriptionFuture;
-            }
-          }
-        }
-
-        // Trigger checklist updates if enabled and linked to task
-        if (shouldTriggerChecklistUpdates &&
-            linkedTaskId != null &&
-            hasAutomaticChecklistUpdates) {
-          final checklistUpdatesPromptIds =
-              category.automaticPrompts![AiResponseType.checklistUpdates]!;
-
-          // Get the first available prompt for the current platform
-          final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-          final availablePrompt = await capabilityFilter
-              .getFirstAvailablePrompt(
-                checklistUpdatesPromptIds,
-              );
-
-          if (availablePrompt == null) {
-            loggingService.captureEvent(
-              'No available checklist update prompts for current platform',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-            // Ensure deferred transcription is still awaited even when no
-            // checklist prompt is available.
-            if (transcriptionFuture != null) {
-              await transcriptionFuture;
-            }
-          } else {
-            final promptId = availablePrompt.id;
-
-            loggingService.captureEvent(
-              'Triggering checklist updates for task $linkedTaskId (transcription pending: ${transcriptionFuture != null})',
-              domain: 'automatic_prompt_trigger',
-              subDomain: 'triggerAutomaticPrompts',
-            );
-
-            // If transcription was triggered, wait for it to complete
-            if (transcriptionFuture != null) {
-              loggingService.captureEvent(
-                'Waiting for transcription to complete before checklist updates',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              );
-              await transcriptionFuture;
-              loggingService.captureEvent(
-                'Transcription completed, now triggering checklist updates',
-                domain: 'automatic_prompt_trigger',
-                subDomain: 'triggerAutomaticPrompts',
-              );
-            }
-
-            // Trigger checklist updates on the task entity, but pass the audio entry as linkedEntityId
-            await ref.read(
-              triggerNewInferenceProvider((
-                entityId: linkedTaskId,
-                promptId: promptId,
-                linkedEntityId: entryId,
-              )).future,
+            unawaited(
+              ref
+                  .read(
+                    triggerNewInferenceProvider((
+                      entityId: entryId,
+                      promptId: promptId,
+                      linkedEntityId: linkedTaskId,
+                    )).future,
+                  )
+                  .catchError((Object error, StackTrace stackTrace) {
+                    loggingService.captureException(
+                      error,
+                      domain: 'automatic_prompt_trigger',
+                      subDomain: 'triggerAutomaticPrompts',
+                      stackTrace: stackTrace,
+                    );
+                  }),
             );
           }
         }

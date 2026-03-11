@@ -18,6 +18,7 @@ void main() {
     test('should start and track inference', () {
       const entityId = 'test-entity-id';
       const promptId = 'test-prompt-id';
+      // ignore: deprecated_member_use_from_same_package
       const responseType = AiResponseType.taskSummary;
 
       final controller = container.read(
@@ -59,6 +60,7 @@ void main() {
     test('should update progress text and stream', () async {
       const entityId = 'test-entity-id';
       const promptId = 'test-prompt-id';
+      // ignore: deprecated_member_use_from_same_package
       const responseType = AiResponseType.taskSummary;
 
       final controller = container.read(
@@ -108,6 +110,7 @@ void main() {
     test('should clear inference', () {
       const entityId = 'test-entity-id';
       const promptId = 'test-prompt-id';
+      // ignore: deprecated_member_use_from_same_package
       const responseType = AiResponseType.taskSummary;
 
       final controller =
@@ -145,6 +148,7 @@ void main() {
     test('ActiveInferenceByEntity should find active inference', () {
       const entityId = 'test-entity-id';
       const promptId = 'test-prompt-id';
+      // ignore: deprecated_member_use_from_same_package
       const responseType = AiResponseType.taskSummary;
 
       // Initially no active inference

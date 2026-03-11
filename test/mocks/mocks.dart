@@ -40,6 +40,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
@@ -337,6 +338,8 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 class MockChatRepository extends Mock implements ChatRepository {}
 
 class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
+
+class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 

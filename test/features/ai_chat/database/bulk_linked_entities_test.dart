@@ -87,6 +87,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'AI generated summary',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response'),
@@ -182,6 +183,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'AI summary for task 1',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response 1'),
@@ -202,6 +204,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'AI summary for task 2',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response 2'),
@@ -293,6 +296,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'First AI summary',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response 1'),
@@ -313,6 +317,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'Second AI summary',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response 2'),
@@ -444,6 +449,7 @@ void main() {
             thoughts: 'User wants task summary',
             response: 'AI summary',
             promptId: 'prompt-123',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
           entryText: const EntryText(plainText: 'AI Response'),
@@ -530,6 +536,7 @@ void main() {
                 thoughts: 'User wants task summary',
                 response: 'AI summary $i-$j',
                 promptId: 'prompt-123',
+                // ignore: deprecated_member_use_from_same_package
                 type: AiResponseType.taskSummary,
               ),
               entryText: EntryText(plainText: 'AI Response $i-$j'),
@@ -617,6 +624,7 @@ void main() {
                 thoughts: 'User wants task summary',
                 response: 'AI summary $i',
                 promptId: 'prompt-123',
+                // ignore: deprecated_member_use_from_same_package
                 type: AiResponseType.taskSummary,
               ),
               entryText: EntryText(plainText: 'AI Response $i'),

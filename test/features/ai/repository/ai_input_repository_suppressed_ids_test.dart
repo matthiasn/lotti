@@ -7,6 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -15,7 +16,8 @@ import '../test_utils.dart';
 class MockJournalDb extends Mock implements JournalDb {}
 
 class TestAiInputRepo extends AiInputRepository {
-  TestAiInputRepo(super.ref);
+  TestAiInputRepo(super.ref)
+    : super(taskSummaryResolver: TaskSummaryResolver(null));
 
   @override
   Future<AiInputTaskObject?> generate(String id) async {

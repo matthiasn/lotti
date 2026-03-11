@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.915" date="2026-03-11">
+      <description>
+          <p>Removed legacy checklist updates and task summary system — conversation-based processing replaced by agent system. New TaskSummaryResolver provides unified fallback (agent report then legacy AI response) across prompt building, linked task context, and chat summary tool. Agent report selection now picks the most recently assigned agent. Recorder no longer blocks on transcription inference. Category settings hide legacy prompt types.</p>
+      </description>
+    </release>
     <release version="0.9.914" date="2026-03-10">
       <description>
           <p>Local inference fixes: conversation headers now show the actual model name during and after runs. Tool call counts are accurate for all tool types. Resilient JSON parsing for local models. Token usage recorded for Ollama. Prevented tool repetition loops — non-batch deferred tools can only be called once per wake, with guided responses listing remaining tools. Raised default max turns from 5 to 10.</p>

@@ -65,6 +65,7 @@ void main() {
   group('AI Animation Modal Interaction Tests', () {
     const testId = 'test-entity-id';
     const testPromptId = 'test-prompt-id';
+    // ignore: deprecated_member_use_from_same_package
     const testType = AiResponseType.taskSummary;
     final testTypes = {testType};
 
@@ -82,6 +83,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: const [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
     });
@@ -284,6 +286,7 @@ void main() {
 
     testWidgets('handles multiple response types correctly', (tester) async {
       final multipleTypes = {
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.audioTranscription,
         AiResponseType.imageAnalysis,

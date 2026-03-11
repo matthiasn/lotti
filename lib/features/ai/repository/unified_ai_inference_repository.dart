@@ -10,24 +10,21 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
-import 'package:lotti/features/ai/functions/checklist_tool_selector.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
-import 'package:lotti/features/ai/functions/lotti_conversation_processor.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
-import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/tool_call_accumulator.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
@@ -43,7 +40,6 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:lotti/services/dev_log.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -72,11 +68,15 @@ class PreparedAudio {
 class UnifiedAiInferenceRepository {
   UnifiedAiInferenceRepository(this.ref, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now {
+    final resolver = TaskSummaryResolver(
+      getIt.isRegistered<AgentDatabase>()
+          ? AgentRepository(getIt<AgentDatabase>())
+          : null,
+    );
     promptBuilderHelper = PromptBuilderHelper(
       aiInputRepository: ref.read(aiInputRepositoryProvider),
       journalRepository: ref.read(journalRepositoryProvider),
-      checklistRepository: ref.read(checklistRepositoryProvider),
-      labelsRepository: ref.read(labelsRepositoryProvider),
+      taskSummaryResolver: resolver,
     );
   }
 
@@ -115,7 +115,9 @@ class UnifiedAiInferenceRepository {
     final validPrompts = <AiConfigPrompt>[];
 
     for (final config in allPrompts) {
-      if (config is AiConfigPrompt && !config.archived) {
+      if (config is AiConfigPrompt &&
+          !config.archived &&
+          !config.aiResponseType.isLegacyType) {
         validPrompts.add(config);
         activeChecks.add(_isPromptActiveForEntity(config, entity));
       }
@@ -199,12 +201,10 @@ class UnifiedAiInferenceRepository {
 
       // Special case: Certain prompts may be triggered from an audio entry
       // popup even though they only require task context (not audio file upload).
-      // - checklistUpdates: extracts action items from transcript
       // - prompt generation types: use {{audioTranscript}} placeholder
       // - imageGeneration: generates cover art from audio description/notes
       if (entity is JournalAudio &&
-          (prompt.aiResponseType == AiResponseType.checklistUpdates ||
-              prompt.aiResponseType == AiResponseType.imageGeneration ||
+          (prompt.aiResponseType == AiResponseType.imageGeneration ||
               prompt.aiResponseType.isPromptGenerationType)) {
         final linkedEntities = await ref
             .read(journalRepositoryProvider)
@@ -228,17 +228,24 @@ class UnifiedAiInferenceRepository {
     required AiConfigPrompt promptConfig,
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
-    bool useConversationApproach =
-        false, // Flag to enable new conversation approach
     String? linkedEntityId,
   }) async {
+    // Guard: legacy response types should not be executed
+    if (promptConfig.aiResponseType.isLegacyType) {
+      developer.log(
+        'Skipping inference for legacy response type '
+        '${promptConfig.aiResponseType.name} (prompt ${promptConfig.id})',
+        name: 'UnifiedAiInferenceRepository',
+      );
+      return;
+    }
+
     await _runInferenceInternal(
       entityId: entityId,
       promptConfig: promptConfig,
       onProgress: onProgress,
       onStatusChange: onStatusChange,
       isRerun: false,
-      useConversationApproach: useConversationApproach,
       linkedEntityId: linkedEntityId,
     );
   }
@@ -250,7 +257,6 @@ class UnifiedAiInferenceRepository {
     required void Function(String) onProgress,
     required void Function(InferenceStatus) onStatusChange,
     required bool isRerun,
-    bool useConversationApproach = false,
     JournalEntity? entity, // Optional entity to avoid redundant fetches
     String? linkedEntityId,
   }) async {
@@ -314,55 +320,11 @@ class UnifiedAiInferenceRepository {
           .getConfigFlag(enableAiStreamingFlag);
 
       // Get system message with placeholder substitution
-      var systemMessage = await promptBuilderHelper.buildSystemMessageWithData(
-        promptConfig: promptConfig,
-        entity: entity,
-      );
-
-      // Modify system message if task has language preference
-      if (entity is Task &&
-          entity.data.languageCode != null &&
-          promptConfig.aiResponseType == AiResponseType.taskSummary) {
-        final language = SupportedLanguage.fromCode(entity.data.languageCode!);
-        if (language != null) {
-          systemMessage =
-              '$systemMessage\n\nIMPORTANT: The task has a language preference set to ${language.name} (${language.code}). Generate the entire summary in this language.';
-        }
-      }
-
-      // Check if we should use conversation approach for checklist updates
-      developer.log(
-        'Checking conversation approach: useConversationApproach=$useConversationApproach, '
-        'responseType=${promptConfig.aiResponseType}, '
-        'supportsFunctionCalling=${model.supportsFunctionCalling}, '
-        'provider=${provider.inferenceProviderType}, '
-        'model=${model.providerModelId}',
-        name: 'UnifiedAiInferenceRepository',
-      );
-
-      if (useConversationApproach &&
-          promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
-          model.supportsFunctionCalling) {
-        developer.log(
-          'Using conversation approach for checklist updates',
-          name: 'UnifiedAiInferenceRepository',
-        );
-
-        // Use conversation processor for better batching and error handling
-        await _processWithConversation(
-          prompt: prompt,
-          entity: entity,
-          promptConfig: promptConfig,
-          model: model,
-          provider: provider,
-          systemMessage: systemMessage,
-          onProgress: onProgress,
-          onStatusChange: onStatusChange,
-          start: start,
-          isRerun: isRerun,
-        );
-        return; // Exit early, conversation processor handles everything
-      }
+      final systemMessage = await promptBuilderHelper
+          .buildSystemMessageWithData(
+            promptConfig: promptConfig,
+            entity: entity,
+          );
 
       // Start timing the inference
       final stopwatch = Stopwatch()..start();
@@ -463,6 +425,7 @@ class UnifiedAiInferenceRepository {
         usage: usage,
         durationMs: durationMs,
         temperature: temperature,
+        effectiveSystemMessage: systemMessage,
       );
 
       onStatusChange(InferenceStatus.idle);
@@ -597,63 +560,10 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
       );
     } else {
-      // Determine tools based on response type and entity.
-      // We keep the selection centralized via getChecklistToolsForProvider
-      // so gating rules (Ollama + GPT‑OSS) stay consistent everywhere.
-      List<ChatCompletionTool>? tools;
-
-      // For checklistUpdates response type, always include function tools regardless of entity type
-      // This is because checklist updates can be triggered from various contexts
-      if (promptConfig.aiResponseType == AiResponseType.checklistUpdates &&
-          model.supportsFunctionCalling) {
-        const enableLabels = true;
-        final checklistTools = getChecklistToolsForProvider(
-          provider: provider,
-          model: model,
-        );
-        tools = [
-          ...checklistTools,
-          if (enableLabels) ...LabelFunctions.getTools(),
-          ...TaskFunctions.getTools(),
-        ];
-        lottiDevLog(
-          name: 'UnifiedAiInferenceRepository',
-          message:
-              'Including checklist and task tools for checklistUpdates response type. '
-              'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
-              'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
-        );
-      }
-      // For task summary, no longer include function tools (they're handled separately now)
-      else if (promptConfig.aiResponseType == AiResponseType.taskSummary) {
-        tools = null;
-        developer.log(
-          'Task summary processing without function tools (functions handled separately)',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
-      // Legacy behavior for other cases (should not happen in practice)
-      else if (entity is Task && model.supportsFunctionCalling) {
-        final checklistTools = getChecklistToolsForProvider(
-          provider: provider,
-          model: model,
-        );
-        tools = [
-          ...checklistTools,
-          ...TaskFunctions.getTools(),
-        ];
-        lottiDevLog(
-          name: 'UnifiedAiInferenceRepository',
-          message:
-              'Including checklist completion and task tools for task ${entity.id} with model ${model.providerModelId}. '
-              'Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')}',
-        );
-      } else {
-        developer.log(
-          'NOT including tools - entity is Task: ${entity is Task}, supportsFunctionCalling: ${model.supportsFunctionCalling}',
-          name: 'UnifiedAiInferenceRepository',
-        );
-      }
+      // No tools attached — checklist updates and task summaries are
+      // handled by the agent system. Other response types (image analysis,
+      // audio transcription, prompt generation) don't use function calling.
+      const List<ChatCompletionTool>? _ = null;
 
       return cloudRepo.generate(
         prompt,
@@ -664,7 +574,6 @@ class UnifiedAiInferenceRepository {
         systemMessage: systemMessage,
         maxCompletionTokens: model.maxCompletionTokens,
         provider: provider,
-        tools: tools,
       );
     }
   }
@@ -705,6 +614,7 @@ class UnifiedAiInferenceRepository {
     CompletionUsage? usage,
     int? durationMs,
     double? temperature,
+    String? effectiveSystemMessage,
   }) async {
     var thoughts = '';
     var cleanResponse = response;
@@ -760,7 +670,7 @@ class UnifiedAiInferenceRepository {
     final data = AiResponseData(
       model: model.providerModelId,
       temperature: temperature,
-      systemMessage: promptConfig.systemMessage,
+      systemMessage: effectiveSystemMessage ?? promptConfig.systemMessage,
       prompt: prompt,
       promptId: promptConfig.id,
       thoughts: thoughts,
@@ -772,14 +682,12 @@ class UnifiedAiInferenceRepository {
       durationMs: durationMs,
     );
 
-    // Save the AI response entry (except for checklist updates which are function-only)
+    // Save the AI response entry
     // Also save for prompt generation types even when triggered from audio entries
     AiResponseEntry? aiResponseEntry;
     final shouldSaveEntry =
         promptConfig.aiResponseType.isPromptGenerationType ||
-        (entity is! JournalAudio &&
-            entity is! JournalImage &&
-            promptConfig.aiResponseType != AiResponseType.checklistUpdates);
+        (entity is! JournalAudio && entity is! JournalImage);
 
     if (shouldSaveEntry) {
       try {
@@ -802,11 +710,6 @@ class UnifiedAiInferenceRepository {
           error: e,
         );
       }
-    } else if (promptConfig.aiResponseType == AiResponseType.checklistUpdates) {
-      developer.log(
-        'Skipping AI response entry creation for checklistUpdates (function-only response)',
-        name: 'UnifiedAiInferenceRepository',
-      );
     }
 
     // Handle special post-processing
@@ -841,13 +744,13 @@ class UnifiedAiInferenceRepository {
     final journalRepo = ref.read(journalRepositoryProvider);
 
     switch (promptConfig.aiResponseType) {
+      // ignore: deprecated_member_use_from_same_package
       case AiResponseType.checklistUpdates:
-        // For checklist updates, we only process function calls, no text response
-        // The function calls have already been processed at this point
-        developer.log(
-          'Checklist updates completed (function calls only, no text response to save)',
-          name: 'UnifiedAiInferenceRepository',
-        );
+      // ignore: deprecated_member_use_from_same_package
+      case AiResponseType.taskSummary:
+        // These response types are now handled by the agent system;
+        // the enum values are kept for DB backwards-compatibility.
+        break;
       case AiResponseType.imageAnalysis:
         if (entity is JournalImage) {
           // Get current image state to avoid overwriting concurrent changes
@@ -939,63 +842,6 @@ class UnifiedAiInferenceRepository {
               name: 'UnifiedAiInferenceRepository',
               error: e,
             );
-          }
-        }
-      case AiResponseType.taskSummary:
-        if (entity is Task) {
-          // Get current task state to avoid overwriting concurrent changes
-          final currentTask =
-              await EntityStateHelper.getCurrentEntityState<Task>(
-                entityId: entity.id,
-                aiInputRepo: ref.read(aiInputRepositoryProvider),
-                entityTypeName: 'task summary',
-              );
-          if (currentTask == null) {
-            break;
-          }
-
-          // Extract title from response (H1 markdown format)
-          final titleRegex = RegExp(r'^#\s+(.+)$', multiLine: true);
-          final titleMatch = titleRegex.firstMatch(response);
-
-          if (titleMatch != null) {
-            final suggestedTitle = titleMatch.group(1)?.trim();
-            final currentTitle = currentTask.data.title;
-
-            // Update title if current title is empty or very short (less than 5 characters)
-            if (suggestedTitle != null &&
-                suggestedTitle.isNotEmpty &&
-                currentTitle.length < kMinExistingTitleLengthForAiSuggestion) {
-              developer.log(
-                'Updating task title from AI suggestion: "$currentTitle" -> "$suggestedTitle" for task ${entity.id}',
-                name: 'UnifiedAiInferenceRepository',
-              );
-
-              final updated = currentTask.copyWith(
-                data: currentTask.data.copyWith(
-                  title: suggestedTitle,
-                ),
-              );
-
-              try {
-                await journalRepo.updateJournalEntity(updated);
-                developer.log(
-                  'Successfully updated task title for task ${entity.id}',
-                  name: 'UnifiedAiInferenceRepository',
-                );
-              } catch (e) {
-                developer.log(
-                  'Failed to update task title for task ${entity.id}',
-                  name: 'UnifiedAiInferenceRepository',
-                  error: e,
-                );
-              }
-            } else {
-              developer.log(
-                'Skipping task title update for task ${entity.id}: suggestedTitle="$suggestedTitle", currentTitle.length=${currentTitle.length}',
-                name: 'UnifiedAiInferenceRepository',
-              );
-            }
           }
         }
       case AiResponseType.promptGeneration:
@@ -1553,133 +1399,6 @@ class UnifiedAiInferenceRepository {
       return linkedEntities.firstWhereOrNull((e) => e is Task) as Task?;
     }
     return null;
-  }
-
-  /// Process checklist updates using conversation approach for better batching
-  Future<void> _processWithConversation({
-    required String prompt,
-    required JournalEntity entity,
-    required AiConfigPrompt promptConfig,
-    required AiConfigModel model,
-    required AiConfigInferenceProvider provider,
-    required String systemMessage,
-    required void Function(String) onProgress,
-    required void Function(InferenceStatus) onStatusChange,
-    required DateTime start,
-    required bool isRerun,
-  }) async {
-    developer.log(
-      'Starting conversation-based processing for ${entity.runtimeType}',
-      name: 'UnifiedAiInferenceRepository',
-    );
-
-    // Get the task for this entity
-    final task = await _getTaskForEntity(entity);
-    if (task == null) {
-      developer.log(
-        'No task found for entity ${entity.id}, falling back to regular processing',
-        name: 'UnifiedAiInferenceRepository',
-      );
-      // Fall back to regular processing
-      await _runInferenceInternal(
-        entityId: entity.id,
-        promptConfig: promptConfig,
-        onProgress: onProgress,
-        onStatusChange: onStatusChange,
-        isRerun: isRerun,
-        entity: entity,
-      );
-      return;
-    }
-
-    try {
-      // Create conversation processor
-      final processor = LottiConversationProcessor(ref: ref);
-
-      // Get the appropriate inference repository based on provider type
-      InferenceRepositoryInterface inferenceRepo;
-
-      if (provider.inferenceProviderType == InferenceProviderType.ollama) {
-        developer.log(
-          'Using OllamaInferenceRepository for conversation approach',
-          name: 'UnifiedAiInferenceRepository',
-        );
-        inferenceRepo = ref.read(ollamaInferenceRepositoryProvider);
-      } else {
-        developer.log(
-          'Using CloudInferenceWrapper for ${provider.inferenceProviderType} provider',
-          name: 'UnifiedAiInferenceRepository',
-        );
-        final cloudRepo = ref.read(cloudInferenceRepositoryProvider);
-        inferenceRepo = CloudInferenceWrapper(cloudRepository: cloudRepo);
-      }
-
-      // Define tools for checklist updates
-      const enableLabels = true;
-      final checklistTools = getChecklistToolsForProvider(
-        provider: provider,
-        model: model,
-      );
-      final tools = [
-        ...checklistTools,
-        if (enableLabels) ...LabelFunctions.getTools(),
-        ...TaskFunctions.getTools(),
-      ];
-
-      lottiDevLog(
-        name: 'UnifiedAiInferenceRepository',
-        message:
-            'Conversation tool set. Checklist tools: ${checklistTools.map((t) => t.function.name).join(', ')} '
-            'for provider=${provider.inferenceProviderType} model=${model.providerModelId}',
-      );
-
-      // Process with conversation
-      final result = await processor.processPromptWithConversation(
-        prompt: prompt,
-        entity: entity,
-        task: task,
-        model: model,
-        provider: provider,
-        promptConfig: promptConfig,
-        systemMessage: systemMessage,
-        tools: tools,
-        inferenceRepo: inferenceRepo,
-      );
-
-      // Update progress with final result
-      onProgress(result.responseText);
-
-      // Handle the result
-      developer.log(
-        'Conversation processing completed: ${result.totalCreated} items created, '
-        'duration: ${result.duration.inMilliseconds}ms, errors: ${result.hadErrors}',
-        name: 'UnifiedAiInferenceRepository',
-      );
-
-      // Update status to idle or error
-      if (result.hadErrors) {
-        onStatusChange(InferenceStatus.error);
-      } else {
-        onStatusChange(InferenceStatus.idle);
-      }
-
-      // Log the response but don't create visible entry for checklist updates
-      developer.log(
-        'Checklist updates completed via conversation: ${result.totalCreated} items',
-        name: 'UnifiedAiInferenceRepository',
-      );
-
-      // Force refresh of checklists UI
-      ref.invalidate(checklistItemControllerProvider);
-    } catch (e) {
-      developer.log(
-        'Error in conversation processing: $e',
-        name: 'UnifiedAiInferenceRepository',
-        error: e,
-      );
-      onStatusChange(InferenceStatus.error);
-      onProgress('Error: $e');
-    }
   }
 }
 

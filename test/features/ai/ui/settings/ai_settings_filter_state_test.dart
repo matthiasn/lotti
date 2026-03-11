@@ -125,12 +125,14 @@ void main() {
 
       final updatedState = state.copyWith(
         selectedResponseTypes: {
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
           AiResponseType.imageAnalysis,
         },
       );
 
       expect(updatedState.selectedResponseTypes, {
+        // ignore: deprecated_member_use_from_same_package
         AiResponseType.taskSummary,
         AiResponseType.imageAnalysis,
       });
@@ -160,6 +162,7 @@ void main() {
 
         expect(
           AiSettingsFilterState.initial()
+              // ignore: deprecated_member_use_from_same_package
               .copyWith(selectedResponseTypes: {AiResponseType.taskSummary})
               .hasPromptFilters,
           isTrue,
@@ -231,6 +234,7 @@ void main() {
           searchQuery: 'test',
           selectedProviders: {'provider1'},
           selectedResponseTypes: {
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
             AiResponseType.imageAnalysis,
           },
@@ -268,6 +272,7 @@ void main() {
         const promptState = AiSettingsFilterState(
           searchQuery: 'test',
           selectedProviders: {'provider1'},
+          // ignore: deprecated_member_use_from_same_package
           selectedResponseTypes: {AiResponseType.taskSummary},
           activeTab: AiSettingsTab.prompts,
         );

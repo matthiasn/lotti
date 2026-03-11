@@ -2,8 +2,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -12,11 +15,18 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
+/// Agent repository that always returns empty links, so the resolver
+/// falls back to legacy AI response entries.
+class _EmptyAgentRepository extends Fake implements AgentRepository {
+  @override
+  Future<List<model.AgentLink>> getLinksTo(String toId, {String? type}) async =>
+      [];
+}
+
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
   late MockJournalRepository mockJournalRepository;
-  late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
   late MockEntitiesCacheService mockEntitiesCacheService;
 
@@ -100,6 +110,7 @@ void main() {
       ),
       data: AiResponseData(
         response: response,
+        // ignore: deprecated_member_use_from_same_package
         type: AiResponseType.taskSummary,
         model: 'test-model',
         systemMessage: 'System message',
@@ -117,7 +128,6 @@ void main() {
   setUp(() {
     mockAiInputRepository = MockAiInputRepository();
     mockJournalRepository = MockJournalRepository();
-    mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockEntitiesCacheService = MockEntitiesCacheService();
 
@@ -144,8 +154,7 @@ void main() {
     promptBuilder = PromptBuilderHelper(
       aiInputRepository: mockAiInputRepository,
       journalRepository: mockJournalRepository,
-      checklistRepository: mockChecklistRepository,
-      labelsRepository: mockLabelsRepository,
+      taskSummaryResolver: TaskSummaryResolver(_EmptyAgentRepository()),
     );
   });
 

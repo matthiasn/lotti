@@ -224,15 +224,15 @@ void main() {
         expect(find.text('Get started quickly with Gemini'), findsOneWidget);
         expect(find.text('Prompts to create:'), findsOneWidget);
 
-        // Gemini should have 4 prompts including Audio
+        // Gemini should have 2 prompts: Audio + Image
         expect(find.text('Audio Transcript'), findsOneWidget);
         expect(find.text('Image Analysis'), findsOneWidget);
-        expect(find.text('Checklist Updates'), findsOneWidget);
-        expect(find.text('Task Summary'), findsOneWidget);
+        expect(find.text('Checklist Updates'), findsNothing);
+        expect(find.text('Task Summary'), findsNothing);
 
         // Model assignments
         expect(find.text('Uses Gemini 2.5 Flash'), findsOneWidget);
-        expect(find.text('Uses Gemini 2.5 Pro'), findsNWidgets(3));
+        expect(find.text('Uses Gemini 2.5 Pro'), findsOneWidget);
       });
 
       testWidgets('should display correct icons for Gemini prompts', (
@@ -263,8 +263,8 @@ void main() {
 
         expect(find.byIcon(Icons.mic), findsOneWidget);
         expect(find.byIcon(Icons.image), findsOneWidget);
-        expect(find.byIcon(Icons.checklist), findsOneWidget);
-        expect(find.byIcon(Icons.summarize), findsOneWidget);
+        expect(find.byIcon(Icons.checklist), findsNothing);
+        expect(find.byIcon(Icons.summarize), findsNothing);
       });
     });
 
@@ -302,14 +302,14 @@ void main() {
         );
         expect(find.text('Prompts to create:'), findsOneWidget);
 
-        // Ollama should have 3 prompts (no Audio)
+        // Ollama should have 1 prompt (Image only, no Audio)
         expect(find.text('Audio Transcript'), findsNothing);
         expect(find.text('Image Analysis'), findsOneWidget);
-        expect(find.text('Checklist Updates'), findsOneWidget);
-        expect(find.text('Task Summary'), findsOneWidget);
+        expect(find.text('Checklist Updates'), findsNothing);
+        expect(find.text('Task Summary'), findsNothing);
 
-        // Model assignments - Qwen 3.5 for all tasks
-        expect(find.text('Uses Qwen 3.5 9B'), findsNWidgets(3));
+        // Model assignments - Qwen 3.5 for the single image prompt
+        expect(find.text('Uses Qwen 3.5 9B'), findsOneWidget);
       });
 
       testWidgets('should display correct icons for Ollama prompts', (
@@ -338,11 +338,11 @@ void main() {
         await tester.tap(find.text('Test Button'));
         await tester.pumpAndSettle();
 
-        // No mic icon for Ollama
+        // No mic icon for Ollama, only image
         expect(find.byIcon(Icons.mic), findsNothing);
         expect(find.byIcon(Icons.image), findsOneWidget);
-        expect(find.byIcon(Icons.checklist), findsOneWidget);
-        expect(find.byIcon(Icons.summarize), findsOneWidget);
+        expect(find.byIcon(Icons.checklist), findsNothing);
+        expect(find.byIcon(Icons.summarize), findsNothing);
       });
     });
 
@@ -385,7 +385,7 @@ void main() {
     });
 
     group('Gemini - Prompt Creation', () {
-      testWidgets('should create 3 prompts for Gemini when user confirms', (
+      testWidgets('should create 2 prompts for Gemini when user confirms', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -418,7 +418,7 @@ void main() {
         await tester.pump();
 
         expect(result, isTrue);
-        verify(() => mockRepository.saveConfig(any())).called(3);
+        verify(() => mockRepository.saveConfig(any())).called(2);
       });
 
       testWidgets('should create prompts with correct names for Gemini', (
@@ -466,12 +466,12 @@ void main() {
           promptNames,
           contains('Image Analysis in Task Context - Gemini 2.5 Pro'),
         );
-        expect(promptNames, contains('Checklist Updates - Gemini 2.5 Pro'));
+        expect(promptNames.length, 2);
       });
     });
 
     group('Ollama - Prompt Creation', () {
-      testWidgets('should create 2 prompts for Ollama when user confirms', (
+      testWidgets('should create 1 prompt for Ollama when user confirms', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -504,7 +504,7 @@ void main() {
         await tester.pump();
 
         expect(result, isTrue);
-        verify(() => mockRepository.saveConfig(any())).called(2);
+        verify(() => mockRepository.saveConfig(any())).called(1);
       });
 
       testWidgets('should create prompts with correct names for Ollama', (
@@ -547,58 +547,13 @@ void main() {
             .map((p) => p.name)
             .toList();
 
-        // No audio prompt for Ollama
+        // No audio prompt for Ollama, only image
         expect(promptNames.any((n) => n.contains('Audio')), isFalse);
         expect(
           promptNames,
           contains('Image Analysis in Task Context - Qwen 3.5 9B'),
         );
-        expect(promptNames, contains('Checklist Updates - Qwen 3.5 9B'));
-      });
-
-      testWidgets('should assign Qwen to reasoning prompts', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => ollamaModels);
-
-        final savedConfigs = <AiConfig>[];
-        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
-          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
-          return Future.value();
-        });
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Set Up Prompts'));
-        await tester.pump();
-
-        final qwenModelId = ollamaModels
-            .firstWhere((m) => m.name.contains('Qwen'))
-            .id;
-
-        final checklistPrompt = savedConfigs
-            .whereType<AiConfigPrompt>()
-            .firstWhere((p) => p.name.contains('Checklist'));
-        expect(checklistPrompt.defaultModelId, qwenModelId);
+        expect(promptNames.length, 1);
       });
 
       testWidgets('should assign Qwen to image analysis prompt', (
@@ -648,7 +603,7 @@ void main() {
     });
 
     group('Snackbar Feedback', () {
-      testWidgets('should show correct count for Gemini (3 prompts)', (
+      testWidgets('should show correct count for Gemini (2 prompts)', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -679,10 +634,10 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
-        expect(find.text('3 prompts created successfully!'), findsOneWidget);
+        expect(find.text('2 prompts created successfully!'), findsOneWidget);
       });
 
-      testWidgets('should show correct count for Ollama (2 prompts)', (
+      testWidgets('should show correct count for Ollama (1 prompt)', (
         WidgetTester tester,
       ) async {
         await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -713,7 +668,7 @@ void main() {
         await tester.pump();
 
         expect(find.byIcon(Icons.check_circle), findsOneWidget);
-        expect(find.text('2 prompts created successfully!'), findsOneWidget);
+        expect(find.text('1 prompt created successfully!'), findsOneWidget);
       });
     });
 
@@ -845,7 +800,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // All prompts should use the only available model
-        expect(find.text('Uses Some Other Model'), findsNWidgets(3));
+        expect(find.text('Uses Some Other Model'), findsOneWidget);
 
         await tester.tap(find.text('Set Up Prompts'));
         await tester.pump();
@@ -967,10 +922,8 @@ void main() {
         final imagePrompt = prompts.firstWhere((p) => p.name.contains('Image'));
         expect(imagePrompt.aiResponseType, AiResponseType.imageAnalysis);
 
-        final checklistPrompt = prompts.firstWhere(
-          (p) => p.name.contains('Checklist'),
-        );
-        expect(checklistPrompt.aiResponseType, AiResponseType.checklistUpdates);
+        // Only image prompt is created for Ollama
+        expect(prompts.length, 1);
       });
     });
 
@@ -1252,6 +1205,7 @@ void main() {
           modelIds: ['model'],
           createdAt: DateTime.now(),
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
           useReasoning: false,
         ),
@@ -1746,6 +1700,7 @@ void main() {
           modelIds: ['model'],
           createdAt: DateTime.now(),
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
           useReasoning: false,
         ),
@@ -2376,16 +2331,15 @@ void main() {
       );
       expect(find.text('Prompts to create:'), findsOneWidget);
 
-      // Alibaba should have 4 prompts
+      // Alibaba should have 2 prompts: Audio + Image
       expect(find.text('Audio Transcript'), findsOneWidget);
       expect(find.text('Image Analysis'), findsOneWidget);
-      expect(find.text('Checklist Updates'), findsOneWidget);
-      expect(find.text('Task Summary'), findsOneWidget);
+      expect(find.text('Checklist Updates'), findsNothing);
+      expect(find.text('Task Summary'), findsNothing);
 
       // Model assignments
       expect(find.text('Uses Qwen3 Omni Flash'), findsOneWidget);
       expect(find.text('Uses Qwen3 VL Flash'), findsOneWidget);
-      expect(find.text('Uses Qwen3 Max'), findsNWidgets(2));
     });
 
     testWidgets('should display correct icons for Alibaba prompts', (
@@ -2416,11 +2370,11 @@ void main() {
 
       expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.byIcon(Icons.image), findsOneWidget);
-      expect(find.byIcon(Icons.checklist), findsOneWidget);
-      expect(find.byIcon(Icons.summarize), findsOneWidget);
+      expect(find.byIcon(Icons.checklist), findsNothing);
+      expect(find.byIcon(Icons.summarize), findsNothing);
     });
 
-    testWidgets('should create 3 prompts for Alibaba when user confirms', (
+    testWidgets('should create 2 prompts for Alibaba when user confirms', (
       WidgetTester tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -2453,7 +2407,7 @@ void main() {
       await tester.pump();
 
       expect(result, isTrue);
-      verify(() => mockRepository.saveConfig(any())).called(3);
+      verify(() => mockRepository.saveConfig(any())).called(2);
     });
 
     testWidgets('should create prompts with correct names for Alibaba', (
@@ -2504,10 +2458,10 @@ void main() {
         promptNames,
         contains('Image Analysis in Task Context - Qwen3 VL Flash'),
       );
-      expect(promptNames, contains('Checklist Updates - Qwen3 Max'));
+      expect(promptNames.length, 2);
     });
 
-    testWidgets('should show correct snackbar count for Alibaba (3 prompts)', (
+    testWidgets('should show correct snackbar count for Alibaba (2 prompts)', (
       WidgetTester tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(1024, 900));
@@ -2538,7 +2492,7 @@ void main() {
       await tester.pump();
 
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
-      expect(find.text('3 prompts created successfully!'), findsOneWidget);
+      expect(find.text('2 prompts created successfully!'), findsOneWidget);
     });
   });
 
@@ -2571,6 +2525,7 @@ void main() {
           modelIds: ['model'],
           createdAt: DateTime(2024, 3, 15),
           requiredInputData: [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
           useReasoning: false,
         ),

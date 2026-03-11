@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.915] - 2026-03-11
+### Removed
+- Legacy checklist updates prompt and task summary system — all conversation-
+  based processing code, UI widgets, and associated tests have been removed.
+  Task summaries are now handled exclusively by the agent system.
+
+### Improved
+- Task summary resolution: a new `TaskSummaryResolver` provides unified
+  fallback logic (agent report → legacy AI response) shared across prompt
+  building, linked task context, and the chat summary tool.
+- Agent report selection: when multiple agent-task links exist, the resolver
+  now picks the most recently assigned agent instead of an arbitrary one.
+- Recorder flow no longer blocks on transcription inference after recording.
+- Category settings no longer offer legacy prompt types that can never run.
+
 ## [0.9.914] - 2026-03-10
 ### Fixed
 - Local inference model display: conversation headers now show the actual

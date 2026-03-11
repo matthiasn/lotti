@@ -144,10 +144,12 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
     }
 
     if (includeTaskSummaryPrompts) {
+      // ignore: deprecated_member_use_from_same_package
       prompts[AiResponseType.taskSummary] = ['summary-prompt'];
     }
 
     if (includeChecklistPrompts) {
+      // ignore: deprecated_member_use_from_same_package
       prompts[AiResponseType.checklistUpdates] = ['checklist-prompt'];
     }
 

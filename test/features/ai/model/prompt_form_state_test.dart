@@ -79,6 +79,7 @@ void main() {
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
           aiResponseType: const PromptAiResponseType.dirty(
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
           ),
         );
@@ -91,6 +92,7 @@ void main() {
           userMessage: const PromptUserMessage.dirty('User message'),
           systemMessage: const PromptSystemMessage.dirty('System message'),
           aiResponseType: const PromptAiResponseType.dirty(
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
           ),
         );
@@ -104,6 +106,7 @@ void main() {
           defaultModelId: 'gpt-4',
           useReasoning: true,
           aiResponseType: const PromptAiResponseType.dirty(
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
           ),
         );
@@ -113,6 +116,7 @@ void main() {
         expect(updatedState.useReasoning, isTrue);
         expect(
           updatedState.aiResponseType.value,
+          // ignore: deprecated_member_use_from_same_package
           AiResponseType.taskSummary,
         );
         expect(updatedState.id, initialState.id);
@@ -136,6 +140,7 @@ void main() {
           category: const PromptCategory.dirty('Testing'),
           defaultVariables: {'input': 'default_value'},
           aiResponseType: const PromptAiResponseType.dirty(
+            // ignore: deprecated_member_use_from_same_package
             AiResponseType.taskSummary,
           ),
         );
@@ -154,6 +159,7 @@ void main() {
         expect(aiConfig.description, 'Detailed description here.');
         expect(aiConfig.category, 'Testing');
         expect(aiConfig.defaultVariables, {'input': 'default_value'});
+        // ignore: deprecated_member_use_from_same_package
         expect(aiConfig.aiResponseType, AiResponseType.taskSummary);
         expect(aiConfig.createdAt, isA<DateTime>());
       });

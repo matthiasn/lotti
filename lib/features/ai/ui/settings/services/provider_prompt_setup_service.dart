@@ -255,10 +255,6 @@ class ProviderPromptSetupService {
             template: imageAnalysisInTaskContextPrompt,
             model: modelSelection.imageModel!,
           ),
-        PromptConfig(
-          template: checklistUpdatesPrompt,
-          model: modelSelection.reasoningModel,
-        ),
       ],
       InferenceProviderType.gemini => [
         if (modelSelection.audioModel != null)
@@ -271,10 +267,6 @@ class ProviderPromptSetupService {
             template: imageAnalysisInTaskContextPrompt,
             model: modelSelection.imageModel!,
           ),
-        PromptConfig(
-          template: checklistUpdatesPrompt,
-          model: modelSelection.reasoningModel,
-        ),
       ],
       InferenceProviderType.ollama => [
         if (modelSelection.imageModel != null)
@@ -282,10 +274,6 @@ class ProviderPromptSetupService {
             template: imageAnalysisInTaskContextPrompt,
             model: modelSelection.imageModel!,
           ),
-        PromptConfig(
-          template: checklistUpdatesPrompt,
-          model: modelSelection.reasoningModel,
-        ),
       ],
       _ => [],
     };
@@ -310,16 +298,6 @@ class ProviderPromptSetupService {
             name: 'Image Analysis',
             modelName: modelSelection.imageModel!.name,
           ),
-        PromptPreviewInfo(
-          icon: Icons.checklist,
-          name: 'Checklist Updates',
-          modelName: modelSelection.reasoningModel.name,
-        ),
-        PromptPreviewInfo(
-          icon: Icons.summarize,
-          name: 'Task Summary',
-          modelName: modelSelection.reasoningModel.name,
-        ),
       ],
       InferenceProviderType.gemini => [
         if (modelSelection.audioModel != null)
@@ -334,16 +312,6 @@ class ProviderPromptSetupService {
             name: 'Image Analysis',
             modelName: modelSelection.imageModel!.name,
           ),
-        PromptPreviewInfo(
-          icon: Icons.checklist,
-          name: 'Checklist Updates',
-          modelName: modelSelection.reasoningModel.name,
-        ),
-        PromptPreviewInfo(
-          icon: Icons.summarize,
-          name: 'Task Summary',
-          modelName: modelSelection.reasoningModel.name,
-        ),
       ],
       InferenceProviderType.ollama => [
         if (modelSelection.imageModel != null)
@@ -352,16 +320,6 @@ class ProviderPromptSetupService {
             name: 'Image Analysis',
             modelName: modelSelection.imageModel!.name,
           ),
-        PromptPreviewInfo(
-          icon: Icons.checklist,
-          name: 'Checklist Updates',
-          modelName: modelSelection.reasoningModel.name,
-        ),
-        PromptPreviewInfo(
-          icon: Icons.summarize,
-          name: 'Task Summary',
-          modelName: modelSelection.reasoningModel.name,
-        ),
       ],
       _ => [],
     };

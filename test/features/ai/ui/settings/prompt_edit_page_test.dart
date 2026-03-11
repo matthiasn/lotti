@@ -33,7 +33,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: const [],
-        aiResponseType: AiResponseType.taskSummary,
+        aiResponseType: AiResponseType.audioTranscription,
       ),
     );
   });
@@ -74,8 +74,8 @@ void main() {
       modelIds: ['model-1', 'model-2'],
       createdAt: DateTime.now(),
       useReasoning: false,
-      requiredInputData: [InputDataType.task],
-      aiResponseType: AiResponseType.taskSummary,
+      requiredInputData: [InputDataType.audioFiles],
+      aiResponseType: AiResponseType.audioTranscription,
       description: 'A test prompt for unit tests',
       category: 'Testing',
     );
@@ -420,13 +420,13 @@ void main() {
         await tester.pumpAndSettle();
 
         // Check that existing values are displayed
-        // The test prompt has InputDataType.task and AiResponseType.taskSummary
+        // The test prompt has InputDataType.audioFiles and AiResponseType.audioTranscription
         expect(
-          find.text('Task'),
+          find.text('Audio Files'),
           findsOneWidget,
         ); // Input data type display name
         expect(
-          find.text('Task Summary'),
+          find.text('Audio Transcription'),
           findsOneWidget,
         ); // Response type display name
       },
@@ -482,6 +482,38 @@ void main() {
       expect(find.text('Select AI Response Type'), findsOneWidget);
     });
 
+    testWidgets(
+      'response type modal excludes legacy types handled by agent system',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Open the response type selection modal
+        final responseTypeCard = find.widgetWithText(
+          InkWell,
+          'Select response type',
+        );
+        await tester.ensureVisible(responseTypeCard);
+        await tester.pump();
+        await tester.tap(responseTypeCard);
+        await tester.pumpAndSettle();
+
+        // Verify modal is open
+        expect(find.text('Select AI Response Type'), findsOneWidget);
+
+        // Legacy response types must not appear in the picker
+        expect(find.text('Task Summary'), findsNothing);
+        expect(find.text('Checklist Updates'), findsNothing);
+
+        // Active response types should be present
+        expect(find.text('Audio Transcription'), findsOneWidget);
+        expect(find.text('Image Analysis'), findsOneWidget);
+      },
+    );
+
     testWidgets('save button is disabled when required fields are missing', (
       WidgetTester tester,
     ) async {
@@ -531,10 +563,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         when(
@@ -609,10 +641,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         when(
@@ -641,7 +673,8 @@ void main() {
         expect(systemPromptField, findsOneWidget);
 
         // Get initial text (should be the preconfigured prompt's system message)
-        final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
+        final preconfiguredPrompt =
+            preconfiguredPrompts['audio_transcription']!;
         final textField = tester.widget<TextFormField>(systemPromptField);
         expect(
           textField.controller?.text,
@@ -675,10 +708,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         when(
@@ -763,10 +796,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.taskSummary,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
           description: 'Test description',
         );
 
@@ -799,7 +832,10 @@ void main() {
         expect(captured, isA<AiConfigPrompt>());
         final savedPrompt = captured as AiConfigPrompt;
         expect(savedPrompt.trackPreconfigured, isTrue);
-        expect(savedPrompt.preconfiguredPromptId, equals('checklist_updates'));
+        expect(
+          savedPrompt.preconfiguredPromptId,
+          equals('audio_transcription'),
+        );
         expect(savedPrompt.name, equals('Updated Tracked Prompt'));
       });
 

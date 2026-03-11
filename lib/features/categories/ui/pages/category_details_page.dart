@@ -544,7 +544,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         final promptConfigs =
             prompts
                 .whereType<AiConfigPrompt>()
-                .where((p) => !p.archived)
+                .where(
+                  (p) => !p.archived && !p.aiResponseType.isLegacyType,
+                )
                 .toList()
               ..sort((a, b) => a.name.compareTo(b.name));
 
@@ -616,23 +618,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           _buildAutomaticPromptConfig(
             category,
             promptList,
-            AiResponseType.checklistUpdates,
-            context.messages.checklistUpdates,
-            Icons.checklist_rtl_outlined,
-          ),
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
             AiResponseType.imageAnalysis,
             context.messages.images,
             Icons.image_outlined,
-          ),
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
-            AiResponseType.taskSummary,
-            context.messages.taskSummaries,
-            Icons.summarize_outlined,
           ),
         ];
 

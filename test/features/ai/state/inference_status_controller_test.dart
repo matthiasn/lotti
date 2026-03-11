@@ -22,6 +22,7 @@ void main() {
 
   group('InferenceStatusController', () {
     const testId = 'test-id';
+    // ignore: deprecated_member_use_from_same_package
     const testAiResponseType = AiResponseType.taskSummary;
 
     test('initial state is idle', () {
@@ -81,6 +82,7 @@ void main() {
 
     test('different instances maintain separate states', () {
       const testId2 = 'test-id-2';
+      // ignore: deprecated_member_use_from_same_package
       const testAiResponseType2 = AiResponseType.taskSummary;
 
       final controller1 = container.read(
@@ -160,7 +162,9 @@ void main() {
 
   group('InferenceRunningController', () {
     const testId = 'test-id';
+    // ignore: deprecated_member_use_from_same_package
     const responseType1 = AiResponseType.taskSummary;
+    // ignore: deprecated_member_use_from_same_package
     const responseType2 = AiResponseType.checklistUpdates;
     final responseTypes = {responseType1, responseType2};
 

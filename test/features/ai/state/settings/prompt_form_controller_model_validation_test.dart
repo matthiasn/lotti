@@ -44,6 +44,7 @@ void main() {
           createdAt: DateTime.now(),
           useReasoning: false,
           requiredInputData: [],
+          // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
 
@@ -120,6 +121,7 @@ void main() {
         createdAt: DateTime.now(),
         useReasoning: false,
         requiredInputData: [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -167,6 +169,7 @@ void main() {
         createdAt: DateTime.now().subtract(const Duration(days: 1)),
         useReasoning: false,
         requiredInputData: [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -180,6 +183,7 @@ void main() {
         createdAt: existingPrompt.createdAt,
         useReasoning: false,
         requiredInputData: [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 

@@ -77,6 +77,7 @@ void main() {
               createdAt: now,
               useReasoning: false,
               requiredInputData: [InputDataType.task],
+              // ignore: deprecated_member_use_from_same_package
               aiResponseType: AiResponseType.taskSummary,
               description: 'A test prompt for testing purposes',
             )
@@ -379,6 +380,7 @@ void main() {
             .read(
               inferenceStatusControllerProvider(
                 id: 'test-entity',
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
               ).notifier,
             )
@@ -483,6 +485,7 @@ void main() {
             .read(
               inferenceStatusControllerProvider(
                 id: 'test-entity',
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
               ).notifier,
             )
@@ -767,6 +770,7 @@ void main() {
                 createdAt: DateTime.now(),
                 useReasoning: false,
                 requiredInputData: [InputDataType.task],
+                // ignore: deprecated_member_use_from_same_package
                 aiResponseType: AiResponseType.taskSummary,
                 description: 'Test description',
               )

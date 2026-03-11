@@ -526,6 +526,7 @@ void main() {
         createdAt: createdAt,
         useReasoning: false,
         requiredInputData: const <InputDataType>[],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 
@@ -883,6 +884,7 @@ void main() {
         createdAt: DateTime(2024),
         useReasoning: false,
         requiredInputData: const [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 

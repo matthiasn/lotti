@@ -92,6 +92,7 @@ void main() {
         modelIds: [],
         useReasoning: false,
         requiredInputData: [],
+        // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
 

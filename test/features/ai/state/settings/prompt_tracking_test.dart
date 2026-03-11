@@ -39,10 +39,10 @@ void main() {
           modelIds: ['model1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.checklistUpdates,
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'checklist_updates',
+          preconfiguredPromptId: 'audio_transcription',
         );
 
         when(
@@ -58,7 +58,8 @@ void main() {
         );
 
         // Get the preconfigured prompt
-        final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
+        final preconfiguredPrompt =
+            preconfiguredPrompts['audio_transcription']!;
 
         // Toggle tracking off
         controller.toggleTrackPreconfigured(false);
@@ -100,10 +101,10 @@ void main() {
         modelIds: ['model1'],
         createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
+        requiredInputData: [InputDataType.audioFiles],
+        aiResponseType: AiResponseType.audioTranscription,
         trackPreconfigured: true,
-        preconfiguredPromptId: 'checklist_updates',
+        preconfiguredPromptId: 'audio_transcription',
       );
 
       when(
@@ -119,7 +120,7 @@ void main() {
       );
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
+      final preconfiguredPrompt = preconfiguredPrompts['audio_transcription']!;
 
       // Verify the controllers loaded the preconfigured values
       expect(
@@ -143,9 +144,9 @@ void main() {
         modelIds: ['model1'],
         createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
-        requiredInputData: [InputDataType.task],
-        aiResponseType: AiResponseType.checklistUpdates,
-        preconfiguredPromptId: 'checklist_updates',
+        requiredInputData: [InputDataType.audioFiles],
+        aiResponseType: AiResponseType.audioTranscription,
+        preconfiguredPromptId: 'audio_transcription',
       );
 
       when(
@@ -174,7 +175,7 @@ void main() {
       controller.toggleTrackPreconfigured(true);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['checklist_updates']!;
+      final preconfiguredPrompt = preconfiguredPrompts['audio_transcription']!;
 
       // Should now have preconfigured values
       expect(

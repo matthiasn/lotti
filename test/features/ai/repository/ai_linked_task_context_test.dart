@@ -798,6 +798,7 @@ void main() {
             thoughts: 'thoughts',
             response:
                 'This is the task summary with\n## Links\n- [PR #123](https://github.com/org/repo/pull/123)',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
         );
@@ -843,6 +844,7 @@ void main() {
             prompt: 'prompt',
             thoughts: 'thoughts',
             response: 'Old summary',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
         );
@@ -861,6 +863,7 @@ void main() {
             prompt: 'prompt',
             thoughts: 'thoughts',
             response: 'Newer summary - this is the latest',
+            // ignore: deprecated_member_use_from_same_package
             type: AiResponseType.taskSummary,
           ),
         );

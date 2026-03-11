@@ -179,8 +179,6 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                 height: 50,
                 isInteractive: true,
                 responseTypes: const {
-                  AiResponseType.taskSummary,
-                  AiResponseType.checklistUpdates,
                   AiResponseType.imageAnalysis,
                   AiResponseType.audioTranscription,
                 },
