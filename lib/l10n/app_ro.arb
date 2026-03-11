@@ -1886,6 +1886,10 @@
     }
   },
   "tasksAddLabelButton": "Adaugă etichetă",
+  "tasksAgentFilterAll": "Toate",
+  "tasksAgentFilterHasAgent": "Cu agent",
+  "tasksAgentFilterNoAgent": "Fără agent",
+  "tasksAgentFilterTitle": "Agent",
   "tasksFilterTitle": "Filtru sarcini",
   "tasksLabelFilterAll": "Toate",
   "tasksLabelFilterTitle": "Etichete",

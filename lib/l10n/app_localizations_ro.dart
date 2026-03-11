@@ -4649,6 +4649,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksAddLabelButton => 'Adaugă etichetă';
 
   @override
+  String get tasksAgentFilterAll => 'Toate';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Cu agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Fără agent';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
   String get tasksFilterTitle => 'Filtru sarcini';
 
   @override

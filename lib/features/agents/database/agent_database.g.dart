@@ -3208,6 +3208,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<int>('cnt'));
   }
 
+  Selectable<String> getAgentTaskLinkToIds() {
+    return customSelect(
+      'SELECT DISTINCT to_id FROM agent_links WHERE type = \'agent_task\' AND deleted_at IS NULL',
+      variables: [],
+      readsFrom: {agentLinks},
+    ).map((QueryRow row) => row.read<String>('to_id'));
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

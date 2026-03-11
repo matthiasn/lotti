@@ -230,17 +230,18 @@ class AgentRepository {
     String templateVersionId, {
     String? resolvedModelId,
   }) async {
-    final updatedRows = await (_db.update(
-      _db.wakeRunLog,
-    )..where((t) => t.runKey.equals(runKey))).write(
-      WakeRunLogCompanion(
-        templateId: Value(templateId),
-        templateVersionId: Value(templateVersionId),
-        resolvedModelId: resolvedModelId != null
-            ? Value(resolvedModelId)
-            : const Value.absent(),
-      ),
-    );
+    final updatedRows =
+        await (_db.update(
+          _db.wakeRunLog,
+        )..where((t) => t.runKey.equals(runKey))).write(
+          WakeRunLogCompanion(
+            templateId: Value(templateId),
+            templateVersionId: Value(templateVersionId),
+            resolvedModelId: resolvedModelId != null
+                ? Value(resolvedModelId)
+                : const Value.absent(),
+          ),
+        );
 
     if (updatedRows == 0) {
       throw StateError('No wake_run_log row found for runKey: $runKey');
@@ -572,6 +573,13 @@ class AgentRepository {
   Future<List<model.AgentLink>> getLinksWithNullVectorClock() async {
     final rows = await _db.getAgentLinksWithNullVectorClock().get();
     return rows.map(AgentDbConversions.fromLinkRow).toList();
+  }
+
+  /// Returns the set of journal task IDs that have a non-deleted `agent_task`
+  /// link. Used by the task filter to distinguish assigned vs unassigned tasks.
+  Future<Set<String>> getTaskIdsWithAgentLink() async {
+    final rows = await _db.getAgentTaskLinkToIds().get();
+    return rows.toSet();
   }
 
   /// Count agent links (including soft-deleted) whose serialized

@@ -34,6 +34,12 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
   showDueDate: json['showDueDate'] as bool? ?? true,
   showCoverArt: json['showCoverArt'] as bool? ?? true,
   showDistances: json['showDistances'] as bool? ?? false,
+  agentAssignmentFilter:
+      $enumDecodeNullable(
+        _$AgentAssignmentFilterEnumMap,
+        json['agentAssignmentFilter'],
+      ) ??
+      AgentAssignmentFilter.all,
 );
 
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
@@ -47,10 +53,18 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'showDueDate': instance.showDueDate,
       'showCoverArt': instance.showCoverArt,
       'showDistances': instance.showDistances,
+      'agentAssignmentFilter':
+          _$AgentAssignmentFilterEnumMap[instance.agentAssignmentFilter]!,
     };
 
 const _$TaskSortOptionEnumMap = {
   TaskSortOption.byPriority: 'byPriority',
   TaskSortOption.byDate: 'byDate',
   TaskSortOption.byDueDate: 'byDueDate',
+};
+
+const _$AgentAssignmentFilterEnumMap = {
+  AgentAssignmentFilter.all: 'all',
+  AgentAssignmentFilter.hasAgent: 'hasAgent',
+  AgentAssignmentFilter.noAgent: 'noAgent',
 };

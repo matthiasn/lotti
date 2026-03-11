@@ -1886,6 +1886,10 @@
     }
   },
   "tasksAddLabelButton": "Añadir etiqueta",
+  "tasksAgentFilterAll": "Todos",
+  "tasksAgentFilterHasAgent": "Con agente",
+  "tasksAgentFilterNoAgent": "Sin agente",
+  "tasksAgentFilterTitle": "Agente",
   "tasksFilterTitle": "Filtro de tareas",
   "tasksLabelFilterAll": "Todas",
   "tasksLabelFilterTitle": "Etiquetas",

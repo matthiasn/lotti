@@ -1584,10 +1584,8 @@ void main() {
 
         // Two separate chunks → two separate responses
         expect(responses.length, 2);
-        final firstToolCalls =
-            responses[0].choices!.first.delta!.toolCalls!;
-        final secondToolCalls =
-            responses[1].choices!.first.delta!.toolCalls!;
+        final firstToolCalls = responses[0].choices!.first.delta!.toolCalls!;
+        final secondToolCalls = responses[1].choices!.first.delta!.toolCalls!;
         expect(firstToolCalls.first.index, 0);
         expect(secondToolCalls.first.index, 1);
       },

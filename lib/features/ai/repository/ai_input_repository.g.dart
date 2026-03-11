@@ -54,4 +54,4 @@ final class AiInputRepositoryProvider
   }
 }
 
-String _$aiInputRepositoryHash() => r'e51003db310e1baa103851d163173a2acf68976c';
+String _$aiInputRepositoryHash() => r'5f778b08b7894dca59c4a37ad4ec4b0a28fbdf19';

@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.916" date="2026-03-11">
+      <description>
+          <p>New task filter: filter by agent assignment (All / Has Agent / No Agent) in the Task Filter Modal. Quickly find tasks that still need an agent assigned. Zero performance overhead when the filter is in its default state.</p>
+      </description>
+    </release>
     <release version="0.9.915" date="2026-03-11">
       <description>
           <p>Removed legacy checklist updates and task summary system — conversation-based processing replaced by agent system. New TaskSummaryResolver provides unified fallback (agent report then legacy AI response) across prompt building, linked task context, and chat summary tool. Agent report selection now picks the most recently assigned agent. Recorder no longer blocks on transcription inference. Category settings hide legacy prompt types.</p>

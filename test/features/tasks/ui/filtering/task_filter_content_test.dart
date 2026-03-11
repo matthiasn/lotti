@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_agent_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_content.dart';
@@ -108,6 +109,7 @@ void main() {
       expect(find.byType(TaskPriorityFilter), findsOneWidget);
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
       expect(find.byType(TaskLabelFilter), findsOneWidget);
+      expect(find.byType(TaskAgentFilter), findsOneWidget);
     });
 
     testWidgets('has correct layout structure', (tester) async {

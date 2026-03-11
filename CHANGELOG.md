@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.916] - 2026-03-11
+### Added
+- Task filter: filter by agent assignment (All / Has Agent / No Agent) in the
+  Task Filter Modal. Enables efficient backfilling of agent assignments by
+  showing only unassigned tasks. Zero performance overhead when filter is off.
+
 ## [0.9.915] - 2026-03-11
 ### Removed
 - Legacy checklist updates prompt and task summary system — all conversation-
