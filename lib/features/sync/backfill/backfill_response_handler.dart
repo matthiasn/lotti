@@ -1,4 +1,5 @@
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
@@ -167,6 +168,52 @@ class BackfillResponseHandler {
       case SyncSequencePayloadType.agentLink:
         return (await agentRepository?.getLinkById(payloadId))?.vectorClock;
     }
+  }
+
+  Future<SyncSequenceLogItem?> _findVerifiedCoveringEntry({
+    required String hostId,
+    required int requestedCounter,
+    required int searchFromCounter,
+  }) async {
+    final covering = await _sequenceLogService.getNearestCoveringEntry(
+      hostId,
+      searchFromCounter,
+    );
+
+    if (covering == null || covering.entryId == null) {
+      return null;
+    }
+
+    final payloadType = SyncSequencePayloadType.values.elementAt(
+      covering.payloadType,
+    );
+    final coveringVc = await _loadPayloadVectorClock(
+      payloadId: covering.entryId!,
+      payloadType: payloadType,
+    );
+    final coveringVcCounter = coveringVc?.vclock[hostId];
+
+    if (coveringVcCounter != null && coveringVcCounter >= requestedCounter) {
+      _trace(
+        'using verified covering entry '
+        'hostId=$hostId requestedCounter=$requestedCounter '
+        'coveringCounter=${covering.counter} '
+        'coveringVcCounter=$coveringVcCounter '
+        'payloadId=${covering.entryId}',
+        subDomain: 'backfill.coveringFallback',
+      );
+      return covering;
+    }
+
+    _trace(
+      'covering entry VC does not cover counter, rejecting '
+      'hostId=$hostId requestedCounter=$requestedCounter '
+      'coveringCounter=${covering.counter} '
+      'payloadId=${covering.entryId} '
+      'coveringVcCounter=$coveringVcCounter',
+      subDomain: 'backfill.coveringRejected',
+    );
+    return null;
   }
 
   /// When the VC doesn't contain the exact counter, decide whether to send
@@ -380,6 +427,48 @@ class BackfillResponseHandler {
       counter,
     );
 
+    if (logEntry != null && logEntry.entryId != null) {
+      final payloadType = SyncSequencePayloadType.values.elementAt(
+        logEntry.payloadType,
+      );
+      final payloadVc = await _loadPayloadVectorClock(
+        payloadId: logEntry.entryId!,
+        payloadType: payloadType,
+      );
+      final vcCounter = payloadVc?.vclock[hostId];
+
+      // An exact row is only safe to answer from when the current payload VC
+      // still covers the requested counter. Otherwise the row is stale and
+      // should fall back to a verified covering entry, not resend first.
+      if (payloadVc != null && (vcCounter == null || vcCounter < counter)) {
+        _trace(
+          'exact entry VC does not cover counter, rejecting '
+          'hostId=$hostId requestedCounter=$counter '
+          'logCounter=${logEntry.counter} payloadId=${logEntry.entryId} '
+          'vcCounter=$vcCounter',
+          subDomain: 'backfill.exactRejected',
+        );
+        logEntry = await _findVerifiedCoveringEntry(
+          hostId: hostId,
+          requestedCounter: counter,
+          searchFromCounter: counter + 1,
+        );
+
+        if (logEntry == null) {
+          final myHost = await _vectorClockService.getHost();
+          if (myHost != null && hostId == myHost) {
+            await _sendUnresolvableResponse(
+              hostId: hostId,
+              counter: counter,
+              payloadType: payloadType,
+            );
+            return true;
+          }
+          return false;
+        }
+      }
+    }
+
     if (logEntry == null || logEntry.entryId == null) {
       // Log whether the entry exists at all vs exists without entryId
       _trace(
@@ -393,57 +482,14 @@ class BackfillResponseHandler {
       // counter for the same host that has a resolved payload). This handles
       // the superseded scenario: counter 5 was superseded by counter 7, so
       // we only have (host, 7) in our log, not (host, 5).
-      final covering = await _sequenceLogService.getNearestCoveringEntry(
-        hostId,
-        counter,
+      final covering = await _findVerifiedCoveringEntry(
+        hostId: hostId,
+        requestedCounter: counter,
+        searchFromCounter: counter,
       );
 
-      if (covering != null && covering.entryId != null) {
-        // Verify the covering entry's payload VC actually covers the
-        // requested counter. Without this, the nearest higher counter
-        // might map to a completely unrelated entity, creating a
-        // permanently unresolvable loop where the hint is stored but
-        // verification always fails.
-        final coveringVc = await _loadPayloadVectorClock(
-          payloadId: covering.entryId!,
-          payloadType: SyncSequencePayloadType.values.elementAt(
-            covering.payloadType,
-          ),
-        );
-        final coveringVcCounter = coveringVc?.vclock[hostId];
-
-        if (coveringVcCounter != null && coveringVcCounter >= counter) {
-          _trace(
-            'exact counter not found, using verified covering entry '
-            'hostId=$hostId requestedCounter=$counter '
-            'coveringCounter=${covering.counter} '
-            'coveringVcCounter=$coveringVcCounter '
-            'payloadId=${covering.entryId}',
-            subDomain: 'backfill.coveringFallback',
-          );
-          logEntry = covering;
-        } else {
-          _trace(
-            'covering entry VC does not cover counter, rejecting '
-            'hostId=$hostId requestedCounter=$counter '
-            'coveringCounter=${covering.counter} '
-            'payloadId=${covering.entryId} '
-            'coveringVcCounter=$coveringVcCounter',
-            subDomain: 'backfill.coveringRejected',
-          );
-          final myHost = await _vectorClockService.getHost();
-          if (myHost != null && hostId == myHost) {
-            await _sendUnresolvableResponse(
-              hostId: hostId,
-              counter: counter,
-              payloadType: SyncSequencePayloadType.values.elementAt(
-                covering.payloadType,
-              ),
-            );
-            return true;
-          }
-          return false;
-        }
+      if (covering != null) {
+        logEntry = covering;
       } else {
         // No covering entry found either
         final myHost = await _vectorClockService.getHost();
@@ -466,19 +512,20 @@ class BackfillResponseHandler {
       }
     }
 
-    final payloadId = logEntry.entryId!;
+    final resolvedLogEntry = logEntry;
+    final payloadId = resolvedLogEntry.entryId!;
     final payloadType = SyncSequencePayloadType.values.elementAt(
-      logEntry.payloadType,
+      resolvedLogEntry.payloadType,
     );
 
     // Use the originatingHostId from the sequence log entry, or fall back to
     // the requested hostId.
-    final originatingHostId = logEntry.originatingHostId ?? hostId;
+    final originatingHostId = resolvedLogEntry.originatingHostId ?? hostId;
 
     _trace(
       'found logEntry hostId=$hostId counter=$counter '
       'payloadId=$payloadId payloadType=$payloadType '
-      'logCounter=${logEntry.counter} origHost=$originatingHostId',
+      'logCounter=${resolvedLogEntry.counter} origHost=$originatingHostId',
       subDomain: 'backfill.found',
     );
 

@@ -18,7 +18,7 @@ void main() {
 
   group('CatchUpStrategy', () {
     test(
-      'escalates when marker missing after backfill and snapshot is full',
+      'returns bounded tail when marker missing after backfill and snapshot is full',
       () async {
         final room = MockRoom();
         final log = MockLogging();
@@ -64,11 +64,14 @@ void main() {
                 required int maxPages,
                 required LoggingService logging,
               }) async => true,
-          maxLookback: 1000,
+          maxLookback: 5000,
         );
 
-        // Should escalate to maxLookback and return that full window
+        // Should escalate to maxLookback, but only return the bounded fallback
+        // tail instead of replaying the entire snapshot.
         expect(slice.length, 1000);
+        expect(slice.first.eventId, 'e4000');
+        expect(slice.last.eventId, 'e4999');
         for (final tl in created) {
           verify(() => tl.cancelSubscriptions()).called(1);
         }
@@ -118,6 +121,45 @@ void main() {
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
+
+    test('uses configurable bounded tail when marker missing', () async {
+      final room = MockRoom();
+      final log = MockLogging();
+      final tl = MockTimeline();
+
+      final events = List<Event>.generate(20, (i) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn('e$i');
+        when(
+          () => e.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+        return e;
+      });
+
+      when(
+        () => room.getTimeline(limit: any(named: 'limit')),
+      ).thenAnswer((_) async => tl);
+      when(() => tl.events).thenReturn(events);
+      when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        room: room,
+        lastEventId: 'missing',
+        logging: log,
+        backfill:
+            ({
+              required Timeline timeline,
+              required String? lastEventId,
+              required int pageSize,
+              required int maxPages,
+              required LoggingService logging,
+            }) async => true,
+        missingMarkerFallbackLimit: 3,
+      );
+
+      expect(slice.map((e) => e.eventId), ['e17', 'e18', 'e19']);
+      verify(() => tl.cancelSubscriptions()).called(1);
+    });
     test('preContextCount=80 bounds pre-context inclusion window', () async {
       final room = MockRoom();
       final log = MockLogging();

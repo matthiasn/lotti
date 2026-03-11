@@ -1,683 +1,127 @@
-# Sync Feature Documentation
+# Sync
 
-## Overview
+## What This Feature Is
 
-Lotti synchronises encrypted journal data across devices through the Matrix
-protocol. Since the 2025-10-06 refactor the sync stack is composed of
-constructor-injected services, Riverpod providers, and a coordinated lifecycle
-that keeps the pipeline testable and observable.
+Sync is the feature that keeps one user's data in step across that user's
+devices.
 
-## UI Surfaces
+At a high level:
 
-- Sync Settings (under `/settings/sync`) now pulls its Outbox and Conflicts list pages from
-  `lib/features/sync/ui/...`, using a shared `SyncListScaffold` for filter chips, inline summaries,
-  and animated empty/loading states.
-- Segmented filter chips hide zero-value badges, suppress redundant success/resolved totals, and
-  draw tinted, bordered badges for pending/error/unresolved counts so actionable numbers stand out
-  while the empty state card stays within the content width on phones.
-- `OutboxListItem` + `OutboxListItemViewModel` format payload metadata, retries, attachments, and
-  retry affordances; retry actions are confirmed before requeueing.
-- `ConflictListItem` + `ConflictListItemViewModel` present entity context, vector clock details, and
-  semantics labels for accessibility. Tapping navigates to the existing conflict detail route.
-- Tests for these surfaces live alongside other sync UI coverage under
-  `test/features/sync/ui/...` with cross-cutting widget smoke tests in `test/widgets/sync`
-  (see `test/widgets/sync/conflict_list_item_test.dart` and
-  `test/widgets/sync/sync_list_scaffold_test.dart` for dedicated widget coverage).
+1. Each device writes local changes to an outbox.
+2. The outbox publishes sync messages into an encrypted Matrix room.
+3. Other devices read those messages, apply them locally, and advance their
+   local view.
+4. If a device notices that some counters are missing, it asks for backfill.
 
-## Architecture
+The core idea is simple:
 
-### Core Services
+- journal entries, entry links, agent entities, and agent links are sent as
+  sync messages
+- each change carries causal information through vector clocks
+- newer state should dominate older state
+- if a device missed something, another device should be able to fill the gap
 
-| Component | Responsibility |
+## Main Parts
+
+| Part | What it does |
 | --- | --- |
-| **SyncEngine** (`matrix/sync_engine.dart`) | Owns the high-level lifecycle via `SyncLifecycleCoordinator`, runs login/logout hooks, and surfaces diagnostic snapshots. |
-| **MatrixService** (`matrix/matrix_service.dart`) | Wraps the `MatrixSyncGateway`, coordinates verification flows, exposes stats/read markers, and delegates lifecycle work to the engine. |
-| **MatrixSyncGateway** (`gateway/matrix_sdk_gateway.dart`) | Abstraction over the Matrix SDK for login, room lookup, invites, timelines, and logout. |
-| **MatrixMessageSender** (`matrix/matrix_message_sender.dart`) | Encodes `SyncMessage`s, uploads attachments (descriptor JSON is sent from a single snapshot for vector-clock consistency), registers the Matrix event IDs it emits, increments send counters, and notifies `MatrixService`. |
-| **SentEventRegistry** (`matrix/sent_event_registry.dart`) | In-memory TTL cache of event IDs produced by this device so timeline ingestion can drop echo events without re-applying them. |
-| **MatrixStreamConsumer** (`matrix/pipeline/matrix_stream_consumer.dart`) | Stream-first consumer: attach-time catch-up (SDK pagination/backfill with graceful fallback), micro-batched streaming, attachment descriptor observation, monotonic marker advancement, retries with TTL + size cap, circuit breaker, and metrics. |
-| **SyncRoomManager** (`matrix/sync_room_manager.dart`) | Persists the active room, filters invites, validates IDs, hydrates cached rooms, and orchestrates safe join/leave operations. |
-| **SyncEventProcessor** (`matrix/sync_event_processor.dart`) | Decodes `SyncMessage`s, mutates `JournalDb`, emits notifications (e.g. `UpdateNotifications`), and surfaces precise `applied/skipReason` diagnostics so the pipeline can distinguish conflicts, older/equal payloads, and genuine missing-base scenarios. Also handles `SyncAgentEntity` and `SyncAgentLink` variants: upserts agent data via `AgentSyncService`, restores wake subscriptions for active task agents on incoming identity entities, and restores subscriptions on incoming `agent_task` links when the linked agent is active. |
-| **SyncReadMarkerService** (`matrix/read_marker_service.dart`) | Writes Matrix read markers after successful timeline processing and persists the last processed event ID. |
-| **OutboxService** (`outbox/outbox_service.dart`) | Stores pending messages with priority-based ordering, resolves attachments, and hands work to `MatrixMessageSender`. Handles `SyncAgentEntity` and `SyncAgentLink` message variants alongside journal entities and links. Priority is assigned based on message type (high for user actions, normal for agent/system, low for bulk resync). |
-| **SyncHealthReporter** (`health/sync_health_reporter.dart`) | Periodic health summary emitter. When sync domain logging is enabled, logs outbox pending/sent counts and sequence log missing/requested counts every 5 minutes via `DomainLogger`. |
-| **UserActivityGate** (`features/user_activity/state/user_activity_gate.dart`) | Exposes reactive idleness signals so heavy timeline processing defers while the user is active. |
-| **SyncSequenceLogService** (`sequence/sync_sequence_log_service.dart`) | Tracks (hostId, counter) pairs for gap detection; enables self-healing backfill. |
-| **BackfillRequestService** (`backfill/backfill_request_service.dart`) | Periodically scans for missing entries and broadcasts batched backfill requests. |
-| **BackfillResponseHandler** (`backfill/backfill_response_handler.dart`) | Responds to backfill requests by re-sending entries; handles responses to update sequence log. |
-
-### Provider Wiring & Lint Guard
-
-- Core sync services are provided via Riverpod (`lib/providers/service_providers.dart`)
-  and overridden in `lib/main.dart` when the app boots. Tests override the same
-  providers to inject mocks/fakes.
-- The custom lint rule `no_get_it_in_sync` (shipping from
-  `tool/lotti_custom_lint`) fails analysis if `getIt` is referenced inside
-  `lib/features/sync` or `lib/widgets/sync`, preventing regressions.
-- Additional documentation is available in `docs/architecture/sync_engine.md`.
-
-### Sync Pipeline
-
-- `MatrixStreamConsumer` attaches directly to the sync room and performs
-  attach-time catch-up via SDK pagination/backfill with a graceful fallback for
-  large gaps.
-- `MatrixStreamConsumer` is composed of focused pipeline units in
-  `matrix/pipeline/`: catch-up coordination (`matrix_stream_catch_up.dart`),
-  live-scan scheduling (`matrix_stream_live_scan.dart`), ordered processing +
-  metrics (`matrix_stream_processor.dart`), and signal wiring
-  (`matrix_stream_signals.dart`).
-- Signal-driven ingestion (2025-10-28):
-  - Client stream events are treated as signals that always trigger a
-    `forceRescan()` with catch-up. An in-flight guard prevents overlapping
-    catch-ups.
-  - Live timeline callbacks continue to schedule debounced live scans; on
-    scheduling failure, the consumer falls back to `forceRescan()`.
-  - Marker advancement happens only from ordered slices returned by
-    catch-up/live scans, never directly from the client stream.
-- Live streaming is micro-batched and ordered chronologically with
-    de-duplication by event ID; attachment descriptors are observed and recorded before invoking
-    `SyncEventProcessor`. Attachment downloads are queued asynchronously (bounded concurrency) so
-    ordered processing never waits; `SmartJournalEntityLoader` still fetches on-demand when needed.
-  - Read markers advance monotonically using Matrix timestamps with event IDs as
-    tie-breakers. The consumer persists the newest processed ID through
-    `SyncReadMarkerService` so fresh sessions resume from the correct position.
-  - Retries apply exponential backoff with a TTL, bounded queue, and circuit
-    breaker to avoid thrashing on persistent failures. Diagnostics surface per
-    event via `SyncApplyDiagnostics`.
-  - Optional typed metrics (`SyncMetrics`) power the Matrix Stats UI and tooling.
-
-- SDK sync wait before catch-up (2025-12):
-  - `_attachCatchUp()` waits for `client.onSync` before collecting events, ensuring
-    the SDK has fetched latest events from the server. This fixes catch-up failures
-    when the app comes online after extended offline periods.
-  - 30-second timeout allows for slow networks while preventing indefinite blocking.
-  - If timeout occurs, a one-time listener (`_pendingSyncSubscription`) triggers
-    a follow-up catch-up when sync eventually completes.
-  - Log: `catchup.waitForSync synced=<bool>`, `waitForSync.timeout`,
-    `pendingSyncListener.triggered`.
-  - Tuning: `SyncTuning.catchupSyncWaitTimeout` (default 30s).
-
-- Coalescing & throttling (2025-11):
-  - Catch-up coalesces with a 1s minimum gap. If signals arrive while a
-    catch-up is running, exactly one trailing catch-up is scheduled ~1s after
-    completion. Logging emits `catchup.start` once at the beginning of a
-    coalesced burst and `catchup.done events=<n>` once after the last run.
-  - Live-scan never overlaps. `_scanInFlight` is guarded by a small nesting
-    counter so nested scans keep the guard asserted until the outermost scan
-    finishes. Signals during a scan defer as a single trailing scan scheduled
-    after completion. A small base debounce (~120ms) is extended as needed to
-    honor the 1s minimum gap; log `signal.liveScan.coalesce`.
-  - Attachment double-scan awaits the immediate second pass and schedules a
-    delayed pass at +200ms. This reduces churn while still catching
-    late-arriving text that pairs with attachments.
-  - Historical windows tightened to reduce redundant work:
-    - Catch-up `preContextCount = 80`, `maxLookback = 10000`.
-    - Live-scan processes only events strictly after the last marker.
-  - Log noise reduced under `collectMetrics`: `signal.*`, `noAdvance.rescan`,
-    and `doubleScan.*` are gated; `marker.local` condensed to one line with
-    id+ts.
-  - Marker advancement happens only from ordered slices returned by
-    catch-up/live scans, never directly from the client stream.
-### Outbox resiliency (2025-11)
-
-- Watchdog (every 10s) enqueues a drain when `pending > 0`, logged-in, and the
-  queue is idle. Log: `watchdog: pending+loggedIn idleQueue → enqueue`.
-- DB nudge subscribes to outbox count changes and enqueues after a short
-  debounce (50ms). Logs: `dbNudge count=<n> → enqueue` then `enqueueRequest() done`.
-- Send timeout (default 20s) marks retry and logs `timedOut=true`; repeated
-  failures produce breadcrumbs, and pass-cap continuation proactively schedules
-  a follow-up drain so the queue advances past pathological items.
-- ClientRunner guards callback errors so the queue cannot die silently.
-- Retry backoff gate coalesces send triggers while a retry delay is active,
-  preventing rapid-fire retries during spotty connectivity.
-- Logging DB writes are best-effort (exceptions captured, file breadcrumbs kept)
-  so diagnostics never block outbox progress.
-
-### Outbox Priority Queue (2026-03)
-
-The outbox uses priority-based ordering so user-initiated actions sync before
-bulk operations. Each outbox entry has a `priority` column (integer, lower =
-higher priority):
-
-| Priority | Index | Message Types |
-| --- | --- | --- |
-| **High** | 0 | `SyncJournalEntity`, `SyncEntryLink` (user edits) |
-| **Normal** | 1 | `SyncBackfillRequest/Response`, `SyncAgentEntity/Link`, `SyncThemingSelection` |
-| **Low** | 2 | `SyncEntityDefinition`, `SyncTagEntity`, `SyncAiConfig`, `SyncAiConfigDelete` |
-
-Queries `oldestOutboxItems` and `claimNextOutboxItem` order by
-`priority ASC, createdAt ASC` so high-priority items are processed first.
-`watchOutboxItems` orders by `priority ASC, createdAt DESC` for UI display
-(newest items first within each priority band).
-
-The `OutboxPriority` enum is defined in `outbox_state_controller.dart`. Priority
-assignment happens in `OutboxService.enqueueMessage()` via an exhaustive switch
-on the `SyncMessage` variant.
-
-**Schema:** Added in migration v5→v6. Existing rows default to `low` (2).
-
-### Self-Healing Sync / Backfill (2025-12)
-
-Sync messages can occasionally go missing due to network issues, corruption, or
-timing problems. The self-healing sync mechanism detects these gaps and
-automatically requests missing entries from peer devices.
-
-**Problem:** When a sync message is lost, entries may never sync even after
-catch-up runs. The user observes data missing on one device but present on
-another.
-
-**Solution:** A sequence log tracks `(hostId, counter, entryId, payloadType)`
-tuples. When a message arrives with counter N but the last seen counter for that
-host was N-2, the system detects counter N-1 is missing. Periodically, missing
-entries are requested via broadcast. Any device with the entry can respond.
-
-**Payload Types:** The `SyncSequencePayloadType` enum distinguishes between
-message types: `journalEntity` for journal entries, `entryLink` for entry
-links, `agentEntity` for agent domain entities, and `agentLink` for agent
-links. All four types are tracked independently in the sequence log, enabling
-complete reconstruction of sync state. Agent payloads carry `originatingHostId`
-and `coveredVectorClocks` fields in their sync messages, just like journal
-entities and entry links.
-
-**Components:**
-- `SyncSequenceLog` table in `sync_db.dart` — stores sequence entries with
-  status (received, missing, requested, backfilled, deleted)
-- `HostActivity` table — tracks when each peer was last seen online
-- `SyncSequenceLogService` — records received/sent entries, detects gaps,
-  manages sequence status, resolves pending backfill hints
-- `BackfillRequestService` — periodically scans for missing entries and sends
-  batched `SyncBackfillRequest` messages (up to 100 entries per message)
-- `BackfillResponseHandler` — handles incoming requests (re-sends entries,
-  sends BackfillResponse hints for superseded counters including own counters),
-  verifies responses, and applies per-counter cooldown + rate limiting to
-  prevent N-device amplification storms
-
-**Gap Detection:**
-- Examines ALL hosts in incoming vector clocks (not just the originator)
-- For each host, compares the counter against the last seen counter
-- Any counter jumps > 1 trigger gap entries marked as `missing`
-- When an entry arrives, ALL (hostId, counter) pairs in its VC are updated to
-  received/backfilled status (not just the originator's counter)
-- **Online Host Guard:** Gap detection is only performed for hosts that have been
-  seen "online" (i.e., have sent us a message directly via the `HostActivity`
-  table). This prevents false positive gaps for hosts we've never communicated
-  with — we may see their counters in vector clocks from other hosts, but we
-  can't know if entries are actually missing without having established
-  communication with them. The originating host is always considered online
-  since they just sent us the current message. Sequence entries are still
-  recorded for offline hosts to enable backfill responses later.
-- **Originating Host ID:** Outgoing journal entities and entry links always
-  include `originatingHostId`; the send path fills it if missing so sequence
-  logging can update even when older outbox rows are sent.
-- **Covered Vector Clocks:** When an entry is updated multiple times before being
-  sent (e.g., counter 10→12→15→20), the final message includes `coveredVectorClocks`
-  with the intermediate counters plus the current vector clock so each payload
-  declares full coverage. Receivers ignore the current vector clock for
-  pre-marking and still perform normal gap detection; superseded counters are
-  processed BEFORE gap detection to prevent false positives.
-- **In-Order Ingest:** Live scan signals are deferred while catch-up is processing
-  older events (`_catchUpInFlight` guard in `_scheduleLiveScan()`). This ensures
-  events are ingested in chronological order, preventing false positive gap
-  detection that would occur if newer events were recorded before older ones.
-
-**Ghost Entry Resolution:**
-Different payload types can share the same sequence counter. When one type
-arrives, it "ghosts" (resolves) any missing entries of other types at that
-counter. For example:
-- Device sends JournalEntity at `(alice:5)` — sequence log records it
-- Same device sends EntryLink at `(alice:5)` — same counter, different type
-- If the JournalEntity was missing but EntryLink arrives, the EntryLink
-  resolves the missing counter because `VC[alice]=5 >= 5`
-
-This prevents entries from being stuck as "missing" when the actual content
-was delivered via a different payload type at the same vector clock position.
-
-**Two-Phase Backfill Verification:**
-When responding to a backfill request, the responder re-sends the entry via
-normal sync. If the requested counter is no longer present in the entry's
-vector clock (superseded by later modifications), it sends a `BackfillResponse`
-hint with the `payloadId` so the receiver can map the counter to the entry.
-This applies equally for own and foreign counters. The only case where
-`unresolvable` is sent is when the originating host has no record of the
-counter in its sequence log at all. This enables safe resolution even when the
-entry's vector clock has evolved since the original counter was recorded:
-
-1. **Phase 1 - Store Hint:** When receiving a BackfillResponse, store the
-   `entryId` as a hint on the sequence log entry but don't change status yet
-2. **Phase 2 - Verify:** Only mark as backfilled when we can verify:
-   - The entry exists locally in the journal
-   - The entry's vector clock "covers" the requested counter (VC[hostId] >= counter)
-
-This handles the edge case where entry E1 was at `(alice:5)` but has since been
-modified to `(alice:7, bob:3)`. The BackfillResponse provides the mapping
-`(alice:5) → E1`, and when E1 arrives with its evolved VC, we verify E1's
-`VC[alice]=7 >= 5` before marking `(alice:5)` as backfilled.
-
-**Pending Hint Resolution:**
-If the BackfillResponse arrives before the sync message (race condition):
-- The hint is stored on the sequence log entry
-- When the entry arrives via normal sync, `resolvePendingHints` checks for
-  entries with matching entryId that are still missing/requested
-- For each, it verifies the VC covers the counter and marks as backfilled
-
-**Smart Retry with Exponential Backoff:**
-- Base interval: 5 minutes between backfill request cycles
-- Backoff: 5min → 10min → 20min → 40min → 80min → 2hr (capped)
-- Host activity filtering: only request entries from hosts that have been
-  online since the last request for that entry
-- Maximum 10 retry attempts before giving up
-- Re-request button in UI to reset stuck entries for manual retry
-
-**Message Flow:**
-1. Device A detects missing entry (host=X, counter=5)
-2. Device A broadcasts `SyncBackfillRequest` with entries list
-3. Device B receives request, looks up entry in its sequence log
-4. If found: Device B re-sends the journal entity via normal sync and:
-   - If the requested counter is still present in its VC, no additional
-     BackfillResponse is needed (the entry arrival resolves the gap)
-   - If the counter is no longer in the VC (superseded by later modifications),
-     it sends `SyncBackfillResponse` with `deleted=false, payloadId=<id>` as a
-     hint so the receiver can map the counter to the payload
-5. If deleted/purged: Device B sends `SyncBackfillResponse` with `deleted=true`
-6. Device A receives the BackfillResponse:
-   - Stores the entryId hint on the sequence log entry
-   - If entry already exists locally and VC covers the counter → mark backfilled
-   - Otherwise, wait for entry to arrive via sync
-7. Device A receives the entry via normal sync:
-   - Updates all (hostId, counter) pairs in the VC to received/backfilled
-   - Resolves any pending hints with this entryId
-8. For deleted entries: Device A marks entry as `deleted`
-
-**Logging:** Key domains include `SYNC_SEQUENCE` (gap detection, status changes)
-and `SYNC_BACKFILL` (request/response handling). Look for:
-- `gapDetected hostId=... counter=... (last seen: ..., observed: ...)`
-- `skipGapDetection hostId=... counter=... - host never seen online`
-- `handleBackfillRequest: N entries from=...`
-- `handleBackfillResponse: stored hint hostId=... counter=... entryId=...`
-- `verifyAndMarkBackfilled: confirmed hostId=... counter=... entryId=...`
-- `resolvePendingHints: resolved N pending entries for entryId=...`
-
-**Configuration:** Tuning constants in `tuning.dart`:
-- `backfillRequestInterval`: 5 minutes between processing cycles
-- `backfillBatchSize`: 100 entries max per request message
-- `backfillMaxRequestCount`: 10 retries before giving up
-- `backfillBaseBackoff` / `backfillMaxBackoff`: exponential backoff bounds
-
-**Sequence Log Population:**
-The maintenance UI provides a "Populate Sequence Log" operation that rebuilds
-the sequence log from existing journal data. This is useful after migrations or
-when the sequence log has become inconsistent. The operation runs in two phases:
-1. `populateFromJournal`: Records all journal entities with their vector clocks
-2. `populateFromEntryLinks`: Records all entry links with their vector clocks
-
-Progress is displayed via `SequenceLogPopulateProgress`, an extracted widget
-that shows phase indicators, progress percentage, and completion counts.
-
-### Documentation & Artefacts
-
-- Architecture: `docs/architecture/sync_engine.md`
-- Memory audit: `docs/architecture/sync_memory_audit.md`
-- Provider wiring (this document) + `lib/providers/service_providers.dart`
-
-## Setup Flow (Multi-Device)
-
-1. **Device A** logs in, creates the encrypted sync room, and displays its user
-   QR code.
-2. **Device B** logs in with its own Matrix account, scans the QR (or enters
-   Device A's Matrix ID), and waits for the invite surfaced by `SyncRoomManager`.
-3. Device A approves the invite. Both devices verify each other using the emoji
-   SAS flow.
-4. `SyncLifecycleCoordinator` starts the streaming pipeline once both devices are
-   logged in and the room has been hydrated. Synchronisation continues
-   automatically while both devices are idle.
-
-## Single-User Multi-Device Discovery (Legacy UI Path) (2025-12)
-
-In addition to the multi-user flow above, Lotti supports a **single-user
-multi-device** flow where the same Matrix account is used across all devices.
-This simplifies setup for users who don't need separate accounts per device.
-
-### How It Works
-
-When a user logs in on a new device with the same Matrix account:
-
-1. **Room Discovery:** After login, `SyncRoomDiscoveryService` scans the user's
-   joined rooms looking for existing Lotti sync rooms based on:
-   - **State marker** (`m.lotti.sync_room`): New rooms are marked with this state
-     event for reliable future discovery (confidence +10)
-   - **Content detection**: Rooms containing messages with `msgtype:
-     com.lotti.sync.message` or base64-encoded JSON with `runtimeType` fields
-     (confidence +5)
-   - Only encrypted, private rooms are considered candidates
-
-2. **Room Selection UI (legacy):** The retired manual setup wizard presented discovered rooms:
-   - If **exactly one** room is found with high confidence, auto-selection is
-     recommended
-   - If **multiple** rooms are found, a selection UI allows the user to choose
-   - Room cards display name, member count, creation date, and confidence
-     indicators
-
-3. **Fallback:** If no rooms are found (or the user skips discovery), the
-   standard room creation flow is used
-
-### Components
-
-| Component | Responsibility |
-| --- | --- |
-| `SyncRoomDiscoveryService` (`matrix/sync_room_discovery.dart`) | Discovers sync rooms by scanning joined rooms for state markers or Lotti content |
-| `SyncRoomCandidate` | Data class representing a discovered room with confidence scoring |
-
-### Key Features
-
-- **Hybrid detection**: Combines explicit state markers (new rooms) with content
-  analysis (legacy rooms) for backward compatibility
-- **Confidence scoring**: Rooms with state markers score higher than those
-  detected only by content, helping users identify the most reliable candidates
-- **State event marking**: New rooms created via `SyncRoomManager.createRoom()`
-  are automatically marked with `m.lotti.sync_room` for future discovery
-- **E2E encryption preserved**: Discovery only evaluates encrypted, private rooms
-- **Bounded concurrency**: Room evaluation uses batched parallel processing
-  (5 concurrent evaluations) to speed up discovery on accounts with many rooms
-- The manual setup wizard pages were removed from the settings UI. Provisioned
-  onboarding is now the only user-facing setup flow.
-
-### Testing
-
-- `test/features/sync/matrix/sync_room_discovery_test.dart`: Unit tests for the
-  discovery service covering filtering, content detection, and confidence scoring
-  (28 tests)
-
-### Data Flow
-
-The stream-first consumer replaces the legacy multi-pass drain:
-
-- Attach-time catch-up: backfills/paginates until the last processed event is
-  present, then processes strictly after it (no rewind before the marker).
-- Micro-batches: orders oldest→newest with in-batch de-duplication by event ID.
-- Self-event suppression: consumes locally produced event IDs from `SentEventRegistry` so echoed payloads advance the marker without redundant database or attachment work; suppression counters and logs surface in the pipeline so Matrix Stats reflects the saved work.
-- Attachment descriptors only; descriptors are recorded to speed up local resolution.
-- Marker advancement: monotonic by server timestamp with eventId tie-breaker;
-  remote updates are guarded to avoid downgrades.
-- Rescans: schedules a tail rescan on activity without advancement, and after
-  any advancement. Attachment-only rescans are throttled and only scheduled
-  when at least one new file was written.
-
-Key helpers:
-- `matrix/pipeline/catch_up_strategy.dart`: no-rewind catch-up via SDK seam and
-  snapshot-limit escalation fallback.
-- `matrix/pipeline/attachment_index.dart`: in-memory relativePath→event map used by
-  the apply phase.
-- `matrix/sync_event_processor.dart` smart loader: vector-clock aware JSON
-  fetching that uses `AttachmentIndex` to fetch newer JSON for same-path
-  updates before applying.
-- `matrix/read_marker_service.dart`: remote monotonic guard comparing candidate
-  vs `fullyRead` using the timeline when available.
-
-## Diagnostics & Logging
-
-- Use `matrixServiceProvider.read().getDiagnosticInfo()` in debug builds to
-  inspect saved room IDs, active room state, lifecycle activity, joined rooms,
-  and login status. Note: typed metrics are not included in this payload; use
-  `MatrixService.getSyncMetrics()` or the Matrix Stats UI instead.
-- Key log domains: `MATRIX_SERVICE`, `MATRIX_SYNC`, `SYNC_ENGINE`,
-  `SYNC_ROOM_MANAGER`, `SYNC_EVENT_PROCESSOR`, `SYNC_READ_MARKER`, and `OUTBOX`.
-  - Coalescing signals to look for: `signal.liveScan.coalesce debounceMs=…`,
-    `trailing.liveScan.scheduled`, `catchup.start`, `catchup.done events=…`.
-- Typical messages include invite acceptance/filters, hydration retries, send
-  attempts, and timeline processing outcomes.
-
-### Domain-Filtered Logging (2026-03)
-
-When the `logSyncFlag` config flag is enabled, `DomainLogger` writes structured
-sync events to both the logging DB and a per-domain file
-(`{documentsDir}/logs/sync-YYYY-MM-DD.log`). The outbox send path logs enqueue
-and send events with sub-domains like `outbox.enqueue` and `outbox.send`.
-
-`SyncHealthReporter` emits a periodic health summary (every 5 min) with:
-- `outbox.pending` — items waiting to be sent
-- `outbox.sentRecent` — items sent in the last interval
-- `seq.missing` — missing sequence entries awaiting backfill
-- `seq.requested` — sequence entries with outstanding requests
-
-## Testing
-
-- **Integration:** `integration_test/matrix_service_test.dart` exercises the
-  full flow with the fake gateway (room creation, invites, verification, message
-  exchange). Run with `dart-mcp.run_tests` targeting the file or via the project
-  Make target.
-- **Backfill Integration:** `integration_test/backfill_integration_test.dart`
-  tests the self-healing backfill mechanism with real Matrix transport. After
-  normal sync completes, gaps are artificially injected into the sequence log
-  and backfill is triggered to verify end-to-end recovery. Run with
-  `./integration_test/run_backfill_tests.sh` (requires Docker with Dendrite and
-  Toxiproxy).
-- **Unit/Widget:** Coverage includes the client runner queue, activity gating,
-  timeline error recovery, verification modals (provider overrides),
-  dependency-injection helpers, and the modern sync pipeline:
-  - `test/features/sync/matrix/pipeline/matrix_stream_consumer_test.dart` covers SDK pagination seams,
-    streaming/flush batching, metrics accuracy, and retry/circuit-breaker logic.
-  - `test/features/sync/matrix/pipeline/*` helper suites validate catch-up, descriptor hydration, and
-    attachment ingestion.
-  - Lifecycle tests exercise activation, deactivation, and login/logout races with the pipeline.
-  - `matrix_service_pipeline_test.dart` covers metrics exposure, retry/rescan
-    delegation, diagnostics text, and resource disposal.
-  - `test/features/sync/sequence/sync_sequence_log_service_test.dart` covers gap detection,
-    host activity tracking, and sequence status management.
-  - `test/features/sync/backfill/backfill_request_service_test.dart` covers timer-based
-    processing, batching, exponential backoff, and lifecycle management.
-  - `test/features/sync/backfill/backfill_response_handler_test.dart` covers request
-    handling (re-send vs deleted response) and response processing.
-- Always run `dart-mcp.analyze_files` before committing. The custom lint will
-  block any reintroduction of `getIt`.
-
-## Troubleshooting
-
-- **One-way sync:** Compare diagnostics across devices (saved room vs active
-  room). If they diverge, leave the room via `SyncRoomManager`, clear the stored
-  ID, and repeat the invite flow.
-- **Stalled sends:** Inspect the Outbox Monitor, verify that all devices are
-  trusted/verified, and look for `Unverified devices found` messages in
-  `MATRIX_SERVICE`.
-- **Verification loops:** Ensure both devices accepted the emoji SAS prompt and
-  the verification modal tests still pass (`test/widgets/sync/matrix/verification_modal_test.dart`).
-- **Memory concerns:** Re-run the procedure described in
-  `docs/architecture/sync_memory_audit.md` and compare against baseline numbers.
-  The drain now disposes unused snapshot timelines during escalation to avoid
-  leaks; if you see RSS growth, inspect timeline creation/disposal logs.
-- **Missing entries not syncing:** Check `SYNC_SEQUENCE` logs for `gapDetected`
-  events. If gaps are detected but not backfilled, verify peer devices are online
-  and check `SYNC_BACKFILL` logs for request/response activity. The sequence log
-  table can be queried to see missing entries and their request counts.
-
-## Current Status
-
-- Provider overrides and custom lint rules enforce the dependency model.
-- When extending the sync feature, update both this README and the architecture
-  documents so the narrative stays aligned with the implementation.
-
-## UI & Navigation (2025-10)
-
-- Sync now has a top-level Settings entry: `/settings/sync`.
-  - The tile is only visible when the Matrix sync flag is enabled.
-- Matrix Sync Settings is surfaced as a card on `/settings/sync` that launches
-  the existing modal flow (no intermediate page).
-- Matrix Sync Maintenance is a dedicated page under
-  `/settings/sync/matrix/maintenance` for deleting the Sync database,
-  replaying sync definitions, and forcing a re-sync window.
-  - Supported definition sync steps: Tags, Measurables, Labels, Categories,
-    Dashboards, Habits, AI Settings, Agent Entities, and Agent Links. Each step
-    reports per-step progress and totals; you can select any subset to sync.
-  - The "Re-sync messages" action re-enqueues journal entities, entry links,
-    agent entities, and agent links updated within the selected date range.
-- Outbox Monitor lives under `/settings/sync/outbox` and no longer exposes
-  its own on/off toggle. The global Matrix sync flag governs enablement.
-- Outbox Monitor adopts the shared `SyncListScaffold` with modern cards,
-  segmented filters, payload metadata, and confirmation-backed retry actions.
-- Outbox Monitor includes a 30-day daily sync volume bar chart
-  (`OutboxVolumeChart`) rendered via the `headerSliver` slot, powered by
-  `outboxDailyVolumeProvider` which maps `OutboxDailyVolume` entries to KB.
-- Matrix Stats is a full page under `/settings/sync/stats`, rendered in a
-  styled card with a large, subtle loading indicator.
-- Advanced Settings no longer contains Matrix/Outbox/Conflicts tiles; those
-  have moved under Sync (Conflicts is still routed under advanced paths but
-  linked from the Sync page).
-- Conflicts list pages now use the shared scaffold with modern cards,
-  entity badges, and inline counts for resolved/unresolved filters.
-- Beamer route matching for the Sync section uses exact path matching to avoid
-  brittle substring checks.
-
-## Sync – Observability
-
-- Metrics (typed + diagnostics)
-  - Consumer surfaces counters via `metricsSnapshot()` including:
-    - processed, skipped, failures, flushes, catchupBatches,
-      skippedByRetryLimit, retriesScheduled, circuitOpens
-    - processed.<type>, droppedByType.<type>
-    - dbApplied, dbIgnoredByVectorClock, conflictsCreated
-    - heartbeatScans, markerMisses
-  - `MatrixService.getSyncMetrics()` maps these into a typed `SyncMetrics` model
-    for UI display. The Matrix Stats page renders them and supports:
-    - Refresh
-    - Force Rescan (triggers live rescan + focused catch-up)
-    - Copy Diagnostics (copies a readable metrics snapshot)
-  - `getDiagnosticInfo()` intentionally omits metrics; prefer the typed API
-    or diagnostics text for tooling/UI.
-- Catch-up and Pagination
-  - On attach, the pipeline attempts SDK pagination/backfill first (best-effort across
-    SDK versions); if unavailable, it falls back to escalating snapshot limits.
-  - Startup lookback: include a bounded pre-context since the last processed
-    timestamp and up to a fixed number of events before the stored marker to
-    provide context for attachment descriptors (no rewind of payloads).
-  - Initial catch-up is retried with exponential backoff and gives up after
-    roughly 15 minutes; logs will indicate `catchup.timeout`.
-- Reliability safeguards
-  - Streaming micro-batches are ordered oldest→newest. Retries apply exponential backoff with TTL and a size cap; a circuit breaker opens after sustained failures to prevent thrash.
-  - Read-marker advancement is sync-payload only (or valid fallback-decoded JSON)
-    to avoid silently skipping payloads when non-sync events arrive late.
-  - A heartbeat rescan (every 5s) runs; if the last marker isn’t in the live
-    window, a focused catch-up recovers gaps.
-  - Service nudges: shortly after startup and whenever connectivity resumes,
-    `MatrixService` triggers a `forceRescan(includeCatchUp=true)` to close any
-    gaps introduced while offline or before room readiness.
-
-### Reliability tracker
-
-For ongoing issues, hypotheses, and the current mitigation plan, see the
-reliability documents under `docs/progress/`. These outline current challenges,
-landed fixes, and how to verify behaviour using Matrix Stats and logs.
-
-## Implementation Notes & Consistency
-
-- Ordering tie-breakers
-  - `TimelineEventOrdering.compare` uses timestamp ordering; on equal timestamps,
-    events are ordered lexicographically by event ID. `isNewer` applies the same
-    rule to ensure monotonic advancement.
-- Sent metrics
-  - `MatrixService.sendMatrixMsg` maps each `SyncMessage` variant to a typed bucket
-    (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`, `aiConfig`,
-    `aiConfigDelete`, `agentEntity`, `agentLink`) and debounces emissions; unit
-    tests cover each variant along with timer cancellation on `dispose`.
-- Vector‑clock aware JSON
-  - `SmartJournalEntityLoader` reads local JSON first; if a vector clock is
-    provided and the local is older, it uses `AttachmentIndex` to fetch the
-    newer JSON, writes it atomically, then applies it.
-- File operations
-  - JSON writes are atomic: write to a `*.tmp` file then rename to the final
-    path. A best-effort fallback moves an existing target aside as `*.bak` to
-    make the rename succeed; temporary/backup files are cleaned up when possible.
-  - Attachment writes use the same atomic pattern. Existing non-empty files are
-    not re-downloaded.
-- Read markers
-  - `SyncReadMarkerService` gates updates via `client.isLogged()` and prefers
-    room-level `setReadMarker`; falls back to timeline-level when available.
-  - Non-server/local event IDs (e.g., `lotti-…`) are persisted locally but skipped for
-    remote updates; matching M_UNKNOWN responses are logged once and suppressed to
-    avoid noisy error streams.
-  - Remote monotonic guard: only advance if the candidate is strictly newer
-    than the current `fullyRead` by server timestamp + eventId tie-breaker.
-
-
-## Provisioned Sync Onboarding
-
-Provisioned sync is the active onboarding flow. It uses a
-pre-configured bundle (typically generated by an admin CLI tool) that contains
-Matrix credentials and a room ID. This lets a new device join an existing sync
-room without manual account creation or invite approval.
-
-### Bundle Format
-
-A `SyncProvisioningBundle` (`lib/classes/config.dart`) is a JSON object
-Base64url-encoded for transport (QR code or clipboard paste):
-
-```json
-{
-  "v": 1,
-  "homeServer": "https://matrix.example.com",
-  "user": "@alice:example.com",
-  "password": "initial-password",
-  "roomId": "!room123:example.com"
-}
-```
-
-Validation: version must be 1, user must start with `@`, roomId must start with
-`!`, homeServer must be a valid `https://` URL.
-
-### Desktop Flow (Password Rotation)
-
-1. Paste or scan the Base64 bundle → decode and validate
-2. Review summary card (homeserver, user, room) → tap Configure
-3. Controller progresses: `loggingIn` → `joiningRoom` → `rotatingPassword` → `ready`
-4. Password is rotated to a secure random value; the controller produces a new
-   Base64 bundle with the updated password and displays it as a QR code
-5. Mobile device scans the QR to complete setup
-
-### Mobile Flow (No Rotation)
-
-1. Scan QR code containing the Base64 bundle
-2. Controller progresses: `loggingIn` → `joiningRoom` → `done`
-3. No password rotation — uses the credentials as received
-
-### Components
-
-| Component | File | Responsibility |
-| --- | --- | --- |
-| `SyncProvisioningBundle` | `lib/classes/config.dart` | Freezed data model for the provisioning bundle |
-| `ProvisioningController` | `lib/features/sync/state/provisioning_controller.dart` | Riverpod state machine (decode → login → join → rotate → ready/done) |
-| `ProvisionedSyncSettingsCard` | `lib/features/sync/ui/provisioned/provisioned_sync_modal.dart` | Settings card + 3-page modal wizard assembly |
-| `BundleImportWidget` | `lib/features/sync/ui/provisioned/bundle_import_page.dart` | Page 0: paste/scan bundle, show summary, configure button |
-| `ProvisionedConfigWidget` | `lib/features/sync/ui/provisioned/provisioned_config_page.dart` | Page 1: step progress, QR display (desktop), success (mobile), error+retry |
-| `ProvisionedStatusWidget` | `lib/features/sync/ui/provisioned/provisioned_status_page.dart` | Page 2: connected account info, diagnostics, disconnect button |
-
-### State Machine
-
-`ProvisioningState` (freezed sealed class) variants:
-- `initial` — wizard not started
-- `bundleDecoded(bundle)` — bundle parsed and validated
-- `loggingIn` — Matrix login in progress
-- `joiningRoom` — joining the sync room
-- `rotatingPassword` — changing password to a secure random value (desktop only)
-- `ready(handoverBase64)` — new bundle ready to display as QR
-- `done` — mobile flow complete
-- `error(ProvisioningError error)` — recoverable error with retry
-
-### Testing
-
-- `test/features/sync/state/provisioning_controller_test.dart` — 16 unit tests
-  covering decode (valid/invalid/edge cases), state progression (desktop/mobile),
-  error paths, and reset
-- `test/features/sync/ui/provisioned/provisioned_sync_modal_test.dart` — 8 widget
-  tests for settings card rendering and smart page detection (starts at status page
-  when already logged in with room, import page otherwise)
-- `test/features/sync/ui/provisioned/bundle_import_page_test.dart` — widget tests
-  for import flow (text field, import button, summary card, error display, navigation)
-- `test/features/sync/ui/provisioned/provisioned_config_page_test.dart` — widget
-  tests for config progress states (logging in, joining room, QR ready, done, error)
-- `test/features/sync/ui/provisioned/provisioned_status_page_test.dart` — 10 widget
-  tests for status page (user/room display, diagnostic button, disconnect, null
-  handling, selectable text, action bar navigation)
-
-## References
-
-- [Matrix Protocol](https://matrix.org/)
-- [matrix-dart-sdk](https://pub.dev/packages/matrix)
-- [End-to-End Encryption implementation guide](https://matrix.org/docs/guides/end-to-end-encryption-implementation-guide)
+| `outbox/` | Queues local work that still needs to be sent |
+| `matrix/` | Sends messages to Matrix and reads them back in order |
+| `sequence/` | Tracks `(hostId, counter)` pairs to detect gaps |
+| `backfill/` | Requests and answers "I am missing counter X" |
+| `ui/` | Settings, outbox monitor, conflicts, stats |
+
+## What Travels Through Sync
+
+The room is not only carrying one kind of message.
+
+It currently carries:
+
+- `SyncJournalEntity`
+- `SyncEntryLink`
+- `SyncAgentEntity`
+- `SyncAgentLink`
+- `SyncBackfillRequest`
+- `SyncBackfillResponse`
+- setup and settings messages such as theme and AI config sync
+
+For journal entities, the sync message itself carries the vector clock.
+
+For agent entities, the sync message can be file-backed:
+
+- the text event points at `jsonPath`
+- the actual JSON is uploaded as an attachment
+- the receiver resolves the payload from that attachment or local disk
+
+That distinction matters a lot for the current investigation.
+
+## What The Sequence Log Is For
+
+The sequence log is the self-healing layer.
+
+It records which `(hostId, counter)` pairs are known locally so the device can:
+
+- detect gaps
+- ask for missing counters
+- mark counters as covered by newer payloads
+- mark counters as backfilled, deleted, or unresolvable
+
+The intended result is eventual convergence even when messages arrive late or
+out of order.
+
+## What Backfill Is For
+
+Backfill exists for the case where a device sees:
+
+- "I received counter 10"
+- "I then received counter 12"
+- "I never saw counter 11"
+
+In that case the device records counter `11` as missing and broadcasts a
+`SyncBackfillRequest`.
+
+Any device that can still explain that counter can answer with:
+
+- the actual payload via normal sync
+- a hint mapping the missing counter to a newer covering payload
+- a deleted response
+- an unresolvable response
+
+## Why There Is A Separate Architecture Document
+
+This README is intentionally the plain-language version.
+
+The detailed engineering map is here:
+
+- [current_architecture.md](./current_architecture.md)
+
+That document covers:
+
+- the actual send and receive pipeline
+- how sequence logging and backfill interact
+- recent sync-related PRs
+- code-backed failure modes
+- the current investigation into false gap storms and sync overhead
+
+## Current State Of The Investigation
+
+The sync system does eventually converge in many cases, but the current logs
+show much more work than the user action volume should create.
+
+The most recent stabilization pass addressed two concrete failures:
+
+- exact backfill hits are now validated against the payload's current vector
+  clock before resend
+- missing-marker catch-up now falls back to a bounded tail instead of replaying
+  an entire large snapshot
+
+The largest remaining concerns are:
+
+- sequence-log mappings that can point a requested counter at a payload whose
+  current vector clock is already behind that counter
+- large bursts of missing counters that later get resolved
+- agent payload handling that can plausibly combine an older text event with a
+  newer attachment version for the same `jsonPath`
+
+Those are documented in detail in
+[current_architecture.md](./current_architecture.md).
