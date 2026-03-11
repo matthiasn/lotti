@@ -381,6 +381,14 @@ class BackfillResponseHandler {
     );
 
     if (logEntry == null || logEntry.entryId == null) {
+      // Log whether the entry exists at all vs exists without entryId
+      _trace(
+        'directLookup miss hostId=$hostId counter=$counter '
+        'exists=${logEntry != null} entryId=${logEntry?.entryId} '
+        'status=${logEntry?.status}',
+        subDomain: 'backfill.directLookup',
+      );
+
       // Exact counter not found — try to find a covering entry (a higher
       // counter for the same host that has a resolved payload). This handles
       // the superseded scenario: counter 5 was superseded by counter 7, so
