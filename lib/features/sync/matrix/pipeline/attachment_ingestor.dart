@@ -87,9 +87,12 @@ class AttachmentIngestor {
       }
       // Only check the local file for repair when the event was already
       // handled once — new events always proceed.
+      // Suppress repair if a save is already in flight for this path to avoid
+      // concurrent writes to the same file.
       final shouldRepairLocal =
           alreadyHandled &&
           documentsDirectory != null &&
+          !_inFlightSavePaths.contains(_normalizeKey(rpAny)) &&
           _isLocalFileMissingOrEmpty(rpAny);
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
@@ -124,11 +127,24 @@ class AttachmentIngestor {
               logging: logging,
             );
           } else {
-            fileWritten = await _saveAttachment(
-              event: event,
-              relativePath: rpAny,
-              logging: logging,
-            );
+            // Guard against concurrent immediate saves for the same path.
+            // The queued download path already has its own dedup via
+            // _queuedKeys/_inFlightKeys.
+            final saveKey = _normalizeKey(rpAny);
+            if (_inFlightSavePaths.contains(saveKey)) {
+              // Another process() call is already saving this file.
+              return false;
+            }
+            _inFlightSavePaths.add(saveKey);
+            try {
+              fileWritten = await _saveAttachment(
+                event: event,
+                relativePath: rpAny,
+                logging: logging,
+              );
+            } finally {
+              _inFlightSavePaths.remove(saveKey);
+            }
           }
         }
       }
@@ -158,6 +174,7 @@ class AttachmentIngestor {
     _handledAttachmentEventIds.clear();
     _handledAttachmentEventOrder.clear();
     _queuedKeys.clear();
+    _inFlightSavePaths.clear();
     _idleCompleter?.complete();
     _idleCompleter = null;
     _inFlightKeys.clear();

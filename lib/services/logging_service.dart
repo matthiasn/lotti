@@ -186,22 +186,20 @@ class LoggingService {
     );
 
     final forceFlush = level == InsightLevel.error;
+    final writes = <Future<void>>[];
     if (_shouldWriteToGeneral(domain, isException: false)) {
-      await _appendToNamedFile(
-        _generalLogStem,
-        line,
-        forceFlush: forceFlush,
+      writes.add(
+        _appendToNamedFile(_generalLogStem, line, forceFlush: forceFlush),
       );
     }
 
     final domainFileStem = _domainFileStem(domain);
     if (domainFileStem != null) {
-      await _appendToNamedFile(
-        domainFileStem,
-        line,
-        forceFlush: forceFlush,
+      writes.add(
+        _appendToNamedFile(domainFileStem, line, forceFlush: forceFlush),
       );
     }
+    await Future.wait(writes);
   }
 
   void captureEvent(
@@ -242,11 +240,16 @@ class LoggingService {
       message: '$exception ${stackTrace ?? ''}'.trim(),
     );
 
-    await _appendToNamedFile(_generalLogStem, line, forceFlush: true);
+    final writes = <Future<void>>[
+      _appendToNamedFile(_generalLogStem, line, forceFlush: true),
+    ];
     final domainFileStem = _domainFileStem(domain);
     if (domainFileStem != null) {
-      await _appendToNamedFile(domainFileStem, line, forceFlush: true);
+      writes.add(
+        _appendToNamedFile(domainFileStem, line, forceFlush: true),
+      );
     }
+    await Future.wait(writes);
   }
 
   void captureException(

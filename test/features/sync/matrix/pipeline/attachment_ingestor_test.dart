@@ -981,6 +981,104 @@ void main() {
       ).called(2); // Once on first pass, once after eviction
     });
 
+    test(
+      'concurrent process() calls for same path only trigger one save',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_concurrent');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        // Use a completer to control when the download finishes so both
+        // process() calls overlap.
+        final downloadCompleter = Completer<MatrixFile>();
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('concurrent-data')));
+
+        final ev1 = MockEvent();
+        when(() => ev1.eventId).thenReturn('e_conc_1');
+        when(() => ev1.content).thenReturn({
+          'relativePath': '/data/conc.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev1.attachmentMimetype).thenReturn('application/json');
+        when(() => ev1.senderId).thenReturn('@other:u');
+        when(
+          ev1.downloadAndDecryptAttachment,
+        ).thenAnswer((_) => downloadCompleter.future);
+
+        // Second event with a different eventId but the SAME relativePath.
+        final ev2 = MockEvent();
+        when(() => ev2.eventId).thenReturn('e_conc_2');
+        when(() => ev2.content).thenReturn({
+          'relativePath': '/data/conc.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev2.attachmentMimetype).thenReturn('application/json');
+        when(() => ev2.senderId).thenReturn('@other:u');
+        when(
+          ev2.downloadAndDecryptAttachment,
+        ).thenAnswer((_) => downloadCompleter.future);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/data/conc.json')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        // Launch both process() calls concurrently.
+        final future1 = ingestor.process(
+          event: ev1,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        final future2 = ingestor.process(
+          event: ev2,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        // Complete the download so both futures can resolve.
+        downloadCompleter.complete(matrixFile);
+        final results = await Future.wait([future1, future2]);
+
+        // Exactly one should have written the file; the other was blocked by
+        // the in-flight guard.
+        expect(results.where((r) => r).length, 1);
+
+        final writtenFile = File('${tmp.path}/data/conc.json');
+        expect(writtenFile.existsSync(), isTrue);
+        expect(writtenFile.readAsStringSync(), 'concurrent-data');
+
+        // Only one download should have been triggered.
+        verify(ev1.downloadAndDecryptAttachment).called(1);
+        verifyNever(ev2.downloadAndDecryptAttachment);
+      },
+    );
+
     test('blocks path traversal attempts', () async {
       final logging = MockLoggingService();
       when(
