@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -162,7 +161,6 @@ void main() {
       // Register essential dependencies
       getIt
         ..registerSingleton<Directory>(sharedDocumentsDirectory)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<LoggingService>(sharedLoggingService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<UserActivityService>(sharedUserActivityService)

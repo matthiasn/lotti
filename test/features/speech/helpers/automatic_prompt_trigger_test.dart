@@ -76,7 +76,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     // Setup default mock behavior for prompt capability filter
     // By default, return the first prompt from any list (simulating all prompts are available)

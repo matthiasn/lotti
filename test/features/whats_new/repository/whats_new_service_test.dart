@@ -12,7 +12,20 @@ import 'package:mocktail/mocktail.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class FakeUri extends Fake implements Uri {}
 
@@ -42,7 +55,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     service = WhatsNewService(httpClient: mockHttpClient);
   });

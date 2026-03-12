@@ -2873,16 +2873,29 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkExistingTask => 'Vorhandene Aufgabe verknüpfen...';
 
   @override
-  String get loggingFailedToLoad =>
-      'Fehler beim Laden der Protokolle. Bitte versuche es erneut.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count passende Logs gefunden',
+      one: '1 passender Log gefunden',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Fehler beim Laden weiterer Ergebnisse. Bitte versuche es erneut.';
+  String get logsLineCopied => 'Log-Zeile kopiert';
 
   @override
-  String get loggingSearchFailed =>
-      'Suche fehlgeschlagen. Bitte versuche es erneut.';
+  String logsNoLogsForDate(String date) {
+    return 'Keine Logs für $date';
+  }
+
+  @override
+  String get logsNoMatch => 'Keine Logs passen zu deiner Suche';
+
+  @override
+  String get logsReload => 'Neu laden';
 
   @override
   String get logsSearchHint => 'Alle Logs durchsuchen...';
@@ -2908,13 +2921,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Editor-Entwürfe-Datenbank löschen';
-
-  @override
-  String get maintenanceDeleteLoggingDb => 'Logging-Datenbank löschen';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription =>
-      'Logging-Datenbank löschen';
 
   @override
   String get maintenanceDeleteSyncDb => 'Synchronisierungsdatenbank löschen';

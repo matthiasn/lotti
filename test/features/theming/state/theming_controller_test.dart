@@ -90,7 +90,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenAnswer((_) {});
+      ).thenAnswer((_) async {});
 
       GetIt.I
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)

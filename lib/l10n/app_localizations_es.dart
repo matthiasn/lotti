@@ -2910,16 +2910,29 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkExistingTask => 'Vincular tarea existente...';
 
   @override
-  String get loggingFailedToLoad =>
-      'Error al cargar registros. Por favor, inténtalo de nuevo.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count logs encontrados',
+      one: '1 log encontrado',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Error al cargar más resultados. Por favor, inténtalo de nuevo.';
+  String get logsLineCopied => 'Línea de log copiada';
 
   @override
-  String get loggingSearchFailed =>
-      'Error en la búsqueda. Por favor, inténtalo de nuevo.';
+  String logsNoLogsForDate(String date) {
+    return 'No hay logs para $date';
+  }
+
+  @override
+  String get logsNoMatch => 'Ningún log coincide con tu búsqueda';
+
+  @override
+  String get logsReload => 'Recargar';
 
   @override
   String get logsSearchHint => 'Buscar todos los logs...';
@@ -2946,14 +2959,6 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Eliminar base de datos de borradores del editor';
-
-  @override
-  String get maintenanceDeleteLoggingDb =>
-      'Eliminar la base de datos de registro';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription =>
-      'Eliminar base de datos de registros';
 
   @override
   String get maintenanceDeleteSyncDb =>

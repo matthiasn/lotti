@@ -14,7 +14,6 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
-import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
@@ -81,9 +80,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/flags',
     '/settings/theming',
     '/settings/advanced',
-    '/settings/logging',
-    '/settings/advanced/logging',
-    '/settings/advanced/logging/:logEntryId',
     '/settings/advanced/logging_domains',
     '/settings/advanced/conflicts/:conflictId',
     '/settings/advanced/conflicts/:conflictId/edit',
@@ -401,29 +397,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: LoggingSettingsPage(),
         ),
 
-      if (pathContains('advanced/logging') &&
-          !pathContains('advanced/logging_domains'))
-        const BeamPage(
-          key: ValueKey('settings-logging'),
-          child: LoggingPage(),
-        ),
-
       if (pathContains('advanced/about'))
         const BeamPage(
           key: ValueKey('settings-about'),
           child: AboutPage(),
-        ),
-
-      if (pathContains('advanced/logging') &&
-          !pathContains('advanced/logging_domains') &&
-          pathContainsKey('logEntryId'))
-        BeamPage(
-          key: ValueKey(
-            'settings-logging-${state.pathParameters['logEntryId']}',
-          ),
-          child: LogDetailPage(
-            logEntryId: state.pathParameters['logEntryId']!,
-          ),
         ),
 
       if (pathContains('advanced/conflicts'))

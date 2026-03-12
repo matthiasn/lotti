@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -34,7 +33,6 @@ void main() {
     late MockAgentDatabase mockAgentDb;
     late MockEditorDb mockEditorDb;
     late MockFts5Db mockFts5Db;
-    late MockLoggingDb mockLoggingDb;
     late MockSettingsDb mockSettingsDb;
     late MockEmbeddingStore mockEmbeddingStore;
     late ServiceDisposer disposer;
@@ -51,7 +49,6 @@ void main() {
       mockAgentDb = MockAgentDatabase();
       mockEditorDb = MockEditorDb();
       mockFts5Db = MockFts5Db();
-      mockLoggingDb = MockLoggingDb();
       mockSettingsDb = MockSettingsDb();
       mockEmbeddingStore = MockEmbeddingStore();
 
@@ -64,7 +61,6 @@ void main() {
       when(mockAgentDb.close).thenAnswer((_) async {});
       when(mockEditorDb.close).thenAnswer((_) async {});
       when(mockFts5Db.close).thenAnswer((_) async {});
-      when(mockLoggingDb.close).thenAnswer((_) async {});
       when(mockSettingsDb.close).thenAnswer((_) async {});
       when(mockEmbeddingStore.close).thenReturn(null);
 
@@ -78,7 +74,6 @@ void main() {
         ..registerSingleton<AgentDatabase>(mockAgentDb)
         ..registerSingleton<EditorDb>(mockEditorDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<LoggingDb>(mockLoggingDb)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
         ..registerSingleton<EmbeddingStore>(mockEmbeddingStore);
 
@@ -101,7 +96,6 @@ void main() {
       verify(mockAgentDb.close).called(1);
       verify(mockEditorDb.close).called(1);
       verify(mockFts5Db.close).called(1);
-      verify(mockLoggingDb.close).called(1);
       verify(mockSettingsDb.close).called(1);
       verify(mockEmbeddingStore.close).called(1);
     });
@@ -164,7 +158,6 @@ void main() {
       verifyNever(mockAgentDb.close);
       verifyNever(mockEditorDb.close);
       verifyNever(mockFts5Db.close);
-      verifyNever(mockLoggingDb.close);
       verifyNever(mockSettingsDb.close);
       verifyNever(mockEmbeddingStore.close);
     });

@@ -81,7 +81,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -108,7 +108,7 @@ void main() {
         () => ev.content,
       ).thenReturn({'relativePath': '/text_entries/2024-01-01/x.json'});
       when(() => timeline.events).thenReturn(<Event>[ev]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -205,7 +205,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -233,7 +233,7 @@ void main() {
       const relPath = '/text_entries/2024-01-01/exist.text.json';
       when(() => ev.content).thenReturn({'relativePath': relPath});
       when(() => timeline.events).thenReturn(<Event>[ev]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -317,7 +317,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -344,7 +344,7 @@ void main() {
           () => e.content,
         ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
         when(() => timeline.events).thenReturn(<Event>[e]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -493,7 +493,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -525,7 +525,7 @@ void main() {
       });
       var eventsList = List<Event>.from(e);
       when(() => timeline.events).thenAnswer((_) => eventsList);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -656,7 +656,7 @@ void main() {
           final timeline = MockTimeline();
           final events = <Event>[];
           when(() => timeline.events).thenReturn(events);
-          when(() => timeline.cancelSubscriptions()).thenReturn(null);
+          when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
 
           final onTimelineController = StreamController<Event>.broadcast();
           addTearDown(onTimelineController.close);
@@ -846,7 +846,7 @@ void main() {
 
           // Catch-up snapshot returns empty
           when(() => catchupTimeline.events).thenReturn(<Event>[]);
-          when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+          when(() => catchupTimeline.cancelSubscriptions()).thenAnswer((_) {});
           when(
             () => room.getTimeline(limit: any(named: 'limit')),
           ).thenAnswer((_) async => catchupTimeline);
@@ -938,7 +938,7 @@ void main() {
           when(() => old2.roomId).thenReturn('!room:server');
 
           when(() => liveTimeline.events).thenReturn(<Event>[old1, old2]);
-          when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+          when(() => liveTimeline.cancelSubscriptions()).thenAnswer((_) {});
 
           // Trigger live-scan via callback
           onNewEvent?.call();
@@ -981,7 +981,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           when(() => timeline.events).thenReturn(<Event>[]);
-          when(() => timeline.cancelSubscriptions()).thenReturn(null);
+          when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
           when(
             () => room.getTimeline(limit: any(named: 'limit')),
           ).thenAnswer((_) async => timeline);
@@ -1130,7 +1130,7 @@ void main() {
 
           // Catch-up snapshot returns empty
           when(() => catchupTimeline.events).thenReturn(<Event>[]);
-          when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+          when(() => catchupTimeline.cancelSubscriptions()).thenAnswer((_) {});
           when(
             () => room.getTimeline(limit: any(named: 'limit')),
           ).thenAnswer((_) async => catchupTimeline);
@@ -1162,7 +1162,7 @@ void main() {
           ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
           when(() => ev.roomId).thenReturn('!room:server');
           when(() => liveTimeline.events).thenReturn(<Event>[ev]);
-          when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+          when(() => liveTimeline.cancelSubscriptions()).thenAnswer((_) {});
 
           final completer = Completer<void>();
           when(
@@ -1238,7 +1238,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -1265,7 +1265,7 @@ void main() {
       ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
 
       when(() => timeline.events).thenReturn(<Event>[ev]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -1335,7 +1335,7 @@ void main() {
         ).thenAnswer((_) async => 'e0');
         when(() => timeline.events).thenReturn(<Event>[]);
         when(() => timeline.canRequestHistory).thenReturn(false);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -1446,7 +1446,7 @@ void main() {
       );
 
       when(() => timeline.events).thenReturn(<Event>[att]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -1541,7 +1541,7 @@ void main() {
         ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
 
         when(() => timeline.events).thenReturn(<Event>[oldSync]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -1648,7 +1648,7 @@ void main() {
           () => settingsDb.itemByKey(lastReadMatrixEventId),
         ).thenAnswer((_) async => null);
         when(() => timeline.events).thenReturn(<Event>[]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -1769,7 +1769,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         when(() => timeline.events).thenReturn(<Event>[ev]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -1858,7 +1858,7 @@ void main() {
         ).thenThrow(Exception('boom'));
 
         when(() => timeline.events).thenReturn(<Event>[ev]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -1936,7 +1936,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         when(() => catchupTimeline.events).thenReturn(<Event>[]);
-        when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+        when(() => catchupTimeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => catchupTimeline);
@@ -1957,7 +1957,7 @@ void main() {
 
         // Cause events getter to throw inside _scanLiveTimeline
         when(() => liveTimeline.events).thenThrow(Exception('events'));
-        when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+        when(() => liveTimeline.cancelSubscriptions()).thenAnswer((_) {});
 
         final consumer = MatrixStreamConsumer(
           skipSyncWait: true,
@@ -2022,7 +2022,7 @@ void main() {
 
       // Catch-up snapshot returns empty
       when(() => catchupTimeline.events).thenReturn(<Event>[]);
-      when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+      when(() => catchupTimeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => catchupTimeline);
@@ -2054,7 +2054,7 @@ void main() {
       ).thenReturn(<String, dynamic>{'msgtype': syncMessageType});
       when(() => ev.roomId).thenReturn('!room:server');
       when(() => liveTimeline.events).thenReturn(<Event>[ev]);
-      when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+      when(() => liveTimeline.cancelSubscriptions()).thenAnswer((_) {});
 
       when(
         () => processor.process(event: ev, journalDb: journalDb),
@@ -2133,7 +2133,7 @@ void main() {
       when(() => ev.roomId).thenReturn('!room:server');
 
       when(() => timeline.events).thenReturn(<Event>[ev]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2204,7 +2204,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2348,7 +2348,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2440,7 +2440,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2522,7 +2522,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2543,7 +2543,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -2628,7 +2628,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2724,7 +2724,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2771,7 +2771,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -2840,7 +2840,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -2894,7 +2894,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -3011,7 +3011,7 @@ void main() {
         );
 
         when(() => timeline.events).thenReturn(<Event>[e1, e2]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => timeline);
@@ -3054,7 +3054,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
         when(
           () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
         ).thenAnswer((_) async => 1);
@@ -3177,7 +3177,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -3284,7 +3284,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final consumer = MatrixStreamConsumer(
         skipSyncWait: true,
@@ -3570,7 +3570,7 @@ void main() {
       when(() => nonsync.roomId).thenReturn('!room:server');
 
       when(() => timeline.events).thenReturn(<Event>[sync, nonsync]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -3670,7 +3670,7 @@ void main() {
     when(() => ev.text).thenReturn(payload);
 
     when(() => timeline.events).thenReturn(<Event>[ev]);
-    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
     when(
       () => room.getTimeline(limit: any(named: 'limit')),
     ).thenAnswer((_) async => timeline);
@@ -3841,7 +3841,7 @@ void main() {
     when(() => okEvent.roomId).thenReturn('!room:server');
 
     when(() => timeline.events).thenReturn(<Event>[fileEvent, okEvent]);
-    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
     when(
       () => room.getTimeline(limit: any(named: 'limit')),
     ).thenAnswer((_) async => timeline);
@@ -3916,7 +3916,7 @@ void main() {
     when(() => ev.text).thenReturn('not base64');
 
     when(() => timeline.events).thenReturn(<Event>[ev]);
-    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
     when(
       () => room.getTimeline(limit: any(named: 'limit')),
     ).thenAnswer((_) async => timeline);
@@ -4030,7 +4030,7 @@ void main() {
       when(() => fileEvent.roomId).thenReturn('!room:server');
 
       when(() => timeline.events).thenReturn(<Event>[fileEvent]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
       ).thenAnswer((_) async => timeline);
@@ -4082,7 +4082,7 @@ void main() {
       () => settingsDb.itemByKey(lastReadMatrixEventId),
     ).thenAnswer((_) async => null);
     when(() => timeline.events).thenReturn(<Event>[]);
-    when(() => timeline.cancelSubscriptions()).thenReturn(null);
+    when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
 
     var catchupCalls = 0;
     when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
@@ -4160,7 +4160,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -4174,7 +4174,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => null);
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
 
       var catchupCalls = 0;
       // Make getTimeline take some time to simulate slow catch-up
@@ -4289,7 +4289,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -4304,7 +4304,7 @@ void main() {
         () => settingsDb.itemByKey(lastReadMatrixEventId),
       ).thenAnswer((_) async => 'stored-marker');
       when(() => timeline.events).thenReturn(<Event>[]);
-      when(() => timeline.cancelSubscriptions()).thenReturn(null);
+      when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
 
       // Use completer to block catch-up calls
       final catchUpCompleter = Completer<void>();
@@ -4439,7 +4439,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4454,7 +4454,7 @@ void main() {
           () => settingsDb.itemByKey(lastReadMatrixEventId),
         ).thenAnswer((_) async => 'stored-marker');
         when(() => timeline.events).thenReturn(<Event>[]);
-        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+        when(() => timeline.cancelSubscriptions()).thenAnswer((_) {});
 
         // Use completer to block the retry catch-up
         final retryCompleter = Completer<void>();

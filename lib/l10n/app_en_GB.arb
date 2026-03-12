@@ -123,8 +123,6 @@
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
   "maintenanceDeleteEditorDb": "Delete editor drafts database",
   "maintenanceDeleteEditorDbDescription": "Delete editor drafts database",
-  "maintenanceDeleteLoggingDb": "Delete logging database",
-  "maintenanceDeleteLoggingDbDescription": "Delete logging database",
   "maintenanceDeleteSyncDb": "Delete sync database",
   "maintenanceDeleteSyncDbDescription": "Delete sync database",
   "maintenancePurgeAudioModels": "Purge audio models",

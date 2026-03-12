@@ -5,17 +5,16 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
+
 // ignore_for_file: cascade_invocations, unnecessary_lambdas
 
 class _MockKeyVerification extends Mock implements KeyVerification {}
-
-class _MockLoggingService extends Mock implements LoggingService {}
 
 class _MockMatrixService extends Mock implements MatrixService {}
 
@@ -192,7 +191,7 @@ void main() {
 
   group('listenForKeyVerificationRequests', () {
     late _MockMatrixService service;
-    late _MockLoggingService loggingService;
+    late MockLoggingService loggingService;
     late _MockClient client;
     late StreamController<KeyVerificationRunner> runnerController;
     late StreamController<KeyVerification> requestController;
@@ -200,7 +199,7 @@ void main() {
 
     setUp(() {
       service = _MockMatrixService();
-      loggingService = _MockLoggingService();
+      loggingService = MockLoggingService();
       client = _MockClient();
       runnerController = StreamController<KeyVerificationRunner>.broadcast(
         sync: true,
@@ -216,7 +215,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => service.client).thenReturn(client);
       requestCachedController = StreamController<KeyVerification>.broadcast(

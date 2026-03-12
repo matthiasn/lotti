@@ -10,7 +10,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockLoggingService extends Mock implements LoggingService {}
+import '../mocks/mocks.dart';
 
 void main() {
   setUpAll(() async {
@@ -25,7 +25,7 @@ void main() {
   group('JournalDb isolate-safe construction', () {
     late Directory documentsDirectory;
     late JournalDb db;
-    final mockLoggingService = _MockLoggingService();
+    final mockLoggingService = MockLoggingService();
 
     setUp(() {
       documentsDirectory = Directory.systemTemp.createTempSync(

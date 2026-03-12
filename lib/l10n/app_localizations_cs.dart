@@ -2845,16 +2845,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
-  String get loggingFailedToLoad =>
-      'Nepodařilo se načíst logy. Prosím, zkuste to znovu.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Nalezeno $count odpovídajících logů',
+      few: 'Nalezeny $count odpovídající logy',
+      one: 'Nalezen 1 odpovídající log',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Nepodařilo se načíst další výsledky. Prosím, zkuste to znovu.';
+  String get logsLineCopied => 'Řádek logu zkopírován';
 
   @override
-  String get loggingSearchFailed =>
-      'Vyhledávání neúspěšné. Prosím, zkuste to znovu.';
+  String logsNoLogsForDate(String date) {
+    return 'Žádné logy pro $date';
+  }
+
+  @override
+  String get logsNoMatch => 'Žádné logy neodpovídají hledání';
+
+  @override
+  String get logsReload => 'Znovu načíst';
 
   @override
   String get logsSearchHint => 'Prohledat všechny logy...';
@@ -2880,13 +2894,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Smazat databázi konceptů editoru';
-
-  @override
-  String get maintenanceDeleteLoggingDb => 'Smazat databázi logování';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription =>
-      'Smazat logovací databázi';
 
   @override
   String get maintenanceDeleteSyncDb => 'Smazat synchronizační databázi';

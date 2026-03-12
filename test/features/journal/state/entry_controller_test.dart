@@ -11,7 +11,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -276,7 +275,6 @@ void main() {
       ..registerSingleton<NotificationService>(mockNotificationService)
       ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<LoggingService>(LoggingService())
       ..registerSingleton<SecureStorage>(secureStorageMock)
       ..registerSingleton<OutboxService>(mockOutboxService)

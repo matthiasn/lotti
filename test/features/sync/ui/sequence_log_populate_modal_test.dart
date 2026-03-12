@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
@@ -22,7 +21,6 @@ void main() {
   late MockSyncSequenceLogService mockSequenceLogService;
   late MockJournalDb mockJournalDb;
   late MockLoggingService mockLoggingService;
-  late MockLoggingDb mockLoggingDb;
 
   setUp(() async {
     await getIt.reset();
@@ -30,13 +28,11 @@ void main() {
     mockSequenceLogService = MockSyncSequenceLogService();
     mockJournalDb = MockJournalDb();
     mockLoggingService = MockLoggingService();
-    mockLoggingDb = MockLoggingDb();
 
     getIt
       ..registerSingleton<SyncSequenceLogService>(mockSequenceLogService)
       ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<LoggingDb>(mockLoggingDb);
+      ..registerSingleton<LoggingService>(mockLoggingService);
 
     when(
       () => mockLoggingService.captureException(
@@ -45,7 +41,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);

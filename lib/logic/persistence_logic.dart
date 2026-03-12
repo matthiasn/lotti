@@ -597,11 +597,13 @@ class PersistenceLogic {
             // ignore best-effort denormalized update errors
           }
         },
-        orElse: () async => _loggingService.captureException(
-          'not a task',
-          domain: 'persistence_logic',
-          subDomain: 'updateTask',
-        ),
+        orElse: () async {
+          _loggingService.captureException(
+            'not a task',
+            domain: 'persistence_logic',
+            subDomain: 'updateTask',
+          );
+        },
       );
     } catch (exception, stackTrace) {
       _loggingService.captureException(
@@ -636,11 +638,13 @@ class PersistenceLogic {
             ),
           );
         },
-        orElse: () async => _loggingService.captureException(
-          'not an event',
-          domain: 'persistence_logic',
-          subDomain: 'updateEvent',
-        ),
+        orElse: () async {
+          _loggingService.captureException(
+            'not an event',
+            domain: 'persistence_logic',
+            subDomain: 'updateEvent',
+          );
+        },
       );
     } catch (exception, stackTrace) {
       _loggingService.captureException(

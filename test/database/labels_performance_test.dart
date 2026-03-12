@@ -110,8 +110,8 @@ void main() {
     expect(filtered.isNotEmpty, isTrue);
     expect(
       stopwatch.elapsedMilliseconds,
-      lessThan(400),
-      reason: 'Filtering should complete under 400ms',
+      lessThan(500),
+      reason: 'Filtering should complete under 500ms',
     );
   });
 

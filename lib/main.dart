@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -37,9 +36,7 @@ class AppConstants {
 Future<void> main() async {
   await runZonedGuarded(
     () async {
-      getIt
-        ..registerSingleton<LoggingDb>(LoggingDb())
-        ..registerSingleton<LoggingService>(LoggingService());
+      getIt.registerSingleton<LoggingService>(LoggingService());
 
       WidgetsFlutterBinding.ensureInitialized();
       try {
@@ -101,7 +98,6 @@ Future<void> main() async {
             matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
             maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
             journalDbProvider.overrideWithValue(getIt<JournalDb>()),
-            loggingDbProvider.overrideWithValue(getIt<LoggingDb>()),
             syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
             loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
             outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),

@@ -11,13 +11,13 @@ import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../mocks/mocks.dart';
+
 class _MockJournalDb extends Mock implements JournalDb {}
 
 class _MockVectorClockService extends Mock implements VectorClockService {}
 
 class _MockUpdateNotifications extends Mock implements UpdateNotifications {}
-
-class _MockLoggingService extends Mock implements LoggingService {}
 
 class _MockNotificationService extends Mock implements NotificationService {}
 
@@ -27,7 +27,7 @@ void main() {
   late _MockJournalDb journalDb;
   late _MockVectorClockService vclock;
   late _MockUpdateNotifications updates;
-  late _MockLoggingService logging;
+  late MockLoggingService logging;
   late _MockNotificationService notifications;
 
   setUpAll(() {
@@ -58,7 +58,7 @@ void main() {
     journalDb = _MockJournalDb();
     vclock = _MockVectorClockService();
     updates = _MockUpdateNotifications();
-    logging = _MockLoggingService();
+    logging = MockLoggingService();
     notifications = _MockNotificationService();
 
     getIt

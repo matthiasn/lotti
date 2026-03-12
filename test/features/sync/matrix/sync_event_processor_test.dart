@@ -135,7 +135,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace>(named: 'stackTrace'),
       ),
-    ).thenAnswer((_) {});
+    ).thenAnswer((_) async {});
     when(
       () => aiConfigRepository.saveConfig(
         any<AiConfig>(),
@@ -191,7 +191,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenAnswer((_) {});
+      ).thenAnswer((_) async {});
       validator = VectorClockValidator(loggingService: logging);
     });
 
@@ -346,7 +346,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
-      ).thenAnswer((_) {});
+      ).thenAnswer((_) async {});
       validator = VectorClockValidator(loggingService: logging);
       downloader = DescriptorDownloader(
         loggingService: logging,
@@ -3707,7 +3707,7 @@ void main() {
             subDomain: any(named: 'subDomain'),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
           ),
-        ).thenAnswer((_) {});
+        ).thenAnswer((_) async {});
 
         final stale = JournalEntry(
           meta: Metadata(

@@ -8,7 +8,6 @@ void main() {
     'matrixServiceProvider': matrixServiceProvider,
     'maintenanceProvider': maintenanceProvider,
     'journalDbProvider': journalDbProvider,
-    'loggingDbProvider': loggingDbProvider,
     'loggingServiceProvider': loggingServiceProvider,
     'outboxServiceProvider': outboxServiceProvider,
     'aiConfigRepositoryProvider': aiConfigRepositoryProvider,

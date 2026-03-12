@@ -7,7 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/logging_db.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
@@ -21,6 +21,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 // ignore_for_file: unnecessary_lambdas
 import 'package:record/record.dart' as record;
+
+import '../../../../mocks/mocks.dart';
 
 class _MockAudioRecorder extends Mock implements record.AudioRecorder {}
 
@@ -57,8 +59,6 @@ class _FakeLoggingService extends LoggingService {
     InsightType type = InsightType.exception,
   }) {}
 }
-
-class _MockLoggingService extends Mock implements LoggingService {}
 
 class _ThrowingCancelSubscription
     implements StreamSubscription<record.Amplitude> {
@@ -659,7 +659,7 @@ void main() {
   });
 
   test('stopAndTranscribe logs when recorder.stop throws', () async {
-    final mockLogger = _MockLoggingService();
+    final mockLogger = MockLoggingService();
     // Replace the fake with a mock for verification
     getIt.unregister<LoggingService>();
     getIt.registerSingleton<LoggingService>(mockLogger);
@@ -717,7 +717,7 @@ void main() {
   });
 
   test('cancel logs when ampSub.cancel and recorder.stop throw', () async {
-    final mockLogger = _MockLoggingService();
+    final mockLogger = MockLoggingService();
     // Replace the fake with a mock for verification
     getIt.unregister<LoggingService>();
     getIt.registerSingleton<LoggingService>(mockLogger);
@@ -784,7 +784,7 @@ void main() {
   });
 
   test('cleanup logs when file/dir are missing (PathNotFound)', () async {
-    final mockLogger = _MockLoggingService();
+    final mockLogger = MockLoggingService();
     // Replace the fake with a mock for verification
     getIt.unregister<LoggingService>();
     getIt.registerSingleton<LoggingService>(mockLogger);
@@ -2044,7 +2044,7 @@ void main() {
       if (getIt.isRegistered<LoggingService>()) {
         getIt.unregister<LoggingService>();
       }
-      final mockLogging = _MockLoggingService();
+      final mockLogging = MockLoggingService();
       getIt.registerSingleton<LoggingService>(mockLogging);
       when(
         () => mockLogging.captureEvent(
@@ -2064,7 +2064,7 @@ void main() {
           level: any<InsightLevel>(named: 'level'),
           type: any<InsightType>(named: 'type'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final mockRecorder = _MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);

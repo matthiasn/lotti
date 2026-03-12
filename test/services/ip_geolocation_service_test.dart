@@ -42,7 +42,7 @@ void main() {
         domain: any<String>(named: 'domain'),
         subDomain: any<String>(named: 'subDomain'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
   });
 
   tearDown(getIt.reset);

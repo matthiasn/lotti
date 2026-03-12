@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/ai_chat/models/chat_exceptions.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';

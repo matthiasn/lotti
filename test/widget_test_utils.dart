@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -23,14 +22,12 @@ class TestGetItMocks {
     required this.journalDb,
     required this.updateNotifications,
     required this.settingsDb,
-    required this.loggingDb,
     required this.loggingService,
   });
 
   final MockJournalDb journalDb;
   final MockUpdateNotifications updateNotifications;
   final MockSettingsDb settingsDb;
-  final MockLoggingDb loggingDb;
   final LoggingService loggingService;
 }
 
@@ -57,7 +54,6 @@ Future<TestGetItMocks> setUpTestGetIt({
   final mockUpdateNotifications = MockUpdateNotifications();
   final mockJournalDb = MockJournalDb();
   final mockSettingsDb = MockSettingsDb();
-  final mockLoggingDb = MockLoggingDb();
   final loggingService = LoggingService();
 
   when(
@@ -79,7 +75,6 @@ Future<TestGetItMocks> setUpTestGetIt({
     ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
     ..registerSingleton<JournalDb>(mockJournalDb)
     ..registerSingleton<SettingsDb>(mockSettingsDb)
-    ..registerSingleton<LoggingDb>(mockLoggingDb)
     ..registerSingleton<LoggingService>(loggingService)
     ..registerSingleton<EmbeddingStore>(mockEmbeddingStore)
     ..registerSingleton<OllamaEmbeddingRepository>(
@@ -92,7 +87,6 @@ Future<TestGetItMocks> setUpTestGetIt({
     journalDb: mockJournalDb,
     updateNotifications: mockUpdateNotifications,
     settingsDb: mockSettingsDb,
-    loggingDb: mockLoggingDb,
     loggingService: loggingService,
   );
 }
@@ -125,10 +119,6 @@ void ensureThemingServicesRegistered() {
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
     getIt.registerSingleton<SettingsDb>(mockSettingsDb);
-  }
-
-  if (!getIt.isRegistered<LoggingDb>()) {
-    getIt.registerSingleton<LoggingDb>(MockLoggingDb());
   }
 
   if (!getIt.isRegistered<LoggingService>()) {

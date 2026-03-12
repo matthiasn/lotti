@@ -5,11 +5,11 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
+
 class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
-
-class MockLogging extends Mock implements LoggingService {}
 
 void main() {
   setUpAll(() {
@@ -21,7 +21,7 @@ void main() {
       'returns bounded tail when marker missing after backfill and snapshot is full',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final created = <MockTimeline>[];
 
         // Large dataset e0..e4999
@@ -82,7 +82,7 @@ void main() {
       'does not escalate when marker missing after backfill but snapshot not full',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final tl = MockTimeline();
 
         // Data shorter than the initial limit
@@ -124,7 +124,7 @@ void main() {
 
     test('uses configurable bounded tail when marker missing', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final tl = MockTimeline();
 
       final events = List<Event>.generate(20, (i) {
@@ -162,7 +162,7 @@ void main() {
     });
     test('preContextCount=80 bounds pre-context inclusion window', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final tl = MockTimeline();
 
       // Build ordered events e0..e199 (ts increasing)
@@ -204,7 +204,7 @@ void main() {
 
     test('maxLookback=1000 bounds fallback pagination length', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final created = <MockTimeline>[];
 
       // Synthetic large window e0..e9999
@@ -258,7 +258,7 @@ void main() {
     });
     test('uses backfill and returns slice strictly after lastEventId', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final tl = MockTimeline();
 
       // Snapshot with events e0..e2 (sorted oldest->newest)
@@ -300,7 +300,7 @@ void main() {
 
     test('falls back to doubling when backfill unavailable', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final created = <MockTimeline>[];
 
       // Build a synthetic sequence e0..e9
@@ -356,7 +356,7 @@ void main() {
 
     test('with no marker id, returns snapshot events (no rewind)', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final tl = MockTimeline();
 
       // Start with newer window (ts 300..309), then page older (200..209), then (100..109)
@@ -430,7 +430,7 @@ void main() {
       'includes pre-context by count even when strictly-after is non-empty',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final tl = MockTimeline();
 
         // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
@@ -477,7 +477,7 @@ void main() {
 
     test('includes pre-context by timestamp (since last sync)', () async {
       final room = MockRoom();
-      final log = MockLogging();
+      final log = MockLoggingService();
       final tl = MockTimeline();
 
       // o1(ts=100), x1(ts=150), x2(ts=200)
@@ -522,7 +522,7 @@ void main() {
       'preContextCount=1 includes exactly one before marker and marker',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final tl = MockTimeline();
 
         // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
@@ -569,7 +569,7 @@ void main() {
       'preContextSinceTs equals earliest timestamp does not over-include',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final tl = MockTimeline();
 
         // Earliest ts is 100; marker at 150; latest 200
@@ -617,7 +617,7 @@ void main() {
       'marker missing with preContext does not escalate or over-include',
       () async {
         final room = MockRoom();
-        final log = MockLogging();
+        final log = MockLoggingService();
         final tl = MockTimeline();
 
         // Simple window e0..e2, marker not present

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';

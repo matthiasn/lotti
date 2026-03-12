@@ -1406,7 +1406,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -1564,7 +1564,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -1670,7 +1670,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -1785,7 +1785,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -1905,7 +1905,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -1998,7 +1998,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -2130,7 +2130,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -2232,7 +2232,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -2341,7 +2341,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -2470,7 +2470,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -2599,7 +2599,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -2719,7 +2719,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -2826,7 +2826,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -2907,7 +2907,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -3053,7 +3053,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       when(() => session.client).thenReturn(client);
       when(() => client.userID).thenReturn('@me:server');
@@ -3173,7 +3173,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
@@ -3272,7 +3272,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
@@ -3377,7 +3377,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     when(() => session.client).thenReturn(client);
     when(() => client.userID).thenReturn('@me:server');
@@ -3611,7 +3611,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -3753,7 +3753,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');
@@ -3859,7 +3859,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -3982,7 +3982,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4090,7 +4090,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4222,7 +4222,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // Return a stored marker to trigger the catch-up retry path
         when(
@@ -4359,7 +4359,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // Create events to process
         final event1 = MockEvent();
@@ -4535,7 +4535,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenAnswer((invocation) {
+          ).thenAnswer((invocation) async {
             capturedExceptions.add(invocation.positionalArguments[0] as Object);
           });
 
@@ -4663,7 +4663,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4757,7 +4757,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4871,7 +4871,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -4976,7 +4976,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         when(() => session.client).thenReturn(client);
         when(() => client.userID).thenReturn('@me:server');
@@ -5087,7 +5087,7 @@ void main() {
               subDomain: any<String>(named: 'subDomain'),
               stackTrace: any<StackTrace?>(named: 'stackTrace'),
             ),
-          ).thenReturn(null);
+          ).thenAnswer((_) async {});
 
           when(() => session.client).thenReturn(client);
           when(() => client.userID).thenReturn('@me:server');

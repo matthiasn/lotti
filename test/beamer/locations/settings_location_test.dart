@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
-import 'package:lotti/features/settings/ui/pages/advanced/logging_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
@@ -56,7 +54,6 @@ void main() {
       // Register mock services with GetIt for tests that need them
       getIt
         ..registerSingleton<TagsService>(MockTagsService())
-        ..registerSingleton<LoggingDb>(MockLoggingDb())
         ..registerSingleton<JournalDb>(MockJournalDb());
     });
 
@@ -106,9 +103,6 @@ void main() {
         '/settings/flags',
         '/settings/theming',
         '/settings/advanced',
-        '/settings/logging',
-        '/settings/advanced/logging',
-        '/settings/advanced/logging/:logEntryId',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts/:conflictId/edit',
@@ -697,42 +691,6 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<AdvancedSettingsPage>());
       expect(pages[2].child, isA<LoggingSettingsPage>());
-    });
-
-    test('buildPages builds LoggingPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/advanced/logging'),
-      );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
-      expect(pages[2].child, isA<LoggingPage>());
-    });
-
-    test('buildPages builds LogDetailPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/advanced/logging/log-123'),
-      );
-      final location = SettingsLocation(routeInformation);
-      var beamState = BeamState.fromRouteInformation(routeInformation);
-      beamState = beamState.copyWith(
-        pathParameters: {'logEntryId': 'log-123'},
-      );
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 4);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
-      expect(pages[2].child, isA<LoggingPage>());
-      expect(pages[3].child, isA<LogDetailPage>());
     });
 
     test('buildPages builds AboutPage', () {

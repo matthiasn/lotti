@@ -9,7 +9,6 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
@@ -42,7 +41,6 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
         ..registerSingleton<VectorClockService>(MockVectorClockService())
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
@@ -58,9 +56,6 @@ void main() {
 
     tearDownAll(() async {
       // Ensure databases are closed and service locator is reset
-      if (getIt.isRegistered<LoggingDb>()) {
-        await getIt<LoggingDb>().close();
-      }
       if (getIt.isRegistered<JournalDb>()) {
         await getIt<JournalDb>().close();
       }

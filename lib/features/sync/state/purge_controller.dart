@@ -1,8 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/utils/file_utils.dart';
 
 final purgeControllerProvider = NotifierProvider<PurgeController, PurgeState>(
   PurgeController.new,
@@ -37,12 +37,10 @@ class PurgeController extends Notifier<PurgeState> {
   PurgeController();
 
   late final JournalDb _db;
-  late final LoggingDb _loggingDb;
 
   @override
   PurgeState build() {
     _db = ref.watch(journalDbProvider);
-    _loggingDb = ref.watch(loggingDbProvider);
     return const PurgeState();
   }
 
@@ -54,18 +52,14 @@ class PurgeController extends Notifier<PurgeState> {
         state = state.copyWith(progress: progress);
       }
     } catch (e, stackTrace) {
-      await _loggingDb.log(
-        LogEntry(
-          id: uuid.v1(),
-          createdAt: DateTime.now().toIso8601String(),
-          domain: 'PurgeController',
-          subDomain: 'purgeDeleted',
-          message: e.toString(),
-          stacktrace: stackTrace.toString(),
-          level: InsightLevel.error.name.toUpperCase(),
-          type: InsightType.exception.name.toUpperCase(),
-        ),
-      );
+      ref
+          .read(loggingServiceProvider)
+          .captureException(
+            e,
+            domain: 'PurgeController',
+            subDomain: 'purgeDeleted',
+            stackTrace: stackTrace,
+          );
       state = state.copyWith(
         isPurging: false,
         progress: 0,

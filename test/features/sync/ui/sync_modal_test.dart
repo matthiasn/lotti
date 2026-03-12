@@ -183,7 +183,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenReturn(null); // Or some other appropriate response
+    ).thenAnswer((_) async {});
 
     SpySyncController.onSyncAll = null;
   });

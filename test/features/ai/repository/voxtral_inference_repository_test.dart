@@ -16,7 +16,20 @@ import '../../../test_utils/retry_fake_time.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
-class MockLoggingService extends Mock implements LoggingService {}
+class MockLoggingService extends Mock implements LoggingService {
+  MockLoggingService() {
+    when(
+      () => captureException(
+        any<dynamic>(),
+        domain: any(named: 'domain'),
+        subDomain: any(named: 'subDomain'),
+        level: any(named: 'level'),
+        type: any(named: 'type'),
+        stackTrace: any<dynamic>(named: 'stackTrace'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+}
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -993,7 +1006,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final stream = Stream.fromIterable([utf8.encode('Not found')]);
         when(() => mockHttpClient.send(any())).thenAnswer(
@@ -1034,7 +1047,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final stream = Stream.fromIterable([utf8.encode('Server error')]);
         when(() => mockHttpClient.send(any())).thenAnswer(
@@ -1075,7 +1088,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         // Throw a StateError to trigger the generic catch block
         when(

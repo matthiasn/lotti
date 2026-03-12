@@ -79,7 +79,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final index = AttachmentIndex(logging: logging);
       final roomManager = MockSyncRoomManager();
@@ -162,7 +162,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final index = AttachmentIndex(logging: logging);
       final roomManager = MockSyncRoomManager();
@@ -266,7 +266,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
       final index = AttachmentIndex(logging: logging);
       final roomManager = MockSyncRoomManager();
       final room = MockRoom();
@@ -319,7 +319,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
 
     final index = AttachmentIndex(logging: logging);
     final roomManager = MockSyncRoomManager();
@@ -364,7 +364,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
     final index = AttachmentIndex(logging: logging);
     final roomManager = MockSyncRoomManager();
     final room = MockRoom();
@@ -416,7 +416,7 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenReturn(null);
+        ).thenAnswer((_) async {});
 
         final index = AttachmentIndex(logging: logging);
         final roomManager = MockSyncRoomManager();
@@ -492,7 +492,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final index = AttachmentIndex(logging: logging);
       final roomManager = MockSyncRoomManager();
@@ -548,7 +548,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final index = AttachmentIndex(logging: logging);
       final roomManager = MockSyncRoomManager();

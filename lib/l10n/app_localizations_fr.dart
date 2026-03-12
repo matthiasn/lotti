@@ -2910,16 +2910,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkExistingTask => 'Lier une tâche existante...';
 
   @override
-  String get loggingFailedToLoad =>
-      'Échec du chargement des journaux. Réessaie s\'il te plaît.';
+  String logsFoundCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count logs correspondants trouvés',
+      one: '1 log correspondant trouvé',
+    );
+    return '$_temp0';
+  }
 
   @override
-  String get loggingFailedToLoadMore =>
-      'Échec du chargement de résultats supplémentaires. Réessaie s\'il te plaît.';
+  String get logsLineCopied => 'Ligne de log copiée';
 
   @override
-  String get loggingSearchFailed =>
-      'Échec de la recherche. Réessaie s\'il te plaît.';
+  String logsNoLogsForDate(String date) {
+    return 'Aucun log pour le $date';
+  }
+
+  @override
+  String get logsNoMatch => 'Aucun log ne correspond à ta recherche';
+
+  @override
+  String get logsReload => 'Recharger';
 
   @override
   String get logsSearchHint => 'Rechercher tous les logs...';
@@ -2948,14 +2961,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get maintenanceDeleteEditorDbDescription =>
       'Supprimer la base de données des brouillons de l\'éditeur';
-
-  @override
-  String get maintenanceDeleteLoggingDb =>
-      'Supprimer la base de données de journalisation';
-
-  @override
-  String get maintenanceDeleteLoggingDbDescription =>
-      'Supprimer la base de données de journalisation';
 
   @override
   String get maintenanceDeleteSyncDb =>

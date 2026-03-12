@@ -205,7 +205,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
-      ).thenReturn(null);
+      ).thenAnswer((_) async {});
 
       final result = await engine.connectWithLifecycleOption(
         shouldAttemptLogin: true,
@@ -239,7 +239,7 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async {});
     when(
       () => loggingService.captureEvent(
         any<String>(),

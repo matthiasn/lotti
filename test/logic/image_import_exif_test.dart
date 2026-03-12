@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
-import 'package:lotti/database/logging_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -300,7 +299,6 @@ void main() {
     // Register mock services
     getIt
       ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-      ..registerSingleton<LoggingDb>(LoggingDb(inMemoryDatabase: true))
       ..registerSingleton<JournalDb>(MockJournalDb())
       ..registerSingleton<Fts5Db>(MockFts5Db())
       ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())

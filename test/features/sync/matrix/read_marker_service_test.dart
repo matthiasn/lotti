@@ -1,7 +1,6 @@
 // ignore_for_file: unnecessary_lambdas, avoid_redundant_argument_values
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/platform.dart' as pf;
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -14,7 +13,7 @@ class MockRoom extends Mock implements Room {}
 
 class MockTimeline extends Mock implements Timeline {}
 
-class MockLogging extends Mock implements LoggingService {}
+typedef MockLogging = MockLoggingService;
 
 class MockEvent extends Mock implements Event {}
 
