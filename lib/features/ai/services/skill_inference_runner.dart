@@ -53,12 +53,26 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
-    final skill = automationResult.skill!;
-    final profile = automationResult.resolvedProfile!;
-    final provider = profile.transcriptionProvider!;
-    final modelId = profile.transcriptionModelId!;
-
     try {
+      final skill = automationResult.skill;
+      final profile = automationResult.resolvedProfile;
+      if (skill == null || profile == null) {
+        developer.log(
+          'AutomationResult missing skill or profile for $audioEntryId',
+          name: _logTag,
+        );
+        return;
+      }
+      final provider = profile.transcriptionProvider;
+      final modelId = profile.transcriptionModelId;
+      if (provider == null || modelId == null) {
+        developer.log(
+          'Profile missing transcription provider/model for $audioEntryId',
+          name: _logTag,
+        );
+        return;
+      }
+
       // 1. Fetch the audio entity.
       final entity = await _aiInputRepository.getEntity(audioEntryId);
       if (entity is! JournalAudio) {
@@ -69,8 +83,13 @@ class SkillInferenceRunner {
         return;
       }
 
-      // 2. Build context for prompts.
-      final speechDictionary = await _buildSpeechDictionaryText(entity);
+      // 2. Build context for prompts (fetch terms once, reuse for both
+      // prompt text and provider-level context biasing).
+      final speechDictionaryTerms = await _promptBuilderHelper
+          .getSpeechDictionaryTerms(entity);
+      final speechDictionary = _formatSpeechDictionaryText(
+        speechDictionaryTerms,
+      );
       final taskContext = linkedTaskId != null
           ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
           : null;
@@ -94,23 +113,16 @@ class SkillInferenceRunner {
       final bytes = await file.readAsBytes();
       final audioBase64 = base64Encode(bytes);
 
-      // 5. Get speech dictionary terms for context biasing.
-      final speechDictionaryTerms = await _promptBuilderHelper
-          .getSpeechDictionaryTerms(entity);
-
-      // 6. Call inference.
-      final prompt =
-          '${promptResult.systemMessage}\n\n'
-          '${promptResult.userMessage}';
-
+      // 5. Call inference with separate system/user messages.
       final start = DateTime.now();
       final responseStream = _cloudRepository.generateWithAudio(
-        prompt,
+        promptResult.userMessage,
         model: modelId,
         audioBase64: audioBase64,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
         provider: provider,
+        systemMessage: promptResult.systemMessage,
         speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
             ? speechDictionaryTerms
             : null,
@@ -186,12 +198,25 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
-    final skill = automationResult.skill!;
-    final profile = automationResult.resolvedProfile!;
-    final provider = profile.imageRecognitionProvider!;
-    final modelId = profile.imageRecognitionModelId!;
-
     try {
+      final skill = automationResult.skill;
+      final profile = automationResult.resolvedProfile;
+      if (skill == null || profile == null) {
+        developer.log(
+          'AutomationResult missing skill or profile for $imageEntryId',
+          name: _logTag,
+        );
+        return;
+      }
+      final provider = profile.imageRecognitionProvider;
+      final modelId = profile.imageRecognitionModelId;
+      if (provider == null || modelId == null) {
+        developer.log(
+          'Profile missing image recognition provider/model for $imageEntryId',
+          name: _logTag,
+        );
+        return;
+      }
       // 1. Fetch the image entity.
       final entity = await _aiInputRepository.getEntity(imageEntryId);
       if (entity is! JournalImage) {
@@ -233,19 +258,16 @@ class SkillInferenceRunner {
         return;
       }
 
-      // 5. Call inference.
-      final prompt =
-          '${promptResult.systemMessage}\n\n'
-          '${promptResult.userMessage}';
-
+      // 5. Call inference with separate system/user messages.
       final responseStream = _cloudRepository.generateWithImages(
-        prompt,
+        promptResult.userMessage,
         baseUrl: provider.baseUrl,
         apiKey: provider.apiKey,
         model: modelId,
         temperature: null,
         images: images,
         provider: provider,
+        systemMessage: promptResult.systemMessage,
       );
 
       // 6. Collect streaming response.
@@ -304,8 +326,8 @@ class SkillInferenceRunner {
     }
   }
 
-  Future<String> _buildSpeechDictionaryText(JournalEntity entity) async {
-    final terms = await _promptBuilderHelper.getSpeechDictionaryTerms(entity);
+  /// Formats pre-fetched speech dictionary terms into a prompt fragment.
+  static String _formatSpeechDictionaryText(List<String> terms) {
     if (terms.isEmpty) return '';
 
     String escapeForJson(String s) => s

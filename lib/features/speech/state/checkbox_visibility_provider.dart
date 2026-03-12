@@ -6,7 +6,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'checkbox_visibility_provider.g.dart';
 
 /// Checks whether a task has profile-driven transcription available.
-@riverpod
+///
+/// Uses `keepAlive` to cache the result across modal open/close cycles,
+/// avoiding repeated full profile-chain resolution for the same task.
+@Riverpod(keepAlive: true)
 Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
   final service = ref.watch(profileAutomationServiceProvider);
   final result = await service.tryTranscribe(taskId: taskId);

@@ -2699,20 +2699,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Selectați un model…';
 
   @override
-  String inferenceProfileSkillModelRequired(String slotName) {
-    return 'Necesită modelul $slotName';
-  }
+  String get inferenceProfilesEmpty => 'Niciun profil de inferență';
 
   @override
-  String inferenceProfileSkillUsesModel(String slotName) {
-    return 'Utilizează modelul $slotName';
+  String inferenceProfileSkillModelRequired(String slotName) {
+    return 'Necesită modelul $slotName';
   }
 
   @override
   String get inferenceProfileSkillsSection => 'Competențe automatizate';
 
   @override
-  String get inferenceProfilesEmpty => 'Niciun profil de inferență';
+  String inferenceProfileSkillUsesModel(String slotName) {
+    return 'Utilizează modelul $slotName';
+  }
 
   @override
   String get inferenceProfilesTitle => 'Profile de inferență';

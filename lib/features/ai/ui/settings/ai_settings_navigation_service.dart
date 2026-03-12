@@ -144,8 +144,9 @@ class AiSettingsNavigationService {
         builder: (context) => InferenceProfileForm(existingProfile: config),
       ),
       // Skills are read-only in this phase; no dedicated edit page yet.
-      AiConfigSkill() => throw UnimplementedError(
-        'Skill editing is not yet implemented',
+      // Return a no-op route to avoid crashing if this path is reached.
+      AiConfigSkill() => _createSlideRoute(
+        builder: (_) => const SizedBox.shrink(),
       ),
     };
   }

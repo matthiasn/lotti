@@ -48,6 +48,16 @@ void main() {
           imageRecognitionModelId: 'models/gemini-3-flash-preview',
           transcriptionModelId: 'models/gemini-3-flash-preview',
           imageGenerationModelId: 'models/gemini-3-pro-image-preview',
+          skillAssignments: const [
+            SkillAssignment(
+              skillId: skillTranscribeContextId,
+              automate: true,
+            ),
+            SkillAssignment(
+              skillId: skillImageAnalysisContextId,
+              automate: true,
+            ),
+          ],
           isDefault: true,
           createdAt: DateTime(2026),
         ),
@@ -161,13 +171,19 @@ void main() {
     });
 
     test('does not update default profile when all slots match', () async {
-      // Local profile exists with matching model IDs.
+      // Local profile exists with matching model IDs and skill assignments.
       when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3.5:9b',
           imageRecognitionModelId: 'qwen3.5:9b',
+          skillAssignments: const [
+            SkillAssignment(
+              skillId: skillImageAnalysisContextId,
+              automate: true,
+            ),
+          ],
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -324,7 +340,7 @@ void main() {
         final skillIds = geminiFlash.skillAssignments
             .map((a) => a.skillId)
             .toSet();
-        expect(skillIds, contains(skillTranscribeId));
+        expect(skillIds, contains(skillTranscribeContextId));
         expect(skillIds, contains(skillImageAnalysisContextId));
       },
     );

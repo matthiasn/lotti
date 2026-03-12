@@ -2699,20 +2699,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Modell auswählen…';
 
   @override
-  String inferenceProfileSkillModelRequired(String slotName) {
-    return '$slotName-Modell muss gesetzt sein';
-  }
+  String get inferenceProfilesEmpty => 'Noch keine Inferenz-Profile';
 
   @override
-  String inferenceProfileSkillUsesModel(String slotName) {
-    return 'Verwendet $slotName-Modell';
+  String inferenceProfileSkillModelRequired(String slotName) {
+    return '$slotName-Modell muss gesetzt sein';
   }
 
   @override
   String get inferenceProfileSkillsSection => 'Automatisierte Fähigkeiten';
 
   @override
-  String get inferenceProfilesEmpty => 'Noch keine Inferenz-Profile';
+  String inferenceProfileSkillUsesModel(String slotName) {
+    return 'Verwendet $slotName-Modell';
+  }
 
   @override
   String get inferenceProfilesTitle => 'Inferenz-Profile';

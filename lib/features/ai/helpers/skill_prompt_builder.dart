@@ -123,8 +123,9 @@ class SkillPromptBuilder {
       }
     }
 
-    // Inject task context for fullTask policy.
-    if (skill.contextPolicy == ContextPolicy.fullTask) {
+    // Inject task context for fullTask and taskSummary policies.
+    if (skill.contextPolicy == ContextPolicy.fullTask ||
+        skill.contextPolicy == ContextPolicy.taskSummary) {
       _appendTaskContext(
         buffer,
         skill: skill,
@@ -185,6 +186,19 @@ class SkillPromptBuilder {
             '**Task context (for terminology only, do NOT include in '
             'output):**',
           )
+          ..writeln(currentTaskSummary);
+      }
+      return;
+    }
+
+    // taskSummary policy: inject only the current task summary, not the
+    // full task JSON or linked tasks.
+    if (skill.contextPolicy == ContextPolicy.taskSummary) {
+      if (currentTaskSummary != null && currentTaskSummary.isNotEmpty) {
+        buffer
+          ..writeln()
+          ..writeln()
+          ..writeln('**Task Summary:**')
           ..writeln(currentTaskSummary);
       }
       return;

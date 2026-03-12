@@ -495,6 +495,7 @@ class AiConfigRepository {
       model: (_) => AiConfigType.model,
       prompt: (_) => AiConfigType.prompt,
       inferenceProfile: (_) => AiConfigType.inferenceProfile,
+      skill: (_) => AiConfigType.skill,
     );
   }
 }

@@ -4821,17 +4821,17 @@ abstract class AppLocalizations {
   /// **'Select a model…'**
   String get inferenceProfileSelectModel;
 
+  /// No description provided for @inferenceProfilesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No inference profiles yet'**
+  String get inferenceProfilesEmpty;
+
   /// No description provided for @inferenceProfileSkillModelRequired.
   ///
   /// In en, this message translates to:
   /// **'Requires {slotName} model to be set'**
   String inferenceProfileSkillModelRequired(String slotName);
-
-  /// No description provided for @inferenceProfileSkillUsesModel.
-  ///
-  /// In en, this message translates to:
-  /// **'Uses {slotName} model'**
-  String inferenceProfileSkillUsesModel(String slotName);
 
   /// No description provided for @inferenceProfileSkillsSection.
   ///
@@ -4839,11 +4839,11 @@ abstract class AppLocalizations {
   /// **'Automated Skills'**
   String get inferenceProfileSkillsSection;
 
-  /// No description provided for @inferenceProfilesEmpty.
+  /// No description provided for @inferenceProfileSkillUsesModel.
   ///
   /// In en, this message translates to:
-  /// **'No inference profiles yet'**
-  String get inferenceProfilesEmpty;
+  /// **'Uses {slotName} model'**
+  String inferenceProfileSkillUsesModel(String slotName);
 
   /// No description provided for @inferenceProfilesTitle.
   ///

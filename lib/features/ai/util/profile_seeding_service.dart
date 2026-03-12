@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -17,14 +18,16 @@ const profileLocalPowerId = 'profile-local-power-001';
 const _logTag = 'ProfileSeedingService';
 
 /// Default skill assignments for profiles with transcription + image
-/// recognition model slots.
+/// recognition model slots. Uses `skillTranscribeContextId` which has
+/// `contextPolicy: fullTask` for richer context-aware transcription.
 const _defaultSkillAssignments = [
-  SkillAssignment(skillId: skillTranscribeId, automate: true),
+  SkillAssignment(skillId: skillTranscribeContextId, automate: true),
   SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
 ];
 
 /// Skill assignments for Mistral (EU) — uses the basic transcription skill
-/// which has `contextPolicy: dictionaryOnly`, suitable for Voxtral.
+/// which has `contextPolicy: dictionaryOnly`, suitable for Voxtral's
+/// more limited context window.
 const _mistralSkillAssignments = [
   SkillAssignment(skillId: skillTranscribeId, automate: true),
   SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
@@ -123,7 +126,18 @@ class ProfileSeedingService {
         existing.transcriptionModelId != target.transcriptionModelId ||
         existing.imageGenerationModelId != target.imageGenerationModelId ||
         existing.isDefault != target.isDefault ||
-        existing.desktopOnly != target.desktopOnly;
+        existing.desktopOnly != target.desktopOnly ||
+        !_skillAssignmentsEqual(
+          existing.skillAssignments,
+          target.skillAssignments,
+        );
+  }
+
+  static bool _skillAssignmentsEqual(
+    List<SkillAssignment> a,
+    List<SkillAssignment> b,
+  ) {
+    return const SetEquality<SkillAssignment>().equals(a.toSet(), b.toSet());
   }
 
   /// The default profile definitions.

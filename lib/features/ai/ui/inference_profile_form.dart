@@ -214,6 +214,9 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   /// skill whose required model slot is currently empty. This prevents
   /// persisting an inconsistent state where a skill claims to be automated
   /// but the profile has no model to execute it.
+  ///
+  /// Note: only checks `defaultSkills` — custom/future skills pass through
+  /// unchanged. Extend this when custom skill editing is added.
   List<SkillAssignment> _sanitizedSkillAssignments() {
     return _skillAssignments.map((a) {
       if (!a.automate) return a;
