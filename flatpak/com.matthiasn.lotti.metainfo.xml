@@ -31,9 +31,10 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.916" date="2026-03-11">
+    <release version="0.9.917" date="2026-03-12">
       <description>
           <p>New task filter: filter by agent assignment (All / Has Agent / No Agent) in the Task Filter Modal. Quickly find tasks that still need an agent assigned. Zero performance overhead when the filter is in its default state.</p>
+          <p>Sync fixes: exact backfill hits are now validated against the payload's current vector clock before resend, preventing stale exact mappings from resending a payload and then declaring the same counter unresolvable. When the stored sync marker cannot be found, catch-up now falls back to a bounded recent tail instead of replaying the entire visible room snapshot.</p>
       </description>
     </release>
     <release version="0.9.915" date="2026-03-11">

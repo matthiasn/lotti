@@ -4,11 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.916] - 2026-03-11
+## [0.9.917] - 2026-03-12
 ### Added
 - Task filter: filter by agent assignment (All / Has Agent / No Agent) in the
   Task Filter Modal. Enables efficient backfilling of agent assignments by
   showing only unassigned tasks. Zero performance overhead when filter is off.
+
+### Fixed
+- Sync backfill: exact `(hostId, counter)` hits are now validated against the
+  payload's current vector clock before resend. Stale exact mappings no longer
+  resend a payload and then declare the same counter unresolvable in the same
+  handling pass.
+
+### Improved
+- Sync catch-up: when the stored marker cannot be found, catch-up now falls
+  back to a bounded recent tail instead of replaying the entire visible room
+  snapshot. This reduces repeated historical reprocessing during recovery.
 
 ## [0.9.915] - 2026-03-11
 ### Removed

@@ -1,3 +1,4 @@
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
@@ -15,6 +16,10 @@ typedef BackfillFn =
       required LoggingService logging,
     });
 
+/// Default value for the [CatchUpStrategy.collectEventsForCatchUp]
+/// `missingMarkerFallbackLimit` parameter.
+const defaultMissingMarkerFallbackLimit = 1000;
+
 /// Catch‑up helper used at attach time by the stream consumer.
 ///
 /// Behaviour:
@@ -23,11 +28,12 @@ typedef BackfillFn =
 /// - If the target is still missing and no SDK backfill was attempted, it
 ///   escalates snapshot limits (doubling) up to maxLookback.
 /// - Returns only events strictly after lastEventId when it can be located;
-///   otherwise returns the entire snapshot (oldest→newest).
+///   otherwise returns only a bounded tail of the snapshot (oldest→newest
+///   within that tail).
 class CatchUpStrategy {
   /// Collects ordered events for catch‑up without rewinding before the last
-  /// processed marker. If [lastEventId] cannot be located, returns the entire
-  /// snapshot ordered chronologically.
+  /// processed marker. If [lastEventId] cannot be located, returns a bounded
+  /// chronological tail instead of replaying the entire snapshot.
   static Future<List<Event>> collectEventsForCatchUp({
     required Room room,
     required String? lastEventId,
@@ -35,6 +41,7 @@ class CatchUpStrategy {
     required LoggingService logging,
     int initialLimit = 200,
     int maxLookback = 4000,
+    int missingMarkerFallbackLimit = defaultMissingMarkerFallbackLimit,
     num? preContextSinceTs,
     int preContextCount = 0,
   }) async {
@@ -130,7 +137,18 @@ class CatchUpStrategy {
         if (start > events.length) start = events.length;
         return events.sublist(start);
       }
-      return events;
+      final fallbackStart = events.length <= missingMarkerFallbackLimit
+          ? 0
+          : events.length - missingMarkerFallbackLimit;
+      final fallback = events.sublist(fallbackStart);
+      logging.captureEvent(
+        'catchup.markerMissing lastEventId=${lastEventId ?? 'null'} '
+        'snapshot=${events.length} returned=${fallback.length} '
+        'fallbackLimit=$missingMarkerFallbackLimit',
+        domain: syncLoggingDomain,
+        subDomain: 'catchup.markerMissing',
+      );
+      return fallback;
     } finally {
       try {
         snapshot.cancelSubscriptions();
