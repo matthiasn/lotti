@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
@@ -389,6 +390,10 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep agent runtime wiring alive from app startup onward so sync can
+    // apply and verify incoming agent payloads before the first entry view.
+    ref.listen(agentInitializationProvider, (_, _) {});
+
     final themingState = ref.watch(themingControllerProvider);
     final enableTooltips = ref.watch(enableTooltipsProvider).value ?? true;
 

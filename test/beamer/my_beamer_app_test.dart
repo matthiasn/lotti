@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../mocks/mocks.dart';
 
 void main() {
   group('MyBeamerApp theming', () {
@@ -183,6 +189,34 @@ void main() {
     });
   });
 
+  group('MyBeamerApp startup wiring', () {
+    testWidgets('starts agent initialization on app startup', (tester) async {
+      final mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/');
+
+      var initializationRuns = 0;
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themingControllerProvider.overrideWith(
+              _LoadingThemingController.new,
+            ),
+            agentInitializationProvider.overrideWith((ref) async {
+              initializationRuns++;
+            }),
+          ],
+          child: MyBeamerApp(navService: mockNavService),
+        ),
+      );
+
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(initializationRuns, 1);
+      expect(find.text('Loading...'), findsOneWidget);
+    });
+  });
+
   group('Listener widget activity tracking', () {
     testWidgets('Listener widget receives pointer events', (tester) async {
       var pointerDownCount = 0;
@@ -218,4 +252,9 @@ void main() {
       expect(pointerUpCount, 1);
     });
   });
+}
+
+class _LoadingThemingController extends ThemingController {
+  @override
+  ThemingState build() => const ThemingState();
 }

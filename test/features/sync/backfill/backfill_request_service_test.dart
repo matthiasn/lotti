@@ -806,14 +806,12 @@ void main() {
             _createRequestedLogItem(aliceHostId, 12),
           ];
 
-          var callCount = 0;
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: 50,
               offset: any(named: 'offset'),
             ),
           ).thenAnswer((inv) async {
-            callCount++;
             final offset = inv.namedArguments[#offset] as int;
             return offset == 0 ? requestedEntries : [];
           });
@@ -1105,14 +1103,12 @@ void main() {
             ),
           ];
 
-          var callCount = 0;
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: 50,
               offset: any(named: 'offset'),
             ),
           ).thenAnswer((inv) async {
-            callCount++;
             final offset = inv.namedArguments[#offset] as int;
             return offset == 0 ? requestedEntries : [];
           });
@@ -1173,14 +1169,12 @@ void main() {
             ),
           ];
 
-          var callCount = 0;
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: 50,
               offset: any(named: 'offset'),
             ),
           ).thenAnswer((inv) async {
-            callCount++;
             final offset = inv.namedArguments[#offset] as int;
             return offset == 0 ? requestedEntries : [];
           });
@@ -1296,14 +1290,12 @@ void main() {
             _createRequestedLogItem(aliceHostId, 3),
           ];
 
-          var callCount = 0;
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: 2,
               offset: any(named: 'offset'),
             ),
           ).thenAnswer((inv) async {
-            callCount++;
             final offset = inv.namedArguments[#offset] as int;
             if (offset == 0) return batch1;
             if (offset == 2) return batch2;
