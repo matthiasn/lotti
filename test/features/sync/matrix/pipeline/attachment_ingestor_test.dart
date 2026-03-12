@@ -713,6 +713,86 @@ void main() {
       },
     );
 
+    test(
+      'repairs the same agent attachment event when the local file is empty',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_agent_empty',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"status":"ok"}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_agent_empty');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/empty.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/empty.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        final firstResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        // Truncate to empty to trigger the empty-file repair path.
+        final localFile = File('${tmp.path}/agent_entities/empty.json');
+        expect(localFile.existsSync(), isTrue);
+        localFile.writeAsStringSync('');
+
+        final secondResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(localFile.readAsStringSync(), '{"status":"ok"}');
+        verify(ev.downloadAndDecryptAttachment).called(2);
+      },
+    );
+
     test('overwrites stale agent link file instead of deduping', () async {
       final logging = MockLoggingService();
       when(

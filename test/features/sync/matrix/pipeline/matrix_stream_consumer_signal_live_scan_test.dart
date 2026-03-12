@@ -235,6 +235,8 @@ void main() {
 
       void Function()? onNewEvent;
       void Function(int)? onInsert;
+      void Function(int)? onChange;
+      void Function(int)? onRemove;
       void Function()? onUpdate;
       when(
         () => room.getTimeline(
@@ -247,6 +249,8 @@ void main() {
       ).thenAnswer((inv) async {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
         onInsert = inv.namedArguments[#onInsert] as void Function(int)?;
+        onChange = inv.namedArguments[#onChange] as void Function(int)?;
+        onRemove = inv.namedArguments[#onRemove] as void Function(int)?;
         onUpdate = inv.namedArguments[#onUpdate] as void Function()?;
         return liveTimeline;
       });
@@ -278,15 +282,19 @@ void main() {
 
       final before = consumer.metricsSnapshot()['signalTimelineCallbacks'] ?? 0;
       onNewEvent?.call();
-      // Exercise both no-arg callbacks and one representative indexed callback.
+      // Exercise all callback subtypes to cover _recordTimelineSignal branches.
       onUpdate?.call();
       onInsert?.call(0);
+      onChange?.call(0);
+      onRemove?.call(0);
       async.flushMicrotasks();
       final afterSnap = consumer.metricsSnapshot();
       final after = afterSnap['signalTimelineCallbacks'] ?? 0;
-      expect(after, greaterThanOrEqualTo(before + 1));
+      expect(after, greaterThanOrEqualTo(before + 5));
       expect(afterSnap['signalTimelineNewEvent'], greaterThanOrEqualTo(1));
       expect(afterSnap['signalTimelineInsert'], greaterThanOrEqualTo(1));
+      expect(afterSnap['signalTimelineChange'], greaterThanOrEqualTo(1));
+      expect(afterSnap['signalTimelineRemove'], greaterThanOrEqualTo(1));
       expect(afterSnap['signalTimelineUpdate'], greaterThanOrEqualTo(1));
     });
   });
