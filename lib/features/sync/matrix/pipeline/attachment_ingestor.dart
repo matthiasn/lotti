@@ -7,8 +7,8 @@ import 'dart:io';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
-import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -241,10 +241,10 @@ class AttachmentIngestor {
       return false;
     }
     try {
-      if (!await file.exists()) {
+      if (!file.existsSync()) {
         return true;
       }
-      return await file.length() <= 0;
+      return file.lengthSync() <= 0;
     } catch (_) {
       return true;
     }

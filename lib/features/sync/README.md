@@ -114,6 +114,9 @@ The most recent stabilization pass addressed two concrete failures:
   clock before resend
 - missing-marker catch-up now falls back to a bounded tail instead of replaying
   an entire large snapshot
+- receive-side signal diagnostics now summarize scheduler pokes per catch-up
+  burst and per live-scan pass instead of writing one log line for every raw
+  callback
 
 The largest remaining concerns are:
 

@@ -39,6 +39,22 @@ class MatrixStreamSignalBinder {
 
   StreamSubscription<Event>? _sub;
 
+  void _recordTimelineSignal(String kind) {
+    if (!_collectMetrics) return;
+    _metrics.incSignalTimelineCallbacks();
+    if (kind == 'new') {
+      _metrics.incSignalTimelineNewEvent();
+    } else if (kind == 'insert') {
+      _metrics.incSignalTimelineInsert();
+    } else if (kind == 'change') {
+      _metrics.incSignalTimelineChange();
+    } else if (kind == 'remove') {
+      _metrics.incSignalTimelineRemove();
+    } else if (kind == 'update') {
+      _metrics.incSignalTimelineUpdate();
+    }
+  }
+
   Future<void> start({required String? lastProcessedEventId}) async {
     await _sub?.cancel();
     _sub = null;
@@ -50,14 +66,7 @@ class MatrixStreamSignalBinder {
       final roomId = _roomManager.currentRoomId;
       if (roomId == null || event.roomId != roomId) return;
       _catchUp.handleFirstStreamEvent();
-      if (_collectMetrics) {
-        _metrics.incSignalClientStream();
-        _loggingService.captureEvent(
-          'signal.clientStream',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
-      }
+      if (_collectMetrics) _metrics.incSignalClientStream();
       // Conditional processing: expensive catch-up during startup, cheap scan in
       // steady state.
       if (_catchUp.handleClientStreamSignal()) {
@@ -76,15 +85,8 @@ class MatrixStreamSignalBinder {
       try {
         // Wrap timeline callbacks to count and log signals. These callbacks do
         // not process payloads; they only nudge the scheduler.
-        void onTimelineSignal() {
-          if (_collectMetrics) {
-            _metrics.incSignalTimelineCallbacks();
-            _loggingService.captureEvent(
-              'signal.timeline',
-              domain: syncLoggingDomain,
-              subDomain: 'signal',
-            );
-          }
+        void onTimelineSignal(String kind) {
+          _recordTimelineSignal(kind);
           try {
             _liveScan.scheduleLiveScan();
           } catch (e, st) {
@@ -99,11 +101,11 @@ class MatrixStreamSignalBinder {
         }
 
         final tl = await room.getTimeline(
-          onNewEvent: onTimelineSignal,
-          onInsert: (_) => onTimelineSignal(),
-          onChange: (_) => onTimelineSignal(),
-          onRemove: (_) => onTimelineSignal(),
-          onUpdate: onTimelineSignal,
+          onNewEvent: () => onTimelineSignal('new'),
+          onInsert: (_) => onTimelineSignal('insert'),
+          onChange: (_) => onTimelineSignal('change'),
+          onRemove: (_) => onTimelineSignal('remove'),
+          onUpdate: () => onTimelineSignal('update'),
         );
         _liveScan.liveTimeline = tl;
         // Proactively scan once at startup, now that initial catch-up has run

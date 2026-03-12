@@ -18,6 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync logging: sync-family info logs are now routed into `sync-YYYY-MM-DD.log`
   instead of inflating the general `lotti-YYYY-MM-DD.log`. Sync errors remain
   visible in both logs.
+- Sync diagnostics: receiver-side signal logging now emits burst/pass summaries
+  with source breakdowns instead of one hot-path line per raw scheduler poke.
 
 ### Removed
 - Label assignment snackbar/toaster — no longer needed since label assignments

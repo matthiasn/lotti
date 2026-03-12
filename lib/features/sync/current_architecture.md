@@ -141,6 +141,41 @@ That change is specifically about sink routing, not about reducing event
 volume. The remaining work on signal coalescing and replay overlap is still
 separate.
 
+## 2026-03-12 Signal Summary Diagnostics
+
+The next receiver-side diagnostics pass changed how scheduler signals are
+observed.
+
+These are hard facts from the current code:
+
+- the receiver still has two overlapping signal sources:
+  `MatrixStreamSignalBinder` listens to the client stream and also attaches
+  live timeline callbacks
+- the live timeline still wires all five callback types into the scheduler:
+  `onNewEvent`, `onInsert`, `onChange`, `onRemove`, and `onUpdate`
+- those callbacks still nudge catch-up or live-scan; the pass did not remove
+  the underlying signal sources
+- what changed is the logging shape:
+  raw per-callback `signal.clientStream`, `signal.timeline`,
+  `signal.catchup.coalesce`, and `signal.liveScan.coalesce` style lines are no
+  longer the primary diagnostic surface
+- `MetricsCounters` now keeps explicit counters for:
+  client-stream signals, each timeline callback subtype, deferred/coalesced
+  catch-up signals, deferred/coalesced live-scan signals, `signal.noTimeline`,
+  and wake detections
+- catch-up now logs one burst-level completion line with
+  `catchup.done events=... signalSummary ...`
+- live scan now logs one pass-level summary with
+  `liveScan.summary afterSlice=... deduped=... processed=... latest=... signalSummary ...`
+- the live-scan `signalSummary` includes:
+  client-stream count, total timeline callback count, per-callback breakdown,
+  deferred reasons, coalesced count, trailing-scan scheduling, and the latest
+  signal-to-scan latency sample
+
+This is a diagnostics restructuring, not a scheduler rewrite. The point is to
+preserve cause-and-effect data while removing hundreds of thousands of
+individual callback log lines from the hot path.
+
 ## Observed Symptoms In The 2026-03-11 Logs
 
 There are now three relevant artifacts:

@@ -80,6 +80,11 @@ class MatrixStreamCatchUpCoordinator {
   bool _catchupLogStartPending = false;
   bool _catchupDoneLoggedThisBurst = false;
   int _lastCatchupEventsCount = 0;
+  int _lastCatchupSignalClientStream = 0;
+  int _lastCatchupFirstStreamTriggers = 0;
+  int _lastCatchupDeferredSignals = 0;
+  int _lastCatchupCoalescedSignals = 0;
+  int _lastCatchupTrailingSignals = 0;
 
   StreamSubscription<SyncUpdate>? _pendingSyncSubscription;
   Timer? _wakeCatchUpRetryTimer;
@@ -108,13 +113,7 @@ class MatrixStreamCatchUpCoordinator {
       return false;
     }
     _firstStreamEventCatchUpTriggered = true;
-    if (_collectMetrics) {
-      _loggingService.captureEvent(
-        'signal.firstStreamEvent.triggering.catchup',
-        domain: syncLoggingDomain,
-        subDomain: 'signal',
-      );
-    }
+    if (_collectMetrics) _metrics.incSignalFirstStreamCatchupTriggers();
     _startCatchupNow();
     return true;
   }
@@ -131,11 +130,7 @@ class MatrixStreamCatchUpCoordinator {
     if (_catchUpInFlight) {
       if (!_deferredCatchup) {
         _deferredCatchup = true;
-        _loggingService.captureEvent(
-          'signal.catchup.deferred set',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
+        if (_collectMetrics) _metrics.incSignalCatchupDeferred();
       }
       return true;
     }
@@ -146,11 +141,7 @@ class MatrixStreamCatchUpCoordinator {
       final remaining = _minCatchupGap - now.difference(_lastCatchupAt!);
       _catchupDebounceTimer?.cancel();
       _catchupDebounceTimer = Timer(remaining, _startCatchupNow);
-      _loggingService.captureEvent(
-        'signal.catchup.coalesce debounceMs=${remaining.inMilliseconds}',
-        domain: syncLoggingDomain,
-        subDomain: 'signal',
-      );
+      if (_collectMetrics) _metrics.incSignalCatchupCoalesce();
       return true;
     }
     _startCatchupNow();
@@ -203,7 +194,9 @@ class MatrixStreamCatchUpCoordinator {
           // No trailing run scheduled: log 'done' once for this burst.
           if (!_catchupDoneLoggedThisBurst) {
             _loggingService.captureEvent(
-              _withInstance('catchup.done events=$_lastCatchupEventsCount'),
+              _withInstance(
+                'catchup.done events=$_lastCatchupEventsCount ${_catchupSignalSummary()}',
+              ),
               domain: syncLoggingDomain,
               subDomain: 'catchup',
             );
@@ -239,6 +232,31 @@ class MatrixStreamCatchUpCoordinator {
       _catchUpInFlight = false;
       _flushDeferredLiveScan('runGuardedCatchUp');
     }
+  }
+
+  String _catchupSignalSummary() {
+    if (!_collectMetrics) {
+      return '';
+    }
+    final clientStream =
+        _metrics.signalClientStream - _lastCatchupSignalClientStream;
+    final firstStream =
+        _metrics.signalFirstStreamCatchupTriggers -
+        _lastCatchupFirstStreamTriggers;
+    final deferred =
+        _metrics.signalCatchupDeferredCount - _lastCatchupDeferredSignals;
+    final coalesced =
+        _metrics.signalCatchupCoalesceCount - _lastCatchupCoalescedSignals;
+    final trailing = _metrics.trailingCatchups - _lastCatchupTrailingSignals;
+
+    _lastCatchupSignalClientStream = _metrics.signalClientStream;
+    _lastCatchupFirstStreamTriggers = _metrics.signalFirstStreamCatchupTriggers;
+    _lastCatchupDeferredSignals = _metrics.signalCatchupDeferredCount;
+    _lastCatchupCoalescedSignals = _metrics.signalCatchupCoalesceCount;
+    _lastCatchupTrailingSignals = _metrics.trailingCatchups;
+
+    return 'signalSummary clientStream=$clientStream firstStream=$firstStream '
+        'deferred=$deferred coalesced=$coalesced trailing=$trailing';
   }
 
   void _scheduleInitialCatchUpRetry() {

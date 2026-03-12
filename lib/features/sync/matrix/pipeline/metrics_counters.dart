@@ -38,6 +38,20 @@ class MetricsCounters {
   /// Number of signals received from live timeline callbacks (onNewEvent,
   /// onInsert, onChange, onRemove, onUpdate).
   int signalTimelineCallbacks = 0;
+  int signalTimelineNewEvent = 0;
+  int signalTimelineInsert = 0;
+  int signalTimelineChange = 0;
+  int signalTimelineRemove = 0;
+  int signalTimelineUpdate = 0;
+
+  int signalFirstStreamCatchupTriggers = 0;
+  int signalCatchupDeferredCount = 0;
+  int signalCatchupCoalesceCount = 0;
+  int signalLiveScanDeferredInitialCatchupIncomplete = 0;
+  int signalLiveScanDeferredCatchupInFlight = 0;
+  int signalLiveScanDeferredInFlight = 0;
+  int signalNoTimelineCount = 0;
+  int wakeDetections = 0;
 
   /// Number of connectivity-driven nudges recorded by MatrixService when
   /// connectivity resumes.
@@ -111,6 +125,71 @@ class MetricsCounters {
   void incSignalTimelineCallbacks() {
     if (!collect) return;
     signalTimelineCallbacks++;
+  }
+
+  void incSignalTimelineNewEvent() {
+    if (!collect) return;
+    signalTimelineNewEvent++;
+  }
+
+  void incSignalTimelineInsert() {
+    if (!collect) return;
+    signalTimelineInsert++;
+  }
+
+  void incSignalTimelineChange() {
+    if (!collect) return;
+    signalTimelineChange++;
+  }
+
+  void incSignalTimelineRemove() {
+    if (!collect) return;
+    signalTimelineRemove++;
+  }
+
+  void incSignalTimelineUpdate() {
+    if (!collect) return;
+    signalTimelineUpdate++;
+  }
+
+  void incSignalFirstStreamCatchupTriggers() {
+    if (!collect) return;
+    signalFirstStreamCatchupTriggers++;
+  }
+
+  void incSignalCatchupDeferred() {
+    if (!collect) return;
+    signalCatchupDeferredCount++;
+  }
+
+  void incSignalCatchupCoalesce() {
+    if (!collect) return;
+    signalCatchupCoalesceCount++;
+  }
+
+  void incSignalLiveScanDeferredInitialCatchupIncomplete() {
+    if (!collect) return;
+    signalLiveScanDeferredInitialCatchupIncomplete++;
+  }
+
+  void incSignalLiveScanDeferredCatchupInFlight() {
+    if (!collect) return;
+    signalLiveScanDeferredCatchupInFlight++;
+  }
+
+  void incSignalLiveScanDeferredInFlight() {
+    if (!collect) return;
+    signalLiveScanDeferredInFlight++;
+  }
+
+  void incSignalNoTimeline() {
+    if (!collect) return;
+    signalNoTimelineCount++;
+  }
+
+  void incWakeDetections() {
+    if (!collect) return;
+    wakeDetections++;
   }
 
   void incSignalConnectivity() {
@@ -196,6 +275,37 @@ class MetricsCounters {
             'signalTimelineCallbacks',
             () => signalTimelineCallbacks,
           )
+          ..putIfAbsent('signalTimelineNewEvent', () => signalTimelineNewEvent)
+          ..putIfAbsent('signalTimelineInsert', () => signalTimelineInsert)
+          ..putIfAbsent('signalTimelineChange', () => signalTimelineChange)
+          ..putIfAbsent('signalTimelineRemove', () => signalTimelineRemove)
+          ..putIfAbsent('signalTimelineUpdate', () => signalTimelineUpdate)
+          ..putIfAbsent(
+            'signalFirstStreamCatchupTriggers',
+            () => signalFirstStreamCatchupTriggers,
+          )
+          ..putIfAbsent(
+            'signalCatchupDeferredCount',
+            () => signalCatchupDeferredCount,
+          )
+          ..putIfAbsent(
+            'signalCatchupCoalesceCount',
+            () => signalCatchupCoalesceCount,
+          )
+          ..putIfAbsent(
+            'signalLiveScanDeferredInitialCatchupIncomplete',
+            () => signalLiveScanDeferredInitialCatchupIncomplete,
+          )
+          ..putIfAbsent(
+            'signalLiveScanDeferredCatchupInFlight',
+            () => signalLiveScanDeferredCatchupInFlight,
+          )
+          ..putIfAbsent(
+            'signalLiveScanDeferredInFlight',
+            () => signalLiveScanDeferredInFlight,
+          )
+          ..putIfAbsent('signalNoTimelineCount', () => signalNoTimelineCount)
+          ..putIfAbsent('wakeDetections', () => wakeDetections)
           ..putIfAbsent('signalConnectivity', () => signalConnectivity)
           ..putIfAbsent('signalLatencyLastMs', () => signalLatencyLastMs)
           ..putIfAbsent('signalLatencyMinMs', () => signalLatencyMinMs)

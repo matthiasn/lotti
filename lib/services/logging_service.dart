@@ -52,8 +52,7 @@ class LoggingService {
     final pendingLines = _pendingFileLinesByStem.putIfAbsent(
       fileStem,
       () => <String>[],
-    );
-    pendingLines.add(line);
+    )..add(line);
     final shouldFlushNow =
         forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 

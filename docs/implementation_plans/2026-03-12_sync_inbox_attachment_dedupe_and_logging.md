@@ -103,11 +103,20 @@ Add or update targeted tests in
 
 ## Follow-up After This Pass
 
-If the logs are still too large after this lands, the next likely cuts are:
+The first follow-up from this plan has now landed:
 
-1. replace per-signal `signal.timeline` and `signal.clientStream` logging with
-   periodic summaries
-2. increase or redesign the processor-level seen-event dedupe window
-3. add an integration test with `1000+` offline-created agent entities and
+- per-callback `signal.timeline` and `signal.clientStream` logging was replaced
+  with summary diagnostics
+- catch-up now emits one `catchup.done ... signalSummary ...` line per burst
+- live scan now emits one `liveScan.summary ... signalSummary ...` line per
+  pass
+- the summary keeps the signal source breakdown instead of just silencing it:
+  client stream, timeline callback subtype, deferred reasons, coalescing, and
+  trailing scheduling are all counted explicitly
+
+If the logs are still too large after this, the next likely cuts are:
+
+1. increase or redesign the processor-level seen-event dedupe window
+2. add an integration test with `1000+` offline-created agent entities and
    assert one reconnect pass does not redownload the same attachment event
    repeatedly
