@@ -99,7 +99,8 @@ class DomainLogger {
 
   // ── Per-domain file sink ────────────────────────────────────────────────
 
-  bool _usesCentralFileRouting(String domain) => domain == LogDomains.sync;
+  bool _usesCentralFileRouting(String domain) =>
+      LoggingService.syncFileDomains.contains(domain);
 
   /// Appends a formatted line to `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`.
   ///

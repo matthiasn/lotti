@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -18,7 +19,10 @@ class LoggingService {
   static const int _fileFlushLineThreshold = 40;
   static const String _generalLogStem = 'lotti';
   static const String _syncLogStem = 'sync';
-  static const Set<String> _syncFileDomains = <String>{
+
+  /// Domains whose info-level events are routed to the sync log file instead
+  /// of the general log. Exposed so `DomainLogger` can avoid duplicate writes.
+  static const Set<String> syncFileDomains = <String>{
     'sync',
     'MATRIX_SYNC',
     'MATRIX_SERVICE',
@@ -31,6 +35,7 @@ class LoggingService {
       <String, List<String>>{};
   final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
   final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
+  final List<Future<void>> _pendingWrites = <Future<void>>[];
 
   void listenToConfigFlag() {
     getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
@@ -122,8 +127,26 @@ class LoggingService {
     await nextDrain;
   }
 
+  /// Awaits all pending writes and flushes all buffered lines. Intended for
+  /// tests that use buffered (non-test-env) mode and need deterministic
+  /// completion without arbitrary [Future.delayed] waits.
+  @visibleForTesting
+  Future<void> flushAllForTest() async {
+    // Await all tracked unawaited writes (captureEvent / captureException).
+    await Future.wait(_pendingWrites);
+    _pendingWrites.clear();
+    // Cancel any pending timer-based flushes and drain remaining lines.
+    for (final entry in _fileFlushTimers.entries.toList()) {
+      entry.value.cancel();
+    }
+    _fileFlushTimers.clear();
+    for (final stem in _pendingFileLinesByStem.keys.toList()) {
+      await _flushPendingLines(stem, forceFlush: true);
+    }
+  }
+
   String? _domainFileStem(String domain) {
-    if (_syncFileDomains.contains(domain)) {
+    if (syncFileDomains.contains(domain)) {
       return _syncLogStem;
     }
     return null;
@@ -131,7 +154,7 @@ class LoggingService {
 
   bool _shouldWriteToGeneral(String domain, {required bool isException}) {
     if (isException) return true;
-    return !_syncFileDomains.contains(domain);
+    return !syncFileDomains.contains(domain);
   }
 
   String _formatLine({
@@ -191,14 +214,16 @@ class LoggingService {
     if (!_enableLogging) {
       return;
     }
+    final future = _captureEventAsync(
+      event,
+      domain: domain,
+      subDomain: subDomain,
+      level: level,
+      type: type,
+    );
+    _pendingWrites.add(future);
     unawaited(
-      _captureEventAsync(
-        event,
-        domain: domain,
-        subDomain: subDomain,
-        level: level,
-        type: type,
-      ),
+      future,
     );
   }
 
@@ -240,15 +265,15 @@ class LoggingService {
       error: exception,
       stackTrace: stackTrace is StackTrace ? stackTrace : null,
     );
-    unawaited(
-      _captureExceptionAsync(
-        exception,
-        domain: domain,
-        subDomain: subDomain,
-        stackTrace: stackTrace,
-        level: level,
-        type: type,
-      ),
+    final future = _captureExceptionAsync(
+      exception,
+      domain: domain,
+      subDomain: subDomain,
+      stackTrace: stackTrace,
+      level: level,
+      type: type,
     );
+    _pendingWrites.add(future);
+    unawaited(future);
   }
 }

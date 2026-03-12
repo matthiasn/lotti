@@ -563,7 +563,7 @@ void main() {
         subDomain: 'signal',
       );
 
-      await Future<void>.delayed(const Duration(milliseconds: 600));
+      await bufferedLogging.flushAllForTest();
 
       final generalFile = File(logPath0());
       final syncFile = File(
@@ -592,7 +592,7 @@ void main() {
           stackTrace: 'trace',
         );
 
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await bufferedLogging.flushAllForTest();
 
         final generalFile = File(logPath0());
         final syncFile = File(

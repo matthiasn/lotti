@@ -398,12 +398,23 @@ class MatrixStreamLiveScanController {
     _lastSummaryLiveScanCoalesce = _metrics.liveScanCoalesceCount;
     _lastSummaryLiveScanTrailingScheduled = _metrics.liveScanTrailingScheduled;
 
-    return 'signalSummary clientStream=$clientStream timeline=$timelineCallbacks '
-        'timelineBreakdown=new:$timelineNew,insert:$timelineInsert,change:$timelineChange,remove:$timelineRemove,update:$timelineUpdate '
-        'deferredInitial=$deferredInitial deferredCatchUp=$deferredCatchup '
-        'deferredInFlight=$deferredInFlight coalesced=$coalesced '
-        'trailingScheduled=${trailingScheduled ? 1 : 0} trailingCountDelta=$trailing '
-        'latencyMs=${_metrics.signalLatencyLastMs}';
+    // Only include non-zero fields to keep the log compact in steady state.
+    final parts = <String>[
+      'signalSummary',
+      if (clientStream > 0) 'clientStream=$clientStream',
+      if (timelineCallbacks > 0) 'timeline=$timelineCallbacks',
+      if (timelineCallbacks > 0)
+        'timelineBreakdown=new:$timelineNew,insert:$timelineInsert,change:$timelineChange,remove:$timelineRemove,update:$timelineUpdate',
+      if (deferredInitial > 0) 'deferredInitial=$deferredInitial',
+      if (deferredCatchup > 0) 'deferredCatchUp=$deferredCatchup',
+      if (deferredInFlight > 0) 'deferredInFlight=$deferredInFlight',
+      if (coalesced > 0) 'coalesced=$coalesced',
+      if (trailingScheduled) 'trailingScheduled=1',
+      if (trailing > 0) 'trailingCountDelta=$trailing',
+      if (_metrics.signalLatencyLastMs > 0)
+        'latencyMs=${_metrics.signalLatencyLastMs}',
+    ];
+    return parts.join(' ');
   }
 
   // Test-only hooks are exposed as public fields for easy wiring in tests.

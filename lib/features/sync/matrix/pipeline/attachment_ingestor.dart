@@ -72,13 +72,21 @@ class AttachmentIngestor {
     // file is missing and needs repair.
     final rpAny = event.content['relativePath'];
     if (rpAny is String && rpAny.isNotEmpty) {
+      // Synchronously check-and-record to prevent concurrent process() calls
+      // for the same eventId from both passing the guard.
+      final alreadyHandled = _wasAttachmentEventHandled(event.eventId);
+      if (!alreadyHandled) {
+        _recordHandledAttachmentEvent(event.eventId);
+      }
+      // Only do the async file check for repair when the event was already
+      // handled once — new events always proceed.
       final shouldRepairLocal =
-          documentsDirectory != null && await _isLocalFileMissingOrEmpty(rpAny);
-      final shouldProcessAttachment =
-          !_wasAttachmentEventHandled(event.eventId) || shouldRepairLocal;
+          alreadyHandled &&
+          documentsDirectory != null &&
+          await _isLocalFileMissingOrEmpty(rpAny);
+      final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
-        _recordHandledAttachmentEvent(event.eventId);
         attachmentIndex?.record(event);
         // Observability log for attachment-like events.
         try {

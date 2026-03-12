@@ -255,8 +255,15 @@ class MatrixStreamCatchUpCoordinator {
     _lastCatchupCoalescedSignals = _metrics.signalCatchupCoalesceCount;
     _lastCatchupTrailingSignals = _metrics.trailingCatchups;
 
-    return 'signalSummary clientStream=$clientStream firstStream=$firstStream '
-        'deferred=$deferred coalesced=$coalesced trailing=$trailing';
+    final parts = <String>[
+      'signalSummary',
+      if (clientStream > 0) 'clientStream=$clientStream',
+      if (firstStream > 0) 'firstStream=$firstStream',
+      if (deferred > 0) 'deferred=$deferred',
+      if (coalesced > 0) 'coalesced=$coalesced',
+      if (trailing > 0) 'trailing=$trailing',
+    ];
+    return parts.join(' ');
   }
 
   void _scheduleInitialCatchUpRetry() {
