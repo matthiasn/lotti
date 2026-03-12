@@ -192,6 +192,11 @@ AiConfigInferenceProfile _$AiConfigInferenceProfileFromJson(
   imageGenerationModelId: json['imageGenerationModelId'] as String?,
   isDefault: json['isDefault'] as bool? ?? false,
   desktopOnly: json['desktopOnly'] as bool? ?? false,
+  skillAssignments:
+      (json['skillAssignments'] as List<dynamic>?)
+          ?.map((e) => SkillAssignment.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
   updatedAt: json['updatedAt'] == null
       ? null
       : DateTime.parse(json['updatedAt'] as String),
@@ -211,7 +216,66 @@ Map<String, dynamic> _$AiConfigInferenceProfileToJson(
   'imageGenerationModelId': instance.imageGenerationModelId,
   'isDefault': instance.isDefault,
   'desktopOnly': instance.desktopOnly,
+  'skillAssignments': instance.skillAssignments,
   'updatedAt': instance.updatedAt?.toIso8601String(),
   'description': instance.description,
   'runtimeType': instance.$type,
+};
+
+AiConfigSkill _$AiConfigSkillFromJson(Map<String, dynamic> json) =>
+    AiConfigSkill(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      skillType: $enumDecode(_$SkillTypeEnumMap, json['skillType']),
+      requiredInputModalities:
+          (json['requiredInputModalities'] as List<dynamic>)
+              .map((e) => $enumDecode(_$ModalityEnumMap, e))
+              .toList(),
+      systemInstructions: json['systemInstructions'] as String,
+      userInstructions: json['userInstructions'] as String,
+      contextPolicy:
+          $enumDecodeNullable(_$ContextPolicyEnumMap, json['contextPolicy']) ??
+          ContextPolicy.none,
+      isPreconfigured: json['isPreconfigured'] as bool? ?? false,
+      useReasoning: json['useReasoning'] as bool? ?? false,
+      updatedAt: json['updatedAt'] == null
+          ? null
+          : DateTime.parse(json['updatedAt'] as String),
+      description: json['description'] as String?,
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$AiConfigSkillToJson(AiConfigSkill instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'name': instance.name,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'skillType': _$SkillTypeEnumMap[instance.skillType]!,
+      'requiredInputModalities': instance.requiredInputModalities
+          .map((e) => _$ModalityEnumMap[e]!)
+          .toList(),
+      'systemInstructions': instance.systemInstructions,
+      'userInstructions': instance.userInstructions,
+      'contextPolicy': _$ContextPolicyEnumMap[instance.contextPolicy]!,
+      'isPreconfigured': instance.isPreconfigured,
+      'useReasoning': instance.useReasoning,
+      'updatedAt': instance.updatedAt?.toIso8601String(),
+      'description': instance.description,
+      'runtimeType': instance.$type,
+    };
+
+const _$SkillTypeEnumMap = {
+  SkillType.transcription: 'transcription',
+  SkillType.imageAnalysis: 'imageAnalysis',
+  SkillType.imageGeneration: 'imageGeneration',
+  SkillType.promptGeneration: 'promptGeneration',
+  SkillType.imagePromptGeneration: 'imagePromptGeneration',
+};
+
+const _$ContextPolicyEnumMap = {
+  ContextPolicy.none: 'none',
+  ContextPolicy.dictionaryOnly: 'dictionaryOnly',
+  ContextPolicy.taskSummary: 'taskSummary',
+  ContextPolicy.fullTask: 'fullTask',
 };

@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -239,6 +240,46 @@ void main() {
       expect(result!.thinkingModelId, 'thinking-model');
       // Vision model wasn't found, so it should be null (non-fatal).
       expect(result.imageRecognitionProvider, isNull);
+    });
+
+    test('carries skill assignments through to resolved profile', () async {
+      const assignments = [
+        SkillAssignment(skillId: 'skill-transcribe-001', automate: true),
+        SkillAssignment(skillId: 'skill-image-analysis-001'),
+      ];
+
+      final profile = testInferenceProfile(
+        id: 'profile-skills',
+        skillAssignments: assignments,
+      );
+      stubProfile(profile);
+      stubModelResolution();
+
+      final result = await resolver.resolve(
+        agentConfig: const AgentConfig(profileId: 'profile-skills'),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result, isNotNull);
+      expect(result!.skillAssignments, hasLength(2));
+      expect(result.skillAssignments[0].skillId, 'skill-transcribe-001');
+      expect(result.skillAssignments[0].automate, isTrue);
+      expect(result.skillAssignments[1].skillId, 'skill-image-analysis-001');
+      expect(result.skillAssignments[1].automate, isFalse);
+    });
+
+    test('legacy fallback has empty skill assignments', () async {
+      stubModelResolution();
+
+      final result = await resolver.resolve(
+        agentConfig: const AgentConfig(),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result, isNotNull);
+      expect(result!.skillAssignments, isEmpty);
     });
 
     test('resolves local provider with empty API key', () async {

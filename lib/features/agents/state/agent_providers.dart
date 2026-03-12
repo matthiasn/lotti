@@ -28,6 +28,8 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
@@ -903,10 +905,20 @@ Future<void> agentInitialization(Ref ref) async {
     syncEventProcessor,
   );
 
-  // 5. Seed default agent templates and restore subscriptions.
-  //    Profile seeding and model backfill are handled separately by
-  //    aiConfigInitializationProvider (not gated by the agents flag).
-  await templateService.seedDefaults();
+  // 5. Seed default templates, profiles, and skills in parallel, then
+  //    upgrade existing profiles with skill assignments and restore
+  //    subscriptions (which depends on templates being seeded).
+  final aiConfigRepo = ref.watch(aiConfigRepositoryProvider);
+  final profileSeeder = ProfileSeedingService(
+    aiConfigRepository: aiConfigRepo,
+  );
+  await Future.wait([
+    templateService.seedDefaults(),
+    profileSeeder.seedDefaults(),
+    SkillSeedingService(aiConfigRepository: aiConfigRepo).seedDefaults(),
+  ]);
+  // Backfill skill assignments on existing default profiles.
+  await profileSeeder.upgradeExisting();
   await taskAgentService.restoreSubscriptions();
 }
 

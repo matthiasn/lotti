@@ -95,6 +95,13 @@ class AiConfigDeleteService {
             _showConfigDeletedSnackbar(context, ref, config);
           }
           return true;
+
+        case AiConfigSkill():
+          await repository.deleteConfig(config.id);
+          if (context.mounted) {
+            _showConfigDeletedSnackbar(context, ref, config);
+          }
+          return true;
       }
     } catch (error) {
       if (context.mounted) {
@@ -614,6 +621,7 @@ class AiConfigDeleteService {
       AiConfigModel() => 'Delete Model',
       AiConfigPrompt() => 'Delete Prompt',
       AiConfigInferenceProfile() => 'Delete Profile',
+      AiConfigSkill() => 'Delete Skill',
     };
   }
 
@@ -626,6 +634,7 @@ class AiConfigDeleteService {
       AiConfigPrompt() => 'This will permanently delete the prompt template.',
       AiConfigInferenceProfile() =>
         'This will permanently delete the inference profile.',
+      AiConfigSkill() => 'This will permanently delete the skill.',
     };
   }
 
@@ -635,6 +644,7 @@ class AiConfigDeleteService {
       AiConfigModel() => Icons.smart_toy,
       AiConfigPrompt() => Icons.psychology,
       AiConfigInferenceProfile() => Icons.tune,
+      AiConfigSkill() => Icons.auto_fix_high,
     };
   }
 
@@ -644,6 +654,7 @@ class AiConfigDeleteService {
       AiConfigModel() => 'Model',
       AiConfigPrompt() => 'Prompt',
       AiConfigInferenceProfile() => 'Profile',
+      AiConfigSkill() => 'Skill',
     };
   }
 }

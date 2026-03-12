@@ -2733,6 +2733,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Sélectionner un modèle…';
 
   @override
+  String inferenceProfileSkillModelRequired(String slotName) {
+    return 'Nécessite le modèle $slotName';
+  }
+
+  @override
+  String inferenceProfileSkillUsesModel(String slotName) {
+    return 'Utilise le modèle $slotName';
+  }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Compétences automatisées';
+
+  @override
   String get inferenceProfilesEmpty => 'Aucun profil d\'inférence';
 
   @override

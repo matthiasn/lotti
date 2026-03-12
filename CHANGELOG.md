@@ -176,6 +176,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `(from_id, to_id, type)` links instead of crashing with UNIQUE constraint
   violation.
 
+### Added
+- Profile-driven skills: introduced Skills as model-agnostic AI capability
+  definitions (transcription, image analysis, etc.) and skill assignments on
+  inference profiles to control which skills auto-trigger when assets are added
+  to a task. Seven preconfigured skills are seeded on first launch.
+- Profile automation service: when an audio recording or image is added to a
+  task whose agent's profile has the relevant skill with automation enabled,
+  processing fires immediately via the profile's model slot — no legacy prompt
+  lookup needed. Falls back to category-based automatic prompts when no
+  profile-driven skill is configured.
+- Profile skill assignments UI: the inference profile form now shows an
+  "Automated Skills" section where users can toggle automation per skill,
+  with validation that the required model slot is populated.
+- Speech-recognition checkbox visibility: the opt-out checkbox now also
+  appears when the task's agent profile has a transcription skill with
+  automation enabled, not only when legacy category automatic prompts exist.
+
 ### Improved
 - Category icon picker: replaced flat gray styling with Material 3 semantic
   colors, subtle shadows, and selected-state glow for a more polished,

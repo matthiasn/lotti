@@ -143,6 +143,10 @@ class AiSettingsNavigationService {
       AiConfigInferenceProfile() => _createSlideRoute(
         builder: (context) => InferenceProfileForm(existingProfile: config),
       ),
+      // Skills are read-only in this phase; no dedicated edit page yet.
+      AiConfigSkill() => throw UnimplementedError(
+        'Skill editing is not yet implemented',
+      ),
     };
   }
 

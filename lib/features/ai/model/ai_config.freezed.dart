@@ -31,6 +31,10 @@ AiConfig _$AiConfigFromJson(
           return AiConfigInferenceProfile.fromJson(
             json
           );
+                case 'skill':
+          return AiConfigSkill.fromJson(
+            json
+          );
         
           default:
             throw CheckedFromJsonException(
@@ -120,14 +124,15 @@ extension AiConfigPatterns on AiConfig {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AiConfigInferenceProvider value)?  inferenceProvider,TResult Function( AiConfigModel value)?  model,TResult Function( AiConfigPrompt value)?  prompt,TResult Function( AiConfigInferenceProfile value)?  inferenceProfile,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( AiConfigInferenceProvider value)?  inferenceProvider,TResult Function( AiConfigModel value)?  model,TResult Function( AiConfigPrompt value)?  prompt,TResult Function( AiConfigInferenceProfile value)?  inferenceProfile,TResult Function( AiConfigSkill value)?  skill,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
 return inferenceProvider(_that);case AiConfigModel() when model != null:
 return model(_that);case AiConfigPrompt() when prompt != null:
 return prompt(_that);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that);case _:
+return inferenceProfile(_that);case AiConfigSkill() when skill != null:
+return skill(_that);case _:
   return orElse();
 
 }
@@ -145,14 +150,15 @@ return inferenceProfile(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AiConfigInferenceProvider value)  inferenceProvider,required TResult Function( AiConfigModel value)  model,required TResult Function( AiConfigPrompt value)  prompt,required TResult Function( AiConfigInferenceProfile value)  inferenceProfile,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( AiConfigInferenceProvider value)  inferenceProvider,required TResult Function( AiConfigModel value)  model,required TResult Function( AiConfigPrompt value)  prompt,required TResult Function( AiConfigInferenceProfile value)  inferenceProfile,required TResult Function( AiConfigSkill value)  skill,}){
 final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider():
 return inferenceProvider(_that);case AiConfigModel():
 return model(_that);case AiConfigPrompt():
 return prompt(_that);case AiConfigInferenceProfile():
-return inferenceProfile(_that);}
+return inferenceProfile(_that);case AiConfigSkill():
+return skill(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -166,14 +172,15 @@ return inferenceProfile(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AiConfigInferenceProvider value)?  inferenceProvider,TResult? Function( AiConfigModel value)?  model,TResult? Function( AiConfigPrompt value)?  prompt,TResult? Function( AiConfigInferenceProfile value)?  inferenceProfile,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( AiConfigInferenceProvider value)?  inferenceProvider,TResult? Function( AiConfigModel value)?  model,TResult? Function( AiConfigPrompt value)?  prompt,TResult? Function( AiConfigInferenceProfile value)?  inferenceProfile,TResult? Function( AiConfigSkill value)?  skill,}){
 final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
 return inferenceProvider(_that);case AiConfigModel() when model != null:
 return model(_that);case AiConfigPrompt() when prompt != null:
 return prompt(_that);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that);case _:
+return inferenceProfile(_that);case AiConfigSkill() when skill != null:
+return skill(_that);case _:
   return null;
 
 }
@@ -190,13 +197,14 @@ return inferenceProfile(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  DateTime? updatedAt,  String? description)?  inferenceProfile,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  List<SkillAssignment> skillAssignments,  DateTime? updatedAt,  String? description)?  inferenceProfile,TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)?  skill,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
 return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel() when model != null:
 return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.supportsFunctionCalling,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt() when prompt != null:
 return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.updatedAt,_that.description);case _:
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.skillAssignments,_that.updatedAt,_that.description);case AiConfigSkill() when skill != null:
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);case _:
   return orElse();
 
 }
@@ -214,13 +222,14 @@ return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelI
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)  inferenceProvider,required TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)  model,required TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)  prompt,required TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  DateTime? updatedAt,  String? description)  inferenceProfile,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)  inferenceProvider,required TResult Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)  model,required TResult Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)  prompt,required TResult Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  List<SkillAssignment> skillAssignments,  DateTime? updatedAt,  String? description)  inferenceProfile,required TResult Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)  skill,}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider():
 return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel():
 return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.supportsFunctionCalling,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt():
 return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile():
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.updatedAt,_that.description);}
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.skillAssignments,_that.updatedAt,_that.description);case AiConfigSkill():
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -234,13 +243,14 @@ return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelI
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult? Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult? Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult? Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  DateTime? updatedAt,  String? description)?  inferenceProfile,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String baseUrl,  String apiKey,  String name,  DateTime createdAt,  InferenceProviderType inferenceProviderType,  DateTime? updatedAt,  String? description)?  inferenceProvider,TResult? Function( String id,  String name,  String providerModelId,  String inferenceProviderId,  DateTime createdAt,  List<Modality> inputModalities,  List<Modality> outputModalities,  bool isReasoningModel,  bool supportsFunctionCalling,  DateTime? updatedAt,  String? description,  int? maxCompletionTokens)?  model,TResult? Function( String id,  String name,  String systemMessage,  String userMessage,  String defaultModelId,  List<String> modelIds,  DateTime createdAt,  bool useReasoning,  List<InputDataType> requiredInputData,  AiResponseType aiResponseType,  String? comment,  DateTime? updatedAt,  String? description,  Map<String, String>? defaultVariables,  String? category,  bool archived,  bool trackPreconfigured,  String? preconfiguredPromptId)?  prompt,TResult? Function( String id,  String name,  DateTime createdAt,  String thinkingModelId,  String? imageRecognitionModelId,  String? transcriptionModelId,  String? imageGenerationModelId,  bool isDefault,  bool desktopOnly,  List<SkillAssignment> skillAssignments,  DateTime? updatedAt,  String? description)?  inferenceProfile,TResult? Function( String id,  String name,  DateTime createdAt,  SkillType skillType,  List<Modality> requiredInputModalities,  String systemInstructions,  String userInstructions,  ContextPolicy contextPolicy,  bool isPreconfigured,  bool useReasoning,  DateTime? updatedAt,  String? description)?  skill,}) {final _that = this;
 switch (_that) {
 case AiConfigInferenceProvider() when inferenceProvider != null:
 return inferenceProvider(_that.id,_that.baseUrl,_that.apiKey,_that.name,_that.createdAt,_that.inferenceProviderType,_that.updatedAt,_that.description);case AiConfigModel() when model != null:
 return model(_that.id,_that.name,_that.providerModelId,_that.inferenceProviderId,_that.createdAt,_that.inputModalities,_that.outputModalities,_that.isReasoningModel,_that.supportsFunctionCalling,_that.updatedAt,_that.description,_that.maxCompletionTokens);case AiConfigPrompt() when prompt != null:
 return prompt(_that.id,_that.name,_that.systemMessage,_that.userMessage,_that.defaultModelId,_that.modelIds,_that.createdAt,_that.useReasoning,_that.requiredInputData,_that.aiResponseType,_that.comment,_that.updatedAt,_that.description,_that.defaultVariables,_that.category,_that.archived,_that.trackPreconfigured,_that.preconfiguredPromptId);case AiConfigInferenceProfile() when inferenceProfile != null:
-return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.updatedAt,_that.description);case _:
+return inferenceProfile(_that.id,_that.name,_that.createdAt,_that.thinkingModelId,_that.imageRecognitionModelId,_that.transcriptionModelId,_that.imageGenerationModelId,_that.isDefault,_that.desktopOnly,_that.skillAssignments,_that.updatedAt,_that.description);case AiConfigSkill() when skill != null:
+return skill(_that.id,_that.name,_that.createdAt,_that.skillType,_that.requiredInputModalities,_that.systemInstructions,_that.userInstructions,_that.contextPolicy,_that.isPreconfigured,_that.useReasoning,_that.updatedAt,_that.description);case _:
   return null;
 
 }
@@ -561,7 +571,7 @@ as String?,
 @JsonSerializable()
 
 class AiConfigInferenceProfile implements AiConfig {
-  const AiConfigInferenceProfile({required this.id, required this.name, required this.createdAt, required this.thinkingModelId, this.imageRecognitionModelId, this.transcriptionModelId, this.imageGenerationModelId, this.isDefault = false, this.desktopOnly = false, this.updatedAt, this.description, final  String? $type}): $type = $type ?? 'inferenceProfile';
+  const AiConfigInferenceProfile({required this.id, required this.name, required this.createdAt, required this.thinkingModelId, this.imageRecognitionModelId, this.transcriptionModelId, this.imageGenerationModelId, this.isDefault = false, this.desktopOnly = false, final  List<SkillAssignment> skillAssignments = const [], this.updatedAt, this.description, final  String? $type}): _skillAssignments = skillAssignments,$type = $type ?? 'inferenceProfile';
   factory AiConfigInferenceProfile.fromJson(Map<String, dynamic> json) => _$AiConfigInferenceProfileFromJson(json);
 
 @override final  String id;
@@ -579,6 +589,15 @@ class AiConfigInferenceProfile implements AiConfig {
 @JsonKey() final  bool isDefault;
 /// Whether this profile requires a desktop environment (e.g. Ollama).
 @JsonKey() final  bool desktopOnly;
+/// Skills assigned to this profile.
+ final  List<SkillAssignment> _skillAssignments;
+/// Skills assigned to this profile.
+@JsonKey() List<SkillAssignment> get skillAssignments {
+  if (_skillAssignments is EqualUnmodifiableListView) return _skillAssignments;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_skillAssignments);
+}
+
 @override final  DateTime? updatedAt;
 @override final  String? description;
 
@@ -599,12 +618,12 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.thinkingModelId, thinkingModelId) || other.thinkingModelId == thinkingModelId)&&(identical(other.imageRecognitionModelId, imageRecognitionModelId) || other.imageRecognitionModelId == imageRecognitionModelId)&&(identical(other.transcriptionModelId, transcriptionModelId) || other.transcriptionModelId == transcriptionModelId)&&(identical(other.imageGenerationModelId, imageGenerationModelId) || other.imageGenerationModelId == imageGenerationModelId)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.desktopOnly, desktopOnly) || other.desktopOnly == desktopOnly)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigInferenceProfile&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.thinkingModelId, thinkingModelId) || other.thinkingModelId == thinkingModelId)&&(identical(other.imageRecognitionModelId, imageRecognitionModelId) || other.imageRecognitionModelId == imageRecognitionModelId)&&(identical(other.transcriptionModelId, transcriptionModelId) || other.transcriptionModelId == transcriptionModelId)&&(identical(other.imageGenerationModelId, imageGenerationModelId) || other.imageGenerationModelId == imageGenerationModelId)&&(identical(other.isDefault, isDefault) || other.isDefault == isDefault)&&(identical(other.desktopOnly, desktopOnly) || other.desktopOnly == desktopOnly)&&const DeepCollectionEquality().equals(other._skillAssignments, _skillAssignments)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,thinkingModelId,imageRecognitionModelId,transcriptionModelId,imageGenerationModelId,isDefault,desktopOnly,updatedAt,description);
+int get hashCode => Object.hash(runtimeType,id,name,createdAt,thinkingModelId,imageRecognitionModelId,transcriptionModelId,imageGenerationModelId,isDefault,desktopOnly,const DeepCollectionEquality().hash(_skillAssignments),updatedAt,description);
 
 
 
@@ -615,7 +634,7 @@ abstract mixin class $AiConfigInferenceProfileCopyWith<$Res> implements $AiConfi
   factory $AiConfigInferenceProfileCopyWith(AiConfigInferenceProfile value, $Res Function(AiConfigInferenceProfile) _then) = _$AiConfigInferenceProfileCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String name, DateTime createdAt, String thinkingModelId, String? imageRecognitionModelId, String? transcriptionModelId, String? imageGenerationModelId, bool isDefault, bool desktopOnly, DateTime? updatedAt, String? description
+ String id, String name, DateTime createdAt, String thinkingModelId, String? imageRecognitionModelId, String? transcriptionModelId, String? imageGenerationModelId, bool isDefault, bool desktopOnly, List<SkillAssignment> skillAssignments, DateTime? updatedAt, String? description
 });
 
 
@@ -632,7 +651,7 @@ class _$AiConfigInferenceProfileCopyWithImpl<$Res>
 
 /// Create a copy of AiConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? thinkingModelId = null,Object? imageRecognitionModelId = freezed,Object? transcriptionModelId = freezed,Object? imageGenerationModelId = freezed,Object? isDefault = null,Object? desktopOnly = null,Object? updatedAt = freezed,Object? description = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? thinkingModelId = null,Object? imageRecognitionModelId = freezed,Object? transcriptionModelId = freezed,Object? imageGenerationModelId = freezed,Object? isDefault = null,Object? desktopOnly = null,Object? skillAssignments = null,Object? updatedAt = freezed,Object? description = freezed,}) {
   return _then(AiConfigInferenceProfile(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
@@ -643,6 +662,113 @@ as String?,transcriptionModelId: freezed == transcriptionModelId ? _self.transcr
 as String?,imageGenerationModelId: freezed == imageGenerationModelId ? _self.imageGenerationModelId : imageGenerationModelId // ignore: cast_nullable_to_non_nullable
 as String?,isDefault: null == isDefault ? _self.isDefault : isDefault // ignore: cast_nullable_to_non_nullable
 as bool,desktopOnly: null == desktopOnly ? _self.desktopOnly : desktopOnly // ignore: cast_nullable_to_non_nullable
+as bool,skillAssignments: null == skillAssignments ? _self._skillAssignments : skillAssignments // ignore: cast_nullable_to_non_nullable
+as List<SkillAssignment>,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
+as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class AiConfigSkill implements AiConfig {
+  const AiConfigSkill({required this.id, required this.name, required this.createdAt, required this.skillType, required final  List<Modality> requiredInputModalities, required this.systemInstructions, required this.userInstructions, this.contextPolicy = ContextPolicy.none, this.isPreconfigured = false, this.useReasoning = false, this.updatedAt, this.description, final  String? $type}): _requiredInputModalities = requiredInputModalities,$type = $type ?? 'skill';
+  factory AiConfigSkill.fromJson(Map<String, dynamic> json) => _$AiConfigSkillFromJson(json);
+
+@override final  String id;
+@override final  String name;
+@override final  DateTime createdAt;
+ final  SkillType skillType;
+ final  List<Modality> _requiredInputModalities;
+ List<Modality> get requiredInputModalities {
+  if (_requiredInputModalities is EqualUnmodifiableListView) return _requiredInputModalities;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_requiredInputModalities);
+}
+
+/// User-editable prose instructions for the system role.
+/// Does NOT contain placeholders — the prompt builder wraps these
+/// with the appropriate context based on [skillType] and
+/// [contextPolicy] at runtime.
+ final  String systemInstructions;
+/// User-editable prose instructions for the user message.
+/// Same rule: no placeholders, prompt builder handles injection.
+ final  String userInstructions;
+/// How much task context the prompt builder should inject.
+@JsonKey() final  ContextPolicy contextPolicy;
+/// Whether this is a system-seeded skill (non-deletable).
+@JsonKey() final  bool isPreconfigured;
+/// Whether the skill uses reasoning/extended thinking.
+@JsonKey() final  bool useReasoning;
+@override final  DateTime? updatedAt;
+@override final  String? description;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of AiConfig
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$AiConfigSkillCopyWith<AiConfigSkill> get copyWith => _$AiConfigSkillCopyWithImpl<AiConfigSkill>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$AiConfigSkillToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiConfigSkill&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.skillType, skillType) || other.skillType == skillType)&&const DeepCollectionEquality().equals(other._requiredInputModalities, _requiredInputModalities)&&(identical(other.systemInstructions, systemInstructions) || other.systemInstructions == systemInstructions)&&(identical(other.userInstructions, userInstructions) || other.userInstructions == userInstructions)&&(identical(other.contextPolicy, contextPolicy) || other.contextPolicy == contextPolicy)&&(identical(other.isPreconfigured, isPreconfigured) || other.isPreconfigured == isPreconfigured)&&(identical(other.useReasoning, useReasoning) || other.useReasoning == useReasoning)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.description, description) || other.description == description));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,name,createdAt,skillType,const DeepCollectionEquality().hash(_requiredInputModalities),systemInstructions,userInstructions,contextPolicy,isPreconfigured,useReasoning,updatedAt,description);
+
+
+
+}
+
+/// @nodoc
+abstract mixin class $AiConfigSkillCopyWith<$Res> implements $AiConfigCopyWith<$Res> {
+  factory $AiConfigSkillCopyWith(AiConfigSkill value, $Res Function(AiConfigSkill) _then) = _$AiConfigSkillCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, String name, DateTime createdAt, SkillType skillType, List<Modality> requiredInputModalities, String systemInstructions, String userInstructions, ContextPolicy contextPolicy, bool isPreconfigured, bool useReasoning, DateTime? updatedAt, String? description
+});
+
+
+
+
+}
+/// @nodoc
+class _$AiConfigSkillCopyWithImpl<$Res>
+    implements $AiConfigSkillCopyWith<$Res> {
+  _$AiConfigSkillCopyWithImpl(this._self, this._then);
+
+  final AiConfigSkill _self;
+  final $Res Function(AiConfigSkill) _then;
+
+/// Create a copy of AiConfig
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? skillType = null,Object? requiredInputModalities = null,Object? systemInstructions = null,Object? userInstructions = null,Object? contextPolicy = null,Object? isPreconfigured = null,Object? useReasoning = null,Object? updatedAt = freezed,Object? description = freezed,}) {
+  return _then(AiConfigSkill(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,skillType: null == skillType ? _self.skillType : skillType // ignore: cast_nullable_to_non_nullable
+as SkillType,requiredInputModalities: null == requiredInputModalities ? _self._requiredInputModalities : requiredInputModalities // ignore: cast_nullable_to_non_nullable
+as List<Modality>,systemInstructions: null == systemInstructions ? _self.systemInstructions : systemInstructions // ignore: cast_nullable_to_non_nullable
+as String,userInstructions: null == userInstructions ? _self.userInstructions : userInstructions // ignore: cast_nullable_to_non_nullable
+as String,contextPolicy: null == contextPolicy ? _self.contextPolicy : contextPolicy // ignore: cast_nullable_to_non_nullable
+as ContextPolicy,isPreconfigured: null == isPreconfigured ? _self.isPreconfigured : isPreconfigured // ignore: cast_nullable_to_non_nullable
+as bool,useReasoning: null == useReasoning ? _self.useReasoning : useReasoning // ignore: cast_nullable_to_non_nullable
 as bool,updatedAt: freezed == updatedAt ? _self.updatedAt : updatedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,description: freezed == description ? _self.description : description // ignore: cast_nullable_to_non_nullable
 as String?,

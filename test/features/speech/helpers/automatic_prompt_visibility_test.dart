@@ -47,5 +47,43 @@ void main() {
 
       expect(v.speech, isFalse);
     });
+
+    test('speech visible when hasProfileTranscription is true', () {
+      final v = deriveAutomaticPromptVisibility(
+        automaticPrompts: null,
+        hasProfileTranscription: true,
+      );
+
+      expect(v.speech, isTrue);
+      expect(v.none, isFalse);
+    });
+
+    test(
+      'speech visible when both legacy prompts and profile transcription exist',
+      () {
+        final v = deriveAutomaticPromptVisibility(
+          automaticPrompts: {
+            AiResponseType.audioTranscription: ['p1'],
+          },
+          hasProfileTranscription: true,
+        );
+
+        expect(v.speech, isTrue);
+      },
+    );
+
+    test(
+      'speech hidden when hasProfileTranscription is false and no prompts',
+      () {
+        final v = deriveAutomaticPromptVisibility(
+          automaticPrompts: null,
+          // ignore: avoid_redundant_argument_values
+          hasProfileTranscription: false,
+        );
+
+        expect(v.speech, isFalse);
+        expect(v.none, isTrue);
+      },
+    );
   });
 }

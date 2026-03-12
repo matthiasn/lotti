@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
@@ -38,6 +40,32 @@ class AutomaticPromptTrigger {
     bool realtimeTranscriptProvided = false,
   }) async {
     try {
+      // Profile-driven path: check if task's agent profile handles
+      // transcription. When handled, skip the entire legacy path.
+      if (linkedTaskId != null) {
+        final automationService = ref.read(profileAutomationServiceProvider);
+        final result = await automationService.tryTranscribe(
+          taskId: linkedTaskId,
+          enableSpeechRecognition: state.enableSpeechRecognition,
+        );
+        if (result.handled && !realtimeTranscriptProvided) {
+          loggingService.captureEvent(
+            'Profile-driven transcription for task $linkedTaskId '
+            'using skill "${result.skill!.name}"',
+            domain: 'automatic_prompt_trigger',
+            subDomain: 'triggerAutomaticPrompts',
+          );
+          final runner = ref.read(skillInferenceRunnerProvider);
+          await runner.runTranscription(
+            audioEntryId: entryId,
+            automationResult: result,
+            linkedTaskId: linkedTaskId,
+          );
+          return; // Skip legacy path entirely
+        }
+      }
+
+      // Legacy path: use category-configured automatic prompts.
       final category = await categoryRepository.getCategoryById(categoryId);
 
       if (category?.automaticPrompts != null) {

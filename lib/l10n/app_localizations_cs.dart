@@ -2673,6 +2673,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Select a model…';
 
   @override
+  String inferenceProfileSkillModelRequired(String slotName) {
+    return 'Vyžaduje nastavení modelu $slotName';
+  }
+
+  @override
+  String inferenceProfileSkillUsesModel(String slotName) {
+    return 'Používá model $slotName';
+  }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Automatizované dovednosti';
+
+  @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';
 
   @override

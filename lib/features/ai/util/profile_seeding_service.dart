@@ -1,7 +1,9 @@
 import 'dart:developer' as developer;
 
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
 const profileGeminiFlashId = 'profile-gemini-flash-001';
@@ -13,6 +15,20 @@ const profileLocalId = 'profile-local-001';
 const profileLocalPowerId = 'profile-local-power-001';
 
 const _logTag = 'ProfileSeedingService';
+
+/// Default skill assignments for profiles with transcription + image
+/// recognition model slots.
+const _defaultSkillAssignments = [
+  SkillAssignment(skillId: skillTranscribeId, automate: true),
+  SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
+];
+
+/// Skill assignments for Mistral (EU) — uses the basic transcription skill
+/// which has `contextPolicy: dictionaryOnly`, suitable for Voxtral.
+const _mistralSkillAssignments = [
+  SkillAssignment(skillId: skillTranscribeId, automate: true),
+  SkillAssignment(skillId: skillImageAnalysisContextId, automate: true),
+];
 
 /// Seeds default inference profiles into the AI config database.
 ///
@@ -33,7 +49,7 @@ class ProfileSeedingService {
     var seededCount = 0;
     var updatedCount = 0;
 
-    for (final profile in _defaultProfiles) {
+    for (final profile in defaultProfiles) {
       final existing = await _repo.getConfigById(profile.id);
 
       if (existing == null) {
@@ -61,6 +77,41 @@ class ProfileSeedingService {
     }
   }
 
+  /// Upgrades existing default profiles that have empty `skillAssignments`.
+  ///
+  /// This is a one-time backfill on app upgrade that enables automation for
+  /// default profiles. Only touches profiles with `isDefault: true` and
+  /// empty `skillAssignments`.
+  Future<void> upgradeExisting() async {
+    var upgradedCount = 0;
+
+    for (final template in defaultProfiles) {
+      final existing = await _repo.getConfigById(template.id);
+      if (existing == null) continue;
+
+      // Only upgrade default profiles with empty skill assignments.
+      if (existing is! AiConfigInferenceProfile) continue;
+      if (!existing.isDefault) continue;
+      if (existing.skillAssignments.isNotEmpty) continue;
+
+      // Apply the template's skill assignments to the existing profile.
+      if (template.skillAssignments.isEmpty) continue;
+
+      final upgraded = existing.copyWith(
+        skillAssignments: template.skillAssignments,
+      );
+      await _repo.saveConfig(upgraded);
+      upgradedCount++;
+    }
+
+    if (upgradedCount > 0) {
+      developer.log(
+        'Upgraded $upgradedCount default profiles with skill assignments',
+        name: _logTag,
+      );
+    }
+  }
+
   /// Returns true when any seeded field in [existing] differs from [target].
   static bool _hasProfileDrift(
     AiConfigInferenceProfile existing,
@@ -75,7 +126,10 @@ class ProfileSeedingService {
         existing.desktopOnly != target.desktopOnly;
   }
 
-  static final _defaultProfiles = <AiConfigInferenceProfile>[
+  /// The default profile definitions.
+  ///
+  /// Exposed as a static list for testability.
+  static final defaultProfiles = <AiConfigInferenceProfile>[
     AiConfigInferenceProfile(
       id: profileGeminiFlashId,
       name: 'Gemini Flash',
@@ -83,6 +137,7 @@ class ProfileSeedingService {
       imageRecognitionModelId: 'models/gemini-3-flash-preview',
       transcriptionModelId: 'models/gemini-3-flash-preview',
       imageGenerationModelId: 'models/gemini-3-pro-image-preview',
+      skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
@@ -93,6 +148,7 @@ class ProfileSeedingService {
       imageRecognitionModelId: 'models/gemini-3.1-pro-preview',
       transcriptionModelId: 'models/gemini-3.1-pro-preview',
       imageGenerationModelId: 'models/gemini-3-pro-image-preview',
+      skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
@@ -103,6 +159,7 @@ class ProfileSeedingService {
       imageRecognitionModelId: 'gpt-5-nano',
       transcriptionModelId: 'gpt-4o-transcribe',
       imageGenerationModelId: 'gpt-image-1.5',
+      skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
@@ -112,6 +169,7 @@ class ProfileSeedingService {
       thinkingModelId: 'magistral-medium-2509',
       imageRecognitionModelId: 'mistral-small-2501',
       transcriptionModelId: 'voxtral-mini-latest',
+      skillAssignments: _mistralSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
@@ -122,6 +180,7 @@ class ProfileSeedingService {
       imageRecognitionModelId: 'qwen3-vl-flash',
       transcriptionModelId: 'qwen3-omni-flash',
       imageGenerationModelId: 'wan2.6-image',
+      skillAssignments: _defaultSkillAssignments,
       isDefault: true,
       createdAt: DateTime(2026),
     ),
@@ -130,6 +189,13 @@ class ProfileSeedingService {
       name: 'Local (Ollama)',
       thinkingModelId: 'qwen3.5:9b',
       imageRecognitionModelId: 'qwen3.5:9b',
+      skillAssignments: [
+        // Ollama has no transcription model, only image analysis.
+        const SkillAssignment(
+          skillId: skillImageAnalysisContextId,
+          automate: true,
+        ),
+      ],
       isDefault: true,
       desktopOnly: true,
       createdAt: DateTime(2026),

@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:meta/meta.dart';
 
 /// Runtime-resolved inference profile with provider references for each slot.
@@ -17,6 +19,7 @@ class ResolvedProfile {
     this.transcriptionProvider,
     this.imageGenerationModelId,
     this.imageGenerationProvider,
+    this.skillAssignments = const [],
   });
 
   /// The providerModelId string for the thinking slot.
@@ -43,6 +46,11 @@ class ResolvedProfile {
   /// The resolved inference provider for image generation (nullable).
   final AiConfigInferenceProvider? imageGenerationProvider;
 
+  /// Skill assignments from the profile, for downstream automation lookup.
+  final List<SkillAssignment> skillAssignments;
+
+  static const _listEquals = ListEquality<SkillAssignment>();
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -55,7 +63,8 @@ class ResolvedProfile {
           transcriptionModelId == other.transcriptionModelId &&
           transcriptionProvider == other.transcriptionProvider &&
           imageGenerationModelId == other.imageGenerationModelId &&
-          imageGenerationProvider == other.imageGenerationProvider;
+          imageGenerationProvider == other.imageGenerationProvider &&
+          _listEquals.equals(skillAssignments, other.skillAssignments);
 
   @override
   int get hashCode => Object.hash(
@@ -67,5 +76,6 @@ class ResolvedProfile {
     transcriptionProvider,
     imageGenerationModelId,
     imageGenerationProvider,
+    _listEquals.hash(skillAssignments),
   );
 }

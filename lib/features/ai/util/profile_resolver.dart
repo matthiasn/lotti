@@ -112,6 +112,7 @@ class ProfileResolver {
       transcriptionProvider: transcriptionProvider,
       imageGenerationModelId: config.imageGenerationModelId,
       imageGenerationProvider: imageGenerationProvider,
+      skillAssignments: config.skillAssignments,
     );
   }
 

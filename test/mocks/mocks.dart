@@ -36,6 +36,8 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
+import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
+import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -46,6 +48,9 @@ import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
+import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
@@ -482,3 +487,15 @@ class FakeBaseRequest extends Fake implements http.BaseRequest {}
 class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
 
 class MockEmbeddingService extends Mock implements EmbeddingService {}
+
+class MockProfileResolver extends Mock implements ProfileResolver {}
+
+class MockProfileAutomationResolver extends Mock
+    implements ProfileAutomationResolver {}
+
+class MockProfileAutomationService extends Mock
+    implements ProfileAutomationService {}
+
+class MockSkillInferenceRunner extends Mock implements SkillInferenceRunner {}
+
+class MockPromptBuilderHelper extends Mock implements PromptBuilderHelper {}

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Default template ID used across tests.
@@ -574,6 +575,7 @@ AiConfigInferenceProfile testInferenceProfile({
   String? imageRecognitionModelId,
   String? transcriptionModelId,
   String? imageGenerationModelId,
+  List<SkillAssignment> skillAssignments = const [],
   bool isDefault = false,
   bool desktopOnly = false,
 }) {
@@ -584,6 +586,7 @@ AiConfigInferenceProfile testInferenceProfile({
         imageRecognitionModelId: imageRecognitionModelId,
         transcriptionModelId: transcriptionModelId,
         imageGenerationModelId: imageGenerationModelId,
+        skillAssignments: skillAssignments,
         isDefault: isDefault,
         desktopOnly: desktopOnly,
         createdAt: DateTime(2024),

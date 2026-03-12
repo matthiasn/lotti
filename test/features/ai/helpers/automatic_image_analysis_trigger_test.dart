@@ -6,7 +6,10 @@ import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
@@ -24,6 +27,7 @@ void main() {
   late MockCategoryRepository mockCategoryRepository;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
+  late MockProfileAutomationService mockProfileAutomationService;
   late ProviderContainer container;
 
   // Helper to create a test category with all required fields
@@ -70,6 +74,14 @@ void main() {
     mockCategoryRepository = MockCategoryRepository();
     mockAiConfigRepository = MockAiConfigRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
+    mockProfileAutomationService = MockProfileAutomationService();
+
+    // By default, profile automation returns not-handled so legacy path runs.
+    when(
+      () => mockProfileAutomationService.tryAnalyzeImage(
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => AutomationResult.notHandled);
 
     // Register mocks with GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -102,6 +114,9 @@ void main() {
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         promptCapabilityFilterProvider.overrideWithValue(
           mockPromptCapabilityFilter,
+        ),
+        profileAutomationServiceProvider.overrideWithValue(
+          mockProfileAutomationService,
         ),
         // Override the trigger provider to capture calls
         triggerNewInferenceProvider((
@@ -160,6 +175,9 @@ void main() {
             promptCapabilityFilterProvider.overrideWithValue(
               mockPromptCapabilityFilter,
             ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockProfileAutomationService,
+            ),
             triggerNewInferenceProvider((
               entityId: imageEntryId,
               promptId: promptId,
@@ -201,22 +219,98 @@ void main() {
       },
     );
 
-    test('does not trigger when categoryId is null', () async {
+    test('does not trigger legacy path when categoryId is null', () async {
       // Arrange
       final trigger = container.read(automaticImageAnalysisTriggerProvider);
 
-      // Act
+      // Act — no linkedTaskId, so profile path is skipped too.
       await trigger.triggerAutomaticImageAnalysis(
         imageEntryId: 'test-image',
         categoryId: null,
       );
 
-      // Assert
+      // Assert — legacy path not entered.
       verifyNever(() => mockCategoryRepository.getCategoryById(any()));
       verifyNever(
         () => mockPromptCapabilityFilter.getFirstAvailablePrompt(any()),
       );
     });
+
+    test(
+      'tries profile-driven path when categoryId is null but task linked',
+      () async {
+        // Arrange — profile automation returns handled.
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-1',
+                  name: 'Image Analysis',
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: const [Modality.image],
+                  systemInstructions: 'Analyze.',
+                  userInstructions: 'Describe.',
+                  createdAt: DateTime(2024),
+                )
+                as AiConfigSkill;
+
+        final automationResult = AutomationResult(
+          handled: true,
+          skill: skill,
+        );
+
+        when(
+          () => mockProfileAutomationService.tryAnalyzeImage(
+            taskId: 'test-task',
+          ),
+        ).thenAnswer((_) async => automationResult);
+
+        final mockRunner = MockSkillInferenceRunner();
+        when(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: 'test-image',
+            automationResult: automationResult,
+            linkedTaskId: 'test-task',
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockProfileAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+
+        final trigger = testContainer.read(
+          automaticImageAnalysisTriggerProvider,
+        );
+
+        // Act — null categoryId but with linkedTaskId.
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: 'test-image',
+          categoryId: null,
+          linkedTaskId: 'test-task',
+        );
+
+        // Assert — profile path ran, legacy path skipped.
+        verify(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: 'test-image',
+            automationResult: automationResult,
+            linkedTaskId: 'test-task',
+          ),
+        ).called(1);
+        verifyNever(() => mockCategoryRepository.getCategoryById(any()));
+
+        testContainer.dispose();
+      },
+    );
 
     test('does not trigger when category has no automatic prompts', () async {
       // Arrange
@@ -551,6 +645,9 @@ void main() {
           promptCapabilityFilterProvider.overrideWithValue(
             mockPromptCapabilityFilter,
           ),
+          profileAutomationServiceProvider.overrideWithValue(
+            mockProfileAutomationService,
+          ),
           triggerNewInferenceProvider((
             entityId: imageEntryId,
             promptId: promptId,
@@ -579,6 +676,172 @@ void main() {
       expect(capturedLinkedId, equals(linkedTaskId));
 
       testContainer.dispose();
+    });
+
+    group('Profile-driven path', () {
+      test('skips legacy path when profile handles image analysis', () async {
+        const categoryId = 'test-category';
+        const imageEntryId = 'test-image';
+        const linkedTaskId = 'test-task';
+
+        final mockAutomationService = MockProfileAutomationService();
+        final mockRunner = MockSkillInferenceRunner();
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-vision',
+                  name: 'Profile Vision',
+                  skillType: SkillType.imageAnalysis,
+                  requiredInputModalities: const [Modality.image],
+                  systemInstructions: 'Analyze.',
+                  userInstructions: 'Image.',
+                  createdAt: DateTime(2024),
+                )
+                as AiConfigSkill;
+
+        final automationResult = AutomationResult(
+          handled: true,
+          skill: skill,
+        );
+
+        when(
+          () => mockAutomationService.tryAnalyzeImage(taskId: linkedTaskId),
+        ).thenAnswer((_) async => automationResult);
+
+        when(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: imageEntryId,
+            automationResult: automationResult,
+            linkedTaskId: linkedTaskId,
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+
+        final trigger = testContainer.read(
+          automaticImageAnalysisTriggerProvider,
+        );
+
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: imageEntryId,
+          categoryId: categoryId,
+          linkedTaskId: linkedTaskId,
+        );
+
+        // Profile path should have been used
+        verify(
+          () => mockRunner.runImageAnalysis(
+            imageEntryId: imageEntryId,
+            automationResult: automationResult,
+            linkedTaskId: linkedTaskId,
+          ),
+        ).called(1);
+
+        // Legacy category lookup should NOT have been called
+        verifyNever(
+          () => mockCategoryRepository.getCategoryById(any()),
+        );
+
+        verify(
+          () => mockLoggingService.captureEvent(
+            any<String>(that: contains('Profile-driven image analysis')),
+            domain: 'automatic_image_analysis_trigger',
+            subDomain: 'triggerAutomaticImageAnalysis',
+          ),
+        ).called(1);
+
+        testContainer.dispose();
+      });
+
+      test('falls through to legacy when profile does not handle', () async {
+        const categoryId = 'test-category';
+        const imageEntryId = 'test-image';
+        const linkedTaskId = 'test-task';
+
+        final mockAutomationService = MockProfileAutomationService();
+
+        when(
+          () => mockAutomationService.tryAnalyzeImage(taskId: linkedTaskId),
+        ).thenAnswer((_) async => AutomationResult.notHandled);
+
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+        );
+
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+          ],
+        );
+
+        final trigger = testContainer.read(
+          automaticImageAnalysisTriggerProvider,
+        );
+
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: imageEntryId,
+          categoryId: categoryId,
+          linkedTaskId: linkedTaskId,
+        );
+
+        // Should have fallen through to legacy path
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+
+        testContainer.dispose();
+      });
+
+      test('skips profile path when no linkedTaskId', () async {
+        const categoryId = 'test-category';
+        const imageEntryId = 'test-image';
+
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+        );
+
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+
+        final trigger = container.read(automaticImageAnalysisTriggerProvider);
+
+        await trigger.triggerAutomaticImageAnalysis(
+          imageEntryId: imageEntryId,
+          categoryId: categoryId,
+        );
+
+        // Should go directly to legacy path
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+      });
     });
   });
 }

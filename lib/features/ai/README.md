@@ -7,8 +7,9 @@ This module provides a comprehensive AI integration system for generating task s
 The AI feature consists of several key components:
 
 1. **Configuration Management**: Store and manage API keys, prompts, and model configurations
-2. **Inference Profiles**: Named bundles of model assignments per capability slot (thinking, image recognition, transcription, image generation) for agent templates and instances
-3. **Prompt Creation**: Build structured prompts for different AI tasks
+2. **Inference Profiles**: Named bundles of model assignments per capability slot (thinking, image recognition, transcription, image generation) with skill assignments that control which capabilities auto-trigger
+3. **Skills**: Model-agnostic AI capability definitions (transcription, image analysis, etc.) with instructions and context policies — the profile's model slots determine which model executes each skill
+4. **Prompt Creation**: Build structured prompts for different AI tasks
 4. **Inference Execution**: Run AI inference through various providers (OpenAI, Anthropic, Google, etc.)
 5. **Response Processing**: Parse and display AI-generated responses
 6. **UI Components**: Settings pages, response displays, and configuration management
@@ -31,8 +32,9 @@ The AI feature also owns the local embedding pipeline used for semantic search.
 ### Core Components
 
 #### Models (`model/`)
-- **`ai_config.dart`**: Union type for different configuration types (API keys, prompts, models, inference profiles)
-- **`resolved_profile.dart`**: Immutable data class for a fully resolved inference profile with provider references
+- **`ai_config.dart`**: Union type for different configuration types (API keys, prompts, models, inference profiles, skills)
+- **`skill_assignment.dart`**: `SkillAssignment` freezed class — references a skill by ID with an `automate` toggle, stored on inference profiles
+- **`resolved_profile.dart`**: Immutable data class for a fully resolved inference profile with provider references and skill assignments
 - **`ai_input.dart`**: Data structures for task input (task details, action items, log entries)
 - **`cloud_inference_config.dart`**: Configuration for cloud inference providers
 - **`inference_error.dart`**: Error types and handling for AI operations
@@ -112,6 +114,7 @@ The repository layer has been refactored for better separation of concerns:
 #### Services (`services/`)
 - **`auto_checklist_service.dart`**: Handles automatic checklist creation logic and decision making
 - **`checklist_completion_service.dart`**: Manages checklist item completion suggestions and tracking
+- **`profile_automation_service.dart`**: Skill-driven automation for asset processing. Provides `tryTranscribe()` and `tryAnalyzeImage()` — resolves the task's agent profile, checks for a matching skill assignment with `automate: true`, builds prompts via `SkillPromptBuilder`, and invokes the appropriate provider. Respects `enableSpeechRecognition` opt-out and applies the skill's `contextPolicy`.
 
 #### Conversation Management (`conversation/`)
 - **`conversation_manager.dart`**: Manages multi-turn AI conversations
@@ -318,6 +321,9 @@ To integrate a new handler:
 
 #### Helpers & Extensions
 - **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
+- **`helpers/skill_prompt_builder.dart`**: Assembles final system/user messages from skill instructions + runtime context. Injects placeholders (speech dictionary, task context, etc.) based on `skillType` + `contextPolicy` — skill definitions contain only prose.
+- **`helpers/profile_automation_resolver.dart`**: Resolves the profile for a task's agent, delegates to `ProfileResolver.resolve()` to use the same resolution chain as agent wakes.
+- **`helpers/automatic_image_analysis_trigger.dart`**: Fires image analysis when an image is added to a task. Checks profile-driven skill path first, falls back to legacy `category.automaticPrompts`.
 - **Extensions for type safety and convenience**:
   - `input_data_type_extensions.dart`: Extensions for InputDataType enum
   - `modality_extensions.dart`: Extensions for Modality enum
@@ -344,6 +350,8 @@ To integrate a new handler:
   - Six main prompt types (Task Summary, Checklist Updates, etc.)
   - Consistent formatting and instructions
   - Unique IDs enable [prompt template tracking](#prompt-template-tracking)
+- **`skill_seeding_service.dart`**: Seeds preconfigured skills (transcription, image analysis, image generation, prompt generation) on first launch. Idempotent — checks by ID before inserting. Exposes `defaultSkills` static list for reference by profile seeder and UI.
+- **`profile_seeding_service.dart`**: Seeds default inference profiles with `skillAssignments`. Also provides `upgradeExisting()` to backfill skill assignments on existing default profiles during app upgrade.
 
 #### Constants & Configuration
 - **`constants/provider_config.dart`**: Configuration constants for AI providers

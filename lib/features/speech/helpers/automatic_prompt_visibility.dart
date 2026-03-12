@@ -15,15 +15,18 @@ class AutomaticPromptVisibility {
 /// Derives visibility flags for automatic prompt checkboxes based on the
 /// category configuration and current recording context.
 ///
-/// - Speech checkbox is shown only if there is at least one
-///   `AiResponseType.audioTranscription` automatic prompt.
+/// - Speech checkbox is shown when at least one
+///   `AiResponseType.audioTranscription` automatic prompt exists, or when
+///   a profile-driven transcription skill is available
+///   ([hasProfileTranscription]).
 AutomaticPromptVisibility deriveAutomaticPromptVisibility({
   required Map<AiResponseType, List<String>>? automaticPrompts,
+  bool hasProfileTranscription = false,
 }) {
   final hasTranscription =
       automaticPrompts?[AiResponseType.audioTranscription]?.isNotEmpty ?? false;
 
   return AutomaticPromptVisibility(
-    speech: hasTranscription,
+    speech: hasTranscription || hasProfileTranscription,
   );
 }

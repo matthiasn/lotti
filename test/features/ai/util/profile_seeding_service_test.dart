@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -83,7 +85,7 @@ void main() {
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3:8b', // old model
-          imageRecognitionModelId: 'qwen3.5:9b',
+          imageRecognitionModelId: 'qwen3.5:9b', // matches current
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -276,5 +278,158 @@ void main() {
         }
       },
     );
+
+    test('all default profiles have skillAssignments', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(
+          invocation.positionalArguments.first as AiConfig,
+        );
+      });
+
+      await service.seedDefaults();
+
+      for (final config in capturedConfigs) {
+        final profile = config as AiConfigInferenceProfile;
+        // Local Power has no skill assignments (opt-in profile).
+        if (profile.id == profileLocalPowerId) continue;
+        expect(
+          profile.skillAssignments,
+          isNotEmpty,
+          reason: '${profile.name} skillAssignments',
+        );
+      }
+    });
+
+    test(
+      'Gemini Flash has transcription and image analysis assignments',
+      () async {
+        final capturedConfigs = <AiConfig>[];
+        when(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).thenAnswer((invocation) async {
+          capturedConfigs.add(
+            invocation.positionalArguments.first as AiConfig,
+          );
+        });
+
+        await service.seedDefaults();
+
+        final geminiFlash = capturedConfigs
+            .whereType<AiConfigInferenceProfile>()
+            .firstWhere((p) => p.id == profileGeminiFlashId);
+
+        final skillIds = geminiFlash.skillAssignments
+            .map((a) => a.skillId)
+            .toSet();
+        expect(skillIds, contains(skillTranscribeId));
+        expect(skillIds, contains(skillImageAnalysisContextId));
+      },
+    );
+
+    test('Local (Ollama) has only image analysis assignment', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(
+          invocation.positionalArguments.first as AiConfig,
+        );
+      });
+
+      await service.seedDefaults();
+
+      final localProfile = capturedConfigs
+          .whereType<AiConfigInferenceProfile>()
+          .firstWhere((p) => p.id == profileLocalId);
+
+      expect(localProfile.skillAssignments, hasLength(1));
+      expect(
+        localProfile.skillAssignments.first.skillId,
+        skillImageAnalysisContextId,
+      );
+    });
+  });
+
+  group('ProfileSeedingService.upgradeExisting', () {
+    test('upgrades default profiles with empty skillAssignments', () async {
+      // Existing profile has empty skill assignments.
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          isDefault: true,
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      // Should save the upgraded profile with skill assignments.
+      final captured = verify(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).captured;
+
+      expect(captured, hasLength(1));
+      final upgraded = captured.first as AiConfigInferenceProfile;
+      expect(upgraded.id, profileGeminiFlashId);
+      expect(upgraded.skillAssignments, isNotEmpty);
+    });
+
+    test('skips profiles that already have skillAssignments', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          isDefault: true,
+          skillAssignments: [
+            const SkillAssignment(skillId: 'existing-skill', automate: true),
+          ],
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      // Should not save — profile already has assignments.
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
+
+    test('skips non-default profiles', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          createdAt: DateTime(2026),
+          // isDefault defaults to false.
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
+
+    test('does nothing when profiles do not exist', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+
+      await service.upgradeExisting();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
   });
 }
