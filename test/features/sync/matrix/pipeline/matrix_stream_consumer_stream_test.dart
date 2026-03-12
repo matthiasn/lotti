@@ -1526,9 +1526,9 @@ void main() {
 
           // e1 (catch-up) should process before live scan logs
           expect(processed.first, 'e1');
-          // Ensure we saw a liveScan processed log
+          // Ensure we saw a liveScan summary log
           expect(
-            logs.any((l) => l.contains('liveScan|v2 liveScan processed=')),
+            logs.any((l) => l.contains('liveScan|v2 liveScan.summary')),
             isTrue,
           );
         });

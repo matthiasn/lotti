@@ -56,6 +56,18 @@ class MatrixStreamLiveScanController {
   // Tracks the last time we received a signal (client stream or timeline)
   // to compute signal->scan latency when the next scan runs.
   DateTime? _lastSignalAt;
+  int _lastSummarySignalClientStream = 0;
+  int _lastSummarySignalTimelineCallbacks = 0;
+  int _lastSummarySignalTimelineNewEvent = 0;
+  int _lastSummarySignalTimelineInsert = 0;
+  int _lastSummarySignalTimelineChange = 0;
+  int _lastSummarySignalTimelineRemove = 0;
+  int _lastSummarySignalTimelineUpdate = 0;
+  int _lastSummaryDeferredInitialCatchupIncomplete = 0;
+  int _lastSummaryDeferredCatchupInFlight = 0;
+  int _lastSummaryDeferredInFlight = 0;
+  int _lastSummaryLiveScanCoalesce = 0;
+  int _lastSummaryLiveScanTrailingScheduled = 0;
 
   static const Duration _standbyThreshold = Duration(seconds: 30);
   static const Duration _minLiveScanGap = SyncTuning.minLiveScanGap;
@@ -117,11 +129,9 @@ class MatrixStreamLiveScanController {
     if (!_isInitialCatchUpCompleted()) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
-        _loggingService.captureEvent(
-          'signal.liveScan.deferred.initialCatchUpIncomplete',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
+        if (_collectMetrics) {
+          _metrics.incSignalLiveScanDeferredInitialCatchupIncomplete();
+        }
       }
       return;
     }
@@ -131,11 +141,9 @@ class MatrixStreamLiveScanController {
     if (_isCatchUpInFlight()) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
-        _loggingService.captureEvent(
-          'signal.liveScan.deferred.catchUpInFlight',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
+        if (_collectMetrics) {
+          _metrics.incSignalLiveScanDeferredCatchupInFlight();
+        }
       }
       return;
     }
@@ -150,6 +158,7 @@ class MatrixStreamLiveScanController {
     if (lastScan != null && !_isWakeCatchUpPending()) {
       final gap = now.difference(lastScan);
       if (gap > _standbyThreshold) {
+        if (_collectMetrics) _metrics.incWakeDetections();
         _loggingService.captureEvent(
           'wake.detected gapMs=${gap.inMilliseconds}',
           domain: syncLoggingDomain,
@@ -159,6 +168,7 @@ class MatrixStreamLiveScanController {
       }
     }
     if (liveTimeline == null) {
+      if (_collectMetrics) _metrics.incSignalNoTimeline();
       _loggingService.captureEvent(
         'signal.noTimeline',
         domain: syncLoggingDomain,
@@ -169,12 +179,11 @@ class MatrixStreamLiveScanController {
     if (_scanInFlight) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
-        if (_collectMetrics) _metrics.incLiveScanDeferred();
-        _loggingService.captureEvent(
-          'signal.liveScan.deferred set',
-          domain: syncLoggingDomain,
-          subDomain: 'signal',
-        );
+        if (_collectMetrics) {
+          _metrics
+            ..incLiveScanDeferred()
+            ..incSignalLiveScanDeferredInFlight();
+        }
       }
       return;
     }
@@ -183,11 +192,6 @@ class MatrixStreamLiveScanController {
     final delay = _calculateNextLiveScanDelay();
     if (delay > _trailingLiveScanDebounce) {
       if (_collectMetrics) _metrics.incLiveScanCoalesce();
-      _loggingService.captureEvent(
-        'signal.liveScan.coalesce debounceMs=${delay.inMilliseconds}',
-        domain: syncLoggingDomain,
-        subDomain: 'signal',
-      );
     }
     _liveScanTimer?.cancel();
     _liveScanTimer = Timer(delay, () {
@@ -203,6 +207,10 @@ class MatrixStreamLiveScanController {
   }
 
   Future<void> scanLiveTimeline() async {
+    var afterSliceCount = 0;
+    var dedupedCount = 0;
+    var toProcessCount = 0;
+    String? latestEventId;
     if (!_isInitialCatchUpCompleted() || _isCatchUpInFlight()) {
       if (!_liveScanDeferred) {
         _liveScanDeferred = true;
@@ -240,7 +248,9 @@ class MatrixStreamLiveScanController {
         tailLimit: _liveScanTailLimit,
         lastTimestamp: null,
       );
+      afterSliceCount = afterSlice.length;
       final deduped = tu.dedupEventsByIdPreserveOrder(afterSlice);
+      dedupedCount = deduped.length;
       if (deduped.isNotEmpty) {
         final collisions = TimelineEventOrdering.timestampCollisionStats(
           deduped,
@@ -268,16 +278,11 @@ class MatrixStreamLiveScanController {
           wasCompleted: _processor.wasCompletedSync,
           onSkipped: _collectMetrics ? _metrics.incSkipped : null,
         );
+        toProcessCount = toProcess.length;
 
         if (toProcess.isNotEmpty) {
           await _processor.processOrdered(toProcess);
-        }
-        if (_collectMetrics) {
-          _loggingService.captureEvent(
-            'liveScan processed=${toProcess.length} latest=${_processor.lastProcessedEventId ?? 'null'}',
-            domain: syncLoggingDomain,
-            subDomain: 'liveScan',
-          );
+          latestEventId = _processor.lastProcessedEventId;
         }
       }
     } catch (e, st) {
@@ -299,9 +304,11 @@ class MatrixStreamLiveScanController {
         _scanInFlight = false;
         // Record completion time to bound the rate of subsequent scans.
         _lastLiveScanAt = clock.now();
+        var trailingScheduled = false;
         if (_liveScanDeferred) {
           _liveScanDeferred = false;
           if (_collectMetrics) _metrics.incLiveScanTrailingScheduled();
+          trailingScheduled = true;
           _loggingService.captureEvent(
             'trailing.liveScan.scheduled',
             domain: syncLoggingDomain,
@@ -314,6 +321,17 @@ class MatrixStreamLiveScanController {
           _liveScanTimer = Timer(delay, () {
             unawaited(scanLiveTimeline());
           });
+        }
+        if (_collectMetrics) {
+          _loggingService.captureEvent(
+            _withInstance(
+              'liveScan.summary afterSlice=$afterSliceCount deduped=$dedupedCount '
+              'processed=$toProcessCount latest=${latestEventId ?? _processor.lastProcessedEventId ?? 'null'} '
+              '${_liveScanSignalSummary(trailingScheduled: trailingScheduled)}',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'liveScan',
+          );
         }
       }
     }
@@ -334,6 +352,69 @@ class MatrixStreamLiveScanController {
       }
     }
     return delay;
+  }
+
+  String _liveScanSignalSummary({required bool trailingScheduled}) {
+    final clientStream =
+        _metrics.signalClientStream - _lastSummarySignalClientStream;
+    final timelineCallbacks =
+        _metrics.signalTimelineCallbacks - _lastSummarySignalTimelineCallbacks;
+    final timelineNew =
+        _metrics.signalTimelineNewEvent - _lastSummarySignalTimelineNewEvent;
+    final timelineInsert =
+        _metrics.signalTimelineInsert - _lastSummarySignalTimelineInsert;
+    final timelineChange =
+        _metrics.signalTimelineChange - _lastSummarySignalTimelineChange;
+    final timelineRemove =
+        _metrics.signalTimelineRemove - _lastSummarySignalTimelineRemove;
+    final timelineUpdate =
+        _metrics.signalTimelineUpdate - _lastSummarySignalTimelineUpdate;
+    final deferredInitial =
+        _metrics.signalLiveScanDeferredInitialCatchupIncomplete -
+        _lastSummaryDeferredInitialCatchupIncomplete;
+    final deferredCatchup =
+        _metrics.signalLiveScanDeferredCatchupInFlight -
+        _lastSummaryDeferredCatchupInFlight;
+    final deferredInFlight =
+        _metrics.signalLiveScanDeferredInFlight - _lastSummaryDeferredInFlight;
+    final coalesced =
+        _metrics.liveScanCoalesceCount - _lastSummaryLiveScanCoalesce;
+    final trailing =
+        _metrics.liveScanTrailingScheduled -
+        _lastSummaryLiveScanTrailingScheduled;
+
+    _lastSummarySignalClientStream = _metrics.signalClientStream;
+    _lastSummarySignalTimelineCallbacks = _metrics.signalTimelineCallbacks;
+    _lastSummarySignalTimelineNewEvent = _metrics.signalTimelineNewEvent;
+    _lastSummarySignalTimelineInsert = _metrics.signalTimelineInsert;
+    _lastSummarySignalTimelineChange = _metrics.signalTimelineChange;
+    _lastSummarySignalTimelineRemove = _metrics.signalTimelineRemove;
+    _lastSummarySignalTimelineUpdate = _metrics.signalTimelineUpdate;
+    _lastSummaryDeferredInitialCatchupIncomplete =
+        _metrics.signalLiveScanDeferredInitialCatchupIncomplete;
+    _lastSummaryDeferredCatchupInFlight =
+        _metrics.signalLiveScanDeferredCatchupInFlight;
+    _lastSummaryDeferredInFlight = _metrics.signalLiveScanDeferredInFlight;
+    _lastSummaryLiveScanCoalesce = _metrics.liveScanCoalesceCount;
+    _lastSummaryLiveScanTrailingScheduled = _metrics.liveScanTrailingScheduled;
+
+    // Only include non-zero fields to keep the log compact in steady state.
+    final parts = <String>[
+      'signalSummary',
+      if (clientStream > 0) 'clientStream=$clientStream',
+      if (timelineCallbacks > 0) 'timeline=$timelineCallbacks',
+      if (timelineCallbacks > 0)
+        'timelineBreakdown=new:$timelineNew,insert:$timelineInsert,change:$timelineChange,remove:$timelineRemove,update:$timelineUpdate',
+      if (deferredInitial > 0) 'deferredInitial=$deferredInitial',
+      if (deferredCatchup > 0) 'deferredCatchUp=$deferredCatchup',
+      if (deferredInFlight > 0) 'deferredInFlight=$deferredInFlight',
+      if (coalesced > 0) 'coalesced=$coalesced',
+      if (trailingScheduled) 'trailingScheduled=1',
+      if (trailing > 0) 'trailingCountDelta=$trailing',
+      if (_metrics.signalLatencyLastMs > 0)
+        'latencyMs=${_metrics.signalLatencyLastMs}',
+    ];
+    return parts.join(' ');
   }
 
   // Test-only hooks are exposed as public fields for easy wiring in tests.

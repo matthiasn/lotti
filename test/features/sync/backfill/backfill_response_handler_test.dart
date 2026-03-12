@@ -516,8 +516,8 @@ void main() {
 
         // No unresolvable response should have been sent
         final unresolvable = captured.whereType<SyncBackfillResponse>().where(
-              (r) => r.unresolvable ?? false,
-            );
+          (r) => r.unresolvable ?? false,
+        );
         expect(unresolvable, isEmpty);
       },
     );

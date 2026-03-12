@@ -31,6 +31,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.919" date="2026-03-12">
+      <description>
+          <p>Sync inbox: replay of the exact same attachment event no longer re-runs attachment observe/download/write work unless the local file is missing or empty, reducing unnecessary agent payload I/O during catch-up.</p>
+          <p>Sync logging: sync-family info logs now go to the dedicated sync daily log instead of inflating the general app log, while sync errors remain visible in both places.</p>
+          <p>Sync diagnostics: receiver-side signal logging now emits catch-up and live-scan summaries with source breakdowns instead of one log line per raw scheduler callback.</p>
+      </description>
+    </release>
     <release version="0.9.918" date="2026-03-12">
       <description>
           <p>UI polish: replaced the intrusive automatic rating modal with a pulsating "Rate Session" button next to the timer. Removed the label assignment snackbar (now redundant with change sets).</p>

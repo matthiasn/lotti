@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -16,9 +17,25 @@ class LoggingService {
   final _dateFmt = DateFormat('yyyy-MM-dd');
   static const Duration _fileFlushInterval = Duration(milliseconds: 500);
   static const int _fileFlushLineThreshold = 40;
-  final List<String> _pendingFileLines = <String>[];
-  Timer? _fileFlushTimer;
-  Future<void> _fileDrain = Future<void>.value();
+  static const String _generalLogStem = 'lotti';
+  static const String _syncLogStem = 'sync';
+
+  /// Domains whose info-level events are routed to the sync log file instead
+  /// of the general log. Exposed so `DomainLogger` can avoid duplicate writes.
+  static const Set<String> syncFileDomains = <String>{
+    'sync',
+    'MATRIX_SYNC',
+    'MATRIX_SERVICE',
+    'OUTBOX',
+    'AGENT_SYNC',
+    'SYNC_SEQUENCE',
+    'SYNC_BACKFILL',
+  };
+  final Map<String, List<String>> _pendingFileLinesByStem =
+      <String, List<String>>{};
+  final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
+  final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
+  final List<Future<void>> _pendingWrites = <Future<void>>[];
 
   void listenToConfigFlag() {
     getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
@@ -27,40 +44,43 @@ class LoggingService {
   }
 
   // --- Text file sink -----------------------------------------------------
-  Future<void> _appendToFile(
+  Future<void> _appendToNamedFile(
+    String fileStem,
     String line, {
     bool forceFlush = false,
   }) async {
     if (isTestEnv) {
-      _appendToFileSync(line);
+      _appendToNamedFileSync(fileStem, line);
       return;
     }
 
-    _pendingFileLines.add(line);
+    final pendingLines = _pendingFileLinesByStem.putIfAbsent(
+      fileStem,
+      () => <String>[],
+    )..add(line);
     final shouldFlushNow =
-        forceFlush || _pendingFileLines.length >= _fileFlushLineThreshold;
+        forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 
     if (!shouldFlushNow) {
-      _fileFlushTimer ??= Timer(
+      _fileFlushTimers[fileStem] ??= Timer(
         _fileFlushInterval,
         () {
-          _fileFlushTimer = null;
-          unawaited(_flushPendingLines());
+          _fileFlushTimers.remove(fileStem);
+          unawaited(_flushPendingLines(fileStem, forceFlush: forceFlush));
         },
       );
       return;
     }
 
-    _fileFlushTimer?.cancel();
-    _fileFlushTimer = null;
-    await _flushPendingLines(forceFlush: forceFlush);
+    _fileFlushTimers.remove(fileStem)?.cancel();
+    await _flushPendingLines(fileStem, forceFlush: forceFlush);
   }
 
-  void _appendToFileSync(String line) {
+  void _appendToNamedFileSync(String fileStem, String line) {
     try {
       final dir = getDocumentsDirectory();
       final logDir = Directory(p.join(dir.path, 'logs'));
-      final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
+      final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
       final file = File(p.join(logDir.path, fileName));
       // Synchronous in tests to avoid timing flakes under parallel runners.
       if (!logDir.existsSync()) {
@@ -72,21 +92,24 @@ class LoggingService {
     }
   }
 
-  Future<void> _flushPendingLines({
+  Future<void> _flushPendingLines(
+    String fileStem, {
     bool forceFlush = false,
   }) async {
-    if (_pendingFileLines.isEmpty) {
+    final pendingLines = _pendingFileLinesByStem[fileStem];
+    if (pendingLines == null || pendingLines.isEmpty) {
       return;
     }
 
-    final lines = List<String>.from(_pendingFileLines);
-    _pendingFileLines.clear();
+    final lines = List<String>.from(pendingLines);
+    pendingLines.clear();
 
-    _fileDrain = _fileDrain.then((_) async {
+    final currentDrain = _fileDrains[fileStem] ?? Future<void>.value();
+    final nextDrain = currentDrain.then((_) async {
       try {
         final dir = getDocumentsDirectory();
         final logDir = Directory(p.join(dir.path, 'logs'));
-        final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
+        final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
         final file = File(p.join(logDir.path, fileName));
         await logDir.create(recursive: true);
         final payload = '${lines.join('\n')}\n';
@@ -99,8 +122,39 @@ class LoggingService {
         // Swallow file-sink errors so logging never interferes with app flows.
       }
     });
+    _fileDrains[fileStem] = nextDrain;
 
-    await _fileDrain;
+    await nextDrain;
+  }
+
+  /// Awaits all pending writes and flushes all buffered lines. Intended for
+  /// tests that use buffered (non-test-env) mode and need deterministic
+  /// completion without arbitrary [Future.delayed] waits.
+  @visibleForTesting
+  Future<void> flushAllForTest() async {
+    // Await all tracked unawaited writes (captureEvent / captureException).
+    // Snapshot first since whenComplete callbacks remove items during iteration.
+    await Future.wait(List<Future<void>>.of(_pendingWrites));
+    // Cancel any pending timer-based flushes and drain remaining lines.
+    for (final entry in _fileFlushTimers.entries.toList()) {
+      entry.value.cancel();
+    }
+    _fileFlushTimers.clear();
+    for (final stem in _pendingFileLinesByStem.keys.toList()) {
+      await _flushPendingLines(stem, forceFlush: true);
+    }
+  }
+
+  String? _domainFileStem(String domain) {
+    if (syncFileDomains.contains(domain)) {
+      return _syncLogStem;
+    }
+    return null;
+  }
+
+  bool _shouldWriteToGeneral(String domain, {required bool isException}) {
+    if (isException) return true;
+    return !syncFileDomains.contains(domain);
   }
 
   String _formatLine({
@@ -131,11 +185,21 @@ class LoggingService {
       message: event.toString(),
     );
 
-    // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(
-      line,
-      forceFlush: level == InsightLevel.error,
-    );
+    final forceFlush = level == InsightLevel.error;
+    final writes = <Future<void>>[];
+    if (_shouldWriteToGeneral(domain, isException: false)) {
+      writes.add(
+        _appendToNamedFile(_generalLogStem, line, forceFlush: forceFlush),
+      );
+    }
+
+    final domainFileStem = _domainFileStem(domain);
+    if (domainFileStem != null) {
+      writes.add(
+        _appendToNamedFile(domainFileStem, line, forceFlush: forceFlush),
+      );
+    }
+    await Future.wait(writes);
   }
 
   void captureEvent(
@@ -148,15 +212,15 @@ class LoggingService {
     if (!_enableLogging) {
       return;
     }
-    unawaited(
-      _captureEventAsync(
-        event,
-        domain: domain,
-        subDomain: subDomain,
-        level: level,
-        type: type,
-      ),
+    final future = _captureEventAsync(
+      event,
+      domain: domain,
+      subDomain: subDomain,
+      level: level,
+      type: type,
     );
+    _pendingWrites.add(future);
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
   }
 
   Future<void> _captureExceptionAsync(
@@ -176,8 +240,16 @@ class LoggingService {
       message: '$exception ${stackTrace ?? ''}'.trim(),
     );
 
-    // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(line, forceFlush: true);
+    final writes = <Future<void>>[
+      _appendToNamedFile(_generalLogStem, line, forceFlush: true),
+    ];
+    final domainFileStem = _domainFileStem(domain);
+    if (domainFileStem != null) {
+      writes.add(
+        _appendToNamedFile(domainFileStem, line, forceFlush: true),
+      );
+    }
+    await Future.wait(writes);
   }
 
   void captureException(
@@ -194,15 +266,15 @@ class LoggingService {
       error: exception,
       stackTrace: stackTrace is StackTrace ? stackTrace : null,
     );
-    unawaited(
-      _captureExceptionAsync(
-        exception,
-        domain: domain,
-        subDomain: subDomain,
-        stackTrace: stackTrace,
-        level: level,
-        type: type,
-      ),
+    final future = _captureExceptionAsync(
+      exception,
+      domain: domain,
+      subDomain: subDomain,
+      stackTrace: stackTrace,
+      level: level,
+      type: type,
     );
+    _pendingWrites.add(future);
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
   }
 }

@@ -550,6 +550,249 @@ void main() {
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
+    test(
+      'does not redownload the same agent attachment event when file exists',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_agent_repeat',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"status":"resolved"}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_agent_repeat');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/repeat.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/repeat.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        final firstResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        final secondResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isFalse);
+        expect(
+          File('${tmp.path}/agent_entities/repeat.json').readAsStringSync(),
+          '{"status":"resolved"}',
+        );
+        verify(ev.downloadAndDecryptAttachment).called(1);
+        verify(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'attachment.observe',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'repairs the same agent attachment event when the local file is missing',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_agent_repair',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"status":"resolved"}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_agent_repair');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/repair.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/repair.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        final firstResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        final localFile = File('${tmp.path}/agent_entities/repair.json');
+        expect(localFile.existsSync(), isTrue);
+        localFile.deleteSync();
+
+        final secondResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(localFile.existsSync(), isTrue);
+        verify(ev.downloadAndDecryptAttachment).called(2);
+      },
+    );
+
+    test(
+      'repairs the same agent attachment event when the local file is empty',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync(
+          'ingestor_agent_empty',
+        );
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('{"status":"ok"}')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_agent_empty');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/agent_entities/empty.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(
+          () => desc.removeIfPresent('/agent_entities/empty.json'),
+        ).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        final firstResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        // Truncate to empty to trigger the empty-file repair path.
+        final localFile = File('${tmp.path}/agent_entities/empty.json');
+        expect(localFile.existsSync(), isTrue);
+        localFile.writeAsStringSync('');
+
+        final secondResult = await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(firstResult, isTrue);
+        expect(secondResult, isTrue);
+        expect(localFile.readAsStringSync(), '{"status":"ok"}');
+        verify(ev.downloadAndDecryptAttachment).called(2);
+      },
+    );
+
     test('overwrites stale agent link file instead of deduping', () async {
       final logging = MockLoggingService();
       when(
@@ -672,6 +915,172 @@ void main() {
       );
       verifyNever(ev.downloadAndDecryptAttachment);
     });
+
+    test('evicts oldest handled event IDs when capacity is exceeded', () async {
+      final logging = MockLoggingService();
+      when(
+        () => logging.captureEvent(
+          any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent(any<String>())).thenReturn(false);
+
+      // Use a tiny capacity so the eviction loop triggers quickly.
+      final ingestor = AttachmentIngestor(handledEventCapacity: 2);
+
+      // Process 3 distinct events (capacity=2 so e1 gets evicted).
+      for (var i = 1; i <= 3; i++) {
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evict_$i');
+        when(
+          () => ev.content,
+        ).thenReturn({'relativePath': '/path/$i.bin', 'msgtype': 'm.file'});
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+      }
+
+      // Re-process e1 — it should be treated as new because it was evicted.
+      final e1Again = MockEvent();
+      when(() => e1Again.eventId).thenReturn('evict_1');
+      when(
+        () => e1Again.content,
+      ).thenReturn({'relativePath': '/path/1.bin', 'msgtype': 'm.file'});
+      when(() => e1Again.attachmentMimetype).thenReturn('application/json');
+      when(() => e1Again.senderId).thenReturn('@other:u');
+
+      await ingestor.process(
+        event: e1Again,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+      );
+
+      // Verify e1 was recorded again (the observe log fires for new events).
+      // If eviction didn't happen, the second call would skip the record.
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('attachmentEvent id=evict_1')),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'attachment.observe',
+        ),
+      ).called(2); // Once on first pass, once after eviction
+    });
+
+    test(
+      'concurrent process() calls for same path only trigger one save',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_concurrent');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        // Use a completer to control when the download finishes so both
+        // process() calls overlap.
+        final downloadCompleter = Completer<MatrixFile>();
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('concurrent-data')));
+
+        final ev1 = MockEvent();
+        when(() => ev1.eventId).thenReturn('e_conc_1');
+        when(() => ev1.content).thenReturn({
+          'relativePath': '/data/conc.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev1.attachmentMimetype).thenReturn('application/json');
+        when(() => ev1.senderId).thenReturn('@other:u');
+        var downloadCallCount = 0;
+        when(ev1.downloadAndDecryptAttachment).thenAnswer((_) {
+          downloadCallCount++;
+          return downloadCompleter.future;
+        });
+
+        // Second event with a different eventId but the SAME relativePath.
+        final ev2 = MockEvent();
+        when(() => ev2.eventId).thenReturn('e_conc_2');
+        when(() => ev2.content).thenReturn({
+          'relativePath': '/data/conc.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev2.attachmentMimetype).thenReturn('application/json');
+        when(() => ev2.senderId).thenReturn('@other:u');
+        when(ev2.downloadAndDecryptAttachment).thenAnswer((_) {
+          downloadCallCount++;
+          return downloadCompleter.future;
+        });
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/data/conc.json')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        // Launch both process() calls concurrently.
+        final future1 = ingestor.process(
+          event: ev1,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+        final future2 = ingestor.process(
+          event: ev2,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        // Complete the download so both futures can resolve.
+        downloadCompleter.complete(matrixFile);
+        final results = await Future.wait([future1, future2]);
+
+        // Exactly one should have written the file; the other was blocked by
+        // the in-flight guard.
+        expect(results.where((r) => r).length, 1);
+
+        final writtenFile = File('${tmp.path}/data/conc.json');
+        expect(writtenFile.existsSync(), isTrue);
+        expect(writtenFile.readAsStringSync(), 'concurrent-data');
+
+        // Exactly one download should have been triggered across both events,
+        // regardless of which process() call won the race.
+        expect(downloadCallCount, 1);
+      },
+    );
 
     test('blocks path traversal attempts', () async {
       final logging = MockLoggingService();

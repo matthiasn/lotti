@@ -110,14 +110,6 @@ void main() {
         async.flushMicrotasks();
         final snap = consumer.metricsSnapshot();
         expect(snap['signalClientStream'], 1);
-        // Log contains signal.clientStream marker
-        verify(
-          () => logger.captureEvent(
-            any<String>(that: contains('signal.clientStream')),
-            domain: any<String>(named: 'domain'),
-            subDomain: 'signal',
-          ),
-        ).called(greaterThanOrEqualTo(1));
         // With new behavior, client-stream triggers a forceRescan (catch-up + scan)
         verify(
           () => logger.captureEvent(
@@ -201,9 +193,8 @@ void main() {
 
       // Within the first second, we should see a coalesce log and at most one forceRescan start
       async.elapse(const Duration(milliseconds: 200));
-      final coalesceSeen = logs.any(
-        (l) => l.contains('signal.catchup.coalesce debounceMs='),
-      );
+      final coalesceSeen =
+          (consumer.metricsSnapshot()['signalCatchupCoalesceCount'] ?? 0) > 0;
       final rescansWithinFirstBurst = logs
           .where((l) => l.contains('forceRescan.start includeCatchUp=true'))
           .length;

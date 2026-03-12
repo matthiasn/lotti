@@ -114,12 +114,19 @@ The most recent stabilization pass addressed two concrete failures:
   clock before resend
 - missing-marker catch-up now falls back to a bounded tail instead of replaying
   an entire large snapshot
+- receive-side signal diagnostics now summarize scheduler pokes per catch-up
+  burst and per live-scan pass instead of writing one log line for every raw
+  callback
 
 The largest remaining concerns are:
 
 - sequence-log mappings that can point a requested counter at a payload whose
   current vector clock is already behind that counter
 - large bursts of missing counters that later get resolved
+- inbox-side attachment replay: repeated processing for the exact same
+  attachment `eventId` is now suppressed unless the local file is missing or
+  empty (repair path). The remaining edge case is different attachment events
+  that share the same agent payload path, which can still overwrite each other
 - agent payload handling that can plausibly combine an older text event with a
   newer attachment version for the same `jsonPath`
 

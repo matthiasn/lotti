@@ -3,7 +3,7 @@
 ## Scope
 
 This document describes the sync system as it exists in the codebase on
-2026-03-11.
+2026-03-12.
 
 It is not a target architecture document. It is a map of the current system,
 the recent fix history, and the code-backed failure surfaces that are relevant
@@ -22,6 +22,7 @@ The evidence used here comes from:
 - `logs/sync-2026-03-11.log`
 - `logs/sync-2026-03-11_desktop.log`
 - `logs/sync-2026-03-11_mobile.log`
+- `logs/lotti-2026-03-12.log`
 - recent sync PRs in March 2026
 
 ## Executive View
@@ -90,6 +91,91 @@ The log evidence below is still useful because it explains why those changes
 were necessary. The remaining open question is whether the agent
 text-event-to-attachment binding model is still producing synthetic gaps after
 those stabilizations.
+
+## 2026-03-12 Inbox And Logging Findings
+
+The next log capture added a second, separate receiver-side problem: repeated
+attachment work.
+
+These facts are directly backed by `logs/lotti-2026-03-12.log` and the current
+receive-path code:
+
+- the general log reached about `124 MB` with `770045` lines
+- sync-family domains accounted for `677159` lines, about `87.94%`
+- `MATRIX_SYNC attachment.observe` alone contributed `244891` lines
+- those observe lines covered only `7033` unique attachment event IDs, about
+  `34.82` observations per attachment event on average
+- `MATRIX_SYNC attachment.download` contributed `83963` lines for only `5244`
+  unique paths, about `16.01` downloads per path on average
+- `79123 / 83963` download lines were for `/agent_entities/...`
+
+The relevant code path is straightforward:
+
+- `AttachmentIngestor.process()` logged `attachment.observe` for every
+  attachment event with `relativePath`
+- the same method then scheduled download work immediately afterward
+- `AttachmentIngestor._saveAttachment()` explicitly skipped existing-file
+  dedupe for agent payload paths
+- `MatrixStreamProcessor` only remembered `5000` recently seen event IDs for
+  first-pass duplicate suppression, while catch-up can replay windows up to
+  `10000`
+
+That meant repeated replay waves could re-run the same attachment event's
+observe/download/write path even when nothing new had arrived.
+
+The latest stabilization pass now suppresses repeated processing for the exact
+same attachment `eventId` unless the local file is missing or empty. That is a
+real work reduction, not only a logging reduction. It does not yet solve the
+separate stable-path causality question for different attachment events that
+share the same agent payload path.
+
+There is now also a logging-routing change:
+
+- sync-family info logs no longer need to stay in `lotti-YYYY-MM-DD.log`
+- direct domains such as `MATRIX_SYNC`, `MATRIX_SERVICE`, `OUTBOX`,
+  `AGENT_SYNC`, `SYNC_SEQUENCE`, `SYNC_BACKFILL`, and logical `sync` are
+  routed into `sync-YYYY-MM-DD.log`
+- sync exceptions are still mirrored into the general log so failures remain
+  visible outside the sync-specific file
+
+That change is specifically about sink routing, not about reducing event
+volume. The remaining work on signal coalescing and replay overlap is still
+separate.
+
+## 2026-03-12 Signal Summary Diagnostics
+
+The next receiver-side diagnostics pass changed how scheduler signals are
+observed.
+
+These are hard facts from the current code:
+
+- the receiver still has two overlapping signal sources:
+  `MatrixStreamSignalBinder` listens to the client stream and also attaches
+  live timeline callbacks
+- the live timeline still wires all five callback types into the scheduler:
+  `onNewEvent`, `onInsert`, `onChange`, `onRemove`, and `onUpdate`
+- those callbacks still nudge catch-up or live-scan; the pass did not remove
+  the underlying signal sources
+- what changed is the logging shape:
+  raw per-callback `signal.clientStream`, `signal.timeline`,
+  `signal.catchup.coalesce`, and `signal.liveScan.coalesce` style lines are no
+  longer the primary diagnostic surface
+- `MetricsCounters` now keeps explicit counters for:
+  client-stream signals, each timeline callback subtype, deferred/coalesced
+  catch-up signals, deferred/coalesced live-scan signals, `signal.noTimeline`,
+  and wake detections
+- catch-up now logs one burst-level completion line with
+  `catchup.done events=... signalSummary ...`
+- live scan now logs one pass-level summary with
+  `liveScan.summary afterSlice=... deduped=... processed=... latest=... signalSummary ...`
+- the live-scan `signalSummary` includes:
+  client-stream count, total timeline callback count, per-callback breakdown,
+  deferred reasons, coalesced count, trailing-scan scheduling, and the latest
+  signal-to-scan latency sample
+
+This is a diagnostics restructuring, not a scheduler rewrite. The point is to
+preserve cause-and-effect data while removing hundreds of thousands of
+individual callback log lines from the hot path.
 
 ## Observed Symptoms In The 2026-03-11 Logs
 

@@ -208,7 +208,7 @@ void main() {
     });
   });
 
-  test('all timeline callbacks trigger signals and log signal.timeline', () {
+  test('timeline callbacks update per-callback metrics', () {
     fakeAsync((async) {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -234,7 +234,9 @@ void main() {
       ).thenAnswer((_) async => null);
 
       void Function()? onNewEvent;
-      void Function(dynamic)? onInsert;
+      void Function(int)? onInsert;
+      void Function(int)? onChange;
+      void Function(int)? onRemove;
       void Function()? onUpdate;
       when(
         () => room.getTimeline(
@@ -246,7 +248,9 @@ void main() {
         ),
       ).thenAnswer((inv) async {
         onNewEvent = inv.namedArguments[#onNewEvent] as void Function()?;
-        onInsert = inv.namedArguments[#onInsert] as void Function(dynamic)?;
+        onInsert = inv.namedArguments[#onInsert] as void Function(int)?;
+        onChange = inv.namedArguments[#onChange] as void Function(int)?;
+        onRemove = inv.namedArguments[#onRemove] as void Function(int)?;
         onUpdate = inv.namedArguments[#onUpdate] as void Function()?;
         return liveTimeline;
       });
@@ -276,22 +280,39 @@ void main() {
         await consumer.dispose();
       });
 
-      final before = consumer.metricsSnapshot()['signalTimelineCallbacks'] ?? 0;
+      final beforeSnap = consumer.metricsSnapshot();
       onNewEvent?.call();
-      // Some SDK builds may not invoke all parametrized callbacks in tests;
-      // call the ones that are reliably no-arg and one representative arg callback.
+      // Exercise all callback subtypes to cover _recordTimelineSignal branches.
       onUpdate?.call();
-      onInsert?.call(Object());
+      onInsert?.call(0);
+      onChange?.call(0);
+      onRemove?.call(0);
       async.flushMicrotasks();
-      final after = consumer.metricsSnapshot()['signalTimelineCallbacks'] ?? 0;
-      expect(after, greaterThanOrEqualTo(before + 1));
-      verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('signal.timeline')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'signal',
-        ),
-      ).called(greaterThanOrEqualTo(1));
+      final afterSnap = consumer.metricsSnapshot();
+      expect(
+        afterSnap['signalTimelineCallbacks'],
+        (beforeSnap['signalTimelineCallbacks'] ?? 0) + 5,
+      );
+      expect(
+        afterSnap['signalTimelineNewEvent'],
+        (beforeSnap['signalTimelineNewEvent'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineInsert'],
+        (beforeSnap['signalTimelineInsert'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineChange'],
+        (beforeSnap['signalTimelineChange'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineRemove'],
+        (beforeSnap['signalTimelineRemove'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineUpdate'],
+        (beforeSnap['signalTimelineUpdate'] ?? 0) + 1,
+      );
     });
   });
 
@@ -525,7 +546,7 @@ void main() {
       async.flushMicrotasks();
       verify(
         () => logger.captureEvent(
-          any<String>(that: contains('liveScan processed=')),
+          any<String>(that: contains('liveScan.summary')),
           domain: any<String>(named: 'domain'),
           subDomain: 'liveScan',
         ),
@@ -691,6 +712,8 @@ void main() {
       // During the scan, schedule another scan via the new test seam; it
       // should defer (log once) and yield exactly one trailing schedule.
       var ran = false;
+      final deferredBefore =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
       consumer.scanLiveTimelineTestHook = (schedule) {
         if (ran) return;
         ran = true;
@@ -708,10 +731,9 @@ void main() {
       async.flushMicrotasks();
 
       // While in-flight schedules should be coalesced into a single deferral.
-      final deferredLogs = logs
-          .where((l) => l.contains('signal.liveScan.deferred set'))
-          .length;
-      expect(deferredLogs <= 1, isTrue);
+      final deferredAfter =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
+      expect(deferredAfter - deferredBefore, lessThanOrEqualTo(1));
 
       // Let scan complete and trailing schedule occur (min gap is 1s)
       async.elapse(const Duration(seconds: 2));
@@ -720,6 +742,17 @@ void main() {
           .where((l) => l.contains('trailing.liveScan.scheduled'))
           .length;
       expect(trailing, 1);
+
+      // Verify the summary includes the deferred-in-flight field from the
+      // in-flight coalescing that happened during the first scan.
+      final summaries = logs
+          .where((l) => l.contains('liveScan.summary'))
+          .toList();
+      expect(summaries, isNotEmpty);
+      expect(
+        summaries.any((s) => s.contains('deferredInFlight=')),
+        isTrue,
+      );
     });
   });
 
@@ -815,6 +848,8 @@ void main() {
 
       // Burst three schedules while in-flight
       var ran = false;
+      final deferredBefore =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
       consumer.scanLiveTimelineTestHook = (schedule) {
         if (ran) return;
         ran = true;
@@ -826,10 +861,9 @@ void main() {
       onNewEvent?.call();
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
-      final deferred = logs
-          .where((l) => l.contains('signal.liveScan.deferred set'))
-          .length;
-      expect(deferred, 1);
+      final deferredAfter =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
+      expect(deferredAfter - deferredBefore, 1);
 
       // Let scan complete and any trailing follow-up schedule occur
       async.elapse(const Duration(seconds: 2));
@@ -1057,6 +1091,8 @@ void main() {
       async.flushMicrotasks();
 
       // While in-flight, fire more signals to request a trailing scan
+      final deferredBefore =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
       onNewEvent?.call();
       onNewEvent?.call();
       // Also make a new event visible so the trailing scan has work to do.
@@ -1070,13 +1106,9 @@ void main() {
       async.elapse(const Duration(milliseconds: 900));
       async.flushMicrotasks();
       // Expect we deferred due to in-flight scan; no immediate run
-      verify(
-        () => logger.captureEvent(
-          any<String>(that: contains('signal.liveScan.deferred set')),
-          domain: any<String>(named: 'domain'),
-          subDomain: 'signal',
-        ),
-      ).called(greaterThanOrEqualTo(1));
+      final deferredAfter =
+          consumer.metricsSnapshot()['signalLiveScanDeferredInFlight'] ?? 0;
+      expect(deferredAfter, greaterThanOrEqualTo(deferredBefore + 1));
 
       // After crossing the 1s min gap (plus small debounce), trailing runs
       async.elapse(const Duration(milliseconds: 200));
@@ -1207,7 +1239,7 @@ void main() {
       async.flushMicrotasks();
 
       expect(
-        logs.any((l) => l.contains('liveScan processed=')),
+        logs.any((l) => l.contains('liveScan.summary')),
         isTrue,
       );
       expect(
@@ -1217,6 +1249,8 @@ void main() {
 
       logs.clear();
       when(() => liveTimeline.events).thenReturn(<Event>[payload1, payload2]);
+      final coalescedBefore =
+          consumer.metricsSnapshot()['liveScanCoalesceCount'] ?? 0;
 
       // Burst more signals within the min gap; coalesce live scan scheduling
       clientStream
@@ -1228,10 +1262,9 @@ void main() {
       async.flushMicrotasks();
 
       // Expect coalescing log and no catch-up start
-      expect(
-        logs.any((l) => l.contains('signal.liveScan.coalesce')),
-        isTrue,
-      );
+      final coalescedAfter =
+          consumer.metricsSnapshot()['liveScanCoalesceCount'] ?? 0;
+      expect(coalescedAfter, greaterThan(coalescedBefore));
       expect(
         logs.any((l) => l.contains('catchup.start')),
         isFalse,
@@ -1240,8 +1273,18 @@ void main() {
       // After min gap elapses, a live scan should run
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
+      final summaries = logs
+          .where((l) => l.contains('liveScan.summary'))
+          .toList();
+      expect(summaries, isNotEmpty);
+      // Verify the summary includes client-stream and coalesced fields from
+      // the burst of signals we sent within the min-gap window.
       expect(
-        logs.any((l) => l.contains('liveScan processed=')),
+        summaries.any((s) => s.contains('clientStream=')),
+        isTrue,
+      );
+      expect(
+        summaries.any((s) => s.contains('coalesced=')),
         isTrue,
       );
 
@@ -1365,7 +1408,7 @@ void main() {
 
       final processedCalls = verify(
         () => logger.captureEvent(
-          any<String>(that: contains('liveScan processed=')),
+          any<String>(that: contains('liveScan.summary')),
           domain: any<String>(named: 'domain'),
           subDomain: 'liveScan',
         ),
