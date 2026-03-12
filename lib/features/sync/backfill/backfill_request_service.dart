@@ -424,7 +424,7 @@ class BackfillRequestService {
       rel = rel.substring(prefix.length);
     }
     final resolved = p.normalize(p.join(docDir.path, rel));
-    if (resolved != docDir.path && !p.isWithin(docDir.path, resolved)) {
+    if (!p.isWithin(docDir.path, resolved)) {
       return null;
     }
     return File(resolved);

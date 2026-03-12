@@ -1203,23 +1203,20 @@ void main() {
         'blocks path traversal when sweeping derived agent payload paths',
         () {
           fakeAsync((async) {
-            final tmp = Directory.systemTemp.createTempSync(
+            final root = Directory.systemTemp.createTempSync(
               'backfill_sweep_safe',
             );
-            addTearDown(() => tmp.deleteSync(recursive: true));
+            addTearDown(() => root.deleteSync(recursive: true));
+            final tmp = Directory(p.join(root.path, 'docs'))..createSync();
 
             final escapedPath = p.normalize(
               p.join(tmp.path, 'agent_entities/../../escape.json'),
             );
             expect(p.isWithin(tmp.path, escapedPath), isFalse);
+            // The escaped file lands inside root but outside tmp (docs dir)
             final escapedFile = File(escapedPath)
               ..createSync(recursive: true)
               ..writeAsStringSync('keep-me');
-            addTearDown(() {
-              if (escapedFile.existsSync()) {
-                escapedFile.deleteSync();
-              }
-            });
 
             final service = BackfillRequestService(
               sequenceLogService: mockSequenceService,

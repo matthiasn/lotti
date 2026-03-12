@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -195,6 +197,7 @@ void main() {
       when(() => mockNavService.currentPath).thenReturn('/');
 
       var initializationRuns = 0;
+      final completer = Completer<void>();
 
       await tester.pumpWidget(
         ProviderScope(
@@ -204,6 +207,7 @@ void main() {
             ),
             agentInitializationProvider.overrideWith((ref) async {
               initializationRuns++;
+              await completer.future;
             }),
           ],
           child: MyBeamerApp(navService: mockNavService),
@@ -212,8 +216,18 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
+      // Initialization started exactly once and remains in progress
       expect(initializationRuns, 1);
       expect(find.text('Loading...'), findsOneWidget);
+
+      // Pump again to verify the subscription stays active
+      await tester.pump(const Duration(seconds: 2));
+      expect(initializationRuns, 1);
+      expect(find.text('Loading...'), findsOneWidget);
+
+      // Complete initialization to allow clean teardown
+      completer.complete();
+      await tester.pump();
     });
   });
 

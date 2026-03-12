@@ -855,15 +855,14 @@ class SyncDatabase extends _$SyncDatabase {
           // migration.
           await customStatement(
             'UPDATE sync_sequence_log '
-            "SET json_path = '/agent_entities/' || entry_id || '.json' "
-            'WHERE entry_id IS NOT NULL '
-            'AND payload_type = ${SyncSequencePayloadType.agentEntity.index}',
-          );
-          await customStatement(
-            'UPDATE sync_sequence_log '
-            "SET json_path = '/agent_links/' || entry_id || '.json' "
-            'WHERE entry_id IS NOT NULL '
-            'AND payload_type = ${SyncSequencePayloadType.agentLink.index}',
+            'SET json_path = CASE '
+            "  WHEN payload_type = ${SyncSequencePayloadType.agentEntity.index} THEN '/agent_entities/' || entry_id || '.json' "
+            "  WHEN payload_type = ${SyncSequencePayloadType.agentLink.index} THEN '/agent_links/' || entry_id || '.json' "
+            'END '
+            'WHERE entry_id IS NOT NULL AND payload_type IN ('
+            '  ${SyncSequencePayloadType.agentEntity.index}, '
+            '  ${SyncSequencePayloadType.agentLink.index}'
+            ')',
           );
         }
       },
