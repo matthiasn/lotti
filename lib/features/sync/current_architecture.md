@@ -3,7 +3,7 @@
 ## Scope
 
 This document describes the sync system as it exists in the codebase on
-2026-03-11.
+2026-03-12.
 
 It is not a target architecture document. It is a map of the current system,
 the recent fix history, and the code-backed failure surfaces that are relevant
@@ -22,6 +22,7 @@ The evidence used here comes from:
 - `logs/sync-2026-03-11.log`
 - `logs/sync-2026-03-11_desktop.log`
 - `logs/sync-2026-03-11_mobile.log`
+- `logs/lotti-2026-03-12.log`
 - recent sync PRs in March 2026
 
 ## Executive View

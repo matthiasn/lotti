@@ -78,12 +78,12 @@ class AttachmentIngestor {
       if (!alreadyHandled) {
         _recordHandledAttachmentEvent(event.eventId);
       }
-      // Only do the async file check for repair when the event was already
+      // Only check the local file for repair when the event was already
       // handled once — new events always proceed.
       final shouldRepairLocal =
           alreadyHandled &&
           documentsDirectory != null &&
-          await _isLocalFileMissingOrEmpty(rpAny);
+          _isLocalFileMissingOrEmpty(rpAny);
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
@@ -243,7 +243,7 @@ class AttachmentIngestor {
   String _normalizeKey(String relativePath) =>
       normalizeAttachmentIndexKey(relativePath);
 
-  Future<bool> _isLocalFileMissingOrEmpty(String relativePath) async {
+  bool _isLocalFileMissingOrEmpty(String relativePath) {
     final file = _targetFile(relativePath);
     if (file == null) {
       return false;

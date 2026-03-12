@@ -133,8 +133,8 @@ class LoggingService {
   @visibleForTesting
   Future<void> flushAllForTest() async {
     // Await all tracked unawaited writes (captureEvent / captureException).
-    await Future.wait(_pendingWrites);
-    _pendingWrites.clear();
+    // Snapshot first since whenComplete callbacks remove items during iteration.
+    await Future.wait(List<Future<void>>.of(_pendingWrites));
     // Cancel any pending timer-based flushes and drain remaining lines.
     for (final entry in _fileFlushTimers.entries.toList()) {
       entry.value.cancel();
@@ -222,9 +222,7 @@ class LoggingService {
       type: type,
     );
     _pendingWrites.add(future);
-    unawaited(
-      future,
-    );
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
   }
 
   Future<void> _captureExceptionAsync(
@@ -274,6 +272,6 @@ class LoggingService {
       type: type,
     );
     _pendingWrites.add(future);
-    unawaited(future);
+    unawaited(future.whenComplete(() => _pendingWrites.remove(future)));
   }
 }

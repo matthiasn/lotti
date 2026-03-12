@@ -443,6 +443,11 @@ void main() {
       'logs',
       'lotti-${DateTime.now().toIso8601String().substring(0, 10)}.log',
     );
+    String syncLogPath() => p.join(
+      bufferedTempDocs.path,
+      'logs',
+      'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+    );
 
     test('timer flush writes buffered lines after interval', () async {
       bufferedLogging.captureEvent(
@@ -566,13 +571,7 @@ void main() {
       await bufferedLogging.flushAllForTest();
 
       final generalFile = File(logPath0());
-      final syncFile = File(
-        p.join(
-          bufferedTempDocs.path,
-          'logs',
-          'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-        ),
-      );
+      final syncFile = File(syncLogPath());
 
       expect(generalFile.existsSync(), isFalse);
       expect(syncFile.existsSync(), isTrue);
@@ -595,13 +594,7 @@ void main() {
         await bufferedLogging.flushAllForTest();
 
         final generalFile = File(logPath0());
-        final syncFile = File(
-          p.join(
-            bufferedTempDocs.path,
-            'logs',
-            'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
-          ),
-        );
+        final syncFile = File(syncLogPath());
 
         expect(generalFile.existsSync(), isTrue);
         expect(syncFile.existsSync(), isTrue);
