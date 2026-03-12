@@ -114,6 +114,11 @@ class SyncSequenceLog extends Table {
   DateTimeColumn get lastRequestedAt =>
       dateTime().named('last_requested_at').nullable()();
 
+  /// The documents-directory-relative path to the entry's JSON file.
+  /// Stored so the backfill sweep can delete zombie files for any payload
+  /// type, not just agent entities/links whose paths are derivable from ID.
+  TextColumn get jsonPath => text().named('json_path').nullable()();
+
   @override
   Set<Column> get primaryKey => {hostId, counter};
 }
@@ -301,13 +306,22 @@ class SyncDatabase extends _$SyncDatabase {
     return (delete(outbox)..where((t) => t.id.equals(id))).go();
   }
 
-  /// Get (hostId, counter) pairs from pending backfill request messages in outbox.
-  /// Used to avoid enqueuing duplicate backfill requests.
+  /// Get (hostId, counter) pairs from queued or in-flight backfill request
+  /// messages in outbox.
+  ///
+  /// Used to avoid enqueuing duplicate backfill requests while an older request
+  /// is still pending or leased in `sending`.
   Future<Set<({String hostId, int counter})>>
   getPendingBackfillEntries() async {
-    final pendingItems = await (select(
-      outbox,
-    )..where((t) => t.status.equals(OutboxStatus.pending.index))).get();
+    final pendingItems =
+        await (select(
+              outbox,
+            )..where(
+              (t) =>
+                  t.status.equals(OutboxStatus.pending.index) |
+                  t.status.equals(_outboxSendingStatus),
+            ))
+            .get();
 
     final entries = <({String hostId, int counter})>{};
 
@@ -361,6 +375,7 @@ class SyncDatabase extends _$SyncDatabase {
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
+    int offset = 0,
   }) {
     return (select(syncSequenceLog)
           ..where(
@@ -370,7 +385,7 @@ class SyncDatabase extends _$SyncDatabase {
                 t.requestCount.isSmallerThanValue(maxRequestCount),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
-          ..limit(limit))
+          ..limit(limit, offset: offset))
         .get();
   }
 
@@ -571,13 +586,14 @@ class SyncDatabase extends _$SyncDatabase {
   /// Ignores maxRequestCount to allow re-requesting stuck entries.
   Future<List<SyncSequenceLogItem>> getRequestedEntries({
     int limit = 50,
+    int offset = 0,
   }) {
     return (select(syncSequenceLog)
           ..where(
             (t) => t.status.equals(SyncSequenceStatus.requested.index),
           )
           ..orderBy([(t) => OrderingTerm(expression: t.createdAt)])
-          ..limit(limit))
+          ..limit(limit, offset: offset))
         .get();
   }
 
@@ -615,6 +631,7 @@ class SyncDatabase extends _$SyncDatabase {
     Duration? maxAge,
     int? maxPerHost,
     DateTime? now,
+    int offset = 0,
   }) async {
     // Get all missing/requested entries respecting request count
     final baseQuery = select(syncSequenceLog)
@@ -644,7 +661,7 @@ class SyncDatabase extends _$SyncDatabase {
         ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
     }
 
-    return entries.take(limit).toList();
+    return entries.skip(offset).take(limit).toList();
   }
 
   /// Reset entries that were incorrectly marked as unresolvable back to
@@ -797,7 +814,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration {
@@ -825,6 +842,29 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 6) {
           // Add priority column for outbox priority queue
           await m.addColumn(outbox, outbox.priority);
+        }
+        if (from >= 2 && from < 7) {
+          // Add jsonPath column for zombie file sweep on re-request.
+          // Guard with from >= 2 because createTable (from < 2) already
+          // includes jsonPath in the current schema definition.
+          await m.addColumn(syncSequenceLog, syncSequenceLog.jsonPath);
+
+          // Backfill jsonPath for existing agent entity/link entries whose
+          // paths are derivable from entry_id. This ensures the zombie-file
+          // sweep works for items stuck in 'requested' state before this
+          // migration.
+          await customStatement(
+            'UPDATE sync_sequence_log '
+            "SET json_path = '/agent_entities/' || entry_id || '.json' "
+            'WHERE entry_id IS NOT NULL '
+            'AND payload_type = ${SyncSequencePayloadType.agentEntity.index}',
+          );
+          await customStatement(
+            'UPDATE sync_sequence_log '
+            "SET json_path = '/agent_links/' || entry_id || '.json' "
+            'WHERE entry_id IS NOT NULL '
+            'AND payload_type = ${SyncSequencePayloadType.agentLink.index}',
+          );
         }
       },
     );

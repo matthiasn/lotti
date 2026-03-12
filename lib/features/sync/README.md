@@ -117,6 +117,9 @@ The most recent stabilization pass addressed two concrete failures:
 - receive-side signal diagnostics now summarize scheduler pokes per catch-up
   burst and per live-scan pass instead of writing one log line for every raw
   callback
+- backfill request paging now walks past already queued oldest rows instead of
+  stopping at the first filtered page, and zombie-file cleanup only deletes
+  paths that resolve inside the local docs directory
 
 The largest remaining concerns are:
 

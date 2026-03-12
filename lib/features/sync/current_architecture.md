@@ -177,6 +177,33 @@ This is a diagnostics restructuring, not a scheduler rewrite. The point is to
 preserve cause-and-effect data while removing hundreds of thousands of
 individual callback log lines from the hot path.
 
+## 2026-03-12 Backfill Request Follow-up
+
+The review of the first inbox/backfill performance pass found three concrete
+regressions in the new re-request path, and all three have now been addressed.
+
+The code-backed changes are:
+
+- duplicate-request detection no longer looks only at `pending` outbox rows:
+  `SyncDatabase.getPendingBackfillEntries()` now also includes `sending`
+  entries, so a leased in-flight backfill request still suppresses a duplicate
+- `processReRequest()` no longer stops when the oldest fetched page is fully
+  filtered by "already queued"
+- bounded automatic backfill likewise pages past a fully queued oldest page
+  instead of repeatedly returning zero while newer missing rows remain behind it
+- zombie-file sweep no longer concatenates untrusted `jsonPath` or derived
+  agent-path strings directly onto the docs directory path
+- sweep targets are now normalized and rejected if they resolve outside the
+  docs directory
+
+That means the current backfill request path has these guarantees that the
+previous revision did not:
+
+- "already queued" includes both queued and in-flight requests
+- later missing/requested rows are still reachable even when the oldest page is
+  saturated with already queued counters
+- local zombie cleanup cannot delete arbitrary files outside the sync docs tree
+
 ## Observed Symptoms In The 2026-03-11 Logs
 
 There are now three relevant artifacts:

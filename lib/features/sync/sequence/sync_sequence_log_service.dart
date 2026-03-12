@@ -169,6 +169,7 @@ class SyncSequenceLogService {
     required String originatingHostId,
     List<VectorClock>? coveredVectorClocks,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
+    String? jsonPath,
   }) async {
     final gaps = <({String hostId, int counter})>[];
     final myHost = await _vectorClockService.getHost();
@@ -331,6 +332,7 @@ class SyncSequenceLogService {
             payloadType: Value(payloadType.index),
             originatingHostId: Value(originatingHostId),
             status: Value(status.index),
+            jsonPath: Value(jsonPath),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -394,6 +396,7 @@ class SyncSequenceLogService {
             payloadType: Value(payloadType.index),
             originatingHostId: Value(originatingHostId),
             status: Value(status.index),
+            jsonPath: Value(jsonPath),
             createdAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -586,10 +589,12 @@ class SyncSequenceLogService {
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
+    int offset = 0,
   }) {
     return _syncDatabase.getMissingEntries(
       limit: limit,
       maxRequestCount: maxRequestCount,
+      offset: offset,
     );
   }
 
@@ -912,12 +917,14 @@ class SyncSequenceLogService {
     int maxRequestCount = 10,
     Duration? maxAge,
     int? maxPerHost,
+    int offset = 0,
   }) {
     return _syncDatabase.getMissingEntriesWithLimits(
       limit: limit,
       maxRequestCount: maxRequestCount,
       maxAge: maxAge,
       maxPerHost: maxPerHost,
+      offset: offset,
     );
   }
 
@@ -925,8 +932,9 @@ class SyncSequenceLogService {
   /// These are entries that were requested but never received.
   Future<List<SyncSequenceLogItem>> getRequestedEntries({
     int limit = 50,
+    int offset = 0,
   }) {
-    return _syncDatabase.getRequestedEntries(limit: limit);
+    return _syncDatabase.getRequestedEntries(limit: limit, offset: offset);
   }
 
   /// Reset request counts for specified entries to allow re-requesting.

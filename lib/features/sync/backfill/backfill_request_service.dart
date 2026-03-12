@@ -1,14 +1,18 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as p;
 
 /// Service responsible for periodically sending backfill requests
 /// for missing entries detected in the sync sequence log.
@@ -22,6 +26,7 @@ class BackfillRequestService {
     required OutboxService outboxService,
     required VectorClockService vectorClockService,
     required LoggingService loggingService,
+    this.documentsDirectory,
     DomainLogger? domainLogger,
     Duration? requestInterval,
     int? maxBatchSize,
@@ -41,6 +46,11 @@ class BackfillRequestService {
        _maxRequestCount = maxRequestCount ?? SyncTuning.backfillMaxRequestCount,
        _maxAge = maxAge ?? SyncTuning.defaultBackfillMaxAge,
        _maxPerHost = maxPerHost ?? SyncTuning.defaultBackfillMaxEntriesPerHost;
+
+  /// The documents directory for resolving local attachment paths.
+  /// When provided, re-requests will sweep (delete) local zombie files
+  /// for agent entities/links to allow fresh downloads.
+  final Directory? documentsDirectory;
 
   final SyncSequenceLogService _sequenceLogService;
   final SyncDatabase _syncDatabase;
@@ -110,29 +120,36 @@ class BackfillRequestService {
         return 0;
       }
 
-      // Process in batches until no more requested entries
+      // Process in stable createdAt order, paging past rows that are already
+      // queued or in-flight instead of stopping at the first filtered page.
+      var offset = 0;
       while (true) {
-        // Get next batch of requested entries
         var requested = await _sequenceLogService.getRequestedEntries(
           limit: _maxBatchSize,
+          offset: offset,
         );
 
         if (requested.isEmpty) break;
+        offset += requested.length;
 
-        // Filter out entries that are already queued in the outbox
         final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
-        if (alreadyQueued.isNotEmpty) {
-          requested = requested
-              .where(
-                (m) => !alreadyQueued.contains((
-                  hostId: m.hostId,
-                  counter: m.counter,
-                )),
-              )
-              .toList();
+        final filteredCount = requested.length;
+        requested = _filterAlreadyQueuedEntries(requested, alreadyQueued);
+
+        if (requested.isEmpty) {
+          if (filteredCount > 0 && alreadyQueued.isNotEmpty) {
+            _trace(
+              'processReRequest: skipped $filteredCount already-queued entries at offset=${offset - filteredCount}',
+              subDomain: 'backfill.reRequest',
+            );
+          }
+          continue;
         }
 
-        if (requested.isEmpty) break;
+        // Sweep local zombie files for agent payloads so the next
+        // download attempt starts fresh instead of hitting the
+        // "file exists, skip" guard.
+        _sweepLocalFiles(requested);
 
         // Reset request counts for these entries
         final entries = requested
@@ -212,53 +229,11 @@ class BackfillRequestService {
     _isProcessing = true;
 
     try {
-      // Get missing entries - either with limits (automatic) or without (manual)
-      // For manual full backfill, use getMissingEntries which doesn't filter
-      // by host activity, allowing backfill from hosts not recently seen.
-      var missing = useLimits
-          ? await _sequenceLogService.getMissingEntriesWithLimits(
-              limit: _maxBatchSize,
-              maxRequestCount: _maxRequestCount,
-              maxAge: _maxAge,
-              maxPerHost: _maxPerHost,
-            )
-          : await _sequenceLogService.getMissingEntries(
-              limit: _maxBatchSize,
-              maxRequestCount: _maxRequestCount,
-            );
+      final missing = await _loadNextUnqueuedMissingBatch(useLimits: useLimits);
 
       if (missing.isEmpty) {
         _trace(
           'processBackfillRequests: no missing entries (useLimits=$useLimits)',
-          subDomain: 'backfill.process',
-        );
-        return 0;
-      }
-
-      // Filter out entries that are already queued in the outbox
-      final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
-      if (alreadyQueued.isNotEmpty) {
-        final beforeCount = missing.length;
-        missing = missing
-            .where(
-              (m) => !alreadyQueued.contains((
-                hostId: m.hostId,
-                counter: m.counter,
-              )),
-            )
-            .toList();
-        final filtered = beforeCount - missing.length;
-        if (filtered > 0) {
-          _trace(
-            'processBackfillRequests: filtered $filtered already-queued entries',
-            subDomain: 'backfill.process',
-          );
-        }
-      }
-
-      if (missing.isEmpty) {
-        _trace(
-          'processBackfillRequests: all entries already queued (useLimits=$useLimits)',
           subDomain: 'backfill.process',
         );
         return 0;
@@ -313,6 +288,146 @@ class BackfillRequestService {
     } finally {
       _isProcessing = false;
     }
+  }
+
+  /// Deletes local files for entries that are about to be re-requested.
+  /// This breaks the zombie-file cycle where a file exists on disk (non-empty)
+  /// but contains stale or corrupt data, causing the attachment ingestor to
+  /// skip re-downloading indefinitely.
+  ///
+  /// Uses `jsonPath` from the sequence log when available (any payload type).
+  /// Falls back to deriving the path from `entryId` for agent entities/links.
+  void _sweepLocalFiles(List<SyncSequenceLogItem> entries) {
+    final docDir = documentsDirectory;
+    if (docDir == null) return;
+
+    var swept = 0;
+    for (final entry in entries) {
+      var relativePath = entry.jsonPath;
+
+      // Fall back to deriving path from entryId for agent payloads
+      if (relativePath == null) {
+        final entryId = entry.entryId;
+        if (entryId == null) continue;
+
+        final payloadType = SyncSequencePayloadType.values.elementAtOrNull(
+          entry.payloadType,
+        );
+
+        if (payloadType == SyncSequencePayloadType.agentEntity) {
+          relativePath = relativeAgentEntityPath(entryId);
+        } else if (payloadType == SyncSequencePayloadType.agentLink) {
+          relativePath = relativeAgentLinkPath(entryId);
+        }
+      }
+
+      if (relativePath == null) continue;
+
+      try {
+        final file = _resolveSafeLocalFile(docDir, relativePath);
+        if (file == null) {
+          _trace(
+            'sweepLocalFiles: blocked path traversal for $relativePath',
+            subDomain: 'backfill.sweep',
+          );
+          continue;
+        }
+        if (file.existsSync()) {
+          file.deleteSync();
+          swept++;
+        }
+      } catch (e) {
+        _trace(
+          'sweepLocalFiles: failed to delete $relativePath err=$e',
+          subDomain: 'backfill.sweep',
+        );
+      }
+    }
+
+    if (swept > 0) {
+      _trace(
+        'sweepLocalFiles: deleted $swept zombie files',
+        subDomain: 'backfill.sweep',
+      );
+    }
+  }
+
+  List<SyncSequenceLogItem> _filterAlreadyQueuedEntries(
+    List<SyncSequenceLogItem> entries,
+    Set<({String hostId, int counter})> alreadyQueued,
+  ) {
+    if (alreadyQueued.isEmpty) {
+      return entries;
+    }
+    return entries
+        .where(
+          (entry) => !alreadyQueued.contains((
+            hostId: entry.hostId,
+            counter: entry.counter,
+          )),
+        )
+        .toList();
+  }
+
+  Future<List<SyncSequenceLogItem>> _loadNextUnqueuedMissingBatch({
+    required bool useLimits,
+  }) async {
+    final alreadyQueued = await _syncDatabase.getPendingBackfillEntries();
+    final selected = <SyncSequenceLogItem>[];
+    var offset = 0;
+    var filteredCount = 0;
+
+    while (selected.length < _maxBatchSize) {
+      final remaining = _maxBatchSize - selected.length;
+      final page = useLimits
+          ? await _sequenceLogService.getMissingEntriesWithLimits(
+              limit: remaining,
+              maxRequestCount: _maxRequestCount,
+              maxAge: _maxAge,
+              maxPerHost: _maxPerHost,
+              offset: offset,
+            )
+          : await _sequenceLogService.getMissingEntries(
+              limit: remaining,
+              maxRequestCount: _maxRequestCount,
+              offset: offset,
+            );
+
+      if (page.isEmpty) {
+        break;
+      }
+      offset += page.length;
+
+      final filteredPage = _filterAlreadyQueuedEntries(page, alreadyQueued);
+      filteredCount += page.length - filteredPage.length;
+      selected.addAll(filteredPage);
+
+      if (page.length < remaining) {
+        break;
+      }
+    }
+
+    if (filteredCount > 0) {
+      _trace(
+        'processBackfillRequests: filtered $filteredCount already-queued entries',
+        subDomain: 'backfill.process',
+      );
+    }
+
+    return selected;
+  }
+
+  File? _resolveSafeLocalFile(Directory docDir, String relativePath) {
+    var rel = relativePath;
+    if (p.isAbsolute(rel)) {
+      final prefix = p.rootPrefix(rel);
+      rel = rel.substring(prefix.length);
+    }
+    final resolved = p.normalize(p.join(docDir.path, rel));
+    if (resolved != docDir.path && !p.isWithin(docDir.path, resolved)) {
+      return null;
+    }
+    return File(resolved);
   }
 
   /// Dispose of the service and cancel the timer.

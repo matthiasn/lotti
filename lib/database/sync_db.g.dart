@@ -778,6 +778,17 @@ class $SyncSequenceLogTable extends SyncSequenceLog
         type: DriftSqlType.dateTime,
         requiredDuringInsert: false,
       );
+  static const VerificationMeta _jsonPathMeta = const VerificationMeta(
+    'jsonPath',
+  );
+  @override
+  late final GeneratedColumn<String> jsonPath = GeneratedColumn<String>(
+    'json_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     hostId,
@@ -790,6 +801,7 @@ class $SyncSequenceLogTable extends SyncSequenceLog
     updatedAt,
     requestCount,
     lastRequestedAt,
+    jsonPath,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -883,6 +895,12 @@ class $SyncSequenceLogTable extends SyncSequenceLog
         ),
       );
     }
+    if (data.containsKey('json_path')) {
+      context.handle(
+        _jsonPathMeta,
+        jsonPath.isAcceptableOrUnknown(data['json_path']!, _jsonPathMeta),
+      );
+    }
     return context;
   }
 
@@ -932,6 +950,10 @@ class $SyncSequenceLogTable extends SyncSequenceLog
         DriftSqlType.dateTime,
         data['${effectivePrefix}last_requested_at'],
       ),
+      jsonPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}json_path'],
+      ),
     );
   }
 
@@ -975,6 +997,11 @@ class SyncSequenceLogItem extends DataClass
 
   /// When a backfill request was last sent for this entry
   final DateTime? lastRequestedAt;
+
+  /// The documents-directory-relative path to the entry's JSON file.
+  /// Stored so the backfill sweep can delete zombie files for any payload
+  /// type, not just agent entities/links whose paths are derivable from ID.
+  final String? jsonPath;
   const SyncSequenceLogItem({
     required this.hostId,
     required this.counter,
@@ -986,6 +1013,7 @@ class SyncSequenceLogItem extends DataClass
     required this.updatedAt,
     required this.requestCount,
     this.lastRequestedAt,
+    this.jsonPath,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1005,6 +1033,9 @@ class SyncSequenceLogItem extends DataClass
     map['request_count'] = Variable<int>(requestCount);
     if (!nullToAbsent || lastRequestedAt != null) {
       map['last_requested_at'] = Variable<DateTime>(lastRequestedAt);
+    }
+    if (!nullToAbsent || jsonPath != null) {
+      map['json_path'] = Variable<String>(jsonPath);
     }
     return map;
   }
@@ -1027,6 +1058,9 @@ class SyncSequenceLogItem extends DataClass
       lastRequestedAt: lastRequestedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(lastRequestedAt),
+      jsonPath: jsonPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(jsonPath),
     );
   }
 
@@ -1048,6 +1082,7 @@ class SyncSequenceLogItem extends DataClass
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
       requestCount: serializer.fromJson<int>(json['requestCount']),
       lastRequestedAt: serializer.fromJson<DateTime?>(json['lastRequestedAt']),
+      jsonPath: serializer.fromJson<String?>(json['jsonPath']),
     );
   }
   @override
@@ -1064,6 +1099,7 @@ class SyncSequenceLogItem extends DataClass
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
       'requestCount': serializer.toJson<int>(requestCount),
       'lastRequestedAt': serializer.toJson<DateTime?>(lastRequestedAt),
+      'jsonPath': serializer.toJson<String?>(jsonPath),
     };
   }
 
@@ -1078,6 +1114,7 @@ class SyncSequenceLogItem extends DataClass
     DateTime? updatedAt,
     int? requestCount,
     Value<DateTime?> lastRequestedAt = const Value.absent(),
+    Value<String?> jsonPath = const Value.absent(),
   }) => SyncSequenceLogItem(
     hostId: hostId ?? this.hostId,
     counter: counter ?? this.counter,
@@ -1093,6 +1130,7 @@ class SyncSequenceLogItem extends DataClass
     lastRequestedAt: lastRequestedAt.present
         ? lastRequestedAt.value
         : this.lastRequestedAt,
+    jsonPath: jsonPath.present ? jsonPath.value : this.jsonPath,
   );
   SyncSequenceLogItem copyWithCompanion(SyncSequenceLogCompanion data) {
     return SyncSequenceLogItem(
@@ -1114,6 +1152,7 @@ class SyncSequenceLogItem extends DataClass
       lastRequestedAt: data.lastRequestedAt.present
           ? data.lastRequestedAt.value
           : this.lastRequestedAt,
+      jsonPath: data.jsonPath.present ? data.jsonPath.value : this.jsonPath,
     );
   }
 
@@ -1129,7 +1168,8 @@ class SyncSequenceLogItem extends DataClass
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('requestCount: $requestCount, ')
-          ..write('lastRequestedAt: $lastRequestedAt')
+          ..write('lastRequestedAt: $lastRequestedAt, ')
+          ..write('jsonPath: $jsonPath')
           ..write(')'))
         .toString();
   }
@@ -1146,6 +1186,7 @@ class SyncSequenceLogItem extends DataClass
     updatedAt,
     requestCount,
     lastRequestedAt,
+    jsonPath,
   );
   @override
   bool operator ==(Object other) =>
@@ -1160,7 +1201,8 @@ class SyncSequenceLogItem extends DataClass
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.requestCount == this.requestCount &&
-          other.lastRequestedAt == this.lastRequestedAt);
+          other.lastRequestedAt == this.lastRequestedAt &&
+          other.jsonPath == this.jsonPath);
 }
 
 class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
@@ -1174,6 +1216,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
   final Value<DateTime> updatedAt;
   final Value<int> requestCount;
   final Value<DateTime?> lastRequestedAt;
+  final Value<String?> jsonPath;
   final Value<int> rowid;
   const SyncSequenceLogCompanion({
     this.hostId = const Value.absent(),
@@ -1186,6 +1229,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     this.updatedAt = const Value.absent(),
     this.requestCount = const Value.absent(),
     this.lastRequestedAt = const Value.absent(),
+    this.jsonPath = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SyncSequenceLogCompanion.insert({
@@ -1199,6 +1243,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     required DateTime updatedAt,
     this.requestCount = const Value.absent(),
     this.lastRequestedAt = const Value.absent(),
+    this.jsonPath = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : hostId = Value(hostId),
        counter = Value(counter),
@@ -1215,6 +1260,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     Expression<DateTime>? updatedAt,
     Expression<int>? requestCount,
     Expression<DateTime>? lastRequestedAt,
+    Expression<String>? jsonPath,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1228,6 +1274,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (requestCount != null) 'request_count': requestCount,
       if (lastRequestedAt != null) 'last_requested_at': lastRequestedAt,
+      if (jsonPath != null) 'json_path': jsonPath,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1243,6 +1290,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     Value<DateTime>? updatedAt,
     Value<int>? requestCount,
     Value<DateTime?>? lastRequestedAt,
+    Value<String?>? jsonPath,
     Value<int>? rowid,
   }) {
     return SyncSequenceLogCompanion(
@@ -1256,6 +1304,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
       updatedAt: updatedAt ?? this.updatedAt,
       requestCount: requestCount ?? this.requestCount,
       lastRequestedAt: lastRequestedAt ?? this.lastRequestedAt,
+      jsonPath: jsonPath ?? this.jsonPath,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1293,6 +1342,9 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
     if (lastRequestedAt.present) {
       map['last_requested_at'] = Variable<DateTime>(lastRequestedAt.value);
     }
+    if (jsonPath.present) {
+      map['json_path'] = Variable<String>(jsonPath.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1312,6 +1364,7 @@ class SyncSequenceLogCompanion extends UpdateCompanion<SyncSequenceLogItem> {
           ..write('updatedAt: $updatedAt, ')
           ..write('requestCount: $requestCount, ')
           ..write('lastRequestedAt: $lastRequestedAt, ')
+          ..write('jsonPath: $jsonPath, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1884,6 +1937,7 @@ typedef $$SyncSequenceLogTableCreateCompanionBuilder =
       required DateTime updatedAt,
       Value<int> requestCount,
       Value<DateTime?> lastRequestedAt,
+      Value<String?> jsonPath,
       Value<int> rowid,
     });
 typedef $$SyncSequenceLogTableUpdateCompanionBuilder =
@@ -1898,6 +1952,7 @@ typedef $$SyncSequenceLogTableUpdateCompanionBuilder =
       Value<DateTime> updatedAt,
       Value<int> requestCount,
       Value<DateTime?> lastRequestedAt,
+      Value<String?> jsonPath,
       Value<int> rowid,
     });
 
@@ -1957,6 +2012,11 @@ class $$SyncSequenceLogTableFilterComposer
 
   ColumnFilters<DateTime> get lastRequestedAt => $composableBuilder(
     column: $table.lastRequestedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get jsonPath => $composableBuilder(
+    column: $table.jsonPath,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2019,6 +2079,11 @@ class $$SyncSequenceLogTableOrderingComposer
     column: $table.lastRequestedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get jsonPath => $composableBuilder(
+    column: $table.jsonPath,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SyncSequenceLogTableAnnotationComposer
@@ -2067,6 +2132,9 @@ class $$SyncSequenceLogTableAnnotationComposer
     column: $table.lastRequestedAt,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get jsonPath =>
+      $composableBuilder(column: $table.jsonPath, builder: (column) => column);
 }
 
 class $$SyncSequenceLogTableTableManager
@@ -2116,6 +2184,7 @@ class $$SyncSequenceLogTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> requestCount = const Value.absent(),
                 Value<DateTime?> lastRequestedAt = const Value.absent(),
+                Value<String?> jsonPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SyncSequenceLogCompanion(
                 hostId: hostId,
@@ -2128,6 +2197,7 @@ class $$SyncSequenceLogTableTableManager
                 updatedAt: updatedAt,
                 requestCount: requestCount,
                 lastRequestedAt: lastRequestedAt,
+                jsonPath: jsonPath,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2142,6 +2212,7 @@ class $$SyncSequenceLogTableTableManager
                 required DateTime updatedAt,
                 Value<int> requestCount = const Value.absent(),
                 Value<DateTime?> lastRequestedAt = const Value.absent(),
+                Value<String?> jsonPath = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SyncSequenceLogCompanion.insert(
                 hostId: hostId,
@@ -2154,6 +2225,7 @@ class $$SyncSequenceLogTableTableManager
                 updatedAt: updatedAt,
                 requestCount: requestCount,
                 lastRequestedAt: lastRequestedAt,
+                jsonPath: jsonPath,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

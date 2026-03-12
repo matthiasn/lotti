@@ -321,6 +321,7 @@ Future<void> registerSingletons() async {
     outboxService: outboxService,
     vectorClockService: vectorClockService,
     loggingService: loggingService,
+    documentsDirectory: documentsDirectory,
     domainLogger: domainLogger,
   );
 

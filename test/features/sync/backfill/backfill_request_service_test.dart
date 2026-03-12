@@ -1,12 +1,16 @@
 // ignore_for_file: cascade_invocations, avoid_redundant_argument_values
 
+import 'dart:io';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
@@ -89,6 +93,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -105,6 +110,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).called(1);
 
@@ -118,6 +124,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).called(1);
 
@@ -147,6 +154,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => missingEntries);
 
@@ -202,6 +210,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -229,6 +238,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).called(1);
 
@@ -253,6 +263,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -294,6 +305,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async {
           callCount++;
@@ -341,6 +353,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -363,6 +376,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         );
       });
@@ -385,6 +399,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenThrow(Exception('Database error'));
 
@@ -473,6 +488,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         );
 
@@ -507,6 +523,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         );
 
@@ -537,6 +554,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => missingEntries);
 
@@ -593,6 +611,7 @@ void main() {
             maxRequestCount: any(named: 'maxRequestCount'),
             maxAge: any(named: 'maxAge'),
             maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
           ),
         ).thenAnswer((_) async => missingEntries);
 
@@ -609,6 +628,70 @@ void main() {
 
         // Should not enqueue any message
         verifyNever(() => mockOutboxService.enqueueMessage(any()));
+
+        service.dispose();
+      });
+    });
+
+    test('automatic backfill paginates past a fully queued first page', () {
+      fakeAsync((async) {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(seconds: 5),
+          maxBatchSize: 2,
+        );
+
+        final batch1 = [
+          _createMissingLogItem(aliceHostId, 1),
+          _createMissingLogItem(aliceHostId, 2),
+        ];
+        final batch2 = [
+          _createMissingLogItem(aliceHostId, 3),
+        ];
+
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((inv) async {
+          final offset = inv.namedArguments[#offset] as int;
+          if (offset == 0) return batch1;
+          if (offset == 2) return batch2;
+          return [];
+        });
+
+        when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+          (_) async => {
+            (hostId: aliceHostId, counter: 1),
+            (hostId: aliceHostId, counter: 2),
+          },
+        );
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((_) async {});
+
+        service.start();
+        async.flushMicrotasks();
+
+        async.elapse(const Duration(seconds: 5));
+        async.flushMicrotasks();
+
+        final captured = verify(
+          () => mockOutboxService.enqueueMessage(captureAny()),
+        ).captured;
+        final request = captured.single as SyncBackfillRequest;
+        expect(request.entries.map((e) => e.counter).toList(), [3]);
 
         service.dispose();
       });
@@ -632,17 +715,16 @@ void main() {
             _createRequestedLogItem(aliceHostId, 11),
           ];
 
-          when(
-            () => mockSequenceService.getRequestedEntries(limit: 50),
-          ).thenAnswer((_) async => requestedEntries);
-
           // Second call returns empty to stop pagination
-          var callCount = 0;
           when(
-            () => mockSequenceService.getRequestedEntries(limit: 50),
-          ).thenAnswer((_) async {
-            callCount++;
-            return callCount == 1 ? requestedEntries : [];
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
+            final offset = inv.namedArguments[#offset] as int;
+            if (offset == 0) return requestedEntries;
+            return [];
           });
 
           when(
@@ -691,6 +773,7 @@ void main() {
           when(
             () => mockSequenceService.getRequestedEntries(
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           ).thenAnswer((_) async => []);
 
@@ -725,10 +808,14 @@ void main() {
 
           var callCount = 0;
           when(
-            () => mockSequenceService.getRequestedEntries(limit: 50),
-          ).thenAnswer((_) async {
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
             callCount++;
-            return callCount == 1 ? requestedEntries : [];
+            final offset = inv.namedArguments[#offset] as int;
+            return offset == 0 ? requestedEntries : [];
           });
 
           // Entry 11 is already queued
@@ -763,6 +850,70 @@ void main() {
         });
       });
 
+      test('paginates past a fully queued first page', () {
+        fakeAsync((async) {
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 2,
+          );
+
+          final batch1 = [
+            _createRequestedLogItem(aliceHostId, 10),
+            _createRequestedLogItem(aliceHostId, 11),
+          ];
+          final batch2 = [
+            _createRequestedLogItem(aliceHostId, 12),
+          ];
+
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 2,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
+            final offset = inv.namedArguments[#offset] as int;
+            if (offset == 0) return batch1;
+            if (offset == 2) return batch2;
+            return [];
+          });
+
+          when(() => mockSyncDatabase.getPendingBackfillEntries()).thenAnswer(
+            (_) async => {
+              (hostId: aliceHostId, counter: 10),
+              (hostId: aliceHostId, counter: 11),
+            },
+          );
+
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockSequenceService.markAsRequested(any()),
+          ).thenAnswer((_) async {});
+
+          int? result;
+          service.processReRequest().then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, 1);
+          final captured = verify(
+            () => mockOutboxService.enqueueMessage(captureAny()),
+          ).captured;
+          final request = captured.single as SyncBackfillRequest;
+          expect(request.entries.map((e) => e.counter).toList(), [12]);
+
+          service.dispose();
+        });
+      });
+
       test('returns zero when no host ID available', () {
         fakeAsync((async) {
           final service = BackfillRequestService(
@@ -784,6 +935,7 @@ void main() {
           verifyNever(
             () => mockSequenceService.getRequestedEntries(
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
             ),
           );
 
@@ -804,7 +956,10 @@ void main() {
           );
 
           when(
-            () => mockSequenceService.getRequestedEntries(limit: 50),
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
           ).thenThrow(Exception('Database error'));
 
           int? result;
@@ -841,7 +996,10 @@ void main() {
 
           var getRequestedCallCount = 0;
           when(
-            () => mockSequenceService.getRequestedEntries(limit: 50),
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
           ).thenAnswer((_) async {
             getRequestedCallCount++;
             // Simulate slow processing
@@ -896,6 +1054,228 @@ void main() {
         });
       });
 
+      test('sweeps agent entity/link files on re-request', () {
+        fakeAsync((async) {
+          final tmp = Directory.systemTemp.createTempSync('backfill_sweep');
+          addTearDown(() => tmp.deleteSync(recursive: true));
+
+          // Pre-create zombie files for agent entities and links
+          final agentEntityFile =
+              File(
+                  '${tmp.path}/agent_entities/entity-1.json',
+                )
+                ..createSync(recursive: true)
+                ..writeAsStringSync('{"stale":"data"}');
+          final agentLinkFile =
+              File(
+                  '${tmp.path}/agent_links/link-2.json',
+                )
+                ..createSync(recursive: true)
+                ..writeAsStringSync('{"stale":"link"}');
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            documentsDirectory: tmp,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+
+          final requestedEntries = [
+            _createRequestedLogItemWithPayload(
+              aliceHostId,
+              10,
+              entryId: 'entity-1',
+              payloadType: SyncSequencePayloadType.agentEntity,
+            ),
+            _createRequestedLogItemWithPayload(
+              aliceHostId,
+              11,
+              entryId: 'link-2',
+              payloadType: SyncSequencePayloadType.agentLink,
+            ),
+            _createRequestedLogItemWithPayload(
+              aliceHostId,
+              12,
+              entryId: 'journal-3',
+              payloadType: SyncSequencePayloadType.journalEntity,
+            ),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
+            callCount++;
+            final offset = inv.namedArguments[#offset] as int;
+            return offset == 0 ? requestedEntries : [];
+          });
+
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockSequenceService.markAsRequested(any()),
+          ).thenAnswer((_) async {});
+
+          service.processReRequest();
+          async.flushMicrotasks();
+
+          // Agent entity file should be deleted
+          expect(agentEntityFile.existsSync(), isFalse);
+          // Agent link file should be deleted
+          expect(agentLinkFile.existsSync(), isFalse);
+
+          service.dispose();
+        });
+      });
+
+      test('sweeps journal entity files using jsonPath from sequence log', () {
+        fakeAsync((async) {
+          final tmp = Directory.systemTemp.createTempSync('backfill_sweep_jp');
+          addTearDown(() => tmp.deleteSync(recursive: true));
+
+          // Pre-create a zombie journal entity file
+          final journalFile =
+              File(
+                  '${tmp.path}/text/2026-03-12/journal-3.text.json',
+                )
+                ..createSync(recursive: true)
+                ..writeAsStringSync('{"stale":"journal"}');
+
+          final service = BackfillRequestService(
+            sequenceLogService: mockSequenceService,
+            syncDatabase: mockSyncDatabase,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVcService,
+            loggingService: mockLogging,
+            documentsDirectory: tmp,
+            requestInterval: const Duration(minutes: 5),
+            maxBatchSize: 50,
+          );
+
+          final requestedEntries = [
+            _createRequestedLogItemWithJsonPath(
+              aliceHostId,
+              12,
+              entryId: 'journal-3',
+              payloadType: SyncSequencePayloadType.journalEntity,
+              jsonPath: '/text/2026-03-12/journal-3.text.json',
+            ),
+          ];
+
+          var callCount = 0;
+          when(
+            () => mockSequenceService.getRequestedEntries(
+              limit: 50,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
+            callCount++;
+            final offset = inv.namedArguments[#offset] as int;
+            return offset == 0 ? requestedEntries : [];
+          });
+
+          when(
+            () => mockSequenceService.resetRequestCounts(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockSequenceService.markAsRequested(any()),
+          ).thenAnswer((_) async {});
+
+          service.processReRequest();
+          async.flushMicrotasks();
+
+          // Journal entity file should be deleted using jsonPath
+          expect(journalFile.existsSync(), isFalse);
+
+          service.dispose();
+        });
+      });
+
+      test(
+        'blocks path traversal when sweeping derived agent payload paths',
+        () {
+          fakeAsync((async) {
+            final tmp = Directory.systemTemp.createTempSync(
+              'backfill_sweep_safe',
+            );
+            addTearDown(() => tmp.deleteSync(recursive: true));
+
+            final escapedPath = p.normalize(
+              p.join(tmp.path, 'agent_entities/../../escape.json'),
+            );
+            expect(p.isWithin(tmp.path, escapedPath), isFalse);
+            final escapedFile = File(escapedPath)
+              ..createSync(recursive: true)
+              ..writeAsStringSync('keep-me');
+            addTearDown(() {
+              if (escapedFile.existsSync()) {
+                escapedFile.deleteSync();
+              }
+            });
+
+            final service = BackfillRequestService(
+              sequenceLogService: mockSequenceService,
+              syncDatabase: mockSyncDatabase,
+              outboxService: mockOutboxService,
+              vectorClockService: mockVcService,
+              loggingService: mockLogging,
+              documentsDirectory: tmp,
+              requestInterval: const Duration(minutes: 5),
+              maxBatchSize: 50,
+            );
+
+            final requestedEntries = [
+              _createRequestedLogItemWithPayload(
+                aliceHostId,
+                10,
+                entryId: '../../escape',
+                payloadType: SyncSequencePayloadType.agentEntity,
+              ),
+            ];
+
+            when(
+              () => mockSequenceService.getRequestedEntries(
+                limit: 50,
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((inv) async {
+              final offset = inv.namedArguments[#offset] as int;
+              return offset == 0 ? requestedEntries : [];
+            });
+            when(
+              () => mockSequenceService.resetRequestCounts(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockOutboxService.enqueueMessage(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockSequenceService.markAsRequested(any()),
+            ).thenAnswer((_) async {});
+
+            service.processReRequest();
+            async.flushMicrotasks();
+
+            expect(escapedFile.existsSync(), isTrue);
+
+            service.dispose();
+          });
+        },
+      );
+
       test('paginates through all requested entries', () {
         fakeAsync((async) {
           final service = BackfillRequestService(
@@ -918,11 +1298,15 @@ void main() {
 
           var callCount = 0;
           when(
-            () => mockSequenceService.getRequestedEntries(limit: 2),
-          ).thenAnswer((_) async {
+            () => mockSequenceService.getRequestedEntries(
+              limit: 2,
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((inv) async {
             callCount++;
-            if (callCount == 1) return batch1;
-            if (callCount == 2) return batch2;
+            final offset = inv.namedArguments[#offset] as int;
+            if (offset == 0) return batch1;
+            if (offset == 2) return batch2;
             return [];
           });
 
@@ -982,5 +1366,45 @@ SyncSequenceLogItem _createRequestedLogItem(
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     requestCount: 10, // Hit max retries
+  );
+}
+
+SyncSequenceLogItem _createRequestedLogItemWithPayload(
+  String hostId,
+  int counter, {
+  required String entryId,
+  required SyncSequencePayloadType payloadType,
+}) {
+  return SyncSequenceLogItem(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType.index,
+    originatingHostId: null,
+    status: SyncSequenceStatus.requested.index,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    requestCount: 10,
+  );
+}
+
+SyncSequenceLogItem _createRequestedLogItemWithJsonPath(
+  String hostId,
+  int counter, {
+  required String entryId,
+  required SyncSequencePayloadType payloadType,
+  required String jsonPath,
+}) {
+  return SyncSequenceLogItem(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    payloadType: payloadType.index,
+    originatingHostId: null,
+    status: SyncSequenceStatus.requested.index,
+    jsonPath: jsonPath,
+    createdAt: DateTime(2024),
+    updatedAt: DateTime(2024),
+    requestCount: 10,
   );
 }

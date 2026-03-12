@@ -982,6 +982,88 @@ void main() {
     });
 
     test(
+      'records descriptor in AttachmentIndex even when download is skipped',
+      () async {
+        final logging = MockLoggingService();
+        when(
+          () => logging.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) async {});
+        when(
+          () => logging.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final tmp = Directory.systemTemp.createTempSync('ingestor_index_dedup');
+        addTearDown(() => tmp.deleteSync(recursive: true));
+
+        final matrixFile = MockMatrixFile();
+        when(
+          () => matrixFile.bytes,
+        ).thenReturn(Uint8List.fromList(utf8.encode('data')));
+
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('e_idx_dedup');
+        when(() => ev.content).thenReturn({
+          'relativePath': '/data/idx.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => matrixFile);
+
+        final index = AttachmentIndex(logging: logging);
+        final desc = MockDescriptorCatchUpManager();
+        when(() => desc.removeIfPresent('/data/idx.json')).thenReturn(false);
+
+        final ingestor = AttachmentIngestor(documentsDirectory: tmp);
+
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        final ev2 = MockEvent();
+        when(() => ev2.eventId).thenReturn('e_idx_dedup_2');
+        when(() => ev2.content).thenReturn({
+          'relativePath': '/data/idx.json',
+          'msgtype': 'm.file',
+        });
+        when(() => ev2.attachmentMimetype).thenReturn('application/json');
+        when(() => ev2.senderId).thenReturn('@other:u');
+
+        final result2 = await ingestor.process(
+          event: ev2,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+
+        expect(result2, isFalse);
+        verifyNever(ev2.downloadAndDecryptAttachment);
+
+        final recorded = index.find('/data/idx.json');
+        expect(recorded, isNotNull);
+        expect(recorded!.eventId, 'e_idx_dedup_2');
+      },
+    );
+
+    test(
       'concurrent process() calls for same path only trigger one save',
       () async {
         final logging = MockLoggingService();

@@ -1365,25 +1365,31 @@ void main() {
   group('getRequestedEntries', () {
     test('delegates to database with default limit', () async {
       when(
-        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+        () => mockDb.getRequestedEntries(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
       ).thenAnswer((_) async => []);
 
       await service.getRequestedEntries();
 
       verify(
-        () => mockDb.getRequestedEntries(limit: 50),
+        () => mockDb.getRequestedEntries(limit: 50, offset: 0),
       ).called(1);
     });
 
     test('passes custom limit', () async {
       when(
-        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+        () => mockDb.getRequestedEntries(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
       ).thenAnswer((_) async => []);
 
-      await service.getRequestedEntries(limit: 25);
+      await service.getRequestedEntries(limit: 25, offset: 7);
 
       verify(
-        () => mockDb.getRequestedEntries(limit: 25),
+        () => mockDb.getRequestedEntries(limit: 25, offset: 7),
       ).called(1);
     });
 
@@ -1394,7 +1400,10 @@ void main() {
       ];
 
       when(
-        () => mockDb.getRequestedEntries(limit: any(named: 'limit')),
+        () => mockDb.getRequestedEntries(
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
       ).thenAnswer((_) async => entries);
 
       final result = await service.getRequestedEntries();
@@ -1716,6 +1725,7 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => []);
 
@@ -1727,6 +1737,7 @@ void main() {
           maxRequestCount: 10,
           maxAge: null,
           maxPerHost: null,
+          offset: 0,
         ),
       ).called(1);
     });
@@ -1738,6 +1749,7 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => []);
 
@@ -1746,6 +1758,7 @@ void main() {
         maxRequestCount: 5,
         maxAge: const Duration(hours: 12),
         maxPerHost: 100,
+        offset: 9,
       );
 
       verify(
@@ -1754,6 +1767,7 @@ void main() {
           maxRequestCount: 5,
           maxAge: const Duration(hours: 12),
           maxPerHost: 100,
+          offset: 9,
         ),
       ).called(1);
     });
@@ -1770,6 +1784,7 @@ void main() {
           maxRequestCount: any(named: 'maxRequestCount'),
           maxAge: any(named: 'maxAge'),
           maxPerHost: any(named: 'maxPerHost'),
+          offset: any(named: 'offset'),
         ),
       ).thenAnswer((_) async => entries);
 
