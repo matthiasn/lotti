@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -29,10 +31,61 @@ class DurationWidget extends ConsumerStatefulWidget {
 
 class _DurationWidgetState extends ConsumerState<DurationWidget> {
   final TimeService _timeService = getIt<TimeService>();
+  StreamSubscription<JournalEntity?>? _subscription;
 
   /// Tracks whether this entry was actively recording in the previous
   /// stream emission so we can detect the recording→stopped transition.
   bool _wasRecording = false;
+
+  /// The latest snapshot from the time service stream, used for rendering.
+  JournalEntity? _currentRecording;
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = _timeService.getStream().listen(_onTimeServiceEvent);
+  }
+
+  void _onTimeServiceEvent(JournalEntity? recording) {
+    final entryId = widget.item.meta.id;
+    final isRecording = recording != null && recording.meta.id == entryId;
+
+    // Detect recording→stopped transition and persist in provider
+    if (_wasRecording && !isRecording) {
+      final duration = DateTime.now().difference(widget.item.meta.dateFrom);
+      if (duration >= const Duration(minutes: 1)) {
+        ref
+            .read(sessionEndedControllerProvider.notifier)
+            .markSessionEnded(entryId);
+      }
+    }
+    // Clear when a new recording starts on this entry
+    if (isRecording && !_wasRecording) {
+      ref
+          .read(sessionEndedControllerProvider.notifier)
+          .clearSessionEnded(entryId);
+    }
+    _wasRecording = isRecording;
+
+    setState(() {
+      _currentRecording = recording;
+    });
+  }
+
+  @override
+  void didUpdateWidget(DurationWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reset tracking when the entry changes to avoid false transitions
+    if (widget.item.meta.id != oldWidget.item.meta.id) {
+      _wasRecording = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,120 +101,92 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
       ),
     );
 
-    return StreamBuilder(
-      stream: _timeService.getStream(),
-      builder:
-          (
-            BuildContext context,
-            AsyncSnapshot<JournalEntity?> snapshot,
-          ) {
-            final isRecent =
-                DateTime.now().difference(item.meta.dateFrom).inHours < 12;
+    final isRecent = DateTime.now().difference(item.meta.dateFrom).inHours < 12;
 
-            final recording = snapshot.data;
+    final recording = _currentRecording;
 
-            final latestLinkedId = ref
-                .watch(newestLinkedIdControllerProvider(id: linkedFrom?.id))
-                .value;
+    final latestLinkedId = ref
+        .watch(newestLinkedIdControllerProvider(id: linkedFrom?.id))
+        .value;
 
-            final showRecordIcon =
-                item is JournalEntry &&
-                (latestLinkedId == item.id || linkedFrom == null);
+    final showRecordIcon =
+        item is JournalEntry &&
+        (latestLinkedId == item.id || linkedFrom == null);
 
-            var displayed = item;
-            var isRecording = false;
+    var displayed = item;
+    var isRecording = false;
 
-            if (recording != null && recording.meta.id == item.meta.id) {
-              displayed = recording;
-              isRecording = true;
-            }
+    if (recording != null && recording.meta.id == item.meta.id) {
+      displayed = recording;
+      isRecording = true;
+    }
 
-            // Detect recording→stopped transition and persist in provider
-            if (_wasRecording && !isRecording) {
-              final duration = DateTime.now().difference(item.meta.dateFrom);
-              if (duration >= const Duration(minutes: 1)) {
-                ref
-                    .read(sessionEndedControllerProvider.notifier)
-                    .markSessionEnded(entryId);
-              }
-            }
-            // Clear when a new recording starts on this entry
-            if (isRecording && !_wasRecording) {
-              ref
-                  .read(sessionEndedControllerProvider.notifier)
-                  .clearSessionEnded(entryId);
-            }
-            _wasRecording = isRecording;
+    final labelColor = isRecording
+        ? context.colorScheme.error
+        : context.colorScheme.outline;
 
-            final labelColor = isRecording
-                ? context.colorScheme.error
-                : context.colorScheme.outline;
+    final saveFn = ref.read(provider.notifier).save;
 
-            final saveFn = ref.read(provider.notifier).save;
-
-            return GestureDetector(
-              onTap: () => EntryDateTimeMultiPageModal.show(
-                entry: item,
-                context: context,
+    return GestureDetector(
+      onTap: () => EntryDateTimeMultiPageModal.show(
+        entry: item,
+        context: context,
+      ),
+      child: Visibility(
+        visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Icon(
+                MdiIcons.timerOutline,
+                color: labelColor,
+                size: 15,
               ),
-              child: Visibility(
-                visible:
-                    entryDuration(displayed).inMilliseconds > 0 || isRecent,
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Icon(
-                        MdiIcons.timerOutline,
-                        color: labelColor,
-                        size: 15,
-                      ),
-                    ),
-                    FormattedTime(labelColor: labelColor, displayed: displayed),
-                    Visibility(
-                      visible: isRecent && showRecordIcon && !isRecording,
-                      child: IconButton(
-                        icon: const Icon(Icons.fiber_manual_record_sharp),
-                        iconSize: 20,
-                        tooltip: context.messages.addActionAddTimeRecording,
-                        color: context.colorScheme.error,
-                        onPressed: () {
-                          if (entry != null) {
-                            // Clear immediately so the rate button hides
-                            // without waiting for the next stream tick
-                            ref
-                                .read(sessionEndedControllerProvider.notifier)
-                                .clearSessionEnded(entryId);
-                            _timeService.start(entry, linkedFrom);
-                          }
-                        },
-                      ),
-                    ),
-                    Visibility(
-                      visible: isRecording,
-                      child: IconButton(
-                        icon: const Icon(Icons.stop),
-                        iconSize: 20,
-                        tooltip: context.messages.doneButton,
-                        color: labelColor,
-                        onPressed: () async {
-                          await saveFn(stopRecording: true);
-                        },
-                      ),
-                    ),
-                    if (sessionJustEnded && !isRecording)
-                      Flexible(
-                        child: PulsatingRateButton(
-                          entryId: entryId,
-                          sessionJustEnded: sessionJustEnded,
-                        ),
-                      ),
-                    const SizedBox(width: 15),
-                  ],
+            ),
+            FormattedTime(labelColor: labelColor, displayed: displayed),
+            Visibility(
+              visible: isRecent && showRecordIcon && !isRecording,
+              child: IconButton(
+                icon: const Icon(Icons.fiber_manual_record_sharp),
+                iconSize: 20,
+                tooltip: context.messages.addActionAddTimeRecording,
+                color: context.colorScheme.error,
+                onPressed: () {
+                  if (entry != null) {
+                    // Clear immediately so the rate button hides
+                    // without waiting for the next stream tick
+                    ref
+                        .read(sessionEndedControllerProvider.notifier)
+                        .clearSessionEnded(entryId);
+                    _timeService.start(entry, linkedFrom);
+                  }
+                },
+              ),
+            ),
+            Visibility(
+              visible: isRecording,
+              child: IconButton(
+                icon: const Icon(Icons.stop),
+                iconSize: 20,
+                tooltip: context.messages.doneButton,
+                color: labelColor,
+                onPressed: () async {
+                  await saveFn(stopRecording: true);
+                },
+              ),
+            ),
+            if (sessionJustEnded && !isRecording)
+              Flexible(
+                child: PulsatingRateButton(
+                  entryId: entryId,
+                  sessionJustEnded: sessionJustEnded,
                 ),
               ),
-            );
-          },
+            const SizedBox(width: 15),
+          ],
+        ),
+      ),
     );
   }
 }

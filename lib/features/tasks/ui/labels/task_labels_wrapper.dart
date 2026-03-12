@@ -24,7 +24,8 @@ class TaskLabelsWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch label stream to rebuild when labels change
+    // Watch label definitions stream to rebuild when label names/colors/visibility change.
+    // Label assignment reactivity comes from entryControllerProvider below.
     ref.watch(labelsStreamProvider);
     final entryState = ref.watch(entryControllerProvider(id: taskId)).value;
     final task = entryState?.entry;

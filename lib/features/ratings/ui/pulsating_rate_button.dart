@@ -36,16 +36,22 @@ class PulsatingRateButton extends ConsumerWidget {
     );
     final hasRating = ratingAsync.value != null;
 
-    // Clean up provider state when a rating is saved
-    if (hasRating) {
-      ref
-          .read(sessionEndedControllerProvider.notifier)
-          .clearSessionEnded(
-            entryId,
-          );
-      return const SizedBox.shrink();
-    }
+    // Clean up provider state when a rating is saved — deferred to avoid
+    // mutating Riverpod state synchronously during the build phase.
+    ref.listen(
+      ratingControllerProvider(targetId: entryId),
+      (previous, next) {
+        if (previous?.value == null && next.value != null) {
+          Future.microtask(() {
+            ref
+                .read(sessionEndedControllerProvider.notifier)
+                .clearSessionEnded(entryId);
+          });
+        }
+      },
+    );
 
+    if (hasRating) return const SizedBox.shrink();
     if (!sessionJustEnded) return const SizedBox.shrink();
 
     return _AnimatedRateButton(

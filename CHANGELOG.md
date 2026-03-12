@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.918] - 2026-03-12
+### Changed
+- Session rating: replaced the intrusive automatic rating modal (which popped
+  up when a timer stopped) with a non-blocking pulsating "Rate Session" outline
+  button next to the timer. The button pulses for ~10 seconds, then stays
+  visible until a rating is saved. Rating remains accessible from the
+  triple-dot menu.
+
+### Removed
+- Label assignment snackbar/toaster — no longer needed since label assignments
+  are now confirmed individually via change sets.
+- Automatic rating modal trigger on timer stop — replaced by the pulsating
+  rate button (see Changed above).
+
 ## [0.9.917] - 2026-03-12
 ### Added
 - Task filter: filter by agent assignment (All / Has Agent / No Agent) in the
@@ -22,18 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snapshot. This reduces repeated historical reprocessing during recovery.
 
 ## [0.9.915] - 2026-03-11
-### Changed
-- Session rating: replaced the intrusive automatic rating modal (which popped
-  up when a timer stopped) with a non-blocking pulsating "Rate Session" outline
-  button next to the timer. The button pulses for ~10 seconds, then stays
-  visible until a rating is saved. Rating remains accessible from the
-  triple-dot menu.
-
 ### Removed
-- Label assignment snackbar/toaster — no longer needed since label assignments
-  are now confirmed individually via change sets.
-- Automatic rating modal trigger on timer stop — replaced by the pulsating
-  rate button (see Changed above).
 - Legacy checklist updates prompt and task summary system — all conversation-
   based processing code, UI widgets, and associated tests have been removed.
   Task summaries are now handled exclusively by the agent system.

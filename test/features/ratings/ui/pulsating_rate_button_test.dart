@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/pulsating_rate_button.dart';
@@ -122,6 +124,36 @@ void main() {
 
       // Verify the RatingModal was shown as a modal bottom sheet
       expect(find.byType(RatingModal), findsOneWidget);
+    });
+
+    testWidgets('hidden when a rating already exists', (tester) async {
+      final now = DateTime(2024, 3, 15);
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: const RatingData(
+          targetId: testEntryId,
+          dimensions: [
+            RatingDimension(key: 'productivity', value: 0.8),
+          ],
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(testEntryId),
+      ).thenAnswer((_) async => existingRating);
+
+      await tester.pumpWidget(buildSubject());
+      // First pump triggers the build, second pump resolves the async data
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Rate Session'), findsNothing);
     });
   });
 }
