@@ -916,6 +916,71 @@ void main() {
       verifyNever(ev.downloadAndDecryptAttachment);
     });
 
+    test('evicts oldest handled event IDs when capacity is exceeded', () async {
+      final logging = MockLoggingService();
+      when(
+        () => logging.captureEvent(
+          any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final index = AttachmentIndex(logging: logging);
+      final desc = MockDescriptorCatchUpManager();
+      when(() => desc.removeIfPresent(any<String>())).thenReturn(false);
+
+      // Use a tiny capacity so the eviction loop triggers quickly.
+      final ingestor = AttachmentIngestor(handledEventCapacity: 2);
+
+      // Process 3 distinct events (capacity=2 so e1 gets evicted).
+      for (var i = 1; i <= 3; i++) {
+        final ev = MockEvent();
+        when(() => ev.eventId).thenReturn('evict_$i');
+        when(
+          () => ev.content,
+        ).thenReturn({'relativePath': '/path/$i.bin', 'msgtype': 'm.file'});
+        when(() => ev.attachmentMimetype).thenReturn('application/json');
+        when(() => ev.senderId).thenReturn('@other:u');
+        await ingestor.process(
+          event: ev,
+          logging: logging,
+          attachmentIndex: index,
+          descriptorCatchUp: desc,
+          scheduleLiveScan: () {},
+          retryNow: () async {},
+        );
+      }
+
+      // Re-process e1 — it should be treated as new because it was evicted.
+      final e1Again = MockEvent();
+      when(() => e1Again.eventId).thenReturn('evict_1');
+      when(
+        () => e1Again.content,
+      ).thenReturn({'relativePath': '/path/1.bin', 'msgtype': 'm.file'});
+      when(() => e1Again.attachmentMimetype).thenReturn('application/json');
+      when(() => e1Again.senderId).thenReturn('@other:u');
+
+      await ingestor.process(
+        event: e1Again,
+        logging: logging,
+        attachmentIndex: index,
+        descriptorCatchUp: desc,
+        scheduleLiveScan: () {},
+        retryNow: () async {},
+      );
+
+      // Verify e1 was recorded again (the observe log fires for new events).
+      // If eviction didn't happen, the second call would skip the record.
+      verify(
+        () => logging.captureEvent(
+          any<String>(that: contains('attachmentEvent id=evict_1')),
+          domain: any<String>(named: 'domain'),
+          subDomain: 'attachment.observe',
+        ),
+      ).called(2); // Once on first pass, once after eviction
+    });
+
     test('blocks path traversal attempts', () async {
       final logging = MockLoggingService();
       when(
@@ -977,6 +1042,5 @@ void main() {
       // Verify download was NOT called
       verifyNever(ev.downloadAndDecryptAttachment);
     });
-
   });
 }

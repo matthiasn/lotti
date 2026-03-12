@@ -742,6 +742,17 @@ void main() {
           .where((l) => l.contains('trailing.liveScan.scheduled'))
           .length;
       expect(trailing, 1);
+
+      // Verify the summary includes the deferred-in-flight field from the
+      // in-flight coalescing that happened during the first scan.
+      final summaries = logs
+          .where((l) => l.contains('liveScan.summary'))
+          .toList();
+      expect(summaries, isNotEmpty);
+      expect(
+        summaries.any((s) => s.contains('deferredInFlight=')),
+        isTrue,
+      );
     });
   });
 
@@ -1262,8 +1273,18 @@ void main() {
       // After min gap elapses, a live scan should run
       async.elapse(const Duration(seconds: 2));
       async.flushMicrotasks();
+      final summaries = logs
+          .where((l) => l.contains('liveScan.summary'))
+          .toList();
+      expect(summaries, isNotEmpty);
+      // Verify the summary includes client-stream and coalesced fields from
+      // the burst of signals we sent within the min-gap window.
       expect(
-        logs.any((l) => l.contains('liveScan.summary')),
+        summaries.any((s) => s.contains('clientStream=')),
+        isTrue,
+      );
+      expect(
+        summaries.any((s) => s.contains('coalesced=')),
         isTrue,
       );
 

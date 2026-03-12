@@ -27,12 +27,15 @@ class AttachmentIngestor {
   AttachmentIngestor({
     this.documentsDirectory,
     int maxConcurrentDownloads = _defaultMaxConcurrentDownloads,
+    int? handledEventCapacity,
   }) : _maxConcurrentDownloads = maxConcurrentDownloads < 0
            ? 0
-           : maxConcurrentDownloads;
+           : maxConcurrentDownloads,
+       _handledAttachmentEventCapacity =
+           handledEventCapacity ?? _defaultHandledAttachmentEventCapacity;
 
   static const int _defaultMaxConcurrentDownloads = 2;
-  static const int _handledAttachmentEventCapacity =
+  static const int _defaultHandledAttachmentEventCapacity =
       SyncTuning.catchupMaxLookback;
 
   /// The documents directory for saving attachments. If null, downloads are
@@ -40,6 +43,7 @@ class AttachmentIngestor {
   /// available).
   final Directory? documentsDirectory;
   final int _maxConcurrentDownloads;
+  final int _handledAttachmentEventCapacity;
 
   final Queue<String> _downloadQueue = Queue<String>();
   final Map<String, _DownloadRequest> _pendingDownloads =
@@ -48,6 +52,9 @@ class AttachmentIngestor {
   final Queue<String> _handledAttachmentEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
+  /// Tracks paths with an in-flight immediate (non-queued) save to prevent
+  /// concurrent `_saveAttachment()` calls for the same file from `process()`.
+  final Set<String> _inFlightSavePaths = <String>{};
   int _inFlightCount = 0;
   bool _disposed = false;
   Completer<void>? _idleCompleter;
