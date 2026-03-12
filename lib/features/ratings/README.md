@@ -52,12 +52,11 @@ ratings/
     rating_repository.dart  # Persistence: create, update, fetch ratings
   state/
     rating_controller.dart  # Riverpod async controller per (targetId, catalogId)
-    rating_prompt_controller.dart  # Triggers the rating modal after timer stop
   ui/
-    session_rating_modal.dart   # Modal bottom sheet (editable + read-only views)
-    rating_summary.dart         # Read-only summary shown in entry details
-    rating_input_widgets.dart   # Reusable input widgets (RatingTapBar, RatingSegmentedInput)
-    rating_prompt_listener.dart # Widget-tree listener that shows the modal
+    session_rating_modal.dart     # Modal bottom sheet (editable + read-only views)
+    rating_summary.dart           # Read-only summary shown in entry details
+    rating_input_widgets.dart     # Reusable input widgets (RatingTapBar, RatingSegmentedInput)
+    pulsating_rate_button.dart    # Animated outline button shown after timer stops
 ```
 
 ## Data Model
@@ -75,5 +74,5 @@ ratings/
    `List<RatingQuestion>` given `AppLocalizations`
 2. Register it in `ratingCatalogRegistry` with a unique `catalogId`
 3. Add localized strings to all `.arb` files
-4. Call `RatingModal.show(context, targetId, catalogId: 'your_id')` or
-   use `RatingPromptController.requestRating(targetId: ..., catalogId: ...)`
+4. Call `RatingModal.show(context, targetId, catalogId: 'your_id')` from
+   the triple-dot menu or any other entry point

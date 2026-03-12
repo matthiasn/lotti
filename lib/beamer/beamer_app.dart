@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
-import 'package:lotti/features/ratings/ui/rating_prompt_listener.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -238,112 +237,108 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
         // No eager toast from build(); event-driven toast handled via ref.listen
 
-        return RatingPromptListener(
-          child: Scaffold(
-            body: Stack(
-              children: [
-                const IncomingVerificationWrapper(),
-                IndexedStack(
-                  index: index,
-                  children: [
-                    Beamer(routerDelegate: navService.tasksDelegate),
-                    if (_isDailyOsPageEnabled)
-                      Beamer(routerDelegate: navService.calendarDelegate),
-                    if (_isHabitsPageEnabled)
-                      Beamer(routerDelegate: navService.habitsDelegate),
-                    if (_isDashboardsPageEnabled)
-                      Beamer(routerDelegate: navService.dashboardsDelegate),
-                    Beamer(routerDelegate: navService.journalDelegate),
-                    Beamer(routerDelegate: navService.settingsDelegate),
-                  ],
-                ),
+        return Scaffold(
+          body: Stack(
+            children: [
+              const IncomingVerificationWrapper(),
+              IndexedStack(
+                index: index,
+                children: [
+                  Beamer(routerDelegate: navService.tasksDelegate),
+                  if (_isDailyOsPageEnabled)
+                    Beamer(routerDelegate: navService.calendarDelegate),
+                  if (_isHabitsPageEnabled)
+                    Beamer(routerDelegate: navService.habitsDelegate),
+                  if (_isDashboardsPageEnabled)
+                    Beamer(routerDelegate: navService.dashboardsDelegate),
+                  Beamer(routerDelegate: navService.journalDelegate),
+                  Beamer(routerDelegate: navService.settingsDelegate),
+                ],
+              ),
+              const Positioned(
+                left: AppScreenConstants.navigationPadding,
+                bottom: AppScreenConstants.navigationTimeIndicatorBottom,
+                child: TimeRecordingIndicator(),
+              ),
+              // Only show AudioRecordingIndicator when not running in Flatpak
+              // Flatpak builds have MediaKit compatibility issues
+              if (!_isRunningInFlatpak())
                 const Positioned(
-                  left: AppScreenConstants.navigationPadding,
+                  right: AppScreenConstants.navigationAudioIndicatorRight,
                   bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                  child: TimeRecordingIndicator(),
+                  child: AudioRecordingIndicator(),
                 ),
-                // Only show AudioRecordingIndicator when not running in Flatpak
-                // Flatpak builds have MediaKit compatibility issues
-                if (!_isRunningInFlatpak())
-                  const Positioned(
-                    right: AppScreenConstants.navigationAudioIndicatorRight,
-                    bottom: AppScreenConstants.navigationTimeIndicatorBottom,
-                    child: AudioRecordingIndicator(),
-                  ),
-              ],
+            ],
+          ),
+          bottomNavigationBar: SpotifyStyleBottomNavigationBar(
+            selectedItemColor: context.colorScheme.primary,
+            unselectedItemColor: context.colorScheme.primary.withAlpha(127),
+            enableFeedback: true,
+            backgroundColor: context.colorScheme.surface,
+            elevation: AppScreenConstants.navigationElevation,
+            iconSize: AppScreenConstants.navigationIconSize,
+            selectedLabelStyle: const TextStyle(
+              height: AppScreenConstants.navigationTextHeight,
+              fontWeight: FontWeight.normal,
+              fontSize: fontSizeSmall,
             ),
-            bottomNavigationBar: SpotifyStyleBottomNavigationBar(
-              selectedItemColor: context.colorScheme.primary,
-              unselectedItemColor: context.colorScheme.primary.withAlpha(127),
-              enableFeedback: true,
-              backgroundColor: context.colorScheme.surface,
-              elevation: AppScreenConstants.navigationElevation,
-              iconSize: AppScreenConstants.navigationIconSize,
-              selectedLabelStyle: const TextStyle(
-                height: AppScreenConstants.navigationTextHeight,
-                fontWeight: FontWeight.normal,
-                fontSize: fontSizeSmall,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                height: AppScreenConstants.navigationTextHeight,
-                fontWeight: FontWeight.w300,
-                fontSize: fontSizeSmall,
-              ),
-              type: SpotifyStyleBottomNavigationBarType.fixed,
-              currentIndex: index,
-              items: [
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleTasks,
-                  icon: TasksBadge(
-                    child: Icon(MdiIcons.checkboxMarkedCircleOutline),
-                  ),
-                  activeIcon: TasksBadge(
-                    child: Icon(MdiIcons.checkboxMarkedCircle),
-                  ),
-                  label: context.messages.navTabTitleTasks,
-                ),
-                if (_isDailyOsPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: context.messages.navTabTitleCalendar,
-                    icon: const Icon(Ionicons.calendar_outline),
-                    activeIcon: const OutboxBadgeIcon(
-                      icon: Icon(Ionicons.calendar),
-                    ),
-                    label: context.messages.navTabTitleCalendar,
-                  ),
-                if (_isHabitsPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: context.messages.navTabTitleHabits,
-                    icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
-                    activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
-                    label: context.messages.navTabTitleHabits,
-                  ),
-                if (_isDashboardsPageEnabled)
-                  createNavBarItem(
-                    semanticLabel: context.messages.navTabTitleInsights,
-                    icon: const Icon(Ionicons.bar_chart_outline),
-                    activeIcon: const Icon(Ionicons.bar_chart),
-                    label: context.messages.navTabTitleInsights,
-                  ),
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleJournal,
-                  icon: const Icon(Ionicons.book_outline),
-                  activeIcon: const Icon(Ionicons.book),
-                  label: context.messages.navTabTitleJournal,
-                ),
-                createNavBarItem(
-                  semanticLabel: context.messages.navTabTitleSettings,
-                  icon: const OutboxBadgeIcon(
-                    icon: Icon(Ionicons.settings_outline),
-                  ),
-                  activeIcon: const OutboxBadgeIcon(
-                    icon: Icon(Ionicons.settings),
-                  ),
-                  label: context.messages.navTabTitleSettings,
-                ),
-              ],
-              onTap: navService.tapIndex,
+            unselectedLabelStyle: const TextStyle(
+              height: AppScreenConstants.navigationTextHeight,
+              fontWeight: FontWeight.w300,
+              fontSize: fontSizeSmall,
             ),
+            type: SpotifyStyleBottomNavigationBarType.fixed,
+            currentIndex: index,
+            items: [
+              createNavBarItem(
+                semanticLabel: context.messages.navTabTitleTasks,
+                icon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircleOutline),
+                ),
+                activeIcon: TasksBadge(
+                  child: Icon(MdiIcons.checkboxMarkedCircle),
+                ),
+                label: context.messages.navTabTitleTasks,
+              ),
+              if (_isDailyOsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: context.messages.navTabTitleCalendar,
+                  icon: const Icon(Ionicons.calendar_outline),
+                  activeIcon: const Icon(Ionicons.calendar),
+                  label: context.messages.navTabTitleCalendar,
+                ),
+              if (_isHabitsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: context.messages.navTabTitleHabits,
+                  icon: Icon(MdiIcons.checkboxMultipleMarkedOutline),
+                  activeIcon: Icon(MdiIcons.checkboxMultipleMarked),
+                  label: context.messages.navTabTitleHabits,
+                ),
+              if (_isDashboardsPageEnabled)
+                createNavBarItem(
+                  semanticLabel: context.messages.navTabTitleInsights,
+                  icon: const Icon(Ionicons.bar_chart_outline),
+                  activeIcon: const Icon(Ionicons.bar_chart),
+                  label: context.messages.navTabTitleInsights,
+                ),
+              createNavBarItem(
+                semanticLabel: context.messages.navTabTitleJournal,
+                icon: const Icon(Ionicons.book_outline),
+                activeIcon: const Icon(Ionicons.book),
+                label: context.messages.navTabTitleJournal,
+              ),
+              createNavBarItem(
+                semanticLabel: context.messages.navTabTitleSettings,
+                icon: const OutboxBadgeIcon(
+                  icon: Icon(Ionicons.settings_outline),
+                ),
+                activeIcon: const OutboxBadgeIcon(
+                  icon: Icon(Ionicons.settings),
+                ),
+                label: context.messages.navTabTitleSettings,
+              ),
+            ],
+            onTap: navService.tapIndex,
           ),
         );
       },
