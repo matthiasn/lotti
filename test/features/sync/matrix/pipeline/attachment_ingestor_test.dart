@@ -1020,9 +1020,11 @@ void main() {
         });
         when(() => ev1.attachmentMimetype).thenReturn('application/json');
         when(() => ev1.senderId).thenReturn('@other:u');
-        when(
-          ev1.downloadAndDecryptAttachment,
-        ).thenAnswer((_) => downloadCompleter.future);
+        var downloadCallCount = 0;
+        when(ev1.downloadAndDecryptAttachment).thenAnswer((_) {
+          downloadCallCount++;
+          return downloadCompleter.future;
+        });
 
         // Second event with a different eventId but the SAME relativePath.
         final ev2 = MockEvent();
@@ -1033,9 +1035,10 @@ void main() {
         });
         when(() => ev2.attachmentMimetype).thenReturn('application/json');
         when(() => ev2.senderId).thenReturn('@other:u');
-        when(
-          ev2.downloadAndDecryptAttachment,
-        ).thenAnswer((_) => downloadCompleter.future);
+        when(ev2.downloadAndDecryptAttachment).thenAnswer((_) {
+          downloadCallCount++;
+          return downloadCompleter.future;
+        });
 
         final index = AttachmentIndex(logging: logging);
         final desc = MockDescriptorCatchUpManager();
@@ -1073,9 +1076,9 @@ void main() {
         expect(writtenFile.existsSync(), isTrue);
         expect(writtenFile.readAsStringSync(), 'concurrent-data');
 
-        // Only one download should have been triggered.
-        verify(ev1.downloadAndDecryptAttachment).called(1);
-        verifyNever(ev2.downloadAndDecryptAttachment);
+        // Exactly one download should have been triggered across both events,
+        // regardless of which process() call won the race.
+        expect(downloadCallCount, 1);
       },
     );
 
