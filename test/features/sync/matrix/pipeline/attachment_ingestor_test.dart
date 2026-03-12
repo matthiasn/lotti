@@ -977,5 +977,6 @@ void main() {
       // Verify download was NOT called
       verifyNever(ev.downloadAndDecryptAttachment);
     });
+
   });
 }

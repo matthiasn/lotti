@@ -280,7 +280,7 @@ void main() {
         await consumer.dispose();
       });
 
-      final before = consumer.metricsSnapshot()['signalTimelineCallbacks'] ?? 0;
+      final beforeSnap = consumer.metricsSnapshot();
       onNewEvent?.call();
       // Exercise all callback subtypes to cover _recordTimelineSignal branches.
       onUpdate?.call();
@@ -289,13 +289,30 @@ void main() {
       onRemove?.call(0);
       async.flushMicrotasks();
       final afterSnap = consumer.metricsSnapshot();
-      final after = afterSnap['signalTimelineCallbacks'] ?? 0;
-      expect(after, greaterThanOrEqualTo(before + 5));
-      expect(afterSnap['signalTimelineNewEvent'], greaterThanOrEqualTo(1));
-      expect(afterSnap['signalTimelineInsert'], greaterThanOrEqualTo(1));
-      expect(afterSnap['signalTimelineChange'], greaterThanOrEqualTo(1));
-      expect(afterSnap['signalTimelineRemove'], greaterThanOrEqualTo(1));
-      expect(afterSnap['signalTimelineUpdate'], greaterThanOrEqualTo(1));
+      expect(
+        afterSnap['signalTimelineCallbacks'],
+        (beforeSnap['signalTimelineCallbacks'] ?? 0) + 5,
+      );
+      expect(
+        afterSnap['signalTimelineNewEvent'],
+        (beforeSnap['signalTimelineNewEvent'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineInsert'],
+        (beforeSnap['signalTimelineInsert'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineChange'],
+        (beforeSnap['signalTimelineChange'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineRemove'],
+        (beforeSnap['signalTimelineRemove'] ?? 0) + 1,
+      );
+      expect(
+        afterSnap['signalTimelineUpdate'],
+        (beforeSnap['signalTimelineUpdate'] ?? 0) + 1,
+      );
     });
   });
 

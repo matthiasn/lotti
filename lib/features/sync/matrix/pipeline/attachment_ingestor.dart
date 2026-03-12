@@ -253,7 +253,7 @@ class AttachmentIngestor {
         return true;
       }
       return file.lengthSync() <= 0;
-    } catch (_) {
+    } on FileSystemException {
       return true;
     }
   }
