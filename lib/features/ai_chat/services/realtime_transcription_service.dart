@@ -185,24 +185,42 @@ class RealtimeTranscriptionService {
     required Future<void> Function() stopRecorder,
     required String outputPath,
   }) async {
-    // 1. Stop forwarding audio
-    await _pcmSubscription?.cancel();
-    _pcmSubscription = null;
+    // Subscribe to the broadcast stream BEFORE cleanup so we don't miss
+    // a transcription.done event that arrives while we're cancelling
+    // subscriptions and signalling end-of-audio. Use a Completer +
+    // explicit subscription so the listener is properly cancelled on
+    // timeout (Stream.first.timeout leaves an orphaned listener).
+    final doneCompleter = Completer<RealtimeTranscriptionDone>();
+    final doneSubscription = _repository.transcriptionDone.listen(
+      (done) {
+        if (!doneCompleter.isCompleted) {
+          doneCompleter.complete(done);
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (!doneCompleter.isCompleted) {
+          doneCompleter.completeError(error, stackTrace);
+        }
+      },
+    );
 
-    // 2. Stop the recorder (mic off)
-    await stopRecorder();
-
-    // 3. Signal end of audio
-    await _repository.endAudio();
-
-    // 4. Wait for transcription.done
     String transcript;
     var usedFallback = false;
 
     try {
-      final done = await _repository.transcriptionDone.first.timeout(
-        _doneTimeout,
-      );
+      // 1. Stop forwarding audio
+      await _pcmSubscription?.cancel();
+      _pcmSubscription = null;
+
+      // 2. Stop the recorder (mic off)
+      await stopRecorder();
+
+      // 3. Signal end of audio
+      await _repository.endAudio();
+
+      // 4. Wait for transcription.done — timeout starts here so the full
+      //    budget applies to waiting for the server, not recorder shutdown.
+      final done = await doneCompleter.future.timeout(_doneTimeout);
       transcript = done.text;
     } on TimeoutException {
       // Read delta buffer *after* the timeout so any late-arriving deltas
@@ -216,6 +234,8 @@ class RealtimeTranscriptionService {
         domain: 'RealtimeTranscriptionService',
         subDomain: 'stop.timeout',
       );
+    } finally {
+      await doneSubscription.cancel();
     }
 
     final detectedLanguage = _detectedLanguage;

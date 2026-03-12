@@ -50,20 +50,27 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
     final entryId = widget.item.meta.id;
     final isRecording = recording != null && recording.meta.id == entryId;
 
-    // Detect recording→stopped transition and persist in provider
+    // Detect recording→stopped transition and persist in provider.
+    // Defer provider mutations to avoid modifying state during the build phase
+    // (stream events can fire while the widget tree is still building).
+    // Capture the notifier eagerly so the mutation still fires even if this
+    // widget is unmounted before the post-frame callback runs (the controller
+    // is keepAlive and outlives the widget).
     if (_wasRecording && !isRecording) {
       final duration = DateTime.now().difference(widget.item.meta.dateFrom);
       if (duration >= const Duration(minutes: 1)) {
-        ref
-            .read(sessionEndedControllerProvider.notifier)
-            .markSessionEnded(entryId);
+        final notifier = ref.read(sessionEndedControllerProvider.notifier);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          notifier.markSessionEnded(entryId);
+        });
       }
     }
     // Clear when a new recording starts on this entry
     if (isRecording && !_wasRecording) {
-      ref
-          .read(sessionEndedControllerProvider.notifier)
-          .clearSessionEnded(entryId);
+      final notifier = ref.read(sessionEndedControllerProvider.notifier);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifier.clearSessionEnded(entryId);
+      });
     }
     _wasRecording = isRecording;
 
@@ -177,11 +184,9 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
               ),
             ),
             if (sessionJustEnded && !isRecording)
-              Flexible(
-                child: PulsatingRateButton(
-                  entryId: entryId,
-                  sessionJustEnded: sessionJustEnded,
-                ),
+              PulsatingRateButton(
+                entryId: entryId,
+                sessionJustEnded: sessionJustEnded,
               ),
             const SizedBox(width: 15),
           ],
