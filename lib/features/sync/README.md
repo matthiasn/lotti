@@ -120,6 +120,9 @@ The largest remaining concerns are:
 - sequence-log mappings that can point a requested counter at a payload whose
   current vector clock is already behind that counter
 - large bursts of missing counters that later get resolved
+- inbox-side attachment replay, where the same attachment event can be
+  re-observed many times and agent payload paths can be re-downloaded unless
+  duplicate event processing is suppressed
 - agent payload handling that can plausibly combine an older text event with a
   newer attachment version for the same `jsonPath`
 

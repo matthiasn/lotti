@@ -23,7 +23,7 @@ abstract final class LogDomains {
 /// Provides:
 /// - PII-safe sanitization helpers for entity IDs and content bodies.
 /// - Per-domain enabled check (reads from [enabledDomains]).
-/// - Delegates to [LoggingService] for the DB + general-file dual-sink.
+/// - Delegates to [LoggingService] for the main file sink.
 /// - Writes an additional **per-domain log file** at
 ///   `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` so each domain's
 ///   telemetry can be reviewed in isolation.
@@ -56,6 +56,9 @@ class DomainLogger {
       subDomain: subDomain,
       level: level,
     );
+    if (_usesCentralFileRouting(domain)) {
+      return;
+    }
     _appendToDomainFile(
       domain: domain,
       level: level.name.toUpperCase(),
@@ -82,6 +85,9 @@ class DomainLogger {
       subDomain: subDomain,
       stackTrace: stackTrace,
     );
+    if (_usesCentralFileRouting(domain)) {
+      return;
+    }
     _appendToDomainFile(
       domain: domain,
       level: 'ERROR',
@@ -92,6 +98,8 @@ class DomainLogger {
   }
 
   // ── Per-domain file sink ────────────────────────────────────────────────
+
+  bool _usesCentralFileRouting(String domain) => domain == LogDomains.sync;
 
   /// Appends a formatted line to `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`.
   ///

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/descriptor_catch_up_manager.dart';
+import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/matrix/utils/atomic_write.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -31,6 +32,8 @@ class AttachmentIngestor {
            : maxConcurrentDownloads;
 
   static const int _defaultMaxConcurrentDownloads = 2;
+  static const int _handledAttachmentEventCapacity =
+      SyncTuning.catchupMaxLookback;
 
   /// The documents directory for saving attachments. If null, downloads are
   /// skipped (descriptor-only mode for testing or when fs access is not
@@ -41,6 +44,8 @@ class AttachmentIngestor {
   final Queue<String> _downloadQueue = Queue<String>();
   final Map<String, _DownloadRequest> _pendingDownloads =
       <String, _DownloadRequest>{};
+  final Set<String> _handledAttachmentEventIds = <String>{};
+  final Queue<String> _handledAttachmentEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
   int _inFlightCount = 0;
@@ -62,44 +67,54 @@ class AttachmentIngestor {
   }) async {
     var fileWritten = false;
 
-    // Record descriptors when present and emit a compact observability line.
+    // Record descriptors when present and avoid re-processing the exact same
+    // attachment event on repeated catch-up/live-scan passes unless the local
+    // file is missing and needs repair.
     final rpAny = event.content['relativePath'];
     if (rpAny is String && rpAny.isNotEmpty) {
-      attachmentIndex?.record(event);
-      // Observability log for attachment-like events.
-      try {
-        final mime = event.attachmentMimetype;
-        final content = event.content;
-        final hasUrl =
-            content.containsKey('url') ||
-            content.containsKey('mxc') ||
-            content.containsKey('mxcUrl') ||
-            content.containsKey('uri');
-        final hasEnc = content.containsKey('file');
-        final msgType = content['msgtype'];
-        logging.captureEvent(
-          'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
-          domain: syncLoggingDomain,
-          subDomain: 'attachment.observe',
-        );
-      } catch (_) {
-        // best-effort logging only
-      }
+      final shouldRepairLocal =
+          documentsDirectory != null && await _isLocalFileMissingOrEmpty(rpAny);
+      final shouldProcessAttachment =
+          !_wasAttachmentEventHandled(event.eventId) || shouldRepairLocal;
 
-      // Download attachments either immediately or via the async queue.
-      if (documentsDirectory != null) {
-        if (scheduleDownload) {
-          _scheduleDownload(
-            event: event,
-            relativePath: rpAny,
-            logging: logging,
+      if (shouldProcessAttachment) {
+        _recordHandledAttachmentEvent(event.eventId);
+        attachmentIndex?.record(event);
+        // Observability log for attachment-like events.
+        try {
+          final mime = event.attachmentMimetype;
+          final content = event.content;
+          final hasUrl =
+              content.containsKey('url') ||
+              content.containsKey('mxc') ||
+              content.containsKey('mxcUrl') ||
+              content.containsKey('uri');
+          final hasEnc = content.containsKey('file');
+          final msgType = content['msgtype'];
+          logging.captureEvent(
+            'attachmentEvent id=${event.eventId} path=$rpAny mime=$mime msgtype=$msgType hasUrl=$hasUrl hasFile=$hasEnc',
+            domain: syncLoggingDomain,
+            subDomain: 'attachment.observe',
           );
-        } else {
-          fileWritten = await _saveAttachment(
-            event: event,
-            relativePath: rpAny,
-            logging: logging,
-          );
+        } catch (_) {
+          // best-effort logging only
+        }
+
+        // Download attachments either immediately or via the async queue.
+        if (documentsDirectory != null) {
+          if (scheduleDownload) {
+            _scheduleDownload(
+              event: event,
+              relativePath: rpAny,
+              logging: logging,
+            );
+          } else {
+            fileWritten = await _saveAttachment(
+              event: event,
+              relativePath: rpAny,
+              logging: logging,
+            );
+          }
         }
       }
 
@@ -125,6 +140,8 @@ class AttachmentIngestor {
     _disposed = true;
     _downloadQueue.clear();
     _pendingDownloads.clear();
+    _handledAttachmentEventIds.clear();
+    _handledAttachmentEventOrder.clear();
     _queuedKeys.clear();
     _idleCompleter?.complete();
     _idleCompleter = null;
@@ -201,8 +218,55 @@ class AttachmentIngestor {
     }
   }
 
+  bool _wasAttachmentEventHandled(String eventId) =>
+      _handledAttachmentEventIds.contains(eventId);
+
+  void _recordHandledAttachmentEvent(String eventId) {
+    if (_handledAttachmentEventIds.add(eventId)) {
+      _handledAttachmentEventOrder.addLast(eventId);
+      while (_handledAttachmentEventOrder.length >
+          _handledAttachmentEventCapacity) {
+        final oldest = _handledAttachmentEventOrder.removeFirst();
+        _handledAttachmentEventIds.remove(oldest);
+      }
+    }
+  }
+
   String _normalizeKey(String relativePath) =>
       normalizeAttachmentIndexKey(relativePath);
+
+  Future<bool> _isLocalFileMissingOrEmpty(String relativePath) async {
+    final file = _targetFile(relativePath);
+    if (file == null) {
+      return false;
+    }
+    try {
+      if (!await file.exists()) {
+        return true;
+      }
+      return await file.length() <= 0;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  File? _targetFile(String relativePath) {
+    final docDir = documentsDirectory;
+    if (docDir == null) {
+      return null;
+    }
+
+    var rel = relativePath;
+    if (p.isAbsolute(rel)) {
+      final prefix = p.rootPrefix(rel);
+      rel = rel.substring(prefix.length);
+    }
+    final resolved = p.normalize(p.join(docDir.path, rel));
+    if (!p.isWithin(docDir.path, resolved)) {
+      return null;
+    }
+    return File(resolved);
+  }
 
   /// Downloads and saves an attachment.
   ///
@@ -228,23 +292,16 @@ class AttachmentIngestor {
     }
 
     try {
-      // Build a safe, normalized path under documentsDirectory.
-      var rel = relativePath;
-      if (p.isAbsolute(rel)) {
-        final prefix = p.rootPrefix(rel);
-        rel = rel.substring(prefix.length);
-      }
-      final resolved = p.normalize(p.join(docDir.path, rel));
-      if (!p.isWithin(docDir.path, resolved)) {
+      final file = _targetFile(relativePath);
+      if (file == null) {
         logging.captureEvent(
-          'pathTraversal.blocked path=$relativePath resolved=$resolved',
+          'pathTraversal.blocked path=$relativePath',
           domain: syncLoggingDomain,
           subDomain: 'attachment.save',
         );
         return false;
       }
 
-      final file = File(resolved);
       // Agent entities/links can be legitimately updated in-place (e.g.
       // ChangeSetEntity pending → resolved). Always re-download to avoid
       // stale reads.
@@ -286,7 +343,7 @@ class AttachmentIngestor {
 
       await atomicWriteBytes(
         bytes: bytes,
-        filePath: resolved,
+        filePath: file.path,
         logging: logging,
         subDomain: 'attachment.write',
       );

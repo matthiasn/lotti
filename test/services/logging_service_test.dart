@@ -555,5 +555,65 @@ void main() {
       expect(content, contains('[INFO] CANCEL_TIMER: queued line'));
       expect(content, contains('[ERROR] CANCEL_TIMER: forced line'));
     });
+
+    test('sync-family info events are routed to sync log only', () async {
+      bufferedLogging.captureEvent(
+        'timeline callback',
+        domain: 'MATRIX_SYNC',
+        subDomain: 'signal',
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+
+      final generalFile = File(logPath0());
+      final syncFile = File(
+        p.join(
+          bufferedTempDocs.path,
+          'logs',
+          'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+        ),
+      );
+
+      expect(generalFile.existsSync(), isFalse);
+      expect(syncFile.existsSync(), isTrue);
+      expect(
+        syncFile.readAsStringSync(),
+        contains('[INFO] MATRIX_SYNC signal: timeline callback'),
+      );
+    });
+
+    test(
+      'sync-family exceptions are written to both general and sync logs',
+      () async {
+        bufferedLogging.captureException(
+          'sync blew up',
+          domain: 'MATRIX_SYNC',
+          subDomain: 'liveScan',
+          stackTrace: 'trace',
+        );
+
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+
+        final generalFile = File(logPath0());
+        final syncFile = File(
+          p.join(
+            bufferedTempDocs.path,
+            'logs',
+            'sync-${DateTime.now().toIso8601String().substring(0, 10)}.log',
+          ),
+        );
+
+        expect(generalFile.existsSync(), isTrue);
+        expect(syncFile.existsSync(), isTrue);
+        expect(
+          generalFile.readAsStringSync(),
+          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+        );
+        expect(
+          syncFile.readAsStringSync(),
+          contains('[ERROR] MATRIX_SYNC liveScan: sync blew up trace'),
+        );
+      },
+    );
   });
 }

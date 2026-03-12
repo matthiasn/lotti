@@ -16,9 +16,21 @@ class LoggingService {
   final _dateFmt = DateFormat('yyyy-MM-dd');
   static const Duration _fileFlushInterval = Duration(milliseconds: 500);
   static const int _fileFlushLineThreshold = 40;
-  final List<String> _pendingFileLines = <String>[];
-  Timer? _fileFlushTimer;
-  Future<void> _fileDrain = Future<void>.value();
+  static const String _generalLogStem = 'lotti';
+  static const String _syncLogStem = 'sync';
+  static const Set<String> _syncFileDomains = <String>{
+    'sync',
+    'MATRIX_SYNC',
+    'MATRIX_SERVICE',
+    'OUTBOX',
+    'AGENT_SYNC',
+    'SYNC_SEQUENCE',
+    'SYNC_BACKFILL',
+  };
+  final Map<String, List<String>> _pendingFileLinesByStem =
+      <String, List<String>>{};
+  final Map<String, Timer> _fileFlushTimers = <String, Timer>{};
+  final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
 
   void listenToConfigFlag() {
     getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
@@ -27,40 +39,44 @@ class LoggingService {
   }
 
   // --- Text file sink -----------------------------------------------------
-  Future<void> _appendToFile(
+  Future<void> _appendToNamedFile(
+    String fileStem,
     String line, {
     bool forceFlush = false,
   }) async {
     if (isTestEnv) {
-      _appendToFileSync(line);
+      _appendToNamedFileSync(fileStem, line);
       return;
     }
 
-    _pendingFileLines.add(line);
+    final pendingLines = _pendingFileLinesByStem.putIfAbsent(
+      fileStem,
+      () => <String>[],
+    );
+    pendingLines.add(line);
     final shouldFlushNow =
-        forceFlush || _pendingFileLines.length >= _fileFlushLineThreshold;
+        forceFlush || pendingLines.length >= _fileFlushLineThreshold;
 
     if (!shouldFlushNow) {
-      _fileFlushTimer ??= Timer(
+      _fileFlushTimers[fileStem] ??= Timer(
         _fileFlushInterval,
         () {
-          _fileFlushTimer = null;
-          unawaited(_flushPendingLines());
+          _fileFlushTimers.remove(fileStem);
+          unawaited(_flushPendingLines(fileStem, forceFlush: forceFlush));
         },
       );
       return;
     }
 
-    _fileFlushTimer?.cancel();
-    _fileFlushTimer = null;
-    await _flushPendingLines(forceFlush: forceFlush);
+    _fileFlushTimers.remove(fileStem)?.cancel();
+    await _flushPendingLines(fileStem, forceFlush: forceFlush);
   }
 
-  void _appendToFileSync(String line) {
+  void _appendToNamedFileSync(String fileStem, String line) {
     try {
       final dir = getDocumentsDirectory();
       final logDir = Directory(p.join(dir.path, 'logs'));
-      final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
+      final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
       final file = File(p.join(logDir.path, fileName));
       // Synchronous in tests to avoid timing flakes under parallel runners.
       if (!logDir.existsSync()) {
@@ -72,21 +88,24 @@ class LoggingService {
     }
   }
 
-  Future<void> _flushPendingLines({
+  Future<void> _flushPendingLines(
+    String fileStem, {
     bool forceFlush = false,
   }) async {
-    if (_pendingFileLines.isEmpty) {
+    final pendingLines = _pendingFileLinesByStem[fileStem];
+    if (pendingLines == null || pendingLines.isEmpty) {
       return;
     }
 
-    final lines = List<String>.from(_pendingFileLines);
-    _pendingFileLines.clear();
+    final lines = List<String>.from(pendingLines);
+    pendingLines.clear();
 
-    _fileDrain = _fileDrain.then((_) async {
+    final currentDrain = _fileDrains[fileStem] ?? Future<void>.value();
+    final nextDrain = currentDrain.then((_) async {
       try {
         final dir = getDocumentsDirectory();
         final logDir = Directory(p.join(dir.path, 'logs'));
-        final fileName = 'lotti-${_dateFmt.format(DateTime.now())}.log';
+        final fileName = '$fileStem-${_dateFmt.format(DateTime.now())}.log';
         final file = File(p.join(logDir.path, fileName));
         await logDir.create(recursive: true);
         final payload = '${lines.join('\n')}\n';
@@ -99,8 +118,21 @@ class LoggingService {
         // Swallow file-sink errors so logging never interferes with app flows.
       }
     });
+    _fileDrains[fileStem] = nextDrain;
 
-    await _fileDrain;
+    await nextDrain;
+  }
+
+  String? _domainFileStem(String domain) {
+    if (_syncFileDomains.contains(domain)) {
+      return _syncLogStem;
+    }
+    return null;
+  }
+
+  bool _shouldWriteToGeneral(String domain, {required bool isException}) {
+    if (isException) return true;
+    return !_syncFileDomains.contains(domain);
   }
 
   String _formatLine({
@@ -131,11 +163,23 @@ class LoggingService {
       message: event.toString(),
     );
 
-    // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(
-      line,
-      forceFlush: level == InsightLevel.error,
-    );
+    final forceFlush = level == InsightLevel.error;
+    if (_shouldWriteToGeneral(domain, isException: false)) {
+      await _appendToNamedFile(
+        _generalLogStem,
+        line,
+        forceFlush: forceFlush,
+      );
+    }
+
+    final domainFileStem = _domainFileStem(domain);
+    if (domainFileStem != null) {
+      await _appendToNamedFile(
+        domainFileStem,
+        line,
+        forceFlush: forceFlush,
+      );
+    }
   }
 
   void captureEvent(
@@ -176,8 +220,11 @@ class LoggingService {
       message: '$exception ${stackTrace ?? ''}'.trim(),
     );
 
-    // File sink (best-effort). Await to ensure ordering and determinism.
-    await _appendToFile(line, forceFlush: true);
+    await _appendToNamedFile(_generalLogStem, line, forceFlush: true);
+    final domainFileStem = _domainFileStem(domain);
+    if (domainFileStem != null) {
+      await _appendToNamedFile(domainFileStem, line, forceFlush: true);
+    }
   }
 
   void captureException(

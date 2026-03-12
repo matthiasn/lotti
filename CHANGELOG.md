@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button next to the timer. The button pulses for ~10 seconds, then stays
   visible until a rating is saved. Rating remains accessible from the
   triple-dot menu.
+- Sync inbox: repeated replay of the exact same attachment event no longer
+  re-runs attachment observe/download/write work unless the local file is
+  missing. This reduces sync log volume and unnecessary agent payload I/O
+  during large catch-up waves.
+- Sync logging: sync-family info logs are now routed into `sync-YYYY-MM-DD.log`
+  instead of inflating the general `lotti-YYYY-MM-DD.log`. Sync errors remain
+  visible in both logs.
 
 ### Removed
 - Label assignment snackbar/toaster — no longer needed since label assignments
