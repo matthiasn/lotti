@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from ..container import container
 from ..core.exceptions import (
@@ -33,6 +33,14 @@ from ..core.models import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class Paging:
+    """FastAPI dependency for clamped pagination parameters"""
+
+    def __init__(self, page: int = 1, page_size: int = 20):
+        self.page = max(1, page)
+        self.page_size = max(1, min(100, page_size))
 
 
 @router.get("/health", response_model=dict[str, str])
@@ -214,17 +222,13 @@ async def bill(request: BillRequest):
 
 
 @router.get("/users", response_model=UserListResponse)
-async def list_users(page: int = 1, page_size: int = 20):
+async def list_users(paging: Paging = Depends()):
     """List all registered users with pagination"""
     try:
-        # Clamp page_size to 1-100
-        page_size = max(1, min(100, page_size))
-        page = max(1, page)
-
         user_registry = container.get_user_registry()
         balance_service = container.get_balance_service()
 
-        users, total = await user_registry.list_users(page=page, page_size=page_size)
+        users, total = await user_registry.list_users(page=paging.page, page_size=paging.page_size)
 
         # Fetch balances concurrently to avoid N+1 sequential lookups
         async def _get_balance(uid: str):
@@ -248,8 +252,8 @@ async def list_users(page: int = 1, page_size: int = 20):
         return UserListResponse(
             users=user_infos,
             total=total,
-            page=page,
-            page_size=page_size,
+            page=paging.page,
+            page_size=paging.page_size,
         )
 
     except Exception:
@@ -306,13 +310,9 @@ async def get_user(user_id: str):
     response_model=TransactionListResponse,
     responses={404: {"model": ErrorResponse, "description": "User not found"}},
 )
-async def get_transactions(user_id: str, page: int = 1, page_size: int = 20):
+async def get_transactions(user_id: str, paging: Paging = Depends()):
     """Get transaction history for a user"""
     try:
-        # Clamp page_size to 1-100
-        page_size = max(1, min(100, page_size))
-        page = max(1, page)
-
         user_registry = container.get_user_registry()
         if not await user_registry.user_exists(user_id):
             raise HTTPException(
@@ -322,7 +322,7 @@ async def get_transactions(user_id: str, page: int = 1, page_size: int = 20):
 
         transaction_log = container.get_transaction_log()
         transactions, total = await transaction_log.get_transactions(
-            user_id, page=page, page_size=page_size
+            user_id, page=paging.page, page_size=paging.page_size
         )
 
         transaction_records = [
@@ -341,8 +341,8 @@ async def get_transactions(user_id: str, page: int = 1, page_size: int = 20):
         return TransactionListResponse(
             transactions=transaction_records,
             total=total,
-            page=page,
-            page_size=page_size,
+            page=paging.page,
+            page_size=paging.page_size,
         )
 
     except HTTPException:

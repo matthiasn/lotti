@@ -93,11 +93,14 @@ class BillingService(IBillingService):
 
             logger.info(f"Top-up successful. New balance for {user_id}: ${new_balance}")
 
-            # Log the transaction
+            # Log the transaction (best-effort; transfer is already committed)
             if self.transaction_log is not None:
-                await self.transaction_log.log_transaction(
-                    user_id, "topup", amount, new_balance
-                )
+                try:
+                    await self.transaction_log.log_transaction(
+                        user_id, "topup", amount, new_balance
+                    )
+                except Exception:
+                    logger.exception("Failed to log top-up transaction for user %s", user_id)
 
             return new_balance
 
@@ -151,11 +154,14 @@ class BillingService(IBillingService):
 
             logger.info(f"Billing successful. New balance for {user_id}: ${new_balance}")
 
-            # Log the transaction
+            # Log the transaction (best-effort; transfer is already committed)
             if self.transaction_log is not None:
-                await self.transaction_log.log_transaction(
-                    user_id, "bill", amount, new_balance, description
-                )
+                try:
+                    await self.transaction_log.log_transaction(
+                        user_id, "bill", amount, new_balance, description
+                    )
+                except Exception:
+                    logger.exception("Failed to log bill transaction for user %s", user_id)
 
             return new_balance
 

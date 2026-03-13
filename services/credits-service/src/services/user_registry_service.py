@@ -1,11 +1,12 @@
 """User registry service backed by SQLite"""
 
+from __future__ import annotations
+
 import asyncio
 import logging
 import os
 import sqlite3
 from datetime import datetime, timezone
-from __future__ import annotations
 
 from ..core.interfaces import IUserRegistryService
 
