@@ -667,6 +667,70 @@ void main() {
       ).called(1);
     });
 
+    test('chunks extreme gaps without truncating the logical result', () async {
+      const lastSeen = 10;
+      const gapSize = SyncTuning.gapMaterializationChunkSize * 2 + 7;
+      const observedCounter = lastSeen + gapSize + 1;
+      const vectorClock = VectorClock({aliceHostId: observedCounter});
+      const entryId = 'entry-extreme-gap';
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => lastSeen);
+      when(
+        () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, observedCounter),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps.length, gapSize);
+      expect(gaps.first.counter, lastSeen + 1);
+      expect(gaps.last.counter, observedCounter - 1);
+      verify(
+        () => mockDb.getCountersForHostInRange(aliceHostId, 11, 5010),
+      ).called(1);
+      verify(
+        () => mockDb.getCountersForHostInRange(aliceHostId, 5011, 10010),
+      ).called(1);
+      verify(
+        () => mockDb.getCountersForHostInRange(
+          aliceHostId,
+          10011,
+          observedCounter - 1,
+        ),
+      ).called(1);
+
+      final inserted =
+          verify(
+                () => mockDb.batchInsertSequenceEntries(captureAny()),
+              ).captured
+              .map((value) => value as List<SyncSequenceLogCompanion>)
+              .toList();
+      expect(inserted, hasLength(3));
+      expect(inserted[0], hasLength(SyncTuning.gapMaterializationChunkSize));
+      expect(inserted[1], hasLength(SyncTuning.gapMaterializationChunkSize));
+      expect(inserted[2], hasLength(7));
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('extremeGapDetected')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'extremeGap',
+        ),
+      ).called(1);
+    });
+
     test('invokes missing-work callback after detecting gaps', () async {
       const vectorClock = VectorClock({aliceHostId: 5});
       const entryId = 'entry-5';

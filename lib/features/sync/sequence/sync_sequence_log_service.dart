@@ -1,3 +1,6 @@
+import 'dart:collection';
+import 'dart:math' as math;
+
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -7,6 +10,97 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
+
+typedef _GapRange = ({String hostId, int startCounter, int endCounter});
+
+class _GapAccumulator {
+  final List<_GapRange> _ranges = [];
+  int _count = 0;
+
+  bool get isNotEmpty => _count > 0;
+  int get count => _count;
+
+  void addRange({
+    required String hostId,
+    required int startCounter,
+    required int endCounter,
+  }) {
+    if (endCounter < startCounter) return;
+    _ranges.add((
+      hostId: hostId,
+      startCounter: startCounter,
+      endCounter: endCounter,
+    ));
+    _count += endCounter - startCounter + 1;
+  }
+
+  List<({String hostId, int counter})> toGapList() => _GapEntriesView(_ranges);
+}
+
+class _GapEntriesView extends ListBase<({String hostId, int counter})> {
+  _GapEntriesView(List<_GapRange> ranges)
+    : _ranges = List.unmodifiable(ranges),
+      _rangeEnds = _buildRangeEnds(ranges),
+      _length = _computeLength(ranges);
+
+  final List<_GapRange> _ranges;
+  final List<int> _rangeEnds;
+  final int _length;
+
+  static List<int> _buildRangeEnds(List<_GapRange> ranges) {
+    final ends = <int>[];
+    var total = 0;
+    for (final range in ranges) {
+      total += range.endCounter - range.startCounter + 1;
+      ends.add(total);
+    }
+    return ends;
+  }
+
+  static int _computeLength(List<_GapRange> ranges) {
+    var total = 0;
+    for (final range in ranges) {
+      total += range.endCounter - range.startCounter + 1;
+    }
+    return total;
+  }
+
+  @override
+  int get length => _length;
+
+  @override
+  set length(int newLength) {
+    throw UnsupportedError('GapEntriesView is read-only');
+  }
+
+  @override
+  ({String hostId, int counter}) operator [](int index) {
+    RangeError.checkValidIndex(index, this, null, _length);
+    var low = 0;
+    var high = _rangeEnds.length - 1;
+    while (low < high) {
+      final mid = (low + high) >> 1;
+      if (index < _rangeEnds[mid]) {
+        high = mid;
+      } else {
+        low = mid + 1;
+      }
+    }
+
+    final rangeIndex = low;
+    final previousEnd = rangeIndex == 0 ? 0 : _rangeEnds[rangeIndex - 1];
+    final range = _ranges[rangeIndex];
+    return (
+      hostId: range.hostId,
+      counter: range.startCounter + index - previousEnd,
+    );
+  }
+
+  @override
+  void operator []=(int index, ({String hostId, int counter}) value) {
+    throw UnsupportedError('GapEntriesView is read-only');
+  }
+}
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
@@ -148,7 +242,9 @@ class SyncSequenceLogService {
   }
 
   /// Record a received entry and detect gaps in the sequence.
-  /// Returns a list of detected gaps as (hostId, counter) records.
+  /// Returns a read-only list of detected gaps as `(hostId, counter)` records.
+  /// The list may be backed by logical ranges so very large gaps do not
+  /// allocate one in-memory record per missing counter.
   ///
   /// The [originatingHostId] identifies which host created/modified this entry.
   /// This must be provided by the sender in the sync message.
@@ -172,7 +268,7 @@ class SyncSequenceLogService {
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     String? jsonPath,
   }) async {
-    final gaps = <({String hostId, int counter})>[];
+    final gaps = _GapAccumulator();
     final myHost = await _vectorClockService.getHost();
     final now = DateTime.now();
 
@@ -250,6 +346,11 @@ class SyncSequenceLogService {
         // Gap detected! Mark missing counters for this host
         final gapSize = counter - gapBaseline - 1;
         final startCounter = gapBaseline + 1;
+        gaps.addRange(
+          hostId: hostId,
+          startCounter: startCounter,
+          endCounter: counter - 1,
+        );
 
         if (gapSize > SyncTuning.maxGapSize) {
           _trace(
@@ -261,53 +362,28 @@ class SyncSequenceLogService {
             domain: 'SYNC_SEQUENCE',
             subDomain: 'largeGap',
           );
-          // Correctness requires representing the full gap, but a per-counter
-          // read/write loop is too expensive for large jumps. Switch to a
-          // range lookup plus batched inserts once the gap crosses the logging
-          // threshold.
-          final existingCounters = await _syncDatabase
-              .getCountersForHostInRange(
-                hostId,
-                startCounter,
-                counter - 1,
-              );
-          final missingEntries = <SyncSequenceLogCompanion>[];
-
-          for (var i = startCounter; i < counter; i++) {
-            gaps.add((hostId: hostId, counter: i));
-            if (!existingCounters.contains(i)) {
-              missingEntries.add(
-                SyncSequenceLogCompanion(
-                  hostId: Value(hostId),
-                  counter: Value(i),
-                  originatingHostId: Value(originatingHostId),
-                  status: Value(SyncSequenceStatus.missing.index),
-                  createdAt: Value(now),
-                  updatedAt: Value(now),
-                ),
-              );
-            }
-          }
-
-          if (missingEntries.isNotEmpty) {
-            await _syncDatabase.batchInsertSequenceEntries(missingEntries);
-          }
+          final insertedCount = await _materializeLargeGap(
+            hostId: hostId,
+            startCounter: startCounter,
+            endCounter: counter - 1,
+            gapSize: gapSize,
+            originatingHostId: originatingHostId,
+            now: now,
+          );
 
           _trace(
             'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
-            'inserted=${missingEntries.length} (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+            'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
             subDomain: 'sequence.gapDetected',
           );
           _loggingService.captureEvent(
             'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
-            'inserted=${missingEntries.length} (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+            'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
             domain: 'SYNC_SEQUENCE',
             subDomain: 'gapDetected',
           );
         } else {
           for (var i = startCounter; i < counter; i++) {
-            gaps.add((hostId: hostId, counter: i));
-
             // Keep the small-gap path explicit because the per-counter logging
             // is still useful when debugging ordinary out-of-order delivery.
             final existing = await _syncDatabase.getEntryByHostAndCounter(
@@ -475,11 +551,11 @@ class SyncSequenceLogService {
 
     if (gaps.isNotEmpty) {
       _trace(
-        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.length} gaps',
+        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
         subDomain: 'sequence.recordReceived',
       );
       _loggingService.captureEvent(
-        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.length} gaps',
+        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
         domain: 'SYNC_SEQUENCE',
         subDomain: 'recordReceived',
       );
@@ -511,7 +587,72 @@ class SyncSequenceLogService {
       }
     }
 
-    return gaps;
+    return gaps.toGapList();
+  }
+
+  Future<int> _materializeLargeGap({
+    required String hostId,
+    required int startCounter,
+    required int endCounter,
+    required int gapSize,
+    required String originatingHostId,
+    required DateTime now,
+  }) async {
+    if (gapSize >= SyncTuning.extremeGapWarningSize) {
+      _trace(
+        'extremeGapDetected hostId=$hostId gapSize=$gapSize '
+        'start=$startCounter end=$endCounter '
+        'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
+        subDomain: 'sequence.extremeGap',
+      );
+      _loggingService.captureEvent(
+        'extremeGapDetected hostId=$hostId gapSize=$gapSize '
+        'start=$startCounter end=$endCounter '
+        'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'extremeGap',
+      );
+    }
+
+    var insertedCount = 0;
+    for (
+      var chunkStart = startCounter;
+      chunkStart <= endCounter;
+      chunkStart += SyncTuning.gapMaterializationChunkSize
+    ) {
+      final chunkEnd = math.min(
+        endCounter,
+        chunkStart + SyncTuning.gapMaterializationChunkSize - 1,
+      );
+      final existingCounters = await _syncDatabase.getCountersForHostInRange(
+        hostId,
+        chunkStart,
+        chunkEnd,
+      );
+      final missingEntries = <SyncSequenceLogCompanion>[];
+
+      for (var counter = chunkStart; counter <= chunkEnd; counter++) {
+        if (!existingCounters.contains(counter)) {
+          missingEntries.add(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              originatingHostId: Value(originatingHostId),
+              status: Value(SyncSequenceStatus.missing.index),
+              createdAt: Value(now),
+              updatedAt: Value(now),
+            ),
+          );
+        }
+      }
+
+      if (missingEntries.isNotEmpty) {
+        insertedCount += missingEntries.length;
+        await _syncDatabase.batchInsertSequenceEntries(missingEntries);
+      }
+    }
+
+    return insertedCount;
   }
 
   List<VectorClock> _filterCoveredVectorClocks(

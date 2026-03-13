@@ -203,7 +203,7 @@ class CatchUpStrategy {
           events.isNotEmpty &&
           TimelineEventOrdering.timestamp(events.first) <= preContextSinceTs;
       logging.captureEvent(
-        'catchup.markerMissing lastEventId=${lastEventId ?? 'null'} '
+        'catchup.markerMissing lastEventId=$lastEventId '
         'snapshot=${events.length} visibleTail=$visibleTailCount '
         'fallbackLimit=$missingMarkerFallbackLimit '
         'processingSuppressed=true '

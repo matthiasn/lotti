@@ -110,6 +110,12 @@ class SyncTuning {
   // Gaps larger than this are still fully materialized so backfill can recover
   // them, but they are logged explicitly for diagnostics.
   static const int maxGapSize = 100;
+  // Materialize large gaps in bounded chunks so a pathological counter jump
+  // does not require a single huge in-memory batch.
+  static const int gapMaterializationChunkSize = 5000;
+  // Additional warning threshold for extreme gaps. We still preserve the full
+  // gap for correctness; this only improves observability.
+  static const int extremeGapWarningSize = 10000;
 
   // Maximum entries to process from an incoming backfill request.
   // Prevents a single large request from flooding the outbox.
