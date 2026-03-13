@@ -1,7 +1,9 @@
 """API routes for credits service"""
 
+from __future__ import annotations
+
+import asyncio
 import logging
-from typing import Dict
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -22,6 +24,10 @@ from ..core.models import (
     ErrorResponse,
     TopUpRequest,
     TopUpResponse,
+    TransactionListResponse,
+    TransactionRecord,
+    UserInfo,
+    UserListResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -29,7 +35,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/health", response_model=Dict[str, str])
+@router.get("/health", response_model=dict[str, str])
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
@@ -201,6 +207,148 @@ async def bill(request: BillRequest):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception:
         logger.exception("Error processing bill")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
+
+
+@router.get("/users", response_model=UserListResponse)
+async def list_users(page: int = 1, page_size: int = 20):
+    """List all registered users with pagination"""
+    try:
+        # Clamp page_size to 1-100
+        page_size = max(1, min(100, page_size))
+        page = max(1, page)
+
+        user_registry = container.get_user_registry()
+        balance_service = container.get_balance_service()
+
+        users, total = await user_registry.list_users(page=page, page_size=page_size)
+
+        # Fetch balances concurrently to avoid N+1 sequential lookups
+        async def _get_balance(uid: str):
+            try:
+                return await balance_service.get_balance(uid)
+            except AccountNotFoundException:
+                return None
+
+        balances = await asyncio.gather(*[_get_balance(u["user_id"]) for u in users])
+
+        user_infos = [
+            UserInfo(
+                user_id=user["user_id"],
+                display_name=user.get("display_name"),
+                created_at=user["created_at"],
+                balance=balance,
+            )
+            for user, balance in zip(users, balances)
+        ]
+
+        return UserListResponse(
+            users=user_infos,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    except Exception:
+        logger.exception("Error listing users")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
+
+
+@router.get(
+    "/users/{user_id}",
+    response_model=UserInfo,
+    responses={404: {"model": ErrorResponse, "description": "User not found"}},
+)
+async def get_user(user_id: str):
+    """Get user details including balance"""
+    try:
+        user_registry = container.get_user_registry()
+        user = await user_registry.get_user(user_id)
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User '{user_id}' not found",
+            )
+
+        balance = None
+        try:
+            balance_service = container.get_balance_service()
+            balance = await balance_service.get_balance(user_id)
+        except AccountNotFoundException:
+            pass
+
+        return UserInfo(
+            user_id=user["user_id"],
+            display_name=user.get("display_name"),
+            created_at=user["created_at"],
+            balance=balance,
+        )
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error getting user")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error - please try again later",
+        )
+
+
+@router.get(
+    "/users/{user_id}/transactions",
+    response_model=TransactionListResponse,
+    responses={404: {"model": ErrorResponse, "description": "User not found"}},
+)
+async def get_transactions(user_id: str, page: int = 1, page_size: int = 20):
+    """Get transaction history for a user"""
+    try:
+        # Clamp page_size to 1-100
+        page_size = max(1, min(100, page_size))
+        page = max(1, page)
+
+        user_registry = container.get_user_registry()
+        if not await user_registry.user_exists(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"User '{user_id}' not found",
+            )
+
+        transaction_log = container.get_transaction_log()
+        transactions, total = await transaction_log.get_transactions(
+            user_id, page=page, page_size=page_size
+        )
+
+        transaction_records = [
+            TransactionRecord(
+                id=tx["id"],
+                user_id=tx["user_id"],
+                type=tx["type"],
+                amount=tx["amount"],
+                description=tx.get("description"),
+                balance_after=tx["balance_after"],
+                created_at=tx["created_at"],
+            )
+            for tx in transactions
+        ]
+
+        return TransactionListResponse(
+            transactions=transaction_records,
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error getting transactions")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error - please try again later",

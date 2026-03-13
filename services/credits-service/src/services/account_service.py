@@ -1,12 +1,13 @@
 """Account management service"""
 
+from __future__ import annotations
+
 import logging
 from decimal import Decimal
-from typing import Optional
 
 from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import AccountAlreadyExistsException, AccountNotFoundException
-from ..core.interfaces import IAccountService, ITigerBeetleClient
+from ..core.interfaces import IAccountService, ITigerBeetleClient, IUserRegistryService
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +15,22 @@ logger = logging.getLogger(__name__)
 class AccountService(IAccountService):
     """Service for managing user accounts"""
 
-    def __init__(self, tigerbeetle_client: ITigerBeetleClient):
+    def __init__(
+        self,
+        tigerbeetle_client: ITigerBeetleClient,
+        user_registry: IUserRegistryService | None = None,
+    ):
         """
         Initialize account service
 
         Args:
             tigerbeetle_client: TigerBeetle client instance
+            user_registry: Optional user registry for tracking user metadata
         """
         self.client = tigerbeetle_client
+        self.user_registry = user_registry
 
-    async def create_account(self, user_id: str, initial_balance: Optional[Decimal] = None) -> tuple[int, Decimal]:
+    async def create_account(self, user_id: str, initial_balance: Decimal | None = None) -> tuple[int, Decimal]:
         """
         Create a new account and set its initial balance
 
@@ -49,6 +56,10 @@ class AccountService(IAccountService):
             # Create the account with zero balance (TigerBeetle requirement)
             await self.client.create_account(account_id, user_id)
             logger.info(f"Successfully created account {account_id} for user {user_id}")
+
+            # Register user in the user registry
+            if self.user_registry is not None:
+                await self.user_registry.register_user(user_id)
 
             # If an initial balance is specified, transfer from system account
             if initial_balance > 0:

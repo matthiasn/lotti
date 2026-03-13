@@ -1,7 +1,9 @@
 """Core domain models"""
 
+from __future__ import annotations
+
 from decimal import Decimal
-from typing import Optional
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -69,7 +71,7 @@ class BillRequest(BaseModel):
 
     user_id: str = Field(..., description="User identifier")
     amount: Decimal = Field(..., description="Amount to bill in USD", gt=0)
-    description: Optional[str] = Field(None, description="Description of the charge (e.g., 'Gemini API call')")
+    description: str | None = Field(None, description="Description of the charge (e.g., 'Gemini API call')")
 
     @field_validator("amount")
     @classmethod
@@ -92,4 +94,43 @@ class ErrorResponse(BaseModel):
     """Standard error response"""
 
     error: str = Field(..., description="Error message")
-    detail: Optional[str] = Field(None, description="Additional error details")
+    detail: str | None = Field(None, description="Additional error details")
+
+
+class UserInfo(BaseModel):
+    """User information"""
+
+    user_id: str = Field(..., description="Unique user identifier (UUID)")
+    display_name: str | None = Field(None, description="User display name")
+    created_at: str = Field(..., description="ISO 8601 creation timestamp")
+    balance: Decimal | None = Field(None, description="Current balance in USD")
+
+
+class UserListResponse(BaseModel):
+    """Paginated list of users"""
+
+    users: list[UserInfo] = Field(..., description="List of users")
+    total: int = Field(..., description="Total number of users")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of users per page")
+
+
+class TransactionRecord(BaseModel):
+    """A single transaction record"""
+
+    id: int = Field(..., description="Transaction ID")
+    user_id: str = Field(..., description="User identifier")
+    type: str = Field(..., description="Transaction type: 'topup' or 'bill'")
+    amount: Decimal = Field(..., description="Transaction amount in USD")
+    description: str | None = Field(None, description="Transaction description")
+    balance_after: Decimal = Field(..., description="Balance after transaction in USD")
+    created_at: str = Field(..., description="ISO 8601 timestamp")
+
+
+class TransactionListResponse(BaseModel):
+    """Paginated list of transactions"""
+
+    transactions: list[TransactionRecord] = Field(..., description="List of transactions")
+    total: int = Field(..., description="Total number of transactions")
+    page: int = Field(..., description="Current page number")
+    page_size: int = Field(..., description="Number of transactions per page")

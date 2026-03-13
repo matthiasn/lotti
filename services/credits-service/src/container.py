@@ -8,12 +8,16 @@ from .core.constants import (
     SERVICE_BALANCE_SERVICE,
     SERVICE_BILLING_SERVICE,
     SERVICE_TIGERBEETLE_CLIENT,
+    SERVICE_TRANSACTION_LOG,
+    SERVICE_USER_REGISTRY,
 )
 from .core.interfaces import (
     IAccountService,
     IBalanceService,
     IBillingService,
     ITigerBeetleClient,
+    ITransactionLogService,
+    IUserRegistryService,
 )
 
 T = TypeVar("T")
@@ -33,6 +37,8 @@ class Container:
         self._factories[SERVICE_ACCOUNT_SERVICE] = lambda: self._create_account_service()
         self._factories[SERVICE_BALANCE_SERVICE] = lambda: self._create_balance_service()
         self._factories[SERVICE_BILLING_SERVICE] = lambda: self._create_billing_service()
+        self._factories[SERVICE_USER_REGISTRY] = lambda: self._create_user_registry()
+        self._factories[SERVICE_TRANSACTION_LOG] = lambda: self._create_transaction_log()
 
     def _create_tigerbeetle_client(self) -> Any:
         """Create TigerBeetle client"""
@@ -48,11 +54,23 @@ class Container:
 
         return TigerBeetleClient(cluster_id=cluster_id, addresses=addresses)
 
+    def _create_user_registry(self) -> Any:
+        """Create user registry service"""
+        from .services.user_registry_service import UserRegistryService
+
+        return UserRegistryService()
+
+    def _create_transaction_log(self) -> Any:
+        """Create transaction log service"""
+        from .services.transaction_log_service import TransactionLogService
+
+        return TransactionLogService()
+
     def _create_account_service(self) -> Any:
         """Create account service"""
         from .services.account_service import AccountService
 
-        return AccountService(self.get_tigerbeetle_client())
+        return AccountService(self.get_tigerbeetle_client(), self.get_user_registry())
 
     def _create_balance_service(self) -> Any:
         """Create balance service"""
@@ -64,7 +82,7 @@ class Container:
         """Create billing service"""
         from .services.billing_service import BillingService
 
-        return BillingService(self.get_tigerbeetle_client())
+        return BillingService(self.get_tigerbeetle_client(), self.get_transaction_log())
 
     def get(self, service_name: str) -> Any:
         """Get a service by name (lazy initialization)"""
@@ -90,6 +108,14 @@ class Container:
     def get_billing_service(self) -> IBillingService:
         """Get billing service"""
         return cast(IBillingService, self.get(SERVICE_BILLING_SERVICE))
+
+    def get_user_registry(self) -> IUserRegistryService:
+        """Get user registry service"""
+        return cast(IUserRegistryService, self.get(SERVICE_USER_REGISTRY))
+
+    def get_transaction_log(self) -> ITransactionLogService:
+        """Get transaction log service"""
+        return cast(ITransactionLogService, self.get(SERVICE_TRANSACTION_LOG))
 
 
 # Global container instance
