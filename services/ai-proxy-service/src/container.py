@@ -3,8 +3,13 @@
 import os
 from typing import Any, Callable, Dict, TypeVar, cast
 
-from .core.constants import SERVICE_GEMINI_CLIENT, SERVICE_BILLING_SERVICE
-from .core.interfaces import IGeminiClient, IBillingService
+from .core.constants import (
+    SERVICE_GEMINI_CLIENT,
+    SERVICE_BILLING_SERVICE,
+    SERVICE_USAGE_LOG,
+    SERVICE_PRICING_SERVICE,
+)
+from .core.interfaces import IGeminiClient, IBillingService, IUsageLogService, IPricingService
 
 T = TypeVar("T")
 
@@ -21,6 +26,8 @@ class Container:
         """Configure service factory functions for lazy initialization"""
         self._factories[SERVICE_GEMINI_CLIENT] = lambda: self._create_gemini_client()
         self._factories[SERVICE_BILLING_SERVICE] = lambda: self._create_billing_service()
+        self._factories[SERVICE_USAGE_LOG] = lambda: self._create_usage_log_service()
+        self._factories[SERVICE_PRICING_SERVICE] = lambda: self._create_pricing_service()
 
     def _create_gemini_client(self) -> Any:
         """Create Gemini client"""
@@ -32,11 +39,24 @@ class Container:
 
         return GeminiClient(api_key=api_key)
 
+    def _create_pricing_service(self) -> Any:
+        """Create pricing service"""
+        from .services.pricing_service import PricingService
+
+        return PricingService()
+
     def _create_billing_service(self) -> Any:
-        """Create billing service"""
+        """Create billing service, wired with pricing service"""
         from .services.billing_service import BillingService
 
-        return BillingService()
+        pricing_service = self.get_pricing_service()
+        return BillingService(pricing_service=pricing_service)
+
+    def _create_usage_log_service(self) -> Any:
+        """Create usage log service"""
+        from .services.usage_log_service import UsageLogService
+
+        return UsageLogService()
 
     def get(self, service_name: str) -> Any:
         """Get a service by name (lazy initialization)"""
@@ -54,6 +74,14 @@ class Container:
     def get_billing_service(self) -> IBillingService:
         """Get billing service"""
         return cast(IBillingService, self.get(SERVICE_BILLING_SERVICE))
+
+    def get_usage_log(self) -> IUsageLogService:
+        """Get usage log service"""
+        return cast(IUsageLogService, self.get(SERVICE_USAGE_LOG))
+
+    def get_pricing_service(self) -> IPricingService:
+        """Get pricing service"""
+        return cast(IPricingService, self.get(SERVICE_PRICING_SERVICE))
 
 
 # Global container instance
