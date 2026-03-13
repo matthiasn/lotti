@@ -12,15 +12,25 @@ export default function UserListPage() {
   const pageSize = 20;
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError(null);
     fetchUsers(page, pageSize)
       .then((res) => {
+        if (cancelled) return;
         setUsers(res.users);
         setTotal(res.total);
       })
-      .catch((err) => setError(err.message || "Failed to load users"))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err?.message || "Failed to load users");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [page]);
 
   const totalPages = Math.ceil(total / pageSize);

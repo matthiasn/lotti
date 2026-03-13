@@ -69,7 +69,15 @@ export default function UserTable({ users, loading }: Props) {
             <tr
               key={user.user_id}
               className="clickable"
-              onClick={() => navigate(`/users/${user.user_id}`)}
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(`/users/${encodeURIComponent(user.user_id)}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/users/${encodeURIComponent(user.user_id)}`);
+                }
+              }}
             >
               <td>
                 <span className="mono" style={{ color: "var(--color-text-tertiary)" }}>

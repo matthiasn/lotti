@@ -65,7 +65,7 @@ after a usable version is ready.
 
 ## Architecture
 
-```
+```text
 ┌─────────────────────┐
 │  Dashboard Frontend  │  (React + Vite, runs on :5173)
 │  services/dashboard/ │
@@ -361,7 +361,7 @@ prototype, good charting ecosystem (recharts).
 
 ## Execution Order
 
-```
+```text
 Phase 1 (credits-service backend)
   ├── Step 1.1: User registry + list endpoint
   └── Step 1.2: Transaction history endpoint

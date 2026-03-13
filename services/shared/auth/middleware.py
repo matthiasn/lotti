@@ -111,13 +111,11 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         # Check admin paths first — require admin key
         if self._is_admin_path(request.url.path):
             if not self.valid_admin_keys:
-                # No admin keys configured — fall back to regular API key check
-                if api_key not in self.valid_api_keys:
-                    logger.warning(f"Authentication failed: Invalid API key for admin path (path: {request.url.path})")
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Invalid API key",
-                    )
+                logger.error(f"Authentication failed: Admin API keys not configured for admin path (path: {request.url.path})")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Admin API keys not configured for this endpoint",
+                )
             elif api_key not in self.valid_admin_keys:
                 logger.warning(f"Authentication failed: Admin API key required (path: {request.url.path})")
                 raise HTTPException(
