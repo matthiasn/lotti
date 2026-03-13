@@ -57,9 +57,16 @@ class AccountService(IAccountService):
             await self.client.create_account(account_id, user_id)
             logger.info(f"Successfully created account {account_id} for user {user_id}")
 
-            # Register user in the user registry
+            # Register user in the user registry (best-effort; failure must not
+            # roll back a successful TigerBeetle account creation)
             if self.user_registry is not None:
-                await self.user_registry.register_user(user_id)
+                try:
+                    await self.user_registry.register_user(user_id)
+                except Exception:
+                    logger.exception(
+                        "Failed to register user %s in registry; account was created successfully",
+                        user_id,
+                    )
 
             # If an initial balance is specified, transfer from system account
             if initial_balance > 0:
