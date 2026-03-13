@@ -138,7 +138,6 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
     const baseColor = starredGold;
 
     return AnimatedBuilder(
@@ -147,24 +146,14 @@ class _AnimatedRateButtonState extends State<_AnimatedRateButton>
         final opacity = _isPulsing ? _animation.value : 1.0;
         final borderColor = baseColor.withValues(alpha: opacity);
 
-        return OutlinedButton.icon(
+        return IconButton(
           onPressed: () => RatingModal.show(context, widget.entryId),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: borderColor, width: 1.5),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            foregroundColor: colorScheme.onSurface,
-          ),
-          icon: Icon(
-            Icons.star_rate_outlined,
-            size: 16,
-            color: borderColor,
-          ),
-          label: Text(
-            context.messages.sessionRatingRateAction,
-            style: TextStyle(fontSize: 12, color: borderColor),
-          ),
+          icon: Icon(Icons.star_rate_rounded, color: borderColor),
+          iconSize: 20,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          visualDensity: VisualDensity.compact,
+          tooltip: context.messages.sessionRatingRateAction,
         );
       },
     );

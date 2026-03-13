@@ -66,7 +66,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Rate Session'), findsNothing);
+      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
     });
 
     testWidgets('visible when ratings enabled and session just ended', (
@@ -75,9 +75,8 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.text('Rate Session'), findsOneWidget);
-      expect(find.byIcon(Icons.star_rate_outlined), findsOneWidget);
-      expect(find.byType(OutlinedButton), findsOneWidget);
+      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
+      expect(find.byType(IconButton), findsOneWidget);
 
       // Drain animation to avoid pending timer errors
       await drainPulseAnimation(tester);
@@ -91,7 +90,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Rate Session'), findsNothing);
+      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
     });
 
     testWidgets('button remains visible after pulse animation completes', (
@@ -100,13 +99,13 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.text('Rate Session'), findsOneWidget);
+      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
 
       // Drain all pulse cycles
       await drainPulseAnimation(tester);
 
       // Button should still be visible (just not pulsing anymore)
-      expect(find.text('Rate Session'), findsOneWidget);
+      expect(find.byIcon(Icons.star_rate_rounded), findsOneWidget);
     });
 
     testWidgets('tapping button opens rating modal', (tester) async {
@@ -116,7 +115,7 @@ void main() {
       // Drain pulse animation first so tap target is stable
       await drainPulseAnimation(tester);
 
-      await tester.tap(find.byType(OutlinedButton));
+      await tester.tap(find.byType(IconButton));
       // Use pump with duration instead of pumpAndSettle — the modal
       // may contain animations that never fully settle.
       await tester.pump();
@@ -153,7 +152,7 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('Rate Session'), findsNothing);
+      expect(find.byIcon(Icons.star_rate_rounded), findsNothing);
     });
   });
 }

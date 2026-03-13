@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -89,17 +90,16 @@ void main() {
     await tearDownTestGetIt();
   });
 
-  Widget buildSubject({
+  /// Builds the widget under test and returns the [ProviderContainer] so
+  /// tests can read provider state for assertions.
+  ProviderContainer buildSubjectWithContainer(
+    WidgetTester tester, {
     JournalEntity? item,
     JournalEntity? linkedFrom,
     List<Override> extraOverrides = const [],
   }) {
     final entry = item ?? testEntry;
-    return makeTestableWidgetWithScaffold(
-      DurationWidget(
-        item: entry,
-        linkedFrom: linkedFrom,
-      ),
+    final container = ProviderContainer(
       overrides: [
         createEntryControllerOverride(entry),
         newestLinkedIdControllerProvider(id: linkedFrom?.id).overrideWith(
@@ -108,14 +108,30 @@ void main() {
         ...extraOverrides,
       ],
     );
+    addTearDown(container.dispose);
+    return container;
   }
 
   group('DurationWidget stream subscription', () {
     testWidgets(
       'marks session ended when recording stops and duration >= 1 minute',
       (tester) async {
-        await tester.pumpWidget(buildSubject());
+        final container = buildSubjectWithContainer(tester);
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidgetWithScaffold(
+              DurationWidget(item: testEntry, linkedFrom: null),
+            ),
+          ),
+        );
         await tester.pump();
+
+        // Verify session is not marked yet
+        expect(
+          container.read(sessionEndedControllerProvider).contains(entryId),
+          isFalse,
+        );
 
         // Simulate a recording event for our entry
         final recordingEntry = testEntry.copyWith(
@@ -129,21 +145,26 @@ void main() {
         // Now stop recording (emit null)
         fakeTimeService.emit(null);
         await tester.pump();
+        // Extra pump to process the deferred addPostFrameCallback
+        await tester.pump();
 
-        // The markSessionEnded call should have been made without crashing.
-        // We can't read the container directly, but we verify the code path
-        // executed by confirming no exceptions were thrown.
+        // Assert the provider was actually mutated
+        expect(
+          container.read(sessionEndedControllerProvider).contains(entryId),
+          isTrue,
+        );
       },
     );
 
     testWidgets(
       'does not mark session ended for short sessions (< 1 minute)',
       (tester) async {
-        // Entry with very recent dateFrom — duration will be < 1 minute
-        final recentDate = DateTime(2024, 3, 15, 12);
+        // Entry with dateFrom < 1 minute ago so the duration check fails
+        final recentDate = DateTime.now().subtract(const Duration(seconds: 30));
+        const shortEntryId = 'short-entry';
         final shortEntry = JournalEntity.journalEntry(
           meta: Metadata(
-            id: 'short-entry',
+            id: shortEntryId,
             createdAt: recentDate,
             updatedAt: recentDate,
             dateFrom: recentDate,
@@ -151,7 +172,18 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(buildSubject(item: shortEntry));
+        final container = buildSubjectWithContainer(
+          tester,
+          item: shortEntry,
+        );
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidgetWithScaffold(
+              DurationWidget(item: shortEntry, linkedFrom: null),
+            ),
+          ),
+        );
         await tester.pump();
 
         // Simulate recording then stop
@@ -166,25 +198,42 @@ void main() {
 
         fakeTimeService.emit(null);
         await tester.pump();
+        await tester.pump();
 
-        // No crash and no session-ended marking for short sessions
+        // Assert session was NOT marked ended for short session
+        expect(
+          container.read(sessionEndedControllerProvider).contains(shortEntryId),
+          isFalse,
+        );
       },
     );
 
     testWidgets(
       'clears session ended when new recording starts',
       (tester) async {
-        // Pre-populate session ended state
+        final container = buildSubjectWithContainer(
+          tester,
+          extraOverrides: [
+            sessionEndedControllerProvider.overrideWith(
+              () => _PreloadedSessionEndedController({entryId}),
+            ),
+          ],
+        );
         await tester.pumpWidget(
-          buildSubject(
-            extraOverrides: [
-              sessionEndedControllerProvider.overrideWith(
-                () => _PreloadedSessionEndedController({entryId}),
-              ),
-            ],
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidgetWithScaffold(
+              DurationWidget(item: testEntry, linkedFrom: null),
+            ),
           ),
         );
         await tester.pump();
+
+        // Verify session is initially marked as ended
+        expect(
+          container.read(sessionEndedControllerProvider).contains(entryId),
+          isTrue,
+        );
 
         // First emit null (not recording) to establish baseline
         fakeTimeService.emit(null);
@@ -198,8 +247,14 @@ void main() {
         );
         fakeTimeService.emit(recordingEntry);
         await tester.pump();
+        // Extra pump to process the deferred addPostFrameCallback
+        await tester.pump();
 
-        // The clearSessionEnded call should have been made without crashing
+        // Assert the provider was cleared
+        expect(
+          container.read(sessionEndedControllerProvider).contains(entryId),
+          isFalse,
+        );
       },
     );
 

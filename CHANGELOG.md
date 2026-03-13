@@ -21,14 +21,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agent sync startup: the app now keeps agent initialization alive from app
   startup when agents are enabled, so incoming agent backfill can resolve
   without waiting for the first entry or agent screen to be opened.
-
-## [0.9.918] - 2026-03-12
-### Changed
 - Session rating: replaced the intrusive automatic rating modal (which popped
-  up when a timer stopped) with a non-blocking pulsating "Rate Session" outline
-  button next to the timer. The button pulses for ~10 seconds, then stays
-  visible until a rating is saved. Rating remains accessible from the
-  triple-dot menu.
+  up when a timer stopped) with a non-blocking pulsating star icon button next
+  to the timer. The button pulses for ~10 seconds, then stays visible until a
+  rating is saved. Rating remains accessible from the triple-dot menu.
+
+### Fixed
+- Fixed provider state mutation during widget tree build phase in timer
+  session-ended detection by deferring to post-frame callbacks.
+- Fixed RenderFlex overflow on the rate button row by replacing the outlined
+  text button with a compact star icon button.
+- Fixed race condition in realtime transcription stop: subscribe to the
+  done-event stream before cleanup to avoid missing events on broadcast streams.
 
 ### Removed
 - Label assignment snackbar/toaster — no longer needed since label assignments
