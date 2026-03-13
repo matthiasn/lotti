@@ -1207,6 +1207,29 @@ void main() {
       expect(missing, hasLength(3));
     });
 
+    test('supports offset after filtering', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      final missing = await database.getMissingEntriesWithLimits(
+        limit: 2,
+        offset: 2,
+      );
+      expect(missing.map((e) => e.counter).toList(), [3, 4]);
+    });
+
     test('respects maxRequestCount', () async {
       final database = db!;
       const hostId = 'host-1';
@@ -1485,6 +1508,27 @@ void main() {
       expect(entries, isEmpty);
     });
 
+    test('includes sending backfill request messages', () async {
+      final database = db!;
+
+      await database.addOutboxItem(
+        _buildOutbox(
+          status: OutboxStatus.sending,
+          createdAt: DateTime(2024, 1, 1),
+          message: '''
+{
+  "runtimeType": "backfillRequest",
+  "entries": [{"hostId": "host-1", "counter": 5}],
+  "requesterId": "requester-1"
+}
+''',
+        ),
+      );
+
+      final entries = await database.getPendingBackfillEntries();
+      expect(entries, {(hostId: 'host-1', counter: 5)});
+    });
+
     test('ignores error backfill request messages', () async {
       final database = db!;
 
@@ -1719,6 +1763,26 @@ void main() {
 
       final requested = await database.getRequestedEntries(limit: 2);
       expect(requested, hasLength(2));
+    });
+
+    test('supports offset parameter', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      for (var i = 1; i <= 5; i++) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(i),
+            status: Value(SyncSequenceStatus.requested.index),
+            createdAt: Value(DateTime(2024, 1, i)),
+            updatedAt: Value(DateTime(2024, 1, i)),
+          ),
+        );
+      }
+
+      final requested = await database.getRequestedEntries(limit: 2, offset: 2);
+      expect(requested.map((e) => e.counter).toList(), [3, 4]);
     });
 
     test('returns empty list when no requested entries', () async {
@@ -2978,8 +3042,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 6', () {
-      expect(db.schemaVersion, 6);
+    test('schema version is 7', () {
+      expect(db.schemaVersion, 7);
     });
   });
 

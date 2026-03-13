@@ -780,6 +780,7 @@ class SyncEventProcessor {
           vectorClock: incomingVc,
           originatingHostId: syncMessage.originatingHostId!,
           coveredVectorClocks: syncMessage.coveredVectorClocks,
+          jsonPath: syncMessage.jsonPath,
         );
         if (gaps.isNotEmpty) {
           _trace(
@@ -836,6 +837,7 @@ class SyncEventProcessor {
             vectorClock: syncMessage.vectorClock!,
             originatingHostId: syncMessage.originatingHostId!,
             coveredVectorClocks: syncMessage.coveredVectorClocks,
+            jsonPath: syncMessage.jsonPath,
           );
         } catch (e, st) {
           _loggingService.captureException(
@@ -957,6 +959,7 @@ class SyncEventProcessor {
             vectorClock: syncMessage.vectorClock!,
             originatingHostId: syncMessage.originatingHostId!,
             coveredVectorClocks: syncMessage.coveredVectorClocks,
+            jsonPath: syncMessage.jsonPath,
           );
           if (gaps.isNotEmpty) {
             _trace(
@@ -1508,6 +1511,7 @@ class SyncEventProcessor {
                 originatingHostId: msg.originatingHostId!,
                 coveredVectorClocks: msg.coveredVectorClocks,
                 payloadType: SyncSequencePayloadType.agentEntity,
+                jsonPath: msg.jsonPath,
               );
               if (gaps.isNotEmpty) {
                 _trace(
@@ -1597,6 +1601,7 @@ class SyncEventProcessor {
                 originatingHostId: msg.originatingHostId!,
                 coveredVectorClocks: msg.coveredVectorClocks,
                 payloadType: SyncSequencePayloadType.agentLink,
+                jsonPath: msg.jsonPath,
               );
               if (gaps.isNotEmpty) {
                 _trace(

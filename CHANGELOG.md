@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   visible in both logs.
 - Sync diagnostics: receiver-side signal logging now emits burst/pass summaries
   with source breakdowns instead of one hot-path line per raw scheduler poke.
+- Sync backfill follow-up: re-request paging now walks past already queued
+  oldest rows, in-flight `sending` backfill requests suppress duplicates, and
+  zombie-file cleanup rejects paths that resolve outside the docs directory.
+- Agent sync startup: the app now keeps agent initialization alive from app
+  startup when agents are enabled, so incoming agent backfill can resolve
+  without waiting for the first entry or agent screen to be opened.
 
 ## [0.9.918] - 2026-03-12
 ### Changed

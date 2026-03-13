@@ -52,6 +52,7 @@ class AttachmentIngestor {
   final Queue<String> _handledAttachmentEventOrder = Queue<String>();
   final Set<String> _queuedKeys = <String>{};
   final Set<String> _inFlightKeys = <String>{};
+
   /// Tracks paths with an in-flight immediate (non-queued) save to prevent
   /// concurrent `_saveAttachment()` calls for the same file from `process()`.
   final Set<String> _inFlightSavePaths = <String>{};
@@ -79,6 +80,11 @@ class AttachmentIngestor {
     // file is missing and needs repair.
     final rpAny = event.content['relativePath'];
     if (rpAny is String && rpAny.isNotEmpty) {
+      // Always keep AttachmentIndex up-to-date so SmartJournalEntityLoader
+      // can find descriptors for VC validation and re-fetch, even when the
+      // download itself is skipped by the dedup guards below.
+      attachmentIndex?.record(event);
+
       // Synchronously check-and-record to prevent concurrent process() calls
       // for the same eventId from both passing the guard.
       final alreadyHandled = _wasAttachmentEventHandled(event.eventId);
@@ -97,7 +103,6 @@ class AttachmentIngestor {
       final shouldProcessAttachment = !alreadyHandled || shouldRepairLocal;
 
       if (shouldProcessAttachment) {
-        attachmentIndex?.record(event);
         // Observability log for attachment-like events.
         try {
           final mime = event.attachmentMimetype;

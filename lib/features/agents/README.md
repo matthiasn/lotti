@@ -8,6 +8,8 @@ This feature provides persistent, sync-aware agents for Lotti, centered on:
 4. Meta-Improver: recursive self-improvement that evaluates and improves the improver agents themselves on a monthly cadence, with recursion depth governed by the policy cap (max depth 2 per ADR 0012).
 
 The system is enabled only when `enableAgents` is true.
+When enabled, app startup keeps `agentInitializationProvider` alive so sync can
+apply incoming agent payloads before the first entry or agent screen is opened.
 
 ## Runtime Scope
 

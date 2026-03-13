@@ -671,6 +671,7 @@ void main() {
           originatingHostId: 'originator-host',
           coveredVectorClocks: any(named: 'coveredVectorClocks'),
           payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
         ),
       ).called(2);
     },
@@ -1446,6 +1447,7 @@ void main() {
             originatingHostId: 'host-A',
             coveredVectorClocks: null,
             payloadType: SyncSequencePayloadType.agentEntity,
+            jsonPath: any(named: 'jsonPath'),
           ),
         ).called(1);
       });
@@ -1609,6 +1611,7 @@ void main() {
             originatingHostId: 'host-A',
             coveredVectorClocks: null,
             payloadType: SyncSequencePayloadType.agentLink,
+            jsonPath: any(named: 'jsonPath'),
           ),
         ).called(1);
       });
@@ -4276,6 +4279,7 @@ void main() {
           originatingHostId: any(named: 'originatingHostId'),
           coveredVectorClocks: any(named: 'coveredVectorClocks'),
           payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
         ),
       ).thenAnswer((_) async => [(hostId: 'host-A', counter: 10)]);
 
@@ -4294,6 +4298,7 @@ void main() {
           originatingHostId: 'host-A',
           coveredVectorClocks: null,
           payloadType: any(named: 'payloadType'),
+          jsonPath: any(named: 'jsonPath'),
         ),
       ).called(1);
       verify(
