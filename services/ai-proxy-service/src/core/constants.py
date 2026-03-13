@@ -3,6 +3,8 @@
 # Service names for dependency injection
 SERVICE_GEMINI_CLIENT = "gemini_client"
 SERVICE_BILLING_SERVICE = "billing_service"
+SERVICE_USAGE_LOG = "usage_log"
+SERVICE_PRICING_SERVICE = "pricing_service"
 
 # Model pricing (USD per 1K tokens)
 # Based on Gemini pricing as of 2025
