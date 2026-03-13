@@ -1254,7 +1254,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final ev = MockEvent();
-      when(() => ev.eventId).thenReturn('e1');
+      when(() => ev.eventId).thenReturn(r'$e1');
       when(() => ev.roomId).thenReturn('!room:server');
       when(
         () => ev.originServerTs,
@@ -1302,7 +1302,7 @@ void main() {
       await consumer.start();
 
       verify(
-        () => settingsDb.saveSettingsItem(lastReadMatrixEventId, 'e1'),
+        () => settingsDb.saveSettingsItem(lastReadMatrixEventId, r'$e1'),
       ).called(1);
       verify(
         () => settingsDb.saveSettingsItem(lastReadMatrixEventTs, '123'),

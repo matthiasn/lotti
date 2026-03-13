@@ -31,9 +31,9 @@ class SyncReadMarkerService {
   ///   when the room-level update fails.
   ///
   /// The method is intentionally defensive:
-  /// - Non-server event IDs (local placeholders such as `lotti-…`) are skipped
-  ///   for remote updates but still persisted locally so we do not regress the
-  ///   stored marker.
+  /// - Non-server event IDs (local placeholders such as `lotti-…`) are not
+  ///   used as durable read markers. They are skipped for both remote and local
+  ///   persistence because catch-up cannot re-anchor on them after restart.
   /// - Matrix `M_UNKNOWN` errors ("Could not find event …") are treated as
   ///   informational noise; they are logged once and suppressed to avoid
   ///   spamming the error channel while we wait for the server to learn about
@@ -44,22 +44,17 @@ class SyncReadMarkerService {
     required String eventId,
     Timeline? timeline,
   }) async {
-    final isServerEventId = eventId.startsWith(r'$');
+    final isServerEventId = isServerAssignedMatrixEventId(eventId);
     if (!isServerEventId) {
       _loggingService.captureEvent(
         'marker.remote.skip(nonServerId) id=$eventId',
         domain: 'MATRIX_SERVICE',
         subDomain: 'setReadMarker.guard',
       );
+      return;
     }
-    await setLastReadMatrixEventId(
-      eventId,
-      _settingsDb,
-    );
 
-    if (!isServerEventId) {
-      return; // keep local marker only
-    }
+    await setLastReadMatrixEventId(eventId, _settingsDb);
 
     if (client.isLogged()) {
       try {

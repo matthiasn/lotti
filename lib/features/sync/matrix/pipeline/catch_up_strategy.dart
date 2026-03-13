@@ -1,6 +1,5 @@
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
-import 'package:lotti/features/sync/matrix/utils/timeline_utils.dart' as tu;
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -24,7 +23,7 @@ const defaultMissingMarkerFallbackLimit = 1000;
 class CatchUpCollection {
   const CatchUpCollection._({
     required this.events,
-    required this.markerMissing,
+    required this.incomplete,
     required this.timestampAnchored,
     required this.snapshotSize,
     required this.visibleTailCount,
@@ -37,7 +36,7 @@ class CatchUpCollection {
     required int snapshotSize,
   }) : this._(
          events: events,
-         markerMissing: false,
+         incomplete: false,
          timestampAnchored: false,
          snapshotSize: snapshotSize,
          visibleTailCount: 0,
@@ -50,7 +49,7 @@ class CatchUpCollection {
     required int snapshotSize,
   }) : this._(
          events: events,
-         markerMissing: false,
+         incomplete: false,
          timestampAnchored: true,
          snapshotSize: snapshotSize,
          visibleTailCount: 0,
@@ -58,14 +57,14 @@ class CatchUpCollection {
          reachedTimestampBoundary: true,
        );
 
-  const CatchUpCollection.markerMissing({
+  const CatchUpCollection.incomplete({
     required int snapshotSize,
     required int visibleTailCount,
     required int fallbackLimit,
     required bool reachedTimestampBoundary,
   }) : this._(
          events: const [],
-         markerMissing: true,
+         incomplete: true,
          timestampAnchored: false,
          snapshotSize: snapshotSize,
          visibleTailCount: visibleTailCount,
@@ -74,7 +73,7 @@ class CatchUpCollection {
        );
 
   final List<Event> events;
-  final bool markerMissing;
+  final bool incomplete;
   final bool timestampAnchored;
   final int snapshotSize;
   final int visibleTailCount;
@@ -84,11 +83,16 @@ class CatchUpCollection {
 
 /// Catch‑up helper used at attach time by the stream consumer.
 class CatchUpStrategy {
-  /// Collects ordered events for catch‑up without rewinding before the last
-  /// processed marker. If [lastEventId] cannot be located but pagination reaches
-  /// [preContextSinceTs], returns a timestamp-anchored replay window instead of
-  /// falling back to sparse live recovery. Only returns an incomplete-recovery
-  /// result when neither anchor can be re-established.
+  /// Collects ordered events for catch-up using the stored timestamp as the
+  /// canonical replay anchor.
+  ///
+  /// When [preContextSinceTs] is available, catch-up keeps paging until the
+  /// earliest visible event is older than that boundary, then replays forward
+  /// from a bounded overlap around the boundary. [lastEventId] is accepted only
+  /// as legacy/debug context; recovery no longer depends on locating it.
+  ///
+  /// Returns an incomplete-recovery result only when the timestamp boundary
+  /// cannot be reached.
   static Future<CatchUpCollection> collectEventsForCatchUp({
     required Room room,
     required String? lastEventId,
@@ -103,83 +107,51 @@ class CatchUpStrategy {
     var limit = initialLimit;
     final snapshot = await room.getTimeline(limit: limit);
     try {
-      if (lastEventId == null) {
-        final events = TimelineEventOrdering.sortStableByTimestamp(
-          snapshot.events,
-        );
+      final events = TimelineEventOrdering.sortStableByTimestamp(
+        snapshot.events,
+      );
+      if (preContextSinceTs == null) {
         return CatchUpCollection.complete(
           events: events,
           snapshotSize: events.length,
         );
       }
 
-      final attempted = await backfill(
-        timeline: snapshot,
-        lastEventId: lastEventId,
-        pageSize: 200,
-        // When reconnecting after offline use, we must be able to keep paging
-        // until we either re-anchor on the stored marker or prove we have
-        // walked back past the last processed timestamp. A fixed page cap is
-        // what turned ordinary offline backlog into synthetic "missing" gaps.
-        maxPages: null,
-        logging: logging,
-        untilTimestamp: preContextSinceTs,
-      );
-      final events = TimelineEventOrdering.sortStableByTimestamp(
-        snapshot.events,
-      );
-      var idx = tu.findLastIndexByEventId(events, lastEventId);
-
-      // Escalate snapshot size when:
-      // - The marker is not present (idx < 0 and no SDK pagination attempted)
-      // - OR we need additional pre-context (by count or by timestamp)
-      bool needsMore() {
-        // If we haven't located the marker and we haven't tried SDK backfill
-        // yet, escalate immediately.
-        if (idx < 0 && !attempted) return true;
-
-        if (idx < 0 &&
-            preContextSinceTs != null &&
-            events.isNotEmpty &&
-            TimelineEventOrdering.timestamp(events.first) > preContextSinceTs) {
-          return true;
-        }
-
-        // If the marker is still not found even after backfill attempted,
-        // escalate while the snapshot appears full. This avoids truncating
-        // catch-up when there are more events than the current snapshot limit.
-        if (idx < 0) return events.length >= limit;
-
-        // Marker found: ensure requested pre-context by count and/or since-ts.
-        final availablePre = idx + 1; // events before (and including) marker
-        final needCount = preContextCount > 0 && availablePre < preContextCount;
-        final needSinceTs =
-            preContextSinceTs != null &&
-            (events.isEmpty ||
-                TimelineEventOrdering.timestamp(events.first) >
-                    preContextSinceTs);
-        if (needCount || needSinceTs) return true;
-
-        // If the snapshot is full, there may be more events after the marker.
-        // Keep escalating until the snapshot is not full or we hit the cap.
-        return events.length >= limit;
+      Future<void> pageUntilBoundary(Timeline timeline) async {
+        await backfill(
+          timeline: timeline,
+          lastEventId: lastEventId,
+          pageSize: 200,
+          // Reconnect catch-up must keep paging until the timestamp boundary is
+          // reached or the SDK proves there is no more history to request.
+          maxPages: null,
+          logging: logging,
+          untilTimestamp: preContextSinceTs,
+        );
       }
 
-      while (needsMore()) {
-        final reachedStart = events.length < limit;
-        final reachedCap = limit >= maxLookback;
-        if (reachedStart || reachedCap) break;
+      bool reachedTimestampBoundary(List<Event> ordered) =>
+          ordered.isNotEmpty &&
+          TimelineEventOrdering.timestamp(ordered.first) <= preContextSinceTs;
+
+      var ordered = events;
+      if (!reachedTimestampBoundary(ordered)) {
+        await pageUntilBoundary(snapshot);
+        ordered = TimelineEventOrdering.sortStableByTimestamp(snapshot.events);
+      }
+
+      bool needsMore(List<Event> current) =>
+          !reachedTimestampBoundary(current) &&
+          current.length >= limit &&
+          limit < maxLookback;
+
+      while (needsMore(ordered)) {
         final doubled = limit * 2;
         limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);
         try {
-          final nextEvents = TimelineEventOrdering.sortStableByTimestamp(
-            next.events,
-          );
-          events
-            ..clear()
-            ..addAll(nextEvents);
-          idx = tu.findLastIndexByEventId(events, lastEventId);
+          await pageUntilBoundary(next);
+          ordered = TimelineEventOrdering.sortStableByTimestamp(next.events);
         } finally {
           try {
             next.cancelSubscriptions();
@@ -187,93 +159,66 @@ class CatchUpStrategy {
         }
       }
 
-      if (idx >= 0) {
-        // Compute a start index that ensures a pre-context by count and/or by
-        // timestamp since the stored last sync ts (when provided).
-        var startByCount = idx + 1;
-        if (preContextCount > 0) {
-          // Include exactly [preContextCount] events BEFORE the marker, and
-          // also include the marker itself. That means rewinding by
-          // preContextCount from the marker index (idx).
-          startByCount = idx - preContextCount;
-          if (startByCount < 0) startByCount = 0;
-          if (startByCount > events.length) startByCount = events.length;
-        }
-        var startByTs = idx + 1;
-        if (preContextSinceTs != null) {
-          // Find the first index whose timestamp is >= preContextSinceTs.
-          var i = 0;
-          while (i < events.length &&
-              TimelineEventOrdering.timestamp(events[i]) < preContextSinceTs) {
-            i++;
-          }
-          startByTs = i;
-        }
-        var start = startByCount < startByTs ? startByCount : startByTs;
-        if (start < 0) start = 0;
-        if (start > events.length) start = events.length;
-        return CatchUpCollection.complete(
-          events: events.sublist(start),
-          snapshotSize: events.length,
+      if (reachedTimestampBoundary(ordered)) {
+        final start = _startIndexForTimestampBoundary(
+          ordered,
+          preContextSinceTs: preContextSinceTs,
+          preContextCount: preContextCount,
         );
-      }
-      final reachedTimestampBoundary =
-          preContextSinceTs != null &&
-          events.isNotEmpty &&
-          TimelineEventOrdering.timestamp(events.first) <= preContextSinceTs;
-      if (reachedTimestampBoundary) {
-        var start = 0;
-        if (preContextSinceTs != null) {
-          while (start < events.length &&
-              TimelineEventOrdering.timestamp(events[start]) <
-                  preContextSinceTs) {
-            start++;
-          }
-          // Rewind a small bounded overlap before the timestamp anchor so
-          // replay remains stable around same-timestamp collisions and marker
-          // debounce skew without reprocessing an unbounded tail.
-          start -= preContextCount;
-          if (start < 0) start = 0;
-          if (start > events.length) start = events.length;
-        }
         logging.captureEvent(
-          'catchup.markerMissing lastEventId=$lastEventId '
-          'snapshot=${events.length} visibleTail=0 '
-          'fallbackLimit=$missingMarkerFallbackLimit '
-          'processingSuppressed=false '
-          'recoveredBy=timestampBoundary '
-          'startIndex=$start '
-          'reachedTimestampBoundary=true',
+          'catchup.timestampBoundary '
+          'snapshot=${ordered.length} '
+          'lastEventId=${lastEventId ?? 'null'} '
+          'startIndex=$start',
           domain: syncLoggingDomain,
-          subDomain: 'catchup.markerMissing',
+          subDomain: 'catchup.timestampBoundary',
         );
         return CatchUpCollection.timestampAnchored(
-          events: events.sublist(start),
-          snapshotSize: events.length,
+          events: ordered.sublist(start),
+          snapshotSize: ordered.length,
         );
       }
-      final visibleTailCount = events.length <= missingMarkerFallbackLimit
-          ? events.length
+
+      final visibleTailCount = ordered.length <= missingMarkerFallbackLimit
+          ? ordered.length
           : missingMarkerFallbackLimit;
       logging.captureEvent(
-        'catchup.markerMissing lastEventId=$lastEventId '
-        'snapshot=${events.length} visibleTail=$visibleTailCount '
+        'catchup.incomplete lastEventId=$lastEventId '
+        'snapshot=${ordered.length} visibleTail=$visibleTailCount '
         'fallbackLimit=$missingMarkerFallbackLimit '
-        'processingSuppressed=true '
-        'reachedTimestampBoundary=$reachedTimestampBoundary',
+        'reason=timestampBoundaryUnreachable '
+        'reachedTimestampBoundary=false',
         domain: syncLoggingDomain,
-        subDomain: 'catchup.markerMissing',
+        subDomain: 'catchup.incomplete',
       );
-      return CatchUpCollection.markerMissing(
-        snapshotSize: events.length,
+      return CatchUpCollection.incomplete(
+        snapshotSize: ordered.length,
         visibleTailCount: visibleTailCount,
         fallbackLimit: missingMarkerFallbackLimit,
-        reachedTimestampBoundary: reachedTimestampBoundary,
+        reachedTimestampBoundary: false,
       );
     } finally {
       try {
         snapshot.cancelSubscriptions();
       } catch (_) {}
     }
+  }
+
+  static int _startIndexForTimestampBoundary(
+    List<Event> events, {
+    required num preContextSinceTs,
+    required int preContextCount,
+  }) {
+    var start = 0;
+    while (start < events.length &&
+        TimelineEventOrdering.timestamp(events[start]) < preContextSinceTs) {
+      start++;
+    }
+    // Rewind a bounded overlap before the time anchor so catch-up absorbs
+    // same-timestamp collisions and small marker debounce skew.
+    start -= preContextCount;
+    if (start < 0) start = 0;
+    if (start > events.length) start = events.length;
+    return start;
   }
 }

@@ -437,10 +437,10 @@ class MatrixStreamCatchUpCoordinator {
         preContextCount: SyncTuning.catchupPreContextCount,
         maxLookback: SyncTuning.catchupMaxLookback,
       );
-      if (catchUp.markerMissing) {
+      if (catchUp.incomplete) {
         _loggingService.captureEvent(
           _withInstance(
-            'catchup.incomplete reason=markerMissing marker=$catchUpMarker '
+            'catchup.incomplete reason=timestampBoundaryUnreachable marker=$catchUpMarker '
             'snapshot=${catchUp.snapshotSize} visibleTail=${catchUp.visibleTailCount} '
             'timestampBoundary=${catchUp.reachedTimestampBoundary}',
           ),
@@ -452,7 +452,9 @@ class MatrixStreamCatchUpCoordinator {
           _catchUpRetryTimer?.cancel();
           _catchUpRetryTimer = null;
           _loggingService.captureEvent(
-            _withInstance('catchup.initial.incomplete reason=markerMissing'),
+            _withInstance(
+              'catchup.initial.incomplete reason=timestampBoundaryUnreachable',
+            ),
             domain: syncLoggingDomain,
             subDomain: 'catchup',
           );
@@ -516,8 +518,8 @@ class MatrixStreamCatchUpCoordinator {
         if (_initialCatchUpReady) {
           _loggingService.captureEvent(
             _withInstance(
-              'catchup.recovered from=markerMissing '
-              'via=${catchUp.timestampAnchored ? 'timestampBoundary' : 'markerFound'}',
+              'catchup.recovered from=incomplete '
+              'via=${catchUp.timestampAnchored ? 'timestampBoundary' : 'snapshot'}',
             ),
             domain: syncLoggingDomain,
             subDomain: 'catchup',

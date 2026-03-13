@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.920] - 2026-03-13
+### Changed
+- Sync catch-up: reconnect recovery is now timestamp-first. The client pages
+  backward until the stored timestamp boundary is visible, then replays forward
+  with bounded overlap instead of depending on exact event-id re-anchoring.
+- Sync markers: local `lotti-...` echo ids are no longer persisted as durable
+  remote read-marker ids. Server-assigned Matrix event ids are still kept for
+  remote marker state, while timestamp progress remains the canonical local
+  catch-up anchor.
+
 ## [0.9.919] - 2026-03-12
 ### Changed
 - Sync inbox: repeated replay of the exact same attachment event no longer

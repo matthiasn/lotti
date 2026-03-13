@@ -11,6 +11,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
 import 'package:lotti/features/sync/matrix/read_marker_service.dart';
@@ -155,10 +156,10 @@ void main() {
     test('stream events in steady state skip catch-up, only scan', () async {
       when(
         () => settingsDb.itemByKey(lastReadMatrixEventId),
-      ).thenAnswer((_) async => 'marker1');
+      ).thenAnswer((_) async => r'$marker1');
 
       final streamEvent = MockEvent();
-      when(() => streamEvent.eventId).thenReturn('stream2');
+      when(() => streamEvent.eventId).thenReturn(r'$stream2');
       when(() => streamEvent.roomId).thenReturn('!room:server');
       when(
         () => streamEvent.originServerTs,
@@ -242,10 +243,10 @@ void main() {
       // The live scan should be deferred until catch-up completes.
       when(
         () => settingsDb.itemByKey(lastReadMatrixEventId),
-      ).thenAnswer((_) async => 'marker1');
+      ).thenAnswer((_) async => r'$marker1');
 
       final streamEvent = MockEvent();
-      when(() => streamEvent.eventId).thenReturn('stream3');
+      when(() => streamEvent.eventId).thenReturn(r'$stream3');
       when(() => streamEvent.roomId).thenReturn('!room:server');
       when(
         () => streamEvent.originServerTs,
@@ -3718,6 +3719,136 @@ void main() {
           greaterThanOrEqualTo(snapshot['selfEventsSuppressed'] ?? 0),
         );
         // Prefetch metric removed
+
+        await consumer.dispose();
+      },
+    );
+
+    test(
+      'suppressed local echo does not persist non-server marker ids',
+      () async {
+        final session = MockMatrixSessionManager();
+        final roomManager = MockSyncRoomManager();
+        final logger = MockLoggingService();
+        final journalDb = MockJournalDb();
+        final settingsDb = MockSettingsDb();
+        final processor = MockSyncEventProcessor();
+        final readMarker = MockSyncReadMarkerService();
+        final client = MockClient();
+        final room = MockRoom();
+        final timeline = MockTimeline();
+        final event = MockEvent();
+        final sentRegistry = SentEventRegistry();
+
+        when(
+          () => logger.captureEvent(
+            any<String>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+        when(
+          () => logger.captureException(
+            any<Object>(),
+            domain: any<String>(named: 'domain'),
+            subDomain: any<String>(named: 'subDomain'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) async {});
+
+        when(() => session.client).thenReturn(client);
+        when(() => client.userID).thenReturn('@me:server');
+        when(
+          () => client.sync(),
+        ).thenAnswer((_) async => SyncUpdate(nextBatch: 'token'));
+        when(
+          () => session.timelineEvents,
+        ).thenAnswer((_) => const Stream<Event>.empty());
+        when(() => roomManager.initialize()).thenAnswer((_) async {});
+        when(() => roomManager.currentRoom).thenReturn(room);
+        when(() => roomManager.currentRoomId).thenReturn('!room:server');
+        when(() => room.id).thenReturn('!room:server');
+        when(
+          () => settingsDb.itemByKey(lastReadMatrixEventId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => settingsDb.itemByKey(lastReadMatrixEventTs),
+        ).thenAnswer((_) async => null);
+        when(
+          () => settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+        when(
+          () => room.getTimeline(
+            limit: any(named: 'limit'),
+            onNewEvent: any(named: 'onNewEvent'),
+            onInsert: any(named: 'onInsert'),
+            onChange: any(named: 'onChange'),
+            onRemove: any(named: 'onRemove'),
+            onUpdate: any(named: 'onUpdate'),
+          ),
+        ).thenAnswer((_) async => timeline);
+        when(() => timeline.events).thenReturn(<Event>[event]);
+        when(() => timeline.cancelSubscriptions()).thenReturn(null);
+
+        when(() => event.eventId).thenReturn('lotti-123');
+        when(() => event.roomId).thenReturn('!room:server');
+        when(() => event.senderId).thenReturn('@remote:server');
+        when(
+          () => event.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(5));
+        when(() => event.type).thenReturn('m.room.message');
+        when(() => event.messageType).thenReturn(syncMessageType);
+        when(() => event.attachmentMimetype).thenReturn('application/json');
+        when(
+          () => event.content,
+        ).thenReturn(const {'msgtype': syncMessageType});
+
+        sentRegistry.register('lotti-123');
+
+        final consumer = MatrixStreamConsumer(
+          skipSyncWait: true,
+          sessionManager: session,
+          roomManager: roomManager,
+          loggingService: logger,
+          journalDb: journalDb,
+          settingsDb: settingsDb,
+          eventProcessor: processor,
+          readMarkerService: readMarker,
+          collectMetrics: true,
+          sentEventRegistry: sentRegistry,
+        );
+
+        fakeAsync((async) {
+          unawaited(consumer.initialize());
+          async.flushMicrotasks();
+          unawaited(consumer.start());
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+        });
+
+        verifyNever(
+          () => settingsDb.saveSettingsItem(lastReadMatrixEventId, 'lotti-123'),
+        );
+        verify(
+          () => settingsDb.saveSettingsItem(lastReadMatrixEventTs, '5'),
+        ).called(greaterThanOrEqualTo(1));
+        verifyNever(
+          () => readMarker.updateReadMarker(
+            client: any<Client>(named: 'client'),
+            room: any<Room>(named: 'room'),
+            eventId: 'lotti-123',
+          ),
+        );
+        verify(
+          () => logger.captureEvent(
+            contains('marker.local.skip(nonServerId) id=lotti-123'),
+            domain: any<String>(named: 'domain'),
+            subDomain: 'marker.local',
+          ),
+        ).called(greaterThanOrEqualTo(1));
 
         await consumer.dispose();
       },

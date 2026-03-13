@@ -1,6 +1,9 @@
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/matrix.dart';
 
+bool isServerAssignedMatrixEventId(String? eventId) =>
+    eventId != null && eventId.startsWith(r'$');
+
 Future<void> setLastReadMatrixEventId(
   String eventId,
   SettingsDb settingsDb,

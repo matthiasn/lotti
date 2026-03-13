@@ -112,8 +112,9 @@ The most recent stabilization pass addressed two concrete failures:
 
 - exact backfill hits are now validated against the payload's current vector
   clock before resend
-- missing-marker catch-up now falls back to a bounded tail instead of replaying
-  an entire large snapshot
+- reconnect catch-up now treats the stored timestamp as the canonical replay
+  anchor; it pages backward until that time boundary is visible, then replays
+  forward with bounded overlap instead of trusting exact marker lookup
 - receive-side signal diagnostics now summarize scheduler pokes per catch-up
   burst and per live-scan pass instead of writing one log line for every raw
   callback
@@ -132,18 +133,21 @@ The largest remaining concerns are:
 
 The receive-side recovery model is now stricter than before:
 
-- if catch-up cannot re-anchor on the stored Matrix marker but it can page
-  back past the stored last-sync timestamp, it now replays that
-  timestamp-anchored slice instead of declaring failure and falling straight
-  into backfill-driven recovery
-- if catch-up can reach neither the stored marker nor the stored timestamp
-  boundary, it reports incomplete recovery instead of replaying a fallback
-  room tail as if it were exact backlog
+- reconnect catch-up now succeeds when it reaches the stored timestamp
+  boundary; exact Matrix marker lookup is no longer part of the recovery
+  contract
+- if catch-up cannot page back to the stored timestamp boundary, it reports
+  incomplete recovery instead of replaying a fallback room tail as if it were
+  exact backlog
 - sequence progress is derived from the highest contiguous resolved counter for
   each host, not from the maximum sparse counter present anywhere in the log
 - large counter gaps are fully materialized in the sequence log and immediately
   nudged into automatic backfill instead of being truncated to the newest `100`
   rows
+- durable restart markers now only persist server-assigned Matrix event ids;
+  local `lotti-...` echo ids are kept out of the stored read marker so Matrix
+  read-marker state stays durable even though reconnect recovery is
+  timestamp-first
 
 Those are documented in detail in
 [current_architecture.md](./current_architecture.md) and

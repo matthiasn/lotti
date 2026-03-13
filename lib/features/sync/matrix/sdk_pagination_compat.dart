@@ -5,20 +5,23 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// SDK pagination/backfill helper for Matrix 2.x Timeline API.
+/// SDK pagination helper for Matrix 2.x Timeline API.
 ///
 /// This implementation targets our pinned Matrix SDK (2.x) and uses the
 /// strongly-typed `Timeline.canRequestHistory` and `Timeline.requestHistory` APIs
 /// directly. No reflective/dynamic fallbacks are used.
 class SdkPaginationCompat {
-  /// Attempts to backfill the provided [timeline] in-place using SDK
-  /// pagination until either [lastEventId] is present in the events or
-  /// [maxPages] is reached or the SDK reports no more history.
+  /// Attempts to page the provided [timeline] in-place until either the
+  /// earliest visible event crosses [untilTimestamp], [lastEventId] is present,
+  /// [maxPages] is reached, or the SDK reports no more history.
   ///
-  /// Returns true if the target event is already present (no pagination
-  /// required) or if at least one pagination call was attempted. Returns false
-  /// only if pagination could not be attempted at all (no suitable SDK method
-  /// is available or invocation failed before any attempt).
+  /// The timestamp boundary is the primary reconnect anchor. [lastEventId] is
+  /// retained only as a legacy early-stop hint while older installs may still
+  /// have one stored.
+  ///
+  /// Returns true if pagination was attempted or the boundary/marker was
+  /// already visible. Returns false only if pagination could not be attempted
+  /// at all.
   static Future<bool> backfillUntilContains({
     required Timeline timeline,
     required String? lastEventId,
@@ -35,13 +38,13 @@ class SdkPaginationCompat {
         final events = TimelineEventOrdering.sortStableByTimestamp(
           timeline.events,
         );
-        final contains = events.any((e) => e.eventId == lastEventId);
-        if (contains) return true;
         if (untilTimestamp != null &&
             events.isNotEmpty &&
             TimelineEventOrdering.timestamp(events.first) <= untilTimestamp) {
-          return anyPaged;
+          return anyPaged || events.isNotEmpty;
         }
+        final contains = events.any((e) => e.eventId == lastEventId);
+        if (contains) return true;
 
         if (!timeline.canRequestHistory) break;
 

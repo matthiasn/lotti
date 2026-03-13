@@ -574,16 +574,26 @@ class MatrixStreamProcessor {
         lastEventId: _lastProcessedEventId,
       );
       if (shouldAdvance) {
-        _lastProcessedEventId = latestEventId;
+        final isDurableMarker = isServerAssignedMatrixEventId(latestEventId);
+        if (isDurableMarker) {
+          _lastProcessedEventId = latestEventId;
+        }
         _lastProcessedTs = latestTs;
         // Persist locally immediately to avoid losing progress if the app
-        // backgrounds or exits before the debounced remote flush fires.
+        // backgrounds or exits before the debounced remote flush fires. Only
+        // durable server event ids are safe to reuse as restart anchors; local
+        // `lotti-...` placeholders are session-local and must not be written
+        // into the persisted read marker.
         try {
-          await setLastReadMatrixEventId(latestEventId, _settingsDb);
+          if (isDurableMarker) {
+            await setLastReadMatrixEventId(latestEventId, _settingsDb);
+          }
           await setLastReadMatrixEventTs(latestTs.toInt(), _settingsDb);
           if (_collectMetrics) {
             _loggingService.captureEvent(
-              'marker.local id=$latestEventId ts=${latestTs.toInt()}',
+              isDurableMarker
+                  ? 'marker.local id=$latestEventId ts=${latestTs.toInt()}'
+                  : 'marker.local.skip(nonServerId) id=$latestEventId ts=${latestTs.toInt()}',
               domain: syncLoggingDomain,
               subDomain: 'marker.local',
             );
@@ -596,7 +606,9 @@ class MatrixStreamProcessor {
             stackTrace: st,
           );
         }
-        _readMarkerManager.schedule(room, latestEventId);
+        if (isDurableMarker) {
+          _readMarkerManager.schedule(room, latestEventId);
+        }
         _circuit.reset(); // reset on successful advancement
         // Nudge a quick tail rescan to catch immediately subsequent events
         // that may have landed while we were applying this batch.
