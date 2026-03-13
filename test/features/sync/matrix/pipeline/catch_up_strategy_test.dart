@@ -61,7 +61,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async => true,
@@ -110,7 +110,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async => true,
@@ -154,7 +154,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => true,
@@ -198,7 +198,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => true,
@@ -252,7 +252,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => false,
@@ -297,7 +297,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async {
@@ -351,7 +351,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => false,
@@ -429,7 +429,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => true,
@@ -477,7 +477,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async {
@@ -527,7 +527,7 @@ void main() {
               required Timeline timeline,
               required String? lastEventId,
               required int pageSize,
-              required int maxPages,
+              required int? maxPages,
               required LoggingService logging,
               num? untilTimestamp,
             }) async => true,
@@ -574,7 +574,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async => true,
@@ -624,7 +624,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async => true,
@@ -671,7 +671,7 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async => true,
@@ -688,12 +688,13 @@ void main() {
     );
 
     test(
-      'marker missing reports timestamp boundary after bounded backfill reaches older history',
+      'marker missing replays from timestamp boundary after backfill reaches older history',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
         final tl = MockTimeline();
         num? capturedUntilTimestamp;
+        int? capturedMaxPages;
 
         Event mk(String id, int ts) {
           final e = MockEvent();
@@ -721,11 +722,12 @@ void main() {
                 required Timeline timeline,
                 required String? lastEventId,
                 required int pageSize,
-                required int maxPages,
+                required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
               }) async {
                 capturedUntilTimestamp = untilTimestamp;
+                capturedMaxPages = maxPages;
                 events.insert(0, mk('older', 40));
                 return true;
               },
@@ -734,8 +736,15 @@ void main() {
         );
 
         expect(capturedUntilTimestamp, 50);
-        expect(result.markerMissing, isTrue);
-        expect(result.events, isEmpty);
+        expect(capturedMaxPages, isNull);
+        expect(result.markerMissing, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events.map((event) => event.eventId), [
+          'older',
+          'e0',
+          'e1',
+          'e2',
+        ]);
         expect(result.reachedTimestampBoundary, isTrue);
         verify(() => tl.cancelSubscriptions()).called(1);
       },

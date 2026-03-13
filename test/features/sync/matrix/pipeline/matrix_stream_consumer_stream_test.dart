@@ -919,7 +919,7 @@ void main() {
             required Timeline timeline,
             required String? lastEventId,
             required int pageSize,
-            required int maxPages,
+            required int? maxPages,
             required LoggingService logging,
             num? untilTimestamp,
           }) async {

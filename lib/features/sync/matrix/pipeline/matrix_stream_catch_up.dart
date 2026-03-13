@@ -30,7 +30,7 @@ class MatrixStreamCatchUpCoordinator {
       required Timeline timeline,
       required String? lastEventId,
       required int pageSize,
-      required int maxPages,
+      required int? maxPages,
       required LoggingService logging,
       num? untilTimestamp,
     })?
@@ -59,7 +59,7 @@ class MatrixStreamCatchUpCoordinator {
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
     num? untilTimestamp,
   })?
@@ -68,8 +68,9 @@ class MatrixStreamCatchUpCoordinator {
   String? _startupLastProcessedEventId;
   num? _startupLastProcessedTs;
   // "Ready" means startup catch-up has run enough that live scans may proceed
-  // without deadlocking. "Converged" means we actually re-anchored on the
-  // stored marker or later recovered to a marker-found catch-up.
+  // without deadlocking. "Converged" means we re-established a trustworthy
+  // historical boundary, either by finding the stored marker or by paging back
+  // past the stored timestamp and replaying forward from there.
   bool _initialCatchUpReady = false;
   bool _initialCatchUpConverged = false;
   Timer? _catchUpRetryTimer;
@@ -458,6 +459,16 @@ class MatrixStreamCatchUpCoordinator {
         }
         return true;
       }
+      if (catchUp.timestampAnchored) {
+        _loggingService.captureEvent(
+          _withInstance(
+            'catchup.recovered via=timestampBoundary marker=$catchUpMarker '
+            'snapshot=${catchUp.snapshotSize} slice=${catchUp.events.length}',
+          ),
+          domain: syncLoggingDomain,
+          subDomain: 'catchup',
+        );
+      }
       final slice = catchUp.events;
       _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
@@ -504,7 +515,10 @@ class MatrixStreamCatchUpCoordinator {
         _initialCatchUpConverged = true;
         if (_initialCatchUpReady) {
           _loggingService.captureEvent(
-            _withInstance('catchup.recovered from=markerMissing'),
+            _withInstance(
+              'catchup.recovered from=markerMissing '
+              'via=${catchUp.timestampAnchored ? 'timestampBoundary' : 'markerFound'}',
+            ),
             domain: syncLoggingDomain,
             subDomain: 'catchup',
           );

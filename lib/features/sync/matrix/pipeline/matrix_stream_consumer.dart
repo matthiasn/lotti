@@ -56,7 +56,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       required Timeline timeline,
       required String? lastEventId,
       required int pageSize,
-      required int maxPages,
+      required int? maxPages,
       required LoggingService logging,
       num? untilTimestamp,
     })?
@@ -166,7 +166,7 @@ class MatrixStreamConsumer implements SyncPipeline {
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
     num? untilTimestamp,
   })?

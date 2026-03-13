@@ -132,9 +132,13 @@ The largest remaining concerns are:
 
 The receive-side recovery model is now stricter than before:
 
-- if catch-up cannot re-anchor on the stored Matrix marker, it reports
-  incomplete recovery instead of replaying a fallback room tail as if it were
-  exact backlog
+- if catch-up cannot re-anchor on the stored Matrix marker but it can page
+  back past the stored last-sync timestamp, it now replays that
+  timestamp-anchored slice instead of declaring failure and falling straight
+  into backfill-driven recovery
+- if catch-up can reach neither the stored marker nor the stored timestamp
+  boundary, it reports incomplete recovery instead of replaying a fallback
+  room tail as if it were exact backlog
 - sequence progress is derived from the highest contiguous resolved counter for
   each host, not from the maximum sparse counter present anywhere in the log
 - large counter gaps are fully materialized in the sequence log and immediately
@@ -142,4 +146,5 @@ The receive-side recovery model is now stricter than before:
   rows
 
 Those are documented in detail in
-[current_architecture.md](./current_architecture.md).
+[current_architecture.md](./current_architecture.md) and
+[../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md).

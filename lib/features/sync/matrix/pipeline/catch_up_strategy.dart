@@ -12,7 +12,7 @@ typedef BackfillFn =
       required Timeline timeline,
       required String? lastEventId,
       required int pageSize,
-      required int maxPages,
+      required int? maxPages,
       required LoggingService logging,
       num? untilTimestamp,
     });
@@ -25,6 +25,7 @@ class CatchUpCollection {
   const CatchUpCollection._({
     required this.events,
     required this.markerMissing,
+    required this.timestampAnchored,
     required this.snapshotSize,
     required this.visibleTailCount,
     required this.fallbackLimit,
@@ -37,10 +38,24 @@ class CatchUpCollection {
   }) : this._(
          events: events,
          markerMissing: false,
+         timestampAnchored: false,
          snapshotSize: snapshotSize,
          visibleTailCount: 0,
          fallbackLimit: null,
          reachedTimestampBoundary: false,
+       );
+
+  const CatchUpCollection.timestampAnchored({
+    required List<Event> events,
+    required int snapshotSize,
+  }) : this._(
+         events: events,
+         markerMissing: false,
+         timestampAnchored: true,
+         snapshotSize: snapshotSize,
+         visibleTailCount: 0,
+         fallbackLimit: null,
+         reachedTimestampBoundary: true,
        );
 
   const CatchUpCollection.markerMissing({
@@ -51,6 +66,7 @@ class CatchUpCollection {
   }) : this._(
          events: const [],
          markerMissing: true,
+         timestampAnchored: false,
          snapshotSize: snapshotSize,
          visibleTailCount: visibleTailCount,
          fallbackLimit: fallbackLimit,
@@ -59,6 +75,7 @@ class CatchUpCollection {
 
   final List<Event> events;
   final bool markerMissing;
+  final bool timestampAnchored;
   final int snapshotSize;
   final int visibleTailCount;
   final int? fallbackLimit;
@@ -68,9 +85,10 @@ class CatchUpCollection {
 /// Catch‑up helper used at attach time by the stream consumer.
 class CatchUpStrategy {
   /// Collects ordered events for catch‑up without rewinding before the last
-  /// processed marker. If [lastEventId] cannot be located, returns an
-  /// incomplete-recovery result instead of replaying a bounded fallback tail as
-  /// if it were the exact backlog after the marker.
+  /// processed marker. If [lastEventId] cannot be located but pagination reaches
+  /// [preContextSinceTs], returns a timestamp-anchored replay window instead of
+  /// falling back to sparse live recovery. Only returns an incomplete-recovery
+  /// result when neither anchor can be re-established.
   static Future<CatchUpCollection> collectEventsForCatchUp({
     required Room room,
     required String? lastEventId,
@@ -99,7 +117,11 @@ class CatchUpStrategy {
         timeline: snapshot,
         lastEventId: lastEventId,
         pageSize: 200,
-        maxPages: 20,
+        // When reconnecting after offline use, we must be able to keep paging
+        // until we either re-anchor on the stored marker or prove we have
+        // walked back past the last processed timestamp. A fixed page cap is
+        // what turned ordinary offline backlog into synthetic "missing" gaps.
+        maxPages: null,
         logging: logging,
         untilTimestamp: preContextSinceTs,
       );
@@ -195,13 +217,44 @@ class CatchUpStrategy {
           snapshotSize: events.length,
         );
       }
-      final visibleTailCount = events.length <= missingMarkerFallbackLimit
-          ? events.length
-          : missingMarkerFallbackLimit;
       final reachedTimestampBoundary =
           preContextSinceTs != null &&
           events.isNotEmpty &&
           TimelineEventOrdering.timestamp(events.first) <= preContextSinceTs;
+      if (reachedTimestampBoundary) {
+        var start = 0;
+        if (preContextSinceTs != null) {
+          while (start < events.length &&
+              TimelineEventOrdering.timestamp(events[start]) <
+                  preContextSinceTs) {
+            start++;
+          }
+          // Rewind a small bounded overlap before the timestamp anchor so
+          // replay remains stable around same-timestamp collisions and marker
+          // debounce skew without reprocessing an unbounded tail.
+          start -= preContextCount;
+          if (start < 0) start = 0;
+          if (start > events.length) start = events.length;
+        }
+        logging.captureEvent(
+          'catchup.markerMissing lastEventId=$lastEventId '
+          'snapshot=${events.length} visibleTail=0 '
+          'fallbackLimit=$missingMarkerFallbackLimit '
+          'processingSuppressed=false '
+          'recoveredBy=timestampBoundary '
+          'startIndex=$start '
+          'reachedTimestampBoundary=true',
+          domain: syncLoggingDomain,
+          subDomain: 'catchup.markerMissing',
+        );
+        return CatchUpCollection.timestampAnchored(
+          events: events.sublist(start),
+          snapshotSize: events.length,
+        );
+      }
+      final visibleTailCount = events.length <= missingMarkerFallbackLimit
+          ? events.length
+          : missingMarkerFallbackLimit;
       logging.captureEvent(
         'catchup.markerMissing lastEventId=$lastEventId '
         'snapshot=${events.length} visibleTail=$visibleTailCount '

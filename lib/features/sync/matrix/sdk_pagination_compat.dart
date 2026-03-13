@@ -23,7 +23,7 @@ class SdkPaginationCompat {
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
     num? untilTimestamp,
   }) async {
@@ -31,7 +31,7 @@ class SdkPaginationCompat {
     try {
       var pages = 0;
       var anyPaged = false;
-      while (pages < maxPages) {
+      while (maxPages == null || pages < maxPages) {
         final events = TimelineEventOrdering.sortStableByTimestamp(
           timeline.events,
         );
@@ -47,6 +47,7 @@ class SdkPaginationCompat {
 
         // Mark that we attempted pagination regardless of the outcome.
         anyPaged = true;
+        final beforeCount = timeline.events.length;
         var ok = true;
         try {
           await timeline.requestHistory();
@@ -60,6 +61,7 @@ class SdkPaginationCompat {
           ok = false;
         }
         if (!ok) break;
+        if (timeline.events.length <= beforeCount) break;
         pages++;
       }
       return anyPaged;

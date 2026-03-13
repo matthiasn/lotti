@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tail as successful backlog, host progress now stays on the highest contiguous
   resolved counter, large gaps are fully materialized for backfill, and newly
   detected missing work nudges automatic backfill immediately.
+- Sync convergence: reconnect catch-up now keeps paging until it either finds
+  the stored Matrix marker or reaches the stored timestamp boundary, then
+  replays that ordered historical slice instead of turning an ordinary offline
+  backlog into redundant backfill requests.
 - Agent sync startup: the app now keeps agent initialization alive from app
   startup when agents are enabled, so incoming agent backfill can resolve
   without waiting for the first entry or agent screen to be opened.
