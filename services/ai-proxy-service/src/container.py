@@ -1,7 +1,10 @@
 """Dependency injection container"""
 
+import logging
 import os
 from typing import Any, Callable, Dict, TypeVar, cast
+
+logger = logging.getLogger(__name__)
 
 from .core.constants import (
     SERVICE_GEMINI_CLIENT,
@@ -49,7 +52,11 @@ class Container:
         """Create billing service, wired with pricing service"""
         from .services.billing_service import BillingService
 
-        pricing_service = self.get_pricing_service()
+        try:
+            pricing_service = self.get_pricing_service()
+        except Exception:
+            logger.exception("Pricing service unavailable; falling back to static pricing")
+            pricing_service = None
         return BillingService(pricing_service=pricing_service)
 
     def _create_usage_log_service(self) -> Any:

@@ -159,6 +159,8 @@ class PricingService(IPricingService):
                 "FROM model_pricing WHERE model_id = ?",
                 (model_id,),
             ).fetchone()
+            if row is None:
+                raise ValueError(f"Model '{model_id}' not found after update")
             result = dict(row)
             self._refresh_cache()
             return result
@@ -203,6 +205,8 @@ class PricingService(IPricingService):
                 "FROM model_pricing WHERE model_id = ?",
                 (model_id,),
             ).fetchone()
+            if row is None:
+                raise ValueError(f"Model '{model_id}' not found after insert")
             result = dict(row)
             self._refresh_cache()
             return result
