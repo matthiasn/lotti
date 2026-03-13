@@ -66,6 +66,9 @@ export default function UserDetailPage() {
         setTransactions(res.transactions);
         setTxTotal(res.total);
       })
+      .catch((err) => {
+        setError(err?.message || "Failed to load transactions");
+      })
       .finally(() => setTxLoading(false));
   }, [userId, txPage]);
 

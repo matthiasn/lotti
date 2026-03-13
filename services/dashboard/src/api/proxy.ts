@@ -43,7 +43,7 @@ export async function updatePricing(
   output_price_per_1k: number,
   display_name?: string,
 ): Promise<ModelPricing> {
-  const { data } = await proxyApi.put<ModelPricing>(`/pricing/${modelId}`, {
+  const { data } = await proxyApi.put<ModelPricing>(`/pricing/${encodeURIComponent(modelId)}`, {
     input_price_per_1k,
     output_price_per_1k,
     display_name,

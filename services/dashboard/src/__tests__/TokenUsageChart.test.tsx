@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { render, screen } from "@testing-library/react";
 import TokenUsageChart from "../components/TokenUsageChart";
 import type { UsageLogEntry } from "../types";
@@ -9,7 +9,15 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+const originalResizeObserver = globalThis.ResizeObserver;
+
+beforeAll(() => {
+  globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+});
+
+afterAll(() => {
+  globalThis.ResizeObserver = originalResizeObserver;
+});
 
 describe("TokenUsageChart", () => {
   it("renders empty message when no data", () => {

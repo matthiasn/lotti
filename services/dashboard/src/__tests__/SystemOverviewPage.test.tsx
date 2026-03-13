@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeAll, afterAll, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import SystemOverviewPage from "../pages/SystemOverviewPage";
@@ -9,7 +9,15 @@ class ResizeObserverMock {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+const originalResizeObserver = globalThis.ResizeObserver;
+
+beforeAll(() => {
+  globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+});
+
+afterAll(() => {
+  globalThis.ResizeObserver = originalResizeObserver;
+});
 
 const mockFetchSystemSummary = vi.fn();
 const mockFetchUsers = vi.fn();

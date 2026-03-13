@@ -31,7 +31,7 @@ docker compose -f docker-compose.dashboard.yml up --build
 
 ## Architecture
 
-```
+```text
 Dashboard (:5173) ──┬── Credits Service (:8001) ── TigerBeetle
                     └── AI Proxy Service (:8002) ── Gemini API
 ```
@@ -44,7 +44,7 @@ ai-proxy-service. In Docker, nginx handles the same routing.
 | Page | Route | Description |
 |------|-------|-------------|
 | Users | `/users` | Paginated list of all users with balances |
-| User Detail | `/users/:id` | Balance, transactions, token usage charts, model breakdown |
+| User Detail | `/users/:userId` | Balance, transactions, token usage charts, model breakdown |
 | System Overview | `/overview` | System-wide stats and usage charts |
 | Pricing | `/pricing` | View and edit model pricing ($/1K tokens) |
 
@@ -67,4 +67,4 @@ npm run test:watch # Watch mode
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VITE_API_KEY` | `dev-key` | API key for backend services |
+| `VITE_API_KEY` | `dev-admin-key` | API key for backend services |

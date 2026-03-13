@@ -25,6 +25,7 @@ export default function PricingPage() {
 
   const loadPricing = useCallback(() => {
     setLoading(true);
+    setError(null);
     fetchPricing()
       .then((res) => setModels(res.models))
       .catch((err) => setError(err.message))

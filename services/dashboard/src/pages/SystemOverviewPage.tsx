@@ -13,15 +13,23 @@ export default function SystemOverviewPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      fetchSystemUsageSummary().catch(() => null),
-      fetchUsers(1, 1).catch(() => ({ total: 0 })),
-    ])
+    setError(null);
+    Promise.allSettled([fetchSystemUsageSummary(), fetchUsers(1, 1)])
       .then(([summaryRes, usersRes]) => {
-        setSummary(summaryRes);
-        setTotalUsers(usersRes?.total ?? 0);
+        if (summaryRes.status === "fulfilled") {
+          setSummary(summaryRes.value);
+        } else {
+          setSummary(null);
+          setError("Failed to load usage summary");
+        }
+
+        if (usersRes.status === "fulfilled") {
+          setTotalUsers(usersRes.value.total ?? 0);
+        } else {
+          setTotalUsers(0);
+          setError((prev) => prev ?? "Failed to load user count");
+        }
       })
-      .catch((err) => setError(err.message || "Failed to load overview"))
       .finally(() => setLoading(false));
   }, []);
 
