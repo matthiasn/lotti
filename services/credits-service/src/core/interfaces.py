@@ -1,8 +1,9 @@
 """Service interfaces for dependency injection"""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import Optional
 
 
 class ITigerBeetleClient(ABC):
@@ -54,7 +55,7 @@ class IAccountService(ABC):
     """Interface for account management"""
 
     @abstractmethod
-    async def create_account(self, user_id: str, initial_balance: Optional[Decimal] = None) -> tuple[int, Decimal]:
+    async def create_account(self, user_id: str, initial_balance: Decimal | None = None) -> tuple[int, Decimal]:
         """
         Create a new account
 
@@ -96,11 +97,58 @@ class IBillingService(ABC):
         pass
 
     @abstractmethod
-    async def bill(self, user_id: str, amount: Decimal, description: Optional[str] = None) -> Decimal:
+    async def bill(self, user_id: str, amount: Decimal, description: str | None = None) -> Decimal:
         """
         Bill an account
 
         Returns:
             New balance
         """
+        pass
+
+
+class IUserRegistryService(ABC):
+    """Interface for user registry operations"""
+
+    @abstractmethod
+    async def register_user(self, user_id: str, display_name: str | None = None) -> None:
+        """Register a user in the registry"""
+        pass
+
+    @abstractmethod
+    async def get_user(self, user_id: str) -> dict | None:
+        """Get user info by ID. Returns dict with user_id, display_name, created_at or None."""
+        pass
+
+    @abstractmethod
+    async def list_users(self, page: int = 1, page_size: int = 20) -> tuple[list[dict], int]:
+        """List users with pagination. Returns (users, total_count)."""
+        pass
+
+    @abstractmethod
+    async def user_exists(self, user_id: str) -> bool:
+        """Check if a user is registered"""
+        pass
+
+
+class ITransactionLogService(ABC):
+    """Interface for transaction log operations"""
+
+    @abstractmethod
+    async def log_transaction(
+        self,
+        user_id: str,
+        tx_type: str,
+        amount: Decimal,
+        balance_after: Decimal,
+        description: str | None = None,
+    ) -> None:
+        """Log a transaction"""
+        pass
+
+    @abstractmethod
+    async def get_transactions(
+        self, user_id: str, page: int = 1, page_size: int = 20
+    ) -> tuple[list[dict], int]:
+        """Get transactions for a user with pagination. Returns (transactions, total_count)."""
         pass

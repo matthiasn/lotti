@@ -1,8 +1,9 @@
 """Billing and transaction service"""
 
+from __future__ import annotations
+
 import logging
 from decimal import Decimal
-from typing import Optional
 
 from ..core.constants import CURRENCY_PRECISION, SYSTEM_ACCOUNT_ID
 from ..core.exceptions import (
@@ -10,7 +11,7 @@ from ..core.exceptions import (
     InsufficientBalanceException,
     InvalidAmountException,
 )
-from ..core.interfaces import IBillingService, ITigerBeetleClient
+from ..core.interfaces import IBillingService, ITransactionLogService, ITigerBeetleClient
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +19,20 @@ logger = logging.getLogger(__name__)
 class BillingService(IBillingService):
     """Service for billing operations (top-up and bill)"""
 
-    def __init__(self, tigerbeetle_client: ITigerBeetleClient):
+    def __init__(
+        self,
+        tigerbeetle_client: ITigerBeetleClient,
+        transaction_log: ITransactionLogService | None = None,
+    ):
         """
         Initialize billing service
 
         Args:
             tigerbeetle_client: TigerBeetle client instance
+            transaction_log: Optional transaction log for recording transactions
         """
         self.client = tigerbeetle_client
+        self.transaction_log = transaction_log
         self._system_account_initialized = False
 
     async def _ensure_system_account(self) -> None:
@@ -85,13 +92,23 @@ class BillingService(IBillingService):
             new_balance = Decimal(new_balance_cents) / CURRENCY_PRECISION
 
             logger.info(f"Top-up successful. New balance for {user_id}: ${new_balance}")
+
+            # Log the transaction (best-effort; transfer is already committed)
+            if self.transaction_log is not None:
+                try:
+                    await self.transaction_log.log_transaction(
+                        user_id, "topup", amount, new_balance
+                    )
+                except Exception:
+                    logger.exception("Failed to log top-up transaction for user %s", user_id)
+
             return new_balance
 
         except AccountNotFoundException:
             logger.warning(f"Account not found for user {user_id}")
             raise
 
-    async def bill(self, user_id: str, amount: Decimal, description: Optional[str] = None) -> Decimal:
+    async def bill(self, user_id: str, amount: Decimal, description: str | None = None) -> Decimal:
         """
         Bill an account (deduct credits)
 
@@ -136,6 +153,16 @@ class BillingService(IBillingService):
             new_balance = Decimal(new_balance_cents) / CURRENCY_PRECISION
 
             logger.info(f"Billing successful. New balance for {user_id}: ${new_balance}")
+
+            # Log the transaction (best-effort; transfer is already committed)
+            if self.transaction_log is not None:
+                try:
+                    await self.transaction_log.log_transaction(
+                        user_id, "bill", amount, new_balance, description
+                    )
+                except Exception:
+                    logger.exception("Failed to log bill transaction for user %s", user_id)
+
             return new_balance
 
         except (AccountNotFoundException, InsufficientBalanceException):
