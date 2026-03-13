@@ -1,5 +1,7 @@
 """Authentication middleware for API key validation"""
 
+from __future__ import annotations
+
 import logging
 import os
 from typing import Callable
@@ -13,21 +15,34 @@ logger = logging.getLogger(__name__)
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
     """Middleware to validate API keys for protected endpoints"""
 
-    def __init__(self, app, exempt_paths: list[str] | None = None):
+    def __init__(
+        self,
+        app,
+        exempt_paths: list[str] | None = None,
+        admin_path_prefixes: list[str] | None = None,
+    ):
         """
         Initialize authentication middleware
 
         Args:
             app: FastAPI application
             exempt_paths: List of paths that don't require authentication (e.g., /health)
+            admin_path_prefixes: List of path prefixes that require an admin API key
         """
         super().__init__(app)
         self.exempt_paths = exempt_paths or ["/health", "/docs", "/openapi.json", "/redoc"]
+        self.admin_path_prefixes = admin_path_prefixes or []
 
         # Load API keys from environment variable
         # Format: API_KEYS=key1,key2,key3
         api_keys_str = os.getenv("API_KEYS", "")
         self.valid_api_keys = {key.strip() for key in api_keys_str.split(",") if key.strip()}
+
+        # Load admin API keys from environment variable
+        # Format: ADMIN_API_KEYS=admin-key1,admin-key2
+        # Falls back to API_KEYS if not set (backwards-compatible)
+        admin_keys_str = os.getenv("ADMIN_API_KEYS", "")
+        self.valid_admin_keys = {key.strip() for key in admin_keys_str.split(",") if key.strip()}
 
         if not self.valid_api_keys:
             logger.warning(
@@ -36,6 +51,16 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             )
         else:
             logger.info(f"API key authentication enabled with {len(self.valid_api_keys)} key(s)")
+
+        if self.valid_admin_keys:
+            logger.info(
+                f"Admin API key authentication enabled with {len(self.valid_admin_keys)} key(s) "
+                f"for {len(self.admin_path_prefixes)} path prefix(es)"
+            )
+
+    def _is_admin_path(self, path: str) -> bool:
+        """Check if the path requires admin authentication"""
+        return any(path.startswith(prefix) for prefix in self.admin_path_prefixes)
 
     async def dispatch(self, request: Request, call_next: Callable):
         """
@@ -83,7 +108,25 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         api_key = parts[1]
 
-        # Validate API key
+        # Check admin paths first — require admin key
+        if self._is_admin_path(request.url.path):
+            if not self.valid_admin_keys:
+                logger.error(f"Authentication failed: Admin API keys not configured for admin path (path: {request.url.path})")
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Admin API keys not configured for this endpoint",
+                )
+            elif api_key not in self.valid_admin_keys:
+                logger.warning(f"Authentication failed: Admin API key required (path: {request.url.path})")
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Admin API key required for this endpoint",
+                )
+
+            logger.debug(f"Admin authentication successful for {request.url.path}")
+            return await call_next(request)
+
+        # Validate regular API key
         if api_key not in self.valid_api_keys:
             logger.warning(f"Authentication failed: Invalid API key (path: {request.url.path})")
             raise HTTPException(

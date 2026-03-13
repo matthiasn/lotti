@@ -51,19 +51,23 @@ app = FastAPI(
 # Add CORS middleware
 # Configure allowed origins from environment variable
 # Example: CORS_ALLOWED_ORIGINS="https://app.lotti.com,https://dev.lotti.com"
-cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")
+cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173")
 cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
 # Add API key authentication middleware
-app.add_middleware(APIKeyAuthMiddleware)
+# Admin paths require ADMIN_API_KEYS for user listing and transaction history
+app.add_middleware(
+    APIKeyAuthMiddleware,
+    admin_path_prefixes=["/api/v1/users"],
+)
 
 # Include routes
 app.include_router(router, prefix="/api/v1")
