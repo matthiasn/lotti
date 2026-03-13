@@ -25,6 +25,7 @@ class SdkPaginationCompat {
     required int pageSize,
     required int maxPages,
     required LoggingService logging,
+    num? untilTimestamp,
   }) async {
     if (lastEventId == null) return false;
     try {
@@ -36,6 +37,11 @@ class SdkPaginationCompat {
         );
         final contains = events.any((e) => e.eventId == lastEventId);
         if (contains) return true;
+        if (untilTimestamp != null &&
+            events.isNotEmpty &&
+            TimelineEventOrdering.timestamp(events.first) <= untilTimestamp) {
+          return anyPaged;
+        }
 
         if (!timeline.canRequestHistory) break;
 

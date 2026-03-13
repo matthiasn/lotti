@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync backfill follow-up: re-request paging now walks past already queued
   oldest rows, in-flight `sending` backfill requests suppress duplicates, and
   zombie-file cleanup rejects paths that resolve outside the docs directory.
+- Sync reliability: marker-missing catch-up no longer replays a bounded recent
+  tail as successful backlog, host progress now stays on the highest contiguous
+  resolved counter, large gaps are fully materialized for backfill, and newly
+  detected missing work nudges automatic backfill immediately.
 - Agent sync startup: the app now keeps agent initialization alive from app
   startup when agents are enabled, so incoming agent backfill can resolve
   without waiting for the first entry or agent screen to be opened.

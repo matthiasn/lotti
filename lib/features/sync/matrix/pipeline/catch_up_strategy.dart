@@ -14,27 +14,64 @@ typedef BackfillFn =
       required int pageSize,
       required int maxPages,
       required LoggingService logging,
+      num? untilTimestamp,
     });
 
 /// Default value for the [CatchUpStrategy.collectEventsForCatchUp]
 /// `missingMarkerFallbackLimit` parameter.
 const defaultMissingMarkerFallbackLimit = 1000;
 
+class CatchUpCollection {
+  const CatchUpCollection._({
+    required this.events,
+    required this.markerMissing,
+    required this.snapshotSize,
+    required this.visibleTailCount,
+    required this.fallbackLimit,
+    required this.reachedTimestampBoundary,
+  });
+
+  const CatchUpCollection.complete({
+    required List<Event> events,
+    required int snapshotSize,
+  }) : this._(
+         events: events,
+         markerMissing: false,
+         snapshotSize: snapshotSize,
+         visibleTailCount: 0,
+         fallbackLimit: null,
+         reachedTimestampBoundary: false,
+       );
+
+  const CatchUpCollection.markerMissing({
+    required int snapshotSize,
+    required int visibleTailCount,
+    required int fallbackLimit,
+    required bool reachedTimestampBoundary,
+  }) : this._(
+         events: const [],
+         markerMissing: true,
+         snapshotSize: snapshotSize,
+         visibleTailCount: visibleTailCount,
+         fallbackLimit: fallbackLimit,
+         reachedTimestampBoundary: reachedTimestampBoundary,
+       );
+
+  final List<Event> events;
+  final bool markerMissing;
+  final int snapshotSize;
+  final int visibleTailCount;
+  final int? fallbackLimit;
+  final bool reachedTimestampBoundary;
+}
+
 /// Catch‑up helper used at attach time by the stream consumer.
-///
-/// Behaviour:
-/// - Takes a live snapshot and asks backfill (SDK pagination seam) to ensure
-///   the last processed event is present in the timeline.
-/// - If the target is still missing and no SDK backfill was attempted, it
-///   escalates snapshot limits (doubling) up to maxLookback.
-/// - Returns only events strictly after lastEventId when it can be located;
-///   otherwise returns only a bounded tail of the snapshot (oldest→newest
-///   within that tail).
 class CatchUpStrategy {
   /// Collects ordered events for catch‑up without rewinding before the last
-  /// processed marker. If [lastEventId] cannot be located, returns a bounded
-  /// chronological tail instead of replaying the entire snapshot.
-  static Future<List<Event>> collectEventsForCatchUp({
+  /// processed marker. If [lastEventId] cannot be located, returns an
+  /// incomplete-recovery result instead of replaying a bounded fallback tail as
+  /// if it were the exact backlog after the marker.
+  static Future<CatchUpCollection> collectEventsForCatchUp({
     required Room room,
     required String? lastEventId,
     required BackfillFn backfill,
@@ -48,12 +85,23 @@ class CatchUpStrategy {
     var limit = initialLimit;
     final snapshot = await room.getTimeline(limit: limit);
     try {
+      if (lastEventId == null) {
+        final events = TimelineEventOrdering.sortStableByTimestamp(
+          snapshot.events,
+        );
+        return CatchUpCollection.complete(
+          events: events,
+          snapshotSize: events.length,
+        );
+      }
+
       final attempted = await backfill(
         timeline: snapshot,
         lastEventId: lastEventId,
         pageSize: 200,
         maxPages: 20,
         logging: logging,
+        untilTimestamp: preContextSinceTs,
       );
       final events = TimelineEventOrdering.sortStableByTimestamp(
         snapshot.events,
@@ -67,6 +115,13 @@ class CatchUpStrategy {
         // If we haven't located the marker and we haven't tried SDK backfill
         // yet, escalate immediately.
         if (idx < 0 && !attempted) return true;
+
+        if (idx < 0 &&
+            preContextSinceTs != null &&
+            events.isNotEmpty &&
+            TimelineEventOrdering.timestamp(events.first) > preContextSinceTs) {
+          return true;
+        }
 
         // If the marker is still not found even after backfill attempted,
         // escalate while the snapshot appears full. This avoids truncating
@@ -135,20 +190,33 @@ class CatchUpStrategy {
         var start = startByCount < startByTs ? startByCount : startByTs;
         if (start < 0) start = 0;
         if (start > events.length) start = events.length;
-        return events.sublist(start);
+        return CatchUpCollection.complete(
+          events: events.sublist(start),
+          snapshotSize: events.length,
+        );
       }
-      final fallbackStart = events.length <= missingMarkerFallbackLimit
-          ? 0
-          : events.length - missingMarkerFallbackLimit;
-      final fallback = events.sublist(fallbackStart);
+      final visibleTailCount = events.length <= missingMarkerFallbackLimit
+          ? events.length
+          : missingMarkerFallbackLimit;
+      final reachedTimestampBoundary =
+          preContextSinceTs != null &&
+          events.isNotEmpty &&
+          TimelineEventOrdering.timestamp(events.first) <= preContextSinceTs;
       logging.captureEvent(
         'catchup.markerMissing lastEventId=${lastEventId ?? 'null'} '
-        'snapshot=${events.length} returned=${fallback.length} '
-        'fallbackLimit=$missingMarkerFallbackLimit',
+        'snapshot=${events.length} visibleTail=$visibleTailCount '
+        'fallbackLimit=$missingMarkerFallbackLimit '
+        'processingSuppressed=true '
+        'reachedTimestampBoundary=$reachedTimestampBoundary',
         domain: syncLoggingDomain,
         subDomain: 'catchup.markerMissing',
       );
-      return fallback;
+      return CatchUpCollection.markerMissing(
+        snapshotSize: events.length,
+        visibleTailCount: visibleTailCount,
+        fallbackLimit: missingMarkerFallbackLimit,
+        reachedTimestampBoundary: reachedTimestampBoundary,
+      );
     } finally {
       try {
         snapshot.cancelSubscriptions();

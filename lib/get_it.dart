@@ -324,6 +324,8 @@ Future<void> registerSingletons() async {
     documentsDirectory: documentsDirectory,
     domainLogger: domainLogger,
   );
+  syncSequenceLogService.onMissingEntriesDetected =
+      backfillRequestService.nudge;
 
   // Inject backfill handler into SyncEventProcessor (resolves circular dependency)
   syncEventProcessor.backfillResponseHandler = backfillResponseHandler;

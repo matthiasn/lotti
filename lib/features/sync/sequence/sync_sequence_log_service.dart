@@ -25,6 +25,7 @@ class SyncSequenceLogService {
   final VectorClockService _vectorClockService;
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
+  void Function()? onMissingEntriesDetected;
 
   void _trace(String message, {String? subDomain}) {
     _domainLogger?.log(
@@ -239,60 +240,102 @@ class SyncSequenceLogService {
       }
 
       final lastSeen = await _getCachedLastCounterForHost(hostId);
+      // For hosts that are currently considered online, an unknown contiguous
+      // prefix still means "we have not resolved counter 1 yet", not "there can
+      // be no gap". Treat that as watermark 0 so the first observed counter can
+      // materialize the missing prefix instead of silently skipping it.
+      final gapBaseline = shouldDetectGaps ? (lastSeen ?? 0) : null;
 
-      if (shouldDetectGaps && lastSeen != null && counter > lastSeen + 1) {
+      if (gapBaseline != null && counter > gapBaseline + 1) {
         // Gap detected! Mark missing counters for this host
-        final gapSize = counter - lastSeen - 1;
+        final gapSize = counter - gapBaseline - 1;
+        final startCounter = gapBaseline + 1;
 
-        // Limit gap size to prevent explosion of missing entries
-        // when sequence log is corrupted or entries are deleted
         if (gapSize > SyncTuning.maxGapSize) {
           _trace(
-            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
+            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
             subDomain: 'sequence.largeGap',
           );
           _loggingService.captureEvent(
-            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$lastSeen, counter=$counter) - limiting to ${SyncTuning.maxGapSize} entries',
+            'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
             domain: 'SYNC_SEQUENCE',
             subDomain: 'largeGap',
           );
-        }
+          // Correctness requires representing the full gap, but a per-counter
+          // read/write loop is too expensive for large jumps. Switch to a
+          // range lookup plus batched inserts once the gap crosses the logging
+          // threshold.
+          final existingCounters = await _syncDatabase
+              .getCountersForHostInRange(
+                hostId,
+                startCounter,
+                counter - 1,
+              );
+          final missingEntries = <SyncSequenceLogCompanion>[];
 
-        // Only create missing entries for the most recent portion of the gap
-        // This prioritizes recent entries which are more likely to be resolvable
-        final startCounter = gapSize > SyncTuning.maxGapSize
-            ? counter - SyncTuning.maxGapSize
-            : lastSeen + 1;
+          for (var i = startCounter; i < counter; i++) {
+            gaps.add((hostId: hostId, counter: i));
+            if (!existingCounters.contains(i)) {
+              missingEntries.add(
+                SyncSequenceLogCompanion(
+                  hostId: Value(hostId),
+                  counter: Value(i),
+                  originatingHostId: Value(originatingHostId),
+                  status: Value(SyncSequenceStatus.missing.index),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
+                ),
+              );
+            }
+          }
 
-        for (var i = startCounter; i < counter; i++) {
-          gaps.add((hostId: hostId, counter: i));
+          if (missingEntries.isNotEmpty) {
+            await _syncDatabase.batchInsertSequenceEntries(missingEntries);
+          }
 
-          // Check if we already have this entry
-          final existing = await _syncDatabase.getEntryByHostAndCounter(
-            hostId,
-            i,
+          _trace(
+            'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
+            'inserted=${missingEntries.length} (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+            subDomain: 'sequence.gapDetected',
           );
-          if (existing == null) {
-            await _syncDatabase.recordSequenceEntry(
-              SyncSequenceLogCompanion(
-                hostId: Value(hostId),
-                counter: Value(i),
-                originatingHostId: Value(originatingHostId),
-                status: Value(SyncSequenceStatus.missing.index),
-                createdAt: Value(now),
-                updatedAt: Value(now),
-              ),
-            );
+          _loggingService.captureEvent(
+            'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
+            'inserted=${missingEntries.length} (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+            domain: 'SYNC_SEQUENCE',
+            subDomain: 'gapDetected',
+          );
+        } else {
+          for (var i = startCounter; i < counter; i++) {
+            gaps.add((hostId: hostId, counter: i));
 
-            _trace(
-              'gapDetected hostId=$hostId counter=$i (last seen: $lastSeen, observed: $counter) from=$originatingHostId',
-              subDomain: 'sequence.gapDetected',
+            // Keep the small-gap path explicit because the per-counter logging
+            // is still useful when debugging ordinary out-of-order delivery.
+            final existing = await _syncDatabase.getEntryByHostAndCounter(
+              hostId,
+              i,
             );
-            _loggingService.captureEvent(
-              'gapDetected hostId=$hostId counter=$i (last seen: $lastSeen, observed: $counter) from=$originatingHostId',
-              domain: 'SYNC_SEQUENCE',
-              subDomain: 'gapDetected',
-            );
+            if (existing == null) {
+              await _syncDatabase.recordSequenceEntry(
+                SyncSequenceLogCompanion(
+                  hostId: Value(hostId),
+                  counter: Value(i),
+                  originatingHostId: Value(originatingHostId),
+                  status: Value(SyncSequenceStatus.missing.index),
+                  createdAt: Value(now),
+                  updatedAt: Value(now),
+                ),
+              );
+
+              _trace(
+                'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+                subDomain: 'sequence.gapDetected',
+              );
+              _loggingService.captureEvent(
+                'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
+                domain: 'SYNC_SEQUENCE',
+                subDomain: 'gapDetected',
+              );
+            }
           }
         }
       }
@@ -454,6 +497,19 @@ class SyncSequenceLogService {
 
     // Note: Covered vector clocks are processed at the START of this method,
     // BEFORE gap detection, to prevent false positives.
+
+    if (gaps.isNotEmpty && onMissingEntriesDetected != null) {
+      try {
+        onMissingEntriesDetected!.call();
+      } catch (e, st) {
+        _loggingService.captureException(
+          e,
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'missingEntriesDetected',
+          stackTrace: st,
+        );
+      }
+    }
 
     return gaps;
   }

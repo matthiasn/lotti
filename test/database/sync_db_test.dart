@@ -700,24 +700,72 @@ void main() {
       expect(entry.entryId, 'entry-1');
     });
 
-    test('getLastCounterForHost returns highest counter', () async {
+    test(
+      'getLastCounterForHost returns highest contiguous resolved counter',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+
+        for (var i = 1; i <= 5; i++) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(i),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(DateTime(2024, 1, i)),
+              updatedAt: Value(DateTime(2024, 1, i)),
+            ),
+          );
+        }
+
+        final lastCounter = await database.getLastCounterForHost(hostId);
+        expect(lastCounter, 5);
+      },
+    );
+
+    test('getLastCounterForHost stops at first unresolved gap', () async {
       final database = db!;
       const hostId = 'host-1';
 
-      for (var i = 1; i <= 5; i++) {
-        await database.recordSequenceEntry(
-          SyncSequenceLogCompanion(
-            hostId: const Value(hostId),
-            counter: Value(i),
-            status: Value(SyncSequenceStatus.received.index),
-            createdAt: Value(DateTime(2024, 1, i)),
-            updatedAt: Value(DateTime(2024, 1, i)),
-          ),
-        );
-      }
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(1),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(2),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(3),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(DateTime(2024, 1, 3)),
+          updatedAt: Value(DateTime(2024, 1, 3)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(4),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 4)),
+          updatedAt: Value(DateTime(2024, 1, 4)),
+        ),
+      );
 
       final lastCounter = await database.getLastCounterForHost(hostId);
-      expect(lastCounter, 5);
+      expect(lastCounter, 2);
     });
 
     test('getLastCounterForHost returns null for unknown host', () async {
@@ -725,6 +773,27 @@ void main() {
       final lastCounter = await database.getLastCounterForHost('unknown');
       expect(lastCounter, isNull);
     });
+
+    test(
+      'getLastCounterForHost returns 0 when host rows start above counter 1',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: const Value(5),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2024, 1, 5)),
+            updatedAt: Value(DateTime(2024, 1, 5)),
+          ),
+        );
+
+        final lastCounter = await database.getLastCounterForHost(hostId);
+        expect(lastCounter, 0);
+      },
+    );
 
     test('getMissingEntries returns only missing/requested entries', () async {
       final database = db!;

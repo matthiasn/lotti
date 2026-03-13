@@ -123,15 +123,23 @@ The most recent stabilization pass addressed two concrete failures:
 
 The largest remaining concerns are:
 
-- sequence-log mappings that can point a requested counter at a payload whose
-  current vector clock is already behind that counter
-- large bursts of missing counters that later get resolved
 - inbox-side attachment replay: repeated processing for the exact same
   attachment `eventId` is now suppressed unless the local file is missing or
   empty (repair path). The remaining edge case is different attachment events
   that share the same agent payload path, which can still overwrite each other
 - agent payload handling that can plausibly combine an older text event with a
   newer attachment version for the same `jsonPath`
+
+The receive-side recovery model is now stricter than before:
+
+- if catch-up cannot re-anchor on the stored Matrix marker, it reports
+  incomplete recovery instead of replaying a fallback room tail as if it were
+  exact backlog
+- sequence progress is derived from the highest contiguous resolved counter for
+  each host, not from the maximum sparse counter present anywhere in the log
+- large counter gaps are fully materialized in the sequence log and immediately
+  nudged into automatic backfill instead of being truncated to the newest `100`
+  rows
 
 Those are documented in detail in
 [current_architecture.md](./current_architecture.md).

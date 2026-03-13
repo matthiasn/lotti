@@ -101,6 +101,14 @@ class BackfillRequestService {
     return _processBackfillRequests(useLimits: false, ignoreEnabledFlag: true);
   }
 
+  /// Trigger an immediate automatic backfill pass instead of waiting for the
+  /// next periodic timer tick.
+  void nudge() {
+    if (_isDisposed) return;
+    _trace('nudge immediate automatic pass', subDomain: 'backfill.nudge');
+    unawaited(_processBackfillRequests(useLimits: true));
+  }
+
   /// Re-request entries that are in 'requested' status but haven't been received.
   /// This resets their request counts and sends new backfill requests.
   /// Uses pagination to process all requested entries, not just the batch size.

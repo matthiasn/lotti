@@ -921,6 +921,7 @@ void main() {
             required int pageSize,
             required int maxPages,
             required LoggingService logging,
+            num? untilTimestamp,
           }) async {
             return false;
           },

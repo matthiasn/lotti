@@ -599,6 +599,7 @@ void main() {
         required int pageSize,
         required int maxPages,
         required LoggingService logging,
+        num? untilTimestamp,
       }) async {
         final e0 = MockEvent();
         when(() => e0.eventId).thenReturn('e0');

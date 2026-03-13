@@ -18,7 +18,7 @@ void main() {
 
   group('CatchUpStrategy', () {
     test(
-      'returns bounded tail when marker missing after backfill and snapshot is full',
+      'returns incomplete recovery when marker missing after backfill and snapshot is full',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -52,7 +52,7 @@ void main() {
         });
 
         // Backfill attempted but marker never found in any snapshot
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'e999999',
           logging: log,
@@ -63,15 +63,15 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async => true,
           maxLookback: 5000,
         );
 
-        // Should escalate to maxLookback, but only return the bounded fallback
-        // tail instead of replaying the entire snapshot.
-        expect(slice.length, 1000);
-        expect(slice.first.eventId, 'e4000');
-        expect(slice.last.eventId, 'e4999');
+        expect(result.markerMissing, isTrue);
+        expect(result.events, isEmpty);
+        expect(result.snapshotSize, 5000);
+        expect(result.visibleTailCount, 1000);
         for (final tl in created) {
           verify(() => tl.cancelSubscriptions()).called(1);
         }
@@ -79,7 +79,7 @@ void main() {
     );
 
     test(
-      'does not escalate when marker missing after backfill but snapshot not full',
+      'returns incomplete recovery without escalating when marker missing and snapshot not full',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -101,7 +101,7 @@ void main() {
         when(() => tl.events).thenReturn(all);
         when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'does_not_exist',
           logging: log,
@@ -112,17 +112,20 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async => true,
           maxLookback: 1000,
         );
 
-        // No escalation: returns the existing snapshot (150)
-        expect(slice.length, 150);
+        expect(result.markerMissing, isTrue);
+        expect(result.events, isEmpty);
+        expect(result.snapshotSize, 150);
+        expect(result.visibleTailCount, 150);
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
 
-    test('uses configurable bounded tail when marker missing', () async {
+    test('reports configurable visible tail when marker missing', () async {
       final room = MockRoom();
       final log = MockLoggingService();
       final tl = MockTimeline();
@@ -142,7 +145,7 @@ void main() {
       when(() => tl.events).thenReturn(events);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'missing',
         logging: log,
@@ -153,11 +156,15 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => true,
         missingMarkerFallbackLimit: 3,
       );
 
-      expect(slice.map((e) => e.eventId), ['e17', 'e18', 'e19']);
+      expect(result.markerMissing, isTrue);
+      expect(result.events, isEmpty);
+      expect(result.visibleTailCount, 3);
+      expect(result.fallbackLimit, 3);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
     test('preContextCount=80 bounds pre-context inclusion window', () async {
@@ -182,7 +189,7 @@ void main() {
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
       // Marker at e120 → with preContextCount=80, start at e(120-80)=e40 (one-based vs zero-based)
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'e120',
         logging: log,
@@ -193,11 +200,13 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => true,
         preContextCount: 80,
         maxLookback: 2000,
       );
 
+      final slice = result.events;
       expect(slice.first.eventId, 'e40');
       verify(() => tl.cancelSubscriptions()).called(greaterThanOrEqualTo(1));
     });
@@ -234,7 +243,7 @@ void main() {
       });
 
       // Use lastEventId far back so we need to page a lot; ensure maxLookback caps
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'e0',
         logging: log,
@@ -245,11 +254,13 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => false,
         initialLimit: 50,
         maxLookback: 1000,
       );
 
+      final slice = result.events;
       // Should not exceed maxLookback by more than a small margin
       expect(slice.length, lessThanOrEqualTo(1100));
       for (final tl in created) {
@@ -277,7 +288,7 @@ void main() {
       when(() => tl.events).thenReturn(events);
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'e1',
         logging: log,
@@ -288,12 +299,14 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async {
               // backfill attempts and succeeds (but current snapshot already contains last)
               return true;
             },
       );
 
+      final slice = result.events;
       expect(slice.map((e) => e.eventId), ['e2']);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
@@ -329,7 +342,7 @@ void main() {
         return timelineForLimit(limit);
       });
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'e3',
         logging: log,
@@ -340,11 +353,13 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => false,
         initialLimit: 2,
         maxLookback: 8,
       );
 
+      final slice = result.events;
       // Should include strictly after e3 and be sorted
       expect(slice.first.eventId, 'e4');
       expect(slice.last.eventId, anyOf('e9'));
@@ -405,7 +420,7 @@ void main() {
         page++;
       });
 
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: null,
         logging: log,
@@ -416,9 +431,11 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => true,
       );
 
+      final slice = result.events;
       expect(slice, isNotEmpty);
       // No threshold slicing; returns current window (300..309)
       expect(slice.first.originServerTs.millisecondsSinceEpoch, 300);
@@ -451,7 +468,7 @@ void main() {
         when(() => tl.events).thenReturn(events);
         when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'x1',
           logging: log,
@@ -462,6 +479,7 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async {
                 // Marker already present; no need to paginate.
                 return true;
@@ -469,6 +487,7 @@ void main() {
           preContextCount: 2, // should include o1 and x1
         );
 
+        final slice = result.events;
         // Start should rewind to include o1 (pre-context), not just strictly-after x1
         expect(slice.map((e) => e.eventId), ['o1', 'x1', 'x2']);
         verify(() => tl.cancelSubscriptions()).called(1);
@@ -499,7 +518,7 @@ void main() {
       when(() => tl.cancelSubscriptions()).thenReturn(null);
 
       const sinceTs = 120; // include everything >= 120 -> [x1, x2]
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final result = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: 'x1',
         logging: log,
@@ -510,10 +529,12 @@ void main() {
               required int pageSize,
               required int maxPages,
               required LoggingService logging,
+              num? untilTimestamp,
             }) async => true,
         preContextSinceTs: sinceTs,
       );
 
+      final slice = result.events;
       expect(slice.map((e) => e.eventId), ['x1', 'x2']);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
@@ -544,7 +565,7 @@ void main() {
         when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
         when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'm',
           logging: log,
@@ -555,10 +576,12 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async => true,
           preContextCount: 1,
         );
 
+        final slice = result.events;
         // Expect exactly one event before the marker and the marker present.
         expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
         verify(() => tl.cancelSubscriptions()).called(1);
@@ -592,7 +615,7 @@ void main() {
         when(() => tl.events).thenReturn(<Event>[e0, m, e1]);
         when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'm',
           logging: log,
@@ -603,10 +626,12 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async => true,
           preContextSinceTs: 100, // equals earliest
         );
 
+        final slice = result.events;
         // Expect inclusion from the earliest, with no over-inclusion, and marker present
         expect(slice.map((e) => e.eventId), ['e0', 'm', 'e1']);
         verify(() => tl.cancelSubscriptions()).called(1);
@@ -614,7 +639,7 @@ void main() {
     );
 
     test(
-      'marker missing with preContext does not escalate or over-include',
+      'marker missing with preContext stays incomplete when timestamp boundary is not reachable',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -637,7 +662,7 @@ void main() {
         when(() => tl.cancelSubscriptions()).thenReturn(null);
 
         // Simulate backfill attempted but marker still missing (attempted=true)
-        final slice = await CatchUpStrategy.collectEventsForCatchUp(
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'missing',
           logging: log,
@@ -648,18 +673,70 @@ void main() {
                 required int pageSize,
                 required int maxPages,
                 required LoggingService logging,
+                num? untilTimestamp,
               }) async => true,
           preContextCount: 5,
           preContextSinceTs: 50,
         );
 
-        // With marker missing and backfill attempted, pre-context should not trigger
-        // escalation or over-inclusion. Return current snapshot as-is.
-        expect(slice.length, events.length);
-        expect(
-          slice.map((e) => e.eventId).toList(),
-          events.map((e) => e.eventId).toList(),
+        expect(result.markerMissing, isTrue);
+        expect(result.events, isEmpty);
+        expect(result.snapshotSize, events.length);
+        expect(result.reachedTimestampBoundary, isFalse);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
+
+    test(
+      'marker missing reports timestamp boundary after bounded backfill reaches older history',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+        num? capturedUntilTimestamp;
+
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
+
+        final events = <Event>[mk('e0', 100), mk('e1', 101), mk('e2', 102)];
+
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'missing',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async {
+                capturedUntilTimestamp = untilTimestamp;
+                events.insert(0, mk('older', 40));
+                return true;
+              },
+          preContextCount: 5,
+          preContextSinceTs: 50,
         );
+
+        expect(capturedUntilTimestamp, 50);
+        expect(result.markerMissing, isTrue);
+        expect(result.events, isEmpty);
+        expect(result.reachedTimestampBoundary, isTrue);
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );

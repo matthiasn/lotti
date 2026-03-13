@@ -139,6 +139,45 @@ void main() {
       verify(() => mockDb.recordSequenceEntry(any())).called(3);
     });
 
+    test(
+      'detects the missing prefix when an online host has no stored counters yet',
+      () async {
+        const vectorClock = VectorClock({aliceHostId: 5});
+        const entryId = 'entry-5';
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        expect(gaps, hasLength(4));
+        expect(gaps.map((gap) => gap.counter).toList(), [1, 2, 3, 4]);
+      },
+    );
+
     test('skips own host in vector clock', () async {
       // VC includes our own host - should be skipped
       const vectorClock = VectorClock({myHostId: 10, aliceHostId: 5});
@@ -577,18 +616,22 @@ void main() {
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
     });
 
-    test('limits gap detection to maxGapSize entries', () async {
-      // Large gap: lastSeen=10, counter=500 would normally create 489 missing entries
-      // With maxGapSize=100, should only create entries for counters 400-499
+    test('records the full large gap and logs it', () async {
+      // Large gap: lastSeen=10, counter=500 should create entries for 11-499.
       const vectorClock = VectorClock({aliceHostId: 500});
       const entryId = 'entry-500';
 
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 10);
-      // Stub all potential getEntryByHostAndCounter calls to return null
       when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        () => mockDb.getCountersForHostInRange(aliceHostId, 11, 499),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 500),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
@@ -598,11 +641,21 @@ void main() {
         originatingHostId: aliceHostId,
       );
 
-      // Should detect gaps but limited to maxGapSize (100)
-      expect(gaps.length, SyncTuning.maxGapSize);
-      // Gaps should be for the most recent counters (400-499)
-      expect(gaps.first.counter, 500 - SyncTuning.maxGapSize);
+      expect(gaps.length, 489);
+      expect(gaps.first.counter, 11);
       expect(gaps.last.counter, 499);
+      verify(
+        () => mockDb.getCountersForHostInRange(aliceHostId, 11, 499),
+      ).called(1);
+
+      final inserted =
+          verify(
+                () => mockDb.batchInsertSequenceEntries(captureAny()),
+              ).captured.single
+              as List<SyncSequenceLogCompanion>;
+      expect(inserted.length, 500 - 10 - 1);
+      expect(inserted.first.counter.value, 11);
+      expect(inserted.last.counter.value, 499);
 
       // Verify large gap was logged
       verify(
@@ -612,6 +665,31 @@ void main() {
           subDomain: 'largeGap',
         ),
       ).called(1);
+    });
+
+    test('invokes missing-work callback after detecting gaps', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+      var nudged = false;
+      service.onMissingEntriesDetected = () {
+        nudged = true;
+      };
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(nudged, isTrue);
     });
 
     test('does not log largeGap when gap is within limits', () async {
