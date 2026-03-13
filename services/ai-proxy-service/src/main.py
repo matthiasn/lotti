@@ -39,19 +39,24 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 # Add CORS middleware
 # Configure allowed origins from environment variable
 # Example: CORS_ALLOWED_ORIGINS="https://app.lotti.com,https://dev.lotti.com"
-cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080")
+cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080,http://localhost:5173")
 cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
 # Add API key authentication middleware (exempts /health, /metrics, /docs)
-app.add_middleware(APIKeyAuthMiddleware, exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"])
+# Admin paths require ADMIN_API_KEYS for write access to pricing and read access to usage data
+app.add_middleware(
+    APIKeyAuthMiddleware,
+    exempt_paths=["/health", "/metrics", "/docs", "/openapi.json", "/redoc"],
+    admin_path_prefixes=["/v1/pricing", "/v1/usage"],
+)
 
 # Add request ID middleware for tracing
 app.add_middleware(RequestIDMiddleware)
