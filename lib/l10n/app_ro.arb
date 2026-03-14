@@ -1175,8 +1175,22 @@
   "inferenceProfileSelectModel": "Selectați un model…",
   "inferenceProfilesEmpty": "Niciun profil de inferență",
   "inferenceProfileSkillModelRequired": "Necesită modelul {slotName}",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfileSkillsSection": "Competențe automatizate",
   "inferenceProfileSkillUsesModel": "Utilizează modelul {slotName}",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfilesTitle": "Profile de inferență",
   "inferenceProfileThinking": "Gândire",
   "inferenceProfileThinkingRequired": "Este necesar un model de gândire",

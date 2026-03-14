@@ -1175,8 +1175,22 @@
   "inferenceProfileSelectModel": "Modell auswählen…",
   "inferenceProfilesEmpty": "Noch keine Inferenz-Profile",
   "inferenceProfileSkillModelRequired": "{slotName}-Modell muss gesetzt sein",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfileSkillsSection": "Automatisierte Fähigkeiten",
   "inferenceProfileSkillUsesModel": "Verwendet {slotName}-Modell",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfilesTitle": "Inferenz-Profile",
   "inferenceProfileThinking": "Denken",
   "inferenceProfileThinkingRequired": "Ein Denk-Modell ist erforderlich",

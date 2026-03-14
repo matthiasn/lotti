@@ -1175,8 +1175,22 @@
   "inferenceProfileSelectModel": "Sélectionner un modèle…",
   "inferenceProfilesEmpty": "Aucun profil d'inférence",
   "inferenceProfileSkillModelRequired": "Nécessite le modèle {slotName}",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfileSkillsSection": "Compétences automatisées",
   "inferenceProfileSkillUsesModel": "Utilise le modèle {slotName}",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfilesTitle": "Profils d'inférence",
   "inferenceProfileThinking": "Réflexion",
   "inferenceProfileThinkingRequired": "Un modèle de réflexion est requis",

@@ -967,8 +967,22 @@
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfileSkillsSection": "Automatizované dovednosti",
   "inferenceProfileSkillUsesModel": "Používá model {slotName}",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inputDataTypeAudioFilesDescription": "Použijte audio soubory jako vstup",
   "inputDataTypeAudioFilesName": "Audio soubory",
   "inputDataTypeImagesDescription": "Použijte obrázky jako vstup",
