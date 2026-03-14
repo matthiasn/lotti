@@ -3869,7 +3869,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
-      'Abfragen über 3 ms werden in slow_queries-YYYY-MM-DD.log geschrieben';
+      'Langsame Abfragen werden in slow_queries-YYYY-MM-DD.log geschrieben';
 
   @override
   String get settingsLoggingSync => 'Synchronisation';

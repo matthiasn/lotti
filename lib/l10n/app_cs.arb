@@ -1362,7 +1362,7 @@
     }
   },
   "settingsLoggingSlowQueries": "Pomalé databázové dotazy",
-  "settingsLoggingSlowQueriesSubtitle": "Dotazy pomalejší než 3 ms se zapisují do slow_queries-YYYY-MM-DD.log",
+  "settingsLoggingSlowQueriesSubtitle": "Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log",
   "settingsLogsTitle": "Záznamy",
   "settingsMaintenanceTitle": "Údržba",
   "settingsMatrixAccept": "Přijmout",

@@ -102,7 +102,7 @@ LazyDatabase openDbConnection(
   bool inMemoryDatabase = false,
   bool background = true,
   int readPool = 0,
-  Duration slowQueryThreshold = const Duration(milliseconds: 3),
+  Duration slowQueryThreshold = const Duration(milliseconds: 5),
   SlowQueryReporter? slowQueryReporter,
   Future<Directory> Function()? documentsDirectoryProvider,
   Future<Directory> Function()? tempDirectoryProvider,

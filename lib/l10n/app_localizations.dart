@@ -6910,7 +6910,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLoggingSlowQueriesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Queries slower than 3ms written to slow_queries-YYYY-MM-DD.log'**
+  /// **'Writes slow queries to slow_queries-YYYY-MM-DD.log'**
   String get settingsLoggingSlowQueriesSubtitle;
 
   /// No description provided for @settingsLoggingSync.

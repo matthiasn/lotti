@@ -83,6 +83,20 @@ void main() {
     expect(await db.itemByKey('cached_key'), 'cached_value');
   });
 
+  test('saveSettingsItem skips unchanged cached values', () async {
+    final firstResult = await db.saveSettingsItem('same_key', 'same_value');
+    final firstItem = await db.loadSettingsItem('same_key');
+
+    final secondResult = await db.saveSettingsItem('same_key', 'same_value');
+    final secondItem = await db.loadSettingsItem('same_key');
+
+    expect(firstResult, isNot(0));
+    expect(secondResult, 0);
+    expect(secondItem, isNotNull);
+    expect(secondItem!.updatedAt, firstItem!.updatedAt);
+    expect(secondItem.value, 'same_value');
+  });
+
   test(
     'itemsByKeys returns existing and missing values in one batch',
     () async {

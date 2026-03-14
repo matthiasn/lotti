@@ -59,9 +59,12 @@ class JournalDb extends _$JournalDb {
   bool inMemoryDatabase = false;
   final LoggingService? _loggingService;
   final Directory? _documentsDirectory;
+  final Map<String, bool> _configFlagCache = <String, bool>{};
+  final Map<String, Future<bool>> _inFlightConfigFlagReads =
+      <String, Future<bool>>{};
 
   @override
-  int get schemaVersion => 34;
+  int get schemaVersion => 36;
 
   @override
   MigrationStrategy get migration {
@@ -290,6 +293,32 @@ class JournalDb extends _$JournalDb {
             }
             if (await _tableExists('linked_entries')) {
               await m.createIndex(idxLinkedEntriesFromIdHiddenCreatedAtDesc);
+            }
+          }();
+        }
+
+        // v35: Add a date-oriented task index for date-sorted task queries.
+        if (from < 35) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message: 'Adding date-oriented task index',
+            );
+            if (await _tableExists('journal')) {
+              await m.createIndex(idxJournalTasksDate);
+            }
+          }();
+        }
+
+        // v36: Add a browse-oriented journal index for common journal lists.
+        if (from < 36) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message: 'Adding browse-oriented journal index',
+            );
+            if (await _tableExists('journal')) {
+              await m.createIndex(idxJournalBrowse);
             }
           }();
         }
@@ -577,8 +606,25 @@ class JournalDb extends _$JournalDb {
     if (ids.isEmpty) {
       return const <JournalEntity>[];
     }
-    final res = await journalEntitiesByIds(ids.toList()).get();
+    final res = await journalEntitiesByIds(
+      ids.toList(),
+      await _visiblePrivateStatuses(),
+    ).get();
     return res.map(fromDbEntity).toList();
+  }
+
+  Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
+    Iterable<String> ids,
+  ) async {
+    final idList = ids.toSet().toList(growable: false);
+    if (idList.isEmpty) {
+      return const <String>[];
+    }
+
+    return journalEntityIdsByDateFromDesc(
+      idList,
+      await _visiblePrivateStatuses(),
+    ).get();
   }
 
   /// Stream entries with their vector clocks for populating the sequence log.
@@ -691,6 +737,19 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) {
+    final matchesAllStarredStates =
+        starredStatuses.length == 2 &&
+        starredStatuses.contains(true) &&
+        starredStatuses.contains(false);
+    final matchesAllFlagStates =
+        flaggedStatuses.length == 2 &&
+        flaggedStatuses.contains(0) &&
+        flaggedStatuses.contains(1);
+    final matchesAllPrivateStates =
+        privateStatuses.length == 2 &&
+        privateStatuses.contains(true) &&
+        privateStatuses.contains(false);
+
     if (ids != null) {
       return filteredByTagJournal(
         types,
@@ -711,6 +770,19 @@ class JournalDb extends _$JournalDb {
         limit,
         offset,
       );
+    } else if (matchesAllStarredStates && matchesAllFlagStates) {
+      return matchesAllPrivateStates
+          ? filteredJournalFastAllPrivate(
+              types,
+              limit,
+              offset,
+            )
+          : filteredJournalFast(
+              types,
+              privateStatuses,
+              limit,
+              offset,
+            );
     } else {
       return filteredJournal(
         types,
@@ -734,8 +806,10 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) async {
+    final privateStatuses = await _visiblePrivateStatuses();
     final res = await _selectTasks(
       starredStatuses: starredStatuses,
+      privateStatuses: privateStatuses,
       taskStatuses: taskStatuses,
       categoryIds: categoryIds,
       labelIds: labelIds,
@@ -751,6 +825,7 @@ class JournalDb extends _$JournalDb {
 
   Selectable<JournalDbEntity> _selectTasks({
     required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
     required List<String> taskStatuses,
     required List<String> categoryIds,
     List<String>? labelIds,
@@ -767,6 +842,58 @@ class JournalDb extends _$JournalDb {
         .where((id) => id.isNotEmpty)
         .toList();
     final labelFilterCount = filteredLabelIds.length;
+    final filterByLabels = includeUnlabeled || labelFilterCount > 0;
+    final dbTaskStatuses = taskStatuses.cast<String?>();
+    final selectedPriorities = priorities ?? <String>[];
+    final filterByPriorities = selectedPriorities.isNotEmpty;
+    final dbSelectedPriorities = selectedPriorities.cast<String?>();
+
+    if (ids == null && !filterByLabels) {
+      if (sortByDate) {
+        return filterByPriorities
+            ? filteredTasksByDateFastWithPriorities(
+                types,
+                privateStatuses,
+                starredStatuses,
+                dbTaskStatuses,
+                categoryIds,
+                dbSelectedPriorities,
+                limit,
+                offset,
+              )
+            : filteredTasksByDateFast(
+                types,
+                privateStatuses,
+                starredStatuses,
+                dbTaskStatuses,
+                categoryIds,
+                limit,
+                offset,
+              );
+      }
+
+      return filterByPriorities
+          ? filteredTasksFastWithPriorities(
+              types,
+              privateStatuses,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              dbSelectedPriorities,
+              limit,
+              offset,
+            )
+          : filteredTasksFast(
+              types,
+              privateStatuses,
+              starredStatuses,
+              dbTaskStatuses,
+              categoryIds,
+              limit,
+              offset,
+            );
+    }
+
     // Avoid passing an empty list to the SQL `IN (:labelIds)` clause.
     // SQLite (and SQL generally) does not allow an empty `IN ()`, so we
     // substitute a dummy value when no label IDs are selected. The query
@@ -774,10 +901,6 @@ class JournalDb extends _$JournalDb {
     final effectiveLabelIds = labelFilterCount == 0
         ? <String>['__no_label__']
         : filteredLabelIds;
-    final filterByLabels = includeUnlabeled || labelFilterCount > 0;
-    final dbTaskStatuses = taskStatuses.cast<String?>();
-    final selectedPriorities = priorities ?? <String>[];
-    final filterByPriorities = selectedPriorities.isNotEmpty;
     // Keep the generated SQL valid when no priorities are selected. Drift
     // still expands list parameters even when the CASE guard disables the
     // priority branch, so passing an empty list would yield `IN ()`.
@@ -792,6 +915,7 @@ class JournalDb extends _$JournalDb {
           ? filteredTasksByDate2(
               types,
               ids,
+              privateStatuses,
               starredStatuses,
               dbTaskStatuses,
               categoryIds,
@@ -808,6 +932,7 @@ class JournalDb extends _$JournalDb {
           : filteredTasks2(
               types,
               ids,
+              privateStatuses,
               starredStatuses,
               dbTaskStatuses,
               categoryIds,
@@ -826,6 +951,7 @@ class JournalDb extends _$JournalDb {
       return sortByDate
           ? filteredTasksByDate(
               types,
+              privateStatuses,
               starredStatuses,
               dbTaskStatuses,
               categoryIds,
@@ -841,6 +967,7 @@ class JournalDb extends _$JournalDb {
             )
           : filteredTasks(
               types,
+              privateStatuses,
               starredStatuses,
               dbTaskStatuses,
               categoryIds,
@@ -858,17 +985,18 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> getWipCount() async {
-    final res = await _selectTasks(
-      starredStatuses: [true, false],
-      taskStatuses: ['IN PROGRESS'],
-      categoryIds: [''],
-      limit: 100000,
-    ).get();
-    return res.length;
+    final privateStatuses = await _visiblePrivateStatuses();
+    return countInProgressTasks(
+      privateStatuses,
+      ['IN PROGRESS'],
+    ).getSingle();
   }
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
-    final dbEntities = await linkedJournalEntities(linkedFrom).get();
+    final dbEntities = await linkedJournalEntities(
+      linkedFrom,
+      await _visiblePrivateStatuses(),
+    ).get();
     return dbEntities.map(fromDbEntity).toList();
   }
 
@@ -1094,20 +1222,49 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<bool> getConfigFlag(String flagName) async {
-    return (await configFlagByName(flagName).getSingleOrNull())?.status ??
-        false;
+    if (_configFlagCache.containsKey(flagName)) {
+      return _configFlagCache[flagName] ?? false;
+    }
+
+    final inFlightRead = _inFlightConfigFlagReads[flagName];
+    if (inFlightRead != null) {
+      return inFlightRead;
+    }
+
+    late final Future<bool> future;
+    future = configFlagByName(flagName)
+        .getSingleOrNull()
+        .then((flag) {
+          final status = flag?.status ?? false;
+          _configFlagCache[flagName] = status;
+          return status;
+        })
+        .whenComplete(() {
+          if (identical(_inFlightConfigFlagReads[flagName], future)) {
+            _inFlightConfigFlagReads.remove(flagName);
+          }
+        });
+
+    _inFlightConfigFlagReads[flagName] = future;
+    return future;
   }
 
   Stream<bool> watchConfigFlag(String flagName) {
     return configFlagByName(
       flagName,
-    ).watchSingleOrNull().map((flag) => flag?.status ?? false);
+    ).watchSingleOrNull().map((flag) {
+      final status = flag?.status ?? false;
+      _configFlagCache[flagName] = status;
+      _inFlightConfigFlagReads.remove(flagName);
+      return status;
+    }).distinct();
   }
 
   Future<ConfigFlag?> getConfigFlagByName(String flagName) async {
     final flags = await configFlagByName(flagName).get();
 
     if (flags.isNotEmpty) {
+      _configFlagCache[flagName] = flags.first.status;
       return flags.first;
     }
     return null;
@@ -1122,6 +1279,8 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<int> upsertConfigFlag(ConfigFlag configFlag) async {
+    _configFlagCache[configFlag.name] = configFlag.status;
+    unawaited(_inFlightConfigFlagReads.remove(configFlag.name));
     return into(configFlags).insertOnConflictUpdate(configFlag);
   }
 
@@ -1133,6 +1292,11 @@ class JournalDb extends _$JournalDb {
     }
   }
 
+  Future<List<bool>> _visiblePrivateStatuses() async {
+    final showPrivateEntries = await getConfigFlag('private');
+    return showPrivateEntries ? const [false, true] : const [false];
+  }
+
   Future<int> getCountImportFlagEntries() async {
     final res = await countImportFlagEntries().get();
     return res.first;
@@ -1141,7 +1305,11 @@ class JournalDb extends _$JournalDb {
   Future<int> getTasksCount({
     List<String> statuses = const ['IN PROGRESS'],
   }) async {
-    final res = await countInProgressTasks(statuses).get();
+    final privateStatuses = await _visiblePrivateStatuses();
+    final res = await countInProgressTasks(
+      privateStatuses,
+      statuses.cast<String?>(),
+    ).get();
     return res.first;
   }
 
@@ -1207,7 +1375,10 @@ class JournalDb extends _$JournalDb {
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
     final endIso = endOfDay.toIso8601String();
 
-    final res = await _selectTasksDue(endIso: endIso);
+    final res = await _selectTasksDue(
+      endIso: endIso,
+      privateStatuses: await _visiblePrivateStatuses(),
+    );
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
@@ -1220,7 +1391,11 @@ class JournalDb extends _$JournalDb {
     final startIso = startOfDay.toIso8601String();
     final endIso = endOfDay.toIso8601String();
 
-    final res = await _selectTasksDue(startIso: startIso, endIso: endIso);
+    final res = await _selectTasksDue(
+      startIso: startIso,
+      endIso: endIso,
+      privateStatuses: await _visiblePrivateStatuses(),
+    );
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
@@ -1228,6 +1403,7 @@ class JournalDb extends _$JournalDb {
   // raw SQL to force the dedicated expression index on large journal tables.
   Future<List<JournalDbEntity>> _selectTasksDue({
     required String endIso,
+    required List<bool> privateStatuses,
     String? startIso,
   }) {
     final variables = <Variable<Object>>[];
@@ -1252,15 +1428,24 @@ class JournalDb extends _$JournalDb {
         r"AND json_extract(serialized, '$.data.due') <= "
         '?${variables.length} ',
       )
-      ..write(
-        "AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private')) ",
-      )
+      ..write('AND private IN (');
+
+    for (var i = 0; i < privateStatuses.length; i++) {
+      if (i > 0) {
+        buffer.write(', ');
+      }
+      variables.add(Variable<bool>(privateStatuses[i]));
+      buffer.write('?${variables.length}');
+    }
+
+    buffer
+      ..write(') ')
       ..write(r"ORDER BY json_extract(serialized, '$.data.due') ASC");
 
     return customSelect(
       buffer.toString(),
       variables: variables,
-      readsFrom: {journal, configFlags},
+      readsFrom: {journal},
     ).asyncMap(journal.mapFromRow).get();
   }
 

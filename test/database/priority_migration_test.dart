@@ -180,7 +180,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 34);
+        expect(db.schemaVersion, 36);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
@@ -191,6 +191,128 @@ void main() {
         expect(sql, contains(r"json_extract(serialized, '$.data.due')"));
         expect(sql, contains('type COLLATE BINARY ASC'));
         expect(sql, contains('deleted COLLATE BINARY ASC'));
+
+        await db.close();
+      },
+    );
+  });
+
+  group('Task Date Index Migration v35', () {
+    test('adds the date-oriented task index for existing databases', () async {
+      final dbFile = File(
+        p.join(testDirectory!.path, 'test_v35_task_date_idx.db'),
+      );
+      final sqlite = sqlite3.open(dbFile.path);
+
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS journal (
+          id TEXT PRIMARY KEY,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          date_from INTEGER NOT NULL,
+          date_to INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          subtype TEXT,
+          starred BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
+          task BOOLEAN DEFAULT FALSE,
+          task_status TEXT,
+          task_priority TEXT,
+          task_priority_rank INTEGER,
+          category TEXT NOT NULL DEFAULT '',
+          flag INTEGER DEFAULT 0,
+          schema_version INTEGER DEFAULT 0,
+          plain_text TEXT,
+          latitude REAL,
+          longitude REAL,
+          geohash_string TEXT,
+          geohash_int INTEGER
+        )
+      ''');
+
+      sqlite.execute('PRAGMA user_version = 34');
+      sqlite.dispose();
+
+      final db = JournalDb(overriddenFilename: 'test_v35_task_date_idx.db');
+
+      final version = await db.customSelect('PRAGMA user_version').get();
+      expect(version.first.read<int>('user_version'), db.schemaVersion);
+      expect(db.schemaVersion, 36);
+
+      final idx = await db.customSelect("""
+        SELECT sql FROM sqlite_master
+        WHERE type='index' AND name='idx_journal_tasks_date'
+      """).get();
+      expect(idx, hasLength(1));
+      final sql = idx.first.read<String>('sql');
+      expect(sql, contains('task_status COLLATE BINARY ASC'));
+      expect(sql, contains('category COLLATE BINARY ASC'));
+      expect(sql, contains('date_from COLLATE BINARY DESC'));
+      expect(sql, contains('id COLLATE BINARY ASC'));
+
+      await db.close();
+    });
+  });
+
+  group('Journal Browse Index Migration v36', () {
+    test(
+      'adds the browse-oriented journal index for existing databases',
+      () async {
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v36_journal_browse_idx.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS journal (
+          id TEXT PRIMARY KEY,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          date_from INTEGER NOT NULL,
+          date_to INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          subtype TEXT,
+          starred BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
+          task BOOLEAN DEFAULT FALSE,
+          task_status TEXT,
+          task_priority TEXT,
+          task_priority_rank INTEGER,
+          category TEXT NOT NULL DEFAULT '',
+          flag INTEGER DEFAULT 0,
+          schema_version INTEGER DEFAULT 0,
+          plain_text TEXT,
+          latitude REAL,
+          longitude REAL,
+          geohash_string TEXT,
+          geohash_int INTEGER
+        )
+      ''');
+
+        sqlite.execute('PRAGMA user_version = 35');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v36_journal_browse_idx.db',
+        );
+
+        final version = await db.customSelect('PRAGMA user_version').get();
+        expect(version.first.read<int>('user_version'), db.schemaVersion);
+        expect(db.schemaVersion, 36);
+
+        final idx = await db.customSelect("""
+        SELECT sql FROM sqlite_master
+        WHERE type='index' AND name='idx_journal_browse'
+      """).get();
+        expect(idx, hasLength(1));
+        final sql = idx.first.read<String>('sql');
+        expect(sql, contains('deleted COLLATE BINARY ASC'));
+        expect(sql, contains('type COLLATE BINARY ASC'));
+        expect(sql, contains('date_from COLLATE BINARY DESC'));
 
         await db.close();
       },

@@ -3857,7 +3857,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
-      'Dotazy pomalejší než 3 ms se zapisují do slow_queries-YYYY-MM-DD.log';
+      'Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log';
 
   @override
   String get settingsLoggingSync => 'Sync';

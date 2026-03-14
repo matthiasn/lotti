@@ -30,8 +30,6 @@ import '../../../mocks/mocks.dart';
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
 
-class MockSelectableString extends Mock implements drift.Selectable<String> {}
-
 class MockSelectableJournalDbEntity extends Mock
     implements drift.Selectable<JournalDbEntity> {}
 
@@ -1389,7 +1387,7 @@ void main() {
           expect(result, isEmpty);
           verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
           verifyNever(
-            () => mockJournalDb.journalEntityIdsByDateFromDesc(any()),
+            () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc(any()),
           );
         },
       );
@@ -1442,7 +1440,6 @@ void main() {
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1452,12 +1449,11 @@ void main() {
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
-        ).thenReturn(mockIdsQuery);
-        when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-2', 'to-id-1']);
+        ).thenAnswer((_) async => ['to-id-2', 'to-id-1']);
 
         // Act
         final result = await repository.getLinksFromId(fromId);
@@ -1469,7 +1465,7 @@ void main() {
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
@@ -1505,7 +1501,6 @@ void main() {
 
         final mockEntries = [mockDbEntry];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1515,9 +1510,10 @@ void main() {
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc(['to-id-1']),
-        ).thenReturn(mockIdsQuery);
-        when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-1']);
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
+            'to-id-1',
+          ]),
+        ).thenAnswer((_) async => ['to-id-1']);
 
         // Act
         final result = await repository.getLinksFromId(
@@ -1582,7 +1578,6 @@ void main() {
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1593,13 +1588,10 @@ void main() {
         // Mock the journalEntityIdsByDateFromDesc query to return an ID that doesn't exist
         // in our links map to test the nonNulls filtering
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
-        ).thenReturn(mockIdsQuery);
-        when(
-          mockIdsQuery.get,
         ).thenAnswer((_) async => ['to-id-3', 'to-id-2', 'to-id-1']);
 
         // Act
@@ -1614,7 +1606,7 @@ void main() {
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),

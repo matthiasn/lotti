@@ -3805,7 +3805,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
-      'Queries slower than 3ms written to slow_queries-YYYY-MM-DD.log';
+      'Writes slow queries to slow_queries-YYYY-MM-DD.log';
 
   @override
   String get settingsLoggingSync => 'Sync';

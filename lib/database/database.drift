@@ -31,12 +31,24 @@ CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
 CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_browse ON journal(
+  deleted COLLATE BINARY ASC,
+  type COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC
+);
 CREATE INDEX idx_journal_tasks ON journal(
   type COLLATE BINARY ASC,
   task_status COLLATE BINARY ASC,
   task_priority_rank COLLATE BINARY ASC,
   category COLLATE BINARY ASC,
   date_from COLLATE BINARY DESC
+);
+CREATE INDEX idx_journal_tasks_date ON journal(
+  type COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC,
+  category COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC,
+  id COLLATE BINARY ASC
 );
 CREATE INDEX idx_journal_type_subtype ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
 CREATE INDEX idx_journal_tasks_due_active ON journal(
@@ -245,10 +257,26 @@ filteredJournal:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalFast:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalFastAllPrivate:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;
@@ -257,7 +285,6 @@ filteredJournalByCategories:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -270,7 +297,6 @@ filteredJournalIds:
 SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -283,7 +309,6 @@ SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -296,7 +321,6 @@ SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -350,7 +374,7 @@ filteredTasks:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -393,12 +417,39 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+filteredTasksFast:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksFastWithPriorities:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
 filteredTasks2:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -436,7 +487,7 @@ filteredTasksByDate:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -469,12 +520,39 @@ SELECT * FROM journal
   LIMIT :limit
   OFFSET :offset;
 
+filteredTasksByDateFast:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateFastWithPriorities:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
 filteredTasksByDate2:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -511,7 +589,7 @@ filteredTaskIds:
 SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -524,7 +602,7 @@ SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -662,7 +740,7 @@ SELECT COUNT(*) FROM journal
 countInProgressTasks:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND task = 1
   AND task_status IN :taskStatuses;
 
@@ -781,14 +859,14 @@ linkedJournalEntities:
 SELECT * FROM journal
   WHERE deleted = false
   AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden = false)
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   ORDER BY date_from DESC;
 
 journalEntityIdsByDateFromDesc:
 SELECT id FROM journal
   WHERE deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   ORDER BY date_from DESC;
 
 journalEntityIdsByCategory:
@@ -815,7 +893,7 @@ journalEntitiesByIds:
 SELECT * FROM journal
   WHERE deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   ORDER BY date_from DESC;
 
 linkedJournalEntityIds:

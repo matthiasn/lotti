@@ -1582,7 +1582,7 @@
   "settingsLoggingGlobalToggle": "Activer la journalisation",
   "settingsLoggingGlobalToggleSubtitle": "Interrupteur principal pour toute la journalisation",
   "settingsLoggingSlowQueries": "Requêtes lentes de la base",
-  "settingsLoggingSlowQueriesSubtitle": "Les requêtes de plus de 3 ms sont écrites dans slow_queries-YYYY-MM-DD.log",
+  "settingsLoggingSlowQueriesSubtitle": "Les requêtes lentes sont écrites dans slow_queries-YYYY-MM-DD.log",
   "settingsLoggingSync": "Synchronisation",
   "settingsLoggingSyncSubtitle": "Opérations de synchronisation entre appareils",
   "settingsLoggingViewLogsSubtitle": "Parcourir et rechercher toutes les entrées du journal",

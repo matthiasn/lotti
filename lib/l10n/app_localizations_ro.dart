@@ -3880,7 +3880,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsLoggingSlowQueriesSubtitle =>
-      'Interogările mai lente de 3 ms sunt scrise în slow_queries-YYYY-MM-DD.log';
+      'Interogările lente sunt scrise în slow_queries-YYYY-MM-DD.log';
 
   @override
   String get settingsLoggingSync => 'Sincronizare';

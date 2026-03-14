@@ -13,7 +13,10 @@ const settingsDbFileName = 'settings.sqlite';
 class SettingsDb extends _$SettingsDb {
   SettingsDb({
     this.inMemoryDatabase = false,
-    bool background = true,
+    // Settings reads and writes are tiny and latency-sensitive. Running them on
+    // the main isolate avoids the extra message-hop overhead from
+    // `createInBackground`, which dominated hot preference writes in practice.
+    bool background = false,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
@@ -73,6 +76,12 @@ class SettingsDb extends _$SettingsDb {
   }
 
   Future<int> saveSettingsItem(String configKey, String value) async {
+    if (_cache.containsKey(configKey) && _cache[configKey] == value) {
+      unawaited(_inFlightReads.remove(configKey));
+      _resolveQueuedRead(configKey, value);
+      return 0;
+    }
+
     _bumpGeneration(configKey);
     final settingsItem = SettingsItem(
       configKey: configKey,

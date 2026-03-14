@@ -22,10 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync startup: if catch-up cannot reach the stored timestamp boundary yet, the
   receiver now keeps live scans deferred instead of treating incomplete
   recovery as ready and letting repair traffic start early.
-- Database diagnostics: all Drift-backed databases now append queries slower
-  than 3ms into a dedicated daily `slow_queries-YYYY-MM-DD.log` file under the
-  app logs directory when the new Slow Database Queries logging domain is
-  enabled.
+- Database diagnostics: all Drift-backed databases now append slow queries into
+  a dedicated daily `slow_queries-YYYY-MM-DD.log` file under the app logs
+  directory when the new Slow Database Queries logging domain is enabled.
 - Sync database: `sync_sequence_log` now has dedicated indices for actionable
   queue scans and payload-id resolution, reducing CPU spent scanning the
   sequence log at larger row counts.
@@ -47,6 +46,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Journal database: active task due-date queries now use a dedicated expression
   index on the serialized due date, reducing CPU spent scanning large task
   tables for overdue and same-day task views.
+- Journal database: date-sorted task list queries now use a dedicated
+  `(type, task_status, category, date_from, id)` index instead of relying on
+  the priority-oriented task index, reducing latency for task views sorted by
+  creation date.
+- Journal database: common journal-list browsing now uses a dedicated
+  `(deleted, type, date_from)` browse index and simplified fast-path SQL
+  instead of the fully generic starred/flagged filter template, reducing
+  latency for warm journal queries when no extra filters are active.
+- Journal interactions: unchanged task-filter and entry-type payloads now skip
+  redundant `settings.sqlite` writes, and linked-entry lookups now pass the
+  cached private-visibility status directly instead of re-reading the private
+  config flag inside each query.
+- Settings database: hot `settings.sqlite` reads and writes now stay on a
+  direct Drift executor instead of paying a background-isolate hop for each
+  tiny preference operation, and cached same-value saves now return early
+  without touching SQLite at all.
 - Journal database: definition list screens and `linksFromId()` now use
   dedicated composite indexes for visible-name sorting and recency-ordered
   linked-entry lookups.

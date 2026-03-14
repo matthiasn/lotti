@@ -492,8 +492,9 @@ class JournalRepository {
     // sort by the (editable) date from, descending, to allow for changing the
     // start date of the linked entries and get the list reordered accordingly
     final sortedToIds = await getIt<JournalDb>()
-        .journalEntityIdsByDateFromDesc(linksByToId.keys.toList())
-        .get();
+        .getJournalEntityIdsSortedByDateFromDesc(
+          linksByToId.keys.toList(growable: false),
+        );
 
     return sortedToIds.map((id) => linksByToId[id]).nonNulls.toList();
   }

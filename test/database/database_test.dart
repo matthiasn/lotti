@@ -1256,6 +1256,51 @@ void main() {
         final details = plan.map((row) => row.read<String>('detail')).join(' ');
         expect(details, contains('idx_journal_tasks_due_active'));
       });
+
+      test(
+        'date-sorted task queries use the date-oriented task index',
+        () async {
+          final plan = await db!.customSelect(
+            '''
+          EXPLAIN QUERY PLAN
+          SELECT * FROM journal
+          WHERE type = 'Task'
+          AND deleted = FALSE
+          AND task = 1
+          AND task_status = 'OPEN'
+          AND category = ''
+          ORDER BY date_from DESC, id ASC
+          LIMIT 50 OFFSET 0
+          ''',
+          ).get();
+
+          final details = plan
+              .map((row) => row.read<String>('detail'))
+              .join(' ');
+          expect(details, contains('idx_journal_tasks_date'));
+        },
+      );
+
+      test(
+        'journal browse queries use the browse-oriented journal index',
+        () async {
+          final plan = await db!.customSelect(
+            '''
+          EXPLAIN QUERY PLAN
+          SELECT * FROM journal
+          WHERE type = 'JournalEntry'
+          AND deleted = FALSE
+          ORDER BY date_from DESC
+          LIMIT 50 OFFSET 0
+          ''',
+          ).get();
+
+          final details = plan
+              .map((row) => row.read<String>('detail'))
+              .join(' ');
+          expect(details, contains('idx_journal_browse'));
+        },
+      );
     });
 
     group('Linked entities -', () {
@@ -1302,6 +1347,65 @@ void main() {
 
           final results = await db!.getLinkedEntities(parent.meta.id);
           expect(results.map((e) => e.meta.id), ['child-newer', 'child-older']);
+        },
+      );
+
+      test(
+        'getLinkedEntities respects the private flag without a config subquery',
+        () async {
+          final base = DateTime(2024, 8, 3);
+          final parent = buildJournalEntry(
+            id: 'private-parent',
+            timestamp: base,
+            text: 'Parent',
+          );
+          final publicChild = buildJournalEntry(
+            id: 'public-child',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'Public child',
+          );
+          final privateChild = buildJournalEntry(
+            id: 'private-child',
+            timestamp: base.add(const Duration(minutes: 2)),
+            text: 'Private child',
+            privateFlag: true,
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(parent));
+          await db!.upsertJournalDbEntity(toDbEntity(publicChild));
+          await db!.upsertJournalDbEntity(toDbEntity(privateChild));
+
+          await db!.upsertEntryLink(
+            buildEntryLink(
+              id: 'public-link',
+              fromId: parent.meta.id,
+              toId: publicChild.meta.id,
+              timestamp: base,
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildEntryLink(
+              id: 'private-link',
+              fromId: parent.meta.id,
+              toId: privateChild.meta.id,
+              timestamp: base.add(const Duration(minutes: 1)),
+            ),
+          );
+
+          final privateConfig = await db!.getConfigFlagByName(privateFlag);
+          expect(privateConfig, isNotNull);
+
+          await db!.upsertConfigFlag(privateConfig!.copyWith(status: false));
+          expect(
+            (await db!.getLinkedEntities(parent.meta.id)).map((e) => e.meta.id),
+            ['public-child'],
+          );
+
+          await db!.upsertConfigFlag(privateConfig.copyWith(status: true));
+          expect(
+            (await db!.getLinkedEntities(parent.meta.id)).map((e) => e.meta.id),
+            ['private-child', 'public-child'],
+          );
         },
       );
 
