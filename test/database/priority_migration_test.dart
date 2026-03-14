@@ -91,6 +91,7 @@ void main() {
 
       // Open with Drift to run migration
       final db = JournalDb(overriddenFilename: 'test_v29_priority.db');
+      addTearDown(db.close);
 
       // Schema version advanced
       final version = await db.customSelect('PRAGMA user_version').get();
@@ -177,6 +178,7 @@ void main() {
         sqlite.dispose();
 
         final db = JournalDb(overriddenFilename: 'test_v33_due_idx.db');
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -236,6 +238,7 @@ void main() {
       sqlite.dispose();
 
       final db = JournalDb(overriddenFilename: 'test_v35_task_date_idx.db');
+      addTearDown(db.close);
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -308,6 +311,7 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v35_task_date_idx_existing.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -366,6 +370,7 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v36_journal_browse_idx.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -439,6 +444,7 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v36_journal_browse_idx_existing.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -505,6 +511,7 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v37_task_index_rebuild.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -553,21 +560,21 @@ void main() {
         );
         expect(taskDatePriorityIdxSql, contains("WHERE type = 'Task'"));
 
+        // The redundant idx_labeled_journal_id_label_id was removed because the
+        // UNIQUE(journal_id, label_id) constraint already provides an equivalent
+        // implicit index.
         final labeledIdx = await db.customSelect("""
         SELECT sql FROM sqlite_master
         WHERE type='index' AND name='idx_labeled_journal_id_label_id'
       """).get();
-        expect(labeledIdx, hasLength(1));
-        final labeledIdxSql = labeledIdx.first.read<String>('sql');
-        expect(labeledIdxSql, contains('journal_id COLLATE BINARY ASC'));
-        expect(labeledIdxSql, contains('label_id COLLATE BINARY ASC'));
+        expect(labeledIdx, isEmpty);
 
         await db.close();
       },
     );
 
     test(
-      'recreates an already-existing labeled lookup index safely',
+      'drops redundant labeled lookup index during migration',
       () async {
         final dbFile = File(
           p.join(testDirectory!.path, 'test_v37_labeled_idx_existing.db'),
@@ -624,15 +631,18 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v37_labeled_idx_existing.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
 
+        // The redundant index should be dropped during migration since
+        // UNIQUE(journal_id, label_id) already provides an equivalent index.
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master
         WHERE type='index' AND name='idx_labeled_journal_id_label_id'
       """).get();
-        expect(idx, hasLength(1));
+        expect(idx, isEmpty);
 
         await db.close();
       },

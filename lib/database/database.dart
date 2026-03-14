@@ -388,10 +388,11 @@ class JournalDb extends _$JournalDb {
               await m.createIndex(idxJournalTasksDatePriority);
             }
             if (await _tableExists('labeled')) {
+              // Remove redundant index — the UNIQUE(journal_id, label_id)
+              // constraint already creates an equivalent implicit index.
               await customStatement(
                 'DROP INDEX IF EXISTS idx_labeled_journal_id_label_id',
               );
-              await m.createIndex(idxLabeledJournalIdLabelId);
             }
           }();
         }
@@ -1970,7 +1971,11 @@ class JournalDb extends _$JournalDb {
         })
         .whenComplete(() {
           if (identical(_configFlagsBootstrap, future)) {
-            _configFlagsBootstrap = Future<void>.value();
+            if (_configFlagsLoaded) {
+              _configFlagsBootstrap = Future<void>.value();
+            } else {
+              _configFlagsBootstrap = null;
+            }
           }
         });
 

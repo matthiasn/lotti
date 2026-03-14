@@ -122,7 +122,10 @@ class TaskSummaryRepository {
 
     // Filter to only include actual tasks
     final actualTasks = linkedEntities.whereType<Task>().toList()
-      ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+      ..sort((a, b) {
+        final byDate = b.meta.dateFrom.compareTo(a.meta.dateFrom);
+        return byDate != 0 ? byDate : a.meta.id.compareTo(b.meta.id);
+      });
 
     final results = <TaskSummaryResult>[];
 

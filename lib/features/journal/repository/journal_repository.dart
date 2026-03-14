@@ -409,7 +409,11 @@ class JournalRepository {
     late final Future<List<JournalEntity>> future;
     future = getIt<JournalDb>()
         .getLinkedToEntities(linkedTo)
-        .then((items) => items.map(fromDbEntity).toList(growable: false))
+        .then(
+          (items) => List<JournalEntity>.unmodifiable(
+            items.map(fromDbEntity),
+          ),
+        )
         .then((entities) {
           if (epoch == _cacheEpoch) {
             _linkedToEntitiesCache[linkedTo] = entities;

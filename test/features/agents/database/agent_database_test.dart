@@ -605,6 +605,7 @@ void main() {
           documentsDirectoryProvider: () async => testDirectory,
           tempDirectoryProvider: () async => testDirectory,
         );
+        addTearDown(db.close);
 
         final versionResult = await db
             .customSelect('PRAGMA user_version')

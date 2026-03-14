@@ -157,17 +157,22 @@ class AiConfigRepository {
       return inFlight;
     }
 
-    final future = _db
+    late final Future<AiConfig?> future;
+    future = _db
         .getConfigById(id)
         .then((config) {
-          _configByIdCache[id] = config;
-          if (config != null) {
-            _cacheConfigInTypeList(config);
+          if (identical(_configByIdInFlight[id], future)) {
+            _configByIdCache[id] = config;
+            if (config != null) {
+              _cacheConfigInTypeList(config);
+            }
           }
           return config;
         })
         .whenComplete(() {
-          _configByIdInFlight.remove(id);
+          if (identical(_configByIdInFlight[id], future)) {
+            _configByIdInFlight.remove(id);
+          }
         });
 
     _configByIdInFlight[id] = future;
@@ -191,15 +196,20 @@ class AiConfigRepository {
       return inFlight;
     }
 
-    final future = _db
+    late final Future<List<AiConfig>> future;
+    future = _db
         .getConfigsByType(type.name)
         .then(_decodeDbEntities)
         .then((configs) {
-          _setConfigsByTypeCache(type, configs);
+          if (identical(_configsByTypeInFlight[type], future)) {
+            _setConfigsByTypeCache(type, configs);
+          }
           return configs;
         })
         .whenComplete(() {
-          _configsByTypeInFlight.remove(type);
+          if (identical(_configsByTypeInFlight[type], future)) {
+            _configsByTypeInFlight.remove(type);
+          }
         });
 
     _configsByTypeInFlight[type] = future;
@@ -410,7 +420,11 @@ class AiConfigRepository {
         .then((_) => _ensureWatchingAllConfigs())
         .whenComplete(() {
           if (identical(_allConfigsBootstrap, future)) {
-            _allConfigsBootstrap = Future<void>.value();
+            if (_allConfigsLoaded) {
+              _allConfigsBootstrap = Future<void>.value();
+            } else {
+              _allConfigsBootstrap = null;
+            }
           }
         });
 

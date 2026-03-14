@@ -230,10 +230,6 @@ CREATE TABLE labeled (
 
 CREATE INDEX idx_labeled_journal_id ON labeled (journal_id);
 CREATE INDEX idx_labeled_label_id ON labeled (label_id);
-CREATE INDEX idx_labeled_journal_id_label_id ON labeled(
-  journal_id COLLATE BINARY ASC,
-  label_id COLLATE BINARY ASC
-);
 
 CREATE TABLE linked_entries (
   id TEXT NOT NULL UNIQUE,

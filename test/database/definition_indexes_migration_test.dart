@@ -39,6 +39,11 @@ void main() {
   });
 
   tearDown(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
     getIt.unregister<Directory>();
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
@@ -63,6 +68,7 @@ void main() {
       final db = JournalDb(
         overriddenFilename: 'test_v34_definition_idx.db',
       );
+      addTearDown(db.close);
 
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
@@ -134,6 +140,7 @@ void main() {
         final db = JournalDb(
           overriddenFilename: 'test_v34_definition_idx_existing.db',
         );
+        addTearDown(db.close);
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);

@@ -479,6 +479,9 @@ void main() {
       when(
         () => bufferedJournalDb.watchConfigFlag(enableLoggingFlag),
       ).thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => bufferedJournalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
 
       bufferedLogging = getIt<LoggingService>()..listenToConfigFlag();
       await Future<void>.delayed(Duration.zero);

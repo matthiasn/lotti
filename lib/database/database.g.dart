@@ -6433,10 +6433,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_labeled_label_id',
     'CREATE INDEX idx_labeled_label_id ON labeled (label_id)',
   );
-  late final Index idxLabeledJournalIdLabelId = Index(
-    'idx_labeled_journal_id_label_id',
-    'CREATE INDEX idx_labeled_journal_id_label_id ON labeled (journal_id COLLATE BINARY ASC, label_id COLLATE BINARY ASC)',
-  );
   late final LinkedEntries linkedEntries = LinkedEntries(this);
   late final Index idxLinkedEntriesFromId = Index(
     'idx_linked_entries_from_id',
@@ -8424,7 +8420,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     labeled,
     idxLabeledJournalId,
     idxLabeledLabelId,
-    idxLabeledJournalIdLabelId,
     linkedEntries,
     idxLinkedEntriesFromId,
     idxLinkedEntriesToId,
