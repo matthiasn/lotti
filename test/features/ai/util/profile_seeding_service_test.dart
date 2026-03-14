@@ -401,6 +401,11 @@ void main() {
       final upgraded = captured.first as AiConfigInferenceProfile;
       expect(upgraded.id, profileGeminiFlashId);
       expect(upgraded.skillAssignments, isNotEmpty);
+      expect(
+        upgraded.skillAssignments.every((a) => a.automate),
+        isTrue,
+        reason: 'All seeded assignments should have automate: true',
+      );
     });
 
     test('skips profiles that already have skillAssignments', () async {

@@ -52,7 +52,7 @@ class AutomaticPromptTrigger {
           if (result.handled && !realtimeTranscriptProvided) {
             loggingService.captureEvent(
               'Profile-driven transcription for task $linkedTaskId '
-              'using skill "${result.skill!.name}"',
+              'using skill "${result.skill!.id}"',
               domain: 'automatic_prompt_trigger',
               subDomain: 'triggerAutomaticPrompts',
             );

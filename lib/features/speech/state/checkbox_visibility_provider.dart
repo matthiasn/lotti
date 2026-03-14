@@ -60,7 +60,11 @@ AutomaticPromptVisibility checkboxVisibility(
     final asyncValue = ref.watch(
       hasProfileTranscriptionProvider(linkedId),
     );
-    hasProfileTranscriptionValue = asyncValue.value ?? false;
+    hasProfileTranscriptionValue = asyncValue.when(
+      data: (value) => value,
+      loading: () => false,
+      error: (_, _) => false,
+    );
   }
 
   // Compute visibility based on configuration.

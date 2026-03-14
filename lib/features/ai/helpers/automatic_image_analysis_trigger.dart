@@ -57,7 +57,7 @@ class AutomaticImageAnalysisTrigger {
           if (result.handled) {
             loggingService.captureEvent(
               'Profile-driven image analysis for task $linkedTaskId '
-              'using skill "${result.skill!.name}"',
+              'using skill "${result.skill!.id}"',
               domain: 'automatic_image_analysis_trigger',
               subDomain: 'triggerAutomaticImageAnalysis',
             );

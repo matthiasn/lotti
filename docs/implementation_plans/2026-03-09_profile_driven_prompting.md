@@ -36,7 +36,7 @@ This concept aligns with the [Agent Skills standard](https://agentskills.io/spec
 | Portable files | Portable via Matrix sync |
 | Scripts/references/assets | `contextPolicy` + `skillType` (runtime injects context, not bundled files) |
 
-```
+```text
 Skill: "Transcribe Audio"
   id: "skill-transcribe-001"
   name: "Transcribe Audio"
@@ -62,7 +62,7 @@ Key properties:
 
 A **Profile** assigns models to skills and controls which skills auto-trigger.
 
-```
+```text
 Profile: "Gemini Flash"
   id: "profile-gemini-flash-001"
   thinkingModelId: "models/gemini-3-flash-preview"
@@ -266,7 +266,7 @@ const factory AiConfig.skill({
 
 The `SkillPromptBuilder` assembles the final system/user messages at runtime:
 
-```
+```text
 Final systemMessage = skillType template header
                     + skill.systemInstructions
                     + (contextPolicy == fullTask ? taskContextBlock : "")

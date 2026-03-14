@@ -218,7 +218,26 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   /// Note: only checks `defaultSkills` — custom/future skills pass through
   /// unchanged. Extend this when custom skill editing is added.
   List<SkillAssignment> _sanitizedSkillAssignments() {
-    return _skillAssignments.map((a) {
+    // First, deduplicate legacy same-SkillType entries: keep only the last
+    // assignment per SkillType so profiles migrated from older formats
+    // don't persist conflicting duplicates.
+    final deduped = <SkillType, SkillAssignment>{};
+    final unknown = <SkillAssignment>[];
+    for (final a in _skillAssignments) {
+      final skill = SkillSeedingService.defaultSkills
+          .where((s) => s.id == a.skillId)
+          .firstOrNull;
+      if (skill == null) {
+        unknown.add(a);
+      } else {
+        deduped[skill.skillType] = a;
+      }
+    }
+    final normalized = [...deduped.values, ...unknown];
+
+    // Then, force `automate: false` for any skill whose required model slot
+    // is currently empty.
+    return normalized.map((a) {
       if (!a.automate) return a;
       final skill = SkillSeedingService.defaultSkills
           .where((s) => s.id == a.skillId)

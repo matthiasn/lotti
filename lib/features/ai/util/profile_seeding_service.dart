@@ -72,6 +72,7 @@ class ProfileSeedingService {
         // Preserve the user's skill assignments when updating for
         // model/flag drift.
         final updated = profile.copyWith(
+          name: existing.name,
           skillAssignments: existing.skillAssignments,
         );
         await _repo.saveConfig(updated);
@@ -143,8 +144,7 @@ class ProfileSeedingService {
     AiConfigInferenceProfile existing,
     AiConfigInferenceProfile target,
   ) {
-    return existing.name != target.name ||
-        existing.thinkingModelId != target.thinkingModelId ||
+    return existing.thinkingModelId != target.thinkingModelId ||
         existing.imageRecognitionModelId != target.imageRecognitionModelId ||
         existing.transcriptionModelId != target.transcriptionModelId ||
         existing.imageGenerationModelId != target.imageGenerationModelId ||
