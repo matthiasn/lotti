@@ -255,6 +255,59 @@ void main() {
       });
     });
 
+    group('user message — taskSummary policy', () {
+      test('includes only task summary, not full task JSON', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageAnalysis,
+          contextPolicy: ContextPolicy.taskSummary,
+        );
+        final result = builder.build(
+          skill: skill,
+          taskContext: '{"id": "task-1", "title": "Fix bug"}',
+          linkedTasks: '{"linked_from": []}',
+          currentTaskSummary: 'Working on database migration',
+        );
+
+        expect(result.userMessage, contains('Task Summary'));
+        expect(
+          result.userMessage,
+          contains('Working on database migration'),
+        );
+        // Should NOT include full task JSON or linked tasks.
+        expect(result.userMessage, isNot(contains('Task Context')));
+        expect(result.userMessage, isNot(contains('Related Tasks')));
+      });
+
+      test('omits task summary when empty', () {
+        final skill = makeSkill(
+          skillType: SkillType.imageAnalysis,
+          contextPolicy: ContextPolicy.taskSummary,
+        );
+        final result = builder.build(
+          skill: skill,
+          currentTaskSummary: '',
+        );
+
+        expect(result.userMessage, isNot(contains('Task Summary')));
+      });
+    });
+
+    group('user message — imagePromptGeneration', () {
+      test('includes audio transcript', () {
+        final skill = makeSkill(
+          skillType: SkillType.imagePromptGeneration,
+          contextPolicy: ContextPolicy.fullTask,
+        );
+        final result = builder.build(
+          skill: skill,
+          audioTranscript: 'Create a sunset scene',
+        );
+
+        expect(result.userMessage, contains('Audio Transcription'));
+        expect(result.userMessage, contains('Create a sunset scene'));
+      });
+    });
+
     group('user message — dictionaryOnly policy', () {
       test('includes speech dictionary without task context', () {
         final skill = makeSkill(

@@ -382,6 +382,73 @@ void main() {
       );
     });
 
+    group('ambiguous profiles', () {
+      test(
+        'returns not-handled when multiple automated skills of same type',
+        () async {
+          const assignments = [
+            SkillAssignment(skillId: 'skill-t1', automate: true),
+            SkillAssignment(skillId: 'skill-t2', automate: true),
+          ];
+          final profile = makeProfile(
+            skillAssignments: assignments,
+            withTranscription: true,
+          );
+          final skill1 = makeSkill(id: 'skill-t1');
+          final skill2 = makeSkill(id: 'skill-t2');
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => profile);
+          when(
+            () => mockAiConfig.getConfigById('skill-t1'),
+          ).thenAnswer((_) async => skill1);
+          when(
+            () => mockAiConfig.getConfigById('skill-t2'),
+          ).thenAnswer((_) async => skill2);
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isFalse);
+        },
+      );
+
+      test(
+        'returns handled when only one of multiple skills matches type',
+        () async {
+          const assignments = [
+            SkillAssignment(skillId: 'skill-transcribe', automate: true),
+            SkillAssignment(skillId: 'skill-image', automate: true),
+          ];
+          final profile = makeProfile(
+            skillAssignments: assignments,
+            withTranscription: true,
+            withImageRecognition: true,
+          );
+          final transcribeSkill = makeSkill(id: 'skill-transcribe');
+          final imageSkill = makeSkill(
+            id: 'skill-image',
+            skillType: SkillType.imageAnalysis,
+          );
+
+          when(
+            () => mockResolver.resolveForTask('task-1'),
+          ).thenAnswer((_) async => profile);
+          when(
+            () => mockAiConfig.getConfigById('skill-transcribe'),
+          ).thenAnswer((_) async => transcribeSkill);
+          when(
+            () => mockAiConfig.getConfigById('skill-image'),
+          ).thenAnswer((_) async => imageSkill);
+
+          final result = await service.tryTranscribe(taskId: 'task-1');
+
+          expect(result.handled, isTrue);
+          expect(result.skill!.id, 'skill-transcribe');
+        },
+      );
+    });
+
     group('hasAutomatedSkillType', () {
       test('returns true when skill type is available', () async {
         const assignment = SkillAssignment(

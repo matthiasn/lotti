@@ -79,6 +79,40 @@ void main() {
     );
   }
 
+  JournalEntity makeTaskEntity(String id) {
+    return JournalEntity.task(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024),
+      ),
+      data: TaskData(
+        title: 'Test task',
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: DateTime(2024),
+          utcOffset: 0,
+        ),
+        statusHistory: const [],
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024),
+      ),
+    );
+  }
+
+  void stubLoggingException() {
+    when(
+      () => mockLoggingService.captureException(
+        any<dynamic>(),
+        domain: any<String>(named: 'domain'),
+        subDomain: any<String>(named: 'subDomain'),
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      ),
+    ).thenReturn(null);
+  }
+
   setUp(() {
     mockCloudRepo = MockCloudInferenceRepository();
     mockAiInputRepo = MockAiInputRepository();
@@ -99,6 +133,65 @@ void main() {
 
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
+      test('returns early when skill is null in AutomationResult', () async {
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            thinkingProvider: testInferenceProvider(),
+            transcriptionModelId: 'whisper-1',
+            transcriptionProvider: testInferenceProvider(id: 'p-audio'),
+          ),
+        );
+
+        await runner.runTranscription(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+        verifyZeroInteractions(mockAiInputRepo);
+      });
+
+      test('returns early when profile is null in AutomationResult', () async {
+        final result = AutomationResult(
+          handled: true,
+          skill: testSkill,
+        );
+
+        await runner.runTranscription(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+        verifyZeroInteractions(mockAiInputRepo);
+      });
+
+      test('returns early when transcription provider is null', () async {
+        // Profile has no transcription provider.
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            thinkingProvider: testInferenceProvider(),
+          ),
+          skill: testSkill,
+          skillAssignment: const SkillAssignment(
+            skillId: 'skill-transcribe',
+            automate: true,
+          ),
+        );
+
+        await runner.runTranscription(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+        verifyZeroInteractions(mockAiInputRepo);
+      });
+
       test('returns early when entity is null', () async {
         when(
           () => mockAiInputRepo.getEntity('entry-1'),
@@ -107,44 +200,19 @@ void main() {
         await runner.runTranscription(
           audioEntryId: 'entry-1',
           automationResult: makeTranscriptionResult(),
-          linkedTaskId: 'task-1',
         );
 
-        // Should not attempt any cloud inference
         verifyZeroInteractions(mockCloudRepo);
       });
 
       test('returns early when entity is not JournalAudio', () async {
-        // Return a Task entity instead of audio
         when(
           () => mockAiInputRepo.getEntity('entry-1'),
-        ).thenAnswer(
-          (_) async => JournalEntity.task(
-            meta: Metadata(
-              id: 'entry-1',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              dateFrom: DateTime(2024),
-              dateTo: DateTime(2024),
-            ),
-            data: TaskData(
-              title: 'Test task',
-              status: TaskStatus.open(
-                id: 'status-1',
-                createdAt: DateTime(2024),
-                utcOffset: 0,
-              ),
-              statusHistory: const [],
-              dateFrom: DateTime(2024),
-              dateTo: DateTime(2024),
-            ),
-          ),
-        );
+        ).thenAnswer((_) async => makeTaskEntity('entry-1'));
 
         await runner.runTranscription(
           audioEntryId: 'entry-1',
           automationResult: makeTranscriptionResult(),
-          linkedTaskId: 'task-1',
         );
 
         verifyZeroInteractions(mockCloudRepo);
@@ -154,21 +222,11 @@ void main() {
         when(
           () => mockAiInputRepo.getEntity('entry-1'),
         ).thenThrow(Exception('DB error'));
-
-        // Stub the logging
-        when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          ),
-        ).thenReturn(null);
+        stubLoggingException();
 
         await runner.runTranscription(
           audioEntryId: 'entry-1',
           automationResult: makeTranscriptionResult(),
-          linkedTaskId: 'task-1',
         );
 
         verify(
@@ -183,6 +241,67 @@ void main() {
     });
 
     group('runImageAnalysis', () {
+      test('returns early when skill is null in AutomationResult', () async {
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-3-flash-preview',
+            thinkingProvider: testInferenceProvider(),
+            imageRecognitionModelId: 'vision-model',
+            imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
+          ),
+        );
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: result,
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+        verifyZeroInteractions(mockAiInputRepo);
+      });
+
+      test('returns early when profile is null in AutomationResult', () async {
+        final result = AutomationResult(
+          handled: true,
+          skill: testImageSkill,
+        );
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: result,
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+        verifyZeroInteractions(mockAiInputRepo);
+      });
+
+      test(
+        'returns early when image recognition provider is null',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+            ),
+            skill: testImageSkill,
+            skillAssignment: const SkillAssignment(
+              skillId: 'skill-vision',
+              automate: true,
+            ),
+          );
+
+          await runner.runImageAnalysis(
+            imageEntryId: 'img-1',
+            automationResult: result,
+          );
+
+          verifyZeroInteractions(mockCloudRepo);
+          verifyZeroInteractions(mockAiInputRepo);
+        },
+      );
+
       test('returns early when entity is null', () async {
         when(
           () => mockAiInputRepo.getEntity('img-1'),
@@ -191,7 +310,19 @@ void main() {
         await runner.runImageAnalysis(
           imageEntryId: 'img-1',
           automationResult: makeImageAnalysisResult(),
-          linkedTaskId: 'task-1',
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+      });
+
+      test('returns early when entity is not JournalImage', () async {
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => makeTaskEntity('img-1'));
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
         );
 
         verifyZeroInteractions(mockCloudRepo);
@@ -201,20 +332,11 @@ void main() {
         when(
           () => mockAiInputRepo.getEntity('img-1'),
         ).thenThrow(Exception('DB error'));
-
-        when(
-          () => mockLoggingService.captureException(
-            any<dynamic>(),
-            domain: any<String>(named: 'domain'),
-            subDomain: any<String>(named: 'subDomain'),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          ),
-        ).thenReturn(null);
+        stubLoggingException();
 
         await runner.runImageAnalysis(
           imageEntryId: 'img-1',
           automationResult: makeImageAnalysisResult(),
-          linkedTaskId: 'task-1',
         );
 
         verify(

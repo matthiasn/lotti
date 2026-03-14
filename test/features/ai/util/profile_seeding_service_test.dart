@@ -445,6 +445,42 @@ void main() {
       verifyNever(() => mockRepo.saveConfig(any()));
     });
 
+    test('filters skill assignments by slot availability', () async {
+      // Profile has transcription but no image recognition model.
+      // Template has both transcription and image analysis skills.
+      // Only transcription skill should survive filtering.
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          transcriptionModelId: 'models/gemini-3-flash-preview',
+          // No imageRecognitionModelId — image analysis skill should
+          // be filtered out.
+          isDefault: true,
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      final captured = verify(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).captured;
+
+      expect(captured, hasLength(1));
+      final upgraded = captured.first as AiConfigInferenceProfile;
+      expect(upgraded.id, profileGeminiFlashId);
+      // Should only contain the transcription skill, since image
+      // recognition model slot is missing.
+      final skillIds = upgraded.skillAssignments.map((a) => a.skillId).toSet();
+      expect(skillIds, contains(skillTranscribeContextId));
+      expect(skillIds, isNot(contains(skillImageAnalysisContextId)));
+    });
+
     test('does nothing when profiles do not exist', () async {
       when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
 
