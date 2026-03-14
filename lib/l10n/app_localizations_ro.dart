@@ -2871,6 +2871,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să despărțiți această intrare?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Prompturi vechi';
+
+  @override
   String get linkedFromLabel => 'LEGAT DE LA';
 
   @override
@@ -3158,6 +3161,10 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'Niciun profil de agent configurat pentru această sarcină. Atribuiți mai întâi un agent cu un profil.';
 
   @override
   String get noDefaultLanguage => 'Fără limbă implicită';
@@ -4236,6 +4243,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get showCompleted => 'Afișează finalizate';
+
+  @override
+  String get skillsSectionTitle => 'Competențe';
 
   @override
   String get speechDictionaryHelper =>

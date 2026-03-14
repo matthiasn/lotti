@@ -87,6 +87,32 @@ class UnifiedAiModal {
       builder: (modalSheetContext) => UnifiedAiPromptsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
+        onSkillSelected: (skill) async {
+          // Close the modal first
+          Navigator.of(modalSheetContext).pop();
+
+          developer.log(
+            'AI popup menu skill trigger: entity=${journalEntity.id}, '
+            'skill=${skill.id}, linkedFrom=$linkedFromId',
+            name: 'UnifiedAiPopUpMenu',
+          );
+
+          // Determine the linked task ID for profile resolution
+          final linkedTaskId = journalEntity is Task
+              ? journalEntity.id
+              : linkedFromId;
+
+          // Trigger the skill inference in the background
+          unawaited(
+            ref.read(
+              triggerSkillProvider((
+                entityId: journalEntity.id,
+                skillId: skill.id,
+                linkedTaskId: linkedTaskId,
+              )).future,
+            ),
+          );
+        },
         onPromptSelected: (prompt, index) async {
           // Close the current modal first
           Navigator.of(modalSheetContext).pop();
@@ -210,12 +236,14 @@ class UnifiedAiModal {
   }
 }
 
-/// List of available AI prompts for the current entity
+/// List of available AI actions (skills + legacy prompts) for the current
+/// entity, split into two labelled sections.
 class UnifiedAiPromptsList extends ConsumerWidget {
   const UnifiedAiPromptsList({
     required this.journalEntity,
     required this.onPromptSelected,
     this.linkedFromId,
+    this.onSkillSelected,
     super.key,
   });
 
@@ -224,76 +252,66 @@ class UnifiedAiPromptsList extends ConsumerWidget {
   final Future<void> Function(AiConfigPrompt prompt, int index)
   onPromptSelected;
 
+  /// Called when a skill is tapped. If null, skills are still shown but
+  /// tapping them triggers [triggerSkillProvider] directly.
+  final Future<void> Function(AiConfigSkill skill)? onSkillSelected;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final prompts =
-        ref
-            .watch(
-              availablePromptsProvider(journalEntity.id),
-            )
-            .value ??
+    final skills =
+        ref.watch(availableSkillsForEntityProvider(journalEntity.id)).value ??
         [];
 
-    // Get category to check for automatic prompts
+    final prompts =
+        ref.watch(availablePromptsProvider(journalEntity.id)).value ?? [];
+
     final categoryId = journalEntity.meta.categoryId;
     if (categoryId != null) {
-      // This watch will rebuild the widget when the category changes.
       ref.watch(categoryChangesProvider(categoryId));
     }
-    return _buildPromptList(
-      context,
-      ref,
-      prompts,
-      categoryId,
-    );
-  }
 
-  Widget _buildPromptList(
-    BuildContext context,
-    WidgetRef ref,
-    List<AiConfigPrompt> prompts,
-    String? categoryId,
-  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        ...prompts.asMap().entries.map((entry) {
-          final index = entry.key;
-          final prompt = entry.value;
+        // Skills section
+        if (skills.isNotEmpty) ...[
+          _SectionHeader(title: context.messages.skillsSectionTitle),
+          ...skills.map(
+            (skill) => ModernModalPromptItem(
+              title: skill.name,
+              description: skill.description ?? '',
+              icon: skill.skillType.toResponseType.icon,
+              onTap: () => onSkillSelected?.call(skill),
+            ),
+          ),
+        ],
 
-          // Check if this prompt is a default automatic prompt
-          final isDefault = _isDefaultPromptSync(
-            ref,
-            categoryId,
-            prompt,
-          );
+        // Legacy prompts section
+        if (prompts.isNotEmpty) ...[
+          if (skills.isNotEmpty)
+            _SectionHeader(title: context.messages.legacyPromptsSectionTitle),
+          ...prompts.asMap().entries.map((entry) {
+            final index = entry.key;
+            final prompt = entry.value;
+            final isDefault = isDefaultPromptSync(categoryId, prompt);
 
-          return ModernModalPromptItem(
-            title: prompt.name,
-            description: prompt.description ?? '',
-            icon: _getIconForPrompt(prompt),
-            onTap: () => onPromptSelected(prompt, index),
-            isDefault: isDefault,
-            iconColor: isDefault ? const Color(0xFFD4AF37) : null,
-          );
-        }),
+            return ModernModalPromptItem(
+              title: prompt.name,
+              description: prompt.description ?? '',
+              icon: _getIconForPrompt(prompt),
+              onTap: () => onPromptSelected(prompt, index),
+              isDefault: isDefault,
+              iconColor: isDefault ? const Color(0xFFD4AF37) : null,
+            );
+          }),
+        ],
+
         const SizedBox(height: 24),
       ],
     );
   }
 
-  /// Check if a prompt is configured as an automatic default for the category
-  /// This is a synchronous version that uses the category cache
-  bool _isDefaultPromptSync(
-    WidgetRef ref,
-    String? categoryId,
-    AiConfigPrompt prompt,
-  ) {
-    return isDefaultPromptSync(categoryId, prompt);
-  }
-
   IconData _getIconForPrompt(AiConfigPrompt prompt) {
-    // Map prompt types to appropriate icons
     if (prompt.requiredInputData.contains(InputDataType.images)) {
       return Icons.image;
     } else if (prompt.requiredInputData.contains(InputDataType.audioFiles)) {
@@ -303,6 +321,30 @@ class UnifiedAiPromptsList extends ConsumerWidget {
     } else {
       return Icons.chat_rounded;
     }
+  }
+}
+
+/// Subtle section header for the AI popup menu.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, top: 16, bottom: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: Theme.of(context).colorScheme.outline,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -39,10 +39,10 @@ void main() {
           modelIds: ['model1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         when(
@@ -58,8 +58,7 @@ void main() {
         );
 
         // Get the preconfigured prompt
-        final preconfiguredPrompt =
-            preconfiguredPrompts['audio_transcription']!;
+        final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
 
         // Toggle tracking off
         controller.toggleTrackPreconfigured(false);
@@ -104,7 +103,7 @@ void main() {
         requiredInputData: [InputDataType.audioFiles],
         aiResponseType: AiResponseType.audioTranscription,
         trackPreconfigured: true,
-        preconfiguredPromptId: 'audio_transcription',
+        preconfiguredPromptId: 'image_analysis',
       );
 
       when(
@@ -120,7 +119,7 @@ void main() {
       );
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['audio_transcription']!;
+      final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
 
       // Verify the controllers loaded the preconfigured values
       expect(
@@ -146,7 +145,7 @@ void main() {
         useReasoning: false,
         requiredInputData: [InputDataType.audioFiles],
         aiResponseType: AiResponseType.audioTranscription,
-        preconfiguredPromptId: 'audio_transcription',
+        preconfiguredPromptId: 'image_analysis',
       );
 
       when(
@@ -175,7 +174,7 @@ void main() {
       controller.toggleTrackPreconfigured(true);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['audio_transcription']!;
+      final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
 
       // Should now have preconfigured values
       expect(

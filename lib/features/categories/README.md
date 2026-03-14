@@ -13,8 +13,7 @@ The Categories feature allows users to create, manage, and assign categories to 
 3. **Privacy Controls**: Mark categories as private to hide them when private mode is enabled
 4. **Favorites**: Mark frequently used categories as favorites for quick access
 5. **AI Integration**: Configure which AI prompts are available per category
-6. **Automatic Processing**: Set up automatic AI prompt execution for specific content types
-7. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
+6. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
 8. **Correction Examples**: Learn from user corrections to improve AI suggestions over time
 
 ## Architecture
@@ -42,7 +41,6 @@ The Categories feature allows users to create, manage, and assign categories to 
   - `CategorySwitchTiles`: Privacy, active, and favorite toggles
   - `CategoryLanguageDropdown`: Language preference selector
   - `CategoryPromptSelection`: AI prompt configuration
-  - `CategoryAutomaticPrompts`: Automatic prompt settings
   - `CategorySpeechDictionary`: Speech recognition dictionary editor
   - `CategoryCorrectionExamples`: Correction examples viewer with swipe-to-delete
 
@@ -71,57 +69,13 @@ class CategoryDefinition {
 - **Sensitive Category**: Disable all AI processing for privacy (null or [])
 - **Project Category**: Focus on specific project-related prompts
 
-### Automatic Prompt Execution
+### Automatic Processing (Legacy)
 
-Categories can configure prompts to run automatically when specific content is added:
-
-```dart
-class CategoryDefinition {
-  final Map<String, List<String>>? automaticPrompts;
-  // Example:
-  // {
-  //   'audioTranscription': ['audio_transcription'],        // Currently limited to 1 prompt
-  //   'imageAnalysis': ['extract-text', 'weekly-report']   // Future: prompts in sequence
-  // }
-}
-```
-
-**Note**: Version 1 implementation limits automatic execution to a single prompt per response type. The data model uses `List<String>` to support future expansion where multiple prompts could be executed in sequence (e.g., first extract text, then summarize).
-
-**Automatic Triggers:**
-1. **Audio Transcription**: ✅ After transcribing audio, automatically runs configured prompts
-2. **Image Analysis**: 🚧 When images are attached, automatically analyze them (planned)
-
-**Current Capabilities:**
-- Audio recordings trigger automatic transcription when configured in category
-- Users can control automatic execution via checkboxes in recording modal
-- Warning messages appear when no automatic prompt is configured
-
-### Implementation Roadmap
-
-#### Phase 1: UI and Data Model ✅
-- [x] Category AI settings UI in detail page
-- [x] Allowed prompts selection interface
-- [x] Automatic prompts configuration
-- [x] Data persistence and model updates
-
-#### Phase 2: Prompt Filtering ✅
-- [x] Filter AI popup menu based on category's allowed prompts
-- [x] Hide restricted prompts from the UI
-- [x] Show informative message when no prompts are allowed
-
-#### Phase 3: Automatic Execution 🚧
-- [x] Implement triggers for audio transcription response type
-- [ ] Create background service for queue management
-- [ ] Implement triggers for image analysis
-- [ ] Add queue management for multiple automatic prompts
-- [ ] Link generated responses to source entries
-
-#### Phase 4: User Experience 🚧
-- [ ] Add processing status indicators
-- [ ] Show notifications for completed automatic prompts
-- [ ] Allow users to review and accept/reject automatic results
-- [ ] Add settings to pause/resume automatic processing
+The `automaticPrompts` field on `CategoryDefinition` is retained in the data model for backward
+compatibility but is no longer exposed in the category detail UI. Automatic AI processing (audio
+transcription, image analysis) is now driven exclusively by inference profiles and skill
+assignments on the task's agent. See the
+[Agents README](../agents/README.md#skill-assignments) for details.
 
 ## Speech Dictionary
 
@@ -263,35 +217,9 @@ final workCategory = CategoryDefinition(
   color: Colors.blue,
   isPrivate: false,
   allowedPromptIds: [
-    'audio_transcription',
     'action-item-suggestions',
     'meeting-notes'
   ],
-  // No automatic prompts for manual control
-  automaticPrompts: {},
-);
-```
-
-### Setting Up Automatic Processing for Projects
-
-```dart
-// Create a project category with automation
-final projectCategory = CategoryDefinition(
-  id: 'project-456',
-  name: 'App Development',
-  color: Colors.green,
-  allowedPromptIds: [
-    'audio_transcription',
-    'action-item-suggestions',
-    'extract-code',
-    'ui-feedback',
-    // ... other allowed prompts
-  ],
-  automaticPrompts: {
-    'audioTranscription': ['audio_transcription'],  // Single prompt per type (v1)
-    'imageAnalysis': ['extract-code'],        // Future versions may support
-    // multiple prompts in sequence
-  },
 );
 ```
 
@@ -305,7 +233,6 @@ final privateCategory = CategoryDefinition(
   color: Colors.purple,
   isPrivate: true, // Hidden in private mode
   allowedPromptIds: [], // No AI prompts allowed (same as null)
-  automaticPrompts: {}, // No automatic processing
 );
 ```
 
@@ -317,9 +244,9 @@ final privateCategory = CategoryDefinition(
 - Private mode integration for additional privacy
 
 ### For Productivity Users
-- Automatic prompt execution saves time and effort
-- Consistent processing of similar content types
-- Reduced need for manual AI invocation
+- AI prompt filtering per category saves time
+- Consistent content organization across entries
+- Speech dictionaries improve transcription accuracy
 
 ### For Organization
 - Visual categorization with colors
@@ -329,10 +256,9 @@ final privateCategory = CategoryDefinition(
 ## Future Enhancements
 
 1. **Category Templates**: Pre-configured categories for common use cases
-2. **Bulk Operations**: Apply AI prompts to all entries in a category
-3. **Category Analytics**: Insights into category usage and AI processing
-4. **Sharing**: Export/import category configurations
-5. **Smart Suggestions**: AI-powered category assignment suggestions
+2. **Category Analytics**: Insights into category usage
+3. **Sharing**: Export/import category configurations
+4. **Smart Suggestions**: AI-powered category assignment suggestions
 
 ## Technical Details
 
@@ -346,7 +272,7 @@ Categories are stored in the `categories` table with the following key fields:
 - `active`: Boolean for visibility in lists
 - `favorite`: Boolean for quick access
 - `allowed_prompt_ids`: JSON array of allowed prompt IDs
-- `automatic_prompts`: JSON object mapping response types to prompt IDs
+- `automatic_prompts`: JSON object mapping response types to prompt IDs (legacy — no longer exposed in UI)
 - `language_code`: ISO 639-1 language code for content processing
 
 ### State Management
@@ -363,83 +289,3 @@ The feature uses Riverpod for state management with:
 3. **Task Management**: Tasks can be categorized for better organization
 4. **Search**: Categories are searchable and filterable
 
-## Implementation Plan - Next Steps
-
-This section outlines the detailed implementation plan for completing the category-based AI features.
-
-### Phase 1: Add Category Filtering to AI Popup Menu
-
-**Location**: `/lib/features/ai/ui/unified_ai_popup_menu.dart`
-
-- Update UnifiedAiPopUpMenu to be category-aware
-- Pass current entry's category to prompt filtering logic
-- Modify `_buildAvailablePrompts` to respect category's `allowedPromptIds`
-- Handle three cases:
-  - `null`: Hide AI button entirely (no prompts allowed)
-  - `[]`: Hide AI button entirely (no prompts allowed)
-  - `['id1', 'id2']`: Show only specified prompts
-- Add comprehensive tests for filtering behavior
-
-### Phase 2: Create Automatic Prompt Execution Service
-
-**Location**: `/lib/features/ai/services/automatic_prompt_execution_service.dart`
-
-- Create service for queue management and execution
-- Implement state controller for tracking status
-- Add database fields for execution tracking
-- Handle errors and retries gracefully
-- Support cancellation and priority management
-
-### Phase 3: Add Automatic Prompt Triggers
-
-**Audio Transcription** (Update `UnifiedAiInferenceRepository`):
-- Check category's automatic audio prompts after transcription
-- Queue prompts via AutomaticPromptExecutionService
-- Show processing indicator
-
-**Image Analysis** (Update image attachment flow):
-- Check category's automatic image prompts
-- Queue for execution when images attached
-- Handle multiple images efficiently
-
-**Task Summary** (Update task handlers):
-- Define "significant update" criteria
-- Implement debouncing mechanism
-- Check category's automatic task prompts
-
-### Phase 4: Link AI Responses to Source Entries
-
-- Add `sourceEntryId` field to AI response model
-- Update database schema for relationships
-- Show linked responses in entry detail view
-- Enable bidirectional navigation
-- Display response metadata
-
-### Phase 5: Add Processing Status Indicators
-
-**Widget**: `/lib/features/ai/ui/widgets/automatic_processing_indicator.dart`
-
-- Animated processing indicator
-- Queue position display
-- Cancel functionality
-- Error state handling
-- Integration in entry lists and details
-
-### Phase 6: Testing and Polish
-
-- Unit tests for all services
-- Widget tests for UI components
-- Integration tests for automatic flows
-- Performance testing with queued prompts
-- Error recovery mechanisms
-- User preference settings
-- Rate limiting and quota management
-
-### Implementation Priority
-
-1. Category filtering (can be done independently)
-2. Automatic execution service (foundation for triggers)
-3. Triggers (requires service)
-4. Response linking (can parallel with triggers)
-5. Status indicators (requires service and triggers)
-6. Testing and polish (after features complete)

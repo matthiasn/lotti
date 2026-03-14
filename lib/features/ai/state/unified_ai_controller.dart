@@ -5,11 +5,15 @@ import 'dart:developer' as developer;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/active_inference_controller.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -392,15 +396,150 @@ final availablePromptsProvider = FutureProvider.autoDispose
       },
     );
 
-/// Provider to check if there are any prompts available for an entity.
-/// Uses entityId as key for stable provider identity across entity updates.
+/// Provider to get available skills for a given entity.
+///
+/// Filters skills by matching the entity type to the skill's
+/// [requiredInputModalities]:
+/// - [Modality.audio] → entity must be [JournalAudio]
+/// - [Modality.image] → entity must be [JournalImage]
+/// - [Modality.text] → entity can be any type with text content
+final availableSkillsForEntityProvider = FutureProvider.autoDispose
+    .family<List<AiConfigSkill>, String>(
+      (ref, entityId) async {
+        final entryState = ref
+            .watch(entryControllerProvider(id: entityId))
+            .value;
+        final entity = entryState?.entry;
+        if (entity == null) return [];
+
+        // Watch for changes in skill configurations.
+        final allConfigs = await ref.watch(
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.skill,
+          ).future,
+        );
+
+        final skills = allConfigs.whereType<AiConfigSkill>().where((skill) {
+          final modalities = skill.requiredInputModalities;
+          if (modalities.contains(Modality.audio) && entity is! JournalAudio) {
+            return false;
+          }
+          if (modalities.contains(Modality.image) && entity is! JournalImage) {
+            return false;
+          }
+          return true;
+        }).toList();
+
+        return skills;
+      },
+    );
+
+/// Provider to check if there are any AI actions (skills or prompts)
+/// available for an entity.
 final hasAvailablePromptsProvider = FutureProvider.autoDispose
     .family<bool, String>(
       (ref, entityId) async {
         final prompts = await ref.watch(
           availablePromptsProvider(entityId).future,
         );
-        return prompts.isNotEmpty;
+        if (prompts.isNotEmpty) return true;
+
+        final skills = await ref.watch(
+          availableSkillsForEntityProvider(entityId).future,
+        );
+        return skills.isNotEmpty;
+      },
+    );
+
+/// Record type for trigger skill parameters.
+typedef TriggerSkillParams = ({
+  String entityId,
+  String skillId,
+  String? linkedTaskId,
+});
+
+/// Provider to trigger a skill-based inference run.
+///
+/// Resolves the profile via `ProfileAutomationResolver`, then routes to the
+/// appropriate `SkillInferenceRunner` method based on the skill type.
+/// Note: Not autoDispose — this is a fire-and-forget action that must
+/// survive until completion even when no widget is watching.
+final triggerSkillProvider = FutureProvider.family<void, TriggerSkillParams>(
+      (ref, params) async {
+        developer.log(
+          'triggerSkill: entityId=${params.entityId}, '
+          'skillId=${params.skillId}, linkedTaskId=${params.linkedTaskId}',
+          name: 'UnifiedAiController',
+        );
+
+        final config = await ref.read(
+          aiConfigByIdProvider(params.skillId).future,
+        );
+        if (config == null || config is! AiConfigSkill) {
+          throw Exception('Skill not found: ${params.skillId}');
+        }
+        final skill = config;
+
+        // Resolve the profile for the linked task.
+        if (params.linkedTaskId == null) {
+          throw Exception(
+            'No linked task for skill invocation. '
+            'Skills require a task with an assigned agent profile.',
+          );
+        }
+
+        final resolver = ref.read(profileAutomationResolverProvider);
+        final resolvedProfile = await resolver.resolveForTask(
+          params.linkedTaskId!,
+        );
+        if (resolvedProfile == null) {
+          throw Exception(
+            'No agent profile configured for this task. '
+            'Assign an agent with a profile first.',
+          );
+        }
+
+        developer.log(
+          'triggerSkill: resolved profile for ${params.linkedTaskId}, '
+          'running ${skill.skillType}',
+          name: 'UnifiedAiController',
+        );
+
+        final automationResult = AutomationResult(
+          handled: true,
+          skill: skill,
+          resolvedProfile: resolvedProfile,
+        );
+
+        final runner = ref.read(skillInferenceRunnerProvider);
+
+        switch (skill.skillType) {
+          case SkillType.transcription:
+            await runner.runTranscription(
+              audioEntryId: params.entityId,
+              automationResult: automationResult,
+              linkedTaskId: params.linkedTaskId,
+            );
+          case SkillType.imageAnalysis:
+            await runner.runImageAnalysis(
+              imageEntryId: params.entityId,
+              automationResult: automationResult,
+              linkedTaskId: params.linkedTaskId,
+            );
+          case SkillType.promptGeneration:
+          case SkillType.imagePromptGeneration:
+          case SkillType.imageGeneration:
+            developer.log(
+              'Skill type ${skill.skillType} not yet supported for '
+              'direct invocation via triggerSkillProvider',
+              name: 'UnifiedAiController',
+            );
+        }
+
+        developer.log(
+          'triggerSkill: completed for ${params.entityId}',
+          name: 'UnifiedAiController',
+        );
       },
     );
 

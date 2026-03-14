@@ -13,13 +13,14 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:path/path.dart' as p;
+import 'package:lotti/utils/image_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'skill_inference_runner.g.dart';
@@ -30,19 +31,22 @@ const _logTag = 'SkillInferenceRunner';
 /// profile-resolved models, bypassing the legacy prompt system entirely.
 class SkillInferenceRunner {
   const SkillInferenceRunner({
+    required Ref ref,
     required CloudInferenceRepository cloudRepository,
     required AiInputRepository aiInputRepository,
     required JournalRepository journalRepository,
     required LoggingService loggingService,
     required PromptBuilderHelper promptBuilderHelper,
     required TaskSummaryResolver taskSummaryResolver,
-  }) : _cloudRepository = cloudRepository,
+  }) : _ref = ref,
+       _cloudRepository = cloudRepository,
        _aiInputRepository = aiInputRepository,
        _journalRepository = journalRepository,
        _loggingService = loggingService,
        _promptBuilderHelper = promptBuilderHelper,
        _taskSummaryResolver = taskSummaryResolver;
 
+  final Ref _ref;
   final CloudInferenceRepository _cloudRepository;
   final AiInputRepository _aiInputRepository;
   final JournalRepository _journalRepository;
@@ -50,12 +54,43 @@ class SkillInferenceRunner {
   final PromptBuilderHelper _promptBuilderHelper;
   final TaskSummaryResolver _taskSummaryResolver;
 
+  /// Updates the [InferenceStatusController] for an entity (and optionally
+  /// its linked task) so the Siri waveform animation reflects the current
+  /// skill inference state.
+  void _setStatus(
+    InferenceStatus status, {
+    required String entityId,
+    required AiResponseType responseType,
+    String? linkedTaskId,
+  }) {
+    _ref
+        .read(
+          inferenceStatusControllerProvider(
+            id: entityId,
+            aiResponseType: responseType,
+          ).notifier,
+        )
+        .setStatus(status);
+
+    if (linkedTaskId != null) {
+      _ref
+          .read(
+            inferenceStatusControllerProvider(
+              id: linkedTaskId,
+              aiResponseType: responseType,
+            ).notifier,
+          )
+          .setStatus(status);
+    }
+  }
+
   /// Run skill-based transcription on an audio entry.
   Future<void> runTranscription({
     required String audioEntryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
+    const responseType = AiResponseType.audioTranscription;
     try {
       final skill = automationResult.skill;
       final profile = automationResult.resolvedProfile;
@@ -75,6 +110,13 @@ class SkillInferenceRunner {
         );
         return;
       }
+
+      _setStatus(
+        InferenceStatus.running,
+        entityId: audioEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
 
       // 1. Fetch the audio entity.
       final entity = await _aiInputRepository.getEntity(audioEntryId);
@@ -185,7 +227,20 @@ class SkillInferenceRunner {
         domain: _logTag,
         subDomain: 'runTranscription',
       );
+
+      _setStatus(
+        InferenceStatus.idle,
+        entityId: audioEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
     } catch (e, stack) {
+      _setStatus(
+        InferenceStatus.error,
+        entityId: audioEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
       _loggingService.captureException(
         e,
         domain: _logTag,
@@ -201,6 +256,7 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
+    const responseType = AiResponseType.imageAnalysis;
     try {
       final skill = automationResult.skill;
       final profile = automationResult.resolvedProfile;
@@ -220,6 +276,14 @@ class SkillInferenceRunner {
         );
         return;
       }
+
+      _setStatus(
+        InferenceStatus.running,
+        entityId: imageEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
+
       // 1. Fetch the image entity.
       final entity = await _aiInputRepository.getEntity(imageEntryId);
       if (entity is! JournalImage) {
@@ -319,7 +383,20 @@ class SkillInferenceRunner {
         domain: _logTag,
         subDomain: 'runImageAnalysis',
       );
+
+      _setStatus(
+        InferenceStatus.idle,
+        entityId: imageEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
     } catch (e, stack) {
+      _setStatus(
+        InferenceStatus.error,
+        entityId: imageEntryId,
+        responseType: responseType,
+        linkedTaskId: linkedTaskId,
+      );
       _loggingService.captureException(
         e,
         domain: _logTag,
@@ -356,21 +433,7 @@ class SkillInferenceRunner {
   }
 
   Future<List<String>> _prepareImageData(JournalImage image) async {
-    final imageDirectory = image.data.imageDirectory;
-    final imageFile = image.data.imageFile;
-    final docDir = getDocumentsDirectory();
-    final fullPath = p.normalize(
-      p.join(docDir.path, imageDirectory, imageFile),
-    );
-
-    // Reject paths that escape the documents directory (e.g. via `..`).
-    if (!fullPath.startsWith('${docDir.path}${p.separator}')) {
-      developer.log(
-        'Image path escapes documents directory: $fullPath',
-        name: _logTag,
-      );
-      return [];
-    }
+    final fullPath = getFullImagePath(image);
 
     final file = File(fullPath);
     if (!file.existsSync()) {
@@ -395,6 +458,7 @@ SkillInferenceRunner skillInferenceRunner(Ref ref) {
   );
 
   return SkillInferenceRunner(
+    ref: ref,
     cloudRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiInputRepository: ref.watch(aiInputRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),

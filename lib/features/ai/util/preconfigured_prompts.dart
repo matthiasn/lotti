@@ -39,12 +39,15 @@ class PreconfiguredPrompt {
   final Map<String, String>? defaultVariables;
 }
 
-/// Lookup map for finding preconfigured prompts by ID
+/// Lookup map for finding preconfigured prompts by ID.
+///
+/// Audio transcription prompts have been removed — transcription is now
+/// handled exclusively by the skill-based automation system via
+/// `SkillInferenceRunner`. Existing user-created transcription prompts
+/// remain in the DB; they just won't be seeded for new installs.
 const Map<String, PreconfiguredPrompt> preconfiguredPrompts = {
   'image_analysis': imageAnalysisPrompt,
   'image_analysis_task_context': imageAnalysisInTaskContextPrompt,
-  'audio_transcription': audioTranscriptionPrompt,
-  'audio_transcription_task_context': audioTranscriptionWithTaskContextPrompt,
   'prompt_generation': promptGenerationPrompt,
   'image_prompt_generation': imagePromptGenerationPrompt,
   'cover_art_generation': coverArtGenerationPrompt,

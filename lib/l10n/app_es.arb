@@ -1241,6 +1241,7 @@
   "journalUnlinkConfirm": "SÍ, DESVINCULAR ENTRADA",
   "journalUnlinkHint": "Desvincular",
   "journalUnlinkQuestion": "¿Estás seguro de que quieres desvincular esta entrada?",
+  "legacyPromptsSectionTitle": "Prompts heredados",
   "linkedFromLabel": "VINCULADO DESDE",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
   "linkedTasksTitle": "Tareas vinculadas",
@@ -1360,6 +1361,7 @@
       }
     }
   },
+  "noAgentProfileError": "No hay perfil de agente configurado para esta tarea. Asigna primero un agente con un perfil.",
   "noDefaultLanguage": "Sin idioma predeterminado",
   "noPromptsAvailable": "No hay prompts disponibles",
   "noPromptsForType": "No hay prompts disponibles para este tipo",
@@ -1727,6 +1729,7 @@
   "settingThemingDark": "Tema oscuro",
   "settingThemingLight": "Tema claro",
   "showCompleted": "Mostrar completadas",
+  "skillsSectionTitle": "Habilidades",
   "speechDictionaryHelper": "Términos separados por punto y coma (máx. 50 caracteres) para mejor reconocimiento de voz",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Diccionario de voz",

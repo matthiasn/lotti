@@ -8,13 +8,19 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -27,6 +33,12 @@ import '../../../mocks/mocks.dart';
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
+
+/// Entry controller that returns null (entity not found).
+class FakeEntryControllerNull extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async => null;
+}
 
 void main() {
   late ProviderContainer container;
@@ -45,6 +57,9 @@ void main() {
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(<String, dynamic>{});
     registerFallbackValue(StackTrace.current);
+    registerFallbackValue(
+      const AutomationResult(handled: true),
+    );
     // Register a fallback for JournalEntity (sealed class, use real type)
     registerFallbackValue(
       JournalEntry(
@@ -640,9 +655,13 @@ void main() {
         ),
       );
 
-      // Mock the AI config stream
+      // Mock the AI config streams for both prompts and skills
       when(
         () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
+      ).thenAnswer((_) => Stream.value([]));
+
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
       ).thenAnswer((_) => Stream.value([]));
 
       when(
@@ -664,9 +683,13 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
-      // Keep aiConfigByTypeController alive during the test
+      // Keep aiConfigByTypeControllers alive during the test
       final configSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+        (_, _) {},
+      );
+      final skillConfigSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
         (_, _) {},
       );
 
@@ -675,10 +698,15 @@ void main() {
         entryControllerProvider(id: journalEntry.id).future,
       );
 
-      // Wait for config provider to be ready
+      // Wait for config providers to be ready
       await testContainer.read(
         aiConfigByTypeControllerProvider(
           configType: AiConfigType.prompt,
+        ).future,
+      );
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.skill,
         ).future,
       );
 
@@ -688,6 +716,7 @@ void main() {
 
       expect(hasPrompts, false);
       configSub.close();
+      skillConfigSub.close();
     });
   });
 
@@ -1203,6 +1232,677 @@ void main() {
       // Verify that category watching was NOT triggered
       verifyNever(() => mockCategoryRepository.watchCategory(any()));
       configSub.close();
+    });
+  });
+
+  group('availableSkillsForEntityProvider', () {
+    AiConfigSkill createSkill({
+      required String id,
+      required String name,
+      required SkillType skillType,
+      required List<Modality> modalities,
+      String? description,
+    }) {
+      return AiConfig.skill(
+            id: id,
+            name: name,
+            createdAt: DateTime(2024, 3, 15),
+            skillType: skillType,
+            requiredInputModalities: modalities,
+            systemInstructions: 'System instructions for $name',
+            userInstructions: 'User instructions for $name',
+            description: description,
+          )
+          as AiConfigSkill;
+    }
+
+    test(
+      'returns skills matching audio modality for JournalAudio entities',
+      () async {
+        final audioEntity = JournalAudio(
+          meta: Metadata(
+            id: 'audio-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            audioFile: 'test.mp3',
+            audioDirectory: '/test',
+            duration: const Duration(minutes: 5),
+          ),
+        );
+
+        final transcriptionSkill = createSkill(
+          id: 'skill-transcription',
+          name: 'Transcription',
+          skillType: SkillType.transcription,
+          modalities: [Modality.audio],
+        );
+        final textSkill = createSkill(
+          id: 'skill-text',
+          name: 'Text Analysis',
+          skillType: SkillType.promptGeneration,
+          modalities: [Modality.text],
+        );
+
+        when(
+          () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+        ).thenAnswer(
+          (_) => Stream.value([transcriptionSkill, textSkill]),
+        );
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(
+              mockAiConfigRepository,
+            ),
+            createEntryControllerOverride(audioEntity),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        final skillSub = testContainer.listen(
+          aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
+          (_, _) {},
+        );
+
+        await testContainer.read(
+          entryControllerProvider(id: audioEntity.id).future,
+        );
+        await testContainer.read(
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.skill,
+          ).future,
+        );
+
+        final skills = await testContainer.read(
+          availableSkillsForEntityProvider(audioEntity.id).future,
+        );
+
+        expect(skills.length, 2);
+        expect(skills.map((s) => s.id), contains('skill-transcription'));
+        expect(skills.map((s) => s.id), contains('skill-text'));
+        skillSub.close();
+      },
+    );
+
+    test(
+      'returns skills matching image modality for JournalImage entities',
+      () async {
+        final imageEntity = JournalImage(
+          meta: Metadata(
+            id: 'image-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15),
+            imageId: 'img-1',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test',
+          ),
+        );
+
+        final imageSkill = createSkill(
+          id: 'skill-image',
+          name: 'Image Analysis',
+          skillType: SkillType.imageAnalysis,
+          modalities: [Modality.image],
+        );
+        final textSkill = createSkill(
+          id: 'skill-text',
+          name: 'Text Analysis',
+          skillType: SkillType.promptGeneration,
+          modalities: [Modality.text],
+        );
+
+        when(
+          () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+        ).thenAnswer((_) => Stream.value([imageSkill, textSkill]));
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            aiConfigRepositoryProvider.overrideWithValue(
+              mockAiConfigRepository,
+            ),
+            createEntryControllerOverride(imageEntity),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        final skillSub = testContainer.listen(
+          aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
+          (_, _) {},
+        );
+
+        await testContainer.read(
+          entryControllerProvider(id: imageEntity.id).future,
+        );
+        await testContainer.read(
+          aiConfigByTypeControllerProvider(
+            configType: AiConfigType.skill,
+          ).future,
+        );
+
+        final skills = await testContainer.read(
+          availableSkillsForEntityProvider(imageEntity.id).future,
+        );
+
+        expect(skills.length, 2);
+        expect(skills.map((s) => s.id), contains('skill-image'));
+        expect(skills.map((s) => s.id), contains('skill-text'));
+        skillSub.close();
+      },
+    );
+
+    test('filters out audio-only skills for non-audio entities', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-filter',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      final audioOnlySkill = createSkill(
+        id: 'skill-audio-only',
+        name: 'Transcription',
+        skillType: SkillType.transcription,
+        modalities: [Modality.audio],
+      );
+      final textSkill = createSkill(
+        id: 'skill-text',
+        name: 'Text Skill',
+        skillType: SkillType.promptGeneration,
+        modalities: [Modality.text],
+      );
+
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+      ).thenAnswer((_) => Stream.value([audioOnlySkill, textSkill]));
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final skillSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
+        (_, _) {},
+      );
+
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.skill,
+        ).future,
+      );
+
+      final skills = await testContainer.read(
+        availableSkillsForEntityProvider(taskEntity.id).future,
+      );
+
+      expect(skills.length, 1);
+      expect(skills.first.id, 'skill-text');
+      skillSub.close();
+    });
+
+    test('filters out image-only skills for non-image entities', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-filter-img',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      final imageOnlySkill = createSkill(
+        id: 'skill-image-only',
+        name: 'Image Analysis',
+        skillType: SkillType.imageAnalysis,
+        modalities: [Modality.image],
+      );
+
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+      ).thenAnswer((_) => Stream.value([imageOnlySkill]));
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final skillSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
+        (_, _) {},
+      );
+
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.skill,
+        ).future,
+      );
+
+      final skills = await testContainer.read(
+        availableSkillsForEntityProvider(taskEntity.id).future,
+      );
+
+      expect(skills, isEmpty);
+      skillSub.close();
+    });
+
+    test('returns empty list when no skills configured', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-no-skills',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: TaskData(
+          status: TaskStatus.inProgress(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          title: 'Test Task',
+          statusHistory: [],
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      );
+
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+      ).thenAnswer((_) => Stream.value([]));
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          createEntryControllerOverride(taskEntity),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final skillSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
+        (_, _) {},
+      );
+
+      await testContainer.read(
+        entryControllerProvider(id: taskEntity.id).future,
+      );
+      await testContainer.read(
+        aiConfigByTypeControllerProvider(
+          configType: AiConfigType.skill,
+        ).future,
+      );
+
+      final skills = await testContainer.read(
+        availableSkillsForEntityProvider(taskEntity.id).future,
+      );
+
+      expect(skills, isEmpty);
+      skillSub.close();
+    });
+
+    test('returns empty list when entity not found', () async {
+      when(
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+      ).thenAnswer((_) => Stream.value([]));
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
+          // No entry controller override — entity will not be found
+          entryControllerProvider(id: 'nonexistent').overrideWith(
+            FakeEntryControllerNull.new,
+          ),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final provider = availableSkillsForEntityProvider('nonexistent');
+      final completer = Completer<void>();
+      testContainer.listen(provider, (_, next) {
+        if (next.hasValue && !completer.isCompleted) completer.complete();
+      });
+      await completer.future;
+
+      final skills = testContainer.read(provider).value;
+      expect(skills, isEmpty);
+    });
+  });
+
+  group('triggerSkillProvider', () {
+    late MockProfileAutomationResolver mockResolver;
+    late MockSkillInferenceRunner mockRunner;
+
+    setUp(() {
+      mockResolver = MockProfileAutomationResolver();
+      mockRunner = MockSkillInferenceRunner();
+    });
+
+    test('errors when skill not found', () async {
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('nonexistent-skill').overrideWith(
+            (ref) => Future<AiConfig?>.value(),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final provider = triggerSkillProvider((
+        entityId: 'entity-1',
+        skillId: 'nonexistent-skill',
+        linkedTaskId: 'task-1',
+      ));
+
+      // Wait for the provider to settle into error state
+      final completer = Completer<void>();
+      testContainer.listen(provider, (_, next) {
+        if (next.hasError && !completer.isCompleted) completer.complete();
+      });
+      await completer.future;
+
+      final state = testContainer.read(provider);
+      expect(state.error, isA<Exception>());
+      expect(state.error.toString(), contains('Skill not found'));
+    });
+
+    test('errors when no linkedTaskId provided', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-1',
+                name: 'Test Skill',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-1').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final provider = triggerSkillProvider((
+        entityId: 'entity-1',
+        skillId: 'skill-1',
+        linkedTaskId: null,
+      ));
+
+      final completer = Completer<void>();
+      testContainer.listen(provider, (_, next) {
+        if (next.hasError && !completer.isCompleted) completer.complete();
+      });
+      await completer.future;
+
+      final state = testContainer.read(provider);
+      expect(state.error, isA<Exception>());
+      expect(state.error.toString(), contains('No linked task'));
+    });
+
+    test('errors when no profile configured for task', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-2',
+                name: 'Transcription',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      when(
+        () => mockResolver.resolveForTask('task-no-profile'),
+      ).thenAnswer((_) async => null);
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-2').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      final provider = triggerSkillProvider((
+        entityId: 'audio-1',
+        skillId: 'skill-2',
+        linkedTaskId: 'task-no-profile',
+      ));
+
+      final completer = Completer<void>();
+      testContainer.listen(provider, (_, next) {
+        if (next.hasError && !completer.isCompleted) completer.complete();
+      });
+      await completer.future;
+
+      final state = testContainer.read(provider);
+      expect(state.error, isA<Exception>());
+      expect(state.error.toString(), contains('No agent profile configured'));
+    });
+
+    test('successfully routes transcription skill to runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-transcribe',
+                name: 'Transcription',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final thinkingProvider =
+          AiConfig.inferenceProvider(
+                id: 'anthropic-prov',
+                name: 'Anthropic',
+                inferenceProviderType: InferenceProviderType.anthropic,
+                apiKey: 'key',
+                baseUrl: 'https://api.anthropic.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+      final transcriptionProvider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://api.google.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'thinking-model',
+        thinkingProvider: thinkingProvider,
+        transcriptionModelId: 'transcription-model',
+        transcriptionProvider: transcriptionProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-1'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runTranscription(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-transcribe').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-entry-1',
+          skillId: 'skill-transcribe',
+          linkedTaskId: 'task-1',
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runTranscription(
+          audioEntryId: 'audio-entry-1',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-1',
+        ),
+      ).called(1);
+    });
+
+    test('successfully routes image analysis skill to runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-image',
+                name: 'Image Analysis',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.imageAnalysis,
+                requiredInputModalities: [Modality.image],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final thinkingProvider =
+          AiConfig.inferenceProvider(
+                id: 'anthropic-prov',
+                name: 'Anthropic',
+                inferenceProviderType: InferenceProviderType.anthropic,
+                apiKey: 'key',
+                baseUrl: 'https://api.anthropic.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+      final imageRecognitionProvider =
+          AiConfig.inferenceProvider(
+                id: 'openai-prov',
+                name: 'OpenAI',
+                inferenceProviderType: InferenceProviderType.openAi,
+                apiKey: 'key',
+                baseUrl: 'https://api.openai.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'thinking-model',
+        thinkingProvider: thinkingProvider,
+        imageRecognitionModelId: 'image-model',
+        imageRecognitionProvider: imageRecognitionProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-img'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runImageAnalysis(
+          imageEntryId: any(named: 'imageEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-image').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'image-entry-1',
+          skillId: 'skill-image',
+          linkedTaskId: 'task-img',
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runImageAnalysis(
+          imageEntryId: 'image-entry-1',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-img',
+        ),
+      ).called(1);
     });
   });
 }

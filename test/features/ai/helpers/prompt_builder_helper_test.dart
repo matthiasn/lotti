@@ -72,9 +72,9 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
-          preconfiguredPromptId: 'audio_transcription',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+          preconfiguredPromptId: 'image_analysis',
         );
 
         // Act
@@ -103,10 +103,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         // Act
@@ -120,7 +120,7 @@ void main() {
         );
 
         // Assert
-        final template = preconfiguredPrompts['audio_transcription']!;
+        final template = preconfiguredPrompts['image_analysis']!;
         expect(systemMessage, equals(template.systemMessage));
         expect(userMessage, equals(template.userMessage));
       });
@@ -446,10 +446,10 @@ void main() {
             modelIds: ['model-1'],
             createdAt: testDate,
             useReasoning: false,
-            requiredInputData: [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'audio_transcription',
+            preconfiguredPromptId: 'image_analysis',
           );
 
           // Act
@@ -462,9 +462,11 @@ void main() {
           expect(prompt, isNotNull);
           // Verify it doesn't contain the custom message (template was used instead)
           expect(prompt, isNot(contains('Custom user message')));
-          // Verify it uses the preconfigured audio transcription prompt
-          final template = preconfiguredPrompts['audio_transcription']!;
-          expect(prompt, contains(template.userMessage.substring(0, 50)));
+          // Verify it uses the preconfigured image analysis prompt
+          expect(
+            prompt,
+            contains('Analyze the provided image(s) in detail'),
+          );
         },
       );
 

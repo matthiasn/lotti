@@ -1263,4 +1263,184 @@ void main() {
       expect(find.byType(Icon), findsAtLeastNWidgets(1));
     });
   });
+
+  group('Popup menu with skills and prompts sections', () {
+    late List<AiConfigSkill> testSkills;
+
+    setUp(() {
+      final now = DateTime(2024, 3, 15, 10);
+      testSkills = [
+        AiConfig.skill(
+              id: 'skill-transcription',
+              name: 'Audio Transcription Skill',
+              createdAt: now,
+              skillType: SkillType.transcription,
+              requiredInputModalities: [Modality.audio],
+              systemInstructions: 'Transcribe audio',
+              userInstructions: 'Transcribe the audio file',
+              description: 'Skill-based transcription',
+            )
+            as AiConfigSkill,
+        AiConfig.skill(
+              id: 'skill-image-analysis',
+              name: 'Image Analysis Skill',
+              createdAt: now,
+              skillType: SkillType.imageAnalysis,
+              requiredInputModalities: [Modality.image],
+              systemInstructions: 'Analyze image',
+              userInstructions: 'Analyze the image',
+              description: 'Skill-based image analysis',
+            )
+            as AiConfigSkill,
+      ];
+    });
+
+    testWidgets(
+      'renders skills section header and items when skills available',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPromptsList(
+              journalEntity: testAudioEntity,
+              onPromptSelected: (prompt, index) async {},
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([testSkills.first]),
+              ),
+              availablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value([])),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Verify the skills section header is rendered
+        expect(find.text('Skills'), findsOneWidget);
+        // Verify the skill item is rendered
+        expect(find.text('Audio Transcription Skill'), findsOneWidget);
+        expect(find.text('Skill-based transcription'), findsOneWidget);
+        expect(find.byType(ModernModalPromptItem), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders legacy prompts section header when both skills and prompts',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPromptsList(
+              journalEntity: testAudioEntity,
+              onPromptSelected: (prompt, index) async {},
+            ),
+            overrides: [
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([testSkills.first]),
+              ),
+              availablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([testPrompts.first]),
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Both section headers should appear
+        expect(find.text('Skills'), findsOneWidget);
+        expect(find.text('Legacy Prompts'), findsOneWidget);
+
+        // Both items should appear
+        expect(find.text('Audio Transcription Skill'), findsOneWidget);
+        expect(find.text('Task Summary'), findsOneWidget);
+
+        // Two ModernModalPromptItems total (1 skill + 1 prompt)
+        expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
+      },
+    );
+
+    testWidgets('does not render legacy header when only prompts (no skills)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPromptsList(
+            journalEntity: testTaskEntity,
+            onPromptSelected: (prompt, index) async {},
+          ),
+          overrides: [
+            availableSkillsForEntityProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([])),
+            availablePromptsProvider(
+              testTaskEntity.id,
+            ).overrideWith(
+              (ref) => Future.value(testPrompts.take(2).toList()),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // No section headers should appear when there are only prompts
+      expect(find.text('Skills'), findsNothing);
+      expect(find.text('Legacy Prompts'), findsNothing);
+
+      // Prompts should still render
+      expect(find.text('Task Summary'), findsOneWidget);
+      expect(find.text('Image Analysis'), findsOneWidget);
+      expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
+    });
+
+    testWidgets('calls onSkillSelected when skill item tapped', (
+      tester,
+    ) async {
+      AiConfigSkill? selectedSkill;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPromptsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {
+              selectedSkill = skill;
+            },
+            onPromptSelected: (prompt, index) async {},
+          ),
+          overrides: [
+            availableSkillsForEntityProvider(
+              testAudioEntity.id,
+            ).overrideWith(
+              (ref) => Future.value([testSkills.first]),
+            ),
+            availablePromptsProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value([])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Tap the skill item
+      await tester.tap(find.text('Audio Transcription Skill'));
+      await tester.pump();
+
+      // Verify onSkillSelected was called with the correct skill
+      expect(selectedSkill, isNotNull);
+      expect(selectedSkill!.id, 'skill-transcription');
+      expect(selectedSkill!.name, 'Audio Transcription Skill');
+      expect(selectedSkill!.skillType, SkillType.transcription);
+    });
+  });
 }

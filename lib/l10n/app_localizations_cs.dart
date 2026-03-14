@@ -2843,6 +2843,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalUnlinkQuestion => 'Opravdu chcete tento záznam odepnout?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Starší prompty';
+
+  @override
   String get linkedFromLabel => 'PROPOJENO Z';
 
   @override
@@ -3139,6 +3142,10 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'Pro tento úkol není nakonfigurován žádný profil agenta. Nejprve přiřaď agenta s profilem.';
 
   @override
   String get noDefaultLanguage => 'Žádný výchozí jazyk';
@@ -4209,6 +4216,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get showCompleted => 'Zobrazit dokončené';
+
+  @override
+  String get skillsSectionTitle => 'Dovednosti';
 
   @override
   String get speechDictionaryHelper =>

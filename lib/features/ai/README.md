@@ -323,7 +323,7 @@ To integrate a new handler:
 - **`helpers/entity_state_helper.dart`**: Utilities for managing entity state during AI operations
 - **`helpers/skill_prompt_builder.dart`**: Assembles final system/user messages from skill instructions + runtime context. Injects placeholders (speech dictionary, task context, etc.) based on `skillType` + `contextPolicy` — skill definitions contain only prose.
 - **`helpers/profile_automation_resolver.dart`**: Resolves the profile for a task's agent, delegates to `ProfileResolver.resolve()` to use the same resolution chain as agent wakes.
-- **`helpers/automatic_image_analysis_trigger.dart`**: Fires image analysis when an image is added to a task. Checks profile-driven skill path first, falls back to legacy `category.automaticPrompts`.
+- **`helpers/automatic_image_analysis_trigger.dart`**: Fires image analysis when an image is added to a task. Uses the profile-driven skill path exclusively — requires a task agent with an image analysis skill assigned in the profile.
 - **Extensions for type safety and convenience**:
   - `input_data_type_extensions.dart`: Extensions for InputDataType enum
   - `modality_extensions.dart`: Extensions for Modality enum
@@ -347,7 +347,8 @@ To integrate a new handler:
   - Creates known model configurations when adding providers
   - Saves setup time for common models
 - **`preconfigured_prompts.dart`**: Built-in prompt templates
-  - Six main prompt types (Task Summary, Checklist Updates, etc.)
+  - Prompt types include image analysis, coding prompt generation, image prompt generation, image generation, and cover art generation
+  - Legacy ASR prompts (`audio_transcription`, `audio_transcription_task_context`) are defined but no longer seeded — transcription is handled by profile-driven skills
   - Consistent formatting and instructions
   - Unique IDs enable [prompt template tracking](#prompt-template-tracking)
 - **`skill_seeding_service.dart`**: Seeds preconfigured skills (transcription, image analysis, image generation, prompt generation) on first launch. Idempotent — checks by ID before inserting. Exposes `defaultSkills` static list for reference by profile seeder and UI.
@@ -471,8 +472,8 @@ Each linked task includes:
 **Prompts using this placeholder:**
 - `task_summary` - Include related context in summaries
 - `prompt_generation` - Provide broader project context for coding prompts
-- `audio_transcription_task_context` - Help recognize domain terms
 - `image_analysis_task_context` - Understand image context from related work
+- Skills with `contextPolicy` set to include linked tasks also use this placeholder
 
 ### 2. Data Flow
 
@@ -543,8 +544,8 @@ When images are added to a task (via drag-and-drop, paste, or import), the syste
 
 1. **Image Addition**: User adds an image to a task via any method
 2. **Callback Invocation**: `JournalRepository.createImageEntry()` invokes `onCreated` callback
-3. **Category Check**: `AutomaticImageAnalysisTrigger` checks if category has `automaticPrompts[imageAnalysis]`
-4. **Platform Filtering**: `PromptCapabilityFilter.getFirstAvailablePrompt()` selects an available prompt
+3. **Profile Resolution**: `AutomaticImageAnalysisTrigger` resolves the task's agent profile via `ProfileAutomationService.tryAnalyzeImage()`
+4. **Skill Check**: If the profile has an image analysis skill with `automate: true`, it is invoked via `SkillInferenceRunner`
 5. **Fire-and-Forget**: Analysis runs in background via `unawaited()` - never blocks image import
 
 ### Implementation
@@ -555,7 +556,7 @@ When images are added to a task (via drag-and-drop, paste, or import), the syste
 
 ### Key Features
 
-- **Platform-aware**: Local-only models (Whisper, Ollama) filtered on mobile platforms
+- **Profile-driven**: Uses the task's agent profile to determine which skill and model to use
 - **Non-blocking**: Fire-and-forget pattern ensures image import is never delayed
 - **Linked context**: When image is linked to a task, `linkedTaskId` is passed for context-aware analysis
 
@@ -932,10 +933,12 @@ The system supports tracking updates from preconfigured prompt templates, ensuri
 - **Model Installation Dialog**: Integrated UI for installing Ollama models
 
 ### AI Assistant Access
-- **`unified_ai_popup_menu.dart`**: Context-aware AI menu
-  - Shows available prompts for current entity type
+- **`unified_ai_popup_menu.dart`**: Context-aware AI menu with two-section layout
+  - **Skills section** (top): Shows available skills for the entity, triggering via profile resolution
+  - **Legacy prompts section** (bottom): Shows traditional prompts filtered by category
+  - `hasAvailablePromptsProvider` checks both skills and prompts to determine button visibility
   - Quick access to AI features from any entity
-  - Dynamic prompt filtering based on context
+  - Dynamic filtering based on entity type and category
 
 ### Settings Services
 - **`ui/settings/ai_settings_filter_service.dart`**: Advanced filtering system

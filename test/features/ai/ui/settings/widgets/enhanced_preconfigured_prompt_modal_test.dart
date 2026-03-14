@@ -71,10 +71,6 @@ void main() {
           findsNWidgets(2),
         ); // 2 image analysis prompts
         expect(
-          find.byIcon(Icons.mic_outlined),
-          findsNWidgets(2),
-        ); // 2 audio transcription prompts
-        expect(
           find.byIcon(Icons.auto_fix_high_outlined),
           findsOneWidget,
         ); // 1 prompt generation prompt

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -28,6 +29,7 @@ void main() {
   late MockTaskSummaryResolver mockTaskSummaryResolver;
   late SkillInferenceRunner runner;
   late Directory tempDir;
+  late ProviderContainer container;
 
   final testSkill =
       AiConfig.skill(
@@ -136,7 +138,7 @@ void main() {
 
   JournalImage makeImageEntity({
     String id = 'img-1',
-    String imageDirectory = 'images/',
+    String imageDirectory = '/images/',
     String imageFile = 'test.jpg',
   }) {
     return JournalEntity.journalImage(
@@ -203,7 +205,18 @@ void main() {
     mockPromptBuilderHelper = MockPromptBuilderHelper();
     mockTaskSummaryResolver = MockTaskSummaryResolver();
 
+    container = ProviderContainer();
+
+    // Capture a live Ref from a simple provider so we can pass it to the
+    // SkillInferenceRunner constructor (needed for status updates).
+    late final Ref capturedRef;
+    final refProvider = Provider<void>((ref) {
+      capturedRef = ref;
+    });
+    container.read(refProvider);
+
     runner = SkillInferenceRunner(
+      ref: capturedRef,
       cloudRepository: mockCloudRepo,
       aiInputRepository: mockAiInputRepo,
       journalRepository: mockJournalRepo,
@@ -219,6 +232,7 @@ void main() {
   });
 
   tearDown(() async {
+    container.dispose();
     await getIt.reset();
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
@@ -688,7 +702,7 @@ void main() {
                   data: ImageData(
                     imageId: 'img-1',
                     imageFile: 'test.jpg',
-                    imageDirectory: 'images/',
+                    imageDirectory: '/images/',
                     capturedAt: DateTime(2024),
                   ),
                   entryText: const EntryText(
@@ -797,10 +811,10 @@ void main() {
         verifyZeroInteractions(mockCloudRepo);
       });
 
-      test('rejects path traversal in image path', () async {
+      test('returns empty when image file does not exist', () async {
         final imageEntity = makeImageEntity(
-          imageDirectory: '/../../../etc/',
-          imageFile: 'passwd',
+          imageDirectory: '/nonexistent/',
+          imageFile: 'missing.jpg',
         );
 
         when(
@@ -815,7 +829,7 @@ void main() {
           automationResult: makeImageAnalysisResult(),
         );
 
-        // Should not call inference — path traversal rejected.
+        // Should not call inference — file does not exist.
         verifyZeroInteractions(mockCloudRepo);
       });
 

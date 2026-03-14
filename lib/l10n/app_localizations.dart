@@ -5145,6 +5145,12 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to unlink this entry?'**
   String get journalUnlinkQuestion;
 
+  /// No description provided for @legacyPromptsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legacy Prompts'**
+  String get legacyPromptsSectionTitle;
+
   /// No description provided for @linkedFromLabel.
   ///
   /// In en, this message translates to:
@@ -5574,6 +5580,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} AI response{count, plural, =1{} other{s}}'**
   String nestedAiResponsesTitle(int count);
+
+  /// No description provided for @noAgentProfileError.
+  ///
+  /// In en, this message translates to:
+  /// **'No agent profile configured for this task. Assign an agent with a profile first.'**
+  String get noAgentProfileError;
 
   /// No description provided for @noDefaultLanguage.
   ///
@@ -7533,6 +7545,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show completed'**
   String get showCompleted;
+
+  /// No description provided for @skillsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills'**
+  String get skillsSectionTitle;
 
   /// No description provided for @speechDictionaryHelper.
   ///
