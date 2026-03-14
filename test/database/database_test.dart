@@ -867,7 +867,7 @@ void main() {
       );
 
       test(
-        'getTasks reuses cached results and invalidates on task writes',
+        'getTasks returns consistent results and reflects writes',
         () async {
           final base = DateTime(2024, 7, 4, 11);
           final firstTask = buildTaskEntry(
@@ -896,7 +896,8 @@ void main() {
             sortByDate: true,
           );
 
-          expect(identical(firstResults, secondResults), isTrue);
+          expect(firstResults.map((e) => e.meta.id), ['cached-task-1']);
+          expect(secondResults.map((e) => e.meta.id), ['cached-task-1']);
 
           final secondTask = buildTaskEntry(
             id: 'cached-task-2',
@@ -918,7 +919,6 @@ void main() {
             sortByDate: true,
           );
 
-          expect(identical(secondResults, refreshedResults), isFalse);
           expect(
             refreshedResults.map((e) => e.meta.id),
             ['cached-task-2', 'cached-task-1'],
@@ -1435,7 +1435,7 @@ void main() {
       );
 
       test(
-        'getJournalEntities reuses cached results and invalidates on journal writes',
+        'getJournalEntities returns consistent results and reflects writes',
         () async {
           final base = DateTime(2024, 8, 6, 11);
           final firstEntry = buildJournalEntry(
@@ -1461,7 +1461,10 @@ void main() {
             flaggedStatuses: const [0, 1],
           );
 
-          expect(identical(firstResults, secondResults), isTrue);
+          expect(
+            firstResults.map((e) => e.meta.id),
+            secondResults.map((e) => e.meta.id),
+          );
 
           final secondEntry = buildJournalEntry(
             id: 'cached-journal-2',
@@ -1478,7 +1481,6 @@ void main() {
             flaggedStatuses: const [0, 1],
           );
 
-          expect(identical(secondResults, refreshedResults), isFalse);
           expect(
             refreshedResults
                 .where((entry) => entry.meta.id.startsWith('cached-journal-'))

@@ -224,17 +224,13 @@ class _SlowQueryFileSink {
 
   final Map<String, Future<void>> _pendingWritesByPath =
       <String, Future<void>>{};
-  final Set<String> _createdDirectories = <String>{};
 
   void append(File file, String line) {
     final path = file.path;
     final current = _pendingWritesByPath[path] ?? Future<void>.value();
     final next = current.then((_) async {
       try {
-        final parentPath = file.parent.path;
-        if (_createdDirectories.add(parentPath)) {
-          await file.parent.create(recursive: true);
-        }
+        await file.parent.create(recursive: true);
         await file.writeAsString('$line\n', mode: FileMode.append);
       } catch (error, stackTrace) {
         DevLogger.error(
