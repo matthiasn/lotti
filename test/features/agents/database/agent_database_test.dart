@@ -108,6 +108,7 @@ void main() {
           documentsDirectoryProvider: () async => testDirectory,
           tempDirectoryProvider: () async => testDirectory,
         );
+        addTearDown(db.close);
 
         // Verify schema version is now 5 (latest).
         final versionResult = await db
@@ -225,6 +226,7 @@ void main() {
         documentsDirectoryProvider: () async => testDirectory,
         tempDirectoryProvider: () async => testDirectory,
       );
+      addTearDown(db.close);
 
       // Verify schema version is now 5.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
@@ -372,6 +374,7 @@ void main() {
         documentsDirectoryProvider: () async => testDirectory,
         tempDirectoryProvider: () async => testDirectory,
       );
+      addTearDown(db.close);
 
       // Only one non-deleted link should remain per to_id.
       final activeLinks = await db
@@ -476,6 +479,7 @@ void main() {
         documentsDirectoryProvider: () async => testDirectory,
         tempDirectoryProvider: () async => testDirectory,
       );
+      addTearDown(db.close);
 
       // Verify schema version is now 5.
       final versionResult = await db.customSelect('PRAGMA user_version').get();

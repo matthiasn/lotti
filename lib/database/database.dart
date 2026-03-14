@@ -1303,7 +1303,7 @@ class JournalDb extends _$JournalDb {
       WHERE linked_entries.from_id IN ($fromPlaceholders)
         AND linked_entries.hidden = FALSE
         AND journal.deleted = FALSE
-        AND journal.type NOT IN ('Task', 'AiResponseEntry', 'JournalAudio')
+        AND journal.type NOT IN ('Task', 'AiResponse', 'JournalAudio')
         $privateClause
       ''',
       variables: [

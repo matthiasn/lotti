@@ -41,6 +41,11 @@ void main() {
   });
 
   tearDown(() async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          null,
+        );
     getIt.unregister<Directory>();
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
