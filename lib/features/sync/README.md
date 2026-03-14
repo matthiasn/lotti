@@ -83,9 +83,15 @@ In that case the device records counter `11` as missing and broadcasts a
 Any device that can still explain that counter can answer with:
 
 - the actual payload via normal sync
-- a hint mapping the missing counter to a newer covering payload
+- a hint mapping the missing counter to a newer covering payload, but only when
+  the sender has explicit proof that the newer payload covers that counter
 - a deleted response
 - an unresolvable response
+
+A later vector clock alone is not enough to prove coverage. If counter `189`
+exists and counter `188` is missing, `vc[host] = 189` does not by itself prove
+that `188` was semantically superseded. That proof has to be carried explicitly
+in `coveredVectorClocks` or another persisted supersession mapping.
 
 ## Why There Is A Separate Architecture Document
 
@@ -112,8 +118,9 @@ The most recent stabilization pass addressed two concrete failures:
 
 - exact backfill hits are now validated against the payload's current vector
   clock before resend
-- missing-marker catch-up now falls back to a bounded tail instead of replaying
-  an entire large snapshot
+- reconnect catch-up now treats the stored timestamp as the canonical replay
+  anchor; it pages backward until that time boundary is visible, then replays
+  forward with bounded overlap instead of trusting exact marker lookup
 - receive-side signal diagnostics now summarize scheduler pokes per catch-up
   burst and per live-scan pass instead of writing one log line for every raw
   callback
@@ -123,15 +130,44 @@ The most recent stabilization pass addressed two concrete failures:
 
 The largest remaining concerns are:
 
-- sequence-log mappings that can point a requested counter at a payload whose
-  current vector clock is already behind that counter
-- large bursts of missing counters that later get resolved
 - inbox-side attachment replay: repeated processing for the exact same
   attachment `eventId` is now suppressed unless the local file is missing or
   empty (repair path). The remaining edge case is different attachment events
   that share the same agent payload path, which can still overwrite each other
 - agent payload handling that can plausibly combine an older text event with a
   newer attachment version for the same `jsonPath`
+- sender-side supersession metadata: some offline-convergence failures were not
+  caused by replay at all, but by omitted `coveredVectorClocks` for superseded
+  local counters. When that metadata is missing, the receiver cannot soundly
+  infer that a later payload covers an older missing counter, so autonomous
+  convergence may still require either an exact resend or an `unresolvable`
+  response
+
+The receive-side recovery model is now stricter than before:
+
+- reconnect catch-up now succeeds when it reaches the stored timestamp
+  boundary; exact Matrix marker lookup is no longer part of the recovery
+  contract
+- timestamp-first catch-up now keeps paging even when no durable Matrix event
+  id is stored, and it passes the requested history page size through to the
+  Matrix SDK instead of silently falling back to the SDK default page size
+- if catch-up cannot page back to the stored timestamp boundary, it reports
+  incomplete recovery instead of replaying a fallback room tail as if it were
+  exact backlog
+- sequence progress is derived from the highest contiguous resolved counter for
+  each host, not from the maximum sparse counter present anywhere in the log
+- large counter gaps are fully materialized in the sequence log, but automatic
+  backfill is only nudged after the surrounding ordered replay batch settles so
+  transient in-burst holes do not turn into redundant repair chatter
+- durable restart markers now only persist server-assigned Matrix event ids;
+  local `lotti-...` echo ids are kept out of the stored read marker so Matrix
+  read-marker state stays durable even though reconnect recovery is
+  timestamp-first
+- timestamp-first catch-up fixes reachable-history replay, but it does not
+  replace explicit supersession metadata. Full sender-offline convergence still
+  depends on newer payloads carrying the omitted counters in
+  `coveredVectorClocks`
 
 Those are documented in detail in
-[current_architecture.md](./current_architecture.md).
+[current_architecture.md](./current_architecture.md) and
+[../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md).

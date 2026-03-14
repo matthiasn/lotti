@@ -5,45 +5,77 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// SDK pagination/backfill helper for Matrix 2.x Timeline API.
+/// SDK pagination helper for Matrix 2.x Timeline API.
 ///
 /// This implementation targets our pinned Matrix SDK (2.x) and uses the
 /// strongly-typed `Timeline.canRequestHistory` and `Timeline.requestHistory` APIs
 /// directly. No reflective/dynamic fallbacks are used.
 class SdkPaginationCompat {
-  /// Attempts to backfill the provided [timeline] in-place using SDK
-  /// pagination until either [lastEventId] is present in the events or
-  /// [maxPages] is reached or the SDK reports no more history.
+  static bool _enableServerHistoryPaging(Timeline timeline) {
+    final prevBatch = timeline.room.prev_batch;
+    if (prevBatch == null || prevBatch.isEmpty) {
+      return false;
+    }
+
+    // Startup catch-up must traverse the server-side gap that sits behind the
+    // current /sync tail. The SDK timeline prefers the local event store until
+    // it is exhausted, which can skip exactly the reconnect window we need.
+    // Switching this disposable catch-up timeline into fragmented mode forces
+    // requestHistory() to follow prev_batch on the server instead.
+    timeline
+      ..isFragmentedTimeline = true
+      ..allowNewEvent = false;
+    if (timeline.chunk.prevBatch.isEmpty) {
+      timeline.chunk.prevBatch = prevBatch;
+    }
+    return true;
+  }
+
+  /// Attempts to page the provided [timeline] in-place until either the
+  /// earliest visible event crosses [untilTimestamp], [lastEventId] is present,
+  /// [maxPages] is reached, or the SDK reports no more history.
   ///
-  /// Returns true if the target event is already present (no pagination
-  /// required) or if at least one pagination call was attempted. Returns false
-  /// only if pagination could not be attempted at all (no suitable SDK method
-  /// is available or invocation failed before any attempt).
+  /// The timestamp boundary is the primary reconnect anchor. [lastEventId] is
+  /// retained only as a legacy early-stop hint while older installs may still
+  /// have one stored.
+  ///
+  /// Returns true only when the requested timestamp boundary or [lastEventId]
+  /// is visible after paging. Returns false when history was exhausted or
+  /// pagination failed before the boundary was reached.
   static Future<bool> backfillUntilContains({
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
+    num? untilTimestamp,
   }) async {
-    if (lastEventId == null) return false;
+    if (lastEventId == null && untilTimestamp == null) return false;
     try {
       var pages = 0;
-      var anyPaged = false;
-      while (pages < maxPages) {
+      var boundaryReached = false;
+      var markerReached = false;
+      final requireServerBoundaryPage =
+          untilTimestamp != null && _enableServerHistoryPaging(timeline);
+      while (maxPages == null || pages < maxPages) {
         final events = TimelineEventOrdering.sortStableByTimestamp(
           timeline.events,
         );
-        final contains = events.any((e) => e.eventId == lastEventId);
-        if (contains) return true;
+        if (untilTimestamp != null &&
+            events.isNotEmpty &&
+            TimelineEventOrdering.timestamp(events.first) <= untilTimestamp &&
+            (!requireServerBoundaryPage || boundaryReached)) {
+          return true;
+        }
+        markerReached = events.any((e) => e.eventId == lastEventId);
+        if (markerReached) return true;
 
         if (!timeline.canRequestHistory) break;
 
-        // Mark that we attempted pagination regardless of the outcome.
-        anyPaged = true;
+        final beforeCount = timeline.events.length;
         var ok = true;
         try {
-          await timeline.requestHistory();
+          await timeline.requestHistory(historyCount: pageSize);
         } catch (e, st) {
           logging.captureException(
             e,
@@ -54,9 +86,28 @@ class SdkPaginationCompat {
           ok = false;
         }
         if (!ok) break;
+        if (timeline.events.length <= beforeCount) break;
+        if (untilTimestamp != null) {
+          final appended = timeline.events.sublist(beforeCount);
+          if (appended.any(
+            (event) => TimelineEventOrdering.timestamp(event) <= untilTimestamp,
+          )) {
+            boundaryReached = true;
+          }
+        }
         pages++;
       }
-      return anyPaged;
+      if (untilTimestamp != null &&
+          !requireServerBoundaryPage &&
+          timeline.events.isNotEmpty) {
+        final events = TimelineEventOrdering.sortStableByTimestamp(
+          timeline.events,
+        );
+        if (TimelineEventOrdering.timestamp(events.first) <= untilTimestamp) {
+          return true;
+        }
+      }
+      return markerReached || boundaryReached;
     } catch (e, st) {
       logging.captureException(
         e,

@@ -56,6 +56,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -76,6 +77,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
@@ -129,6 +131,12 @@ class MockJournalDb extends Mock implements JournalDb {
     return Stream<bool>.value(false).asBroadcastStream();
   }
 }
+
+class MockRoom extends Mock implements Room {}
+
+class MockTimeline extends Mock implements Timeline {}
+
+class MockEvent extends Mock implements Event {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
@@ -236,16 +244,30 @@ class MockLoggingService extends Mock implements LoggingService {
     registerFallbackValue(InsightLevel.info);
     registerFallbackValue(InsightType.log);
     registerFallbackValue(StackTrace.empty);
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+  }
+
+  @override
+  void captureException(
+    dynamic exception, {
+    required String domain,
+    String? subDomain,
+    dynamic stackTrace,
+    InsightLevel level = InsightLevel.error,
+    InsightType type = InsightType.exception,
+  }) {
+    super.noSuchMethod(
+      Invocation.method(
+        #captureException,
+        <dynamic>[exception],
+        <Symbol, dynamic>{
+          #domain: domain,
+          #subDomain: subDomain,
+          #stackTrace: stackTrace,
+          #level: level,
+          #type: type,
+        },
       ),
-    ).thenAnswer((_) async {});
+    );
   }
 }
 
@@ -328,6 +350,8 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
 }
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+
+class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 

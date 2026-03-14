@@ -2897,55 +2897,63 @@ void main() {
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
-    test('image media ensure logs and throws on empty bytes', () async {
-      final image = JournalImage(
-        meta: Metadata(
-          id: 'img-empty',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: ImageData(
-          imageId: 'img-empty',
-          imageDirectory: '/images/2024-01-01/',
-          imageFile: 'empty.jpg',
-          capturedAt: DateTime.now(),
-        ),
-      );
-      final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathImg = path.join(tempDir.path, stripLeadingSlashes(relJson));
-      File(jsonPathImg)
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(image.toJson()));
+    test(
+      'image media ensure logs and registers pending on empty bytes',
+      () async {
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-empty',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-empty',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'empty.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        final jsonPathImg = path.join(
+          tempDir.path,
+          stripLeadingSlashes(relJson),
+        );
+        File(jsonPathImg)
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
 
-      final relMedia = getRelativeImagePath(image);
-      final index = AttachmentIndex();
-      final ev = MockEvent();
-      when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
-      when(() => ev.content).thenReturn({'relativePath': relMedia});
-      when(
-        ev.downloadAndDecryptAttachment,
-      ).thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
-      index.record(ev);
+        final relMedia = getRelativeImagePath(image);
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({'relativePath': relMedia});
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
+        index.record(ev);
 
-      final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
-        loggingService: loggingService,
-      );
-      await expectLater(
-        loader.load(jsonPath: relJson),
-        throwsA(isA<FileSystemException>()),
-      );
-      verify(
-        () => loggingService.captureException(
-          any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetchMedia',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        String? pendingPath;
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.id, image.meta.id);
+        expect(pendingPath, relMedia);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchMedia',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('no-VC JSON fetch logs and throws on empty bytes', () async {
       const relJson = '/text_entries/2024-02-01/empty.text.json';
@@ -2978,21 +2986,22 @@ void main() {
     });
 
     test(
-      'throws and logs when image media missing and descriptor not indexed',
+      'loads entity and registers pending image media when descriptor not indexed',
       () async {
+        final fixedDate = DateTime(2024, 3, 15);
         final image = JournalImage(
           meta: Metadata(
             id: 'img-2',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
           ),
           data: ImageData(
             imageId: 'img-2',
             imageDirectory: '/images/2024-01-01/',
             imageFile: 'missing.jpg',
-            capturedAt: DateTime.now(),
+            capturedAt: fixedDate,
           ),
         );
         final relJson = '${getRelativeImagePath(image)}.json';
@@ -3006,14 +3015,15 @@ void main() {
         expect(createdJson.existsSync(), isTrue);
 
         final index = AttachmentIndex(logging: loggingService);
+        String? pendingPath;
         final loader = SmartJournalEntityLoader(
           attachmentIndex: index,
           loggingService: loggingService,
         );
-        await expectLater(
-          loader.load(jsonPath: relJson),
-          throwsA(isA<FileSystemException>()),
-        );
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.id, image.meta.id);
+        expect(pendingPath, getRelativeImagePath(image));
         verify(
           () => loggingService.captureEvent(
             contains('smart.media.miss path=${getRelativeImagePath(image)}'),
@@ -4073,6 +4083,75 @@ void main() {
         processorWithFileLoader.cachePurgeListener = () {};
       }, returnsNormally);
     });
+
+    test('descriptorPendingListener with non-smart loader does not crash', () {
+      final processorWithFileLoader = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: const FileSyncJournalEntityLoader(),
+      );
+
+      expect(() {
+        processorWithFileLoader.descriptorPendingListener = (_) {};
+      }, returnsNormally);
+    });
+
+    test(
+      'descriptorPendingListener forwards missing descriptor notifications from smart loader',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'descriptor_listener_test',
+        );
+        addTearDown(() => tempDir.delete(recursive: true));
+        await getIt.reset();
+        getIt.allowReassignment = true;
+        getIt.registerSingleton<Directory>(tempDir);
+
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-listener',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-listener',
+            imageDirectory: '/images/2024-03-15/',
+            imageFile: 'pending.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex(logging: loggingService),
+          loggingService: loggingService,
+        );
+        final processorWithSmartLoader = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: loader,
+        );
+
+        String? pendingPath;
+        processorWithSmartLoader.descriptorPendingListener = (path) {
+          pendingPath = path;
+        };
+
+        await loader.load(jsonPath: relJson);
+
+        expect(pendingPath, getRelativeImagePath(image));
+      },
+    );
   });
 
   test('EntryLink apply logs from/to IDs and rows affected', () async {
@@ -5663,6 +5742,66 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('runWithDeferredMissingEntryNudges', () {
+    test('falls back to plain action for mock processor instances', () async {
+      final mockProcessor = MockSyncEventProcessor();
+
+      final result = await runWithDeferredMissingEntryNudges<String>(
+        mockProcessor,
+        () async => 'plain-action',
+      );
+
+      expect(result, 'plain-action');
+    });
+
+    test(
+      'falls back to plain action when sequence log service is absent',
+      () async {
+        final result = await runWithDeferredMissingEntryNudges<String>(
+          processor,
+          () async => 'no-sequence-log',
+        );
+
+        expect(result, 'no-sequence-log');
+      },
+    );
+
+    test(
+      'delegates through the concrete sequence log service when present',
+      () async {
+        final sequenceLogService = SyncSequenceLogService(
+          syncDatabase: MockSyncDatabase(),
+          vectorClockService: MockVectorClockService(),
+          loggingService: loggingService,
+        );
+        final processorWithSequenceLog = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: sequenceLogService,
+        );
+
+        final executionOrder = <String>[];
+        sequenceLogService.onMissingEntriesDetected = () {
+          executionOrder.add('flush');
+        };
+
+        final result = await runWithDeferredMissingEntryNudges<String>(
+          processorWithSequenceLog,
+          () async {
+            executionOrder.add('action');
+            return 'with-sequence-log';
+          },
+        );
+
+        expect(result, 'with-sequence-log');
+        expect(executionOrder, ['action']);
+      },
+    );
   });
 
   // Note: Sequence log integration tests for the sync processor are covered

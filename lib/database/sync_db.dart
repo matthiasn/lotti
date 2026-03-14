@@ -359,15 +359,63 @@ class SyncDatabase extends _$SyncDatabase {
     return into(syncSequenceLog).insertOnConflictUpdate(entry);
   }
 
-  /// Get the highest counter we've seen for a given host.
-  /// Returns null if we've never seen this host.
+  /// Get the highest contiguous resolved counter for a given host, starting
+  /// from counter `1`.
+  ///
+  /// Returns:
+  /// - `null` when the host is entirely unknown to this device
+  /// - `0` when the host is known but counter `1` is still unresolved
+  /// - `N > 0` when every counter `1..N` is resolved or terminal
+  ///
+  /// This is intentionally not `MAX(counter)`. Gap detection must not advance
+  /// past unresolved earlier counters just because a sparse newer row exists.
   Future<int?> getLastCounterForHost(String hostId) async {
-    final query = selectOnly(syncSequenceLog)
-      ..addColumns([syncSequenceLog.counter.max()])
-      ..where(syncSequenceLog.hostId.equals(hostId));
+    final received = SyncSequenceStatus.received.index;
+    final backfilled = SyncSequenceStatus.backfilled.index;
+    final deleted = SyncSequenceStatus.deleted.index;
+    final unresolvable = SyncSequenceStatus.unresolvable.index;
 
-    final result = await query.getSingleOrNull();
-    return result?.read(syncSequenceLog.counter.max());
+    // Within the resolved subset, `counter == row_number()` only holds while we
+    // still have the contiguous prefix `1..N`. The first hole or unresolved
+    // status breaks that equality, which is exactly the watermark we need.
+    final query = customSelect(
+      '''
+      WITH host_counters AS (
+        SELECT counter, status
+        FROM sync_sequence_log
+        WHERE host_id = ?
+      ),
+      resolved_prefix AS (
+        SELECT
+          counter,
+          ROW_NUMBER() OVER (ORDER BY counter) AS rn
+        FROM host_counters
+        WHERE status IN (?, ?, ?, ?)
+      )
+      SELECT CASE
+        WHEN (SELECT COUNT(*) FROM host_counters) = 0 THEN NULL
+        ELSE COALESCE(
+          (
+            SELECT MAX(counter)
+            FROM resolved_prefix
+            WHERE counter = rn
+          ),
+          0
+        )
+      END AS last_counter
+      ''',
+      variables: [
+        Variable.withString(hostId),
+        Variable.withInt(received),
+        Variable.withInt(backfilled),
+        Variable.withInt(deleted),
+        Variable.withInt(unresolvable),
+      ],
+      readsFrom: {syncSequenceLog},
+    );
+
+    final result = await query.getSingle();
+    return result.readNullable<int>('last_counter');
   }
 
   /// Get entries with status 'missing' or 'requested' that haven't
@@ -522,6 +570,26 @@ class SyncDatabase extends _$SyncDatabase {
     final entries = await (select(
       syncSequenceLog,
     )..where((t) => t.hostId.equals(hostId))).map((row) => row.counter).get();
+    return entries.toSet();
+  }
+
+  /// Get existing counters for a specific host within an inclusive range.
+  /// Used to materialize large gaps without doing one lookup per counter.
+  Future<Set<int>> getCountersForHostInRange(
+    String hostId,
+    int startCounter,
+    int endCounter,
+  ) async {
+    if (endCounter < startCounter) return <int>{};
+    final entries =
+        await (select(syncSequenceLog)..where(
+              (t) =>
+                  t.hostId.equals(hostId) &
+                  t.counter.isBiggerOrEqualValue(startCounter) &
+                  t.counter.isSmallerOrEqualValue(endCounter),
+            ))
+            .map((row) => row.counter)
+            .get();
     return entries.toSet();
   }
 

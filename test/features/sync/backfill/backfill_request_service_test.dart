@@ -191,6 +191,50 @@ void main() {
       });
     });
 
+    test('nudge sends backfill requests immediately', () {
+      fakeAsync((async) {
+        final service = BackfillRequestService(
+          sequenceLogService: mockSequenceService,
+          syncDatabase: mockSyncDatabase,
+          outboxService: mockOutboxService,
+          vectorClockService: mockVcService,
+          loggingService: mockLogging,
+          requestInterval: const Duration(minutes: 10),
+        );
+
+        final missingEntries = [
+          _createMissingLogItem(aliceHostId, 3),
+          _createMissingLogItem(aliceHostId, 4),
+        ];
+
+        when(
+          () => mockSequenceService.getMissingEntriesWithLimits(
+            limit: any(named: 'limit'),
+            maxRequestCount: any(named: 'maxRequestCount'),
+            maxAge: any(named: 'maxAge'),
+            maxPerHost: any(named: 'maxPerHost'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => missingEntries);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockSequenceService.markAsRequested(any()),
+        ).thenAnswer((_) async {});
+
+        service.nudge();
+        async.flushMicrotasks();
+
+        verify(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).called(1);
+        verify(() => mockSequenceService.markAsRequested(any())).called(1);
+
+        service.dispose();
+      });
+    });
+
     test('respects maxBatchSize limit', () {
       fakeAsync((async) {
         const maxBatch = 2;

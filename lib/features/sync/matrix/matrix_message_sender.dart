@@ -9,6 +9,7 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -412,13 +413,18 @@ class MatrixMessageSender {
           vectorClock: jsonVectorClock,
           coveredVectorClocks: covered,
         );
-        final coveredLog = covered?.map((vc) => vc.vclock).toList() ?? const [];
-        _loggingService.captureEvent(
-          'vectorClock mismatch; adopting json clock for ${message.jsonPath} '
-          'json=${jsonVectorClock.vclock} message=${messageVectorClock.vclock} '
-          'status=$status coveredClocks=${covered?.length ?? 0} covered=$coveredLog',
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg.vclockAdjusted',
+        logVectorClockAssignment(
+          _loggingService,
+          subDomain: 'send.adoptJson',
+          action: 'assign',
+          type: 'SyncJournalEntity',
+          entryId: message.id,
+          jsonPath: message.jsonPath,
+          reason: 'json_mismatch',
+          previous: messageVectorClock,
+          assigned: jsonVectorClock,
+          coveredVectorClocks: covered,
+          extras: {'status': status},
         );
       }
     } else if (jsonVectorClock != null && messageVectorClock == null) {
@@ -432,10 +438,16 @@ class MatrixMessageSender {
         vectorClock: jsonVectorClock,
         coveredVectorClocks: covered,
       );
-      _loggingService.captureEvent(
-        'vectorClock absent on message but present in json for ${message.jsonPath}; adopting json clock ${jsonVectorClock.vclock}',
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'send.adoptJson',
+        action: 'assign',
+        type: 'SyncJournalEntity',
+        entryId: message.id,
+        jsonPath: message.jsonPath,
+        reason: 'message_missing',
+        assigned: jsonVectorClock,
+        coveredVectorClocks: covered,
       );
     }
     final ensuredCovered = VectorClock.mergeUniqueClocks(
@@ -445,7 +457,19 @@ class MatrixMessageSender {
       ],
     );
     if (ensuredCovered != outbound.coveredVectorClocks) {
+      final currentClock = outbound.vectorClock;
       outbound = outbound.copyWith(coveredVectorClocks: ensuredCovered);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'send.ensureCovered',
+        action: 'assign',
+        type: 'SyncJournalEntity',
+        entryId: outbound.id,
+        jsonPath: outbound.jsonPath,
+        reason: 'ensure_current_clock_covered',
+        assigned: currentClock,
+        coveredVectorClocks: ensuredCovered,
+      );
     }
 
     await journalEntity.maybeMap(

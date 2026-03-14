@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.920] - 2026-03-13
+### Changed
+- Sync catch-up: reconnect recovery is now timestamp-first. The client pages
+  backward until the stored timestamp boundary is visible, then replays forward
+  with bounded overlap instead of depending on exact event-id re-anchoring.
+- Sync markers: local `lotti-...` echo ids are no longer persisted as durable
+  remote read-marker ids. Server-assigned Matrix event ids are still kept for
+  remote marker state, while timestamp progress remains the canonical local
+  catch-up anchor.
+- Sync pagination: timestamp-first catch-up now keeps paging even without a
+  stored durable event id, and Matrix history requests now honor the configured
+  page size instead of silently using the SDK default of `30`.
+- Sync backfill: newly detected gaps still become missing work immediately, but
+  the automatic backfill nudge now waits for the surrounding ordered replay
+  batch to finish so transient in-burst holes do not create redundant chatter.
+- Sync startup: if catch-up cannot reach the stored timestamp boundary yet, the
+  receiver now keeps live scans deferred instead of treating incomplete
+  recovery as ready and letting repair traffic start early.
+
 ## [0.9.919] - 2026-03-12
 ### Changed
 - Sync inbox: repeated replay of the exact same attachment event no longer
@@ -18,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync backfill follow-up: re-request paging now walks past already queued
   oldest rows, in-flight `sending` backfill requests suppress duplicates, and
   zombie-file cleanup rejects paths that resolve outside the docs directory.
+- Sync reliability: marker-missing catch-up no longer replays a bounded recent
+  tail as successful backlog, host progress now stays on the highest contiguous
+  resolved counter, large gaps are fully materialized for backfill, and newly
+  detected missing work nudges automatic backfill immediately.
+- Sync convergence: reconnect catch-up now keeps paging until it either finds
+  the stored Matrix marker or reaches the stored timestamp boundary, then
+  replays that ordered historical slice instead of turning an ordinary offline
+  backlog into redundant backfill requests.
 - Agent sync startup: the app now keeps agent initialization alive from app
   startup when agents are enabled, so incoming agent backfill can resolve
   without waiting for the first entry or agent screen to be opened.

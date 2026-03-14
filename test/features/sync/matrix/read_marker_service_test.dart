@@ -86,6 +86,7 @@ void main() {
       );
 
       verifyNever(() => room.setReadMarker(any()));
+      verifyNever(() => db.saveSettingsItem(any(), any()));
       verify(
         () => log.captureEvent(
           'marker.remote.skip(nonServerId) id=lotti-123',

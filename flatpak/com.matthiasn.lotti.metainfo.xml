@@ -31,12 +31,22 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.920" date="2026-03-13">
+      <description>
+          <p>Sync catch-up: reconnect recovery is now timestamp-first. The client pages backward until the stored timestamp boundary is visible, then replays forward with bounded overlap instead of depending on exact event-id re-anchoring.</p>
+          <p>Sync markers: local <code>lotti-...</code> echo ids are no longer persisted as durable remote read-marker ids. Server-assigned Matrix event ids are still kept for remote marker state, while timestamp progress remains the canonical local catch-up anchor.</p>
+          <p>Sync pagination: timestamp-first catch-up now keeps paging even without a stored durable event id, and Matrix history requests now honor the configured page size instead of silently using the SDK default page size of 30.</p>
+          <p>Sync recovery: automatic backfill now waits until an ordered replay batch settles, and startup keeps live scans deferred while timestamp-boundary catch-up is still incomplete. This cuts redundant repair chatter for offline reconnect bursts.</p>
+      </description>
+    </release>
     <release version="0.9.919" date="2026-03-12">
       <description>
           <p>Sync inbox: replay of the exact same attachment event no longer re-runs attachment observe/download/write work unless the local file is missing or empty, reducing unnecessary agent payload I/O during catch-up.</p>
           <p>Sync logging: sync-family info logs now go to the dedicated sync daily log instead of inflating the general app log, while sync errors remain visible in both places.</p>
           <p>Sync diagnostics: receiver-side signal logging now emits catch-up and live-scan summaries with source breakdowns instead of one log line per raw scheduler callback.</p>
           <p>Sync backfill follow-up: re-request paging now walks past already queued oldest rows, in-flight backfill requests suppress duplicates, and zombie-file cleanup only deletes files that resolve inside the local docs directory.</p>
+          <p>Sync reliability: marker-missing catch-up no longer replays a bounded recent tail as successful backlog. Host progress now stays on the highest contiguous resolved counter, large gaps are fully materialized for backfill, and newly detected missing work nudges automatic backfill immediately.</p>
+          <p>Sync convergence: reconnect catch-up now keeps paging until it either finds the stored Matrix marker or reaches the stored timestamp boundary, then replays that ordered historical slice instead of turning an ordinary offline backlog into redundant backfill requests.</p>
           <p>Agent sync startup: when agents are enabled, app startup now keeps agent initialization alive so incoming agent backfill can resolve before any entry or agent screen is opened.</p>
           <p>UI polish: replaced the intrusive automatic rating modal with a pulsating star icon button next to the timer. Fixed provider state mutation during build, RenderFlex overflow, and realtime transcription stop race condition. Removed the label assignment snackbar (now redundant with change sets).</p>
       </description>

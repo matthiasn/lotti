@@ -597,8 +597,9 @@ void main() {
         required Timeline timeline,
         required String? lastEventId,
         required int pageSize,
-        required int maxPages,
+        required int? maxPages,
         required LoggingService logging,
+        num? untilTimestamp,
       }) async {
         final e0 = MockEvent();
         when(() => e0.eventId).thenReturn('e0');
@@ -1253,7 +1254,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       final ev = MockEvent();
-      when(() => ev.eventId).thenReturn('e1');
+      when(() => ev.eventId).thenReturn(r'$e1');
       when(() => ev.roomId).thenReturn('!room:server');
       when(
         () => ev.originServerTs,
@@ -1301,7 +1302,7 @@ void main() {
       await consumer.start();
 
       verify(
-        () => settingsDb.saveSettingsItem(lastReadMatrixEventId, 'e1'),
+        () => settingsDb.saveSettingsItem(lastReadMatrixEventId, r'$e1'),
       ).called(1);
       verify(
         () => settingsDb.saveSettingsItem(lastReadMatrixEventTs, '123'),

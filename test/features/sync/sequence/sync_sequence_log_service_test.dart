@@ -57,6 +57,12 @@ void main() {
     when(
       () => mockDb.updateHostActivity(any(), any()),
     ).thenAnswer((_) async => 1);
+    when(
+      () => mockDb.getCountersForHostInRange(any(), any(), any()),
+    ).thenAnswer((_) async => <int>{});
+    when(
+      () => mockDb.batchInsertSequenceEntries(any()),
+    ).thenAnswer((_) async {});
 
     // Stub getHostLastSeen for all tests - by default alice and bob are "online"
     // (have been seen before). Tests for offline hosts will override this.
@@ -115,12 +121,6 @@ void main() {
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 2);
       when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
-      ).thenAnswer((_) async => null);
-      when(
         () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
@@ -135,9 +135,50 @@ void main() {
       expect(gaps[0], (hostId: aliceHostId, counter: 3));
       expect(gaps[1], (hostId: aliceHostId, counter: 4));
 
-      // Should record: missing 3, missing 4, received 5
-      verify(() => mockDb.recordSequenceEntry(any())).called(3);
+      // Missing counters are materialized in one batch, then the received entry
+      // is recorded normally.
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
     });
+
+    test(
+      'detects the missing prefix when an online host has no stored counters yet',
+      () async {
+        const vectorClock = VectorClock({aliceHostId: 5});
+        const entryId = 'entry-5';
+
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        final gaps = await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        expect(gaps, hasLength(4));
+        expect(gaps.map((gap) => gap.counter).toList(), [1, 2, 3, 4]);
+      },
+    );
 
     test('skips own host in vector clock', () async {
       // VC includes our own host - should be skipped
@@ -179,9 +220,6 @@ void main() {
         () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
       ).thenAnswer((_) async => null);
       when(
-        () => mockDb.getEntryByHostAndCounter(bobHostId, 7),
-      ).thenAnswer((_) async => null);
-      when(
         () => mockDb.getEntryByHostAndCounter(bobHostId, 8),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
@@ -200,8 +238,10 @@ void main() {
       verify(() => mockDb.getLastCounterForHost(aliceHostId)).called(1);
       verify(() => mockDb.getLastCounterForHost(bobHostId)).called(1);
 
-      // Should record: alice:5 with entryId, bob:7 as missing, bob:8 as observed
-      verify(() => mockDb.recordSequenceEntry(any())).called(3);
+      // Missing counters are materialized in a batch; observed counters still
+      // write individual sequence rows with entryId hints.
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+      verify(() => mockDb.recordSequenceEntry(any())).called(2);
     });
 
     test('ALL hosts in VC get entryId (enables backfill responses)', () async {
@@ -263,14 +303,9 @@ void main() {
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 2);
-      // Counter 3 already exists as missing
       when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
-      ).thenAnswer((_) async => _createLogItem(aliceHostId, 3));
-      // Counter 4 doesn't exist
-      when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
-      ).thenAnswer((_) async => null);
+        () => mockDb.getCountersForHostInRange(aliceHostId, 3, 4),
+      ).thenAnswer((_) async => {3});
       // Counter 5 doesn't exist
       when(
         () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
@@ -285,8 +320,10 @@ void main() {
 
       // Should still report gaps but not insert duplicate
       expect(gaps.length, 2);
-      // Only 2 records: missing 4 and received 5 (3 already exists)
-      verify(() => mockDb.recordSequenceEntry(any())).called(2);
+      // Only one missing row is batch-inserted (4) and the received counter 5
+      // is written normally.
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
     });
 
     test('marks previously missing entry as received', () async {
@@ -577,18 +614,22 @@ void main() {
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
     });
 
-    test('limits gap detection to maxGapSize entries', () async {
-      // Large gap: lastSeen=10, counter=500 would normally create 489 missing entries
-      // With maxGapSize=100, should only create entries for counters 400-499
+    test('records the full large gap and logs it', () async {
+      // Large gap: lastSeen=10, counter=500 should create entries for 11-499.
       const vectorClock = VectorClock({aliceHostId: 500});
       const entryId = 'entry-500';
 
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 10);
-      // Stub all potential getEntryByHostAndCounter calls to return null
       when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        () => mockDb.getCountersForHostInRange(aliceHostId, 11, 499),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, 500),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
 
@@ -598,11 +639,21 @@ void main() {
         originatingHostId: aliceHostId,
       );
 
-      // Should detect gaps but limited to maxGapSize (100)
-      expect(gaps.length, SyncTuning.maxGapSize);
-      // Gaps should be for the most recent counters (400-499)
-      expect(gaps.first.counter, 500 - SyncTuning.maxGapSize);
+      expect(gaps.length, 489);
+      expect(gaps.first.counter, 11);
       expect(gaps.last.counter, 499);
+      verify(
+        () => mockDb.getCountersForHostInRange(aliceHostId, 11, 499),
+      ).called(1);
+
+      final inserted =
+          verify(
+                () => mockDb.batchInsertSequenceEntries(captureAny()),
+              ).captured.single
+              as List<SyncSequenceLogCompanion>;
+      expect(inserted.length, 500 - 10 - 1);
+      expect(inserted.first.counter.value, 11);
+      expect(inserted.last.counter.value, 499);
 
       // Verify large gap was logged
       verify(
@@ -612,6 +663,133 @@ void main() {
           subDomain: 'largeGap',
         ),
       ).called(1);
+    });
+
+    test('chunks extreme gaps without truncating the logical result', () async {
+      const lastSeen = 10;
+      const chunkSize = SyncTuning.gapMaterializationChunkSize;
+      const gapSize = SyncTuning.gapMaterializationChunkSize * 2 + 7;
+      const observedCounter = lastSeen + gapSize + 1;
+      const vectorClock = VectorClock({aliceHostId: observedCounter});
+      const entryId = 'entry-extreme-gap';
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => lastSeen);
+      when(
+        () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+      ).thenAnswer((_) async => <int>{});
+      when(
+        () => mockDb.batchInsertSequenceEntries(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, observedCounter),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      final gaps = await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(gaps.length, gapSize);
+      expect(gaps.first.counter, lastSeen + 1);
+      expect(gaps.last.counter, observedCounter - 1);
+      verify(
+        () => mockDb.getCountersForHostInRange(
+          aliceHostId,
+          lastSeen + 1,
+          lastSeen + chunkSize,
+        ),
+      ).called(1);
+      verify(
+        () => mockDb.getCountersForHostInRange(
+          aliceHostId,
+          lastSeen + chunkSize + 1,
+          lastSeen + chunkSize * 2,
+        ),
+      ).called(1);
+      verify(
+        () => mockDb.getCountersForHostInRange(
+          aliceHostId,
+          lastSeen + chunkSize * 2 + 1,
+          observedCounter - 1,
+        ),
+      ).called(1);
+
+      final inserted =
+          verify(
+                () => mockDb.batchInsertSequenceEntries(captureAny()),
+              ).captured
+              .map((value) => value as List<SyncSequenceLogCompanion>)
+              .toList();
+      expect(inserted, hasLength(3));
+      expect(inserted[0], hasLength(SyncTuning.gapMaterializationChunkSize));
+      expect(inserted[1], hasLength(SyncTuning.gapMaterializationChunkSize));
+      expect(inserted[2], hasLength(7));
+
+      verify(
+        () => mockLogging.captureEvent(
+          any<String>(that: contains('extremeGapDetected')),
+          domain: 'SYNC_SEQUENCE',
+          subDomain: 'extremeGap',
+        ),
+      ).called(1);
+    });
+
+    test('invokes missing-work callback after detecting gaps', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+      var nudgeCount = 0;
+      service.onMissingEntriesDetected = () {
+        nudgeCount++;
+      };
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.recordReceivedEntry(
+        entryId: entryId,
+        vectorClock: vectorClock,
+        originatingHostId: aliceHostId,
+      );
+
+      expect(nudgeCount, equals(1));
+    });
+
+    test('defers missing-work callback until deferred block exits', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+      var nudges = 0;
+      service.onMissingEntriesDetected = () {
+        nudges++;
+      };
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.runWithDeferredMissingEntries(() async {
+        await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        expect(nudges, 0);
+      });
+
+      expect(nudges, 1);
     });
 
     test('does not log largeGap when gap is within limits', () async {
@@ -1838,12 +2016,6 @@ void main() {
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 2);
       when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
-      ).thenAnswer((_) async => null);
-      when(
-        () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
-      ).thenAnswer((_) async => null);
-      when(
         () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
@@ -1858,8 +2030,8 @@ void main() {
       expect(gaps[0], (hostId: aliceHostId, counter: 3));
       expect(gaps[1], (hostId: aliceHostId, counter: 4));
 
-      // Should record: missing 3, missing 4, received link 5
-      verify(() => mockDb.recordSequenceEntry(any())).called(3);
+      verify(() => mockDb.batchInsertSequenceEntries(any())).called(1);
+      verify(() => mockDb.recordSequenceEntry(any())).called(1);
     });
   });
 
@@ -2599,6 +2771,13 @@ void main() {
         );
         return 1;
       });
+      when(() => mockDb.batchInsertSequenceEntries(any())).thenAnswer((
+        invocation,
+      ) async {
+        insertedRecords.addAll(
+          invocation.positionalArguments[0] as List<SyncSequenceLogCompanion>,
+        );
+      });
 
       await service.recordReceivedEntry(
         entryId: entryId,
@@ -3060,6 +3239,20 @@ void main() {
           }
           return null;
         });
+        when(
+          () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+        ).thenAnswer((invocation) async {
+          final start = invocation.positionalArguments[1] as int;
+          final end = invocation.positionalArguments[2] as int;
+          return insertedRecords
+              .where(
+                (record) =>
+                    record.counter.value >= start &&
+                    record.counter.value <= end,
+              )
+              .map((record) => record.counter.value)
+              .toSet();
+        });
 
         // When recordSequenceEntry is called, track the record
         when(() => mockDb.recordSequenceEntry(any())).thenAnswer((
@@ -3069,6 +3262,13 @@ void main() {
               invocation.positionalArguments[0] as SyncSequenceLogCompanion;
           insertedRecords.add(companion);
           return 1;
+        });
+        when(() => mockDb.batchInsertSequenceEntries(any())).thenAnswer((
+          invocation,
+        ) async {
+          insertedRecords.addAll(
+            invocation.positionalArguments[0] as List<SyncSequenceLogCompanion>,
+          );
         });
 
         await service.recordReceivedEntry(

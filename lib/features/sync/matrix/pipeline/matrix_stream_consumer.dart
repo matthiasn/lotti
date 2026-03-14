@@ -56,8 +56,9 @@ class MatrixStreamConsumer implements SyncPipeline {
       required Timeline timeline,
       required String? lastEventId,
       required int pageSize,
-      required int maxPages,
+      required int? maxPages,
       required LoggingService logging,
+      num? untilTimestamp,
     })?
     backfill,
     Directory? documentsDirectory,
@@ -116,7 +117,7 @@ class MatrixStreamConsumer implements SyncPipeline {
       collectMetrics: _collectMetrics,
       dropOldPayloadsInLiveScan: _dropOldPayloadsInLiveScan,
       processor: _processor,
-      isInitialCatchUpCompleted: () => _catchUp.initialCatchUpCompleted,
+      isInitialCatchUpCompleted: () => _catchUp.initialCatchUpReady,
       isCatchUpInFlight: () => _catchUp.catchUpInFlight,
       isWakeCatchUpPending: () => _catchUp.wakeCatchUpPending,
       startWakeCatchUp: _catchUp.startWakeCatchUp,
@@ -165,8 +166,9 @@ class MatrixStreamConsumer implements SyncPipeline {
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
+    num? untilTimestamp,
   })?
   _backfill;
   final Directory? _documentsDirectory;

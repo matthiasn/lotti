@@ -401,9 +401,13 @@ void main() {
     expect(result, isTrue);
     verify(
       () => loggingService.captureEvent(
-        contains('vectorClock mismatch; adopting json clock'),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'sendMatrixMsg.vclockAdjusted',
+        allOf(
+          contains('reason=json_mismatch'),
+          contains('previous={hostA: 425}'),
+          contains('assigned={hostA: 402}'),
+        ),
+        domain: 'VECTOR_CLOCK',
+        subDomain: 'send.adoptJson',
       ),
     ).called(1);
     final decoded =
@@ -629,9 +633,12 @@ void main() {
       expect(result, isTrue);
       verify(
         () => loggingService.captureEvent(
-          contains('vectorClock absent on message but present in json'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg.vclockAdjusted',
+          allOf(
+            contains('reason=message_missing'),
+            contains('assigned={hostA: 7}'),
+          ),
+          domain: 'VECTOR_CLOCK',
+          subDomain: 'send.adoptJson',
         ),
       ).called(1);
       final decoded =
@@ -767,9 +774,13 @@ void main() {
       expect(result, isTrue);
       verify(
         () => loggingService.captureEvent(
-          contains('vectorClock mismatch; adopting json clock'),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'sendMatrixMsg.vclockAdjusted',
+          allOf(
+            contains('reason=json_mismatch'),
+            contains('previous={hostA: 8}'),
+            contains('assigned={hostA: 10}'),
+          ),
+          domain: 'VECTOR_CLOCK',
+          subDomain: 'send.adoptJson',
         ),
       ).called(1);
       final decoded =

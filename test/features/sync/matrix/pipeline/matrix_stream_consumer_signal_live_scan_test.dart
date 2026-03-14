@@ -18,7 +18,8 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
-import 'matrix_stream_consumer_test_support.dart';
+import 'matrix_stream_consumer_test_support.dart'
+    hide MockEvent, MockRoom, MockTimeline;
 
 void main() {
   setUpAll(registerMatrixStreamConsumerFallbacks);
@@ -126,9 +127,14 @@ void main() {
       async.flushMicrotasks();
       verify(
         () => logger.captureEvent(
-          any<String>(that: contains('marker.flush id=EE')),
+          any<String>(
+            that: allOf(
+              contains('liveScan.summary'),
+              contains('clientStream=1'),
+            ),
+          ),
           domain: any<String>(named: 'domain'),
-          subDomain: 'marker.flush',
+          subDomain: 'liveScan',
         ),
       ).called(greaterThanOrEqualTo(1));
     });

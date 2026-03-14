@@ -30,8 +30,9 @@ class MatrixStreamCatchUpCoordinator {
       required Timeline timeline,
       required String? lastEventId,
       required int pageSize,
-      required int maxPages,
+      required int? maxPages,
       required LoggingService logging,
+      num? untilTimestamp,
     })?
     backfill,
   }) : _sessionManager = sessionManager,
@@ -58,14 +59,20 @@ class MatrixStreamCatchUpCoordinator {
     required Timeline timeline,
     required String? lastEventId,
     required int pageSize,
-    required int maxPages,
+    required int? maxPages,
     required LoggingService logging,
+    num? untilTimestamp,
   })?
   _backfill;
 
   String? _startupLastProcessedEventId;
   num? _startupLastProcessedTs;
-  bool _initialCatchUpCompleted = false;
+  // "Ready" means startup catch-up has run enough that live scans may proceed
+  // without deadlocking. "Converged" means we re-established a trustworthy
+  // historical boundary, either by finding the stored marker or by paging back
+  // past the stored timestamp and replaying forward from there.
+  bool _initialCatchUpReady = false;
+  bool _initialCatchUpConverged = false;
   Timer? _catchUpRetryTimer;
   bool _firstStreamEventCatchUpTriggered = false;
   bool _catchUpInFlight = false;
@@ -94,7 +101,8 @@ class MatrixStreamCatchUpCoordinator {
   Completer<void>? _forceRescanCompleter;
   Future<void> Function()? scanLiveTimeline;
 
-  bool get initialCatchUpCompleted => _initialCatchUpCompleted;
+  bool get initialCatchUpCompleted => _initialCatchUpConverged;
+  bool get initialCatchUpReady => _initialCatchUpReady;
   bool get catchUpInFlight => _catchUpInFlight;
   bool get wakeCatchUpPending => _wakeCatchUpPending;
 
@@ -109,7 +117,7 @@ class MatrixStreamCatchUpCoordinator {
   }
 
   bool handleFirstStreamEvent() {
-    if (_initialCatchUpCompleted || _firstStreamEventCatchUpTriggered) {
+    if (_initialCatchUpReady || _firstStreamEventCatchUpTriggered) {
       return false;
     }
     _firstStreamEventCatchUpTriggered = true;
@@ -121,7 +129,7 @@ class MatrixStreamCatchUpCoordinator {
   /// Returns true if catch-up handling took the signal, false if the caller
   /// should schedule a live scan instead.
   bool handleClientStreamSignal() {
-    if (_initialCatchUpCompleted) {
+    if (_initialCatchUpReady) {
       return false;
     }
     // Startup: coalesce client-stream-driven catch-ups to avoid redundant work.
@@ -153,7 +161,7 @@ class MatrixStreamCatchUpCoordinator {
       await _attachCatchUp();
       _flushDeferredLiveScan('start');
     }
-    if (!_initialCatchUpCompleted) {
+    if (!_initialCatchUpReady) {
       _scheduleInitialCatchUpRetry();
     }
   }
@@ -269,7 +277,7 @@ class MatrixStreamCatchUpCoordinator {
   void _scheduleInitialCatchUpRetry() {
     _catchUpRetryTimer?.cancel();
     _catchUpRetryTimer = Timer(const Duration(milliseconds: 500), () {
-      if (_initialCatchUpCompleted) return;
+      if (_initialCatchUpReady) return;
       if (_catchUpInFlight) {
         _scheduleInitialCatchUpRetry();
         return;
@@ -287,7 +295,7 @@ class MatrixStreamCatchUpCoordinator {
               _flushDeferredLiveScan('catchUpRetry');
             })
             .then((_) {
-              if (!_initialCatchUpCompleted) {
+              if (!_initialCatchUpReady) {
                 _loggingService.captureEvent(
                   _withInstance('catchup.retry.reschedule (not completed)'),
                   domain: syncLoggingDomain,
@@ -303,7 +311,7 @@ class MatrixStreamCatchUpCoordinator {
                 subDomain: 'catchup.retry',
                 stackTrace: st,
               );
-              if (!_initialCatchUpCompleted) {
+              if (!_initialCatchUpReady) {
                 _scheduleInitialCatchUpRetry();
               }
             }),
@@ -395,27 +403,30 @@ class MatrixStreamCatchUpCoordinator {
         return false;
       }
       if (_catchupLogStartPending) {
-        final marker = !_initialCatchUpCompleted
+        final marker = !_initialCatchUpReady
             ? _startupLastProcessedEventId
             : _processor.lastProcessedEventId;
         _loggingService.captureEvent(
           _withInstance(
-            'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpCompleted ? 'startup' : 'current'})',
+            'catchup.start lastEventId=${marker ?? 'null'} (${!_initialCatchUpReady ? 'startup' : 'current'})',
           ),
           domain: syncLoggingDomain,
           subDomain: 'catchup',
         );
         _catchupLogStartPending = false;
       }
-      final preSinceTs = _startupLastProcessedTs == null
+      final anchorTimestamp = !_initialCatchUpReady
+          ? _startupLastProcessedTs
+          : _processor.lastProcessedTs;
+      final preSinceTs = anchorTimestamp == null
           ? null
-          : (_startupLastProcessedTs!.toInt() - 1000); // small skew buffer
+          : (anchorTimestamp.toInt() - 1000); // small skew buffer
       // Use startup marker for initial catch-up to avoid race with live scans
       // that may advance the current marker before catch-up runs.
-      final catchUpMarker = !_initialCatchUpCompleted
+      final catchUpMarker = !_initialCatchUpReady
           ? _startupLastProcessedEventId
           : _processor.lastProcessedEventId;
-      final slice = await CatchUpStrategy.collectEventsForCatchUp(
+      final catchUp = await CatchUpStrategy.collectEventsForCatchUp(
         room: room,
         lastEventId: catchUpMarker,
         backfill: _backfill ?? SdkPaginationCompat.backfillUntilContains,
@@ -426,6 +437,38 @@ class MatrixStreamCatchUpCoordinator {
         preContextCount: SyncTuning.catchupPreContextCount,
         maxLookback: SyncTuning.catchupMaxLookback,
       );
+      if (catchUp.incomplete) {
+        _loggingService
+          ..captureEvent(
+            _withInstance(
+              'catchup.incomplete reason=timestampBoundaryUnreachable marker=$catchUpMarker '
+              'snapshot=${catchUp.snapshotSize} visibleTail=${catchUp.visibleTailCount} '
+              'timestampBoundary=${catchUp.reachedTimestampBoundary}',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          )
+          ..captureEvent(
+            _withInstance(
+              'catchup.${_initialCatchUpReady ? 'ongoing' : 'initial'}.incomplete '
+              'reason=timestampBoundaryUnreachable',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          );
+        return false;
+      }
+      if (catchUp.timestampAnchored) {
+        _loggingService.captureEvent(
+          _withInstance(
+            'catchup.recovered via=timestampBoundary marker=$catchUpMarker '
+            'snapshot=${catchUp.snapshotSize} slice=${catchUp.events.length}',
+          ),
+          domain: syncLoggingDomain,
+          subDomain: 'catchup',
+        );
+      }
+      final slice = catchUp.events;
       _lastCatchupEventsCount = slice.length;
       if (slice.isNotEmpty) {
         if (_collectMetrics) _metrics.incCatchupBatches();
@@ -467,9 +510,12 @@ class MatrixStreamCatchUpCoordinator {
         }
         await _processor.processOrdered(slice);
       }
+      if (!_initialCatchUpConverged) {
+        _initialCatchUpConverged = true;
+      }
       // Mark initial catch-up as completed and cancel retry timer.
-      if (!_initialCatchUpCompleted) {
-        _initialCatchUpCompleted = true;
+      if (!_initialCatchUpReady) {
+        _initialCatchUpReady = true;
         _catchUpRetryTimer?.cancel();
         _catchUpRetryTimer = null;
         _loggingService.captureEvent(
