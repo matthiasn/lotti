@@ -1174,6 +1174,23 @@
   "inferenceProfileSaveButton": "Guardar",
   "inferenceProfileSelectModel": "Seleccionar un modelo…",
   "inferenceProfilesEmpty": "Aún no hay perfiles de inferencia",
+  "inferenceProfileSkillModelRequired": "Requiere modelo de {slotName}",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileSkillsSection": "Habilidades automatizadas",
+  "inferenceProfileSkillUsesModel": "Usa modelo de {slotName}",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfilesTitle": "Perfiles de inferencia",
   "inferenceProfileThinking": "Pensamiento",
   "inferenceProfileThinkingRequired": "Se requiere un modelo de pensamiento",

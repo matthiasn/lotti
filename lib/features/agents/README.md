@@ -248,6 +248,24 @@ at wake time via `ProfileResolver` with the following precedence:
 Six default profiles are seeded on startup (Gemini Flash, Gemini Pro, OpenAI, Mistral EU, Alibaba, Local).
 The `desktopOnly` flag on a profile hides it from mobile device selection.
 
+### Skill Assignments
+
+Profiles carry a `List<SkillAssignment>` that controls which skills auto-trigger when matching assets
+are added to a task:
+
+- Each `SkillAssignment` references a skill by ID and has an `automate` toggle.
+- The model is determined by the profile's model slot matching the skill's type (e.g., transcription
+  skills use `transcriptionModelId`, image analysis skills use `imageRecognitionModelId`).
+- Seven preconfigured skills are seeded on first launch (see `SkillSeedingService.defaultSkills`),
+  covering all `SkillType` enum values: `transcription`, `imageAnalysis`, `imageGeneration`,
+  `promptGeneration`, and `imagePromptGeneration`.
+- The profile editing UI exposes toggles for `transcription` and `imageAnalysis` skill types;
+  other types are seeded but not yet exposed in the UI.
+- When a skill is toggled on in the profile and an asset (audio recording, image) is added to a
+  task whose agent uses that profile, `ProfileAutomationService` fires the skill automatically.
+  The legacy `category.automaticPrompts` path serves as a fallback when no profile-driven skill
+  is configured.
+
 ## Architecture Decision Records
 
 Current-state architecture stays in this README. Decision rationale and

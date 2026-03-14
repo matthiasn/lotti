@@ -36,6 +36,7 @@ class AiConfigDb extends _$AiConfigDb {
         model: (_) => 'model',
         prompt: (_) => 'prompt',
         inferenceProfile: (_) => 'inferenceProfile',
+        skill: (_) => 'skill',
       ),
       name: config.name,
       serialized: jsonEncode(config.toJson()),

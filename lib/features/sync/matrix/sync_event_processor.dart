@@ -7,6 +7,8 @@ import 'dart:io';
 
 import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
+import 'package:json_annotation/json_annotation.dart'
+    show CheckedFromJsonException;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -590,7 +592,9 @@ class SyncEventProcessor {
         // ArgumentError comes from $enumDecode for unknown enum values,
         // FormatException from malformed JSON sub-fields.
       } catch (e) {
-        if (e is! ArgumentError && e is! FormatException) {
+        if (e is! ArgumentError &&
+            e is! FormatException &&
+            e is! CheckedFromJsonException) {
           rethrow;
         }
         _trace(

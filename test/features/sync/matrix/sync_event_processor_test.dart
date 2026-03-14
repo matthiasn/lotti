@@ -2636,24 +2636,23 @@ void main() {
     }
   });
 
-  test('rethrows non-deserialization errors from fromJson', () async {
-    // A completely unparseable runtimeType that causes a non-ArgumentError,
-    // non-FormatException error should still rethrow.
+  test('skips message with CheckedFromJsonException from empty JSON', () async {
+    // An empty JSON object hits the default case in the generated
+    // _$SyncMessageFromJson switch, which throws CheckedFromJsonException.
+    // The processor catches this and logs a skip.
     final badJson = <String, dynamic>{};
     final encoded = base64.encode(utf8.encode(json.encode(badJson)));
     when(() => event.text).thenReturn(encoded);
 
-    await expectLater(
-      processor.process(event: event, journalDb: journalDb),
-      throwsA(anything),
-    );
+    await processor.process(event: event, journalDb: journalDb);
 
     verify(
-      () => loggingService.captureException(
-        any<Object>(),
-        domain: 'MATRIX_SERVICE',
-        subDomain: 'SyncEventProcessor',
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
+      () => loggingService.captureEvent(
+        any<String>(
+          that: contains('skipping undeserializable sync message'),
+        ),
+        domain: 'MATRIX_SYNC',
+        subDomain: 'skipUnrecoverable',
       ),
     ).called(1);
   });

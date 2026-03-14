@@ -140,8 +140,9 @@ class _AudioRecordingModalContentState
               ],
             ),
 
-            // Automatic prompt options
-            if (widget.categoryId != null) ...[
+            // Automatic prompt options (shown when category or linked task
+            // may provide automatic prompts, including profile-driven skills).
+            if (widget.categoryId != null || widget.linkedId != null) ...[
               const SizedBox(height: 10),
               _buildAutomaticPromptOptions(context, controller, state, theme),
             ],
@@ -424,6 +425,7 @@ class _AudioRecordingModalContentState
     final visibility = ref.watch(
       checkboxVisibilityProvider(
         categoryId: widget.categoryId,
+        linkedId: widget.linkedId,
       ),
     );
 

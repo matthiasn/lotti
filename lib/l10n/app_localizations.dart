@@ -4827,6 +4827,24 @@ abstract class AppLocalizations {
   /// **'No inference profiles yet'**
   String get inferenceProfilesEmpty;
 
+  /// No description provided for @inferenceProfileSkillModelRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires {slotName} model to be set'**
+  String inferenceProfileSkillModelRequired(String slotName);
+
+  /// No description provided for @inferenceProfileSkillsSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Automated Skills'**
+  String get inferenceProfileSkillsSection;
+
+  /// No description provided for @inferenceProfileSkillUsesModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses {slotName} model'**
+  String inferenceProfileSkillUsesModel(String slotName);
+
   /// No description provided for @inferenceProfilesTitle.
   ///
   /// In en, this message translates to:

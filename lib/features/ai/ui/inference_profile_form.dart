@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
@@ -29,6 +32,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   String? _transcriptionModelId;
   String? _imageGenerationModelId;
   bool _desktopOnly = false;
+  late List<SkillAssignment> _skillAssignments;
   bool _isSaving = false;
 
   bool get _isEditing => widget.existingProfile != null;
@@ -44,6 +48,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _transcriptionModelId = p?.transcriptionModelId;
     _imageGenerationModelId = p?.imageGenerationModelId;
     _desktopOnly = p?.desktopOnly ?? false;
+    _skillAssignments = List.of(p?.skillAssignments ?? []);
   }
 
   @override
@@ -154,10 +159,121 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               value: _desktopOnly,
               onChanged: (value) => setState(() => _desktopOnly = value),
             ),
+            const SizedBox(height: 24),
+
+            // Automated skills section
+            Text(
+              context.messages.inferenceProfileSkillsSection,
+              style: context.textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            ...SkillSeedingService.defaultSkills
+                .where(
+                  (s) =>
+                      s.skillType == SkillType.transcription ||
+                      s.skillType == SkillType.imageAnalysis,
+                )
+                .map(
+                  (skill) => _SkillAssignmentTile(
+                    skill: skill,
+                    modelId: _modelIdForSkillType(skill.skillType),
+                    slotName: _slotNameForSkillType(skill.skillType, context),
+                    isAutomated: _skillAssignments.any(
+                      (a) => a.skillId == skill.id && a.automate,
+                    ),
+                    onChanged: (value) => _toggleSkillAssignment(
+                      skill.id,
+                      automate: value,
+                    ),
+                  ),
+                ),
           ],
         ),
       ),
     );
+  }
+
+  String? _modelIdForSkillType(SkillType? skillType) {
+    return switch (skillType) {
+      SkillType.transcription => _transcriptionModelId,
+      SkillType.imageAnalysis => _imageRecognitionModelId,
+      _ => null,
+    };
+  }
+
+  String _slotNameForSkillType(SkillType? skillType, BuildContext context) {
+    return switch (skillType) {
+      SkillType.transcription => context.messages.inferenceProfileTranscription,
+      SkillType.imageAnalysis =>
+        context.messages.inferenceProfileImageRecognition,
+      _ => '',
+    };
+  }
+
+  /// Returns skill assignments with `automate` forced to `false` for any
+  /// skill whose required model slot is currently empty. This prevents
+  /// persisting an inconsistent state where a skill claims to be automated
+  /// but the profile has no model to execute it.
+  ///
+  /// Note: only checks `defaultSkills` — custom/future skills pass through
+  /// unchanged. Extend this when custom skill editing is added.
+  List<SkillAssignment> _sanitizedSkillAssignments() {
+    // First, deduplicate legacy same-SkillType entries: keep only the last
+    // assignment per SkillType so profiles migrated from older formats
+    // don't persist conflicting duplicates.
+    final deduped = <SkillType, SkillAssignment>{};
+    final unknown = <SkillAssignment>[];
+    for (final a in _skillAssignments) {
+      final skill = SkillSeedingService.defaultSkills
+          .where((s) => s.id == a.skillId)
+          .firstOrNull;
+      if (skill == null) {
+        unknown.add(a);
+      } else {
+        deduped[skill.skillType] = a;
+      }
+    }
+    final normalized = [...deduped.values, ...unknown];
+
+    // Then, force `automate: false` for any skill whose required model slot
+    // is currently empty.
+    return normalized.map((a) {
+      if (!a.automate) return a;
+      final skill = SkillSeedingService.defaultSkills
+          .where((s) => s.id == a.skillId)
+          .firstOrNull;
+      if (skill == null) return a;
+      final hasModel = _modelIdForSkillType(skill.skillType) != null;
+      if (hasModel) return a;
+      return SkillAssignment(skillId: a.skillId);
+    }).toList();
+  }
+
+  void _toggleSkillAssignment(String skillId, {required bool automate}) {
+    setState(() {
+      // Find the skill type for mutual exclusion.
+      final toggledSkill = SkillSeedingService.defaultSkills
+          .where((s) => s.id == skillId)
+          .firstOrNull;
+
+      if (automate && toggledSkill != null) {
+        // Remove all assignments of the same SkillType so only one
+        // automated skill per capability is active at a time.
+        final sameTypeIds = SkillSeedingService.defaultSkills
+            .where((s) => s.skillType == toggledSkill.skillType)
+            .map((s) => s.id)
+            .toSet();
+        _skillAssignments.removeWhere(
+          (a) => sameTypeIds.contains(a.skillId),
+        );
+      } else {
+        _skillAssignments.removeWhere((a) => a.skillId == skillId);
+      }
+
+      _skillAssignments.add(
+        SkillAssignment(skillId: skillId, automate: automate),
+      );
+    });
   }
 
   Future<void> _save() async {
@@ -185,6 +301,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 transcriptionModelId: _transcriptionModelId,
                 imageGenerationModelId: _imageGenerationModelId,
                 desktopOnly: _desktopOnly,
+                skillAssignments: _sanitizedSkillAssignments(),
                 isDefault: widget.existingProfile?.isDefault ?? false,
                 description: _descriptionController.text.trim().isNotEmpty
                     ? _descriptionController.text.trim()
@@ -212,6 +329,38 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
         setState(() => _isSaving = false);
       }
     }
+  }
+}
+
+/// A toggle tile for a single skill assignment.
+class _SkillAssignmentTile extends StatelessWidget {
+  const _SkillAssignmentTile({
+    required this.skill,
+    required this.modelId,
+    required this.slotName,
+    required this.isAutomated,
+    required this.onChanged,
+  });
+
+  final AiConfigSkill skill;
+  final String? modelId;
+  final String slotName;
+  final bool isAutomated;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasModel = modelId != null;
+    final subtitle = hasModel
+        ? context.messages.inferenceProfileSkillUsesModel(slotName)
+        : context.messages.inferenceProfileSkillModelRequired(slotName);
+
+    return SwitchListTile(
+      title: Text(skill.name),
+      subtitle: Text(subtitle),
+      value: isAutomated && hasModel,
+      onChanged: hasModel ? onChanged : null,
+    );
   }
 }
 

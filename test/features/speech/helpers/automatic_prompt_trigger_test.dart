@@ -7,7 +7,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_trigger.dart';
@@ -26,6 +29,7 @@ void main() {
   late MockCategoryRepository mockCategoryRepository;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockPromptCapabilityFilter mockPromptCapabilityFilter;
+  late MockProfileAutomationService mockProfileAutomationService;
   late ProviderContainer container;
 
   // Helper to create a test category with all required fields
@@ -53,6 +57,15 @@ void main() {
     mockCategoryRepository = MockCategoryRepository();
     mockAiConfigRepository = MockAiConfigRepository();
     mockPromptCapabilityFilter = MockPromptCapabilityFilter();
+    mockProfileAutomationService = MockProfileAutomationService();
+
+    // By default, profile automation returns not-handled so legacy path runs.
+    when(
+      () => mockProfileAutomationService.tryTranscribe(
+        taskId: any(named: 'taskId'),
+        enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+      ),
+    ).thenAnswer((_) async => AutomationResult.notHandled);
 
     // Register mocks with GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -109,6 +122,9 @@ void main() {
         aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         promptCapabilityFilterProvider.overrideWithValue(
           mockPromptCapabilityFilter,
+        ),
+        profileAutomationServiceProvider.overrideWithValue(
+          mockProfileAutomationService,
         ),
       ],
     );
@@ -386,6 +402,9 @@ void main() {
               promptCapabilityFilterProvider.overrideWithValue(
                 mockPromptCapabilityFilter,
               ),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockProfileAutomationService,
+              ),
               triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: promptId,
@@ -466,6 +485,9 @@ void main() {
               ),
               promptCapabilityFilterProvider.overrideWithValue(
                 mockPromptCapabilityFilter,
+              ),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockProfileAutomationService,
               ),
               triggerNewInferenceProvider((
                 entityId: entryId,
@@ -615,6 +637,9 @@ void main() {
               promptCapabilityFilterProvider.overrideWithValue(
                 mockPromptCapabilityFilter,
               ),
+              profileAutomationServiceProvider.overrideWithValue(
+                mockProfileAutomationService,
+              ),
               triggerNewInferenceProvider((
                 entityId: entryId,
                 promptId: transcriptionPromptId,
@@ -653,6 +678,207 @@ void main() {
 
           testContainer.dispose();
         });
+      });
+    });
+
+    group('Profile-driven path', () {
+      test('skips legacy path when profile handles transcription', () async {
+        const categoryId = 'test-category';
+        const entryId = 'test-entry';
+        const taskId = 'test-task';
+
+        final mockAutomationService = MockProfileAutomationService();
+        final mockRunner = MockSkillInferenceRunner();
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-1',
+                  name: 'Profile Transcription',
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: const [Modality.audio],
+                  systemInstructions: 'Transcribe.',
+                  userInstructions: 'Audio.',
+                  createdAt: DateTime(2024),
+                )
+                as AiConfigSkill;
+
+        final automationResult = AutomationResult(
+          handled: true,
+          skill: skill,
+        );
+
+        when(
+          () => mockAutomationService.tryTranscribe(
+            taskId: taskId,
+            enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+          ),
+        ).thenAnswer((_) async => automationResult);
+
+        when(
+          () => mockRunner.runTranscription(
+            audioEntryId: entryId,
+            automationResult: automationResult,
+            linkedTaskId: taskId,
+          ),
+        ).thenAnswer((_) async {});
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+
+        final trigger = testContainer.read(automaticPromptTriggerProvider);
+
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.stopped,
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+        );
+
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: true,
+          linkedTaskId: taskId,
+        );
+
+        // Profile path should have been used
+        verify(
+          () => mockRunner.runTranscription(
+            audioEntryId: entryId,
+            automationResult: automationResult,
+            linkedTaskId: taskId,
+          ),
+        ).called(1);
+
+        // Legacy category lookup should NOT have been called
+        verifyNever(
+          () => mockCategoryRepository.getCategoryById(any()),
+        );
+
+        verify(
+          () => mockLoggingService.captureEvent(
+            any<String>(that: contains('Profile-driven transcription')),
+            domain: 'automatic_prompt_trigger',
+            subDomain: 'triggerAutomaticPrompts',
+          ),
+        ).called(1);
+
+        testContainer.dispose();
+      });
+
+      test('falls through to legacy when profile does not handle', () async {
+        const categoryId = 'test-category';
+        const entryId = 'test-entry';
+        const taskId = 'test-task';
+
+        final mockAutomationService = MockProfileAutomationService();
+
+        when(
+          () => mockAutomationService.tryTranscribe(
+            taskId: taskId,
+            enableSpeechRecognition: any(named: 'enableSpeechRecognition'),
+          ),
+        ).thenAnswer((_) async => AutomationResult.notHandled);
+
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+        );
+
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            promptCapabilityFilterProvider.overrideWithValue(
+              mockPromptCapabilityFilter,
+            ),
+            profileAutomationServiceProvider.overrideWithValue(
+              mockAutomationService,
+            ),
+          ],
+        );
+
+        final trigger = testContainer.read(automaticPromptTriggerProvider);
+
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.stopped,
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+        );
+
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: true,
+          linkedTaskId: taskId,
+        );
+
+        // Should have fallen through to legacy path
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
+
+        testContainer.dispose();
+      });
+
+      test('skips profile path when no linkedTaskId', () async {
+        const categoryId = 'test-category';
+        const entryId = 'test-entry';
+
+        final category = createTestCategory(
+          id: categoryId,
+          name: 'Test Category',
+        );
+
+        when(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).thenAnswer((_) async => category);
+
+        final trigger = container.read(automaticPromptTriggerProvider);
+
+        final state = AudioRecorderState(
+          status: AudioRecorderStatus.stopped,
+          vu: 0,
+          dBFS: -60,
+          progress: Duration.zero,
+          showIndicator: false,
+          modalVisible: false,
+        );
+
+        await trigger.triggerAutomaticPrompts(
+          entryId,
+          categoryId,
+          state,
+          isLinkedToTask: false,
+        );
+
+        // Should go directly to legacy path
+        verify(
+          () => mockCategoryRepository.getCategoryById(categoryId),
+        ).called(1);
       });
     });
   });

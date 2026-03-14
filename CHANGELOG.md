@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.920] - 2026-03-13
+## [0.9.921] - 2026-03-14
 ### Changed
 - Sync catch-up: reconnect recovery is now timestamp-first, paging backward
   until the stored timestamp boundary is visible, then replaying forward with
@@ -175,6 +175,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Database: `upsertEntryLink` now guards against duplicate
   `(from_id, to_id, type)` links instead of crashing with UNIQUE constraint
   violation.
+
+### Added
+- Profile-driven skills: introduced Skills as model-agnostic AI capability
+  definitions (transcription, image analysis, etc.) and skill assignments on
+  inference profiles to control which skills auto-trigger when assets are added
+  to a task. Seven preconfigured skills are seeded on first launch.
+- Profile automation service: when an audio recording or image is added to a
+  task whose agent's profile has the relevant skill with automation enabled,
+  processing fires immediately via the profile's model slot — no legacy prompt
+  lookup needed. Falls back to category-based automatic prompts when no
+  profile-driven skill is configured.
+- Profile skill assignments UI: the inference profile form now shows an
+  "Automated Skills" section where users can toggle automation per skill,
+  with validation that the required model slot is populated.
+- Speech-recognition checkbox visibility: the opt-out checkbox now also
+  appears when the task's agent profile has a transcription skill with
+  automation enabled, not only when legacy category automatic prompts exist.
 
 ### Improved
 - Category icon picker: replaced flat gray styling with Material 3 semantic

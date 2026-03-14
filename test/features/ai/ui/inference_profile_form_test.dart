@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
@@ -87,7 +90,7 @@ void main() {
 
       // Desktop toggle should be on.
       final switchTile = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile),
+        find.widgetWithText(SwitchListTile, 'Desktop Only'),
       );
       expect(switchTile.value, isTrue);
     });
@@ -348,27 +351,28 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      final desktopToggle = find.widgetWithText(
+        SwitchListTile,
+        'Desktop Only',
+      );
+
       // Scroll down to make the toggle visible.
       await tester.scrollUntilVisible(
-        find.byType(SwitchListTile),
+        desktopToggle,
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
       // Initially off.
-      var switchTile = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile),
-      );
+      var switchTile = tester.widget<SwitchListTile>(desktopToggle);
       expect(switchTile.value, isFalse);
 
       // Toggle on.
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(desktopToggle);
       await tester.pumpAndSettle();
 
-      switchTile = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile),
-      );
+      switchTile = tester.widget<SwitchListTile>(desktopToggle);
       expect(switchTile.value, isTrue);
     });
 
@@ -588,14 +592,18 @@ void main() {
       await tester.pumpAndSettle();
 
       // Scroll down and enable desktop-only toggle.
+      final desktopToggle = find.widgetWithText(
+        SwitchListTile,
+        'Desktop Only',
+      );
       await tester.scrollUntilVisible(
-        find.byType(SwitchListTile),
+        desktopToggle,
         200,
         scrollable: find.byType(Scrollable).first,
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(desktopToggle);
       await tester.pumpAndSettle();
 
       // Scroll back up to Save button.
@@ -612,6 +620,279 @@ void main() {
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       expect(fakeProfileController.savedProfiles.first.desktopOnly, isTrue);
+    });
+
+    group('skill assignments', () {
+      testWidgets('shows skill assignment section with skill names', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // Scroll down to find the skills section.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Automated Skills'), findsOneWidget);
+
+        // All transcription and imageAnalysis skills should be listed.
+        final relevantSkills = SkillSeedingService.defaultSkills.where(
+          (s) =>
+              s.skillType == SkillType.transcription ||
+              s.skillType == SkillType.imageAnalysis,
+        );
+        for (final skill in relevantSkills) {
+          expect(find.text(skill.name), findsOneWidget);
+        }
+      });
+
+      testWidgets('skill toggle disabled when required model slot is empty', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // Scroll to skill assignments.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // All SwitchListTiles for skills should be disabled (no model set).
+        // Find skill tiles (not the desktop-only toggle).
+        final skillTiles = tester
+            .widgetList<SwitchListTile>(find.byType(SwitchListTile))
+            .where((t) => t.onChanged == null)
+            .toList();
+
+        // All skill tiles should be disabled since no model slots are set.
+        final relevantSkillCount = SkillSeedingService.defaultSkills
+            .where(
+              (s) =>
+                  s.skillType == SkillType.transcription ||
+                  s.skillType == SkillType.imageAnalysis,
+            )
+            .length;
+        expect(skillTiles.length, relevantSkillCount);
+      });
+
+      testWidgets(
+        'skill toggle enabled when required model slot is populated',
+        (tester) async {
+          // Profile with transcription model set.
+          final profile = testInferenceProfile(
+            id: 'p1',
+            name: 'With Transcription',
+            transcriptionModelId: 'models/whisper',
+          );
+
+          await tester.pumpWidget(buildSubject(existingProfile: profile));
+          await tester.pumpAndSettle();
+
+          // Scroll to skill assignments.
+          await tester.scrollUntilVisible(
+            find.text('Automated Skills'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+
+          // Transcription skill tiles should be enabled.
+          final transcriptionSkills = SkillSeedingService.defaultSkills.where(
+            (s) => s.skillType == SkillType.transcription,
+          );
+          for (final skill in transcriptionSkills) {
+            final tileFinder = find.widgetWithText(SwitchListTile, skill.name);
+            expect(tileFinder, findsOneWidget);
+            final tile = tester.widget<SwitchListTile>(tileFinder);
+            expect(tile.onChanged, isNotNull);
+          }
+        },
+      );
+
+      testWidgets(
+        'toggling skill on and saving includes it in skillAssignments',
+        (
+          tester,
+        ) async {
+          // Need a thinking model for save to work, plus a transcription model.
+          final thinkingModel =
+              AiConfig.model(
+                    id: 'tm-1',
+                    name: 'Flash',
+                    providerModelId: 'models/flash',
+                    inferenceProviderId: 'prov-1',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                    supportsFunctionCalling: true,
+                  )
+                  as AiConfigModel;
+
+          final profile = testInferenceProfile(
+            id: 'p1',
+            name: 'Skill Test',
+            transcriptionModelId: 'models/whisper',
+          );
+
+          await tester.pumpWidget(
+            buildSubject(
+              existingProfile: profile,
+              models: [thinkingModel],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // Scroll to the first transcription skill.
+          final firstTranscriptionSkill = SkillSeedingService.defaultSkills
+              .firstWhere((s) => s.skillType == SkillType.transcription);
+          await tester.scrollUntilVisible(
+            find.text(firstTranscriptionSkill.name),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+
+          // Toggle the skill on.
+          await tester.tap(
+            find.widgetWithText(SwitchListTile, firstTranscriptionSkill.name),
+          );
+          await tester.pumpAndSettle();
+
+          // Scroll back to Save.
+          await tester.scrollUntilVisible(
+            find.text('Save'),
+            -200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+
+          // Save.
+          await tester.tap(find.text('Save'));
+          await tester.pumpAndSettle();
+
+          expect(fakeProfileController.savedProfiles, hasLength(1));
+          final saved = fakeProfileController.savedProfiles.first;
+          expect(
+            saved.skillAssignments.any(
+              (a) => a.skillId == firstTranscriptionSkill.id && a.automate,
+            ),
+            isTrue,
+          );
+        },
+      );
+
+      testWidgets('preserves existing skill assignments when editing', (
+        tester,
+      ) async {
+        const existingAssignment = SkillAssignment(
+          skillId: skillTranscribeId,
+          automate: true,
+        );
+
+        final profile = testInferenceProfile(
+          id: 'p1',
+          name: 'With Skills',
+          transcriptionModelId: 'models/whisper',
+          skillAssignments: [existingAssignment],
+        );
+
+        await tester.pumpWidget(buildSubject(existingProfile: profile));
+        await tester.pumpAndSettle();
+
+        // Scroll to skill assignments.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // The toggle for the transcribe skill should be on.
+        final tileFinder = find.widgetWithText(
+          SwitchListTile,
+          'Transcribe Audio',
+        );
+        expect(tileFinder, findsOneWidget);
+        final tile = tester.widget<SwitchListTile>(tileFinder);
+        expect(tile.value, isTrue);
+
+        // Scroll back to Save.
+        await tester.scrollUntilVisible(
+          find.text('Save'),
+          -200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Save without changes.
+        await tester.tap(find.text('Save'));
+        await tester.pumpAndSettle();
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        expect(
+          saved.skillAssignments.any(
+            (a) => a.skillId == skillTranscribeId && a.automate,
+          ),
+          isTrue,
+        );
+      });
+
+      testWidgets('shows "Requires" subtitle when model slot is empty', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildSubject());
+        await tester.pumpAndSettle();
+
+        // Scroll to skill assignments.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Should show "Requires Transcription model to be set".
+        expect(
+          find.text('Requires Transcription model to be set'),
+          findsAtLeastNWidgets(1),
+        );
+      });
+
+      testWidgets('shows "Uses" subtitle when model slot is populated', (
+        tester,
+      ) async {
+        final profile = testInferenceProfile(
+          id: 'p1',
+          name: 'With Transcription',
+          transcriptionModelId: 'models/whisper',
+        );
+
+        await tester.pumpWidget(buildSubject(existingProfile: profile));
+        await tester.pumpAndSettle();
+
+        // Scroll to skill assignments.
+        await tester.scrollUntilVisible(
+          find.text('Automated Skills'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+
+        // Should show "Uses Transcription model".
+        expect(
+          find.text('Uses Transcription model'),
+          findsAtLeastNWidgets(1),
+        );
+      });
     });
 
     testWidgets('preserves existing profile ID when editing', (tester) async {

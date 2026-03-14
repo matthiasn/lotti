@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -46,6 +48,16 @@ void main() {
           imageRecognitionModelId: 'models/gemini-3-flash-preview',
           transcriptionModelId: 'models/gemini-3-flash-preview',
           imageGenerationModelId: 'models/gemini-3-pro-image-preview',
+          skillAssignments: const [
+            SkillAssignment(
+              skillId: skillTranscribeContextId,
+              automate: true,
+            ),
+            SkillAssignment(
+              skillId: skillImageAnalysisContextId,
+              automate: true,
+            ),
+          ],
           isDefault: true,
           createdAt: DateTime(2026),
         ),
@@ -83,7 +95,7 @@ void main() {
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3:8b', // old model
-          imageRecognitionModelId: 'qwen3.5:9b',
+          imageRecognitionModelId: 'qwen3.5:9b', // matches current
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -97,9 +109,11 @@ void main() {
     });
 
     test(
-      'does not update user-modified default profile even if drifted',
+      'updates default profile even if updatedAt is set',
       () async {
-        // Profile exists with old model but updatedAt is set (user edited it).
+        // Default profiles are always reconciled when drifted, regardless
+        // of updatedAt — since saveConfig always sets updatedAt, the old
+        // updatedAt == null gate was unreachable.
         when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: profileLocalId,
@@ -109,20 +123,19 @@ void main() {
             isDefault: true,
             desktopOnly: true,
             createdAt: DateTime(2026),
-            updatedAt: DateTime(2026, 3), // user edited
+            updatedAt: DateTime(2026, 3),
           ),
         );
 
         await service.seedDefaults();
 
-        // 6 new profiles saved (local skipped — user modified).
-        verify(() => mockRepo.saveConfig(any())).called(6);
+        // 6 new profiles + 1 updated (drifted local profile).
+        verify(() => mockRepo.saveConfig(any())).called(7);
       },
     );
 
-    test('updates non-default profile when flags have drifted', () async {
-      // Profile exists with isDefault false but seed target has isDefault true,
-      // and updatedAt is null (not user-edited) → should be updated.
+    test('does not update non-default profile even if drifted', () async {
+      // Non-default profiles are user-created and never touched by seeding.
       when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileLocalId,
@@ -131,14 +144,15 @@ void main() {
           imageRecognitionModelId: 'qwen3.5:9b',
           desktopOnly: true,
           createdAt: DateTime(2026),
-          // isDefault defaults to false — differs from seed target
+          // isDefault defaults to false — seed target has isDefault true,
+          // but existing is not default so it should not be updated.
         ),
       );
 
       await service.seedDefaults();
 
-      // 6 new profiles + 1 updated local profile.
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      // 6 new profiles only (local not updated — not isDefault).
+      verify(() => mockRepo.saveConfig(any())).called(6);
     });
 
     test('seeds profiles with correct IDs', () async {
@@ -159,13 +173,19 @@ void main() {
     });
 
     test('does not update default profile when all slots match', () async {
-      // Local profile exists with matching model IDs.
+      // Local profile exists with matching model IDs and skill assignments.
       when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileLocalId,
           name: 'Local (Ollama)',
           thinkingModelId: 'qwen3.5:9b',
           imageRecognitionModelId: 'qwen3.5:9b',
+          skillAssignments: const [
+            SkillAssignment(
+              skillId: skillImageAnalysisContextId,
+              automate: true,
+            ),
+          ],
           isDefault: true,
           desktopOnly: true,
           createdAt: DateTime(2026),
@@ -276,5 +296,202 @@ void main() {
         }
       },
     );
+
+    test('all default profiles have skillAssignments', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(
+          invocation.positionalArguments.first as AiConfig,
+        );
+      });
+
+      await service.seedDefaults();
+
+      for (final config in capturedConfigs) {
+        final profile = config as AiConfigInferenceProfile;
+        // Local Power has no skill assignments (opt-in profile).
+        if (profile.id == profileLocalPowerId) continue;
+        expect(
+          profile.skillAssignments,
+          isNotEmpty,
+          reason: '${profile.name} skillAssignments',
+        );
+      }
+    });
+
+    test(
+      'Gemini Flash has transcription and image analysis assignments',
+      () async {
+        final capturedConfigs = <AiConfig>[];
+        when(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).thenAnswer((invocation) async {
+          capturedConfigs.add(
+            invocation.positionalArguments.first as AiConfig,
+          );
+        });
+
+        await service.seedDefaults();
+
+        final geminiFlash = capturedConfigs
+            .whereType<AiConfigInferenceProfile>()
+            .firstWhere((p) => p.id == profileGeminiFlashId);
+
+        final skillIds = geminiFlash.skillAssignments
+            .map((a) => a.skillId)
+            .toSet();
+        expect(skillIds, contains(skillTranscribeContextId));
+        expect(skillIds, contains(skillImageAnalysisContextId));
+      },
+    );
+
+    test('Local (Ollama) has only image analysis assignment', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(
+          invocation.positionalArguments.first as AiConfig,
+        );
+      });
+
+      await service.seedDefaults();
+
+      final localProfile = capturedConfigs
+          .whereType<AiConfigInferenceProfile>()
+          .firstWhere((p) => p.id == profileLocalId);
+
+      expect(localProfile.skillAssignments, hasLength(1));
+      expect(
+        localProfile.skillAssignments.first.skillId,
+        skillImageAnalysisContextId,
+      );
+    });
+  });
+
+  group('ProfileSeedingService.upgradeExisting', () {
+    test('upgrades default profiles with empty skillAssignments', () async {
+      // Existing profile has empty skill assignments but has the model
+      // slots required by the template's skill assignments.
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          imageRecognitionModelId: 'models/gemini-3-flash-preview',
+          transcriptionModelId: 'models/gemini-3-flash-preview',
+          isDefault: true,
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      // Should save the upgraded profile with skill assignments.
+      final captured = verify(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).captured;
+
+      expect(captured, hasLength(1));
+      final upgraded = captured.first as AiConfigInferenceProfile;
+      expect(upgraded.id, profileGeminiFlashId);
+      expect(upgraded.skillAssignments, isNotEmpty);
+      expect(
+        upgraded.skillAssignments.every((a) => a.automate),
+        isTrue,
+        reason: 'All seeded assignments should have automate: true',
+      );
+    });
+
+    test('skips profiles that already have skillAssignments', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          isDefault: true,
+          skillAssignments: [
+            const SkillAssignment(skillId: 'existing-skill', automate: true),
+          ],
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      // Should not save — profile already has assignments.
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
+
+    test('skips non-default profiles', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          createdAt: DateTime(2026),
+          // isDefault defaults to false.
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
+
+    test('filters skill assignments by slot availability', () async {
+      // Profile has transcription but no image recognition model.
+      // Template has both transcription and image analysis skills.
+      // Only transcription skill should survive filtering.
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockRepo.getConfigById(profileGeminiFlashId),
+      ).thenAnswer(
+        (_) async => AiConfig.inferenceProfile(
+          id: profileGeminiFlashId,
+          name: 'Gemini Flash',
+          thinkingModelId: 'models/gemini-3-flash-preview',
+          transcriptionModelId: 'models/gemini-3-flash-preview',
+          // No imageRecognitionModelId — image analysis skill should
+          // be filtered out.
+          isDefault: true,
+          createdAt: DateTime(2026),
+        ),
+      );
+
+      await service.upgradeExisting();
+
+      final captured = verify(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).captured;
+
+      expect(captured, hasLength(1));
+      final upgraded = captured.first as AiConfigInferenceProfile;
+      expect(upgraded.id, profileGeminiFlashId);
+      // Should only contain the transcription skill, since image
+      // recognition model slot is missing.
+      final skillIds = upgraded.skillAssignments.map((a) => a.skillId).toSet();
+      expect(skillIds, contains(skillTranscribeContextId));
+      expect(skillIds, isNot(contains(skillImageAnalysisContextId)));
+    });
+
+    test('does nothing when profiles do not exist', () async {
+      when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
+
+      await service.upgradeExisting();
+
+      verifyNever(() => mockRepo.saveConfig(any()));
+    });
   });
 }

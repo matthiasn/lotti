@@ -1321,6 +1321,23 @@
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Select a model…",
   "inferenceProfilesEmpty": "No inference profiles yet",
+  "inferenceProfileSkillModelRequired": "Requires {slotName} model to be set",
+  "@inferenceProfileSkillModelRequired": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
+  "inferenceProfileSkillsSection": "Automated Skills",
+  "inferenceProfileSkillUsesModel": "Uses {slotName} model",
+  "@inferenceProfileSkillUsesModel": {
+    "placeholders": {
+      "slotName": {
+        "type": "String"
+      }
+    }
+  },
   "inferenceProfilesTitle": "Inference Profiles",
   "inferenceProfileThinking": "Thinking",
   "inferenceProfileThinkingRequired": "A thinking model is required",

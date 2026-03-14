@@ -2702,6 +2702,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfilesEmpty => 'Niciun profil de inferență';
 
   @override
+  String inferenceProfileSkillModelRequired(String slotName) {
+    return 'Necesită modelul $slotName';
+  }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Competențe automatizate';
+
+  @override
+  String inferenceProfileSkillUsesModel(String slotName) {
+    return 'Utilizează modelul $slotName';
+  }
+
+  @override
   String get inferenceProfilesTitle => 'Profile de inferență';
 
   @override

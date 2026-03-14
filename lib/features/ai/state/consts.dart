@@ -124,3 +124,18 @@ extension AiResponseTypeDisplay on AiResponseType {
       this == AiResponseType.promptGeneration ||
       this == AiResponseType.imagePromptGeneration;
 }
+
+enum SkillType {
+  transcription,
+  imageAnalysis,
+  imageGeneration,
+  promptGeneration,
+  imagePromptGeneration,
+}
+
+enum ContextPolicy {
+  none,
+  dictionaryOnly,
+  taskSummary,
+  fullTask,
+}

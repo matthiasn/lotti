@@ -232,6 +232,7 @@ class CloudInferenceRepository {
     OpenAIClient? overrideClient,
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
+    String? systemMessage,
   }) {
     final client =
         overrideClient ??
@@ -249,6 +250,7 @@ class CloudInferenceRepository {
         images: images,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider!,
+        systemMessage: systemMessage,
       );
     }
 
@@ -263,6 +265,8 @@ class CloudInferenceRepository {
     final res = client.createChatCompletionStream(
       request: _createBaseRequest(
         messages: [
+          if (systemMessage != null)
+            ChatCompletionMessage.system(content: systemMessage),
           ChatCompletionMessage.user(
             content: ChatCompletionUserMessageContent.parts(
               [
@@ -325,6 +329,7 @@ class CloudInferenceRepository {
     ChatCompletionMessageInputAudioFormat audioFormat =
         ChatCompletionMessageInputAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
+    String? systemMessage,
   }) {
     final client =
         overrideClient ??
@@ -409,6 +414,8 @@ class CloudInferenceRepository {
         .createChatCompletionStream(
           request: _createBaseRequest(
             messages: [
+              if (systemMessage != null)
+                ChatCompletionMessage.system(content: systemMessage),
               ChatCompletionMessage.user(
                 content: ChatCompletionUserMessageContent.parts(
                   [

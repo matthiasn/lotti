@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
 part 'ai_config.freezed.dart';
@@ -109,9 +110,45 @@ sealed class AiConfig with _$AiConfig {
 
     /// Whether this profile requires a desktop environment (e.g. Ollama).
     @Default(false) bool desktopOnly,
+
+    /// Skills assigned to this profile.
+    @Default([]) List<SkillAssignment> skillAssignments,
     DateTime? updatedAt,
     String? description,
   }) = AiConfigInferenceProfile;
+
+  /// A skill — a named capability (e.g. transcription, image analysis) that
+  /// defines how to perform a specific AI task, decoupled from which model
+  /// to use. The model is assigned by the profile's model slot matching the
+  /// skill's type.
+  const factory AiConfig.skill({
+    required String id,
+    required String name,
+    required DateTime createdAt,
+    required SkillType skillType,
+    required List<Modality> requiredInputModalities,
+
+    /// User-editable prose instructions for the system role.
+    /// Does NOT contain placeholders — the prompt builder wraps these
+    /// with the appropriate context based on [skillType] and
+    /// [contextPolicy] at runtime.
+    required String systemInstructions,
+
+    /// User-editable prose instructions for the user message.
+    /// Same rule: no placeholders, prompt builder handles injection.
+    required String userInstructions,
+
+    /// How much task context the prompt builder should inject.
+    @Default(ContextPolicy.none) ContextPolicy contextPolicy,
+
+    /// Whether this is a system-seeded skill (non-deletable).
+    @Default(false) bool isPreconfigured,
+
+    /// Whether the skill uses reasoning/extended thinking.
+    @Default(false) bool useReasoning,
+    DateTime? updatedAt,
+    String? description,
+  }) = AiConfigSkill;
 
   factory AiConfig.fromJson(Map<String, dynamic> json) =>
       _$AiConfigFromJson(json);
@@ -122,6 +159,7 @@ enum AiConfigType {
   prompt,
   model,
   inferenceProfile,
+  skill,
 }
 
 /// Checks if a given [AiConfigModel] meets the requirements specified by a [AiConfigPrompt].
