@@ -162,7 +162,7 @@ void main() {
         () => base.existsSync() ? base.deleteSync(recursive: true) : null,
       );
 
-      SlowQueryLoggingGate.setEnabled(true);
+      SlowQueryLoggingGate.isEnabled = true;
 
       final lazy = openDbConnection(
         'test_slow.sqlite',

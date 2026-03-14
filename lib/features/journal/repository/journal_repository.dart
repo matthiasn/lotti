@@ -20,7 +20,58 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'journal_repository.g.dart';
 
 class JournalRepository {
-  JournalRepository();
+  JournalRepository({
+    UpdateNotifications? updateNotifications,
+  }) : _updateNotifications =
+           updateNotifications ?? getIt<UpdateNotifications>() {
+    _updateSubscription = _updateNotifications.updateStream.listen(
+      _invalidateCaches,
+    );
+  }
+
+  final UpdateNotifications _updateNotifications;
+  StreamSubscription<Set<String>>? _updateSubscription;
+  final Map<String, JournalEntity?> _journalEntityByIdCache =
+      <String, JournalEntity?>{};
+  final Map<String, Future<JournalEntity?>> _journalEntityByIdInFlight =
+      <String, Future<JournalEntity?>>{};
+  final Map<String, List<JournalEntity>> _linkedEntitiesCache =
+      <String, List<JournalEntity>>{};
+  final Map<String, Future<List<JournalEntity>>> _linkedEntitiesInFlight =
+      <String, Future<List<JournalEntity>>>{};
+  final Map<String, List<JournalEntity>> _linkedToEntitiesCache =
+      <String, List<JournalEntity>>{};
+  final Map<String, Future<List<JournalEntity>>> _linkedToEntitiesInFlight =
+      <String, Future<List<JournalEntity>>>{};
+  int _cacheEpoch = 0;
+
+  Future<void> dispose() async {
+    await _updateSubscription?.cancel();
+  }
+
+  void _invalidateCaches(Set<String> affectedIds) {
+    _cacheEpoch++;
+
+    if (affectedIds.isEmpty) {
+      _journalEntityByIdCache.clear();
+    } else {
+      affectedIds.forEach(_journalEntityByIdCache.remove);
+    }
+
+    // Linked-entity results depend on both link rows and child-entity state,
+    // so conservatively drop the full list caches on any journal update.
+    _journalEntityByIdInFlight.clear();
+    _linkedEntitiesCache.clear();
+    _linkedEntitiesInFlight.clear();
+    _linkedToEntitiesCache.clear();
+    _linkedToEntitiesInFlight.clear();
+  }
+
+  void _storeLinkedEntities(List<JournalEntity> entities) {
+    for (final entity in entities) {
+      _journalEntityByIdCache[entity.meta.id] = entity;
+    }
+  }
 
   /// Clears coverArtId from any tasks that reference the deleted image
   Future<void> _clearCoverArtReferences(
@@ -44,7 +95,33 @@ class JournalRepository {
   }
 
   Future<JournalEntity?> getJournalEntityById(String id) async {
-    return getIt<JournalDb>().journalEntityById(id);
+    if (_journalEntityByIdCache.containsKey(id)) {
+      return _journalEntityByIdCache[id];
+    }
+
+    final inFlight = _journalEntityByIdInFlight[id];
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final epoch = _cacheEpoch;
+    late final Future<JournalEntity?> future;
+    future = getIt<JournalDb>()
+        .journalEntityById(id)
+        .then((entity) {
+          if (epoch == _cacheEpoch) {
+            _journalEntityByIdCache[id] = entity;
+          }
+          return entity;
+        })
+        .whenComplete(() {
+          if (identical(_journalEntityByIdInFlight[id], future)) {
+            _journalEntityByIdInFlight.remove(id);
+          }
+        });
+
+    _journalEntityByIdInFlight[id] = future;
+    return future;
   }
 
   Future<bool> updateCategoryId(
@@ -316,17 +393,72 @@ class JournalRepository {
   Future<List<JournalEntity>> getLinkedToEntities({
     required String linkedTo,
   }) async {
-    final items = await getIt<JournalDb>()
+    final cached = _linkedToEntitiesCache[linkedTo];
+    if (cached != null) {
+      return cached;
+    }
+
+    final inFlight = _linkedToEntitiesInFlight[linkedTo];
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final epoch = _cacheEpoch;
+    late final Future<List<JournalEntity>> future;
+    future = getIt<JournalDb>()
         .linkedToJournalEntities(linkedTo)
-        .get();
-    return items.map(fromDbEntity).toList();
+        .get()
+        .then((items) => items.map(fromDbEntity).toList(growable: false))
+        .then((entities) {
+          if (epoch == _cacheEpoch) {
+            _linkedToEntitiesCache[linkedTo] = entities;
+            _storeLinkedEntities(entities);
+          }
+          return entities;
+        })
+        .whenComplete(() {
+          if (identical(_linkedToEntitiesInFlight[linkedTo], future)) {
+            _linkedToEntitiesInFlight.remove(linkedTo);
+          }
+        });
+
+    _linkedToEntitiesInFlight[linkedTo] = future;
+    return future;
   }
 
   Future<List<JournalEntity>> getLinkedEntities({
     required String linkedTo,
   }) async {
-    final items = await getIt<JournalDb>().getLinkedEntities(linkedTo);
-    return items;
+    final cached = _linkedEntitiesCache[linkedTo];
+    if (cached != null) {
+      return cached;
+    }
+
+    final inFlight = _linkedEntitiesInFlight[linkedTo];
+    if (inFlight != null) {
+      return inFlight;
+    }
+
+    final epoch = _cacheEpoch;
+    late final Future<List<JournalEntity>> future;
+    future = getIt<JournalDb>()
+        .getLinkedEntities(linkedTo)
+        .then(List<JournalEntity>.unmodifiable)
+        .then((entities) {
+          if (epoch == _cacheEpoch) {
+            _linkedEntitiesCache[linkedTo] = entities;
+            _storeLinkedEntities(entities);
+          }
+          return entities;
+        })
+        .whenComplete(() {
+          if (identical(_linkedEntitiesInFlight[linkedTo], future)) {
+            _linkedEntitiesInFlight.remove(linkedTo);
+          }
+        });
+
+    _linkedEntitiesInFlight[linkedTo] = future;
+    return future;
   }
 
   /// Returns all JournalImage entries linked to the given task.
@@ -368,4 +500,8 @@ class JournalRepository {
 }
 
 @riverpod
-JournalRepository journalRepository(Ref _) => JournalRepository();
+JournalRepository journalRepository(Ref ref) {
+  final repository = JournalRepository();
+  ref.onDispose(repository.dispose);
+  return repository;
+}

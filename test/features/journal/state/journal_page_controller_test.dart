@@ -64,13 +64,18 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => updateStreamController.stream);
 
-      when(
-        () => mockJournalDb.watchActiveConfigFlagNames(),
-      ).thenAnswer((_) => configFlagsController.stream);
+      when(() => mockJournalDb.watchConfigFlag(any())).thenAnswer((
+        invocation,
+      ) {
+        final flagName = invocation.positionalArguments.first as String;
+        if (flagName == privateFlag) {
+          return privateFlagController.stream;
+        }
 
-      when(
-        () => mockJournalDb.watchConfigFlag(privateFlag),
-      ).thenAnswer((_) => privateFlagController.stream);
+        return configFlagsController.stream.map(
+          (flags) => flags.contains(flagName),
+        );
+      });
 
       when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
 

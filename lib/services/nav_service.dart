@@ -7,6 +7,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:rxdart/rxdart.dart';
 
 const String lastRouteKey = 'NAV_LAST_ROUTE';
 
@@ -21,15 +22,33 @@ class NavService {
     // TODO: fix and bring back
     // restoreRoute();
 
-    _journalDb.watchActiveConfigFlagNames().forEach((configFlags) {
-      _isHabitsPageEnabled = configFlags.contains(enableHabitsPageFlag);
-      _isDashboardsPageEnabled = configFlags.contains(enableDashboardsPageFlag);
-      _isDailyOsPageEnabled = configFlags.contains(enableDailyOsPageFlag);
-    });
+    _navigationFlagsSub =
+        Rx.combineLatest3<
+              bool,
+              bool,
+              bool,
+              ({bool habits, bool dashboards, bool dailyOs})
+            >(
+              _journalDb.watchConfigFlag(enableHabitsPageFlag),
+              _journalDb.watchConfigFlag(enableDashboardsPageFlag),
+              _journalDb.watchConfigFlag(enableDailyOsPageFlag),
+              (habits, dashboards, dailyOs) => (
+                habits: habits,
+                dashboards: dashboards,
+                dailyOs: dailyOs,
+              ),
+            )
+            .listen((flags) {
+              _isHabitsPageEnabled = flags.habits;
+              _isDashboardsPageEnabled = flags.dashboards;
+              _isDailyOsPageEnabled = flags.dailyOs;
+            });
   }
 
   late final JournalDb _journalDb;
   late final SettingsDb _settingsDb;
+  late final StreamSubscription<({bool habits, bool dashboards, bool dailyOs})>
+  _navigationFlagsSub;
 
   bool _isHabitsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
@@ -167,6 +186,11 @@ class NavService {
 
   void beamBack({Object? data}) {
     delegateByIndex(index).beamBack(data: data);
+  }
+
+  Future<void> dispose() async {
+    await _navigationFlagsSub.cancel();
+    await indexStreamController.close();
   }
 }
 

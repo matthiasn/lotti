@@ -17,12 +17,13 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_prompt_item.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../helpers/fallbacks.dart';
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
@@ -40,6 +41,7 @@ void main() {
   late MockUnifiedAiInferenceRepository mockInferenceRepository;
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
+  late MockUpdateNotifications mockUpdateNotifications;
   late List<Override> defaultOverrides;
 
   setUpAll(() {
@@ -52,6 +54,7 @@ void main() {
     mockInferenceRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
+    mockUpdateNotifications = MockUpdateNotifications();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -60,11 +63,18 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<JournalDb>(mockJournalDb);
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Mock JournalDb methods - linksFromId returns a Selectable
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
     when(
       () => mockJournalDb.linksFromId(any(), any()),
     ).thenReturn(MockSelectable<LinkedDbEntry>([]));

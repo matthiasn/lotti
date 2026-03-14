@@ -2,20 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
 
 class DesktopMenuWrapper extends StatelessWidget {
-  DesktopMenuWrapper({
+  const DesktopMenuWrapper({
     required this.child,
     super.key,
   });
-
-  final JournalDb _db = getIt<JournalDb>();
 
   final Widget child;
 
@@ -29,9 +25,8 @@ class DesktopMenuWrapper extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       debugShowCheckedModeBanner: false,
-      home: StreamBuilder<Set<String>>(
-        stream: _db.watchActiveConfigFlagNames(),
-        builder: (context, snapshot) {
+      home: Builder(
+        builder: (context) {
           return PlatformMenuBar(
             menus: [
               const PlatformMenu(

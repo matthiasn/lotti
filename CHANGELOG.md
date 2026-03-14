@@ -37,7 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whole flag table, empty task-priority filters no longer emit `IN ()`, and
   repeated AI-config lookups now reuse repository caches instead of re-reading
   the same config type or config ID from SQLite within a single UI burst.
-  Empty journal-ID/link sorts are short-circuited before they hit SQLite.
+  Startup shell and navigation listeners now watch only the specific config
+  flags they actually need, and the macOS desktop menu no longer subscribes to
+  config-flag changes it never used.
+  Journal entry detail reads now coalesce overlapping entity and linked-entry
+  lookups and let linked-entry fetches seed the entity-by-id cache, while
+  empty journal-ID/link sorts are still short-circuited before they hit
+  SQLite.
 - Journal database: active task due-date queries now use a dedicated expression
   index on the serialized due date, reducing CPU spent scanning large task
   tables for overdue and same-day task views.

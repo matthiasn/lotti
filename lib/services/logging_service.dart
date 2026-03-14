@@ -40,9 +40,7 @@ class LoggingService {
   final List<Future<void>> _pendingWrites = <Future<void>>[];
 
   void _syncSlowQueryLoggingGate() {
-    SlowQueryLoggingGate.setEnabled(
-      _enableLogging && _enableSlowQueryLogging,
-    );
+    SlowQueryLoggingGate.isEnabled = _enableLogging && _enableSlowQueryLogging;
   }
 
   void listenToConfigFlag() {

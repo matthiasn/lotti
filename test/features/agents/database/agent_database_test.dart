@@ -617,7 +617,7 @@ void main() {
         final indexes = await db
             .customSelect(
               "SELECT name FROM sqlite_master WHERE type = 'index' "
-              "AND name IN ("
+              'AND name IN ( '
               "'idx_agent_links_active_from_type_to', "
               "'idx_wake_run_log_agent_thread', "
               "'idx_saga_log_status_created_at'"

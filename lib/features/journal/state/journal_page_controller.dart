@@ -48,7 +48,15 @@ class JournalPageController extends _$JournalPageController {
   late final EntitiesCacheService _entitiesCacheService;
 
   // Stream subscriptions
-  StreamSubscription<Set<String>>? _configFlagsSub;
+  StreamSubscription<
+    ({
+      bool events,
+      bool habits,
+      bool dashboards,
+      bool vectorSearch,
+    })
+  >?
+  _configFlagsSub;
   StreamSubscription<bool>? _privateFlagSub;
   StreamSubscription<Set<String>>? _updatesSub;
 
@@ -192,61 +200,84 @@ class JournalPageController extends _$JournalPageController {
       _emitState();
     });
 
-    // Listen to active feature flags and update local cache
-    _configFlagsSub = _db.watchActiveConfigFlagNames().listen((configFlags) {
-      // Compute previously allowed types before updating flags
-      final oldAllowed = computeAllowedEntryTypes(
-        events: _enableEvents,
-        habits: _enableHabits,
-        dashboards: _enableDashboards,
-      ).toSet();
+    // Listen to feature flags needed by this controller without loading the
+    // whole config flag table.
+    _configFlagsSub =
+        Rx.combineLatest4<
+              bool,
+              bool,
+              bool,
+              bool,
+              ({bool events, bool habits, bool dashboards, bool vectorSearch})
+            >(
+              _db.watchConfigFlag(enableEventsFlag),
+              _db.watchConfigFlag(enableHabitsPageFlag),
+              _db.watchConfigFlag(enableDashboardsPageFlag),
+              _db.watchConfigFlag(enableVectorSearchFlag),
+              (events, habits, dashboards, vectorSearch) => (
+                events: events,
+                habits: habits,
+                dashboards: dashboards,
+                vectorSearch: vectorSearch,
+              ),
+            )
+            .listen((flags) {
+              // Compute previously allowed types before updating flags
+              final oldAllowed = computeAllowedEntryTypes(
+                events: _enableEvents,
+                habits: _enableHabits,
+                dashboards: _enableDashboards,
+              ).toSet();
 
-      // Update flags
-      _enableEvents = configFlags.contains(enableEventsFlag);
-      _enableHabits = configFlags.contains(enableHabitsPageFlag);
-      _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
-      _enableVectorSearch = configFlags.contains(enableVectorSearchFlag);
-      var shouldRefreshAfterModeFallback = false;
-      if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
-        _searchMode = SearchMode.fullText;
-        shouldRefreshAfterModeFallback = true;
-      }
+              // Update flags
+              _enableEvents = flags.events;
+              _enableHabits = flags.habits;
+              _enableDashboards = flags.dashboards;
+              _enableVectorSearch = flags.vectorSearch;
+              var shouldRefreshAfterModeFallback = false;
+              if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
+                _searchMode = SearchMode.fullText;
+                shouldRefreshAfterModeFallback = true;
+              }
 
-      // Compute newly allowed types based on updated flags
-      final newAllowed = computeAllowedEntryTypes(
-        events: _enableEvents,
-        habits: _enableHabits,
-        dashboards: _enableDashboards,
-      ).toSet();
+              // Compute newly allowed types based on updated flags
+              final newAllowed = computeAllowedEntryTypes(
+                events: _enableEvents,
+                habits: _enableHabits,
+                dashboards: _enableDashboards,
+              ).toSet();
 
-      // Determine if user had ALL previously-allowed types selected
-      final hadAllPreviouslySelected =
-          oldAllowed.isNotEmpty && setEquals(_selectedEntryTypes, oldAllowed);
+              // Determine if user had ALL previously-allowed types selected
+              final hadAllPreviouslySelected =
+                  oldAllowed.isNotEmpty &&
+                  setEquals(_selectedEntryTypes, oldAllowed);
 
-      // Store previous selection for comparison
-      final prevSelection = _selectedEntryTypes;
+              // Store previous selection for comparison
+              final prevSelection = _selectedEntryTypes;
 
-      // Update selection based on user intent:
-      // - If empty or had all previously: adopt newAllowed (maintain "select all" behavior)
-      // - Otherwise: preserve user's partial selection by intersecting with newAllowed
-      if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
-        _selectedEntryTypes = newAllowed;
-      } else {
-        _selectedEntryTypes = _selectedEntryTypes.intersection(newAllowed);
-      }
+              // Update selection based on user intent:
+              // - If empty or had all previously: adopt newAllowed (maintain "select all" behavior)
+              // - Otherwise: preserve user's partial selection by intersecting with newAllowed
+              if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
+                _selectedEntryTypes = newAllowed;
+              } else {
+                _selectedEntryTypes = _selectedEntryTypes.intersection(
+                  newAllowed,
+                );
+              }
 
-      // Always emit state to update UI
-      _emitState();
+              // Always emit state to update UI
+              _emitState();
 
-      if (shouldRefreshAfterModeFallback) {
-        unawaited(refreshQuery());
-      }
+              if (shouldRefreshAfterModeFallback) {
+                unawaited(refreshQuery());
+              }
 
-      // Only persist if selection actually changed
-      if (!setEquals(prevSelection, _selectedEntryTypes)) {
-        persistEntryTypes();
-      }
-    });
+              // Only persist if selection actually changed
+              if (!setEquals(prevSelection, _selectedEntryTypes)) {
+                persistEntryTypes();
+              }
+            });
 
     // Setup update notifications with throttling
     String idMapper(JournalEntity entity) => entity.meta.id;

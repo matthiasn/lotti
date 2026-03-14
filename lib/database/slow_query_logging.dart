@@ -15,17 +15,11 @@ typedef SlowQueryReporter = void Function(SlowQueryLogEntry entry);
 /// write path is opt-in and controlled by the same advanced logging settings
 /// used for other domains.
 abstract final class SlowQueryLoggingGate {
-  static bool _enabled = false;
-
-  static bool get isEnabled => _enabled;
-
-  static void setEnabled(bool enabled) {
-    _enabled = enabled;
-  }
+  static bool isEnabled = false;
 
   @visibleForTesting
   static void resetForTest() {
-    _enabled = false;
+    isEnabled = false;
   }
 }
 

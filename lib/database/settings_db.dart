@@ -47,6 +47,14 @@ class SettingsDb extends _$SettingsDb {
     ifAbsent: () => 1,
   );
 
+  void _resolveQueuedRead(String configKey, String? value) {
+    final completer = _pendingReadCompleters.remove(configKey);
+    _pendingReadGenerations.remove(configKey);
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(value);
+    }
+  }
+
   @visibleForTesting
   Future<SettingsItem?> loadSettingsItem(String configKey) {
     return settingsItemByKey(configKey).getSingleOrNull();
@@ -74,7 +82,8 @@ class SettingsDb extends _$SettingsDb {
 
     final result = await into(settings).insertOnConflictUpdate(settingsItem);
     _cache[configKey] = value;
-    _inFlightReads.remove(configKey);
+    unawaited(_inFlightReads.remove(configKey));
+    _resolveQueuedRead(configKey, value);
     return result;
   }
 
@@ -82,7 +91,8 @@ class SettingsDb extends _$SettingsDb {
     _bumpGeneration(configKey);
     await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
     _cache.remove(configKey);
-    _inFlightReads.remove(configKey);
+    unawaited(_inFlightReads.remove(configKey));
+    _resolveQueuedRead(configKey, null);
   }
 
   Future<Map<String, String?>> itemsByKeys(Iterable<String> configKeys) async {

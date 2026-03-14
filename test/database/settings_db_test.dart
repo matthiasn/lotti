@@ -217,7 +217,7 @@ void main() {
           if (loadCount == 1) {
             return completer.future;
           }
-          return Future<SettingsItem?>.value(null);
+          return Future<SettingsItem?>.value();
         },
       );
 
