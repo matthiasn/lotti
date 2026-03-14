@@ -236,16 +236,30 @@ class MockLoggingService extends Mock implements LoggingService {
     registerFallbackValue(InsightLevel.info);
     registerFallbackValue(InsightType.log);
     registerFallbackValue(StackTrace.empty);
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
+  }
+
+  @override
+  void captureException(
+    dynamic exception, {
+    required String domain,
+    String? subDomain,
+    dynamic stackTrace,
+    InsightLevel level = InsightLevel.error,
+    InsightType type = InsightType.exception,
+  }) {
+    super.noSuchMethod(
+      Invocation.method(
+        #captureException,
+        <dynamic>[exception],
+        <Symbol, dynamic>{
+          #domain: domain,
+          #subDomain: subDomain,
+          #stackTrace: stackTrace,
+          #level: level,
+          #type: type,
+        },
       ),
-    ).thenAnswer((_) async {});
+    );
   }
 }
 

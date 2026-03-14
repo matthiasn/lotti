@@ -18,6 +18,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -629,6 +630,17 @@ class OutboxService {
     ]);
     if (coveredClocks != journalMsg.coveredVectorClocks) {
       journalMsg = journalMsg.copyWith(coveredVectorClocks: coveredClocks);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'prepare.ensureCovered',
+        action: 'assign',
+        type: 'SyncJournalEntity',
+        entryId: journalMsg.id,
+        jsonPath: journalMsg.jsonPath,
+        reason: 'ensure_current_clock_covered',
+        assigned: journalMsg.vectorClock,
+        coveredVectorClocks: coveredClocks,
+      );
     }
 
     return journalMsg;
@@ -650,6 +662,16 @@ class OutboxService {
     ]);
     if (coveredClocks != linkMsg.coveredVectorClocks) {
       linkMsg = linkMsg.copyWith(coveredVectorClocks: coveredClocks);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'prepare.ensureCovered',
+        action: 'assign',
+        type: 'SyncEntryLink',
+        entryId: linkMsg.entryLink.id,
+        reason: 'ensure_current_clock_covered',
+        assigned: linkMsg.entryLink.vectorClock,
+        coveredVectorClocks: coveredClocks,
+      );
     }
     return linkMsg;
   }
@@ -668,6 +690,17 @@ class OutboxService {
     ]);
     if (coveredClocks != agentMsg.coveredVectorClocks) {
       agentMsg = agentMsg.copyWith(coveredVectorClocks: coveredClocks);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'prepare.ensureCovered',
+        action: 'assign',
+        type: 'SyncAgentEntity',
+        entryId: agentMsg.agentEntity?.id,
+        jsonPath: agentMsg.jsonPath,
+        reason: 'ensure_current_clock_covered',
+        assigned: vc,
+        coveredVectorClocks: coveredClocks,
+      );
     }
     return agentMsg;
   }
@@ -686,6 +719,17 @@ class OutboxService {
     ]);
     if (coveredClocks != linkMsg.coveredVectorClocks) {
       linkMsg = linkMsg.copyWith(coveredVectorClocks: coveredClocks);
+      logVectorClockAssignment(
+        _loggingService,
+        subDomain: 'prepare.ensureCovered',
+        action: 'assign',
+        type: 'SyncAgentLink',
+        entryId: linkMsg.agentLink?.id,
+        jsonPath: linkMsg.jsonPath,
+        reason: 'ensure_current_clock_covered',
+        assigned: vc,
+        coveredVectorClocks: coveredClocks,
+      );
     }
     return linkMsg;
   }
@@ -801,6 +845,19 @@ class OutboxService {
           final mergedMessage = msg.copyWith(
             vectorClock: latestVc,
             coveredVectorClocks: coveredClocks,
+          );
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'enqueue.merge',
+            action: 'assign',
+            type: 'SyncJournalEntity',
+            entryId: msg.id,
+            jsonPath: msg.jsonPath,
+            reason: 'pending_merge_refresh',
+            previous: msg.vectorClock,
+            assigned: latestVc,
+            coveredVectorClocks: coveredClocks,
+            extras: {'oldVc': oldMessage.vectorClock?.vclock},
           );
 
           final mergedJson = json.encode(mergedMessage.toJson());
@@ -958,6 +1015,18 @@ class OutboxService {
           // is added to coveredClocks in subsequent merges.
           final mergedMessage = msg.copyWith(
             coveredVectorClocks: coveredClocks,
+          );
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'enqueue.merge',
+            action: 'assign',
+            type: 'SyncEntryLink',
+            entryId: linkId,
+            reason: 'pending_merge_cover',
+            previous: msg.entryLink.vectorClock,
+            assigned: msg.entryLink.vectorClock,
+            coveredVectorClocks: coveredClocks,
+            extras: {'oldVc': oldMessage.entryLink.vectorClock?.vclock},
           );
 
           final mergedJson = json.encode(mergedMessage.toJson());
@@ -1328,8 +1397,32 @@ class OutboxService {
           mergedMessage = entity.copyWith(
             coveredVectorClocks: coveredClocks,
           );
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'enqueue.merge',
+            action: 'assign',
+            type: 'SyncAgentEntity',
+            entryId: id,
+            jsonPath: entity.jsonPath,
+            reason: 'pending_merge_cover',
+            previous: oldVc,
+            assigned: vectorClock,
+            coveredVectorClocks: coveredClocks,
+          );
         } else if (mergedMessage case final SyncAgentLink link) {
           mergedMessage = link.copyWith(
+            coveredVectorClocks: coveredClocks,
+          );
+          logVectorClockAssignment(
+            _loggingService,
+            subDomain: 'enqueue.merge',
+            action: 'assign',
+            type: 'SyncAgentLink',
+            entryId: id,
+            jsonPath: link.jsonPath,
+            reason: 'pending_merge_cover',
+            previous: oldVc,
+            assigned: vectorClock,
             coveredVectorClocks: coveredClocks,
           );
         }

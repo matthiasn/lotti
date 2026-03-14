@@ -756,6 +756,35 @@ void main() {
       expect(nudged, isTrue);
     });
 
+    test('defers missing-work callback until deferred block exits', () async {
+      const vectorClock = VectorClock({aliceHostId: 5});
+      const entryId = 'entry-5';
+      var nudges = 0;
+      service.onMissingEntriesDetected = () {
+        nudges++;
+      };
+
+      when(
+        () => mockDb.getLastCounterForHost(aliceHostId),
+      ).thenAnswer((_) async => 2);
+      when(
+        () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
+
+      await service.runWithDeferredMissingEntries(() async {
+        await service.recordReceivedEntry(
+          entryId: entryId,
+          vectorClock: vectorClock,
+          originatingHostId: aliceHostId,
+        );
+
+        expect(nudges, 0);
+      });
+
+      expect(nudges, 1);
+    });
+
     test('does not log largeGap when gap is within limits', () async {
       // Gap of 2 is well within maxGapSize
       const vectorClock = VectorClock({aliceHostId: 5});

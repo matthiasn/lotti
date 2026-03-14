@@ -275,6 +275,12 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     _descriptorDownloader.onCachePurge = listener;
   }
 
+  void Function(String path)? _onMissingDescriptorPath;
+
+  set onMissingDescriptorPath(void Function(String path)? listener) {
+    _onMissingDescriptorPath = listener;
+  }
+
   @override
   Future<JournalEntity> load({
     required String jsonPath,
@@ -408,7 +414,9 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
       jsonPath: jsonPath,
     );
 
-    // Ensure referenced media exists only when mentioned by JSON, and only if missing.
+    // Missing media must not block entity application. The JSON payload is the
+    // authoritative state; referenced audio/image files can arrive later via
+    // the attachment pipeline or descriptor catch-up.
     await _ensureMediaOnMissing(entity);
     return entity;
   }
@@ -462,7 +470,8 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         domain: 'MATRIX_SERVICE',
         subDomain: 'SmartLoader.fetchMedia',
       );
-      throw FileSystemException('attachment descriptor not yet available', rp);
+      _onMissingDescriptorPath?.call(rp);
+      return;
     }
     try {
       final file = await ev.downloadAndDecryptAttachment();
@@ -483,7 +492,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         subDomain: 'SmartLoader.fetchMedia',
         stackTrace: st,
       );
-      rethrow;
+      _onMissingDescriptorPath?.call(rp);
     }
   }
 }
@@ -556,6 +565,13 @@ class SyncEventProcessor {
     final loader = _journalEntityLoader;
     if (loader is SmartJournalEntityLoader) {
       loader.onCachePurge = listener;
+    }
+  }
+
+  set descriptorPendingListener(void Function(String path)? listener) {
+    final loader = _journalEntityLoader;
+    if (loader is SmartJournalEntityLoader) {
+      loader.onMissingDescriptorPath = listener;
     }
   }
 
@@ -1639,6 +1655,23 @@ class SyncEventProcessor {
         return null;
     }
   }
+}
+
+Future<T> runWithDeferredMissingEntryNudges<T>(
+  SyncEventProcessor processor,
+  Future<T> Function() action,
+) {
+  // Production always uses the concrete SyncEventProcessor. Tests often inject
+  // mock implementations of its interface; fall back to the plain action there
+  // so the helper does not force new stubs across unrelated test suites.
+  if (processor.runtimeType != SyncEventProcessor) {
+    return action();
+  }
+  final sequenceLogService = processor._sequenceLogService;
+  if (sequenceLogService == null) {
+    return action();
+  }
+  return sequenceLogService.runWithDeferredMissingEntries(action);
 }
 
 class SyncApplyDiagnostics {

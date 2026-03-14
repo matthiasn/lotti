@@ -65,7 +65,7 @@ void main() {
                 required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
-              }) async => true,
+              }) async => false,
           preContextSinceTs: -1,
           maxLookback: 5000,
         );
@@ -320,6 +320,107 @@ void main() {
       expect(slice.map((e) => e.eventId), ['e1', 'e2']);
       verify(() => tl.cancelSubscriptions()).called(1);
     });
+
+    test(
+      'stays incomplete when cached history crosses the timestamp boundary but server history is still advertised',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
+
+        final events = <Event>[mk('cached-old', 100), mk('cached-new', 300)];
+        when(() => room.prev_batch).thenReturn('server-gap-token');
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'legacy-marker',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async => false,
+          preContextSinceTs: 150,
+        );
+
+        expect(result.incomplete, isTrue);
+        expect(result.events, isEmpty);
+        expect(result.reachedTimestampBoundary, isTrue);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
+
+    test(
+      'requires server history to satisfy the timestamp boundary when prev_batch exists',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
+
+        Event mk(String id, int ts) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn(id);
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
+          return e;
+        }
+
+        final events = <Event>[mk('cached-old', 100), mk('cached-new', 300)];
+        when(() => room.prev_batch).thenReturn('server-gap-token');
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: 'legacy-marker',
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async {
+                events.insert(1, mk('server-gap', 140));
+                return true;
+              },
+          preContextSinceTs: 150,
+          preContextCount: 1,
+        );
+
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events.map((event) => event.eventId), [
+          'server-gap',
+          'cached-new',
+        ]);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
 
     test('falls back to doubling when backfill unavailable', () async {
       final room = MockRoom();
@@ -684,7 +785,7 @@ void main() {
                 required int? maxPages,
                 required LoggingService logging,
                 num? untilTimestamp,
-              }) async => true,
+              }) async => false,
           preContextCount: 5,
           preContextSinceTs: 50,
         );

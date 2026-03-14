@@ -136,14 +136,17 @@ The receive-side recovery model is now stricter than before:
 - reconnect catch-up now succeeds when it reaches the stored timestamp
   boundary; exact Matrix marker lookup is no longer part of the recovery
   contract
+- timestamp-first catch-up now keeps paging even when no durable Matrix event
+  id is stored, and it passes the requested history page size through to the
+  Matrix SDK instead of silently falling back to the SDK default page size
 - if catch-up cannot page back to the stored timestamp boundary, it reports
   incomplete recovery instead of replaying a fallback room tail as if it were
   exact backlog
 - sequence progress is derived from the highest contiguous resolved counter for
   each host, not from the maximum sparse counter present anywhere in the log
-- large counter gaps are fully materialized in the sequence log and immediately
-  nudged into automatic backfill instead of being truncated to the newest `100`
-  rows
+- large counter gaps are fully materialized in the sequence log, but automatic
+  backfill is only nudged after the surrounding ordered replay batch settles so
+  transient in-burst holes do not turn into redundant repair chatter
 - durable restart markers now only persist server-assigned Matrix event ids;
   local `lotti-...` echo ids are kept out of the stored read marker so Matrix
   read-marker state stays durable even though reconnect recovery is

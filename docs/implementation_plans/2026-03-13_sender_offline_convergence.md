@@ -195,7 +195,8 @@ Behavioral changes:
 - exact event-id lookup is no longer part of the catch-up success contract
 - startup convergence treats timestamp-anchored replay as a trustworthy recovery
   path
-- non-server `lotti-...` ids are no longer persisted as durable restart markers
+- non-server `lotti-...` ids are no longer persisted as durable remote marker
+  ids
 
 ## Expected Outcome
 

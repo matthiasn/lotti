@@ -438,27 +438,23 @@ class MatrixStreamCatchUpCoordinator {
         maxLookback: SyncTuning.catchupMaxLookback,
       );
       if (catchUp.incomplete) {
-        _loggingService.captureEvent(
-          _withInstance(
-            'catchup.incomplete reason=timestampBoundaryUnreachable marker=$catchUpMarker '
-            'snapshot=${catchUp.snapshotSize} visibleTail=${catchUp.visibleTailCount} '
-            'timestampBoundary=${catchUp.reachedTimestampBoundary}',
-          ),
-          domain: syncLoggingDomain,
-          subDomain: 'catchup',
-        );
-        if (!_initialCatchUpReady) {
-          _initialCatchUpReady = true;
-          _catchUpRetryTimer?.cancel();
-          _catchUpRetryTimer = null;
-          _loggingService.captureEvent(
+        _loggingService
+          ..captureEvent(
+            _withInstance(
+              'catchup.incomplete reason=timestampBoundaryUnreachable marker=$catchUpMarker '
+              'snapshot=${catchUp.snapshotSize} visibleTail=${catchUp.visibleTailCount} '
+              'timestampBoundary=${catchUp.reachedTimestampBoundary}',
+            ),
+            domain: syncLoggingDomain,
+            subDomain: 'catchup',
+          )
+          ..captureEvent(
             _withInstance(
               'catchup.initial.incomplete reason=timestampBoundaryUnreachable',
             ),
             domain: syncLoggingDomain,
             subDomain: 'catchup',
           );
-        }
         return true;
       }
       if (catchUp.timestampAnchored) {

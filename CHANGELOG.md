@@ -13,6 +13,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   remote read-marker ids. Server-assigned Matrix event ids are still kept for
   remote marker state, while timestamp progress remains the canonical local
   catch-up anchor.
+- Sync pagination: timestamp-first catch-up now keeps paging even without a
+  stored durable event id, and Matrix history requests now honor the configured
+  page size instead of silently using the SDK default of `30`.
+- Sync backfill: newly detected gaps still become missing work immediately, but
+  the automatic backfill nudge now waits for the surrounding ordered replay
+  batch to finish so transient in-burst holes do not create redundant chatter.
+- Sync startup: if catch-up cannot reach the stored timestamp boundary yet, the
+  receiver now keeps live scans deferred instead of treating incomplete
+  recovery as ready and letting repair traffic start early.
 
 ## [0.9.919] - 2026-03-12
 ### Changed

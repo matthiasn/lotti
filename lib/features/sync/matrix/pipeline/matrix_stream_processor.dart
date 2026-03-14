@@ -184,6 +184,7 @@ class MatrixStreamProcessor {
         now: clock.now,
       );
     }
+    _eventProcessor.descriptorPendingListener = _descriptorCatchUp?.addPending;
   }
 
   void dispose() {
@@ -353,7 +354,9 @@ class MatrixStreamProcessor {
     _processingCompleter = completer;
 
     try {
-      await _processOrderedInternal(ordered, room);
+      await runWithDeferredMissingEntryNudges(_eventProcessor, () async {
+        await _processOrderedInternal(ordered, room);
+      });
     } finally {
       if (!completer.isCompleted) {
         completer.complete();

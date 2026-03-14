@@ -2897,55 +2897,62 @@ void main() {
       verify(ev.downloadAndDecryptAttachment).called(1);
     });
 
-    test('image media ensure logs and throws on empty bytes', () async {
-      final image = JournalImage(
-        meta: Metadata(
-          id: 'img-empty',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: ImageData(
-          imageId: 'img-empty',
-          imageDirectory: '/images/2024-01-01/',
-          imageFile: 'empty.jpg',
-          capturedAt: DateTime.now(),
-        ),
-      );
-      final relJson = '${getRelativeImagePath(image)}.json';
-      final jsonPathImg = path.join(tempDir.path, stripLeadingSlashes(relJson));
-      File(jsonPathImg)
-        ..createSync(recursive: true)
-        ..writeAsStringSync(jsonEncode(image.toJson()));
+    test(
+      'image media ensure logs and registers pending on empty bytes',
+      () async {
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-empty',
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            dateFrom: DateTime.now(),
+            dateTo: DateTime.now(),
+          ),
+          data: ImageData(
+            imageId: 'img-empty',
+            imageDirectory: '/images/2024-01-01/',
+            imageFile: 'empty.jpg',
+            capturedAt: DateTime.now(),
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        final jsonPathImg = path.join(
+          tempDir.path,
+          stripLeadingSlashes(relJson),
+        );
+        File(jsonPathImg)
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
 
-      final relMedia = getRelativeImagePath(image);
-      final index = AttachmentIndex();
-      final ev = MockEvent();
-      when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
-      when(() => ev.content).thenReturn({'relativePath': relMedia});
-      when(
-        ev.downloadAndDecryptAttachment,
-      ).thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
-      index.record(ev);
+        final relMedia = getRelativeImagePath(image);
+        final index = AttachmentIndex();
+        final ev = MockEvent();
+        when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
+        when(() => ev.content).thenReturn({'relativePath': relMedia});
+        when(
+          ev.downloadAndDecryptAttachment,
+        ).thenAnswer((_) async => MatrixFile(bytes: Uint8List(0), name: 'x'));
+        index.record(ev);
 
-      final loader = SmartJournalEntityLoader(
-        attachmentIndex: index,
-        loggingService: loggingService,
-      );
-      await expectLater(
-        loader.load(jsonPath: relJson),
-        throwsA(isA<FileSystemException>()),
-      );
-      verify(
-        () => loggingService.captureException(
-          any<Object>(),
-          domain: 'MATRIX_SERVICE',
-          subDomain: 'SmartLoader.fetchMedia',
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-        ),
-      ).called(1);
-    });
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        String? pendingPath;
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.id, image.meta.id);
+        expect(pendingPath, relMedia);
+        verify(
+          () => loggingService.captureException(
+            any<Object>(),
+            domain: 'MATRIX_SERVICE',
+            subDomain: 'SmartLoader.fetchMedia',
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
 
     test('no-VC JSON fetch logs and throws on empty bytes', () async {
       const relJson = '/text_entries/2024-02-01/empty.text.json';
@@ -2978,7 +2985,7 @@ void main() {
     });
 
     test(
-      'throws and logs when image media missing and descriptor not indexed',
+      'loads entity and registers pending image media when descriptor not indexed',
       () async {
         final image = JournalImage(
           meta: Metadata(
@@ -3006,14 +3013,15 @@ void main() {
         expect(createdJson.existsSync(), isTrue);
 
         final index = AttachmentIndex(logging: loggingService);
+        String? pendingPath;
         final loader = SmartJournalEntityLoader(
           attachmentIndex: index,
           loggingService: loggingService,
         );
-        await expectLater(
-          loader.load(jsonPath: relJson),
-          throwsA(isA<FileSystemException>()),
-        );
+        loader.onMissingDescriptorPath = (path) => pendingPath = path;
+        final loaded = await loader.load(jsonPath: relJson);
+        expect(loaded.meta.id, image.meta.id);
+        expect(pendingPath, getRelativeImagePath(image));
         verify(
           () => loggingService.captureEvent(
             contains('smart.media.miss path=${getRelativeImagePath(image)}'),

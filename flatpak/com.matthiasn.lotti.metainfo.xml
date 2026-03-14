@@ -35,6 +35,8 @@
       <description>
           <p>Sync catch-up: reconnect recovery is now timestamp-first. The client pages backward until the stored timestamp boundary is visible, then replays forward with bounded overlap instead of depending on exact event-id re-anchoring.</p>
           <p>Sync markers: local <code>lotti-...</code> echo ids are no longer persisted as durable remote read-marker ids. Server-assigned Matrix event ids are still kept for remote marker state, while timestamp progress remains the canonical local catch-up anchor.</p>
+          <p>Sync pagination: timestamp-first catch-up now keeps paging even without a stored durable event id, and Matrix history requests now honor the configured page size instead of silently using the SDK default page size of 30.</p>
+          <p>Sync recovery: automatic backfill now waits until an ordered replay batch settles, and startup keeps live scans deferred while timestamp-boundary catch-up is still incomplete. This cuts redundant repair chatter for offline reconnect bursts.</p>
       </description>
     </release>
     <release version="0.9.919" date="2026-03-12">

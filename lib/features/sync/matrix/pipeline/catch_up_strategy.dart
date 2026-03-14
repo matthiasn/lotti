@@ -3,9 +3,12 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// Signature for a backfill function that attempts to paginate a [timeline]
-/// until [lastEventId] is present or a limit is reached. Returns true if
-/// pagination was attempted (or the event was already present).
+/// Signature for a backfill function that paginates a [timeline] until the
+/// requested reconnect boundary is actually reachable.
+///
+/// Returns true only when the requested timestamp boundary or [lastEventId] is
+/// visible after paging. Returns false when history was exhausted without
+/// reaching that boundary.
 typedef BackfillFn =
     Future<bool> Function({
       required Timeline timeline,
@@ -92,7 +95,8 @@ class CatchUpStrategy {
   /// as legacy/debug context; recovery no longer depends on locating it.
   ///
   /// Returns an incomplete-recovery result only when the timestamp boundary
-  /// cannot be reached.
+  /// cannot be reached from the current sync tail plus any advertised server
+  /// history behind it.
   static Future<CatchUpCollection> collectEventsForCatchUp({
     required Room room,
     required String? lastEventId,
@@ -117,8 +121,8 @@ class CatchUpStrategy {
         );
       }
 
-      Future<void> pageUntilBoundary(Timeline timeline) async {
-        await backfill(
+      Future<bool> pageUntilBoundary(Timeline timeline) async {
+        return backfill(
           timeline: timeline,
           lastEventId: lastEventId,
           pageSize: 200,
@@ -135,9 +139,14 @@ class CatchUpStrategy {
           TimelineEventOrdering.timestamp(ordered.first) <= preContextSinceTs;
 
       var ordered = events;
-      if (!reachedTimestampBoundary(ordered)) {
-        await pageUntilBoundary(snapshot);
+      final requiresServerBoundary =
+          room.prev_batch != null && room.prev_batch!.isNotEmpty;
+      var boundarySatisfied = reachedTimestampBoundary(ordered);
+      var pagingSatisfied = false;
+      if (requiresServerBoundary || !boundarySatisfied) {
+        pagingSatisfied = await pageUntilBoundary(snapshot);
         ordered = TimelineEventOrdering.sortStableByTimestamp(snapshot.events);
+        boundarySatisfied = reachedTimestampBoundary(ordered);
       }
 
       bool needsMore(List<Event> current) =>
@@ -145,13 +154,16 @@ class CatchUpStrategy {
           current.length >= limit &&
           limit < maxLookback;
 
-      while (needsMore(ordered)) {
+      while (!requiresServerBoundary &&
+          !pagingSatisfied &&
+          needsMore(ordered)) {
         final doubled = limit * 2;
         limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);
         try {
-          await pageUntilBoundary(next);
+          pagingSatisfied = await pageUntilBoundary(next);
           ordered = TimelineEventOrdering.sortStableByTimestamp(next.events);
+          boundarySatisfied = reachedTimestampBoundary(ordered);
         } finally {
           try {
             next.cancelSubscriptions();
@@ -159,7 +171,7 @@ class CatchUpStrategy {
         }
       }
 
-      if (reachedTimestampBoundary(ordered)) {
+      if (boundarySatisfied && (!requiresServerBoundary || pagingSatisfied)) {
         final start = _startIndexForTimestampBoundary(
           ordered,
           preContextSinceTs: preContextSinceTs,
@@ -187,7 +199,9 @@ class CatchUpStrategy {
         'snapshot=${ordered.length} visibleTail=$visibleTailCount '
         'fallbackLimit=$missingMarkerFallbackLimit '
         'reason=timestampBoundaryUnreachable '
-        'reachedTimestampBoundary=false',
+        'reachedTimestampBoundary=$boundarySatisfied '
+        'requiresServerBoundary=$requiresServerBoundary '
+        'pagingSatisfied=$pagingSatisfied',
         domain: syncLoggingDomain,
         subDomain: 'catchup.incomplete',
       );
@@ -195,7 +209,7 @@ class CatchUpStrategy {
         snapshotSize: ordered.length,
         visibleTailCount: visibleTailCount,
         fallbackLimit: missingMarkerFallbackLimit,
-        reachedTimestampBoundary: false,
+        reachedTimestampBoundary: boundarySatisfied,
       );
     } finally {
       try {

@@ -120,6 +120,8 @@ class SyncSequenceLogService {
   final LoggingService _loggingService;
   final DomainLogger? _domainLogger;
   void Function()? onMissingEntriesDetected;
+  int _deferredMissingEntriesDepth = 0;
+  bool _pendingMissingEntriesDetected = false;
 
   void _trace(String message, {String? subDomain}) {
     _domainLogger?.log(
@@ -127,6 +129,36 @@ class SyncSequenceLogService {
       message,
       subDomain: subDomain ?? 'sequence',
     );
+  }
+
+  Future<T> runWithDeferredMissingEntries<T>(
+    Future<T> Function() action,
+  ) async {
+    _deferredMissingEntriesDepth++;
+    try {
+      return await action();
+    } finally {
+      _deferredMissingEntriesDepth--;
+      if (_deferredMissingEntriesDepth == 0 && _pendingMissingEntriesDetected) {
+        _pendingMissingEntriesDetected = false;
+        _emitMissingEntriesDetected();
+      }
+    }
+  }
+
+  void _emitMissingEntriesDetected() {
+    final callback = onMissingEntriesDetected;
+    if (callback == null) return;
+    try {
+      callback();
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'missingEntriesDetected',
+        stackTrace: st,
+      );
+    }
   }
 
   // ============ Host Activity Cache ============
@@ -574,16 +606,14 @@ class SyncSequenceLogService {
     // Note: Covered vector clocks are processed at the START of this method,
     // BEFORE gap detection, to prevent false positives.
 
-    if (gaps.isNotEmpty && onMissingEntriesDetected != null) {
-      try {
-        onMissingEntriesDetected!.call();
-      } catch (e, st) {
-        _loggingService.captureException(
-          e,
-          domain: 'SYNC_SEQUENCE',
-          subDomain: 'missingEntriesDetected',
-          stackTrace: st,
-        );
+    if (gaps.isNotEmpty) {
+      // Preserve gaps immediately, but defer the automatic backfill nudge
+      // until the surrounding ordered replay batch settles. This prevents
+      // transient in-burst holes from triggering redundant repair chatter.
+      if (_deferredMissingEntriesDepth > 0) {
+        _pendingMissingEntriesDetected = true;
+      } else {
+        _emitMissingEntriesDetected();
       }
     }
 
