@@ -1043,6 +1043,12 @@ SELECT * FROM journal
   AND private IN :privateStatuses
   ORDER BY date_from DESC;
 
+journalEntitiesByIdsUnordered:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN :ids
+  AND private IN :privateStatuses;
+
 linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
 

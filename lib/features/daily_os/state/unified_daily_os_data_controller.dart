@@ -348,7 +348,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
       linkedFromIds.add(link.fromId);
     }
 
-    final linkedFromEntries = await db.getJournalEntitiesForIds(linkedFromIds);
+    final linkedFromEntries = await db.getJournalEntitiesForIdsUnordered(
+      linkedFromIds,
+    );
     final linkedFromMap = <String, JournalEntity>{
       for (final entry in linkedFromEntries) entry.meta.id: entry,
     };

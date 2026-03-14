@@ -8113,6 +8113,28 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> journalEntitiesByIdsUnordered(
+    List<String> ids,
+    List<bool> privateStatuses,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) AND private IN ($expandedprivateStatuses)',
+      variables: [
+        for (var $ in ids) Variable<String>($),
+        for (var $ in privateStatuses) Variable<bool>($),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<String> linkedJournalEntityIds(String fromId, List<bool?> hidden) {
     var $arrayStartIndex = 2;
     final expandedhidden = $expandVar($arrayStartIndex, hidden.length);

@@ -174,7 +174,7 @@ void main() {
     ).thenReturn(null);
 
     when(
-      () => mockDb.getJournalEntitiesForIds(any()),
+      () => mockDb.getJournalEntitiesForIdsUnordered(any()),
     ).thenAnswer((_) async => []);
 
     when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
@@ -629,7 +629,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -700,7 +700,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -947,7 +947,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1029,7 +1029,8 @@ void main() {
         );
 
         when(
-          () => mockDb.getJournalEntitiesForIds({'task-1', 'rating-1'}),
+          () =>
+              mockDb.getJournalEntitiesForIdsUnordered({'task-1', 'rating-1'}),
         ).thenAnswer((_) async => [ratingEntry, parentTask]);
 
         final result = await container.read(
@@ -1091,7 +1092,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'rating-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'rating-1'}),
       ).thenAnswer((_) async => [ratingEntry]);
 
       final result = await container.read(
@@ -1602,7 +1603,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1689,7 +1690,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1761,7 +1762,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [doneTask]);
 
       final result = await container.read(
@@ -1833,7 +1834,7 @@ void main() {
         );
 
         when(
-          () => mockDb.getJournalEntitiesForIds({'task-1'}),
+          () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
         ).thenAnswer((_) async => [doneTask]);
 
         final result = await container.read(
@@ -1921,7 +1922,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1', 'task-2'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1', 'task-2'}),
       ).thenAnswer((_) async => [task1, task2]);
 
       final result = await container.read(
@@ -2121,7 +2122,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [taskWithDue]);
 
       when(

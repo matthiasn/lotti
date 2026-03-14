@@ -672,6 +672,21 @@ class JournalDb extends _$JournalDb {
     return res.map(fromDbEntity).toList();
   }
 
+  Future<List<JournalEntity>> getJournalEntitiesForIdsUnordered(
+    Set<String> ids,
+  ) async {
+    if (ids.isEmpty) {
+      return const <JournalEntity>[];
+    }
+
+    final res = await journalEntitiesByIdsUnordered(
+      ids.toList(),
+      await _visiblePrivateStatuses(),
+    ).get();
+    _seedJournalEntityCache(res);
+    return res.map(fromDbEntity).toList();
+  }
+
   Future<List<JournalEntity>> getJournalEntitiesByIds(
     Set<String> ids,
   ) async {
@@ -1335,7 +1350,7 @@ class JournalDb extends _$JournalDb {
     final targetIds = links.map((link) => link.toId).toSet();
 
     // Fetch all linked entities in one query
-    final entities = await getJournalEntitiesForIds(targetIds);
+    final entities = await getJournalEntitiesForIdsUnordered(targetIds);
 
     // Group by parent ID with deduplication tracking
     final result = <String, List<JournalEntity>>{

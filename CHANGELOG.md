@@ -87,6 +87,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task lists: identical warm `getTasks()` requests now reuse an in-memory
   result snapshot until task-relevant writes invalidate it, reducing repeated
   page fetches during task-list refresh bursts.
+- Bulk journal hydration: high-volume id-based fetches now use a private-aware
+  unsorted path by default in map-building callers, avoiding expensive
+  `ORDER BY date_from DESC` work when the caller does not need ordered rows.
 - Task lists: active-task indexes are now partial indexes keyed by category
   and status, priority-filtered date sorts have a dedicated task-priority
   index, and labeled task filters now use a composite `(journal_id, label_id)`
