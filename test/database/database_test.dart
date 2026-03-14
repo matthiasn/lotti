@@ -4253,67 +4253,6 @@ void main() {
       });
     });
 
-    group('getJournalEntitiesByIds -', () {
-      test('returns entities for given IDs', () async {
-        final base = DateTime(2024, 8, 2);
-        final entry1 = buildJournalEntry(
-          id: 'by-ids-1',
-          timestamp: base,
-          text: 'First entry',
-        );
-        final entry2 = buildJournalEntry(
-          id: 'by-ids-2',
-          timestamp: base.add(const Duration(hours: 1)),
-          text: 'Second entry',
-        );
-        final entry3 = buildJournalEntry(
-          id: 'by-ids-3',
-          timestamp: base.add(const Duration(hours: 2)),
-          text: 'Third entry',
-        );
-
-        await db!.upsertJournalDbEntity(toDbEntity(entry1));
-        await db!.upsertJournalDbEntity(toDbEntity(entry2));
-        await db!.upsertJournalDbEntity(toDbEntity(entry3));
-
-        final result = await db!.getJournalEntitiesByIds({
-          'by-ids-1',
-          'by-ids-3',
-        });
-        expect(result, hasLength(2));
-        expect(
-          result.map((e) => e.meta.id).toSet(),
-          {'by-ids-1', 'by-ids-3'},
-        );
-      });
-
-      test('returns empty list for empty input', () async {
-        final result = await db!.getJournalEntitiesByIds({});
-        expect(result, isEmpty);
-      });
-
-      test('excludes deleted entities', () async {
-        final base = DateTime(2024, 8, 2);
-        final entry = buildJournalEntry(
-          id: 'by-ids-deleted',
-          timestamp: base,
-          text: 'Will be deleted',
-        );
-        await db!.upsertJournalDbEntity(toDbEntity(entry));
-
-        // Delete the entry
-        final deletedEntry = entry.copyWith(
-          meta: entry.meta.copyWith(
-            deletedAt: base.add(const Duration(hours: 1)),
-          ),
-        );
-        await db!.updateJournalEntity(deletedEntry);
-
-        final result = await db!.getJournalEntitiesByIds({'by-ids-deleted'});
-        expect(result, isEmpty);
-      });
-    });
-
     test(
       'database operations are covered by tests',
       () async {

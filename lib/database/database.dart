@@ -694,17 +694,6 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Future<List<JournalEntity>> getJournalEntitiesByIds(
-    Set<String> ids,
-  ) async {
-    if (ids.isEmpty) {
-      return const <JournalEntity>[];
-    }
-
-    final res = await entriesForIds(ids.toList()).get();
-    return res.where((entity) => !entity.deleted).map(fromDbEntity).toList();
-  }
-
   Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
     Iterable<String> ids,
   ) async {
