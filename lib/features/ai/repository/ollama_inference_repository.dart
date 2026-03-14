@@ -192,6 +192,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required List<String> images,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
+    String? systemMessage,
   }) {
     // Validate inputs
     _validateOllamaRequest(
@@ -211,6 +212,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
     // Build messages with images for chat endpoint
     final messages = [
+      if (systemMessage != null)
+        {
+          'role': 'system',
+          'content': systemMessage,
+        },
       {
         'role': 'user',
         'content': prompt,

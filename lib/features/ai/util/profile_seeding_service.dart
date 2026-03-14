@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 
-import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -62,13 +61,20 @@ class ProfileSeedingService {
         continue;
       }
 
-      // Update existing default profiles if any seeded field has drifted.
+      // Update existing default profiles if model IDs or flags have drifted.
       // Only reconcile profiles marked as `isDefault` — user-created
       // profiles are never touched.
+      // Skill assignments are NOT compared here — user edits to automation
+      // toggles are preserved. Skill backfill is handled by upgradeExisting().
       if (existing is AiConfigInferenceProfile &&
           existing.isDefault &&
           _hasProfileDrift(existing, profile)) {
-        await _repo.saveConfig(profile);
+        // Preserve the user's skill assignments when updating for
+        // model/flag drift.
+        final updated = profile.copyWith(
+          skillAssignments: existing.skillAssignments,
+        );
+        await _repo.saveConfig(updated);
         updatedCount++;
       }
     }
@@ -127,7 +133,12 @@ class ProfileSeedingService {
     }
   }
 
-  /// Returns true when any seeded field in [existing] differs from [target].
+  /// Returns true when any model ID or flag in [existing] differs from
+  /// [target].
+  ///
+  /// Intentionally excludes `skillAssignments` — user edits to automation
+  /// toggles must survive app updates. Skill backfill is a one-time operation
+  /// handled by [upgradeExisting].
   static bool _hasProfileDrift(
     AiConfigInferenceProfile existing,
     AiConfigInferenceProfile target,
@@ -138,18 +149,7 @@ class ProfileSeedingService {
         existing.transcriptionModelId != target.transcriptionModelId ||
         existing.imageGenerationModelId != target.imageGenerationModelId ||
         existing.isDefault != target.isDefault ||
-        existing.desktopOnly != target.desktopOnly ||
-        !_skillAssignmentsEqual(
-          existing.skillAssignments,
-          target.skillAssignments,
-        );
-  }
-
-  static bool _skillAssignmentsEqual(
-    List<SkillAssignment> a,
-    List<SkillAssignment> b,
-  ) {
-    return const SetEquality<SkillAssignment>().equals(a.toSet(), b.toSet());
+        existing.desktopOnly != target.desktopOnly;
   }
 
   /// Returns true when the profile has the model slot required by [skillType].

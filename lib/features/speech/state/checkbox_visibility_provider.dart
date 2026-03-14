@@ -1,4 +1,5 @@
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
@@ -8,12 +9,17 @@ part 'checkbox_visibility_provider.g.dart';
 
 /// Checks whether a task has profile-driven transcription available.
 ///
-/// Uses `keepAlive` to cache the result across modal open/close cycles,
-/// avoiding repeated full profile-chain resolution for the same task.
+/// Re-evaluates when profiles change (via [inferenceProfileControllerProvider])
+/// so that edits to automation toggles are immediately reflected in the UI.
 /// Uses the pure capability check rather than the execution path to avoid
 /// side effects during render-time reads.
-@Riverpod(keepAlive: true)
+@riverpod
 Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
+  // Watch the profiles stream so this provider invalidates when any
+  // profile is edited. Without this, the result would be stale after
+  // a profile automation toggle change.
+  ref.watch(inferenceProfileControllerProvider);
+
   final service = ref.watch(profileAutomationServiceProvider);
   return service.hasAutomatedSkillType(
     taskId: taskId,

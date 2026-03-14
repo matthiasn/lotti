@@ -250,6 +250,7 @@ class CloudInferenceRepository {
         images: images,
         maxCompletionTokens: maxCompletionTokens,
         provider: provider!,
+        systemMessage: systemMessage,
       );
     }
 
