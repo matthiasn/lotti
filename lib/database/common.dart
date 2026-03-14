@@ -81,6 +81,9 @@ void _setupDatabase(Database database) {
 ///   opening from an actor isolate to avoid nested isolates.
 /// - [readPool]: Number of read-only isolates for offloading heavy reads
 ///   (default: 0). Only effective when [background] is true.
+/// - [slowQueryThreshold]: Threshold used by the shared slow-query interceptor.
+///   Slow-query writes remain disabled until the corresponding logging domain
+///   is enabled in Settings > Advanced > Logging Domains.
 /// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///

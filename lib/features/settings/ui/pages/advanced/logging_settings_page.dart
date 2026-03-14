@@ -25,6 +25,8 @@ class LoggingSettingsPage extends ConsumerWidget {
     final logAgentWorkflow =
         ref.watch(configFlagProvider(logAgentWorkflowFlag)).value ?? false;
     final logSync = ref.watch(configFlagProvider(logSyncFlag)).value ?? false;
+    final logSlowQueries =
+        ref.watch(configFlagProvider(logSlowQueriesFlag)).value ?? false;
 
     return SliverBoxAdapterPage(
       title: context.messages.settingsLoggingDomainsTitle,
@@ -79,6 +81,20 @@ class LoggingSettingsPage extends ConsumerWidget {
               value: logSync,
               onChanged: enableLogging
                   ? (_) => getIt<JournalDb>().toggleConfigFlag(logSyncFlag)
+                  : null,
+            ),
+          ),
+          AdaptiveSettingsCard(
+            title: context.messages.settingsLoggingSlowQueries,
+            subtitle: context.messages.settingsLoggingSlowQueriesSubtitle,
+            icon: Icons.speed_rounded,
+            showChevron: false,
+            trailing: Switch.adaptive(
+              value: logSlowQueries,
+              onChanged: enableLogging
+                  ? (_) => getIt<JournalDb>().toggleConfigFlag(
+                      logSlowQueriesFlag,
+                    )
                   : null,
             ),
           ),

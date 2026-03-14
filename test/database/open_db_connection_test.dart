@@ -9,6 +9,9 @@ import 'package:lotti/database/sync_db.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(SlowQueryLoggingGate.resetForTest);
+  tearDown(SlowQueryLoggingGate.resetForTest);
+
   test('openDbConnection creates parent directory if missing', () async {
     final base = Directory.systemTemp.createTempSync('db_parent_create_');
     addTearDown(
@@ -123,12 +126,43 @@ void main() {
   );
 
   test(
-    'openDbConnection appends slow queries to the dated slow query log',
+    'openDbConnection does not write slow query logs when disabled',
     () async {
       final base = Directory.systemTemp.createTempSync('slow_query_log_test_');
       addTearDown(
         () => base.existsSync() ? base.deleteSync(recursive: true) : null,
       );
+
+      final lazy = openDbConnection(
+        'test_slow.sqlite',
+        background: false,
+        slowQueryThreshold: Duration.zero,
+        documentsDirectoryProvider: () async => base,
+        tempDirectoryProvider: () async => base,
+      );
+
+      final db = SyncDatabase.connect(DatabaseConnection(lazy));
+      await db.customSelect('SELECT 1 AS one').getSingle();
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final date = DateTime.now().toIso8601String().substring(0, 10);
+      final logFile = File('${base.path}/logs/slow_queries-$date.log');
+
+      expect(logFile.existsSync(), isFalse);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'openDbConnection appends slow queries to the dated log when enabled',
+    () async {
+      final base = Directory.systemTemp.createTempSync('slow_query_log_test_');
+      addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+      );
+
+      SlowQueryLoggingGate.setEnabled(true);
 
       final lazy = openDbConnection(
         'test_slow.sqlite',

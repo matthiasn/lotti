@@ -3801,6 +3801,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Master switch for all logging';
 
   @override
+  String get settingsLoggingSlowQueries => 'Slow Database Queries';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Queries slower than 3ms written to slow_queries-YYYY-MM-DD.log';
+
+  @override
   String get settingsLoggingSync => 'Sync';
 
   @override

@@ -1581,6 +1581,8 @@
   "settingsLoggingDomainsTitle": "Protokoll-Bereiche",
   "settingsLoggingGlobalToggle": "Protokollierung aktivieren",
   "settingsLoggingGlobalToggleSubtitle": "Hauptschalter für die gesamte Protokollierung",
+  "settingsLoggingSlowQueries": "Langsame Datenbankabfragen",
+  "settingsLoggingSlowQueriesSubtitle": "Abfragen über 3 ms werden in slow_queries-YYYY-MM-DD.log geschrieben",
   "settingsLoggingSync": "Synchronisation",
   "settingsLoggingSyncSubtitle": "Geräteübergreifende Synchronisationsvorgänge",
   "settingsLoggingViewLogsSubtitle": "Alle Protokolleinträge durchsuchen",

@@ -1742,6 +1742,8 @@
   "settingsLoggingDomainsTitle": "Logging Domains",
   "settingsLoggingGlobalToggle": "Enable Logging",
   "settingsLoggingGlobalToggleSubtitle": "Master switch for all logging",
+  "settingsLoggingSlowQueries": "Slow Database Queries",
+  "settingsLoggingSlowQueriesSubtitle": "Queries slower than 3ms written to slow_queries-YYYY-MM-DD.log",
   "settingsLoggingSync": "Sync",
   "settingsLoggingSyncSubtitle": "Cross-device sync operations",
   "settingsLoggingViewLogsSubtitle": "Browse and search all log entries",

@@ -9,6 +9,26 @@ import 'package:path/path.dart' as p;
 
 typedef SlowQueryReporter = void Function(SlowQueryLogEntry entry);
 
+/// Runtime gate for slow-query file logging.
+///
+/// The interceptor is installed on every Drift connection, but the actual
+/// write path is opt-in and controlled by the same advanced logging settings
+/// used for other domains.
+abstract final class SlowQueryLoggingGate {
+  static bool _enabled = false;
+
+  static bool get isEnabled => _enabled;
+
+  static void setEnabled(bool enabled) {
+    _enabled = enabled;
+  }
+
+  @visibleForTesting
+  static void resetForTest() {
+    _enabled = false;
+  }
+}
+
 /// Structured metadata for a slow query observed through drift.
 class SlowQueryLogEntry {
   const SlowQueryLogEntry({
@@ -33,7 +53,9 @@ class SlowQueryLogEntry {
 ///
 /// Drift's `QueryInterceptor` API wraps every executor method, which makes it a
 /// good place to capture database-wide timings without changing individual DAOs
-/// or query call sites.
+/// or query call sites. The interceptor is always installed, but actual writes
+/// are gated behind [SlowQueryLoggingGate] so slow-query logging can stay off
+/// by default and be enabled from advanced logging settings.
 class SlowQueryInterceptor extends QueryInterceptor {
   SlowQueryInterceptor({
     required this.databaseName,
@@ -95,7 +117,7 @@ class SlowQueryInterceptor extends QueryInterceptor {
       return await run();
     } finally {
       stopwatch.stop();
-      if (stopwatch.elapsed >= threshold) {
+      if (SlowQueryLoggingGate.isEnabled && stopwatch.elapsed >= threshold) {
         reporter(
           SlowQueryLogEntry(
             databaseName: databaseName,

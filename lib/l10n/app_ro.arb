@@ -1581,6 +1581,8 @@
   "settingsLoggingDomainsTitle": "Domenii de jurnalizare",
   "settingsLoggingGlobalToggle": "Activați jurnalizarea",
   "settingsLoggingGlobalToggleSubtitle": "Comutatorul principal pentru toată jurnalizarea",
+  "settingsLoggingSlowQueries": "Interogări lente ale bazei de date",
+  "settingsLoggingSlowQueriesSubtitle": "Interogările mai lente de 3 ms sunt scrise în slow_queries-YYYY-MM-DD.log",
   "settingsLoggingSync": "Sincronizare",
   "settingsLoggingSyncSubtitle": "Operațiuni de sincronizare între dispozitive",
   "settingsLoggingViewLogsSubtitle": "Răsfoiți și căutați toate înregistrările din jurnal",

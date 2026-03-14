@@ -139,6 +139,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: logSlowQueriesFlag,
+    description: 'Log slow database queries',
+    status: false,
+  ),
+  const ConfigFlag(
     name: enableEmbeddingsFlag,
     description: 'Generate embeddings for entries?',
     status: false,

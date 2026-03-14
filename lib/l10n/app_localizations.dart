@@ -6901,6 +6901,18 @@ abstract class AppLocalizations {
   /// **'Master switch for all logging'**
   String get settingsLoggingGlobalToggleSubtitle;
 
+  /// No description provided for @settingsLoggingSlowQueries.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow Database Queries'**
+  String get settingsLoggingSlowQueries;
+
+  /// No description provided for @settingsLoggingSlowQueriesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Queries slower than 3ms written to slow_queries-YYYY-MM-DD.log'**
+  String get settingsLoggingSlowQueriesSubtitle;
+
   /// No description provided for @settingsLoggingSync.
   ///
   /// In en, this message translates to:
