@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync startup: if catch-up cannot reach the stored timestamp boundary yet, the
   receiver now keeps live scans deferred instead of treating incomplete
   recovery as ready and letting repair traffic start early.
+- Database diagnostics: all Drift-backed databases now append queries slower
+  than 3ms into a dedicated daily `slow_queries-YYYY-MM-DD.log` file under the
+  app logs directory.
+- Sync database: `sync_sequence_log` now has dedicated indices for actionable
+  queue scans and payload-id resolution, reducing CPU spent scanning the
+  sequence log at larger row counts.
 
 ## [0.9.919] - 2026-03-12
 ### Changed

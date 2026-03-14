@@ -1605,6 +1605,14 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     this,
   );
   late final $HostActivityTable hostActivity = $HostActivityTable(this);
+  late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
+    'idx_sync_sequence_log_actionable_status_created_at',
+    'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at ON sync_sequence_log (status, created_at) WHERE status IN (1, 2)',
+  );
+  late final Index idxSyncSequenceLogPayloadResolution = Index(
+    'idx_sync_sequence_log_payload_resolution',
+    'CREATE INDEX idx_sync_sequence_log_payload_resolution ON sync_sequence_log (entry_id, payload_type, status) WHERE entry_id IS NOT NULL',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1613,6 +1621,8 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     outbox,
     syncSequenceLog,
     hostActivity,
+    idxSyncSequenceLogActionableStatusCreatedAt,
+    idxSyncSequenceLogPayloadResolution,
   ];
 }
 

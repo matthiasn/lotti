@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 7);
+        expect(db.schemaVersion, 8);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 7);
+      expect(versionResult.first.read<int>('user_version'), 8);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -158,6 +158,24 @@ void main() {
       expect(tableNames, contains('outbox'));
       expect(tableNames, contains('sync_sequence_log'));
       expect(tableNames, contains('host_activity'));
+
+      final indexResults = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name IN ( "
+            "'idx_sync_sequence_log_actionable_status_created_at', "
+            "'idx_sync_sequence_log_payload_resolution')",
+          )
+          .get();
+      final indexNames = indexResults
+          .map((row) => row.read<String>('name'))
+          .toSet();
+      expect(
+        indexNames,
+        containsAll(<String>{
+          'idx_sync_sequence_log_actionable_status_created_at',
+          'idx_sync_sequence_log_payload_resolution',
+        }),
+      );
 
       await db.close();
     });
@@ -268,7 +286,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 7);
+      expect(versionResult.first.read<int>('user_version'), 8);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -347,7 +365,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 7);
+      expect(versionResult.first.read<int>('user_version'), 8);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -374,6 +392,76 @@ void main() {
       expect(allItems.first.priority, OutboxPriority.high.index);
       expect(allItems.last.subject, 'v5-subject');
       expect(allItems.last.priority, OutboxPriority.low.index);
+
+      await db.close();
+    });
+
+    test('v8 migration adds sync sequence log indices', () async {
+      final dbFile = File(path.join(testDirectory!.path, 'test_sync_v8.db'));
+      final sqlite = sqlite3.open(dbFile.path);
+
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS outbox (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          status INTEGER NOT NULL DEFAULT 0,
+          retries INTEGER NOT NULL DEFAULT 0,
+          message TEXT NOT NULL,
+          subject TEXT NOT NULL,
+          file_path TEXT,
+          outbox_entry_id TEXT,
+          payload_size INTEGER,
+          priority INTEGER NOT NULL DEFAULT 2
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS sync_sequence_log (
+          host_id TEXT NOT NULL,
+          counter INTEGER NOT NULL,
+          entry_id TEXT,
+          payload_type INTEGER NOT NULL DEFAULT 0,
+          originating_host_id TEXT,
+          status INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          request_count INTEGER NOT NULL DEFAULT 0,
+          last_requested_at INTEGER,
+          json_path TEXT,
+          PRIMARY KEY (host_id, counter)
+        )
+      ''');
+      sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS host_activity (
+          host_id TEXT NOT NULL PRIMARY KEY,
+          last_seen_at INTEGER NOT NULL
+        )
+      ''');
+      sqlite.execute('PRAGMA user_version = 7');
+      sqlite.dispose();
+
+      final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
+
+      final versionResult = await db.customSelect('PRAGMA user_version').get();
+      expect(versionResult.first.read<int>('user_version'), 8);
+
+      final indexResults = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type='index' AND name IN ( "
+            "'idx_sync_sequence_log_actionable_status_created_at', "
+            "'idx_sync_sequence_log_payload_resolution')",
+          )
+          .get();
+      final indexNames = indexResults
+          .map((row) => row.read<String>('name'))
+          .toSet();
+      expect(
+        indexNames,
+        containsAll(<String>{
+          'idx_sync_sequence_log_actionable_status_created_at',
+          'idx_sync_sequence_log_payload_resolution',
+        }),
+      );
 
       await db.close();
     });

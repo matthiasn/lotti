@@ -37,6 +37,7 @@
           <p>Sync markers: local <code>lotti-...</code> echo ids are no longer persisted as durable remote read-marker ids. Server-assigned Matrix event ids are still kept for remote marker state, while timestamp progress remains the canonical local catch-up anchor.</p>
           <p>Sync pagination: timestamp-first catch-up now keeps paging even without a stored durable event id, and Matrix history requests now honor the configured page size instead of silently using the SDK default page size of 30.</p>
           <p>Sync recovery: automatic backfill now waits until an ordered replay batch settles, and startup keeps live scans deferred while timestamp-boundary catch-up is still incomplete. This cuts redundant repair chatter for offline reconnect bursts.</p>
+          <p>Database diagnostics: all Drift-backed databases now append queries slower than 3ms into a dedicated daily <code>slow_queries-YYYY-MM-DD.log</code> file in the app logs directory, and the sync sequence log now uses targeted queue and payload-resolution indices for lower CPU overhead at larger scales.</p>
       </description>
     </release>
     <release version="0.9.919" date="2026-03-12">

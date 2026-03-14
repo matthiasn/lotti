@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:drift/drift.dart' show DatabaseConnection;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/database/sync_db.dart';
 
 void main() {
@@ -116,6 +117,38 @@ void main() {
           .getSingle();
       // NORMAL = 1
       expect(syncResult.read<int>('synchronous'), 1);
+
+      await db.close();
+    },
+  );
+
+  test(
+    'openDbConnection appends slow queries to the dated slow query log',
+    () async {
+      final base = Directory.systemTemp.createTempSync('slow_query_log_test_');
+      addTearDown(
+        () => base.existsSync() ? base.deleteSync(recursive: true) : null,
+      );
+
+      final lazy = openDbConnection(
+        'test_slow.sqlite',
+        background: false,
+        slowQueryThreshold: Duration.zero,
+        documentsDirectoryProvider: () async => base,
+        tempDirectoryProvider: () async => base,
+      );
+
+      final db = SyncDatabase.connect(DatabaseConnection(lazy));
+      await db.customSelect('SELECT 1 AS one').getSingle();
+      await SlowQueryInterceptor.flushFileSinkForTest();
+
+      final date = DateTime.now().toIso8601String().substring(0, 10);
+      final logFile = File('${base.path}/logs/slow_queries-$date.log');
+
+      expect(logFile.existsSync(), isTrue);
+      final contents = await logFile.readAsString();
+      expect(contents, contains('[test_slow.sqlite] select'));
+      expect(contents, contains('SELECT 1 AS one'));
 
       await db.close();
     },
