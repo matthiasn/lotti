@@ -12,24 +12,9 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
-
-class MockHttpClient extends Mock implements http.Client {}
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -100,6 +85,7 @@ void main() {
   late MockHttpClient mockHttpClient;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(FakeRequest());
     registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(Uri.parse('http://localhost:11344'));
@@ -1006,7 +992,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenReturn(null);
 
         final stream = Stream.fromIterable([utf8.encode('Not found')]);
         when(() => mockHttpClient.send(any())).thenAnswer(
@@ -1020,13 +1006,10 @@ data: [DONE]
           baseUrl: baseUrl,
         );
 
-        expect(
+        await expectLater(
           transcriptionStream.toList(),
           throwsA(isA<VoxtralModelNotAvailableException>()),
         );
-
-        // Wait for the stream to be consumed and exception logged
-        await Future<void>.delayed(Duration.zero);
 
         verify(
           () => mockLoggingService.captureException(
@@ -1047,7 +1030,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenReturn(null);
 
         final stream = Stream.fromIterable([utf8.encode('Server error')]);
         when(() => mockHttpClient.send(any())).thenAnswer(
@@ -1061,13 +1044,10 @@ data: [DONE]
           baseUrl: baseUrl,
         );
 
-        expect(
+        await expectLater(
           transcriptionStream.toList(),
           throwsA(isA<VoxtralInferenceException>()),
         );
-
-        // Wait for the stream to be consumed and exception logged
-        await Future<void>.delayed(Duration.zero);
 
         verify(
           () => mockLoggingService.captureException(
@@ -1088,7 +1068,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenReturn(null);
 
         // Throw a StateError to trigger the generic catch block
         when(
@@ -1102,7 +1082,7 @@ data: [DONE]
           baseUrl: baseUrl,
         );
 
-        expect(
+        await expectLater(
           transcriptionStream.toList(),
           throwsA(
             isA<VoxtralInferenceException>().having(
@@ -1112,9 +1092,6 @@ data: [DONE]
             ),
           ),
         );
-
-        // Wait for exception to be logged
-        await Future<void>.delayed(Duration.zero);
 
         verify(
           () => mockLoggingService.captureException(

@@ -778,7 +778,13 @@ class JournalDb extends _$JournalDb {
     final dbTaskStatuses = taskStatuses.cast<String?>();
     final selectedPriorities = priorities ?? <String>[];
     final filterByPriorities = selectedPriorities.isNotEmpty;
-    final dbPriorities = selectedPriorities.cast<String?>();
+    // Keep the generated SQL valid when no priorities are selected. Drift
+    // still expands list parameters even when the CASE guard disables the
+    // priority branch, so passing an empty list would yield `IN ()`.
+    final effectivePriorities = filterByPriorities
+        ? selectedPriorities
+        : <String>['__no_priority__'];
+    final dbPriorities = effectivePriorities.cast<String?>();
 
     if (ids != null) {
       // Use date-sorted or priority-sorted query based on sortByDate flag
@@ -1088,14 +1094,14 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<bool> getConfigFlag(String flagName) async {
-    final flags = await listConfigFlags().get();
-    return findConfigFlag(flagName, flags);
+    return (await configFlagByName(flagName).getSingleOrNull())?.status ??
+        false;
   }
 
   Stream<bool> watchConfigFlag(String flagName) {
-    return listConfigFlags().watch().map((List<ConfigFlag> flags) {
-      return findConfigFlag(flagName, flags);
-    });
+    return configFlagByName(
+      flagName,
+    ).watchSingleOrNull().map((flag) => flag?.status ?? false);
   }
 
   Future<ConfigFlag?> getConfigFlagByName(String flagName) async {

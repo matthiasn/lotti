@@ -29,8 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync database: `sync_sequence_log` now has dedicated indices for actionable
   queue scans and payload-id resolution, reducing CPU spent scanning the
   sequence log at larger row counts.
-- Database reads: repeated settings-key lookups are now cached in-process, and
-  empty journal-ID/link sorts are short-circuited before they hit SQLite.
+- Database reads: repeated settings-key lookups are now cached in-process,
+  concurrent cold reads are coalesced and batched before they hit SQLite, and
+  startup settings restores now collapse both known multi-key restores and
+  overlapping single-key reads into fewer queries.
+  Single-flag watchers now read config flags by name instead of loading the
+  whole flag table, empty task-priority filters no longer emit `IN ()`, and
+  repeated AI-config lookups now reuse repository caches instead of re-reading
+  the same config type or config ID from SQLite within a single UI burst.
+  Empty journal-ID/link sorts are short-circuited before they hit SQLite.
 - Journal database: active task due-date queries now use a dedicated expression
   index on the serialized due date, reducing CPU spent scanning large task
   tables for overdue and same-day task views.

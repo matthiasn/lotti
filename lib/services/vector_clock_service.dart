@@ -24,8 +24,23 @@ class VectorClockService {
   Future<void> get initialized => _initialized;
 
   Future<void> init() async {
-    _host = await _getHost() ?? await setNewHost();
-    await _getNextAvailableCounter();
+    final storedValues = await getIt<SettingsDb>().itemsByKeys({
+      hostKey,
+      nextAvailableCounterKey,
+    });
+    final storedHost = storedValues[hostKey];
+    if (storedHost == null) {
+      await setNewHost();
+      return;
+    }
+
+    _host = storedHost;
+    final storedCounter = storedValues[nextAvailableCounterKey];
+    if (storedCounter != null) {
+      _nextAvailableCounter = int.parse(storedCounter);
+    } else {
+      await setNextAvailableCounter(0);
+    }
   }
 
   Future<void> increment() async {
@@ -43,10 +58,6 @@ class VectorClockService {
     return host;
   }
 
-  Future<String?> _getHost() async {
-    return getIt<SettingsDb>().itemByKey(hostKey);
-  }
-
   Future<String?> getHost() async {
     return _host;
   }
@@ -58,15 +69,6 @@ class VectorClockService {
       nextAvailableCounterKey,
       nextAvailableCounter.toString(),
     );
-  }
-
-  Future<void> _getNextAvailableCounter() async {
-    final value = await getIt<SettingsDb>().itemByKey(nextAvailableCounterKey);
-    if (value != null) {
-      _nextAvailableCounter = int.parse(value);
-    } else {
-      await setNextAvailableCounter(0);
-    }
   }
 
   Future<int> getNextAvailableCounter() async {
