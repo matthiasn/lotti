@@ -55,76 +55,7 @@ void main() {
       );
       final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS habit_definitions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN NOT NULL DEFAULT FALSE,
-          private BOOLEAN NOT NULL DEFAULT FALSE,
-          serialized TEXT NOT NULL,
-          active BOOLEAN NOT NULL
-        )
-      ''');
-
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS label_definitions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL UNIQUE,
-          color TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN NOT NULL DEFAULT FALSE,
-          private BOOLEAN NOT NULL DEFAULT FALSE,
-          serialized TEXT NOT NULL
-        )
-      ''');
-
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS dashboard_definitions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          last_reviewed INTEGER NOT NULL,
-          deleted BOOLEAN NOT NULL DEFAULT FALSE,
-          private BOOLEAN NOT NULL DEFAULT FALSE,
-          serialized TEXT NOT NULL,
-          active BOOLEAN NOT NULL
-        )
-      ''');
-
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS tag_entities (
-          id TEXT NOT NULL UNIQUE,
-          tag TEXT NOT NULL,
-          type TEXT NOT NULL,
-          inactive BOOLEAN DEFAULT FALSE,
-          private BOOLEAN NOT NULL DEFAULT FALSE,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN DEFAULT FALSE,
-          serialized TEXT NOT NULL,
-          PRIMARY KEY (id),
-          UNIQUE(tag, type)
-        )
-      ''');
-
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS linked_entries (
-          id TEXT NOT NULL UNIQUE,
-          from_id TEXT NOT NULL,
-          to_id TEXT NOT NULL,
-          type TEXT NOT NULL,
-          serialized TEXT NOT NULL,
-          hidden BOOLEAN DEFAULT FALSE,
-          created_at INTEGER,
-          updated_at INTEGER,
-          PRIMARY KEY (id),
-          UNIQUE(from_id, to_id, type)
-        )
-      ''');
+      _createV33DefinitionSchema(sqlite);
 
       sqlite.execute('PRAGMA user_version = 33');
       sqlite.dispose();
@@ -180,5 +111,120 @@ void main() {
 
       await db.close();
     });
+
+    test(
+      'recreates an already-existing habit definition index safely',
+      () async {
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v34_definition_idx_existing.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        _createV33DefinitionSchema(sqlite);
+        sqlite.execute('''
+        CREATE INDEX idx_habit_definitions_deleted_private
+        ON habit_definitions (
+          deleted COLLATE BINARY ASC,
+          private COLLATE BINARY ASC
+        )
+      ''');
+        sqlite.execute('PRAGMA user_version = 33');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v34_definition_idx_existing.db',
+        );
+
+        final version = await db.customSelect('PRAGMA user_version').get();
+        expect(version.first.read<int>('user_version'), db.schemaVersion);
+
+        final indexes = await db.customSelect('''
+        SELECT name, sql FROM sqlite_master
+        WHERE type = 'index'
+          AND name = 'idx_habit_definitions_deleted_private'
+      ''').get();
+
+        expect(indexes, hasLength(1));
+        expect(
+          indexes.single.read<String>('sql'),
+          contains('habit_definitions'),
+        );
+
+        await db.close();
+      },
+    );
   });
+}
+
+void _createV33DefinitionSchema(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS habit_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted BOOLEAN NOT NULL DEFAULT FALSE,
+      private BOOLEAN NOT NULL DEFAULT FALSE,
+      serialized TEXT NOT NULL,
+      active BOOLEAN NOT NULL
+    )
+  ''');
+
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS label_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      color TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted BOOLEAN NOT NULL DEFAULT FALSE,
+      private BOOLEAN NOT NULL DEFAULT FALSE,
+      serialized TEXT NOT NULL
+    )
+  ''');
+
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS dashboard_definitions (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_reviewed INTEGER NOT NULL,
+      deleted BOOLEAN NOT NULL DEFAULT FALSE,
+      private BOOLEAN NOT NULL DEFAULT FALSE,
+      serialized TEXT NOT NULL,
+      active BOOLEAN NOT NULL
+    )
+  ''');
+
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS tag_entities (
+      id TEXT NOT NULL UNIQUE,
+      tag TEXT NOT NULL,
+      type TEXT NOT NULL,
+      inactive BOOLEAN DEFAULT FALSE,
+      private BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      deleted BOOLEAN DEFAULT FALSE,
+      serialized TEXT NOT NULL,
+      PRIMARY KEY (id),
+      UNIQUE(tag, type)
+    )
+  ''');
+
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS linked_entries (
+      id TEXT NOT NULL UNIQUE,
+      from_id TEXT NOT NULL,
+      to_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      serialized TEXT NOT NULL,
+      hidden BOOLEAN DEFAULT FALSE,
+      created_at INTEGER,
+      updated_at INTEGER,
+      PRIMARY KEY (id),
+      UNIQUE(from_id, to_id, type)
+    )
+  ''');
 }

@@ -254,6 +254,73 @@ void main() {
 
       await db.close();
     });
+
+    test(
+      'recreates an already-existing date-oriented task index safely',
+      () async {
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v35_task_date_idx_existing.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS journal (
+          id TEXT PRIMARY KEY,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          date_from INTEGER NOT NULL,
+          date_to INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          subtype TEXT,
+          starred BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
+          task BOOLEAN DEFAULT FALSE,
+          task_status TEXT,
+          task_priority TEXT,
+          task_priority_rank INTEGER,
+          category TEXT NOT NULL DEFAULT '',
+          flag INTEGER DEFAULT 0,
+          schema_version INTEGER DEFAULT 0,
+          plain_text TEXT,
+          latitude REAL,
+          longitude REAL,
+          geohash_string TEXT,
+          geohash_int INTEGER
+        )
+      ''');
+
+        sqlite.execute('''
+        CREATE INDEX idx_journal_tasks_date
+        ON journal (
+          category COLLATE BINARY ASC,
+          task_status COLLATE BINARY ASC,
+          date_from COLLATE BINARY DESC,
+          id COLLATE BINARY ASC
+        )
+        WHERE type = 'Task' AND deleted = FALSE AND task = 1
+      ''');
+
+        sqlite.execute('PRAGMA user_version = 34');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v35_task_date_idx_existing.db',
+        );
+
+        final version = await db.customSelect('PRAGMA user_version').get();
+        expect(version.first.read<int>('user_version'), db.schemaVersion);
+
+        final idx = await db.customSelect("""
+        SELECT sql FROM sqlite_master
+        WHERE type='index' AND name='idx_journal_tasks_date'
+      """).get();
+        expect(idx, hasLength(1));
+
+        await db.close();
+      },
+    );
   });
 
   group('Journal Browse Index Migration v36', () {
@@ -313,6 +380,74 @@ void main() {
         expect(sql, contains('deleted COLLATE BINARY ASC'));
         expect(sql, contains('type COLLATE BINARY ASC'));
         expect(sql, contains('date_from COLLATE BINARY DESC'));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'recreates an already-existing browse-oriented journal index safely',
+      () async {
+        final dbFile = File(
+          p.join(
+            testDirectory!.path,
+            'test_v36_journal_browse_idx_existing.db',
+          ),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS journal (
+          id TEXT PRIMARY KEY,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          date_from INTEGER NOT NULL,
+          date_to INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          subtype TEXT,
+          starred BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
+          task BOOLEAN DEFAULT FALSE,
+          task_status TEXT,
+          task_priority TEXT,
+          task_priority_rank INTEGER,
+          category TEXT NOT NULL DEFAULT '',
+          flag INTEGER DEFAULT 0,
+          schema_version INTEGER DEFAULT 0,
+          plain_text TEXT,
+          latitude REAL,
+          longitude REAL,
+          geohash_string TEXT,
+          geohash_int INTEGER
+        )
+      ''');
+
+        sqlite.execute('''
+        CREATE INDEX idx_journal_browse
+        ON journal (
+          deleted COLLATE BINARY ASC,
+          type COLLATE BINARY ASC,
+          date_from COLLATE BINARY DESC
+        )
+      ''');
+
+        sqlite.execute('PRAGMA user_version = 35');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v36_journal_browse_idx_existing.db',
+        );
+
+        final version = await db.customSelect('PRAGMA user_version').get();
+        expect(version.first.read<int>('user_version'), db.schemaVersion);
+
+        final idx = await db.customSelect("""
+        SELECT sql FROM sqlite_master
+        WHERE type='index' AND name='idx_journal_browse'
+      """).get();
+        expect(idx, hasLength(1));
 
         await db.close();
       },
@@ -426,6 +561,78 @@ void main() {
         final labeledIdxSql = labeledIdx.first.read<String>('sql');
         expect(labeledIdxSql, contains('journal_id COLLATE BINARY ASC'));
         expect(labeledIdxSql, contains('label_id COLLATE BINARY ASC'));
+
+        await db.close();
+      },
+    );
+
+    test(
+      'recreates an already-existing labeled lookup index safely',
+      () async {
+        final dbFile = File(
+          p.join(testDirectory!.path, 'test_v37_labeled_idx_existing.db'),
+        );
+        final sqlite = sqlite3.open(dbFile.path);
+
+        sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS journal (
+          id TEXT PRIMARY KEY,
+          serialized TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL,
+          date_from INTEGER NOT NULL,
+          date_to INTEGER NOT NULL,
+          type TEXT NOT NULL,
+          subtype TEXT,
+          starred BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
+          task BOOLEAN DEFAULT FALSE,
+          task_status TEXT,
+          task_priority TEXT,
+          task_priority_rank INTEGER,
+          category TEXT NOT NULL DEFAULT '',
+          flag INTEGER DEFAULT 0,
+          schema_version INTEGER DEFAULT 0,
+          plain_text TEXT,
+          latitude REAL,
+          longitude REAL,
+          geohash_string TEXT,
+          geohash_int INTEGER
+        )
+      ''');
+
+        sqlite.execute('''
+        CREATE TABLE IF NOT EXISTS labeled (
+          id TEXT PRIMARY KEY,
+          journal_id TEXT NOT NULL,
+          label_id TEXT NOT NULL
+        )
+      ''');
+
+        sqlite.execute('''
+        CREATE INDEX idx_labeled_journal_id_label_id
+        ON labeled (
+          journal_id COLLATE BINARY ASC,
+          label_id COLLATE BINARY ASC
+        )
+      ''');
+
+        sqlite.execute('PRAGMA user_version = 36');
+        sqlite.dispose();
+
+        final db = JournalDb(
+          overriddenFilename: 'test_v37_labeled_idx_existing.db',
+        );
+
+        final version = await db.customSelect('PRAGMA user_version').get();
+        expect(version.first.read<int>('user_version'), db.schemaVersion);
+
+        final idx = await db.customSelect("""
+        SELECT sql FROM sqlite_master
+        WHERE type='index' AND name='idx_labeled_journal_id_label_id'
+      """).get();
+        expect(idx, hasLength(1));
 
         await db.close();
       },

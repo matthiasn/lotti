@@ -303,18 +303,33 @@ class JournalDb extends _$JournalDb {
               message: 'Adding definition list and link recency indexes',
             );
             if (await _tableExists('habit_definitions')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_habit_definitions_deleted_private',
+              );
               await m.createIndex(idxHabitDefinitionsDeletedPrivate);
             }
             if (await _tableExists('label_definitions')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_label_definitions_deleted_private_name',
+              );
               await m.createIndex(idxLabelDefinitionsDeletedPrivateName);
             }
             if (await _tableExists('dashboard_definitions')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_dashboard_definitions_deleted_private_name',
+              );
               await m.createIndex(idxDashboardDefinitionsDeletedPrivateName);
             }
             if (await _tableExists('tag_entities')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_tag_entities_deleted_private_tag',
+              );
               await m.createIndex(idxTagEntitiesDeletedPrivateTag);
             }
             if (await _tableExists('linked_entries')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_linked_entries_from_id_hidden_created_at_desc',
+              );
               await m.createIndex(idxLinkedEntriesFromIdHiddenCreatedAtDesc);
             }
           }();
@@ -328,6 +343,9 @@ class JournalDb extends _$JournalDb {
               message: 'Adding date-oriented task index',
             );
             if (await _tableExists('journal')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_journal_tasks_date',
+              );
               await m.createIndex(idxJournalTasksDate);
             }
           }();
@@ -341,6 +359,7 @@ class JournalDb extends _$JournalDb {
               message: 'Adding browse-oriented journal index',
             );
             if (await _tableExists('journal')) {
+              await customStatement('DROP INDEX IF EXISTS idx_journal_browse');
               await m.createIndex(idxJournalBrowse);
             }
           }();
@@ -368,6 +387,9 @@ class JournalDb extends _$JournalDb {
               await m.createIndex(idxJournalTasksDatePriority);
             }
             if (await _tableExists('labeled')) {
+              await customStatement(
+                'DROP INDEX IF EXISTS idx_labeled_journal_id_label_id',
+              );
               await m.createIndex(idxLabeledJournalIdLabelId);
             }
           }();

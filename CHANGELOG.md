@@ -97,6 +97,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   queries seed the shared entity cache for follow-up hydration, and task
   progress now reads task estimates plus linked work time spans through
   lightweight lookups instead of loading full task and child entities.
+- Database migrations: index-adding upgrades now recreate existing indexes
+  safely for real-world databases that already contain those definitions,
+  preventing startup failures during schema upgrades.
 - Task lists: active-task indexes are now partial indexes keyed by category
   and status, priority-filtered date sorts have a dedicated task-priority
   index, and labeled task filters now use a composite `(journal_id, label_id)`

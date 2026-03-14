@@ -50,6 +50,7 @@
           <p>Task lists: identical warm <code>getTasks()</code> requests now reuse an in-memory result snapshot until task-relevant writes invalidate it, cutting repeated page fetches during task-list refresh bursts.</p>
           <p>Bulk journal hydration: high-volume id-based fetches now use a private-aware unsorted path in map-building callers, avoiding expensive <code>ORDER BY date_from DESC</code> work when the caller does not need ordered rows, and all-visible bulk-id lookups now drop the redundant <code>private IN (false, true)</code> predicate entirely.</p>
           <p>Journal browse and task progress: identical generic browse pages now reuse in-memory results, browse/task queries seed the shared entity cache for follow-up hydration, and task progress now reads task estimates plus linked work time spans through lightweight lookups instead of loading full task and child entities.</p>
+          <p>Database migrations: index-adding upgrades now recreate existing indexes safely for real-world databases that already contain those definitions, preventing startup failures during schema upgrades.</p>
           <p>Task lists: active-task indexes are now partial indexes keyed by category and status, priority-filtered date sorts have a dedicated task-priority index, and labeled task filters now use a composite <code>(journal_id, label_id)</code> lookup index plus an all-private/all-starred fast path.</p>
       </description>
     </release>
