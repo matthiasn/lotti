@@ -3,12 +3,20 @@ import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 
-/// Signature for a backfill function that paginates a [timeline] until the
-/// requested reconnect boundary is actually reachable.
+/// Signature for a reconnect backfill/pagination function.
 ///
-/// Returns true only when the requested timestamp boundary or [lastEventId] is
-/// visible after paging. Returns false when history was exhausted without
-/// reaching that boundary.
+/// Implementations page the provided [timeline] until one of these stopping
+/// conditions becomes true:
+///
+/// - [lastEventId] is visible in the timeline
+/// - [untilTimestamp] has been crossed by the earliest visible event
+/// - [maxPages] pages were requested; `null` means unbounded paging
+/// - the SDK reports that no more history is available
+///
+/// [pageSize] is the requested history batch size for each page. Returns
+/// `true` only when the requested reconnect boundary is actually reachable
+/// after paging. Returns `false` when history is exhausted or pagination fails
+/// before [lastEventId] or [untilTimestamp] is reached.
 typedef BackfillFn =
     Future<bool> Function({
       required Timeline timeline,

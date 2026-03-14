@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/last_read.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/read_marker_service.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../mocks/mocks.dart';
+import '../../../../mocks/mocks.dart' hide MockEvent, MockRoom, MockTimeline;
 import 'matrix_stream_consumer_test_support.dart';
 
 void _stubLogger(MockLoggingService logger) {
@@ -131,7 +130,7 @@ void main() {
     when(
       () => session.timelineEvents,
     ).thenAnswer((_) => const Stream<Event>.empty());
-    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(roomManager.initialize).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(null);
     when(() => roomManager.currentRoomId).thenReturn(null);
     when(
@@ -155,7 +154,7 @@ void main() {
     await consumer.initialize();
     await consumer.dispose();
 
-    verify(() => roomManager.initialize()).called(1);
+    verify(roomManager.initialize).called(1);
     verify(() => processor.startupTimestamp = 1234).called(1);
     verify(
       () => logger.captureEvent(
@@ -196,7 +195,7 @@ void main() {
       when(
         () => session.timelineEvents,
       ).thenAnswer((_) => const Stream<Event>.empty());
-      when(() => roomManager.initialize()).thenAnswer((_) async {});
+      when(roomManager.initialize).thenAnswer((_) async {});
       when(() => roomManager.currentRoom).thenAnswer((_) => currentRoom);
       when(() => roomManager.currentRoomId).thenReturn('!room:server');
       when(
@@ -205,12 +204,12 @@ void main() {
         currentRoom = room;
       });
       when(() => catchupTimeline.events).thenReturn(<Event>[event]);
-      when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+      when(catchupTimeline.cancelSubscriptions).thenReturn(null);
       when(
         () => room.getTimeline(limit: any<int>(named: 'limit')),
       ).thenAnswer((_) async => catchupTimeline);
       when(() => liveTimeline.events).thenReturn(<Event>[]);
-      when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+      when(liveTimeline.cancelSubscriptions).thenReturn(null);
       when(
         () => room.getTimeline(
           onNewEvent: any(named: 'onNewEvent'),
@@ -242,6 +241,84 @@ void main() {
     },
   );
 
+  test('start forwards skew-adjusted timestamp to catch-up backfill', () async {
+    final session = MockMatrixSessionManager();
+    final roomManager = MockSyncRoomManager();
+    final logger = MockLoggingService();
+    final journalDb = MockJournalDb();
+    final settingsDb = MockSettingsDb();
+    final processor = MockSyncEventProcessor();
+    final readMarker = MockSyncReadMarkerService();
+    final client = MockClient();
+    final room = MockRoom();
+    final catchupTimeline = MockTimeline();
+    final liveTimeline = MockTimeline();
+    num? capturedUntilTimestamp;
+
+    _stubLogger(logger);
+    _stubProcessor(processor, journalDb);
+    _stubReadMarker(readMarker);
+    _stubSettings(settingsDb);
+
+    when(() => session.client).thenReturn(client);
+    when(() => client.userID).thenReturn('@me:server');
+    when(
+      () => session.timelineEvents,
+    ).thenAnswer((_) => const Stream<Event>.empty());
+    when(roomManager.initialize).thenAnswer((_) async {});
+    when(() => roomManager.currentRoom).thenReturn(room);
+    when(() => roomManager.currentRoomId).thenReturn('!room:server');
+    when(
+      () => settingsDb.itemByKey(lastReadMatrixEventTs),
+    ).thenAnswer((_) async => '1234');
+    when(() => catchupTimeline.events).thenReturn(<Event>[]);
+    when(catchupTimeline.cancelSubscriptions).thenReturn(null);
+    when(
+      () => room.getTimeline(limit: any<int>(named: 'limit')),
+    ).thenAnswer((_) async => catchupTimeline);
+    when(() => liveTimeline.events).thenReturn(<Event>[]);
+    when(liveTimeline.cancelSubscriptions).thenReturn(null);
+    when(
+      () => room.getTimeline(
+        onNewEvent: any(named: 'onNewEvent'),
+        onInsert: any(named: 'onInsert'),
+        onChange: any(named: 'onChange'),
+        onRemove: any(named: 'onRemove'),
+        onUpdate: any(named: 'onUpdate'),
+      ),
+    ).thenAnswer((_) async => liveTimeline);
+
+    final consumer = MatrixStreamConsumer(
+      skipSyncWait: true,
+      sessionManager: session,
+      roomManager: roomManager,
+      loggingService: logger,
+      journalDb: journalDb,
+      settingsDb: settingsDb,
+      eventProcessor: processor,
+      readMarkerService: readMarker,
+      backfill:
+          ({
+            required Timeline timeline,
+            required String? lastEventId,
+            required int pageSize,
+            required int? maxPages,
+            required LoggingService logging,
+            num? untilTimestamp,
+          }) async {
+            capturedUntilTimestamp = untilTimestamp;
+            return false;
+          },
+      sentEventRegistry: SentEventRegistry(),
+    );
+
+    await consumer.initialize();
+    await consumer.start();
+    await consumer.dispose();
+
+    expect(capturedUntilTimestamp, 234);
+  });
+
   test('start handles live timeline attach failure gracefully', () async {
     final session = MockMatrixSessionManager();
     final roomManager = MockSyncRoomManager();
@@ -264,11 +341,11 @@ void main() {
     when(
       () => session.timelineEvents,
     ).thenAnswer((_) => const Stream<Event>.empty());
-    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(roomManager.initialize).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
     when(() => catchupTimeline.events).thenReturn(<Event>[]);
-    when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+    when(catchupTimeline.cancelSubscriptions).thenReturn(null);
     when(
       () => room.getTimeline(limit: any<int>(named: 'limit')),
     ).thenAnswer((_) async => catchupTimeline);
@@ -336,16 +413,16 @@ void main() {
     when(
       () => session.timelineEvents,
     ).thenAnswer((_) => const Stream<Event>.empty());
-    when(() => roomManager.initialize()).thenAnswer((_) async {});
+    when(roomManager.initialize).thenAnswer((_) async {});
     when(() => roomManager.currentRoom).thenReturn(room);
     when(() => roomManager.currentRoomId).thenReturn('!room:server');
     when(() => catchupTimeline.events).thenReturn(<Event>[]);
-    when(() => catchupTimeline.cancelSubscriptions()).thenReturn(null);
+    when(catchupTimeline.cancelSubscriptions).thenReturn(null);
     when(
       () => room.getTimeline(limit: any<int>(named: 'limit')),
     ).thenAnswer((_) async => catchupTimeline);
     when(() => liveTimeline.events).thenReturn(<Event>[]);
-    when(() => liveTimeline.cancelSubscriptions()).thenReturn(null);
+    when(liveTimeline.cancelSubscriptions).thenReturn(null);
     when(
       () => room.getTimeline(
         onNewEvent: any(named: 'onNewEvent'),
@@ -372,7 +449,7 @@ void main() {
 
     await consumer.dispose();
 
-    verify(() => liveTimeline.cancelSubscriptions()).called(1);
+    verify(liveTimeline.cancelSubscriptions).called(1);
     verify(
       () => logger.captureEvent(
         contains('MatrixStreamConsumer disposed'),

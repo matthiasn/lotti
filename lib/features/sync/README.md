@@ -154,4 +154,4 @@ The receive-side recovery model is now stricter than before:
 
 Those are documented in detail in
 [current_architecture.md](./current_architecture.md) and
-[../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md).
+[../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md](../../../docs/implementation_plans/2026-03-13_sender_offline_convergence.md).

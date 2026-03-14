@@ -455,7 +455,7 @@ class MatrixStreamCatchUpCoordinator {
             domain: syncLoggingDomain,
             subDomain: 'catchup',
           );
-        return true;
+        return false;
       }
       if (catchUp.timestampAnchored) {
         _loggingService.captureEvent(

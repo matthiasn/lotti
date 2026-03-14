@@ -380,30 +380,31 @@ class SyncDatabase extends _$SyncDatabase {
     // status breaks that equality, which is exactly the watermark we need.
     final query = customSelect(
       '''
-      SELECT CASE
-        WHEN host_rows.total_rows = 0 THEN NULL
-        ELSE prefix.contiguous_max
-      END AS last_counter
-      FROM (
-        SELECT COUNT(*) AS total_rows
+      WITH host_counters AS (
+        SELECT counter, status
         FROM sync_sequence_log
         WHERE host_id = ?
-      ) host_rows
-      CROSS JOIN (
-        SELECT COALESCE(MAX(counter), 0) AS contiguous_max
-        FROM (
-          SELECT
-            counter,
-            ROW_NUMBER() OVER (ORDER BY counter) AS rn
-          FROM sync_sequence_log
-          WHERE host_id = ?
-            AND status IN (?, ?, ?, ?)
-        ) resolved_prefix
-        WHERE counter = rn
-      ) prefix
+      ),
+      resolved_prefix AS (
+        SELECT
+          counter,
+          ROW_NUMBER() OVER (ORDER BY counter) AS rn
+        FROM host_counters
+        WHERE status IN (?, ?, ?, ?)
+      )
+      SELECT CASE
+        WHEN (SELECT COUNT(*) FROM host_counters) = 0 THEN NULL
+        ELSE COALESCE(
+          (
+            SELECT MAX(counter)
+            FROM resolved_prefix
+            WHERE counter = rn
+          ),
+          0
+        )
+      END AS last_counter
       ''',
       variables: [
-        Variable.withString(hostId),
         Variable.withString(hostId),
         Variable.withInt(received),
         Variable.withInt(backfilled),

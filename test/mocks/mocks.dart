@@ -76,6 +76,7 @@ import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
@@ -129,6 +130,12 @@ class MockJournalDb extends Mock implements JournalDb {
     return Stream<bool>.value(false).asBroadcastStream();
   }
 }
+
+class MockRoom extends Mock implements Room {}
+
+class MockTimeline extends Mock implements Timeline {}
+
+class MockEvent extends Mock implements Event {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override

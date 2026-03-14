@@ -470,7 +470,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         domain: 'MATRIX_SERVICE',
         subDomain: 'SmartLoader.fetchMedia',
       );
-      _onMissingDescriptorPath?.call(rp);
+      _onMissingDescriptorPath?.call(descriptorKey);
       return;
     }
     try {
@@ -492,7 +492,7 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
         subDomain: 'SmartLoader.fetchMedia',
         stackTrace: st,
       );
-      _onMissingDescriptorPath?.call(rp);
+      _onMissingDescriptorPath?.call(descriptorKey);
     }
   }
 }

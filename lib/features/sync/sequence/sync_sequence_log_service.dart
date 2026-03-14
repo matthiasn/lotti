@@ -301,6 +301,7 @@ class SyncSequenceLogService {
     String? jsonPath,
   }) async {
     final gaps = _GapAccumulator();
+    var newMissingDetected = false;
     final myHost = await _vectorClockService.getHost();
     final now = DateTime.now();
 
@@ -402,6 +403,9 @@ class SyncSequenceLogService {
             originatingHostId: originatingHostId,
             now: now,
           );
+          if (insertedCount > 0) {
+            newMissingDetected = true;
+          }
 
           _trace(
             'gapDetectedRange hostId=$hostId start=$startCounter end=${counter - 1} '
@@ -415,15 +419,18 @@ class SyncSequenceLogService {
             subDomain: 'gapDetected',
           );
         } else {
+          final existingCounters = await _syncDatabase
+              .getCountersForHostInRange(
+                hostId,
+                startCounter,
+                counter - 1,
+              );
+          final missingEntries = <SyncSequenceLogCompanion>[];
           for (var i = startCounter; i < counter; i++) {
             // Keep the small-gap path explicit because the per-counter logging
             // is still useful when debugging ordinary out-of-order delivery.
-            final existing = await _syncDatabase.getEntryByHostAndCounter(
-              hostId,
-              i,
-            );
-            if (existing == null) {
-              await _syncDatabase.recordSequenceEntry(
+            if (!existingCounters.contains(i)) {
+              missingEntries.add(
                 SyncSequenceLogCompanion(
                   hostId: Value(hostId),
                   counter: Value(i),
@@ -433,6 +440,7 @@ class SyncSequenceLogService {
                   updatedAt: Value(now),
                 ),
               );
+              newMissingDetected = true;
 
               _trace(
                 'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
@@ -444,6 +452,9 @@ class SyncSequenceLogService {
                 subDomain: 'gapDetected',
               );
             }
+          }
+          if (missingEntries.isNotEmpty) {
+            await _syncDatabase.batchInsertSequenceEntries(missingEntries);
           }
         }
       }
@@ -606,7 +617,7 @@ class SyncSequenceLogService {
     // Note: Covered vector clocks are processed at the START of this method,
     // BEFORE gap detection, to prevent false positives.
 
-    if (gaps.isNotEmpty) {
+    if (newMissingDetected) {
       // Preserve gaps immediately, but defer the automatic backfill nudge
       // until the surrounding ordered replay batch settles. This prevents
       // transient in-burst holes from triggering redundant repair chatter.

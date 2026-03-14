@@ -2900,19 +2900,20 @@ void main() {
     test(
       'image media ensure logs and registers pending on empty bytes',
       () async {
+        final fixedDate = DateTime(2024, 3, 15);
         final image = JournalImage(
           meta: Metadata(
             id: 'img-empty',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
           ),
           data: ImageData(
             imageId: 'img-empty',
             imageDirectory: '/images/2024-01-01/',
             imageFile: 'empty.jpg',
-            capturedAt: DateTime.now(),
+            capturedAt: fixedDate,
           ),
         );
         final relJson = '${getRelativeImagePath(image)}.json';
@@ -2987,19 +2988,20 @@ void main() {
     test(
       'loads entity and registers pending image media when descriptor not indexed',
       () async {
+        final fixedDate = DateTime(2024, 3, 15);
         final image = JournalImage(
           meta: Metadata(
             id: 'img-2',
-            createdAt: DateTime.now(),
-            updatedAt: DateTime.now(),
-            dateFrom: DateTime.now(),
-            dateTo: DateTime.now(),
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
           ),
           data: ImageData(
             imageId: 'img-2',
             imageDirectory: '/images/2024-01-01/',
             imageFile: 'missing.jpg',
-            capturedAt: DateTime.now(),
+            capturedAt: fixedDate,
           ),
         );
         final relJson = '${getRelativeImagePath(image)}.json';

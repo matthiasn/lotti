@@ -6,12 +6,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockTimeline extends Mock implements Timeline {}
-
-class MockEvent extends Mock implements Event {}
-
-class MockRoom extends Mock implements Room {}
-
 void main() {
   group('SdkPaginationCompat', () {
     test(

@@ -41,7 +41,7 @@ synthetic missing/requested backlog.
 
 ### Desktop
 
-From [sync-2026-03-13_desktop.log](/Users/mn/github/lotti/logs/sync-2026-03-13_desktop.log):
+From `sync-2026-03-13_desktop.log`:
 
 - `20:19:51.473` the first processed payload already detects `286 gaps`
 - `20:19:51.611` gap detection immediately nudges backfill
@@ -53,7 +53,7 @@ backlog was replayed.
 
 ### Mobile
 
-From [sync-2026-03-13_mobile.log](/Users/mn/github/lotti/logs/sync-2026-03-13_mobile.log):
+From `sync-2026-03-13_mobile.log`:
 
 - `21:09:32.851` catch-up logs:
   - `markerMissing`
@@ -182,9 +182,9 @@ but reconnect recovery itself is timestamp-first.
 
 Changed files:
 
-- [catch_up_strategy.dart](/Users/mn/github/lotti/lib/features/sync/matrix/pipeline/catch_up_strategy.dart)
-- [sdk_pagination_compat.dart](/Users/mn/github/lotti/lib/features/sync/matrix/sdk_pagination_compat.dart)
-- [matrix_stream_catch_up.dart](/Users/mn/github/lotti/lib/features/sync/matrix/pipeline/matrix_stream_catch_up.dart)
+- `lib/features/sync/matrix/pipeline/catch_up_strategy.dart`
+- `lib/features/sync/matrix/sdk_pagination_compat.dart`
+- `lib/features/sync/matrix/pipeline/matrix_stream_catch_up.dart`
 
 Behavioral changes:
 
