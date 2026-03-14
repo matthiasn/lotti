@@ -61,7 +61,7 @@ class JournalDb extends _$JournalDb {
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 30;
+  int get schemaVersion => 33;
 
   @override
   MigrationStrategy get migration {
@@ -250,6 +250,21 @@ class JournalDb extends _$JournalDb {
               'DROP INDEX IF EXISTS idx_linked_entries_to_id_hidden',
             );
             await m.createIndex(idxLinkedEntriesToIdHidden);
+          }();
+        }
+
+        // v33: Rebuild the active task due-date index as a non-partial
+        // composite index so it can be safely forced with INDEXED BY.
+        if (from < 33) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message: 'Rebuilding active task due-date index',
+            );
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_tasks_due_active',
+            );
+            await m.createIndex(idxJournalTasksDueActive);
           }();
         }
       },
@@ -533,6 +548,9 @@ class JournalDb extends _$JournalDb {
   Future<List<JournalEntity>> getJournalEntitiesForIds(
     Set<String> ids,
   ) async {
+    if (ids.isEmpty) {
+      return const <JournalEntity>[];
+    }
     final res = await journalEntitiesByIds(ids.toList()).get();
     return res.map(fromDbEntity).toList();
   }
@@ -1157,7 +1175,7 @@ class JournalDb extends _$JournalDb {
     final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
     final endIso = endOfDay.toIso8601String();
 
-    final res = await tasksDueOnOrBefore(endIso).get();
+    final res = await _selectTasksDue(endIso: endIso);
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
@@ -1170,8 +1188,48 @@ class JournalDb extends _$JournalDb {
     final startIso = startOfDay.toIso8601String();
     final endIso = endOfDay.toIso8601String();
 
-    final res = await tasksDueOn(startIso, endIso).get();
+    final res = await _selectTasksDue(startIso: startIso, endIso: endIso);
     return res.map(fromDbEntity).whereType<Task>().toList();
+  }
+
+  // Drift SQL doesn't support `INDEXED BY`, so keep the due-date hot path in
+  // raw SQL to force the dedicated expression index on large journal tables.
+  Future<List<JournalDbEntity>> _selectTasksDue({
+    required String endIso,
+    String? startIso,
+  }) {
+    final variables = <Variable<Object>>[];
+    final buffer = StringBuffer()
+      ..write('SELECT * FROM journal INDEXED BY idx_journal_tasks_due_active ')
+      ..write("WHERE type = 'Task' ")
+      ..write('AND deleted = 0 ')
+      ..write("AND task_status NOT IN ('DONE', 'REJECTED') ")
+      ..write(r"AND json_extract(serialized, '$.data.due') IS NOT NULL ");
+
+    if (startIso != null) {
+      variables.add(Variable<String>(startIso));
+      buffer.write(
+        r"AND json_extract(serialized, '$.data.due') >= "
+        '?${variables.length} ',
+      );
+    }
+
+    variables.add(Variable<String>(endIso));
+    buffer
+      ..write(
+        r"AND json_extract(serialized, '$.data.due') <= "
+        '?${variables.length} ',
+      )
+      ..write(
+        "AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private')) ",
+      )
+      ..write(r"ORDER BY json_extract(serialized, '$.data.due') ASC");
+
+    return customSelect(
+      buffer.toString(),
+      variables: variables,
+      readsFrom: {journal, configFlags},
+    ).asyncMap(journal.mapFromRow).get();
   }
 
   /// Find existing rating entity for a target entry and catalog

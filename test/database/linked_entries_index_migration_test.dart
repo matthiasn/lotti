@@ -93,10 +93,10 @@ void main() {
       // Open with Drift to run migration
       final db = JournalDb(overriddenFilename: 'test_v30_linked_idx.db');
 
-      // Schema version advanced to 30
+      // Schema version advanced to the current schema
       final version = await db.customSelect('PRAGMA user_version').get();
       expect(version.first.read<int>('user_version'), db.schemaVersion);
-      expect(db.schemaVersion, 30);
+      expect(db.schemaVersion, 33);
 
       // The corrected index now references to_id in its column list
       final postMigrationIdx = await db.customSelect("""

@@ -1219,6 +1219,38 @@ void main() {
           expect(results, isEmpty);
         },
       );
+
+      test('tasks due queries use the active due-date index', () async {
+        final endOfDay = DateTime(
+          2024,
+          10,
+          5,
+          23,
+          59,
+          59,
+          999,
+        ).toIso8601String();
+
+        final plan = await db!
+            .customSelect(
+              r'''
+          EXPLAIN QUERY PLAN
+          SELECT * FROM journal INDEXED BY idx_journal_tasks_due_active
+          WHERE type = 'Task'
+          AND deleted = 0
+          AND task_status NOT IN ('DONE', 'REJECTED')
+          AND json_extract(serialized, '$.data.due') IS NOT NULL
+          AND json_extract(serialized, '$.data.due') <= ?1
+          AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+          ORDER BY json_extract(serialized, '$.data.due') ASC
+          ''',
+              variables: [drift.Variable<String>(endOfDay)],
+            )
+            .get();
+
+        final details = plan.map((row) => row.read<String>('detail')).join(' ');
+        expect(details, contains('idx_journal_tasks_due_active'));
+      });
     });
 
     group('Linked entities -', () {

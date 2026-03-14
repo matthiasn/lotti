@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sync database: `sync_sequence_log` now has dedicated indices for actionable
   queue scans and payload-id resolution, reducing CPU spent scanning the
   sequence log at larger row counts.
+- Database reads: repeated settings-key lookups are now cached in-process, and
+  empty journal-ID/link sorts are short-circuited before they hit SQLite.
+- Journal database: active task due-date queries now use a dedicated expression
+  index on the serialized due date, reducing CPU spent scanning large task
+  tables for overdue and same-day task views.
+- Sync outbox: queue scans now use a `(status, priority, created_at)` index,
+  and the pending badge count is computed with `COUNT(*)` instead of loading
+  full outbox rows into Dart.
 
 ## [0.9.919] - 2026-03-12
 ### Changed

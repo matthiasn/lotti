@@ -1605,6 +1605,10 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     this,
   );
   late final $HostActivityTable hostActivity = $HostActivityTable(this);
+  late final Index idxOutboxStatusPriorityCreatedAt = Index(
+    'idx_outbox_status_priority_created_at',
+    'CREATE INDEX idx_outbox_status_priority_created_at ON outbox (status, priority, created_at)',
+  );
   late final Index idxSyncSequenceLogActionableStatusCreatedAt = Index(
     'idx_sync_sequence_log_actionable_status_created_at',
     'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at ON sync_sequence_log (status, created_at) WHERE status IN (1, 2)',
@@ -1621,6 +1625,7 @@ abstract class _$SyncDatabase extends GeneratedDatabase {
     outbox,
     syncSequenceLog,
     hostActivity,
+    idxOutboxStatusPriorityCreatedAt,
     idxSyncSequenceLogActionableStatusCreatedAt,
     idxSyncSequenceLogPayloadResolution,
   ];

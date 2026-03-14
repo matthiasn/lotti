@@ -1176,6 +1176,27 @@ void main() {
     });
 
     group('getLinksFromId', () {
+      test(
+        'returns empty list without sorting when there are no links',
+        () async {
+          const fromId = 'from-id';
+          final mockLinksQuery = MockSelectableLinkedDbEntry();
+
+          when(
+            () => mockJournalDb.linksFromId(fromId, [false]),
+          ).thenReturn(mockLinksQuery);
+          when(mockLinksQuery.get).thenAnswer((_) async => <LinkedDbEntry>[]);
+
+          final result = await repository.getLinksFromId(fromId);
+
+          expect(result, isEmpty);
+          verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
+          verifyNever(
+            () => mockJournalDb.journalEntityIdsByDateFromDesc(any()),
+          );
+        },
+      );
+
       test('returns links from a specific ID with sorted order', () async {
         // Arrange
         const fromId = 'from-id';

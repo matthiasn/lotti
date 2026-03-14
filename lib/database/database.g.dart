@@ -6303,6 +6303,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_type_subtype',
     'CREATE INDEX idx_journal_type_subtype ON journal (type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC)',
   );
+  late final Index idxJournalTasksDueActive = Index(
+    'idx_journal_tasks_due_active',
+    'CREATE INDEX idx_journal_tasks_due_active ON journal (type COLLATE BINARY ASC, deleted COLLATE BINARY ASC, json_extract(serialized, \'\$.data.due\') ASC)',
+  );
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -7588,22 +7592,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> tasksDueOnOrBefore(String endDate) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') <= ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
-      variables: [Variable<String>(endDate)],
-      readsFrom: {journal, configFlags},
-    ).asyncMap(journal.mapFromRow);
-  }
-
-  Selectable<JournalDbEntity> tasksDueOn(String startDate, String endDate) {
-    return customSelect(
-      'SELECT * FROM journal WHERE type = \'Task\' AND deleted = 0 AND task_status NOT IN (\'DONE\', \'REJECTED\') AND json_extract(serialized, \'\$.data.due\') IS NOT NULL AND json_extract(serialized, \'\$.data.due\') >= ?1 AND json_extract(serialized, \'\$.data.due\') <= ?2 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY json_extract(serialized, \'\$.data.due\') ASC',
-      variables: [Variable<String>(startDate), Variable<String>(endDate)],
-      readsFrom: {journal, configFlags},
-    ).asyncMap(journal.mapFromRow);
-  }
-
   Selectable<RatingsForTimeEntriesResult> ratingsForTimeEntries(
     List<String> timeEntryIds,
   ) {
@@ -7657,6 +7645,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalTab,
     idxJournalTasks,
     idxJournalTypeSubtype,
+    idxJournalTasksDueActive,
     conflicts,
     measurableTypes,
     habitDefinitions,

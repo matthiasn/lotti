@@ -40,4 +40,16 @@ void main() {
     await db.removeSettingsItem('lifecycle');
     expect(await db.itemByKey('lifecycle'), isNull);
   });
+
+  test('itemByKey reuses cached values for repeated lookups', () async {
+    await db.saveSettingsItem('cached_key', 'cached_value');
+
+    expect(await db.itemByKey('cached_key'), 'cached_value');
+
+    await db.customStatement(
+      "DELETE FROM settings WHERE config_key = 'cached_key'",
+    );
+
+    expect(await db.itemByKey('cached_key'), 'cached_value');
+  });
 }

@@ -96,7 +96,7 @@ void main() {
             .customSelect('PRAGMA user_version')
             .get();
         expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 8);
+        expect(db.schemaVersion, 9);
 
         // Verify sync_sequence_log table exists and has correct schema
         final seqLogResult = await db
@@ -142,7 +142,7 @@ void main() {
 
       // Verify schema version
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 8);
+      expect(versionResult.first.read<int>('user_version'), 9);
 
       // Verify all tables exist
       final tablesResult = await db
@@ -162,6 +162,7 @@ void main() {
       final indexResults = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type='index' AND name IN ( "
+            "'idx_outbox_status_priority_created_at', "
             "'idx_sync_sequence_log_actionable_status_created_at', "
             "'idx_sync_sequence_log_payload_resolution')",
           )
@@ -172,6 +173,7 @@ void main() {
       expect(
         indexNames,
         containsAll(<String>{
+          'idx_outbox_status_priority_created_at',
           'idx_sync_sequence_log_actionable_status_created_at',
           'idx_sync_sequence_log_payload_resolution',
         }),
@@ -286,7 +288,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 8);
+      expect(versionResult.first.read<int>('user_version'), 9);
 
       // Verify existing row survived with null payload_size
       final items = await db.oldestOutboxItems(10);
@@ -365,7 +367,7 @@ void main() {
 
       // Verify schema version updated
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 8);
+      expect(versionResult.first.read<int>('user_version'), 9);
 
       // Verify existing row survived with default priority=2 (low)
       final items = await db.oldestOutboxItems(10);
@@ -443,11 +445,12 @@ void main() {
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 8);
+      expect(versionResult.first.read<int>('user_version'), 9);
 
       final indexResults = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type='index' AND name IN ( "
+            "'idx_outbox_status_priority_created_at', "
             "'idx_sync_sequence_log_actionable_status_created_at', "
             "'idx_sync_sequence_log_payload_resolution')",
           )
@@ -458,6 +461,7 @@ void main() {
       expect(
         indexNames,
         containsAll(<String>{
+          'idx_outbox_status_priority_created_at',
           'idx_sync_sequence_log_actionable_status_created_at',
           'idx_sync_sequence_log_payload_resolution',
         }),

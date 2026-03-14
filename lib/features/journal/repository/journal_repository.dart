@@ -352,6 +352,11 @@ class JournalRepository {
       linksByToId[link.toId] = link;
     }
 
+    if (linksByToId.isEmpty) {
+      // Avoid the follow-up `id IN ()` ordering query when there are no links.
+      return const <EntryLink>[];
+    }
+
     // sort by the (editable) date from, descending, to allow for changing the
     // start date of the linked entries and get the list reordered accordingly
     final sortedToIds = await getIt<JournalDb>()

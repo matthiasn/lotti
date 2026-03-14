@@ -39,6 +39,10 @@ enum SyncSequenceStatus {
 }
 
 @DataClassName('OutboxItem')
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_status_priority_created_at '
+  'ON outbox (status, priority, created_at)',
+)
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -307,14 +311,15 @@ class SyncDatabase extends _$SyncDatabase {
   /// Watches the count of actionable (pending + in-flight) outbox items.
   /// Used by the badge to show how many items still need to be sent.
   Stream<int> watchOutboxCount() {
-    return (select(outbox)..where(
-          (t) => t.status.isIn([
-            OutboxStatus.pending.index,
-            _outboxSendingStatus,
-          ]),
-        ))
-        .watch()
-        .map((res) => res.length);
+    final query = selectOnly(outbox)
+      ..addColumns([outbox.id.count()])
+      ..where(
+        outbox.status.isIn([
+          OutboxStatus.pending.index,
+          _outboxSendingStatus,
+        ]),
+      );
+    return query.watchSingle().map((row) => row.read(outbox.id.count()) ?? 0);
   }
 
   /// Delete a single outbox item by its ID.
@@ -898,7 +903,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -952,6 +957,9 @@ class SyncDatabase extends _$SyncDatabase {
         if (from < 8) {
           await m.createIndex(idxSyncSequenceLogActionableStatusCreatedAt);
           await m.createIndex(idxSyncSequenceLogPayloadResolution);
+        }
+        if (from < 9) {
+          await m.createIndex(idxOutboxStatusPriorityCreatedAt);
         }
       },
     );

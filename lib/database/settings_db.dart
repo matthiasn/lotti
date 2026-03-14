@@ -25,6 +25,9 @@ class SettingsDb extends _$SettingsDb {
        );
 
   bool inMemoryDatabase = false;
+  // Settings are read repeatedly on hot UI and sync paths. Cache per-process
+  // lookups so repeated reads do not serialize through settings.sqlite.
+  final Map<String, String?> _cache = <String, String?>{};
 
   @override
   int get schemaVersion => 1;
@@ -36,21 +39,24 @@ class SettingsDb extends _$SettingsDb {
       updatedAt: DateTime.now(),
     );
 
-    return into(settings).insertOnConflictUpdate(settingsItem);
+    final result = await into(settings).insertOnConflictUpdate(settingsItem);
+    _cache[configKey] = value;
+    return result;
   }
 
   Future<void> removeSettingsItem(String configKey) async {
-    final existing = await settingsItemByKey(configKey).get();
-    if (existing.isNotEmpty) {
-      await delete(settings).delete(existing.first);
-    }
+    await (delete(settings)..where((t) => t.configKey.equals(configKey))).go();
+    _cache.remove(configKey);
   }
 
   Future<String?> itemByKey(String configKey) async {
-    final existing = await settingsItemByKey(configKey).get();
-    if (existing.isNotEmpty) {
-      return existing.first.value;
+    if (_cache.containsKey(configKey)) {
+      return _cache[configKey];
     }
-    return null;
+
+    final existing = await settingsItemByKey(configKey).getSingleOrNull();
+    final value = existing?.value;
+    _cache[configKey] = value;
+    return value;
   }
 }
