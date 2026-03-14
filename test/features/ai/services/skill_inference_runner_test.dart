@@ -18,6 +18,7 @@ void main() {
   late MockJournalRepository mockJournalRepo;
   late MockLoggingService mockLoggingService;
   late MockPromptBuilderHelper mockPromptBuilderHelper;
+  late MockTaskSummaryResolver mockTaskSummaryResolver;
   late SkillInferenceRunner runner;
 
   final testSkill =
@@ -84,6 +85,7 @@ void main() {
     mockJournalRepo = MockJournalRepository();
     mockLoggingService = MockLoggingService();
     mockPromptBuilderHelper = MockPromptBuilderHelper();
+    mockTaskSummaryResolver = MockTaskSummaryResolver();
 
     runner = SkillInferenceRunner(
       cloudRepository: mockCloudRepo,
@@ -91,6 +93,7 @@ void main() {
       journalRepository: mockJournalRepo,
       loggingService: mockLoggingService,
       promptBuilderHelper: mockPromptBuilderHelper,
+      taskSummaryResolver: mockTaskSummaryResolver,
     );
   });
 

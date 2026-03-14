@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
@@ -61,11 +62,11 @@ class ProfileSeedingService {
         continue;
       }
 
-      // Update existing seeded profiles if any field has drifted,
-      // but only when the user hasn't manually edited the profile
-      // (UI edits set updatedAt; seeded profiles leave it null).
+      // Update existing default profiles if any seeded field has drifted.
+      // Only reconcile profiles marked as `isDefault` — user-created
+      // profiles are never touched.
       if (existing is AiConfigInferenceProfile &&
-          existing.updatedAt == null &&
+          existing.isDefault &&
           _hasProfileDrift(existing, profile)) {
         await _repo.saveConfig(profile);
         updatedCount++;
@@ -97,11 +98,22 @@ class ProfileSeedingService {
       if (!existing.isDefault) continue;
       if (existing.skillAssignments.isNotEmpty) continue;
 
-      // Apply the template's skill assignments to the existing profile.
+      // Apply the template's skill assignments, but only for slots that
+      // are still configured on the existing profile.
       if (template.skillAssignments.isEmpty) continue;
 
+      final sanitized = template.skillAssignments.where((a) {
+        final skill = SkillSeedingService.defaultSkills
+            .where((s) => s.id == a.skillId)
+            .firstOrNull;
+        if (skill == null) return true; // keep unknown skills as-is
+        return _hasSlotForSkillType(existing, skill.skillType);
+      }).toList();
+
+      if (sanitized.isEmpty) continue;
+
       final upgraded = existing.copyWith(
-        skillAssignments: template.skillAssignments,
+        skillAssignments: sanitized,
       );
       await _repo.saveConfig(upgraded);
       upgradedCount++;
@@ -138,6 +150,20 @@ class ProfileSeedingService {
     List<SkillAssignment> b,
   ) {
     return const SetEquality<SkillAssignment>().equals(a.toSet(), b.toSet());
+  }
+
+  /// Returns true when the profile has the model slot required by [skillType].
+  static bool _hasSlotForSkillType(
+    AiConfigInferenceProfile profile,
+    SkillType skillType,
+  ) {
+    return switch (skillType) {
+      SkillType.transcription => profile.transcriptionModelId != null,
+      SkillType.imageAnalysis => profile.imageRecognitionModelId != null,
+      SkillType.imageGeneration => profile.imageGenerationModelId != null,
+      SkillType.promptGeneration => true, // uses thinking model
+      SkillType.imagePromptGeneration => true, // uses thinking model
+    };
   }
 
   /// The default profile definitions.

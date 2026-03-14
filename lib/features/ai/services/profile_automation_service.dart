@@ -107,8 +107,9 @@ class ProfileAutomationService {
       return AutomationResult.notHandled;
     }
 
-    // 2. Find a skill assignment with automate: true whose skill matches
-    //    the requested type.
+    // 2. Collect all automated skill assignments matching the requested type.
+    final matches = <({SkillAssignment assignment, AiConfigSkill skill})>[];
+
     for (final assignment in resolvedProfile.skillAssignments) {
       if (!assignment.automate) continue;
 
@@ -125,7 +126,7 @@ class ProfileAutomationService {
 
       if (skillConfig.skillType != skillType) continue;
 
-      // 3. Verify the profile has the required model slot populated.
+      // Verify the profile has the required model slot populated.
       if (!_hasModelSlotForSkillType(resolvedProfile, skillType)) {
         developer.log(
           'Profile has no model slot for $skillType, skipping skill '
@@ -135,21 +136,35 @@ class ProfileAutomationService {
         continue;
       }
 
-      developer.log(
-        'Profile automation: using skill "${skillConfig.name}" for '
-        '$skillType on task $taskId',
-        name: _logTag,
-      );
-
-      return AutomationResult(
-        handled: true,
-        resolvedProfile: resolvedProfile,
-        skill: skillConfig,
-        skillAssignment: assignment,
-      );
+      matches.add((assignment: assignment, skill: skillConfig));
     }
 
-    return AutomationResult.notHandled;
+    if (matches.isEmpty) return AutomationResult.notHandled;
+
+    // 3. Reject ambiguous profiles with multiple automated skills of the
+    //    same type — the context policy could differ silently.
+    if (matches.length > 1) {
+      developer.log(
+        'Ambiguous profile: ${matches.length} automated $skillType '
+        'skills found for task $taskId, treating as not handled',
+        name: _logTag,
+      );
+      return AutomationResult.notHandled;
+    }
+
+    final match = matches.first;
+    developer.log(
+      'Profile automation: using skill "${match.skill.name}" for '
+      '$skillType on task $taskId',
+      name: _logTag,
+    );
+
+    return AutomationResult(
+      handled: true,
+      resolvedProfile: resolvedProfile,
+      skill: match.skill,
+      skillAssignment: match.assignment,
+    );
   }
 
   /// Checks whether the given task has an automated skill of the given type.

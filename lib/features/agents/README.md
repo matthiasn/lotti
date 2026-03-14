@@ -256,9 +256,11 @@ are added to a task:
 - Each `SkillAssignment` references a skill by ID and has an `automate` toggle.
 - The model is determined by the profile's model slot matching the skill's type (e.g., transcription
   skills use `transcriptionModelId`, image analysis skills use `imageRecognitionModelId`).
-- Seven preconfigured skills are seeded on first launch (see `SkillSeedingService.defaultSkills`).
+- Seven preconfigured skills are seeded on first launch (see `SkillSeedingService.defaultSkills`),
+  covering all `SkillType` enum values: `transcription`, `imageAnalysis`, `imageGeneration`,
+  `promptGeneration`, and `imagePromptGeneration`.
 - The profile editing UI exposes toggles for `transcription` and `imageAnalysis` skill types;
-  other types (image generation, prompt generation) are seeded but not yet exposed in the UI.
+  other types are seeded but not yet exposed in the UI.
 - When a skill is toggled on in the profile and an asset (audio recording, image) is added to a
   task whose agent uses that profile, `ProfileAutomationService` fires the skill automatically.
   The legacy `category.automaticPrompts` path serves as a fallback when no profile-driven skill

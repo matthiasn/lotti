@@ -507,11 +507,14 @@ SkillAssignment(skillId: 'skill-transcribe-001', automate: true),
    - Wraps `ProfileResolver` with the extra step of looking up the task's agent identity/template/version, then calling `resolve()`.
    - Returns resolved profile + skill assignments with automation flags, or null if no agent/profile.
 2. **Create `ProfileAutomationService`** in `lib/features/ai/services/profile_automation_service.dart`
-   - `tryTranscribe(audioEntryId, taskId, categoryId, {bool? enableSpeechRecognition})` → respects the user's per-recording opt-out (`enableSpeechRecognition` from `AudioRecorderState`). If `false`, returns immediately without transcribing. If `null`, defaults to `true` when a profile-driven transcription skill is available with `automate: true`.
-   - `tryAnalyzeImage(imageEntryId, taskId, categoryId)` → finds image analysis skill assignment with `automate: true`, loads skill's prompts, invokes analysis
-   - Returns `bool` indicating whether profile-driven path was used
-   - Applies `contextPolicy` from skill: `dictionaryOnly` sends only speech dictionary terms, `fullTask` sends complete task JSON
-3. Write tests with mock providers, including tests for opt-out behavior
+   - `tryTranscribe(taskId:, {enableSpeechRecognition})` → resolves the task's agent profile and returns an `AutomationResult` indicating whether a transcription skill with `automate: true` was found. Respects per-recording opt-out.
+   - `tryAnalyzeImage(taskId:)` → same pattern for image analysis skills.
+   - Returns `AutomationResult` (not bool) with `handled`, `resolvedProfile`, `skill`, and `skillAssignment` fields. Task-level resolution only — prompt loading and inference invocation are handled by `SkillInferenceRunner`.
+   - `hasAutomatedSkillType(taskId:, skillType:)` → pure capability check for checkbox visibility.
+3. **Create `SkillInferenceRunner`** in `lib/features/ai/services/skill_inference_runner.dart`
+   - Takes an `AutomationResult` and performs the actual inference: builds prompts via `SkillPromptBuilder`, prepares audio/image data, and calls the cloud inference repository.
+   - Applies `contextPolicy` from skill: `dictionaryOnly` sends only speech dictionary terms, `fullTask` sends complete task JSON.
+4. Write tests with mock providers, including tests for opt-out behavior
 
 ### Phase 5: Wire into Existing Triggers + Checkbox Visibility
 

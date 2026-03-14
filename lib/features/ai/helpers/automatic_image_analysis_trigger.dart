@@ -49,24 +49,34 @@ class AutomaticImageAnalysisTrigger {
       // Profile-driven path: check if task's agent profile handles
       // image analysis. When handled, skip the entire legacy path.
       if (linkedTaskId != null) {
-        final automationService = ref.read(profileAutomationServiceProvider);
-        final result = await automationService.tryAnalyzeImage(
-          taskId: linkedTaskId,
-        );
-        if (result.handled) {
-          loggingService.captureEvent(
-            'Profile-driven image analysis for task $linkedTaskId '
-            'using skill "${result.skill!.name}"',
+        try {
+          final automationService = ref.read(profileAutomationServiceProvider);
+          final result = await automationService.tryAnalyzeImage(
+            taskId: linkedTaskId,
+          );
+          if (result.handled) {
+            loggingService.captureEvent(
+              'Profile-driven image analysis for task $linkedTaskId '
+              'using skill "${result.skill!.name}"',
+              domain: 'automatic_image_analysis_trigger',
+              subDomain: 'triggerAutomaticImageAnalysis',
+            );
+            final runner = ref.read(skillInferenceRunnerProvider);
+            await runner.runImageAnalysis(
+              imageEntryId: imageEntryId,
+              automationResult: result,
+              linkedTaskId: linkedTaskId,
+            );
+            return; // Skip legacy path
+          }
+        } catch (profileException, profileStackTrace) {
+          loggingService.captureException(
+            profileException,
             domain: 'automatic_image_analysis_trigger',
-            subDomain: 'triggerAutomaticImageAnalysis',
+            subDomain: 'profilePreflight',
+            stackTrace: profileStackTrace,
           );
-          final runner = ref.read(skillInferenceRunnerProvider);
-          await runner.runImageAnalysis(
-            imageEntryId: imageEntryId,
-            automationResult: result,
-            linkedTaskId: linkedTaskId,
-          );
-          return; // Skip legacy path
+          // Fall through to legacy path.
         }
       }
 

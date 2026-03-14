@@ -232,9 +232,28 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
 
   void _toggleSkillAssignment(String skillId, {required bool automate}) {
     setState(() {
-      _skillAssignments
-        ..removeWhere((a) => a.skillId == skillId)
-        ..add(SkillAssignment(skillId: skillId, automate: automate));
+      // Find the skill type for mutual exclusion.
+      final toggledSkill = SkillSeedingService.defaultSkills
+          .where((s) => s.id == skillId)
+          .firstOrNull;
+
+      if (automate && toggledSkill != null) {
+        // Remove all assignments of the same SkillType so only one
+        // automated skill per capability is active at a time.
+        final sameTypeIds = SkillSeedingService.defaultSkills
+            .where((s) => s.skillType == toggledSkill.skillType)
+            .map((s) => s.id)
+            .toSet();
+        _skillAssignments.removeWhere(
+          (a) => sameTypeIds.contains(a.skillId),
+        );
+      } else {
+        _skillAssignments.removeWhere((a) => a.skillId == skillId);
+      }
+
+      _skillAssignments.add(
+        SkillAssignment(skillId: skillId, automate: automate),
+      );
     });
   }
 

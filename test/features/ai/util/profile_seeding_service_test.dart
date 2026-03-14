@@ -109,9 +109,11 @@ void main() {
     });
 
     test(
-      'does not update user-modified default profile even if drifted',
+      'updates default profile even if updatedAt is set',
       () async {
-        // Profile exists with old model but updatedAt is set (user edited it).
+        // Default profiles are always reconciled when drifted, regardless
+        // of updatedAt — since saveConfig always sets updatedAt, the old
+        // updatedAt == null gate was unreachable.
         when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
           (_) async => AiConfig.inferenceProfile(
             id: profileLocalId,
@@ -121,20 +123,19 @@ void main() {
             isDefault: true,
             desktopOnly: true,
             createdAt: DateTime(2026),
-            updatedAt: DateTime(2026, 3), // user edited
+            updatedAt: DateTime(2026, 3),
           ),
         );
 
         await service.seedDefaults();
 
-        // 6 new profiles saved (local skipped — user modified).
-        verify(() => mockRepo.saveConfig(any())).called(6);
+        // 6 new profiles + 1 updated (drifted local profile).
+        verify(() => mockRepo.saveConfig(any())).called(7);
       },
     );
 
-    test('updates non-default profile when flags have drifted', () async {
-      // Profile exists with isDefault false but seed target has isDefault true,
-      // and updatedAt is null (not user-edited) → should be updated.
+    test('does not update non-default profile even if drifted', () async {
+      // Non-default profiles are user-created and never touched by seeding.
       when(() => mockRepo.getConfigById(profileLocalId)).thenAnswer(
         (_) async => AiConfig.inferenceProfile(
           id: profileLocalId,
@@ -143,14 +144,15 @@ void main() {
           imageRecognitionModelId: 'qwen3.5:9b',
           desktopOnly: true,
           createdAt: DateTime(2026),
-          // isDefault defaults to false — differs from seed target
+          // isDefault defaults to false — seed target has isDefault true,
+          // but existing is not default so it should not be updated.
         ),
       );
 
       await service.seedDefaults();
 
-      // 6 new profiles + 1 updated local profile.
-      verify(() => mockRepo.saveConfig(any())).called(7);
+      // 6 new profiles only (local not updated — not isDefault).
+      verify(() => mockRepo.saveConfig(any())).called(6);
     });
 
     test('seeds profiles with correct IDs', () async {
@@ -371,7 +373,8 @@ void main() {
 
   group('ProfileSeedingService.upgradeExisting', () {
     test('upgrades default profiles with empty skillAssignments', () async {
-      // Existing profile has empty skill assignments.
+      // Existing profile has empty skill assignments but has the model
+      // slots required by the template's skill assignments.
       when(() => mockRepo.getConfigById(any())).thenAnswer((_) async => null);
       when(
         () => mockRepo.getConfigById(profileGeminiFlashId),
@@ -380,6 +383,8 @@ void main() {
           id: profileGeminiFlashId,
           name: 'Gemini Flash',
           thinkingModelId: 'models/gemini-3-flash-preview',
+          imageRecognitionModelId: 'models/gemini-3-flash-preview',
+          transcriptionModelId: 'models/gemini-3-flash-preview',
           isDefault: true,
           createdAt: DateTime(2026),
         ),

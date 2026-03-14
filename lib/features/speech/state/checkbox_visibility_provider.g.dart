@@ -9,23 +9,38 @@ part of 'checkbox_visibility_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 /// Checks whether a task has profile-driven transcription available.
+///
+/// Uses `keepAlive` to cache the result across modal open/close cycles,
+/// avoiding repeated full profile-chain resolution for the same task.
+/// Uses the pure capability check rather than the execution path to avoid
+/// side effects during render-time reads.
 
 @ProviderFor(hasProfileTranscription)
 final hasProfileTranscriptionProvider = HasProfileTranscriptionFamily._();
 
 /// Checks whether a task has profile-driven transcription available.
+///
+/// Uses `keepAlive` to cache the result across modal open/close cycles,
+/// avoiding repeated full profile-chain resolution for the same task.
+/// Uses the pure capability check rather than the execution path to avoid
+/// side effects during render-time reads.
 
 final class HasProfileTranscriptionProvider
     extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
     with $FutureModifier<bool>, $FutureProvider<bool> {
   /// Checks whether a task has profile-driven transcription available.
+  ///
+  /// Uses `keepAlive` to cache the result across modal open/close cycles,
+  /// avoiding repeated full profile-chain resolution for the same task.
+  /// Uses the pure capability check rather than the execution path to avoid
+  /// side effects during render-time reads.
   HasProfileTranscriptionProvider._({
     required HasProfileTranscriptionFamily super.from,
     required String super.argument,
   }) : super(
          retry: null,
          name: r'hasProfileTranscriptionProvider',
-         isAutoDispose: true,
+         isAutoDispose: false,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
@@ -64,9 +79,14 @@ final class HasProfileTranscriptionProvider
 }
 
 String _$hasProfileTranscriptionHash() =>
-    r'f497111073ddf778e6f02a044e14256d5062bdfe';
+    r'b8d867f8785011e75186893a0a8380901c46c97a';
 
 /// Checks whether a task has profile-driven transcription available.
+///
+/// Uses `keepAlive` to cache the result across modal open/close cycles,
+/// avoiding repeated full profile-chain resolution for the same task.
+/// Uses the pure capability check rather than the execution path to avoid
+/// side effects during render-time reads.
 
 final class HasProfileTranscriptionFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<bool>, String> {
@@ -76,10 +96,15 @@ final class HasProfileTranscriptionFamily extends $Family
         name: r'hasProfileTranscriptionProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
-        isAutoDispose: true,
+        isAutoDispose: false,
       );
 
   /// Checks whether a task has profile-driven transcription available.
+  ///
+  /// Uses `keepAlive` to cache the result across modal open/close cycles,
+  /// avoiding repeated full profile-chain resolution for the same task.
+  /// Uses the pure capability check rather than the execution path to avoid
+  /// side effects during render-time reads.
 
   HasProfileTranscriptionProvider call(String taskId) =>
       HasProfileTranscriptionProvider._(argument: taskId, from: this);

@@ -13,13 +13,13 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as p;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'skill_inference_runner.g.dart';
@@ -35,17 +35,20 @@ class SkillInferenceRunner {
     required JournalRepository journalRepository,
     required LoggingService loggingService,
     required PromptBuilderHelper promptBuilderHelper,
+    required TaskSummaryResolver taskSummaryResolver,
   }) : _cloudRepository = cloudRepository,
        _aiInputRepository = aiInputRepository,
        _journalRepository = journalRepository,
        _loggingService = loggingService,
-       _promptBuilderHelper = promptBuilderHelper;
+       _promptBuilderHelper = promptBuilderHelper,
+       _taskSummaryResolver = taskSummaryResolver;
 
   final CloudInferenceRepository _cloudRepository;
   final AiInputRepository _aiInputRepository;
   final JournalRepository _journalRepository;
   final LoggingService _loggingService;
   final PromptBuilderHelper _promptBuilderHelper;
+  final TaskSummaryResolver _taskSummaryResolver;
 
   /// Run skill-based transcription on an audio entry.
   Future<void> runTranscription({
@@ -349,27 +352,25 @@ class SkillInferenceRunner {
     final taskId = linkedTaskId ?? (entity is Task ? entity.id : null);
     if (taskId == null) return null;
 
-    final linkedEntities = await _journalRepository.getLinkedToEntities(
-      linkedTo: taskId,
-    );
-
-    final summaries =
-        linkedEntities
-            .whereType<AiResponseEntry>()
-            // ignore: deprecated_member_use_from_same_package
-            .where((e) => e.data.type == AiResponseType.taskSummary)
-            .toList()
-          ..sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
-
-    if (summaries.isEmpty) return null;
-    return summaries.first.data.response;
+    return _taskSummaryResolver.resolve(taskId);
   }
 
   Future<List<String>> _prepareImageData(JournalImage image) async {
     final imageDirectory = image.data.imageDirectory;
     final imageFile = image.data.imageFile;
     final docDir = getDocumentsDirectory();
-    final fullPath = '${docDir.path}$imageDirectory$imageFile';
+    final fullPath = p.normalize(
+      p.join(docDir.path, imageDirectory, imageFile),
+    );
+
+    // Reject paths that escape the documents directory (e.g. via `..`).
+    if (!fullPath.startsWith('${docDir.path}${p.separator}')) {
+      developer.log(
+        'Image path escapes documents directory: $fullPath',
+        name: _logTag,
+      );
+      return [];
+    }
 
     final file = File(fullPath);
     if (!file.existsSync()) {
@@ -387,19 +388,22 @@ class SkillInferenceRunner {
 
 @Riverpod(keepAlive: true)
 SkillInferenceRunner skillInferenceRunner(Ref ref) {
+  final taskSummaryResolver = TaskSummaryResolver(
+    getIt.isRegistered<AgentDatabase>()
+        ? AgentRepository(getIt<AgentDatabase>())
+        : null,
+  );
+
   return SkillInferenceRunner(
     cloudRepository: ref.watch(cloudInferenceRepositoryProvider),
     aiInputRepository: ref.watch(aiInputRepositoryProvider),
     journalRepository: ref.watch(journalRepositoryProvider),
     loggingService: ref.watch(loggingServiceProvider),
+    taskSummaryResolver: taskSummaryResolver,
     promptBuilderHelper: PromptBuilderHelper(
       aiInputRepository: ref.watch(aiInputRepositoryProvider),
       journalRepository: ref.watch(journalRepositoryProvider),
-      taskSummaryResolver: TaskSummaryResolver(
-        getIt.isRegistered<AgentDatabase>()
-            ? AgentRepository(getIt<AgentDatabase>())
-            : null,
-      ),
+      taskSummaryResolver: taskSummaryResolver,
     ),
   );
 }

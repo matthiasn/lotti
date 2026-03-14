@@ -43,25 +43,35 @@ class AutomaticPromptTrigger {
       // Profile-driven path: check if task's agent profile handles
       // transcription. When handled, skip the entire legacy path.
       if (linkedTaskId != null) {
-        final automationService = ref.read(profileAutomationServiceProvider);
-        final result = await automationService.tryTranscribe(
-          taskId: linkedTaskId,
-          enableSpeechRecognition: state.enableSpeechRecognition,
-        );
-        if (result.handled && !realtimeTranscriptProvided) {
-          loggingService.captureEvent(
-            'Profile-driven transcription for task $linkedTaskId '
-            'using skill "${result.skill!.name}"',
+        try {
+          final automationService = ref.read(profileAutomationServiceProvider);
+          final result = await automationService.tryTranscribe(
+            taskId: linkedTaskId,
+            enableSpeechRecognition: state.enableSpeechRecognition,
+          );
+          if (result.handled && !realtimeTranscriptProvided) {
+            loggingService.captureEvent(
+              'Profile-driven transcription for task $linkedTaskId '
+              'using skill "${result.skill!.name}"',
+              domain: 'automatic_prompt_trigger',
+              subDomain: 'triggerAutomaticPrompts',
+            );
+            final runner = ref.read(skillInferenceRunnerProvider);
+            await runner.runTranscription(
+              audioEntryId: entryId,
+              automationResult: result,
+              linkedTaskId: linkedTaskId,
+            );
+            return; // Skip legacy path entirely
+          }
+        } catch (profileException, profileStackTrace) {
+          loggingService.captureException(
+            profileException,
             domain: 'automatic_prompt_trigger',
-            subDomain: 'triggerAutomaticPrompts',
+            subDomain: 'profilePreflight',
+            stackTrace: profileStackTrace,
           );
-          final runner = ref.read(skillInferenceRunnerProvider);
-          await runner.runTranscription(
-            audioEntryId: entryId,
-            automationResult: result,
-            linkedTaskId: linkedTaskId,
-          );
-          return; // Skip legacy path entirely
+          // Fall through to legacy path.
         }
       }
 

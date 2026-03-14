@@ -49,19 +49,48 @@ void main() {
     );
   }
 
-  /// Creates a test skill config.
+  /// Creates a test skill config with type-appropriate modalities and
+  /// instructions.
   AiConfigSkill makeSkill({
     String id = 'skill-001',
     String name = 'Test Skill',
     SkillType skillType = SkillType.transcription,
   }) {
+    final (modalities, sysInstr, userInstr) = switch (skillType) {
+      SkillType.transcription => (
+        const [Modality.audio],
+        'Transcribe the audio.',
+        'Audio attached.',
+      ),
+      SkillType.imageAnalysis => (
+        const [Modality.image],
+        'Analyze the image.',
+        'Image attached.',
+      ),
+      SkillType.imageGeneration => (
+        const <Modality>[],
+        'Generate an image.',
+        'Generate based on description.',
+      ),
+      SkillType.promptGeneration => (
+        const [Modality.audio],
+        'Generate a prompt from audio.',
+        'Audio attached.',
+      ),
+      SkillType.imagePromptGeneration => (
+        const [Modality.audio],
+        'Generate an image prompt from audio.',
+        'Audio attached.',
+      ),
+    };
+
     return AiConfig.skill(
           id: id,
           name: name,
           skillType: skillType,
-          requiredInputModalities: const [Modality.audio],
-          systemInstructions: 'Transcribe the audio.',
-          userInstructions: 'Audio: {{audio}}',
+          requiredInputModalities: modalities,
+          systemInstructions: sysInstr,
+          userInstructions: userInstr,
           createdAt: DateTime(2024),
         )
         as AiConfigSkill;

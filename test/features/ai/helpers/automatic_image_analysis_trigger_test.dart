@@ -190,6 +190,7 @@ void main() {
             }),
           ],
         );
+        addTearDown(testContainer.dispose);
 
         final trigger = testContainer.read(
           automaticImageAnalysisTriggerProvider,
@@ -214,8 +215,6 @@ void main() {
         verify(
           () => mockPromptCapabilityFilter.getFirstAvailablePrompt([promptId]),
         ).called(1);
-
-        testContainer.dispose();
       },
     );
 
@@ -286,6 +285,7 @@ void main() {
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
+        addTearDown(testContainer.dispose);
 
         final trigger = testContainer.read(
           automaticImageAnalysisTriggerProvider,
@@ -307,8 +307,6 @@ void main() {
           ),
         ).called(1);
         verifyNever(() => mockCategoryRepository.getCategoryById(any()));
-
-        testContainer.dispose();
       },
     );
 
@@ -592,6 +590,7 @@ void main() {
           }),
         ],
       );
+      addTearDown(testContainer.dispose);
 
       final trigger = testContainer.read(automaticImageAnalysisTriggerProvider);
 
@@ -604,8 +603,6 @@ void main() {
 
       // Assert
       expect(inferenceCalled, isTrue);
-
-      testContainer.dispose();
     });
 
     test('callback invocation triggers analysis with correct parameters', () async {
@@ -659,6 +656,7 @@ void main() {
           }),
         ],
       );
+      addTearDown(testContainer.dispose);
 
       final trigger = testContainer.read(automaticImageAnalysisTriggerProvider);
 
@@ -674,8 +672,6 @@ void main() {
       expect(capturedEntityId, equals(imageEntryId));
       expect(capturedPromptId, equals(promptId));
       expect(capturedLinkedId, equals(linkedTaskId));
-
-      testContainer.dispose();
     });
 
     group('Profile-driven path', () {
@@ -729,6 +725,7 @@ void main() {
             skillInferenceRunnerProvider.overrideWithValue(mockRunner),
           ],
         );
+        addTearDown(testContainer.dispose);
 
         final trigger = testContainer.read(
           automaticImageAnalysisTriggerProvider,
@@ -761,8 +758,6 @@ void main() {
             subDomain: 'triggerAutomaticImageAnalysis',
           ),
         ).called(1);
-
-        testContainer.dispose();
       });
 
       test('falls through to legacy when profile does not handle', () async {
@@ -798,6 +793,7 @@ void main() {
             ),
           ],
         );
+        addTearDown(testContainer.dispose);
 
         final trigger = testContainer.read(
           automaticImageAnalysisTriggerProvider,
@@ -813,8 +809,6 @@ void main() {
         verify(
           () => mockCategoryRepository.getCategoryById(categoryId),
         ).called(1);
-
-        testContainer.dispose();
       });
 
       test('skips profile path when no linkedTaskId', () async {

@@ -1,3 +1,4 @@
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
@@ -9,11 +10,15 @@ part 'checkbox_visibility_provider.g.dart';
 ///
 /// Uses `keepAlive` to cache the result across modal open/close cycles,
 /// avoiding repeated full profile-chain resolution for the same task.
+/// Uses the pure capability check rather than the execution path to avoid
+/// side effects during render-time reads.
 @Riverpod(keepAlive: true)
 Future<bool> hasProfileTranscription(Ref ref, String taskId) async {
   final service = ref.watch(profileAutomationServiceProvider);
-  final result = await service.tryTranscribe(taskId: taskId);
-  return result.handled;
+  return service.hasAutomatedSkillType(
+    taskId: taskId,
+    skillType: SkillType.transcription,
+  );
 }
 
 /// Provider that computes which automatic prompt checkboxes should be visible
