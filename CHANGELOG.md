@@ -33,9 +33,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Journal database: active task due-date queries now use a dedicated expression
   index on the serialized due date, reducing CPU spent scanning large task
   tables for overdue and same-day task views.
+- Journal database: definition list screens and `linksFromId()` now use
+  dedicated composite indexes for visible-name sorting and recency-ordered
+  linked-entry lookups.
+- Daily OS: the unified day view now ignores unrelated database notifications
+  instead of reloading its full day-plan, timeline, and due-task bundle on
+  every update.
 - Sync outbox: queue scans now use a `(status, priority, created_at)` index,
   and the pending badge count is computed with `COUNT(*)` instead of loading
   full outbox rows into Dart.
+- Agent database: `agent.sqlite` now uses a small Drift read pool, plus
+  targeted indexes for wake-run thread lookups, pending saga ordering, and
+  active template-assignment joins during bursty concurrent read phases.
 
 ## [0.9.919] - 2026-03-12
 ### Changed

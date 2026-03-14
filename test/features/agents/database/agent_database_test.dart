@@ -109,13 +109,13 @@ void main() {
           tempDirectoryProvider: () async => testDirectory,
         );
 
-        // Verify schema version is now 4 (latest).
+        // Verify schema version is now 5 (latest).
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          4,
+          5,
         );
 
         // Verify the new columns exist by querying them
@@ -226,11 +226,11 @@ void main() {
         tempDirectoryProvider: () async => testDirectory,
       );
 
-      // Verify schema version is now 4.
+      // Verify schema version is now 5.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        4,
+        5,
       );
 
       // Verify the partial unique index exists.
@@ -477,11 +477,11 @@ void main() {
         tempDirectoryProvider: () async => testDirectory,
       );
 
-      // Verify schema version is now 4.
+      // Verify schema version is now 5.
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        4,
+        5,
       );
 
       // Verify the column exists by selecting it.
@@ -494,6 +494,149 @@ void main() {
 
       await db.close();
     });
+
+    test(
+      'v4 to v5 adds targeted performance indexes for agent reads',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1,
+              UNIQUE(from_id, to_id, type)
+            )
+          ''')
+          ..execute('''
+            CREATE INDEX idx_agent_links_from ON agent_links(from_id, type)
+          ''')
+          ..execute('''
+            CREATE INDEX idx_agent_links_to ON agent_links(to_id, type)
+          ''')
+          ..execute('''
+            CREATE INDEX idx_agent_links_type ON agent_links(type)
+          ''')
+          ..execute('''
+            CREATE UNIQUE INDEX idx_unique_improver_per_template
+            ON agent_links(to_id)
+            WHERE type = 'improver_target' AND deleted_at IS NULL
+          ''')
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE INDEX idx_wake_run_log_agent
+            ON wake_run_log(agent_id, created_at DESC)
+          ''')
+          ..execute('''
+            CREATE INDEX idx_wake_run_log_template
+            ON wake_run_log(template_id, created_at DESC)
+          ''')
+          ..execute('''
+            CREATE INDEX idx_wake_run_log_status
+            ON wake_run_log(status)
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          ..execute('''
+            CREATE INDEX idx_saga_log_agent ON saga_log(agent_id)
+          ''')
+          ..execute('''
+            CREATE INDEX idx_saga_log_status
+            ON saga_log(status, updated_at)
+          ''');
+
+        rawDb.execute('PRAGMA user_version = 4');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          5,
+        );
+
+        final indexes = await db
+            .customSelect(
+              "SELECT name FROM sqlite_master WHERE type = 'index' "
+              "AND name IN ("
+              "'idx_agent_links_active_from_type_to', "
+              "'idx_wake_run_log_agent_thread', "
+              "'idx_saga_log_status_created_at'"
+              ') ORDER BY name',
+            )
+            .get();
+
+        expect(
+          indexes.map((row) => row.read<String>('name')).toList(),
+          [
+            'idx_agent_links_active_from_type_to',
+            'idx_saga_log_status_created_at',
+            'idx_wake_run_log_agent_thread',
+          ],
+        );
+
+        await db.close();
+      },
+    );
   });
 
   group('AgentDatabase streaming and counting', () {

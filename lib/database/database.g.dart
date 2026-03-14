@@ -6322,6 +6322,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_habit_definitions_private',
     'CREATE INDEX idx_habit_definitions_private ON habit_definitions (private)',
   );
+  late final Index idxHabitDefinitionsDeletedPrivate = Index(
+    'idx_habit_definitions_deleted_private',
+    'CREATE INDEX idx_habit_definitions_deleted_private ON habit_definitions (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC)',
+  );
   late final CategoryDefinitions categoryDefinitions = CategoryDefinitions(
     this,
   );
@@ -6350,6 +6354,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_label_definitions_private',
     'CREATE INDEX idx_label_definitions_private ON label_definitions (private)',
   );
+  late final Index idxLabelDefinitionsDeletedPrivateName = Index(
+    'idx_label_definitions_deleted_private_name',
+    'CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
+  );
   late final DashboardDefinitions dashboardDefinitions = DashboardDefinitions(
     this,
   );
@@ -6364,6 +6372,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxDashboardDefinitionsPrivate = Index(
     'idx_dashboard_definitions_private',
     'CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private)',
+  );
+  late final Index idxDashboardDefinitionsDeletedPrivateName = Index(
+    'idx_dashboard_definitions_deleted_private_name',
+    'CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definitions (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, name COLLATE NOCASE ASC)',
   );
   late final ConfigFlags configFlags = ConfigFlags(this);
   late final TagEntities tagEntities = TagEntities(this);
@@ -6386,6 +6398,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxTagEntitiesInactive = Index(
     'idx_tag_entities_inactive',
     'CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive)',
+  );
+  late final Index idxTagEntitiesDeletedPrivateTag = Index(
+    'idx_tag_entities_deleted_private_tag',
+    'CREATE INDEX idx_tag_entities_deleted_private_tag ON tag_entities (deleted COLLATE BINARY ASC, private COLLATE BINARY ASC, tag COLLATE NOCASE ASC)',
   );
   late final Tagged tagged = Tagged(this);
   late final Index idxTaggedJournalId = Index(
@@ -6429,6 +6445,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
   late final Index idxLinkedEntriesToIdHidden = Index(
     'idx_linked_entries_to_id_hidden',
     'CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries (to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC)',
+  );
+  late final Index idxLinkedEntriesFromIdHiddenCreatedAtDesc = Index(
+    'idx_linked_entries_from_id_hidden_created_at_desc',
+    'CREATE INDEX idx_linked_entries_from_id_hidden_created_at_desc ON linked_entries (from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC, created_at COLLATE BINARY DESC)',
   );
   Selectable<ConfigFlag> listConfigFlags() {
     return customSelect(
@@ -7652,6 +7672,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxHabitDefinitionsId,
     idxHabitDefinitionsName,
     idxHabitDefinitionsPrivate,
+    idxHabitDefinitionsDeletedPrivate,
     categoryDefinitions,
     idxCategoryDefinitionsId,
     idxCategoryDefinitionsName,
@@ -7660,10 +7681,12 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLabelDefinitionsId,
     idxLabelDefinitionsName,
     idxLabelDefinitionsPrivate,
+    idxLabelDefinitionsDeletedPrivateName,
     dashboardDefinitions,
     idxDashboardDefinitionsId,
     idxDashboardDefinitionsName,
     idxDashboardDefinitionsPrivate,
+    idxDashboardDefinitionsDeletedPrivateName,
     configFlags,
     tagEntities,
     idxTagEntitiesId,
@@ -7671,6 +7694,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxTagEntitiesType,
     idxTagEntitiesPrivate,
     idxTagEntitiesInactive,
+    idxTagEntitiesDeletedPrivateTag,
     tagged,
     idxTaggedJournalId,
     idxTaggedTagEntityId,
@@ -7684,6 +7708,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxLinkedEntriesHidden,
     idxLinkedEntriesFromIdHidden,
     idxLinkedEntriesToIdHidden,
+    idxLinkedEntriesFromIdHiddenCreatedAtDesc,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([

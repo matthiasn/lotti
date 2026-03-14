@@ -13,6 +13,7 @@ class AgentDatabase extends _$AgentDatabase {
   AgentDatabase({
     this.inMemoryDatabase = false,
     bool background = true,
+    int readPool = 2,
     Future<Directory> Function()? documentsDirectoryProvider,
     Future<Directory> Function()? tempDirectoryProvider,
   }) : super(
@@ -20,6 +21,7 @@ class AgentDatabase extends _$AgentDatabase {
            agentDbFileName,
            inMemoryDatabase: inMemoryDatabase,
            background: background,
+           readPool: readPool,
            documentsDirectoryProvider: documentsDirectoryProvider,
            tempDirectoryProvider: tempDirectoryProvider,
          ),
@@ -28,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration {
@@ -70,6 +72,24 @@ class AgentDatabase extends _$AgentDatabase {
         if (from < 4) {
           await customStatement(
             'ALTER TABLE wake_run_log ADD COLUMN resolved_model_id TEXT',
+          );
+        }
+        if (from < 5) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_agent_links_active_from_type_to '
+            'ON agent_links(from_id, type, to_id) '
+            'WHERE deleted_at IS NULL',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_wake_run_log_agent_thread '
+            'ON wake_run_log(agent_id, thread_id, created_at DESC)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_saga_log_status_created_at '
+            'ON saga_log(status, created_at ASC)',
           );
         }
       },

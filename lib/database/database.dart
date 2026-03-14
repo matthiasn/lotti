@@ -61,7 +61,7 @@ class JournalDb extends _$JournalDb {
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 33;
+  int get schemaVersion => 34;
 
   @override
   MigrationStrategy get migration {
@@ -265,6 +265,32 @@ class JournalDb extends _$JournalDb {
               'DROP INDEX IF EXISTS idx_journal_tasks_due_active',
             );
             await m.createIndex(idxJournalTasksDueActive);
+          }();
+        }
+
+        // v34: Add composite indexes for definition list screens and the
+        // recency-ordered linksFromId() query.
+        if (from < 34) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message: 'Adding definition list and link recency indexes',
+            );
+            if (await _tableExists('habit_definitions')) {
+              await m.createIndex(idxHabitDefinitionsDeletedPrivate);
+            }
+            if (await _tableExists('label_definitions')) {
+              await m.createIndex(idxLabelDefinitionsDeletedPrivateName);
+            }
+            if (await _tableExists('dashboard_definitions')) {
+              await m.createIndex(idxDashboardDefinitionsDeletedPrivateName);
+            }
+            if (await _tableExists('tag_entities')) {
+              await m.createIndex(idxTagEntitiesDeletedPrivateTag);
+            }
+            if (await _tableExists('linked_entries')) {
+              await m.createIndex(idxLinkedEntriesFromIdHiddenCreatedAtDesc);
+            }
           }();
         }
       },

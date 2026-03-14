@@ -180,7 +180,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 33);
+        expect(db.schemaVersion, 34);
 
         final idx = await db.customSelect("""
         SELECT sql FROM sqlite_master

@@ -59,11 +59,21 @@ class DailyOsData {
 /// (timeline, budget progress bars, summary) update together.
 @riverpod
 class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
+  static const Set<String> _broadRefreshKeys = {
+    dayPlanNotification,
+    textEntryNotification,
+    taskNotification,
+    workoutNotification,
+    categoriesNotification,
+    privateToggleNotification,
+  };
+
   late DateTime _date;
   late DayPlanRepository _dayPlanRepository;
   late TimeService _timeService;
   StreamSubscription<Set<String>>? _updateSubscription;
   StreamSubscription<JournalEntity?>? _timerSubscription;
+  final Set<String> _trackedRefreshKeys = <String>{};
 
   /// The currently running timer entry with live duration.
   /// Used to replace stale DB entries when calculating budget progress.
@@ -74,6 +84,9 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
   int? _lastDisplayedMinute;
 
   bool _isDisposed = false;
+  bool _hasLoadedInitialData = false;
+  bool _refreshInFlight = false;
+  bool _pendingRefresh = false;
 
   @override
   Future<DailyOsData> build({required DateTime date}) async {
@@ -94,28 +107,31 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
 
     // Start listening BEFORE fetch to avoid missing updates during initial load.
     _listen();
-    return _fetchAllData();
+    final data = await _fetchAllData();
+    _hasLoadedInitialData = true;
+
+    if (_pendingRefresh) {
+      unawaited(_refreshFromNotifications());
+    }
+
+    return data;
   }
 
   void _listen() {
     final notifications = getIt<UpdateNotifications>();
-    _updateSubscription = notifications.updateStream.listen((_) async {
+    _updateSubscription = notifications.updateStream.listen((affectedIds) {
       if (_isDisposed) return;
 
-      try {
-        final data = await _fetchAllData();
-        if (!_isDisposed) {
-          state = AsyncData(data);
-        }
-      } catch (e, stackTrace) {
-        if (_isDisposed) return;
-        getIt<LoggingService>().captureException(
-          e,
-          domain: 'unified_daily_os_data_controller',
-          subDomain: '_listen',
-          stackTrace: stackTrace,
-        );
+      if (!_hasLoadedInitialData) {
+        _pendingRefresh = true;
+        return;
       }
+
+      if (!_shouldRefreshFor(affectedIds)) {
+        return;
+      }
+
+      unawaited(_refreshFromNotifications());
     });
 
     // Subscribe to timer updates for live duration tracking.
@@ -147,6 +163,44 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         _updateWithRunningTimer();
       }
     });
+  }
+
+  bool _shouldRefreshFor(Set<String> affectedIds) {
+    if (affectedIds.isEmpty) {
+      return false;
+    }
+
+    return affectedIds.any(_broadRefreshKeys.contains) ||
+        affectedIds.intersection(_trackedRefreshKeys).isNotEmpty;
+  }
+
+  Future<void> _refreshFromNotifications() async {
+    if (_refreshInFlight) {
+      _pendingRefresh = true;
+      return;
+    }
+
+    _refreshInFlight = true;
+    try {
+      do {
+        _pendingRefresh = false;
+        final data = await _fetchAllData();
+        _hasLoadedInitialData = true;
+        if (!_isDisposed) {
+          state = AsyncData(data);
+        }
+      } while (_pendingRefresh && !_isDisposed);
+    } catch (e, stackTrace) {
+      if (_isDisposed) return;
+      getIt<LoggingService>().captureException(
+        e,
+        domain: 'unified_daily_os_data_controller',
+        subDomain: '_refreshFromNotifications',
+        stackTrace: stackTrace,
+      );
+    } finally {
+      _refreshInFlight = false;
+    }
   }
 
   /// Updates state with the running timer's live duration.
@@ -319,6 +373,15 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
 
     // Bulk fetch ratings for all time entries (avoids N+1)
     final ratingIds = await db.getRatingIdsForTimeEntries(entryIds);
+
+    _trackedRefreshKeys
+      ..clear()
+      ..add(dayPlan.meta.id)
+      ..addAll(entryIds)
+      ..addAll(linkedFromIds)
+      ..addAll(dueTasks.map((task) => task.meta.id))
+      ..addAll(ratingIds.keys)
+      ..addAll(ratingIds.values);
 
     return DailyOsData(
       date: _date,

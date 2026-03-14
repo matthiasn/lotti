@@ -2739,6 +2739,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_unique_improver_per_template',
     'CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links (to_id) WHERE type = \'improver_target\' AND deleted_at IS NULL',
   );
+  late final Index idxAgentLinksActiveFromTypeTo = Index(
+    'idx_agent_links_active_from_type_to',
+    'CREATE INDEX idx_agent_links_active_from_type_to ON agent_links (from_id, type, to_id) WHERE deleted_at IS NULL',
+  );
   late final WakeRunLog wakeRunLog = WakeRunLog(this);
   late final Index idxWakeRunLogAgent = Index(
     'idx_wake_run_log_agent',
@@ -2752,6 +2756,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     'idx_wake_run_log_status',
     'CREATE INDEX idx_wake_run_log_status ON wake_run_log (status)',
   );
+  late final Index idxWakeRunLogAgentThread = Index(
+    'idx_wake_run_log_agent_thread',
+    'CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log (agent_id, thread_id, created_at DESC)',
+  );
   late final SagaLog sagaLog = SagaLog(this);
   late final Index idxSagaLogAgent = Index(
     'idx_saga_log_agent',
@@ -2760,6 +2768,10 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
   late final Index idxSagaLogStatus = Index(
     'idx_saga_log_status',
     'CREATE INDEX idx_saga_log_status ON saga_log (status, updated_at)',
+  );
+  late final Index idxSagaLogStatusCreatedAt = Index(
+    'idx_saga_log_status_created_at',
+    'CREATE INDEX idx_saga_log_status_created_at ON saga_log (status, created_at ASC)',
   );
   Selectable<AgentEntity> getAgentEntitiesByAgentId(String agentId, int limit) {
     return customSelect(
@@ -3231,13 +3243,16 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     idxAgentLinksTo,
     idxAgentLinksType,
     idxUniqueImproverPerTemplate,
+    idxAgentLinksActiveFromTypeTo,
     wakeRunLog,
     idxWakeRunLogAgent,
     idxWakeRunLogTemplate,
     idxWakeRunLogStatus,
+    idxWakeRunLogAgentThread,
     sagaLog,
     idxSagaLogAgent,
     idxSagaLogStatus,
+    idxSagaLogStatusCreatedAt,
   ];
 }
 

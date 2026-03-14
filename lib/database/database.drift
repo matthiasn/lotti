@@ -83,6 +83,10 @@ CREATE TABLE habit_definitions (
 CREATE INDEX idx_habit_definitions_id ON habit_definitions (id);
 CREATE INDEX idx_habit_definitions_name ON habit_definitions (name);
 CREATE INDEX idx_habit_definitions_private ON habit_definitions (private);
+CREATE INDEX idx_habit_definitions_deleted_private ON habit_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC
+);
 
 CREATE TABLE category_definitions (
   id TEXT NOT NULL,
@@ -115,6 +119,11 @@ CREATE TABLE label_definitions (
 CREATE INDEX idx_label_definitions_id ON label_definitions (id);
 CREATE INDEX idx_label_definitions_name ON label_definitions (name);
 CREATE INDEX idx_label_definitions_private ON label_definitions (private);
+CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
 
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
@@ -132,6 +141,11 @@ CREATE TABLE dashboard_definitions (
 CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id);
 CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name);
 CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private);
+CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
 
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
@@ -159,6 +173,11 @@ CREATE INDEX idx_tag_entities_tag ON tag_entities (tag);
 CREATE INDEX idx_tag_entities_type ON tag_entities (type);
 CREATE INDEX idx_tag_entities_private ON tag_entities (private);
 CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive);
+CREATE INDEX idx_tag_entities_deleted_private_tag ON tag_entities(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  tag COLLATE NOCASE ASC
+);
 
 CREATE TABLE tagged (
   id TEXT NOT NULL UNIQUE,
@@ -206,6 +225,11 @@ CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
 
 CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries(to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
+CREATE INDEX idx_linked_entries_from_id_hidden_created_at_desc ON linked_entries(
+  from_id COLLATE BINARY ASC,
+  hidden COLLATE BINARY ASC,
+  created_at COLLATE BINARY DESC
+);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:

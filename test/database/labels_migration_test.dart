@@ -89,11 +89,14 @@ void main() {
       sqlite.execute('''
         CREATE TABLE IF NOT EXISTS tag_entities (
           id TEXT PRIMARY KEY,
+          tag TEXT NOT NULL,
+          type TEXT NOT NULL,
+          inactive BOOLEAN DEFAULT FALSE,
+          private BOOLEAN DEFAULT FALSE,
+          deleted BOOLEAN DEFAULT FALSE,
           serialized TEXT NOT NULL,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
-          deleted BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
           schema_version INTEGER DEFAULT 0
         )
       ''');
@@ -243,6 +246,8 @@ void main() {
       sqlite.execute('''
         CREATE TABLE IF NOT EXISTS label_definitions (
           id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          color TEXT NOT NULL,
           serialized TEXT NOT NULL,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
@@ -272,13 +277,15 @@ void main() {
       ''');
 
       sqlite.execute('''
-        INSERT INTO label_definitions (id, serialized, created_at, updated_at, deleted, private)
-        VALUES ('label-1', '{}', 0, 0, 0, 0)
+        INSERT INTO label_definitions
+          (id, name, color, serialized, created_at, updated_at, deleted, private)
+        VALUES ('label-1', 'Label 1', '#ff0000', '{}', 0, 0, 0, 0)
       ''');
 
       sqlite.execute('''
-        INSERT INTO label_definitions (id, serialized, created_at, updated_at, deleted, private)
-        VALUES ('label-orphaned', '{}', 0, 0, 0, 0)
+        INSERT INTO label_definitions
+          (id, name, color, serialized, created_at, updated_at, deleted, private)
+        VALUES ('label-orphaned', 'Orphaned', '#00ff00', '{}', 0, 0, 0, 0)
       ''');
 
       sqlite.execute('''
@@ -431,6 +438,8 @@ void main() {
       sqlite.execute('''
         CREATE TABLE IF NOT EXISTS label_definitions (
           id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          color TEXT NOT NULL,
           serialized TEXT NOT NULL,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL,
@@ -460,8 +469,9 @@ void main() {
         ''');
 
         sqlite.execute('''
-          INSERT INTO label_definitions (id, serialized, created_at, updated_at, deleted, private)
-          VALUES ('label-$i', '{}', 0, 0, 0, 0)
+          INSERT INTO label_definitions
+            (id, name, color, serialized, created_at, updated_at, deleted, private)
+          VALUES ('label-$i', 'Label $i', '#0000ff', '{}', 0, 0, 0, 0)
         ''');
 
         sqlite.execute('''
