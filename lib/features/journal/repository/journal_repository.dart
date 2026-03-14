@@ -15,6 +15,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/lru_cache.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'journal_repository.g.dart';
@@ -31,16 +32,16 @@ class JournalRepository {
 
   final UpdateNotifications _updateNotifications;
   StreamSubscription<Set<String>>? _updateSubscription;
-  final Map<String, JournalEntity?> _journalEntityByIdCache =
-      <String, JournalEntity?>{};
+  final LruCache<String, JournalEntity?> _journalEntityByIdCache =
+      LruCache<String, JournalEntity?>(1000);
   final Map<String, Future<JournalEntity?>> _journalEntityByIdInFlight =
       <String, Future<JournalEntity?>>{};
-  final Map<String, List<JournalEntity>> _linkedEntitiesCache =
-      <String, List<JournalEntity>>{};
+  final LruCache<String, List<JournalEntity>> _linkedEntitiesCache =
+      LruCache<String, List<JournalEntity>>(256);
   final Map<String, Future<List<JournalEntity>>> _linkedEntitiesInFlight =
       <String, Future<List<JournalEntity>>>{};
-  final Map<String, List<JournalEntity>> _linkedToEntitiesCache =
-      <String, List<JournalEntity>>{};
+  final LruCache<String, List<JournalEntity>> _linkedToEntitiesCache =
+      LruCache<String, List<JournalEntity>>(256);
   final Map<String, Future<List<JournalEntity>>> _linkedToEntitiesInFlight =
       <String, Future<List<JournalEntity>>>{};
   int _cacheEpoch = 0;
@@ -95,8 +96,9 @@ class JournalRepository {
   }
 
   Future<JournalEntity?> getJournalEntityById(String id) async {
-    if (_journalEntityByIdCache.containsKey(id)) {
-      return _journalEntityByIdCache[id];
+    final cached = _journalEntityByIdCache.getEntry(id);
+    if (cached.found) {
+      return cached.value;
     }
 
     final inFlight = _journalEntityByIdInFlight[id];

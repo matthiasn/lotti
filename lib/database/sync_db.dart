@@ -955,11 +955,25 @@ class SyncDatabase extends _$SyncDatabase {
           );
         }
         if (from < 8) {
-          await m.createIndex(idxSyncSequenceLogActionableStatusCreatedAt);
-          await m.createIndex(idxSyncSequenceLogPayloadResolution);
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_actionable_status_created_at '
+            'ON sync_sequence_log (status, created_at) '
+            'WHERE status IN (1, 2)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_payload_resolution '
+            'ON sync_sequence_log (entry_id, payload_type, status) '
+            'WHERE entry_id IS NOT NULL',
+          );
         }
         if (from < 9) {
-          await m.createIndex(idxOutboxStatusPriorityCreatedAt);
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_status_priority_created_at '
+            'ON outbox (status, priority, created_at)',
+          );
         }
       },
     );

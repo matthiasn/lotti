@@ -20,6 +20,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/lru_cache.dart';
 
 part 'database.g.dart';
 
@@ -68,16 +69,16 @@ class JournalDb extends _$JournalDb {
   final Map<String, ConfigFlag> _configFlagsByName = <String, ConfigFlag>{};
   final StreamController<Set<ConfigFlag>> _configFlagsController =
       StreamController<Set<ConfigFlag>>.broadcast(sync: true);
-  final Map<String, JournalDbEntity?> _journalEntityByIdCache =
-      <String, JournalDbEntity?>{};
+  final LruCache<String, JournalDbEntity?> _journalEntityByIdCache =
+      LruCache<String, JournalDbEntity?>(2000);
   final Map<String, Completer<JournalDbEntity?>> _journalEntityByIdPending =
       <String, Completer<JournalDbEntity?>>{};
-  final Map<String, List<JournalEntity>> _journalQueryCache =
-      <String, List<JournalEntity>>{};
+  final LruCache<String, List<JournalEntity>> _journalQueryCache =
+      LruCache<String, List<JournalEntity>>(64);
   final Map<String, Future<List<JournalEntity>>> _journalQueryPending =
       <String, Future<List<JournalEntity>>>{};
-  final Map<String, List<JournalEntity>> _tasksQueryCache =
-      <String, List<JournalEntity>>{};
+  final LruCache<String, List<JournalEntity>> _tasksQueryCache =
+      LruCache<String, List<JournalEntity>>(64);
   final Map<String, Future<List<JournalEntity>>> _tasksQueryPending =
       <String, Future<List<JournalEntity>>>{};
   Future<void>? _configFlagsBootstrap;
@@ -634,8 +635,9 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<JournalDbEntity?> entityById(String id) async {
-    if (_journalEntityByIdCache.containsKey(id)) {
-      return _journalEntityByIdCache[id];
+    final cached = _journalEntityByIdCache.getEntry(id);
+    if (cached.found) {
+      return cached.value;
     }
 
     final pending = _journalEntityByIdPending[id];
@@ -780,8 +782,8 @@ class JournalDb extends _$JournalDb {
   }
 
   Future<void> _flushPendingJournalEntityByIdLookups() async {
-    _journalEntityByIdFlushScheduled = false;
     if (_journalEntityByIdPending.isEmpty) {
+      _journalEntityByIdFlushScheduled = false;
       return;
     }
 
@@ -808,6 +810,13 @@ class JournalDb extends _$JournalDb {
         if (!completer.isCompleted) {
           completer.completeError(error, stackTrace);
         }
+      }
+    } finally {
+      // If new lookups were queued during the await, schedule another flush.
+      if (_journalEntityByIdPending.isNotEmpty) {
+        scheduleMicrotask(_flushPendingJournalEntityByIdLookups);
+      } else {
+        _journalEntityByIdFlushScheduled = false;
       }
     }
   }
@@ -1013,10 +1022,7 @@ class JournalDb extends _$JournalDb {
         flaggedStatuses.length == 2 &&
         flaggedStatuses.contains(0) &&
         flaggedStatuses.contains(1);
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
 
     if (ids != null) {
       return filteredByTagJournal(
@@ -1171,10 +1177,7 @@ class JournalDb extends _$JournalDb {
         starredStatuses.length == 2 &&
         starredStatuses.contains(true) &&
         starredStatuses.contains(false);
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
     final selectedLabelIds = labelIds ?? <String>[];
     final includeUnlabeled = selectedLabelIds.contains('');
     final filteredLabelIds = selectedLabelIds
@@ -1457,10 +1460,7 @@ class JournalDb extends _$JournalDb {
 
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
 
     final dbEntities = matchesAllPrivateStates
         ? await linkedJournalEntitiesAllPrivate(linkedFrom).get()
@@ -1474,10 +1474,7 @@ class JournalDb extends _$JournalDb {
 
   Future<List<JournalDbEntity>> getLinkedToEntities(String linkedTo) async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
 
     final dbEntities = matchesAllPrivateStates
         ? await linkedToJournalEntities(linkedTo).get()
@@ -1895,12 +1892,13 @@ class JournalDb extends _$JournalDb {
         continue;
       }
 
-      if (!_journalEntityByIdCache.containsKey(id)) {
+      final entry = _journalEntityByIdCache.getEntry(id);
+      if (!entry.found) {
         missingIds.add(id);
         continue;
       }
 
-      final cached = _journalEntityByIdCache[id];
+      final cached = entry.value;
       if (cached != null &&
           !cached.deleted &&
           (includePrivate || !cached.private)) {
@@ -2094,10 +2092,7 @@ class JournalDb extends _$JournalDb {
 
   Future<DayPlanEntry?> getDayPlanById(String id) async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
     final res = matchesAllPrivateStates
         ? await dayPlanById(id).get()
         : await dayPlanByIdByPrivateStatuses(id, privateStatuses).get();
@@ -2110,10 +2105,7 @@ class JournalDb extends _$JournalDb {
     required DateTime rangeEnd,
   }) async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
     final res = matchesAllPrivateStates
         ? await dayPlansInRange(rangeStart, rangeEnd).get()
         : await dayPlansInRangeByPrivateStatuses(
@@ -2321,10 +2313,7 @@ class JournalDb extends _$JournalDb {
 
   Future<List<LabelDefinition>> getAllLabelDefinitions() async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
     final labels = matchesAllPrivateStates
         ? await allLabelDefinitions().get()
         : await allLabelDefinitionsByPrivateStatuses(privateStatuses).get();
@@ -2333,10 +2322,7 @@ class JournalDb extends _$JournalDb {
 
   Future<LabelDefinition?> getLabelDefinitionById(String id) async {
     final privateStatuses = await _visiblePrivateStatuses();
-    final matchesAllPrivateStates =
-        privateStatuses.length == 2 &&
-        privateStatuses.contains(true) &&
-        privateStatuses.contains(false);
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
     final result = matchesAllPrivateStates
         ? await labelDefinitionById(id).get()
         : await labelDefinitionByIdByPrivateStatuses(id, privateStatuses).get();

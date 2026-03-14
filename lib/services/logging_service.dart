@@ -39,19 +39,31 @@ class LoggingService {
   final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
   final List<Future<void>> _pendingWrites = <Future<void>>[];
 
+  StreamSubscription<bool>? _loggingFlagSubscription;
+  StreamSubscription<bool>? _slowQueryFlagSubscription;
+
   void _syncSlowQueryLoggingGate() {
     SlowQueryLoggingGate.isEnabled = _enableLogging && _enableSlowQueryLogging;
   }
 
   void listenToConfigFlag() {
-    getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
-      _enableLogging = value;
-      _syncSlowQueryLoggingGate();
-    });
-    getIt<JournalDb>().watchConfigFlag(logSlowQueriesFlag).listen((value) {
-      _enableSlowQueryLogging = value;
-      _syncSlowQueryLoggingGate();
-    });
+    _loggingFlagSubscription = getIt<JournalDb>()
+        .watchConfigFlag(enableLoggingFlag)
+        .listen((value) {
+          _enableLogging = value;
+          _syncSlowQueryLoggingGate();
+        });
+    _slowQueryFlagSubscription = getIt<JournalDb>()
+        .watchConfigFlag(logSlowQueriesFlag)
+        .listen((value) {
+          _enableSlowQueryLogging = value;
+          _syncSlowQueryLoggingGate();
+        });
+  }
+
+  Future<void> dispose() async {
+    await _loggingFlagSubscription?.cancel();
+    await _slowQueryFlagSubscription?.cancel();
   }
 
   // --- Text file sink -----------------------------------------------------

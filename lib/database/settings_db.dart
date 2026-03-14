@@ -142,6 +142,11 @@ class SettingsDb extends _$SettingsDb {
       return inFlightRead;
     }
 
+    final existingCompleter = _pendingReadCompleters[configKey];
+    if (existingCompleter != null) {
+      return existingCompleter.future;
+    }
+
     final completer = Completer<String?>();
     _pendingReadCompleters[configKey] = completer;
     _pendingReadGenerations[configKey] = _cacheGenerations[configKey] ?? 0;
