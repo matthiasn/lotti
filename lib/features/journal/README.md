@@ -38,6 +38,9 @@ The Journal feature is the heart of Lotti, providing:
   - Synchronization support
   - Reverse-linked entry reads now go through visibility-aware `JournalDb`
     helpers instead of direct generated Drift queries
+  - Repeated browse queries now reuse an in-memory `JournalDb` snapshot for the
+    same filter/page combination, and browse/task result rows seed the shared
+    entity cache for follow-up detail hydration
 
 #### UI Components (`ui/`)
 

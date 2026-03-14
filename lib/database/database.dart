@@ -30,6 +30,12 @@ enum ConflictStatus {
   resolved,
 }
 
+typedef LinkedEntityTimeSpan = ({
+  String id,
+  DateTime dateFrom,
+  DateTime dateTo,
+});
+
 @DriftDatabase(
   include: {'database.drift'},
 )
@@ -66,6 +72,10 @@ class JournalDb extends _$JournalDb {
       <String, JournalDbEntity?>{};
   final Map<String, Completer<JournalDbEntity?>> _journalEntityByIdPending =
       <String, Completer<JournalDbEntity?>>{};
+  final Map<String, List<JournalEntity>> _journalQueryCache =
+      <String, List<JournalEntity>>{};
+  final Map<String, Future<List<JournalEntity>>> _journalQueryPending =
+      <String, Future<List<JournalEntity>>>{};
   final Map<String, List<JournalEntity>> _tasksQueryCache =
       <String, List<JournalEntity>>{};
   final Map<String, Future<List<JournalEntity>>> _tasksQueryPending =
@@ -73,6 +83,7 @@ class JournalDb extends _$JournalDb {
   Future<void>? _configFlagsBootstrap;
   bool _configFlagsLoaded = false;
   bool _journalEntityByIdFlushScheduled = false;
+  int _journalQueryCacheGeneration = 0;
   int _tasksQueryCacheGeneration = 0;
 
   @override
@@ -390,6 +401,7 @@ class JournalDb extends _$JournalDb {
       entry.id,
       entry.deleted ? null : entry,
     );
+    _invalidateJournalQueryCache();
     _invalidateTaskQueryCache();
     return res;
   }
@@ -405,6 +417,7 @@ class JournalDb extends _$JournalDb {
         [priority, rank, id],
       );
       _journalEntityByIdCache.remove(id);
+      _invalidateJournalQueryCache();
       _invalidateTaskQueryCache();
     } catch (e) {
       DevLogger.error(
@@ -645,17 +658,59 @@ class JournalDb extends _$JournalDb {
     int limit = 500,
     int offset = 0,
   }) async {
-    final res = await _selectJournalEntities(
+    final cacheKey = _buildJournalQueryCacheKey(
       types: types,
       starredStatuses: starredStatuses,
       privateStatuses: privateStatuses,
       flaggedStatuses: flaggedStatuses,
-      categoryIds: categoryIds?.toList(),
       ids: ids,
+      categoryIds: categoryIds,
       limit: limit,
       offset: offset,
-    ).get();
-    return res.map(fromDbEntity).toList();
+    );
+    final cached = _journalQueryCache[cacheKey];
+    if (cached != null) {
+      return cached;
+    }
+
+    final pending = _journalQueryPending[cacheKey];
+    if (pending != null) {
+      return pending;
+    }
+
+    final generation = _journalQueryCacheGeneration;
+    late final Future<List<JournalEntity>> future;
+    future =
+        _selectJournalEntities(
+              types: types,
+              starredStatuses: starredStatuses,
+              privateStatuses: privateStatuses,
+              flaggedStatuses: flaggedStatuses,
+              categoryIds: categoryIds?.toList(),
+              ids: ids,
+              limit: limit,
+              offset: offset,
+            )
+            .get()
+            .then((res) {
+              _seedJournalEntityCache(res);
+              final entities = List<JournalEntity>.unmodifiable(
+                res.map(fromDbEntity),
+              );
+
+              if (generation == _journalQueryCacheGeneration) {
+                _journalQueryCache[cacheKey] = entities;
+              }
+              return entities;
+            })
+            .whenComplete(() {
+              if (identical(_journalQueryPending[cacheKey], future)) {
+                _journalQueryPending.remove(cacheKey);
+              }
+            });
+
+    _journalQueryPending[cacheKey] = future;
+    return future;
   }
 
   Future<List<JournalEntity>> getJournalEntitiesForIds(
@@ -664,12 +719,13 @@ class JournalDb extends _$JournalDb {
     if (ids.isEmpty) {
       return const <JournalEntity>[];
     }
-    final res = await journalEntitiesByIds(
-      ids.toList(),
-      await _visiblePrivateStatuses(),
-    ).get();
-    _seedJournalEntityCache(res);
-    return res.map(fromDbEntity).toList();
+    final privateStatuses = await _visiblePrivateStatuses();
+    final dbEntities = await _getVisibleJournalDbEntitiesForIds(
+      ids,
+      privateStatuses: privateStatuses,
+      sortByDateDesc: true,
+    );
+    return dbEntities.map(fromDbEntity).toList();
   }
 
   Future<List<JournalEntity>> getJournalEntitiesForIdsUnordered(
@@ -678,13 +734,13 @@ class JournalDb extends _$JournalDb {
     if (ids.isEmpty) {
       return const <JournalEntity>[];
     }
-
-    final res = await journalEntitiesByIdsUnordered(
-      ids.toList(),
-      await _visiblePrivateStatuses(),
-    ).get();
-    _seedJournalEntityCache(res);
-    return res.map(fromDbEntity).toList();
+    final privateStatuses = await _visiblePrivateStatuses();
+    final dbEntities = await _getVisibleJournalDbEntitiesForIds(
+      ids,
+      privateStatuses: privateStatuses,
+      sortByDateDesc: false,
+    );
+    return dbEntities.map(fromDbEntity).toList();
   }
 
   Future<List<JournalEntity>> getJournalEntitiesByIds(
@@ -747,15 +803,74 @@ class JournalDb extends _$JournalDb {
   Future<List<String>> getJournalEntityIdsSortedByDateFromDesc(
     Iterable<String> ids,
   ) async {
-    final idList = ids.toSet().toList(growable: false);
+    final idSet = ids.toSet();
+    final idList = idSet.toList(growable: false);
     if (idList.isEmpty) {
       return const <String>[];
     }
+    final privateStatuses = await _visiblePrivateStatuses();
+    final cachedLookup = _lookupCachedVisibleJournalDbEntities(
+      idSet,
+      privateStatuses: privateStatuses,
+    );
+    if (cachedLookup.missingIds.isEmpty) {
+      final sorted = [...cachedLookup.visibleEntities]
+        ..sort(_compareJournalEntitiesByDateDesc);
+      return sorted.map((entity) => entity.id).toList(growable: false);
+    }
 
-    return journalEntityIdsByDateFromDesc(
-      idList,
-      await _visiblePrivateStatuses(),
+    final fetchedIds = _matchesAllPrivateStates(privateStatuses)
+        ? await journalEntityIdsByDateFromDescAllPrivate(
+            cachedLookup.missingIds,
+          ).get()
+        : await journalEntityIdsByDateFromDesc(
+            cachedLookup.missingIds,
+            privateStatuses,
+          ).get();
+    final allIds = <String>[
+      ...cachedLookup.visibleEntities.map((entity) => entity.id),
+      ...fetchedIds,
+    ];
+    if (allIds.length <= 1) {
+      return allIds;
+    }
+
+    final hydrated = await _getVisibleJournalDbEntitiesForIds(
+      allIds.toSet(),
+      privateStatuses: privateStatuses,
+      sortByDateDesc: true,
+    );
+    return hydrated.map((entity) => entity.id).toList(growable: false);
+  }
+
+  Future<Map<String, Duration?>> getTaskEstimatesByIds(Set<String> ids) async {
+    if (ids.isEmpty) {
+      return const <String, Duration?>{};
+    }
+
+    final idList = ids.toSet().toList(growable: false);
+    final placeholders = List.filled(idList.length, '?').join(', ');
+    final rows = await customSelect(
+      '''
+      SELECT id, json_extract(serialized, '\$.data.estimate') AS estimate_us
+      FROM journal
+      WHERE deleted = FALSE
+      AND type = 'Task'
+      AND id IN ($placeholders)
+      ''',
+      variables: [
+        for (final id in idList) Variable<String>(id),
+      ],
+      readsFrom: {journal},
     ).get();
+
+    return <String, Duration?>{
+      for (final row in rows)
+        row.read<String>('id'): switch (row.readNullable<int>('estimate_us')) {
+          final micros? => Duration(microseconds: micros),
+          null => null,
+        },
+    };
   }
 
   /// Stream entries with their vector clocks for populating the sequence log.
@@ -994,6 +1109,7 @@ class JournalDb extends _$JournalDb {
             )
             .get()
             .then((res) {
+              _seedJournalEntityCache(res);
               final entities = List<JournalEntity>.unmodifiable(
                 res.map(fromDbEntity),
               );
@@ -1261,25 +1377,37 @@ class JournalDb extends _$JournalDb {
     required int limit,
     required int offset,
   }) {
-    String normalizeBools(List<bool> values) {
-      final normalized = [...values]..sort((a, b) => a == b ? 0 : (a ? 1 : -1));
-      return normalized.join(',');
-    }
-
-    String normalizeStrings(Iterable<String> values) {
-      final normalized = values.toSet().toList()..sort();
-      return normalized.join(',');
-    }
-
     return [
-      'star=${normalizeBools(starredStatuses)}',
-      'private=${normalizeBools(privateStatuses)}',
-      'status=${normalizeStrings(taskStatuses)}',
-      'category=${normalizeStrings(categoryIds)}',
-      'label=${normalizeStrings(labelIds ?? const <String>[])}',
-      'priority=${normalizeStrings(priorities ?? const <String>[])}',
-      'ids=${normalizeStrings(ids ?? const <String>[])}',
+      'star=${_normalizeBoolValues(starredStatuses)}',
+      'private=${_normalizeBoolValues(privateStatuses)}',
+      'status=${_normalizeStringValues(taskStatuses)}',
+      'category=${_normalizeStringValues(categoryIds)}',
+      'label=${_normalizeStringValues(labelIds ?? const <String>[])}',
+      'priority=${_normalizeStringValues(priorities ?? const <String>[])}',
+      'ids=${_normalizeStringValues(ids ?? const <String>[])}',
       'sortByDate=$sortByDate',
+      'limit=$limit',
+      'offset=$offset',
+    ].join('|');
+  }
+
+  String _buildJournalQueryCacheKey({
+    required List<String> types,
+    required List<bool> starredStatuses,
+    required List<bool> privateStatuses,
+    required List<int> flaggedStatuses,
+    required List<String>? ids,
+    required Set<String>? categoryIds,
+    required int limit,
+    required int offset,
+  }) {
+    return [
+      'types=${_normalizeStringValues(types)}',
+      'star=${_normalizeBoolValues(starredStatuses)}',
+      'private=${_normalizeBoolValues(privateStatuses)}',
+      'flag=${_normalizeIntValues(flaggedStatuses)}',
+      'ids=${_normalizeStringValues(ids ?? const <String>[])}',
+      'category=${_normalizeStringValues(categoryIds ?? const <String>{})}',
       'limit=$limit',
       'offset=$offset',
     ].join('|');
@@ -1289,6 +1417,12 @@ class JournalDb extends _$JournalDb {
     _tasksQueryCacheGeneration++;
     _tasksQueryCache.clear();
     _tasksQueryPending.clear();
+  }
+
+  void _invalidateJournalQueryCache() {
+    _journalQueryCacheGeneration++;
+    _journalQueryCache.clear();
+    _journalQueryPending.clear();
   }
 
   Future<int> getWipCount() async {
@@ -1380,6 +1514,70 @@ class JournalDb extends _$JournalDb {
     // Sort each result list by dateFrom descending to match single-parent semantics
     for (final entry in result.entries) {
       entry.value.sort((a, b) => b.meta.dateFrom.compareTo(a.meta.dateFrom));
+    }
+
+    return result;
+  }
+
+  Future<Map<String, List<LinkedEntityTimeSpan>>> getBulkLinkedTimeSpans(
+    Set<String> fromIds,
+  ) async {
+    if (fromIds.isEmpty) {
+      return <String, List<LinkedEntityTimeSpan>>{};
+    }
+
+    final fromIdList = fromIds.toList(growable: false);
+    final fromPlaceholders = List.filled(fromIdList.length, '?').join(', ');
+    final privateStatuses = await _visiblePrivateStatuses();
+    final filterPrivate = !_matchesAllPrivateStates(privateStatuses);
+    final privateClause = filterPrivate
+        ? 'AND journal.private IN (${List.filled(privateStatuses.length, '?').join(', ')})'
+        : '';
+
+    final rows = await customSelect(
+      '''
+      SELECT
+        linked_entries.from_id AS parent_id,
+        journal.id AS entity_id,
+        journal.date_from AS date_from,
+        journal.date_to AS date_to
+      FROM linked_entries
+      INNER JOIN journal ON journal.id = linked_entries.to_id
+      WHERE linked_entries.from_id IN ($fromPlaceholders)
+        AND linked_entries.hidden = FALSE
+        AND journal.deleted = FALSE
+        AND journal.type NOT IN ('Task', 'AiResponseEntry', 'JournalAudio')
+        $privateClause
+      ''',
+      variables: [
+        for (final fromId in fromIdList) Variable<String>(fromId),
+        if (filterPrivate)
+          for (final privateStatus in privateStatuses)
+            Variable<bool>(privateStatus),
+      ],
+      readsFrom: {linkedEntries, journal},
+    ).get();
+
+    final result = <String, List<LinkedEntityTimeSpan>>{
+      for (final id in fromIds) id: <LinkedEntityTimeSpan>[],
+    };
+    final seenEntities = <String, Set<String>>{
+      for (final id in fromIds) id: <String>{},
+    };
+
+    for (final row in rows) {
+      final parentId = row.read<String>('parent_id');
+      final entityId = row.read<String>('entity_id');
+      final seenForParent = seenEntities[parentId];
+      if (seenForParent == null || !seenForParent.add(entityId)) {
+        continue;
+      }
+
+      result[parentId]!.add((
+        id: entityId,
+        dateFrom: row.read<DateTime>('date_from'),
+        dateTo: row.read<DateTime>('date_to'),
+      ));
     }
 
     return result;
@@ -1610,6 +1808,7 @@ class JournalDb extends _$JournalDb {
     if (existing == null) {
       await into(configFlags).insert(configFlag);
       _setConfigFlag(configFlag);
+      _invalidateJournalQueryCache();
       _invalidateTaskQueryCache();
     }
   }
@@ -1618,6 +1817,7 @@ class JournalDb extends _$JournalDb {
     await _ensureConfigFlagsLoaded();
     final result = await into(configFlags).insertOnConflictUpdate(configFlag);
     _setConfigFlag(configFlag);
+    _invalidateJournalQueryCache();
     _invalidateTaskQueryCache();
     return result;
   }
@@ -1633,6 +1833,106 @@ class JournalDb extends _$JournalDb {
   Future<List<bool>> _visiblePrivateStatuses() async {
     final showPrivateEntries = await getConfigFlag('private');
     return showPrivateEntries ? const [false, true] : const [false];
+  }
+
+  bool _matchesAllPrivateStates(List<bool> privateStatuses) =>
+      privateStatuses.length == 2 &&
+      privateStatuses.contains(true) &&
+      privateStatuses.contains(false);
+
+  String _normalizeBoolValues(List<bool> values) {
+    final normalized = [...values]..sort((a, b) => a == b ? 0 : (a ? 1 : -1));
+    return normalized.join(',');
+  }
+
+  String _normalizeIntValues(Iterable<int> values) {
+    final normalized = values.toSet().toList()..sort();
+    return normalized.join(',');
+  }
+
+  String _normalizeStringValues(Iterable<String> values) {
+    final normalized = values.toSet().toList()..sort();
+    return normalized.join(',');
+  }
+
+  ({
+    List<JournalDbEntity> visibleEntities,
+    List<String> missingIds,
+  })
+  _lookupCachedVisibleJournalDbEntities(
+    Iterable<String> ids, {
+    required List<bool> privateStatuses,
+  }) {
+    final includePrivate = _matchesAllPrivateStates(privateStatuses);
+    final visibleEntities = <JournalDbEntity>[];
+    final missingIds = <String>[];
+    final seenIds = <String>{};
+
+    for (final id in ids) {
+      if (!seenIds.add(id)) {
+        continue;
+      }
+
+      if (!_journalEntityByIdCache.containsKey(id)) {
+        missingIds.add(id);
+        continue;
+      }
+
+      final cached = _journalEntityByIdCache[id];
+      if (cached != null &&
+          !cached.deleted &&
+          (includePrivate || !cached.private)) {
+        visibleEntities.add(cached);
+      }
+    }
+
+    return (
+      visibleEntities: visibleEntities,
+      missingIds: missingIds,
+    );
+  }
+
+  Future<List<JournalDbEntity>> _getVisibleJournalDbEntitiesForIds(
+    Set<String> ids, {
+    required List<bool> privateStatuses,
+    required bool sortByDateDesc,
+  }) async {
+    final cachedLookup = _lookupCachedVisibleJournalDbEntities(
+      ids,
+      privateStatuses: privateStatuses,
+    );
+
+    final fetched = cachedLookup.missingIds.isEmpty
+        ? const <JournalDbEntity>[]
+        : _matchesAllPrivateStates(privateStatuses)
+        ? await journalEntitiesByIdsUnorderedAllPrivate(
+            cachedLookup.missingIds,
+          ).get()
+        : await journalEntitiesByIdsUnordered(
+            cachedLookup.missingIds,
+            privateStatuses,
+          ).get();
+    _seedJournalEntityCache(fetched);
+
+    final result = <JournalDbEntity>[
+      ...cachedLookup.visibleEntities,
+      ...fetched,
+    ];
+    if (sortByDateDesc) {
+      result.sort(_compareJournalEntitiesByDateDesc);
+    }
+    return result;
+  }
+
+  int _compareJournalEntitiesByDateDesc(
+    JournalDbEntity a,
+    JournalDbEntity b,
+  ) {
+    final dateCompare = b.dateFrom.compareTo(a.dateFrom);
+    if (dateCompare != 0) {
+      return dateCompare;
+    }
+    return a.id.compareTo(b.id);
   }
 
   Future<void> _ensureConfigFlagsLoaded() {
@@ -1706,6 +2006,8 @@ class JournalDb extends _$JournalDb {
     }
     _journalEntityByIdCache.clear();
     _journalEntityByIdPending.clear();
+    _journalQueryCache.clear();
+    _journalQueryPending.clear();
     _tasksQueryCache.clear();
     _tasksQueryPending.clear();
     await _configFlagsController.close();

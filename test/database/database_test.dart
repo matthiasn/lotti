@@ -1433,6 +1433,60 @@ void main() {
           expect(details, contains('idx_journal_browse'));
         },
       );
+
+      test(
+        'getJournalEntities reuses cached results and invalidates on journal writes',
+        () async {
+          final base = DateTime(2024, 8, 6, 11);
+          final firstEntry = buildJournalEntry(
+            id: 'cached-journal-1',
+            timestamp: base,
+            text: 'First cached entry',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(firstEntry));
+
+          final firstResults = await fetchJournalEntities(
+            db!,
+            types: const ['JournalEntry'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [false, true],
+            flaggedStatuses: const [0, 1],
+          );
+          final secondResults = await fetchJournalEntities(
+            db!,
+            types: const ['JournalEntry'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [false, true],
+            flaggedStatuses: const [0, 1],
+          );
+
+          expect(identical(firstResults, secondResults), isTrue);
+
+          final secondEntry = buildJournalEntry(
+            id: 'cached-journal-2',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'Second cached entry',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(secondEntry));
+
+          final refreshedResults = await fetchJournalEntities(
+            db!,
+            types: const ['JournalEntry'],
+            starredStatuses: const [true, false],
+            privateStatuses: const [false, true],
+            flaggedStatuses: const [0, 1],
+          );
+
+          expect(identical(secondResults, refreshedResults), isFalse);
+          expect(
+            refreshedResults
+                .where((entry) => entry.meta.id.startsWith('cached-journal-'))
+                .map((entry) => entry.meta.id),
+            ['cached-journal-2', 'cached-journal-1'],
+          );
+        },
+      );
     });
 
     group('Linked entities -', () {
@@ -1595,6 +1649,67 @@ void main() {
           expect(
             withPrivate.map((entry) => entry.id),
             ['private-parent', 'public-parent'],
+          );
+        },
+      );
+
+      test(
+        'bulk journal id lookups respect private visibility on both fast paths',
+        () async {
+          final base = DateTime(2024, 8, 5);
+          final publicEntry = buildJournalEntry(
+            id: 'bulk-public-entry',
+            timestamp: base,
+            text: 'Public entry',
+          );
+          final privateEntry = buildJournalEntry(
+            id: 'bulk-private-entry',
+            timestamp: base.add(const Duration(minutes: 1)),
+            text: 'Private entry',
+            privateFlag: true,
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(publicEntry));
+          await db!.upsertJournalDbEntity(toDbEntity(privateEntry));
+
+          final privateConfig = await db!.getConfigFlagByName(privateFlag);
+          expect(privateConfig, isNotNull);
+
+          await db!.upsertConfigFlag(privateConfig!.copyWith(status: false));
+          expect(
+            (await db!.getJournalEntitiesForIdsUnordered({
+              publicEntry.meta.id,
+              privateEntry.meta.id,
+            })).map((entry) => entry.meta.id),
+            {'bulk-public-entry'},
+          );
+
+          await db!.upsertConfigFlag(privateConfig.copyWith(status: true));
+
+          final unordered = await db!.getJournalEntitiesForIdsUnordered({
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          });
+          expect(
+            unordered.map((entry) => entry.meta.id).toSet(),
+            {'bulk-public-entry', 'bulk-private-entry'},
+          );
+
+          final ordered = await db!.getJournalEntitiesForIds({
+            publicEntry.meta.id,
+            privateEntry.meta.id,
+          });
+          expect(
+            ordered.map((entry) => entry.meta.id),
+            ['bulk-private-entry', 'bulk-public-entry'],
+          );
+
+          expect(
+            await db!.getJournalEntityIdsSortedByDateFromDesc({
+              publicEntry.meta.id,
+              privateEntry.meta.id,
+            }),
+            ['bulk-private-entry', 'bulk-public-entry'],
           );
         },
       );

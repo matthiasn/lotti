@@ -117,19 +117,15 @@ class TaskProgressRepository {
 
     try {
       final db = getIt<JournalDb>();
-      final tasks = await db.getJournalEntitiesByIds(taskIds);
-      final tasksById = <String, Task>{
-        for (final task in tasks.whereType<Task>()) task.id: task,
-      };
-      final linkedEntitiesByTaskId = await db.getBulkLinkedEntities(taskIds);
+      final estimatesByTaskId = await db.getTaskEstimatesByIds(taskIds);
+      final linkedTimeSpansByTaskId = await db.getBulkLinkedTimeSpans(taskIds);
 
       for (final taskId in taskIds) {
-        final task = tasksById[taskId];
-        final result = task == null
+        final result = !estimatesByTaskId.containsKey(taskId)
             ? null
             : (
-                task.data.estimate,
-                _buildTimeRanges(linkedEntitiesByTaskId[taskId] ?? const []),
+                estimatesByTaskId[taskId],
+                _buildTimeRanges(linkedTimeSpansByTaskId[taskId] ?? const []),
               );
 
         for (final completer
@@ -156,16 +152,16 @@ class TaskProgressRepository {
     }
   }
 
-  static Map<String, TimeRange> _buildTimeRanges(List<JournalEntity> entities) {
+  static Map<String, TimeRange> _buildTimeRanges(
+    List<LinkedEntityTimeSpan> timeSpans,
+  ) {
     final timeRanges = <String, TimeRange>{};
 
-    for (final entity in entities) {
-      if (_shouldCountDuration(entity)) {
-        timeRanges[entity.id] = TimeRange(
-          start: entity.meta.dateFrom,
-          end: entity.meta.dateTo,
-        );
-      }
+    for (final timeSpan in timeSpans) {
+      timeRanges[timeSpan.id] = TimeRange(
+        start: timeSpan.dateFrom,
+        end: timeSpan.dateTo,
+      );
     }
 
     return timeRanges;

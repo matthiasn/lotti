@@ -8050,6 +8050,19 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<String>('id'));
   }
 
+  Selectable<String> journalEntityIdsByDateFromDescAllPrivate(
+    List<String> ids,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+      'SELECT id FROM journal WHERE deleted = FALSE AND id IN ($expandedids) ORDER BY date_from DESC',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal},
+    ).map((QueryRow row) => row.read<String>('id'));
+  }
+
   Selectable<String> journalEntityIdsByCategory(String categoryId) {
     return customSelect(
       'SELECT id FROM journal WHERE deleted = FALSE AND category = ?1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) ORDER BY date_from DESC',
@@ -8113,6 +8126,17 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> journalEntitiesByIdsAllPrivate(List<String> ids) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids) ORDER BY date_from DESC',
+      variables: [for (var $ in ids) Variable<String>($)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
   Selectable<JournalDbEntity> journalEntitiesByIdsUnordered(
     List<String> ids,
     List<bool> privateStatuses,
@@ -8131,6 +8155,19 @@ abstract class _$JournalDb extends GeneratedDatabase {
         for (var $ in ids) Variable<String>($),
         for (var $ in privateStatuses) Variable<bool>($),
       ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> journalEntitiesByIdsUnorderedAllPrivate(
+    List<String> ids,
+  ) {
+    var $arrayStartIndex = 1;
+    final expandedids = $expandVar($arrayStartIndex, ids.length);
+    $arrayStartIndex += ids.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE deleted = FALSE AND id IN ($expandedids)',
+      variables: [for (var $ in ids) Variable<String>($)],
       readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
   }

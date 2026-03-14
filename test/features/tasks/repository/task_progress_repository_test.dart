@@ -33,11 +33,11 @@ void main() {
       // Arrange
       const nonTaskId = 'non-task-id';
       when(
-        () => mockJournalDb.getJournalEntitiesByIds({nonTaskId}),
-      ).thenAnswer((_) async => [testTextEntry]);
+        () => mockJournalDb.getTaskEstimatesByIds({nonTaskId}),
+      ).thenAnswer((_) async => const <String, Duration?>{});
       when(
-        () => mockJournalDb.getBulkLinkedEntities({nonTaskId}),
-      ).thenAnswer((_) async => {nonTaskId: const <JournalEntity>[]});
+        () => mockJournalDb.getBulkLinkedTimeSpans({nonTaskId}),
+      ).thenAnswer((_) async => {nonTaskId: const <LinkedEntityTimeSpan>[]});
 
       // Act
       final result = await repository.getTaskProgressData(id: nonTaskId);
@@ -45,20 +45,20 @@ void main() {
       // Assert
       expect(result, isNull);
       verify(
-        () => mockJournalDb.getJournalEntitiesByIds({nonTaskId}),
+        () => mockJournalDb.getTaskEstimatesByIds({nonTaskId}),
       ).called(1);
-      verify(() => mockJournalDb.getBulkLinkedEntities({nonTaskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedTimeSpans({nonTaskId})).called(1);
     });
 
     test('returns task progress data with no linked entities', () async {
       // Arrange
       final taskId = testTask.id;
       when(
-        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
-      ).thenAnswer((_) async => [testTask]);
+        () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+      ).thenAnswer((_) async => {taskId: testTask.data.estimate});
       when(
-        () => mockJournalDb.getBulkLinkedEntities({taskId}),
-      ).thenAnswer((_) async => {taskId: const <JournalEntity>[]});
+        () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
+      ).thenAnswer((_) async => {taskId: const <LinkedEntityTimeSpan>[]});
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -67,8 +67,8 @@ void main() {
       expect(result, isNotNull);
       expect(result?.$1, equals(testTask.data.estimate));
       expect(result?.$2, isEmpty);
-      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
-      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
+      verify(() => mockJournalDb.getTaskEstimatesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedTimeSpans({taskId})).called(1);
     });
 
     test('returns task progress data with linked entries', () async {
@@ -77,13 +77,19 @@ void main() {
       final linkedEntry = testTextEntry;
 
       when(
-        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
-      ).thenAnswer((_) async => [testTask]);
+        () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+      ).thenAnswer((_) async => {taskId: testTask.data.estimate});
       when(
-        () => mockJournalDb.getBulkLinkedEntities({taskId}),
+        () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
       ).thenAnswer(
         (_) async => {
-          taskId: [linkedEntry],
+          taskId: [
+            (
+              id: linkedEntry.id,
+              dateFrom: linkedEntry.meta.dateFrom,
+              dateTo: linkedEntry.meta.dateTo,
+            ),
+          ],
         },
       );
 
@@ -95,8 +101,8 @@ void main() {
       expect(result?.$1, equals(testTask.data.estimate));
       expect(result?.$2, isNotEmpty);
       expect(result?.$2.containsKey(linkedEntry.id), isTrue);
-      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
-      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
+      verify(() => mockJournalDb.getTaskEstimatesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedTimeSpans({taskId})).called(1);
     });
 
     test('ignores linked tasks when calculating duration', () async {
@@ -117,13 +123,19 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
-      ).thenAnswer((_) async => [testTask]);
+        () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+      ).thenAnswer((_) async => {taskId: testTask.data.estimate});
       when(
-        () => mockJournalDb.getBulkLinkedEntities({taskId}),
+        () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
       ).thenAnswer(
         (_) async => {
-          taskId: [linkedTask, testTextEntry],
+          taskId: [
+            (
+              id: testTextEntry.id,
+              dateFrom: testTextEntry.meta.dateFrom,
+              dateTo: testTextEntry.meta.dateTo,
+            ),
+          ],
         },
       );
 
@@ -134,8 +146,8 @@ void main() {
       expect(result, isNotNull);
       expect(result?.$2.containsKey(linkedTask.id), isFalse);
       expect(result?.$2.containsKey(testTextEntry.id), isTrue);
-      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
-      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
+      verify(() => mockJournalDb.getTaskEstimatesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedTimeSpans({taskId})).called(1);
     });
 
     test(
@@ -163,13 +175,19 @@ void main() {
         );
 
         when(
-          () => mockJournalDb.getJournalEntitiesByIds({taskId}),
-        ).thenAnswer((_) async => [testTask]);
+          () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+        ).thenAnswer((_) async => {taskId: testTask.data.estimate});
         when(
-          () => mockJournalDb.getBulkLinkedEntities({taskId}),
+          () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
         ).thenAnswer(
           (_) async => {
-            taskId: [audioEntry, testTextEntry],
+            taskId: [
+              (
+                id: testTextEntry.id,
+                dateFrom: testTextEntry.meta.dateFrom,
+                dateTo: testTextEntry.meta.dateTo,
+              ),
+            ],
           },
         );
 
@@ -182,8 +200,8 @@ void main() {
         expect(result?.$2.containsKey(audioEntry.id), isFalse);
         // Text entry should still be included
         expect(result?.$2.containsKey(testTextEntry.id), isTrue);
-        verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
-        verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
+        verify(() => mockJournalDb.getTaskEstimatesByIds({taskId})).called(1);
+        verify(() => mockJournalDb.getBulkLinkedTimeSpans({taskId})).called(1);
       },
     );
 
@@ -204,20 +222,31 @@ void main() {
           );
 
           when(
-            () => mockJournalDb.getJournalEntitiesByIds({
-              testTask.id,
-              otherTask.id,
-            }),
-          ).thenAnswer((_) async => [testTask, otherTask]);
-          when(
-            () => mockJournalDb.getBulkLinkedEntities({
+            () => mockJournalDb.getTaskEstimatesByIds({
               testTask.id,
               otherTask.id,
             }),
           ).thenAnswer(
             (_) async => {
-              testTask.id: [testTextEntry],
-              otherTask.id: const <JournalEntity>[],
+              testTask.id: testTask.data.estimate,
+              otherTask.id: otherTask.data.estimate,
+            },
+          );
+          when(
+            () => mockJournalDb.getBulkLinkedTimeSpans({
+              testTask.id,
+              otherTask.id,
+            }),
+          ).thenAnswer(
+            (_) async => {
+              testTask.id: [
+                (
+                  id: testTextEntry.id,
+                  dateFrom: testTextEntry.meta.dateFrom,
+                  dateTo: testTextEntry.meta.dateTo,
+                ),
+              ],
+              otherTask.id: const <LinkedEntityTimeSpan>[],
             },
           );
 
@@ -238,13 +267,13 @@ void main() {
           expect(resultB?.$1, equals(otherTask.data.estimate));
           expect(resultB?.$2, isEmpty);
           verify(
-            () => mockJournalDb.getJournalEntitiesByIds({
+            () => mockJournalDb.getTaskEstimatesByIds({
               testTask.id,
               otherTask.id,
             }),
           ).called(1);
           verify(
-            () => mockJournalDb.getBulkLinkedEntities({
+            () => mockJournalDb.getBulkLinkedTimeSpans({
               testTask.id,
               otherTask.id,
             }),

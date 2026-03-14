@@ -89,7 +89,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page fetches during task-list refresh bursts.
 - Bulk journal hydration: high-volume id-based fetches now use a private-aware
   unsorted path by default in map-building callers, avoiding expensive
-  `ORDER BY date_from DESC` work when the caller does not need ordered rows.
+  `ORDER BY date_from DESC` work when the caller does not need ordered rows,
+  and all-visible bulk-id lookups now drop the redundant
+  `private IN (false, true)` predicate entirely.
+- Journal browse and task progress: generic `getJournalEntities()` queries now
+  reuse in-memory results for identical filter/page requests, browse/task
+  queries seed the shared entity cache for follow-up hydration, and task
+  progress now reads task estimates plus linked work time spans through
+  lightweight lookups instead of loading full task and child entities.
 - Task lists: active-task indexes are now partial indexes keyed by category
   and status, priority-filtered date sorts have a dedicated task-priority
   index, and labeled task filters now use a composite `(journal_id, label_id)`
