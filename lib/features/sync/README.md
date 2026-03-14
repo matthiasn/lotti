@@ -83,9 +83,15 @@ In that case the device records counter `11` as missing and broadcasts a
 Any device that can still explain that counter can answer with:
 
 - the actual payload via normal sync
-- a hint mapping the missing counter to a newer covering payload
+- a hint mapping the missing counter to a newer covering payload, but only when
+  the sender has explicit proof that the newer payload covers that counter
 - a deleted response
 - an unresolvable response
+
+A later vector clock alone is not enough to prove coverage. If counter `189`
+exists and counter `188` is missing, `vc[host] = 189` does not by itself prove
+that `188` was semantically superseded. That proof has to be carried explicitly
+in `coveredVectorClocks` or another persisted supersession mapping.
 
 ## Why There Is A Separate Architecture Document
 
@@ -130,6 +136,12 @@ The largest remaining concerns are:
   that share the same agent payload path, which can still overwrite each other
 - agent payload handling that can plausibly combine an older text event with a
   newer attachment version for the same `jsonPath`
+- sender-side supersession metadata: some offline-convergence failures were not
+  caused by replay at all, but by omitted `coveredVectorClocks` for superseded
+  local counters. When that metadata is missing, the receiver cannot soundly
+  infer that a later payload covers an older missing counter, so autonomous
+  convergence may still require either an exact resend or an `unresolvable`
+  response
 
 The receive-side recovery model is now stricter than before:
 
@@ -151,6 +163,10 @@ The receive-side recovery model is now stricter than before:
   local `lotti-...` echo ids are kept out of the stored read marker so Matrix
   read-marker state stays durable even though reconnect recovery is
   timestamp-first
+- timestamp-first catch-up fixes reachable-history replay, but it does not
+  replace explicit supersession metadata. Full sender-offline convergence still
+  depends on newer payloads carrying the omitted counters in
+  `coveredVectorClocks`
 
 Those are documented in detail in
 [current_architecture.md](./current_architecture.md) and

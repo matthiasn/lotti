@@ -4083,6 +4083,75 @@ void main() {
         processorWithFileLoader.cachePurgeListener = () {};
       }, returnsNormally);
     });
+
+    test('descriptorPendingListener with non-smart loader does not crash', () {
+      final processorWithFileLoader = SyncEventProcessor(
+        loggingService: loggingService,
+        updateNotifications: updateNotifications,
+        aiConfigRepository: aiConfigRepository,
+        settingsDb: settingsDb,
+        journalEntityLoader: const FileSyncJournalEntityLoader(),
+      );
+
+      expect(() {
+        processorWithFileLoader.descriptorPendingListener = (_) {};
+      }, returnsNormally);
+    });
+
+    test(
+      'descriptorPendingListener forwards missing descriptor notifications from smart loader',
+      () async {
+        final tempDir = await Directory.systemTemp.createTemp(
+          'descriptor_listener_test',
+        );
+        addTearDown(() => tempDir.delete(recursive: true));
+        await getIt.reset();
+        getIt.allowReassignment = true;
+        getIt.registerSingleton<Directory>(tempDir);
+
+        final fixedDate = DateTime(2024, 3, 15);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'img-listener',
+            createdAt: fixedDate,
+            updatedAt: fixedDate,
+            dateFrom: fixedDate,
+            dateTo: fixedDate,
+          ),
+          data: ImageData(
+            imageId: 'img-listener',
+            imageDirectory: '/images/2024-03-15/',
+            imageFile: 'pending.jpg',
+            capturedAt: fixedDate,
+          ),
+        );
+        final relJson = '${getRelativeImagePath(image)}.json';
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(image.toJson()));
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex(logging: loggingService),
+          loggingService: loggingService,
+        );
+        final processorWithSmartLoader = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: loader,
+        );
+
+        String? pendingPath;
+        processorWithSmartLoader.descriptorPendingListener = (path) {
+          pendingPath = path;
+        };
+
+        await loader.load(jsonPath: relJson);
+
+        expect(pendingPath, getRelativeImagePath(image));
+      },
+    );
   });
 
   test('EntryLink apply logs from/to IDs and rows affected', () async {
@@ -5673,6 +5742,66 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('runWithDeferredMissingEntryNudges', () {
+    test('falls back to plain action for mock processor instances', () async {
+      final mockProcessor = MockSyncEventProcessor();
+
+      final result = await runWithDeferredMissingEntryNudges<String>(
+        mockProcessor,
+        () async => 'plain-action',
+      );
+
+      expect(result, 'plain-action');
+    });
+
+    test(
+      'falls back to plain action when sequence log service is absent',
+      () async {
+        final result = await runWithDeferredMissingEntryNudges<String>(
+          processor,
+          () async => 'no-sequence-log',
+        );
+
+        expect(result, 'no-sequence-log');
+      },
+    );
+
+    test(
+      'delegates through the concrete sequence log service when present',
+      () async {
+        final sequenceLogService = SyncSequenceLogService(
+          syncDatabase: MockSyncDatabase(),
+          vectorClockService: MockVectorClockService(),
+          loggingService: loggingService,
+        );
+        final processorWithSequenceLog = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: sequenceLogService,
+        );
+
+        final executionOrder = <String>[];
+        sequenceLogService.onMissingEntriesDetected = () {
+          executionOrder.add('flush');
+        };
+
+        final result = await runWithDeferredMissingEntryNudges<String>(
+          processorWithSequenceLog,
+          () async {
+            executionOrder.add('action');
+            return 'with-sequence-log';
+          },
+        );
+
+        expect(result, 'with-sequence-log');
+        expect(executionOrder, ['action']);
+      },
+    );
   });
 
   // Note: Sequence log integration tests for the sync processor are covered

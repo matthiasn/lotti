@@ -56,6 +56,7 @@ import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
@@ -349,6 +350,8 @@ class MockAgentSyncService extends Mock implements AgentSyncService {
 }
 
 class MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
+
+class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
 
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 

@@ -450,7 +450,8 @@ class MatrixStreamCatchUpCoordinator {
           )
           ..captureEvent(
             _withInstance(
-              'catchup.initial.incomplete reason=timestampBoundaryUnreachable',
+              'catchup.${_initialCatchUpReady ? 'ongoing' : 'initial'}.incomplete '
+              'reason=timestampBoundaryUnreachable',
             ),
             domain: syncLoggingDomain,
             subDomain: 'catchup',
@@ -511,16 +512,6 @@ class MatrixStreamCatchUpCoordinator {
       }
       if (!_initialCatchUpConverged) {
         _initialCatchUpConverged = true;
-        if (_initialCatchUpReady) {
-          _loggingService.captureEvent(
-            _withInstance(
-              'catchup.recovered from=incomplete '
-              'via=${catchUp.timestampAnchored ? 'timestampBoundary' : 'snapshot'}',
-            ),
-            domain: syncLoggingDomain,
-            subDomain: 'catchup',
-          );
-        }
       }
       // Mark initial catch-up as completed and cancel retry timer.
       if (!_initialCatchUpReady) {

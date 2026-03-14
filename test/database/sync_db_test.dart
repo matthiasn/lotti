@@ -795,6 +795,43 @@ void main() {
       },
     );
 
+    test(
+      'getCountersForHostInRange returns only counters inside range',
+      () async {
+        final database = db!;
+        const hostId = 'host-1';
+
+        for (final counter in [1, 3, 5]) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(DateTime(2024, 1, counter)),
+              updatedAt: Value(DateTime(2024, 1, counter)),
+            ),
+          );
+        }
+
+        final counters = await database.getCountersForHostInRange(hostId, 2, 4);
+        expect(counters, {3});
+      },
+    );
+
+    test(
+      'getCountersForHostInRange returns empty set for invalid range',
+      () async {
+        final database = db!;
+
+        final counters = await database.getCountersForHostInRange(
+          'host-1',
+          5,
+          4,
+        );
+        expect(counters, isEmpty);
+      },
+    );
+
     test('getMissingEntries returns only missing/requested entries', () async {
       final database = db!;
       const hostId = 'host-1';

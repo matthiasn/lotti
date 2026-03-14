@@ -5,7 +5,12 @@
 
 ## Summary
 
-This incident was a catch-up failure, not a repair failure.
+This incident exposed two different failures:
+
+1. catch-up stopped too early even after pagination had already crossed the
+   stored timestamp boundary
+2. some superseded local counters were never represented explicitly in room
+   history because the sender omitted them from `coveredVectorClocks`
 
 When a receiver reconnects after being offline, it should page backward through
 Matrix history until it is older than the last processed timestamp, then
@@ -20,7 +25,10 @@ automatic backfill took over for data that should have arrived through ordinary
 catch-up.
 
 That is why an offline batch of roughly `1500` entries turned into a
-retransmission storm instead of behaving like an email inbox catching up.
+retransmission storm instead of behaving like an email inbox catching up. It
+also explains why some counters still could not converge autonomously even
+after the replay logic was fixed: the receiver did not have explicit proof in
+room history that those counters were superseded.
 
 ## Incident Narrative
 
@@ -36,6 +44,14 @@ When the receiver came back:
 
 The system eventually converged, but it did so with redundant work and a large
 synthetic missing/requested backlog.
+
+Later investigation also found a second, more fundamental problem for some of
+the remaining unresolved counters:
+
+7. the sender sometimes emitted a newer payload without listing every
+   superseded local counter in `coveredVectorClocks`
+8. the receiver therefore had no sound basis for deciding that a missing
+   counter was covered by a later payload
 
 ## What The Logs Prove
 
@@ -90,6 +106,13 @@ recent tail the receiver processed. Once pagination had already crossed the
 stored timestamp boundary, catch-up should have replayed that reachable backlog
 directly.
 
+Backfill also exposed a second protocol problem. In some cases the sender could
+only answer a requested counter by pointing at a later payload whose vector
+clock was merely `>=` the missing counter. That is not proof of semantic
+coverage. If the sender has no exact row for a counter and no explicit
+`coveredVectorClocks` evidence that the counter was superseded, the correct
+answer is `unresolvable`, not "this later payload probably covers it."
+
 ## Root Cause
 
 The stored last-processed timestamp was already enough to drive reliable
@@ -100,6 +123,18 @@ id that would never exist in persistent Matrix history.
 Once pagination had already crossed the stored timestamp boundary, recovery
 should have replayed from that point. Instead the code treated the timestamp as
 diagnostic information rather than the recovery contract.
+
+Independently of that control-flow bug, sender-offline convergence also depends
+on the sender publishing complete supersession evidence. A later counter like
+`189` does not, by itself, prove that missing `188` was covered. That proof
+must come from:
+
+- an exact `(hostId, counter)` entry
+- explicit `coveredVectorClocks`
+- or another explicit persisted supersession mapping
+
+Without one of those, the receiver does not know. The previous backfill
+fallback that accepted `vcCounter >= requestedCounter` was therefore unsound.
 
 That decision created the bad handoff:
 
@@ -177,6 +212,24 @@ reprocessing an unbounded tail.
 Local `lotti-...` echo ids are no longer written into the stored read marker.
 Server-assigned Matrix event ids are still kept for remote read-marker state,
 but reconnect recovery itself is timestamp-first.
+
+## Follow-Up Still Required
+
+The timestamp-first catch-up fix removes the replay-to-backfill handoff for
+reachable room history. It does not, by itself, guarantee autonomous
+sender-offline convergence for superseded local counters.
+
+For that, the sender must publish complete supersession evidence:
+
+- merged/outbox-superseded counters must be included in
+  `coveredVectorClocks`
+- receivers must treat only explicit coverage as proof
+- backfill must answer `unresolvable` when no exact or explicit coverage
+  evidence exists
+
+That is a separate soundness requirement from the catch-up fix. The catch-up
+work fixed how we replay reachable history. The `coveredVectorClocks` issue
+determines whether some counters are knowable from that history at all.
 
 ## Code Changes
 
