@@ -36,6 +36,8 @@ The Journal feature is the heart of Lotti, providing:
   - CRUD operations for all entity types
   - Query and search functionality
   - Synchronization support
+  - Reverse-linked entry reads now go through visibility-aware `JournalDb`
+    helpers instead of direct generated Drift queries
 
 #### UI Components (`ui/`)
 
@@ -174,6 +176,9 @@ Implementation details:
 ### Entry Link Updates
 
 - Link updates only emit sync events when link state changes (e.g., hidden or deleted), avoiding no-op vector clock churn.
+- `JournalDb` now batches same-turn `journalEntityById()` lookups and seeds an
+  in-memory entity cache from upserts and bulk reads, which reduces repeated
+  primary-key fan-out in detail views and linked-entry sections.
 
 ### Editor Toolbar Behavior
 

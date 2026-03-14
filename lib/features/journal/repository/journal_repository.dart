@@ -80,7 +80,7 @@ class JournalRepository {
   ) async {
     final db = getIt<JournalDb>();
     // Find all entities that link TO this image (i.e., tasks that have this image linked)
-    final linkedFromEntities = await db.linkedToJournalEntities(imageId).get();
+    final linkedFromEntities = await db.getLinkedToEntities(imageId);
 
     for (final dbEntity in linkedFromEntities) {
       final entity = fromDbEntity(dbEntity);
@@ -406,8 +406,7 @@ class JournalRepository {
     final epoch = _cacheEpoch;
     late final Future<List<JournalEntity>> future;
     future = getIt<JournalDb>()
-        .linkedToJournalEntities(linkedTo)
-        .get()
+        .getLinkedToEntities(linkedTo)
         .then((items) => items.map(fromDbEntity).toList(growable: false))
         .then((entities) {
           if (epoch == _cacheEpoch) {

@@ -84,6 +84,14 @@ void main() {
 
       // Set up default behavior for mockDb
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
+      when(() => mockDb.getAllConfigs()).thenAnswer((_) async => []);
+      when(
+        () => mockDb.watchAllConfigs(),
+      ).thenAnswer((_) => const Stream<List<AiConfigDbEntity>>.empty());
+    });
+
+    tearDown(() async {
+      await repository.close();
     });
 
     test(
@@ -245,6 +253,51 @@ void main() {
       expect(second?.id, 'cached-id');
       verify(() => mockDb.getConfigById('cached-id')).called(1);
     });
+
+    test(
+      'watchConfigsByType shares a single all-config snapshot watch',
+      () async {
+        final controller = StreamController<List<AiConfigDbEntity>>.broadcast();
+        final config = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final entity = AiConfigDbEntity(
+          id: config.id,
+          type: AiConfigType.inferenceProvider.name,
+          name: config.name,
+          serialized: jsonEncode(config.toJson()),
+          createdAt: fixedDate,
+        );
+
+        when(() => mockDb.getAllConfigs()).thenAnswer((_) async => [entity]);
+        when(
+          () => mockDb.watchAllConfigs(),
+        ).thenAnswer((_) => controller.stream);
+
+        final first = repository
+            .watchConfigsByType(
+              AiConfigType.inferenceProvider,
+            )
+            .first;
+        final second = repository
+            .watchConfigsByType(
+              AiConfigType.inferenceProvider,
+            )
+            .first;
+
+        expect((await first).single.id, 'provider-1');
+        expect((await second).single.id, 'provider-1');
+        verify(() => mockDb.getAllConfigs()).called(1);
+        verify(() => mockDb.watchAllConfigs()).called(1);
+
+        await controller.close();
+      },
+    );
   });
 
   group('AiConfigRepository with in-memory database', () {
@@ -271,6 +324,7 @@ void main() {
     });
 
     tearDown(() async {
+      await repository.close();
       await db.close();
     });
 

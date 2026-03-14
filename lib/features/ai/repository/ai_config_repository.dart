@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/provider_type_utils.dart';
@@ -39,6 +40,12 @@ class AiConfigRepository {
   final Map<String, AiConfig?> _configByIdCache = <String, AiConfig?>{};
   final Map<String, Future<AiConfig?>> _configByIdInFlight =
       <String, Future<AiConfig?>>{};
+  final StreamController<List<AiConfig>> _allConfigsController =
+      StreamController<List<AiConfig>>.broadcast(sync: true);
+  List<AiConfig> _allConfigsSnapshot = const <AiConfig>[];
+  Future<void>? _allConfigsBootstrap;
+  StreamSubscription<List<AiConfigDbEntity>>? _allConfigsSubscription;
+  bool _allConfigsLoaded = false;
 
   /// Save or update an AI configuration
   Future<void> saveConfig(
@@ -141,6 +148,10 @@ class AiConfigRepository {
       return _configByIdCache[id];
     }
 
+    if (_allConfigsLoaded) {
+      return null;
+    }
+
     final inFlight = _configByIdInFlight[id];
     if (inFlight != null) {
       return inFlight;
@@ -171,6 +182,10 @@ class AiConfigRepository {
       return cached;
     }
 
+    if (_allConfigsLoaded) {
+      return const <AiConfig>[];
+    }
+
     final inFlight = _configsByTypeInFlight[type];
     if (inFlight != null) {
       return inFlight;
@@ -194,12 +209,48 @@ class AiConfigRepository {
   /// Streams all AI configurations of a specific type while keeping the
   /// repository cache in sync with the latest emitted snapshot.
   Stream<List<AiConfig>> watchConfigsByType(AiConfigType type) {
-    return _db.watchConfigsByType(type.name).map(_decodeDbEntities).map((
-      configs,
-    ) {
-      _setConfigsByTypeCache(type, configs);
-      return configs;
-    });
+    return Stream<List<AiConfig>>.multi((controller) {
+      StreamSubscription<List<AiConfig>>? subscription;
+      List<AiConfig>? lastEmitted;
+
+      void emit(List<AiConfig> allConfigs) {
+        final filtered = List<AiConfig>.unmodifiable(
+          allConfigs
+              .where((config) => _typeForConfig(config) == type)
+              .toList(growable: false),
+        );
+        final previous = lastEmitted;
+        if (previous != null &&
+            const ListEquality<AiConfig>().equals(previous, filtered)) {
+          return;
+        }
+        lastEmitted = filtered;
+        controller.add(filtered);
+      }
+
+      subscription = _allConfigsController.stream.listen(
+        emit,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+
+      final cached = _configsByTypeCache[type];
+      if (cached != null) {
+        emit(_allConfigsLoaded ? _allConfigsSnapshot : cached);
+      }
+
+      if (_allConfigsLoaded) {
+        emit(_allConfigsSnapshot);
+        _ensureWatchingAllConfigs();
+      } else {
+        Future<void>(() async {
+          await _ensureAllConfigsLoaded();
+          emit(_allConfigsSnapshot);
+        });
+      }
+
+      controller.onCancel = () => subscription?.cancel();
+    }, isBroadcast: true);
   }
 
   /// Returns all inference profiles.
@@ -278,6 +329,21 @@ class AiConfigRepository {
     _configByIdInFlight.remove(config.id);
     _configsByTypeCache.remove(type);
     _configsByTypeInFlight.remove(type);
+
+    if (_allConfigsLoaded) {
+      final updatedSnapshot = [
+        for (final existing in _allConfigsSnapshot)
+          if (existing.id == config.id) config else existing,
+      ];
+      if (!updatedSnapshot.any((existing) => existing.id == config.id)) {
+        updatedSnapshot.add(config);
+      }
+      updatedSnapshot.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _replaceAllConfigsSnapshot(updatedSnapshot);
+      return;
+    }
+
+    _cacheConfigInTypeList(config);
   }
 
   void _invalidateConfig(String id) {
@@ -288,6 +354,23 @@ class AiConfigRepository {
       final type = _typeForConfig(cached);
       _configsByTypeCache.remove(type);
       _configsByTypeInFlight.remove(type);
+      if (_allConfigsLoaded) {
+        _replaceAllConfigsSnapshot(
+          _allConfigsSnapshot
+              .where((config) => config.id != id)
+              .toList(growable: false),
+        );
+        return;
+      }
+      return;
+    }
+
+    if (_allConfigsLoaded) {
+      _replaceAllConfigsSnapshot(
+        _allConfigsSnapshot
+            .where((config) => config.id != id)
+            .toList(growable: false),
+      );
       return;
     }
 
@@ -311,6 +394,85 @@ class AiConfigRepository {
       updatedList.add(config);
     }
     _setConfigsByTypeCache(type, updatedList);
+  }
+
+  Future<void> _ensureAllConfigsLoaded() {
+    final existingBootstrap = _allConfigsBootstrap;
+    if (existingBootstrap != null) {
+      return existingBootstrap;
+    }
+
+    late final Future<void> future;
+    future = _db
+        .getAllConfigs()
+        .then(_decodeDbEntities)
+        .then(_replaceAllConfigsSnapshot)
+        .then((_) => _ensureWatchingAllConfigs())
+        .whenComplete(() {
+          if (identical(_allConfigsBootstrap, future)) {
+            _allConfigsBootstrap = Future<void>.value();
+          }
+        });
+
+    _allConfigsBootstrap = future;
+    return future;
+  }
+
+  void _ensureWatchingAllConfigs() {
+    _allConfigsSubscription ??= _db.watchAllConfigs().listen(
+      (entities) {
+        _replaceAllConfigsSnapshot(_decodeDbEntities(entities));
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        if (!_allConfigsController.isClosed) {
+          _allConfigsController.addError(error, stackTrace);
+        }
+      },
+    );
+  }
+
+  void _replaceAllConfigsSnapshot(List<AiConfig> configs) {
+    final nextSnapshot = List<AiConfig>.unmodifiable(configs);
+
+    _allConfigsLoaded = true;
+
+    if (const ListEquality<AiConfig>().equals(
+      _allConfigsSnapshot,
+      nextSnapshot,
+    )) {
+      return;
+    }
+
+    _allConfigsSnapshot = nextSnapshot;
+    _configByIdCache
+      ..clear()
+      ..addEntries(nextSnapshot.map((config) => MapEntry(config.id, config)));
+    _configsByTypeCache
+      ..clear()
+      ..addEntries(
+        AiConfigType.values.map(
+          (type) => MapEntry(
+            type,
+            List<AiConfig>.unmodifiable(
+              nextSnapshot
+                  .where((config) => _typeForConfig(config) == type)
+                  .toList(growable: false),
+            ),
+          ),
+        ),
+      );
+    _emitAllConfigs();
+  }
+
+  void _emitAllConfigs() {
+    if (!_allConfigsController.isClosed) {
+      _allConfigsController.add(_allConfigsSnapshot);
+    }
+  }
+
+  Future<void> close() async {
+    await _allConfigsSubscription?.cancel();
+    await _allConfigsController.close();
   }
 
   AiConfigType _typeForConfig(AiConfig config) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
@@ -13,6 +15,13 @@ TaskProgressRepository taskProgressRepository(Ref ref) {
 }
 
 class TaskProgressRepository {
+  final Map<String, Future<(Duration?, Map<String, TimeRange>)?>>
+  _inFlightProgressData = {};
+  final Set<String> _pendingTaskIds = <String>{};
+  final Map<String, List<Completer<(Duration?, Map<String, TimeRange>)?>>>
+  _pendingCompleters = {};
+  bool _batchScheduled = false;
+
   /// Determines if an entity's duration should count toward time spent.
   ///
   /// Excludes the following entity types:
@@ -50,26 +59,33 @@ class TaskProgressRepository {
   Future<(Duration?, Map<String, TimeRange>)?> getTaskProgressData({
     required String id,
   }) async {
-    final timeRanges = <String, TimeRange>{};
-    final task = await getIt<JournalDb>().journalEntityById(id);
-
-    if (task is! Task) {
-      return null;
+    final inFlight = _inFlightProgressData[id];
+    if (inFlight != null) {
+      return inFlight;
     }
 
-    final estimate = task.data.estimate;
-    final items = await getIt<JournalDb>().getLinkedEntities(id);
+    final completer = Completer<(Duration?, Map<String, TimeRange>)?>();
+    _pendingTaskIds.add(id);
+    _pendingCompleters
+        .putIfAbsent(
+          id,
+          () => <Completer<(Duration?, Map<String, TimeRange>)?>>[],
+        )
+        .add(completer);
 
-    for (final journalEntity in items) {
-      if (_shouldCountDuration(journalEntity)) {
-        timeRanges[journalEntity.id] = TimeRange(
-          start: journalEntity.meta.dateFrom,
-          end: journalEntity.meta.dateTo,
-        );
+    if (!_batchScheduled) {
+      _batchScheduled = true;
+      scheduleMicrotask(_flushPendingTaskProgressBatch);
+    }
+
+    late final Future<(Duration?, Map<String, TimeRange>)?> future;
+    future = completer.future.whenComplete(() {
+      if (identical(_inFlightProgressData[id], future)) {
+        _inFlightProgressData.remove(id);
       }
-    }
-
-    return (estimate, timeRanges);
+    });
+    _inFlightProgressData[id] = future;
+    return future;
   }
 
   TaskProgressState getTaskProgress({
@@ -82,5 +98,76 @@ class TaskProgressRepository {
       progress: progress,
       estimate: estimate ?? Duration.zero,
     );
+  }
+
+  Future<void> _flushPendingTaskProgressBatch() async {
+    final taskIds = _pendingTaskIds.toSet();
+    if (taskIds.isEmpty) {
+      _batchScheduled = false;
+      return;
+    }
+
+    final completersById =
+        <String, List<Completer<(Duration?, Map<String, TimeRange>)?>>>{};
+    for (final taskId in taskIds) {
+      completersById[taskId] = _pendingCompleters.remove(taskId) ?? [];
+    }
+    _pendingTaskIds.removeAll(taskIds);
+    _batchScheduled = false;
+
+    try {
+      final db = getIt<JournalDb>();
+      final tasks = await db.getJournalEntitiesByIds(taskIds);
+      final tasksById = <String, Task>{
+        for (final task in tasks.whereType<Task>()) task.id: task,
+      };
+      final linkedEntitiesByTaskId = await db.getBulkLinkedEntities(taskIds);
+
+      for (final taskId in taskIds) {
+        final task = tasksById[taskId];
+        final result = task == null
+            ? null
+            : (
+                task.data.estimate,
+                _buildTimeRanges(linkedEntitiesByTaskId[taskId] ?? const []),
+              );
+
+        for (final completer
+            in completersById[taskId] ??
+                const <Completer<(Duration?, Map<String, TimeRange>)?>>[]) {
+          if (!completer.isCompleted) {
+            completer.complete(result);
+          }
+        }
+      }
+    } catch (error, stackTrace) {
+      for (final completers in completersById.values) {
+        for (final completer in completers) {
+          if (!completer.isCompleted) {
+            completer.completeError(error, stackTrace);
+          }
+        }
+      }
+    } finally {
+      if (_pendingTaskIds.isNotEmpty && !_batchScheduled) {
+        _batchScheduled = true;
+        scheduleMicrotask(_flushPendingTaskProgressBatch);
+      }
+    }
+  }
+
+  static Map<String, TimeRange> _buildTimeRanges(List<JournalEntity> entities) {
+    final timeRanges = <String, TimeRange>{};
+
+    for (final entity in entities) {
+      if (_shouldCountDuration(entity)) {
+        timeRanges[entity.id] = TimeRange(
+          start: entity.meta.dateFrom,
+          end: entity.meta.dateTo,
+        );
+      }
+    }
+
+    return timeRanges;
   }
 }

@@ -58,10 +58,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   redundant `settings.sqlite` writes, and linked-entry lookups now pass the
   cached private-visibility status directly instead of re-reading the private
   config flag inside each query.
+- Journal database: unlabeled and labeled task-list filters now use simpler
+  boolean and `EXISTS` predicates instead of nested `CASE` branches, the warm
+  all-starred/all-private task path now bypasses redundant filters entirely,
+  and linked-child lookups now use direct joins instead of `id IN (SELECT …)`
+  scans.
+- Task progress: concurrent task-card progress lookups now batch task and
+  linked-entry fetches across visible task IDs instead of issuing one
+  `journalEntityById()` and one linked-entity query per task.
 - Settings database: hot `settings.sqlite` reads and writes now stay on a
   direct Drift executor instead of paying a background-isolate hop for each
   tiny preference operation, and cached same-value saves now return early
   without touching SQLite at all.
+- Config flags: `JournalDb` now keeps a shared in-memory config-flag snapshot
+  for both direct reads and watchers, so repeated per-flag consumers no longer
+  re-query SQLite after the initial bootstrap load.
+- AI configs: type-based config watchers now derive from a shared in-memory
+  all-config snapshot instead of each watcher re-querying `ai_config.sqlite`,
+  while reverse-linked entry reads and label-definition visibility checks now
+  use explicit private-status filters instead of scalar subqueries.
+- Journal browse: category-filtered list queries now use the same all-values
+  fast paths as the uncategorized browse path, avoiding redundant
+  `private`/`starred`/`flag` predicates when every state is selected.
+- Task filters: task-list queries now hardcode `type = 'Task'`, short-circuit
+  empty status/category selections before they hit SQLite, and day-plan reads
+  now use the same explicit private-status paths as the rest of the journal
+  database.
+- Task lists: identical warm `getTasks()` requests now reuse an in-memory
+  result snapshot until task-relevant writes invalidate it, reducing repeated
+  page fetches during task-list refresh bursts.
+- Task lists: active-task indexes are now partial indexes keyed by category
+  and status, priority-filtered date sorts have a dedicated task-priority
+  index, and labeled task filters now use a composite `(journal_id, label_id)`
+  lookup index plus an all-private/all-starred fast path.
+- Journal entity reads: `journalEntityById()` now batches same-turn primary-key
+  lookups and keeps an in-memory entity cache seeded by upserts and bulk reads,
+  reducing repeated point reads during detail-view fan-out.
 - Journal database: definition list screens and `linksFromId()` now use
   dedicated composite indexes for visible-name sorting and recency-ordered
   linked-entry lookups.

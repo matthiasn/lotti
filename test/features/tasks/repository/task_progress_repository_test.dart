@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -15,6 +16,10 @@ void main() {
   late TaskProgressRepository repository;
   late MockJournalDb mockJournalDb;
 
+  setUpAll(() {
+    registerFallbackValue(<String>{});
+  });
+
   setUp(() {
     mockJournalDb = MockJournalDb();
     getIt.registerSingleton<JournalDb>(mockJournalDb);
@@ -28,26 +33,32 @@ void main() {
       // Arrange
       const nonTaskId = 'non-task-id';
       when(
-        () => mockJournalDb.journalEntityById(nonTaskId),
-      ).thenAnswer((_) async => testTextEntry);
+        () => mockJournalDb.getJournalEntitiesByIds({nonTaskId}),
+      ).thenAnswer((_) async => [testTextEntry]);
+      when(
+        () => mockJournalDb.getBulkLinkedEntities({nonTaskId}),
+      ).thenAnswer((_) async => {nonTaskId: const <JournalEntity>[]});
 
       // Act
       final result = await repository.getTaskProgressData(id: nonTaskId);
 
       // Assert
       expect(result, isNull);
-      verify(() => mockJournalDb.journalEntityById(nonTaskId)).called(1);
+      verify(
+        () => mockJournalDb.getJournalEntitiesByIds({nonTaskId}),
+      ).called(1);
+      verify(() => mockJournalDb.getBulkLinkedEntities({nonTaskId})).called(1);
     });
 
     test('returns task progress data with no linked entities', () async {
       // Arrange
       final taskId = testTask.id;
       when(
-        () => mockJournalDb.journalEntityById(taskId),
-      ).thenAnswer((_) async => testTask);
+        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
+      ).thenAnswer((_) async => [testTask]);
       when(
-        () => mockJournalDb.getLinkedEntities(taskId),
-      ).thenAnswer((_) async => []);
+        () => mockJournalDb.getBulkLinkedEntities({taskId}),
+      ).thenAnswer((_) async => {taskId: const <JournalEntity>[]});
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -56,8 +67,8 @@ void main() {
       expect(result, isNotNull);
       expect(result?.$1, equals(testTask.data.estimate));
       expect(result?.$2, isEmpty);
-      verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
-      verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
     });
 
     test('returns task progress data with linked entries', () async {
@@ -66,11 +77,15 @@ void main() {
       final linkedEntry = testTextEntry;
 
       when(
-        () => mockJournalDb.journalEntityById(taskId),
-      ).thenAnswer((_) async => testTask);
+        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
+      ).thenAnswer((_) async => [testTask]);
       when(
-        () => mockJournalDb.getLinkedEntities(taskId),
-      ).thenAnswer((_) async => [linkedEntry]);
+        () => mockJournalDb.getBulkLinkedEntities({taskId}),
+      ).thenAnswer(
+        (_) async => {
+          taskId: [linkedEntry],
+        },
+      );
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -80,8 +95,8 @@ void main() {
       expect(result?.$1, equals(testTask.data.estimate));
       expect(result?.$2, isNotEmpty);
       expect(result?.$2.containsKey(linkedEntry.id), isTrue);
-      verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
-      verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
     });
 
     test('ignores linked tasks when calculating duration', () async {
@@ -102,11 +117,15 @@ void main() {
       );
 
       when(
-        () => mockJournalDb.journalEntityById(taskId),
-      ).thenAnswer((_) async => testTask);
+        () => mockJournalDb.getJournalEntitiesByIds({taskId}),
+      ).thenAnswer((_) async => [testTask]);
       when(
-        () => mockJournalDb.getLinkedEntities(taskId),
-      ).thenAnswer((_) async => [linkedTask, testTextEntry]);
+        () => mockJournalDb.getBulkLinkedEntities({taskId}),
+      ).thenAnswer(
+        (_) async => {
+          taskId: [linkedTask, testTextEntry],
+        },
+      );
 
       // Act
       final result = await repository.getTaskProgressData(id: taskId);
@@ -115,8 +134,8 @@ void main() {
       expect(result, isNotNull);
       expect(result?.$2.containsKey(linkedTask.id), isFalse);
       expect(result?.$2.containsKey(testTextEntry.id), isTrue);
-      verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
-      verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+      verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
+      verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
     });
 
     test(
@@ -144,11 +163,15 @@ void main() {
         );
 
         when(
-          () => mockJournalDb.journalEntityById(taskId),
-        ).thenAnswer((_) async => testTask);
+          () => mockJournalDb.getJournalEntitiesByIds({taskId}),
+        ).thenAnswer((_) async => [testTask]);
         when(
-          () => mockJournalDb.getLinkedEntities(taskId),
-        ).thenAnswer((_) async => [audioEntry, testTextEntry]);
+          () => mockJournalDb.getBulkLinkedEntities({taskId}),
+        ).thenAnswer(
+          (_) async => {
+            taskId: [audioEntry, testTextEntry],
+          },
+        );
 
         // Act
         final result = await repository.getTaskProgressData(id: taskId);
@@ -159,8 +182,76 @@ void main() {
         expect(result?.$2.containsKey(audioEntry.id), isFalse);
         // Text entry should still be included
         expect(result?.$2.containsKey(testTextEntry.id), isTrue);
-        verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
-        verify(() => mockJournalDb.getLinkedEntities(taskId)).called(1);
+        verify(() => mockJournalDb.getJournalEntitiesByIds({taskId})).called(1);
+        verify(() => mockJournalDb.getBulkLinkedEntities({taskId})).called(1);
+      },
+    );
+
+    test(
+      'batches concurrent task progress lookups across multiple task ids',
+      () {
+        fakeAsync((async) {
+          final otherTask = Task(
+            meta: Metadata(
+              id: 'other-task-id',
+              createdAt: DateTime(2022, 7, 8, 9),
+              dateFrom: DateTime(2022, 7, 8, 9),
+              dateTo: DateTime(2022, 7, 8, 10),
+              updatedAt: DateTime(2022, 7, 8, 10),
+            ),
+            entryText: const EntryText(plainText: 'other task'),
+            data: testTask.data.copyWith(title: 'Other Task'),
+          );
+
+          when(
+            () => mockJournalDb.getJournalEntitiesByIds({
+              testTask.id,
+              otherTask.id,
+            }),
+          ).thenAnswer((_) async => [testTask, otherTask]);
+          when(
+            () => mockJournalDb.getBulkLinkedEntities({
+              testTask.id,
+              otherTask.id,
+            }),
+          ).thenAnswer(
+            (_) async => {
+              testTask.id: [testTextEntry],
+              otherTask.id: const <JournalEntity>[],
+            },
+          );
+
+          (Duration?, Map<String, TimeRange>)? resultA;
+          (Duration?, Map<String, TimeRange>)? resultB;
+
+          repository
+              .getTaskProgressData(id: testTask.id)
+              .then((value) => resultA = value);
+          repository
+              .getTaskProgressData(id: otherTask.id)
+              .then((value) => resultB = value);
+
+          async.flushMicrotasks();
+
+          expect(resultA?.$1, equals(testTask.data.estimate));
+          expect(resultA?.$2.containsKey(testTextEntry.id), isTrue);
+          expect(resultB?.$1, equals(otherTask.data.estimate));
+          expect(resultB?.$2, isEmpty);
+          verify(
+            () => mockJournalDb.getJournalEntitiesByIds({
+              testTask.id,
+              otherTask.id,
+            }),
+          ).called(1);
+          verify(
+            () => mockJournalDb.getBulkLinkedEntities({
+              testTask.id,
+              otherTask.id,
+            }),
+          ).called(1);
+          verifyNever(() => mockJournalDb.journalEntityById(any()));
+          verifyNever(() => mockJournalDb.getLinkedEntities(any()));
+        });
       },
     );
   });

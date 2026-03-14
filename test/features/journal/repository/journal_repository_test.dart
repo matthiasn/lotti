@@ -30,9 +30,6 @@ import '../../../mocks/mocks.dart';
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
 
-class MockSelectableJournalDbEntity extends Mock
-    implements drift.Selectable<JournalDbEntity> {}
-
 void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
@@ -1030,7 +1027,6 @@ void main() {
       test('returns entities linked to the specified entity', () async {
         // Arrange
         const linkedTo = 'linked-to-id';
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
 
         final testEntities = [
           JournalEntity.journalEntry(
@@ -1069,8 +1065,8 @@ void main() {
 
         // Mock JournalDb
         when(
-          () => mockJournalDb.linkedToJournalEntities(linkedTo),
-        ).thenReturn(mockSelectableJournalDbEntities);
+          () => mockJournalDb.getLinkedToEntities(linkedTo),
+        ).thenAnswer((_) async => []);
 
         // Skip the actual Future conversion and just mock getLinkedEntities directly
         when(
@@ -1920,15 +1916,11 @@ void main() {
           ),
         );
 
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
         final mockDbEntities = [dbEntity1, dbEntity2];
 
         // Mock JournalDb
         when(
-          () => mockJournalDb.linkedToJournalEntities(linkedTo),
-        ).thenReturn(mockSelectableJournalDbEntities);
-        when(
-          mockSelectableJournalDbEntities.get,
+          () => mockJournalDb.getLinkedToEntities(linkedTo),
         ).thenAnswer((_) async => mockDbEntities);
 
         // Act
@@ -1941,8 +1933,7 @@ void main() {
         expect((result[0] as JournalEntry).meta.id, equals('entity-1'));
         expect((result[1] as JournalEntry).meta.id, equals('entity-2'));
 
-        verify(() => mockJournalDb.linkedToJournalEntities(linkedTo)).called(1);
-        verify(mockSelectableJournalDbEntities.get).called(1);
+        verify(() => mockJournalDb.getLinkedToEntities(linkedTo)).called(1);
       });
 
       test(
@@ -1985,21 +1976,16 @@ void main() {
               ).toJson(),
             ),
           );
-          final selectable = MockSelectableJournalDbEntity();
           final completer = Completer<List<JournalDbEntity>>();
 
           when(
-            () => mockJournalDb.linkedToJournalEntities(linkedTo),
-          ).thenReturn(selectable);
-          when(selectable.get).thenAnswer((_) => completer.future);
+            () => mockJournalDb.getLinkedToEntities(linkedTo),
+          ).thenAnswer((_) => completer.future);
 
           final futureA = repository.getLinkedToEntities(linkedTo: linkedTo);
           final futureB = repository.getLinkedToEntities(linkedTo: linkedTo);
 
-          verify(
-            () => mockJournalDb.linkedToJournalEntities(linkedTo),
-          ).called(1);
-          verify(selectable.get).called(1);
+          verify(() => mockJournalDb.getLinkedToEntities(linkedTo)).called(1);
 
           completer.complete([dbEntity]);
 
@@ -2234,9 +2220,6 @@ void main() {
           updatedAt: dateTime2023,
         );
 
-        // Create mock selectables
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
-
         // Create JournalDbEntity representations for the tasks
         final taskDbEntity1 = JournalDbEntity(
           id: 'task-with-cover',
@@ -2283,10 +2266,7 @@ void main() {
 
         // Mock linkedToJournalEntities to return tasks that link to this image
         when(
-          () => mockJournalDb.linkedToJournalEntities(imageId),
-        ).thenReturn(mockSelectableJournalDbEntities);
-        when(
-          mockSelectableJournalDbEntities.get,
+          () => mockJournalDb.getLinkedToEntities(imageId),
         ).thenAnswer((_) async => [taskDbEntity1, taskDbEntity2]);
 
         // Mock updateTask for clearing coverArtId
@@ -2328,7 +2308,7 @@ void main() {
         verify(() => mockJournalDb.journalEntityById(imageId)).called(1);
 
         // Verify that we looked for tasks that link to this image
-        verify(() => mockJournalDb.linkedToJournalEntities(imageId)).called(1);
+        verify(() => mockJournalDb.getLinkedToEntities(imageId)).called(1);
 
         // Verify updateTask was called once (only for the task with coverArtId)
         verify(

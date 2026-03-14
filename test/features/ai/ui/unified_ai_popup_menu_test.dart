@@ -79,8 +79,8 @@ void main() {
       () => mockJournalDb.linksFromId(any(), any()),
     ).thenReturn(MockSelectable<LinkedDbEntry>([]));
     when(
-      () => mockJournalDb.linkedToJournalEntities(any()),
-    ).thenReturn(MockSelectable<JournalDbEntity>([]));
+      () => mockJournalDb.getLinkedToEntities(any()),
+    ).thenAnswer((_) async => <JournalDbEntity>[]);
     // Mock getLinkedEntities for bidirectional link lookup
     when(
       () => mockJournalDb.getLinkedEntities(any()),
