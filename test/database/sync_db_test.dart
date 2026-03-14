@@ -305,6 +305,24 @@ void main() {
       expect(results.last.createdAt, DateTime(2024, 4, 2));
     });
 
+    test('oldestOutboxItems uses the queue index', () async {
+      final plan = await db!
+          .customSelect(
+            '''
+        EXPLAIN QUERY PLAN
+        SELECT * FROM outbox
+        WHERE status = ?1
+        ORDER BY priority ASC, created_at ASC
+        LIMIT 1
+        ''',
+            variables: [Variable<int>(OutboxStatus.pending.index)],
+          )
+          .get();
+
+      final details = plan.map((row) => row.read<String>('detail')).join(' ');
+      expect(details, contains('idx_outbox_status_priority_created_at'));
+    });
+
     test('claimNextOutboxItem claims oldest eligible item', () async {
       final database = db!;
       await database.addOutboxItem(
@@ -3148,8 +3166,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 7', () {
-      expect(db.schemaVersion, 7);
+    test('schema version is 9', () {
+      expect(db.schemaVersion, 9);
     });
   });
 

@@ -49,13 +49,21 @@ class WindowService implements WindowListener {
 
   Future<void> restore() async {
     if (isDesktop) {
-      await restoreSize();
-      await restoreOffset();
+      final restoredValues = await getIt<SettingsDb>().itemsByKeys({
+        sizeKey,
+        offsetKey,
+      });
+      await _applyRestoredSize(restoredValues[sizeKey]);
+      await _applyRestoredOffset(restoredValues[offsetKey]);
     }
   }
 
   Future<void> restoreSize() async {
     final sizeString = await getIt<SettingsDb>().itemByKey(sizeKey);
+    await _applyRestoredSize(sizeString);
+  }
+
+  Future<void> _applyRestoredSize(String? sizeString) async {
     final values = sizeString?.split(',').map(double.parse).toList();
     final width = values?.first ?? 400;
     final height = values?.last ?? 900;
@@ -64,6 +72,10 @@ class WindowService implements WindowListener {
 
   Future<void> restoreOffset() async {
     final offsetString = await getIt<SettingsDb>().itemByKey(offsetKey);
+    await _applyRestoredOffset(offsetString);
+  }
+
+  Future<void> _applyRestoredOffset(String? offsetString) async {
     final values = offsetString?.split(',').map(double.parse).toList();
     final dx = values?.first;
     final dy = values?.last;

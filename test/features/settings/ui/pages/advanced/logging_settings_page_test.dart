@@ -67,6 +67,7 @@ void main() {
     logAgentRuntimeFlag: true,
     logAgentWorkflowFlag: true,
     logSyncFlag: true,
+    logSlowQueriesFlag: true,
   });
 
   Future<void> pumpPage(
@@ -104,6 +105,10 @@ void main() {
         find.text(context.messages.settingsLoggingSync),
         findsOneWidget,
       );
+      expect(
+        find.text(context.messages.settingsLoggingSlowQueries),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders subtitles for all cards', (tester) async {
@@ -127,13 +132,17 @@ void main() {
         find.text(context.messages.settingsLoggingSyncSubtitle),
         findsOneWidget,
       );
+      expect(
+        find.text(context.messages.settingsLoggingSlowQueriesSubtitle),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows four switch toggles', (tester) async {
+    testWidgets('shows five switch toggles', (tester) async {
       await pumpPage(tester, overrides: allEnabledOverrides());
 
-      // Global + 3 domain toggles = 4 switches
-      expect(findSwitches(), findsNWidgets(4));
+      // Global + 4 domain toggles = 5 switches
+      expect(findSwitches(), findsNWidgets(5));
     });
 
     testWidgets('domain switches are disabled when global logging is off', (
@@ -144,19 +153,20 @@ void main() {
         logAgentRuntimeFlag: true,
         logAgentWorkflowFlag: true,
         logSyncFlag: true,
+        logSlowQueriesFlag: true,
       });
 
       await pumpPage(tester, overrides: overrides);
 
       final switches = tester.widgetList(findSwitches()).toList();
-      expect(switches, hasLength(4));
+      expect(switches, hasLength(5));
 
       final states = switches.map(switchState).toList();
 
       // The global toggle (first) should still be enabled.
       expect(states[0].enabled, isTrue);
 
-      // Domain toggles (indices 1-3) should be disabled.
+      // Domain toggles (indices 1-4) should be disabled.
       for (var i = 1; i < states.length; i++) {
         expect(
           states[i].enabled,
@@ -206,6 +216,13 @@ void main() {
       await tester.tap(findSwitches().at(3));
       await tester.pump();
       verify(() => mockJournalDb.toggleConfigFlag(logSyncFlag)).called(1);
+
+      // Tap slow query toggle (index 4).
+      await tester.tap(findSwitches().at(4));
+      await tester.pump();
+      verify(
+        () => mockJournalDb.toggleConfigFlag(logSlowQueriesFlag),
+      ).called(1);
     });
 
     testWidgets('switch values reflect mixed flag state', (tester) async {
@@ -214,6 +231,7 @@ void main() {
         logAgentRuntimeFlag: true,
         logAgentWorkflowFlag: false,
         logSyncFlag: false,
+        logSlowQueriesFlag: true,
       });
 
       await pumpPage(tester, overrides: overrides);
@@ -222,12 +240,17 @@ void main() {
           .widgetList(findSwitches())
           .map(switchState)
           .toList();
-      expect(states, hasLength(4));
+      expect(states, hasLength(5));
 
       expect(states[0].value, isTrue, reason: 'Global should be on');
       expect(states[1].value, isTrue, reason: 'Agent runtime should be on');
       expect(states[2].value, isFalse, reason: 'Agent workflow should be off');
       expect(states[3].value, isFalse, reason: 'Sync should be off');
+      expect(
+        states[4].value,
+        isTrue,
+        reason: 'Slow query logging should be on',
+      );
     });
 
     testWidgets('renders correct icons for each card', (tester) async {
@@ -237,6 +260,7 @@ void main() {
       expect(find.byIcon(Icons.memory_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.play_circle_outline_rounded), findsAtLeast(1));
       expect(find.byIcon(Icons.sync_rounded), findsAtLeast(1));
+      expect(find.byIcon(Icons.speed_rounded), findsAtLeast(1));
     });
   });
 }

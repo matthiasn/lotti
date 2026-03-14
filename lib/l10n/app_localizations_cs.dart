@@ -3853,6 +3853,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Master switch for all logging';
 
   @override
+  String get settingsLoggingSlowQueries => 'Pomalé databázové dotazy';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log';
+
+  @override
   String get settingsLoggingSync => 'Sync';
 
   @override

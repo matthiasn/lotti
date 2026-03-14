@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:lotti/classes/entry_link.dart';
@@ -29,7 +28,7 @@ class JournalRepository {
   ) async {
     final db = getIt<JournalDb>();
     // Find all entities that link TO this image (i.e., tasks that have this image linked)
-    final linkedFromEntities = await db.linkedToJournalEntities(imageId).get();
+    final linkedFromEntities = await db.getLinkedToEntities(imageId);
 
     for (final dbEntity in linkedFromEntities) {
       final entity = fromDbEntity(dbEntity);
@@ -316,17 +315,15 @@ class JournalRepository {
   Future<List<JournalEntity>> getLinkedToEntities({
     required String linkedTo,
   }) async {
-    final items = await getIt<JournalDb>()
-        .linkedToJournalEntities(linkedTo)
-        .get();
+    final db = getIt<JournalDb>();
+    final items = await db.getLinkedToEntities(linkedTo);
     return items.map(fromDbEntity).toList();
   }
 
   Future<List<JournalEntity>> getLinkedEntities({
     required String linkedTo,
   }) async {
-    final items = await getIt<JournalDb>().getLinkedEntities(linkedTo);
-    return items;
+    return getIt<JournalDb>().getLinkedEntities(linkedTo);
   }
 
   /// Returns all JournalImage entries linked to the given task.
@@ -352,15 +349,21 @@ class JournalRepository {
       linksByToId[link.toId] = link;
     }
 
+    if (linksByToId.isEmpty) {
+      // Avoid the follow-up `id IN ()` ordering query when there are no links.
+      return const <EntryLink>[];
+    }
+
     // sort by the (editable) date from, descending, to allow for changing the
     // start date of the linked entries and get the list reordered accordingly
     final sortedToIds = await getIt<JournalDb>()
-        .journalEntityIdsByDateFromDesc(linksByToId.keys.toList())
-        .get();
+        .getJournalEntityIdsSortedByDateFromDesc(
+          linksByToId.keys.toList(growable: false),
+        );
 
     return sortedToIds.map((id) => linksByToId[id]).nonNulls.toList();
   }
 }
 
 @riverpod
-JournalRepository journalRepository(Ref _) => JournalRepository();
+JournalRepository journalRepository(Ref ref) => JournalRepository();

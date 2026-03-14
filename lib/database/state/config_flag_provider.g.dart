@@ -65,7 +65,7 @@ final class ConfigFlagProvider
   }
 }
 
-String _$configFlagHash() => r'cb8244b4da8af37d109e0cc56ecd8b977091e30e';
+String _$configFlagHash() => r'263bb7029ed31cc9593ecda05a918a395fbdb90e';
 
 /// Provides a stream of the status (bool) for a specific config flag.
 /// Returns false by default if the flag doesn't exist or has no status.

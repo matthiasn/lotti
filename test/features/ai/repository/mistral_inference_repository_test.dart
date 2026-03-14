@@ -10,22 +10,8 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -107,6 +93,7 @@ void main() {
   late MockHttpClient mockHttpClient;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(FakeRequest());
     registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(Uri.parse('https://api.mistral.ai/v1'));
@@ -1445,7 +1432,7 @@ data: [DONE]
             subDomain: any<String?>(named: 'subDomain'),
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
-        ).thenAnswer((_) async {});
+        ).thenReturn(null);
 
         when(
           () => mockHttpClient.send(any()),
@@ -1459,7 +1446,7 @@ data: [DONE]
           apiKey: apiKey,
         );
 
-        expect(
+        await expectLater(
           responseStream.toList(),
           throwsA(
             isA<MistralInferenceException>().having(
@@ -1469,9 +1456,6 @@ data: [DONE]
             ),
           ),
         );
-
-        // Wait for exception to be logged
-        await Future<void>.delayed(Duration.zero);
 
         verify(
           () => mockLoggingService.captureException(

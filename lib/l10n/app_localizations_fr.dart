@@ -3933,6 +3933,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Interrupteur principal pour toute la journalisation';
 
   @override
+  String get settingsLoggingSlowQueries => 'Requêtes lentes de la base';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Les requêtes lentes sont écrites dans slow_queries-YYYY-MM-DD.log';
+
+  @override
   String get settingsLoggingSync => 'Synchronisation';
 
   @override

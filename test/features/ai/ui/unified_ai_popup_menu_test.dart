@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:drift/drift.dart' show Selectable;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,44 +17,19 @@ import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/widgets/modal/modern_modal_prompt_item.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
-class MockJournalDb extends Mock implements JournalDb {}
-
-class MockSelectable<T> extends Mock implements Selectable<T> {
-  MockSelectable(this._values);
-
-  final List<T> _values;
-
-  @override
-  Future<List<T>> get() async => _values;
-}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late JournalEntity testTaskEntity;
@@ -67,14 +41,12 @@ void main() {
   late MockUnifiedAiInferenceRepository mockInferenceRepository;
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
+  late MockUpdateNotifications mockUpdateNotifications;
   late List<Override> defaultOverrides;
 
   setUpAll(() {
-    registerFallbackValue(
-      StackTrace.current,
-    );
+    registerAllFallbackValues();
     registerFallbackValue(InferenceStatus.idle);
-    registerFallbackValue(FakeAiConfigPrompt());
   });
 
   setUp(() {
@@ -82,6 +54,7 @@ void main() {
     mockInferenceRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
+    mockUpdateNotifications = MockUpdateNotifications();
 
     // Set up GetIt
     if (getIt.isRegistered<LoggingService>()) {
@@ -90,17 +63,24 @@ void main() {
     if (getIt.isRegistered<JournalDb>()) {
       getIt.unregister<JournalDb>();
     }
+    if (getIt.isRegistered<UpdateNotifications>()) {
+      getIt.unregister<UpdateNotifications>();
+    }
     getIt
       ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<JournalDb>(mockJournalDb);
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
     // Mock JournalDb methods - linksFromId returns a Selectable
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
     when(
       () => mockJournalDb.linksFromId(any(), any()),
     ).thenReturn(MockSelectable<LinkedDbEntry>([]));
     when(
-      () => mockJournalDb.linkedToJournalEntities(any()),
-    ).thenReturn(MockSelectable<JournalDbEntity>([]));
+      () => mockJournalDb.getLinkedToEntities(any()),
+    ).thenAnswer((_) async => <JournalDbEntity>[]);
     // Mock getLinkedEntities for bidirectional link lookup
     when(
       () => mockJournalDb.getLinkedEntities(any()),
@@ -122,10 +102,10 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenReturn(null);
 
     // Create test entities
-    final now = DateTime.now();
+    final now = DateTime(2024, 3, 15, 10);
 
     testTaskEntity = Task(
       meta: Metadata(
@@ -514,7 +494,7 @@ void main() {
                 userMessage: 'User message',
                 defaultModelId: 'model-1',
                 modelIds: ['model-1'],
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10),
                 useReasoning: false,
                 requiredInputData: [],
                 // ignore: deprecated_member_use_from_same_package
@@ -613,7 +593,7 @@ void main() {
                 userMessage: 'User message',
                 defaultModelId: 'model-1',
                 modelIds: ['model-1'],
-                createdAt: DateTime.now(),
+                createdAt: DateTime(2024, 3, 15, 10),
                 useReasoning: false,
                 requiredInputData: [],
                 // ignore: deprecated_member_use_from_same_package
@@ -701,7 +681,8 @@ void main() {
 
     testWidgets('handles context not mounted scenario', (tester) async {
       // Arrange - This test simulates a scenario where context becomes unmounted
-      // We'll test this by mocking a delayed response and disposing the widget
+      // by resolving the prompts after the widget tree has already unmounted.
+      final promptsCompleter = Completer<List<AiConfigPrompt>>();
       await tester.pumpWidget(
         buildTestWidget(
           Consumer(
@@ -722,10 +703,7 @@ void main() {
           ),
           overrides: [
             availablePromptsProvider(testTaskEntity.id).overrideWith(
-              (ref) => Future.delayed(
-                const Duration(milliseconds: 5),
-                () => testPrompts.take(2).toList(),
-              ),
+              (ref) => promptsCompleter.future,
             ),
           ],
         ),
@@ -735,11 +713,12 @@ void main() {
 
       // Act - tap button and immediately dispose widget (simulating navigation away)
       await tester.tap(find.text('Show Modal'));
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pump();
 
       // Dispose the widget tree to simulate context becoming unmounted
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
+      promptsCompleter.complete(testPrompts.take(2).toList());
+      await tester.pump();
 
       // Assert - no exception should be thrown and test should complete successfully
       expect(tester.takeException(), isNull);
@@ -1058,7 +1037,7 @@ void main() {
                   userMessage: 'Generate cover art for this task',
                   defaultModelId: 'model-1',
                   modelIds: ['model-1'],
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15, 10),
                   useReasoning: false,
                   requiredInputData: [],
                   aiResponseType:
@@ -1112,7 +1091,7 @@ void main() {
                   userMessage: 'Generate cover art for this task',
                   defaultModelId: 'model-1',
                   modelIds: ['model-1'],
-                  createdAt: DateTime.now(),
+                  createdAt: DateTime(2024, 3, 15, 10),
                   useReasoning: false,
                   requiredInputData: [],
                   aiResponseType: AiResponseType.imageGeneration,

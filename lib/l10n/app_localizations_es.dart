@@ -3930,6 +3930,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Interruptor principal para todo el registro';
 
   @override
+  String get settingsLoggingSlowQueries => 'Consultas lentas de base de datos';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Las consultas lentas se escriben en slow_queries-YYYY-MM-DD.log';
+
+  @override
   String get settingsLoggingSync => 'Sincronización';
 
   @override

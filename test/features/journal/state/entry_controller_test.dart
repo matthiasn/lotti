@@ -1496,7 +1496,7 @@ void main() {
         () => mockJournalDb.journalEntityById(entryId),
       ).thenAnswer((_) async => testTaskEntry);
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
 
       // Corrected when call for updateTask
@@ -1549,7 +1549,8 @@ void main() {
         final expectedEntryText = entryTextFromController(notifier.controller);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds(const <String>{}),
+          () =>
+              mockJournalDb.getJournalEntitiesForIdsUnordered(const <String>{}),
         ).thenAnswer((_) async => []);
 
         await notifier.updateChecklistOrder([]);
@@ -1581,7 +1582,7 @@ void main() {
 
       final newOrder = [testChecklistItem2.id, testChecklistItem1.id];
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(
           {testChecklistItem1.id, testChecklistItem2.id},
         ),
       ).thenAnswer((_) async => [testChecklistItem1, testChecklistItem2]);
@@ -1624,7 +1625,7 @@ void main() {
       ];
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds({
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered({
           testChecklistItem1.id,
           'non_existent_id',
           testChecklistItem3Deleted.id,

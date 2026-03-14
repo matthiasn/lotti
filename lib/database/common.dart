@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -80,6 +81,9 @@ void _setupDatabase(Database database) {
 ///   opening from an actor isolate to avoid nested isolates.
 /// - [readPool]: Number of read-only isolates for offloading heavy reads
 ///   (default: 0). Only effective when [background] is true.
+/// - [slowQueryThreshold]: Threshold used by the shared slow-query interceptor.
+///   Slow-query writes remain disabled until the corresponding logging domain
+///   is enabled in Settings > Advanced > Logging Domains.
 /// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///
@@ -98,12 +102,21 @@ LazyDatabase openDbConnection(
   bool inMemoryDatabase = false,
   bool background = true,
   int readPool = 0,
+  Duration slowQueryThreshold = const Duration(milliseconds: 5),
+  SlowQueryReporter? slowQueryReporter,
   Future<Directory> Function()? documentsDirectoryProvider,
   Future<Directory> Function()? tempDirectoryProvider,
 }) {
   return LazyDatabase(() async {
     if (inMemoryDatabase) {
-      return NativeDatabase.memory();
+      return NativeDatabase.memory().interceptWith(
+        SlowQueryInterceptor(
+          databaseName: fileName,
+          threshold: slowQueryThreshold,
+          reporter:
+              slowQueryReporter ?? SlowQueryInterceptor.devLoggerReporter(),
+        ),
+      );
     }
 
     final dbFolder =
@@ -137,14 +150,24 @@ LazyDatabase openDbConnection(
       );
     }
 
-    if (background) {
-      return NativeDatabase.createInBackground(
-        file,
-        setup: _setupDatabase,
-        readPool: readPool,
-      );
-    } else {
-      return NativeDatabase(file, setup: _setupDatabase);
-    }
+    final executor = background
+        ? NativeDatabase.createInBackground(
+            file,
+            setup: _setupDatabase,
+            readPool: readPool,
+          )
+        : NativeDatabase(file, setup: _setupDatabase);
+
+    return executor.interceptWith(
+      SlowQueryInterceptor(
+        databaseName: fileName,
+        threshold: slowQueryThreshold,
+        reporter:
+            slowQueryReporter ??
+            SlowQueryInterceptor.fileReporter(
+              documentsDirectoryPath: dbFolder.path,
+            ),
+      ),
+    );
   });
 }

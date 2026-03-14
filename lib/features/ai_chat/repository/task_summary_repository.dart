@@ -116,12 +116,16 @@ class TaskSummaryRepository {
     }
 
     // Step 4: Fetch all potential tasks in one batch
-    final linkedEntities = await journalDb.getJournalEntitiesForIds(
+    final linkedEntities = await journalDb.getJournalEntitiesForIdsUnordered(
       linkedTaskIds,
     );
 
     // Filter to only include actual tasks
-    final actualTasks = linkedEntities.whereType<Task>().toList();
+    final actualTasks = linkedEntities.whereType<Task>().toList()
+      ..sort((a, b) {
+        final byDate = b.meta.dateFrom.compareTo(a.meta.dateFrom);
+        return byDate != 0 ? byDate : a.meta.id.compareTo(b.meta.id);
+      });
 
     final results = <TaskSummaryResult>[];
 

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -14,6 +17,7 @@ class MockOutboxService extends Mock implements OutboxService {}
 void main() {
   late GetIt getIt;
   late MockOutboxService mockOutboxService;
+  final fixedDate = DateTime(2024, 3, 15, 12);
 
   setUpAll(() {
     // Register a fallback value for AiConfig
@@ -80,6 +84,14 @@ void main() {
 
       // Set up default behavior for mockDb
       when(() => mockDb.saveConfig(any())).thenAnswer((_) async => 1);
+      when(() => mockDb.getAllConfigs()).thenAnswer((_) async => []);
+      when(
+        () => mockDb.watchAllConfigs(),
+      ).thenAnswer((_) => const Stream<List<AiConfigDbEntity>>.empty());
+    });
+
+    tearDown(() async {
+      await repository.close();
     });
 
     test(
@@ -150,6 +162,142 @@ void main() {
       // Assert
       verify(() => mockDb.getConfigsByType(type)).called(1);
     });
+
+    test('getConfigsByType caches repeated lookups by type', () async {
+      final config = AiConfig.inferenceProvider(
+        id: 'provider-1',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        name: 'Provider 1',
+        createdAt: fixedDate,
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+      final entity = AiConfigDbEntity(
+        id: config.id,
+        type: AiConfigType.inferenceProvider.name,
+        name: config.name,
+        serialized: jsonEncode(config.toJson()),
+        createdAt: fixedDate,
+      );
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).thenAnswer((_) async => [entity]);
+
+      final first = await repository.getConfigsByType(
+        AiConfigType.inferenceProvider,
+      );
+      final second = await repository.getConfigsByType(
+        AiConfigType.inferenceProvider,
+      );
+
+      expect(first, hasLength(1));
+      expect(second, hasLength(1));
+      verify(
+        () => mockDb.getConfigsByType(AiConfigType.inferenceProvider.name),
+      ).called(1);
+    });
+
+    test('getConfigsByType coalesces concurrent lookups by type', () async {
+      final completer = Completer<List<AiConfigDbEntity>>();
+      when(
+        () => mockDb.getConfigsByType(AiConfigType.model.name),
+      ).thenAnswer((_) => completer.future);
+
+      final first = repository.getConfigsByType(AiConfigType.model);
+      final second = repository.getConfigsByType(AiConfigType.model);
+
+      verify(() => mockDb.getConfigsByType(AiConfigType.model.name)).called(1);
+
+      completer.complete([
+        AiConfigDbEntity(
+          id: 'model-1',
+          type: AiConfigType.model.name,
+          name: 'Model 1',
+          serialized: jsonEncode(
+            AiConfig.model(
+              id: 'model-1',
+              name: 'Model 1',
+              providerModelId: 'provider/model-1',
+              inferenceProviderId: 'provider-1',
+              createdAt: fixedDate,
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            ).toJson(),
+          ),
+          createdAt: fixedDate,
+        ),
+      ]);
+
+      expect((await first).single.id, 'model-1');
+      expect((await second).single.id, 'model-1');
+    });
+
+    test('getConfigById caches repeated lookups by id', () async {
+      final config = AiConfig.inferenceProvider(
+        id: 'cached-id',
+        baseUrl: 'https://api.example.com',
+        apiKey: 'test-api-key',
+        name: 'Cached API',
+        createdAt: fixedDate,
+        inferenceProviderType: InferenceProviderType.genericOpenAi,
+      );
+      when(() => mockDb.getConfigById('cached-id')).thenAnswer(
+        (_) async => config,
+      );
+
+      final first = await repository.getConfigById('cached-id');
+      final second = await repository.getConfigById('cached-id');
+
+      expect(first?.id, 'cached-id');
+      expect(second?.id, 'cached-id');
+      verify(() => mockDb.getConfigById('cached-id')).called(1);
+    });
+
+    test(
+      'watchConfigsByType shares a single all-config snapshot watch',
+      () async {
+        final controller = StreamController<List<AiConfigDbEntity>>.broadcast();
+        final config = AiConfig.inferenceProvider(
+          id: 'provider-1',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider 1',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+        final entity = AiConfigDbEntity(
+          id: config.id,
+          type: AiConfigType.inferenceProvider.name,
+          name: config.name,
+          serialized: jsonEncode(config.toJson()),
+          createdAt: fixedDate,
+        );
+
+        when(() => mockDb.getAllConfigs()).thenAnswer((_) async => [entity]);
+        when(
+          () => mockDb.watchAllConfigs(),
+        ).thenAnswer((_) => controller.stream);
+
+        final first = repository
+            .watchConfigsByType(
+              AiConfigType.inferenceProvider,
+            )
+            .first;
+        final second = repository
+            .watchConfigsByType(
+              AiConfigType.inferenceProvider,
+            )
+            .first;
+
+        expect((await first).single.id, 'provider-1');
+        expect((await second).single.id, 'provider-1');
+        verify(() => mockDb.getAllConfigs()).called(1);
+        verify(() => mockDb.watchAllConfigs()).called(1);
+
+        await controller.close();
+      },
+    );
   });
 
   group('AiConfigRepository with in-memory database', () {
@@ -176,6 +324,7 @@ void main() {
     });
 
     tearDown(() async {
+      await repository.close();
       await db.close();
     });
 

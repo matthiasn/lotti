@@ -3876,6 +3876,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Comutatorul principal pentru toată jurnalizarea';
 
   @override
+  String get settingsLoggingSlowQueries => 'Interogări lente ale bazei de date';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Interogările lente sunt scrise în slow_queries-YYYY-MM-DD.log';
+
+  @override
   String get settingsLoggingSync => 'Sincronizare';
 
   @override

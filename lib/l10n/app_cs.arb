@@ -1361,6 +1361,8 @@
       }
     }
   },
+  "settingsLoggingSlowQueries": "Pomalé databázové dotazy",
+  "settingsLoggingSlowQueriesSubtitle": "Pomalé dotazy se zapisují do slow_queries-YYYY-MM-DD.log",
   "settingsLogsTitle": "Záznamy",
   "settingsMaintenanceTitle": "Údržba",
   "settingsMatrixAccept": "Přijmout",

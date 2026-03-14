@@ -34,6 +34,9 @@ void main() {
     late StreamController<bool> tooltipController;
     late StreamController<Set<String>> notificationsController;
     late ProviderContainer container;
+    late Map<String, String?> storedThemeSettings;
+    late Future<Map<String, String?>> Function(Iterable<String> keys)
+    settingsBatchLoader;
 
     setUpAll(() {
       registerFallbackValue(
@@ -59,6 +62,14 @@ void main() {
 
       tooltipController = StreamController<bool>.broadcast();
       notificationsController = StreamController<Set<String>>.broadcast();
+      storedThemeSettings = <String, String?>{
+        darkSchemeNameKey: 'Grey Law',
+        lightSchemeNameKey: 'Grey Law',
+        themeModeKey: 'system',
+      };
+      settingsBatchLoader = (keys) async => <String, String?>{
+        for (final key in keys) key: storedThemeSettings[key],
+      };
 
       when(
         () => mockUpdateNotifications.updateStream,
@@ -66,14 +77,11 @@ void main() {
 
       // Setup default mock behaviors
       when(
-        () => settingsDb.itemByKey(darkSchemeNameKey),
-      ).thenAnswer((_) async => 'Grey Law');
-      when(
-        () => settingsDb.itemByKey(lightSchemeNameKey),
-      ).thenAnswer((_) async => 'Grey Law');
-      when(
-        () => settingsDb.itemByKey(themeModeKey),
-      ).thenAnswer((_) async => 'system');
+        () => settingsDb.itemsByKeys(any()),
+      ).thenAnswer((invocation) async {
+        final keys = invocation.positionalArguments.first as Iterable<String>;
+        return settingsBatchLoader(keys);
+      });
       when(
         () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
       ).thenAnswer((_) async => 1);
@@ -122,15 +130,9 @@ void main() {
 
       test('loads saved theme preferences on init', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenAnswer((_) async => 'Indigo');
-          when(
-            () => settingsDb.itemByKey(darkSchemeNameKey),
-          ).thenAnswer((_) async => 'Shark');
-          when(
-            () => settingsDb.itemByKey(themeModeKey),
-          ).thenAnswer((_) async => 'dark');
+          storedThemeSettings[lightSchemeNameKey] = 'Indigo';
+          storedThemeSettings[darkSchemeNameKey] = 'Shark';
+          storedThemeSettings[themeModeKey] = 'dark';
 
           final states = <ThemingState>[];
           container.listen(
@@ -276,12 +278,19 @@ void main() {
       test('reloads themes when sync updates arrive', () {
         fakeAsync((async) {
           var callCount = 0;
-          when(() => settingsDb.itemByKey(lightSchemeNameKey)).thenAnswer((
-            _,
-          ) async {
+          settingsBatchLoader = (keys) async {
             callCount++;
-            return callCount == 1 ? 'Grey Law' : 'Indigo';
-          });
+            final lightThemeName = callCount == 1 ? 'Grey Law' : 'Indigo';
+            return <String, String?>{
+              for (final key in keys)
+                key: switch (key) {
+                  lightSchemeNameKey => lightThemeName,
+                  darkSchemeNameKey => 'Grey Law',
+                  themeModeKey => 'system',
+                  _ => null,
+                },
+            };
+          };
 
           final states = <ThemingState>[];
           container.listen(
@@ -303,7 +312,7 @@ void main() {
           async.flushMicrotasks();
 
           // Verify theme settings were reloaded
-          verify(() => settingsDb.itemByKey(lightSchemeNameKey)).called(1);
+          verify(() => settingsDb.itemsByKeys(any())).called(1);
 
           // Verify NO sync message was enqueued (synced changes don't re-sync)
           verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
@@ -396,9 +405,9 @@ void main() {
     group('error handling', () {
       test('handles error in _loadSelectedSchemes and logs it', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenThrow(Exception('Database error'));
+          settingsBatchLoader = (_) => Future<Map<String, String?>>.error(
+            Exception('Database error'),
+          );
 
           final states = <ThemingState>[];
           container.listen(
@@ -467,22 +476,30 @@ void main() {
           async.flushMicrotasks();
 
           // Verify settings were NOT reloaded
-          verifyNever(() => settingsDb.itemByKey(lightSchemeNameKey));
+          verifyNever(() => settingsDb.itemsByKeys(any()));
         });
       });
 
       test('handles error during theme reload from sync and logs it', () {
         fakeAsync((async) {
           var callCount = 0;
-          when(() => settingsDb.itemByKey(lightSchemeNameKey)).thenAnswer((
-            _,
-          ) async {
+          settingsBatchLoader = (keys) {
             callCount++;
             if (callCount > 1) {
-              throw Exception('Reload error');
+              return Future<Map<String, String?>>.error(
+                Exception('Reload error'),
+              );
             }
-            return 'Grey Law';
-          });
+            return Future<Map<String, String?>>.value(<String, String?>{
+              for (final key in keys)
+                key: switch (key) {
+                  darkSchemeNameKey => 'Grey Law',
+                  lightSchemeNameKey => 'Grey Law',
+                  themeModeKey => 'system',
+                  _ => null,
+                },
+            });
+          };
 
           final states = <ThemingState>[];
           container.listen(
@@ -572,9 +589,7 @@ void main() {
 
       test('handles null theme mode string gracefully', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(themeModeKey),
-          ).thenAnswer((_) async => null);
+          storedThemeSettings[themeModeKey] = null;
 
           final states = <ThemingState>[];
           container.listen(
@@ -593,9 +608,7 @@ void main() {
 
       test('handles invalid theme mode string gracefully', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(themeModeKey),
-          ).thenAnswer((_) async => 'invalid_mode');
+          storedThemeSettings[themeModeKey] = 'invalid_mode';
 
           final states = <ThemingState>[];
           container.listen(
@@ -614,12 +627,8 @@ void main() {
 
       test('handles null theme names gracefully', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenAnswer((_) async => null);
-          when(
-            () => settingsDb.itemByKey(darkSchemeNameKey),
-          ).thenAnswer((_) async => null);
+          storedThemeSettings[lightSchemeNameKey] = null;
+          storedThemeSettings[darkSchemeNameKey] = null;
 
           final states = <ThemingState>[];
           container.listen(
@@ -666,7 +675,7 @@ void main() {
           async.flushMicrotasks();
 
           // Initial load completed
-          verify(() => settingsDb.itemByKey(lightSchemeNameKey)).called(1);
+          verify(() => settingsDb.itemsByKeys(any())).called(1);
 
           // Emit unrelated notification (should be ignored)
           notificationsController.add({'some_other_notification'});
@@ -675,7 +684,7 @@ void main() {
           async.flushMicrotasks();
 
           // No additional load triggered
-          verifyNever(() => settingsDb.itemByKey(lightSchemeNameKey));
+          verifyNever(() => settingsDb.itemsByKeys(any()));
         });
       });
     });
@@ -775,10 +784,6 @@ void main() {
     group('Gamey theme integration', () {
       test('setLightTheme accepts gamey theme', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenAnswer((_) async => 'Grey Law');
-
           final controller = container.read(themingControllerProvider.notifier);
 
           async.elapse(const Duration(milliseconds: 100));
@@ -801,10 +806,6 @@ void main() {
 
       test('setDarkTheme accepts gamey theme', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(darkSchemeNameKey),
-          ).thenAnswer((_) async => 'Grey Law');
-
           final controller = container.read(themingControllerProvider.notifier);
 
           async.elapse(const Duration(milliseconds: 100));
@@ -827,12 +828,8 @@ void main() {
 
       test('loads saved gamey theme from preferences', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenAnswer((_) async => gameyThemeName);
-          when(
-            () => settingsDb.itemByKey(darkSchemeNameKey),
-          ).thenAnswer((_) async => gameyThemeName);
+          storedThemeSettings[lightSchemeNameKey] = gameyThemeName;
+          storedThemeSettings[darkSchemeNameKey] = gameyThemeName;
 
           final states = <ThemingState>[];
           container.listen(
@@ -852,12 +849,8 @@ void main() {
 
       test('gamey theme builds valid ThemeData', () {
         fakeAsync((async) {
-          when(
-            () => settingsDb.itemByKey(lightSchemeNameKey),
-          ).thenAnswer((_) async => gameyThemeName);
-          when(
-            () => settingsDb.itemByKey(darkSchemeNameKey),
-          ).thenAnswer((_) async => gameyThemeName);
+          storedThemeSettings[lightSchemeNameKey] = gameyThemeName;
+          storedThemeSettings[darkSchemeNameKey] = gameyThemeName;
 
           final states = <ThemingState>[];
           container.listen(

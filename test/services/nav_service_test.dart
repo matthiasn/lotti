@@ -30,26 +30,30 @@ void main() {
         () => secureStorageMock.writeValue(lastRouteKey, any()),
       ).thenAnswer((_) async {});
 
-      when(() => mockJournalDb.watchActiveConfigFlagNames()).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([
-          {
-            enableDailyOsPageFlag,
-            enableHabitsPageFlag,
-            enableDashboardsPageFlag,
-          },
-        ]),
+      when(() => mockJournalDb.watchConfigFlag(any())).thenAnswer((invocation) {
+        final flagName = invocation.positionalArguments.first as String;
+        final enabledFlags = {
+          enableDailyOsPageFlag,
+          enableHabitsPageFlag,
+          enableDashboardsPageFlag,
+        };
+        return Stream<bool>.value(enabledFlags.contains(flagName));
+      });
+
+      final navService = NavService(
+        journalDb: mockJournalDb,
+        settingsDb: settingsDb,
       );
 
       getIt
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<NavService>(
-          NavService(journalDb: mockJournalDb, settingsDb: settingsDb),
-        );
+        ..registerSingleton<NavService>(navService);
     });
 
     tearDownAll(() async {
+      await getIt<NavService>().dispose();
       await getIt.reset();
     });
 

@@ -13,6 +13,8 @@ denormalized lookup table for efficient filtering.
     fetched efficiently with unique-name constraints.
   - `labeled` table: denormalized join table mapping journal entries to label ids. Reconciled on
     every entity save via `JournalDb.addLabeled`.
+  - Visibility filtering now flows through `JournalDb` with explicit private-status parameters,
+    so label definition reads do not need to re-read the private config flag inside each SQL query.
 - **Reconciliation**: Diff-based reconciliation compares the authoritative metadata (`meta.labelIds`)
   with the denormalized table, inserting/removing rows as needed.
 ## Sync

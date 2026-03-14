@@ -288,7 +288,9 @@ void main() {
         ).thenAnswer((_) async => [testLink]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+            testTask.meta.id,
+          }),
         ).thenAnswer((_) async => [testTask]);
 
         // Mock the bulk linked entities method
@@ -417,7 +419,9 @@ void main() {
         ).thenAnswer((_) async => [audioLink]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+            testTask.meta.id,
+          }),
         ).thenAnswer((_) async => [testTask]);
 
         // Mock the bulk linked entities method
@@ -536,7 +540,9 @@ void main() {
 
         // Should not call further methods
         verifyNever(() => mockJournalDb.linksForEntryIds(any()));
-        verifyNever(() => mockJournalDb.getJournalEntitiesForIds(any()));
+        verifyNever(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+        );
       });
 
       test('returns empty list when no linked tasks found', () async {
@@ -587,7 +593,9 @@ void main() {
         expect(result, isEmpty);
 
         // Should not call getJournalEntitiesForIds
-        verifyNever(() => mockJournalDb.getJournalEntitiesForIds(any()));
+        verifyNever(
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
+        );
       });
 
       test('filters out non-task entities from linked results', () async {
@@ -640,7 +648,9 @@ void main() {
         ).thenAnswer((_) async => [testLink]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+            testTask.meta.id,
+          }),
         ).thenAnswer((_) async => [testTask, nonTaskEntity]);
 
         // Mock the bulk linked entities method
@@ -704,7 +714,9 @@ void main() {
           ).thenAnswer((_) async => [testLink]);
 
           when(
-            () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+              testTask.meta.id,
+            }),
           ).thenAnswer((_) async => [testTask]);
 
           // Mock the bulk linked entities method
@@ -768,7 +780,9 @@ void main() {
         ).thenAnswer((_) async => [testLink]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+            testTask.meta.id,
+          }),
         ).thenAnswer((_) async => [testTask]);
 
         // Mock the bulk linked entities method
@@ -843,7 +857,7 @@ void main() {
         ).thenAnswer((_) async => [testLink, link2]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
             testTask.meta.id,
             testTaskDone.meta.id,
           }),
@@ -998,7 +1012,7 @@ void main() {
           );
 
           when(
-            () => mockJournalDb.getJournalEntitiesForIds({
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
               taskWithStatus.meta.id,
             }),
           ).thenAnswer((_) async => [taskWithStatus]);
@@ -1079,7 +1093,9 @@ void main() {
         ).thenAnswer((_) async => [testLink]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({testTask.meta.id}),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+            testTask.meta.id,
+          }),
         ).thenAnswer((_) async => [testTask]);
 
         // Mock the bulk linked entities method
@@ -1184,7 +1200,7 @@ void main() {
         ).thenAnswer((_) async => [link1, link2]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds({
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered({
             testTask.meta.id,
             testTaskDone.meta.id,
           }),

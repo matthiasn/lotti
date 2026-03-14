@@ -13,28 +13,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+
 class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
 class MockCloudInferenceRepository extends Mock
     implements CloudInferenceRepository {}
-
-class FakeAiConfigPrompt extends Fake implements AiConfigPrompt {}
 
 void main() {
   late AiConfigPrompt testPromptConfig;
@@ -43,13 +29,12 @@ void main() {
   late MockCloudInferenceRepository mockCloudRepository;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(InferenceStatus.idle);
-    registerFallbackValue(StackTrace.current);
-    registerFallbackValue(FakeAiConfigPrompt());
   });
 
   setUp(() {
-    final now = DateTime.now();
+    final now = DateTime(2024, 3, 15, 10);
     testPromptConfig =
         AiConfig.prompt(
               id: 'test-prompt-1',
@@ -93,7 +78,7 @@ void main() {
         subDomain: any(named: 'subDomain'),
         stackTrace: any<dynamic>(named: 'stackTrace'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenReturn(null);
   });
 
   tearDown(() {
@@ -126,9 +111,9 @@ void main() {
 
       // Simulate inference
       onStatusChange(InferenceStatus.running);
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await Future<void>.value();
       onProgress('Starting...');
-      await Future<void>.delayed(const Duration(milliseconds: 10));
+      await Future<void>.value();
       onProgress('Complete!');
       onStatusChange(InferenceStatus.idle);
       completer.complete();

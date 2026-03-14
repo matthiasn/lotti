@@ -357,7 +357,7 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
   Future<List<JournalEntity>> _batchedGetEntitiesForIds(
     JournalDb db,
     Set<String> ids,
-  ) => _runBatchedQuery(ids, db.getJournalEntitiesForIds);
+  ) => _runBatchedQuery(ids, db.getJournalEntitiesForIdsUnordered);
 
   TimeHistoryData _aggregateEntries(
     List<JournalEntity> entries,

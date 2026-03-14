@@ -141,6 +141,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: logSlowQueriesFlag,
+      description: 'Log slow database queries',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableEmbeddingsFlag,
       description: 'Generate embeddings for entries?',
       status: false,

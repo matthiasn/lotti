@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:intl/intl.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/consts.dart';
@@ -14,6 +15,7 @@ import 'package:path/path.dart' as p;
 
 class LoggingService {
   bool _enableLogging = !isTestEnv;
+  bool _enableSlowQueryLogging = false;
   final _dateFmt = DateFormat('yyyy-MM-dd');
   static const Duration _fileFlushInterval = Duration(milliseconds: 500);
   static const int _fileFlushLineThreshold = 40;
@@ -37,10 +39,31 @@ class LoggingService {
   final Map<String, Future<void>> _fileDrains = <String, Future<void>>{};
   final List<Future<void>> _pendingWrites = <Future<void>>[];
 
+  StreamSubscription<bool>? _loggingFlagSubscription;
+  StreamSubscription<bool>? _slowQueryFlagSubscription;
+
+  void _syncSlowQueryLoggingGate() {
+    SlowQueryLoggingGate.isEnabled = _enableLogging && _enableSlowQueryLogging;
+  }
+
   void listenToConfigFlag() {
-    getIt<JournalDb>().watchConfigFlag(enableLoggingFlag).listen((value) {
-      _enableLogging = value;
-    });
+    _loggingFlagSubscription = getIt<JournalDb>()
+        .watchConfigFlag(enableLoggingFlag)
+        .listen((value) {
+          _enableLogging = value;
+          _syncSlowQueryLoggingGate();
+        });
+    _slowQueryFlagSubscription = getIt<JournalDb>()
+        .watchConfigFlag(logSlowQueriesFlag)
+        .listen((value) {
+          _enableSlowQueryLogging = value;
+          _syncSlowQueryLoggingGate();
+        });
+  }
+
+  Future<void> dispose() async {
+    await _loggingFlagSubscription?.cancel();
+    await _slowQueryFlagSubscription?.cancel();
   }
 
   // --- Text file sink -----------------------------------------------------

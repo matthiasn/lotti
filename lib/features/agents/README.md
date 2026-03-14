@@ -15,6 +15,9 @@ apply incoming agent payloads before the first entry or agent screen is opened.
 
 - Journal domain (`db.sqlite`): source-of-truth task/checklist/time data.
 - Agent domain (`agent.sqlite`): agent identities, state, messages, reports, template versions, wake runs.
+  The agent database uses a small Drift read pool plus targeted indexes for
+  wake-run thread lookups, pending saga ordering, and active
+  `template_assignment` joins.
 - Inference path: profile-based or template-selected model, resolved via `ProfileResolver` (agent config → template version → template → legacy `modelId` fallback).
 
 ### Task Context Assembly (Current)

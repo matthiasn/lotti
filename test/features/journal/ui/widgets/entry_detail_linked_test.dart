@@ -431,8 +431,8 @@ void main() {
         () => mockJournalDb.linksFromId(any(), any()),
       ).thenReturn(MockSelectable<LinkedDbEntry>(dbEntries));
       when(
-        () => mockJournalDb.journalEntityIdsByDateFromDesc(any()),
-      ).thenReturn(MockSelectable<String>(toIds));
+        () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc(any()),
+      ).thenAnswer((_) async => toIds);
     }
 
     testWidgets('shows filter button and label when entries exist', (

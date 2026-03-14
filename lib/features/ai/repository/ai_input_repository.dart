@@ -258,7 +258,7 @@ class AiInputRepository {
     String taskId,
   ) async {
     // Get entities that link TO this task (where toId = taskId)
-    final linkedEntities = await _db.linkedToJournalEntities(taskId).get();
+    final linkedEntities = await _db.getLinkedToEntities(taskId);
     final tasks =
         linkedEntities
             .map(fromDbEntity)

@@ -10,34 +10,15 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockHttpClient extends Mock implements http.Client {}
-
-class MockLoggingService extends Mock implements LoggingService {
-  MockLoggingService() {
-    when(
-      () => captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        level: any(named: 'level'),
-        type: any(named: 'type'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
-  }
-}
-
-class FakeUri extends Fake implements Uri {}
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 
 void main() {
   late MockHttpClient mockHttpClient;
   late MockLoggingService mockLoggingService;
   late WhatsNewService service;
 
-  setUpAll(() {
-    registerFallbackValue(FakeUri());
-    registerFallbackValue(StackTrace.current);
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockHttpClient = MockHttpClient();

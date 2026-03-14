@@ -39,7 +39,12 @@ The AI feature also owns the local embedding pipeline used for semantic search.
 
 #### Database (`database/`)
 - **`ai_config_db.drift`**: Drift database schema for persistent storage
-- **`ai_config_repository.dart`**: Interface for CRUD operations on configurations
+- **`ai_config_repository.dart`**: Repository facade for CRUD operations and
+  shared in-memory config snapshots
+  - Type-based watchers derive from one shared all-config snapshot instead of
+    issuing separate Drift watches per AI config type
+  - Direct config reads still keep per-id and per-type caches for repeated
+    warm lookups
 
 #### Repositories (`repository/`)
 

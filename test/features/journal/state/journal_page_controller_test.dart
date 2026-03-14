@@ -64,13 +64,18 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => updateStreamController.stream);
 
-      when(
-        () => mockJournalDb.watchActiveConfigFlagNames(),
-      ).thenAnswer((_) => configFlagsController.stream);
+      when(() => mockJournalDb.watchConfigFlag(any())).thenAnswer((
+        invocation,
+      ) {
+        final flagName = invocation.positionalArguments.first as String;
+        if (flagName == privateFlag) {
+          return privateFlagController.stream;
+        }
 
-      when(
-        () => mockJournalDb.watchConfigFlag(privateFlag),
-      ).thenAnswer((_) => privateFlagController.stream);
+        return configFlagsController.stream.map(
+          (flags) => flags.contains(flagName),
+        );
+      });
 
       when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
 
@@ -1488,6 +1493,89 @@ void main() {
               any(),
             ),
           ).called(greaterThan(0));
+        });
+      });
+
+      test('persistTasksFilter skips unchanged writes', () {
+        fakeAsync((async) {
+          final persistedFilter = jsonEncode({
+            'selectedCategoryIds': [''],
+            'selectedTaskStatuses': ['IN PROGRESS', 'OPEN', 'GROOMED'],
+            'selectedLabelIds': <String>[],
+            'selectedPriorities': <String>[],
+            'sortOption': 'byPriority',
+            'showCreationDate': false,
+            'showDueDate': true,
+            'showCoverArt': true,
+            'showDistances': false,
+            'agentAssignmentFilter': 'all',
+          });
+
+          when(
+            () => mockSettingsDb.itemByKey(
+              JournalPageController.tasksCategoryFiltersKey,
+            ),
+          ).thenAnswer((_) async => persistedFilter);
+          when(
+            () =>
+                mockSettingsDb.itemByKey(JournalPageController.taskFiltersKey),
+          ).thenAnswer((_) async => persistedFilter);
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          controller.persistTasksFilter();
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalPageController.tasksCategoryFiltersKey,
+              any(),
+            ),
+          );
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalPageController.taskFiltersKey,
+              any(),
+            ),
+          );
+        });
+      });
+
+      test('persistEntryTypes skips unchanged writes', () {
+        fakeAsync((async) {
+          final persistedEntryTypes = jsonEncode(['Task', 'JournalEntry']);
+
+          when(
+            () => mockSettingsDb.itemByKey(
+              JournalPageController.selectedEntryTypesKey,
+            ),
+          ).thenAnswer((_) async => persistedEntryTypes);
+
+          final controller = container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 200));
+          async.flushMicrotasks();
+
+          controller.persistEntryTypes();
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          verifyNever(
+            () => mockSettingsDb.saveSettingsItem(
+              JournalPageController.selectedEntryTypesKey,
+              any(),
+            ),
+          );
         });
       });
     });

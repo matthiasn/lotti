@@ -285,8 +285,8 @@ void main() {
     void mockLinkedFromEntries(List<JournalEntity> entries) {
       final dbEntries = entries.map(_journalDbEntity).toList();
       when(
-        () => mockJournalDb.linkedToJournalEntities(any()),
-      ).thenReturn(MockSelectable<JournalDbEntity>(dbEntries));
+        () => mockJournalDb.getLinkedToEntities(any()),
+      ).thenAnswer((_) async => dbEntries);
     }
 
     testWidgets('shows label when entries exist', (tester) async {

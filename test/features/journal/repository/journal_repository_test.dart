@@ -1,5 +1,6 @@
 // ignore_for_file: inference_failure_on_function_invocation
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:drift/drift.dart' as drift;
@@ -29,11 +30,6 @@ import '../../../mocks/mocks.dart';
 class MockSelectableLinkedDbEntry extends Mock
     implements drift.Selectable<LinkedDbEntry> {}
 
-class MockSelectableString extends Mock implements drift.Selectable<String> {}
-
-class MockSelectableJournalDbEntity extends Mock
-    implements drift.Selectable<JournalDbEntity> {}
-
 void main() {
   late MockJournalDb mockJournalDb;
   late MockPersistenceLogic mockPersistenceLogic;
@@ -44,6 +40,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   late MockTimeService mockTimeService;
   late JournalRepository repository;
+  late StreamController<Set<String>> updateStreamController;
 
   setUp(() {
     mockJournalDb = MockJournalDb();
@@ -54,6 +51,9 @@ void main() {
     mockUpdateNotifications = MockUpdateNotifications();
     mockOutboxService = MockOutboxService();
     mockTimeService = MockTimeService();
+    updateStreamController = StreamController<Set<String>>.broadcast(
+      sync: true,
+    );
 
     // Register our mock services
     getIt
@@ -65,6 +65,10 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<OutboxService>(mockOutboxService)
       ..registerSingleton<TimeService>(mockTimeService);
+
+    when(
+      () => mockUpdateNotifications.updateStream,
+    ).thenAnswer((_) => updateStreamController.stream);
 
     repository = JournalRepository();
 
@@ -139,7 +143,10 @@ void main() {
     registerFallbackValue(DateTime(2023));
   });
 
-  tearDown(getIt.reset);
+  tearDown(() async {
+    await updateStreamController.close();
+    await getIt.reset();
+  });
 
   group('JournalRepository', () {
     group('updateCategoryId', () {
@@ -1019,7 +1026,6 @@ void main() {
       test('returns entities linked to the specified entity', () async {
         // Arrange
         const linkedTo = 'linked-to-id';
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
 
         final testEntities = [
           JournalEntity.journalEntry(
@@ -1058,8 +1064,8 @@ void main() {
 
         // Mock JournalDb
         when(
-          () => mockJournalDb.linkedToJournalEntities(linkedTo),
-        ).thenReturn(mockSelectableJournalDbEntities);
+          () => mockJournalDb.getLinkedToEntities(linkedTo),
+        ).thenAnswer((_) async => []);
 
         // Skip the actual Future conversion and just mock getLinkedEntities directly
         when(
@@ -1121,6 +1127,93 @@ void main() {
         expect(result, equals(testEntities));
         verify(() => mockJournalDb.getLinkedEntities(linkedTo)).called(1);
       });
+
+      test('concurrent lookups each hit the DB', () async {
+        const linkedTo = 'linked-to-id';
+        final testEntities = [
+          JournalEntity.journalEntry(
+            entryText: const EntryText(
+              plainText: 'Entry 1',
+              markdown: 'Entry 1',
+            ),
+            meta: Metadata(
+              id: 'entry-1',
+              createdAt: DateTime(2023),
+              updatedAt: DateTime(2023),
+              dateFrom: DateTime(2023),
+              dateTo: DateTime(2023),
+            ),
+          ),
+        ];
+
+        when(
+          () => mockJournalDb.getLinkedEntities(linkedTo),
+        ).thenAnswer((_) async => testEntities);
+
+        final futureA = repository.getLinkedEntities(linkedTo: linkedTo);
+        final futureB = repository.getLinkedEntities(linkedTo: linkedTo);
+
+        expect(await futureA, testEntities);
+        expect(await futureB, testEntities);
+        // Without caching, each call hits the DB independently
+        verify(() => mockJournalDb.getLinkedEntities(linkedTo)).called(2);
+      });
+
+      test('fetches from DB on each call', () async {
+        const linkedTo = 'linked-to-id';
+        final initialEntities = [
+          JournalEntity.journalEntry(
+            entryText: const EntryText(
+              plainText: 'Entry 1',
+              markdown: 'Entry 1',
+            ),
+            meta: Metadata(
+              id: 'entry-1',
+              createdAt: DateTime(2023),
+              updatedAt: DateTime(2023),
+              dateFrom: DateTime(2023),
+              dateTo: DateTime(2023),
+            ),
+          ),
+        ];
+        final refreshedEntities = [
+          ...initialEntities,
+          JournalEntity.journalEntry(
+            entryText: const EntryText(
+              plainText: 'Entry 2',
+              markdown: 'Entry 2',
+            ),
+            meta: Metadata(
+              id: 'entry-2',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          ),
+        ];
+
+        when(
+          () => mockJournalDb.getLinkedEntities(linkedTo),
+        ).thenAnswer((_) async => initialEntities);
+
+        final first = await repository.getLinkedEntities(linkedTo: linkedTo);
+        expect(first, initialEntities);
+        verify(() => mockJournalDb.getLinkedEntities(linkedTo)).called(1);
+
+        when(
+          () => mockJournalDb.getLinkedEntities(linkedTo),
+        ).thenAnswer((_) async => refreshedEntities);
+
+        final refreshed = await repository.getLinkedEntities(
+          linkedTo: linkedTo,
+        );
+        expect(refreshed.map((entity) => entity.meta.id), [
+          'entry-1',
+          'entry-2',
+        ]);
+        verify(() => mockJournalDb.getLinkedEntities(linkedTo)).called(1);
+      });
     });
 
     group('getJournalEntityById', () {
@@ -1173,9 +1266,82 @@ void main() {
         expect(result, isNull);
         verify(() => mockJournalDb.journalEntityById(entityId)).called(1);
       });
+
+      test('fetches from DB on each call without caching', () async {
+        const entityId = 'test-entity-id';
+        final initialEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Initial content',
+            markdown: 'initial',
+          ),
+          meta: Metadata(
+            id: entityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2023),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+        final updatedEntity = JournalEntity.journalEntry(
+          entryText: const EntryText(
+            plainText: 'Updated content',
+            markdown: 'updated',
+          ),
+          meta: Metadata(
+            id: entityId,
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2023),
+            dateTo: DateTime(2024),
+            starred: false,
+            private: false,
+            flag: EntryFlag.none,
+          ),
+        );
+
+        when(
+          () => mockJournalDb.journalEntityById(entityId),
+        ).thenAnswer((_) async => initialEntity);
+
+        expect(await repository.getJournalEntityById(entityId), initialEntity);
+        expect(await repository.getJournalEntityById(entityId), initialEntity);
+        // Without caching, each call hits the DB
+        verify(() => mockJournalDb.journalEntityById(entityId)).called(2);
+
+        when(
+          () => mockJournalDb.journalEntityById(entityId),
+        ).thenAnswer((_) async => updatedEntity);
+
+        expect(await repository.getJournalEntityById(entityId), updatedEntity);
+        verify(() => mockJournalDb.journalEntityById(entityId)).called(1);
+      });
     });
 
     group('getLinksFromId', () {
+      test(
+        'returns empty list without sorting when there are no links',
+        () async {
+          const fromId = 'from-id';
+          final mockLinksQuery = MockSelectableLinkedDbEntry();
+
+          when(
+            () => mockJournalDb.linksFromId(fromId, [false]),
+          ).thenReturn(mockLinksQuery);
+          when(mockLinksQuery.get).thenAnswer((_) async => <LinkedDbEntry>[]);
+
+          final result = await repository.getLinksFromId(fromId);
+
+          expect(result, isEmpty);
+          verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
+          verifyNever(
+            () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc(any()),
+          );
+        },
+      );
+
       test('returns links from a specific ID with sorted order', () async {
         // Arrange
         const fromId = 'from-id';
@@ -1224,7 +1390,6 @@ void main() {
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1234,12 +1399,11 @@ void main() {
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
-        ).thenReturn(mockIdsQuery);
-        when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-2', 'to-id-1']);
+        ).thenAnswer((_) async => ['to-id-2', 'to-id-1']);
 
         // Act
         final result = await repository.getLinksFromId(fromId);
@@ -1251,7 +1415,7 @@ void main() {
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
@@ -1287,7 +1451,6 @@ void main() {
 
         final mockEntries = [mockDbEntry];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1297,9 +1460,10 @@ void main() {
 
         // Mock the journalEntityIdsByDateFromDesc query
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc(['to-id-1']),
-        ).thenReturn(mockIdsQuery);
-        when(mockIdsQuery.get).thenAnswer((_) async => ['to-id-1']);
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
+            'to-id-1',
+          ]),
+        ).thenAnswer((_) async => ['to-id-1']);
 
         // Act
         final result = await repository.getLinksFromId(
@@ -1364,7 +1528,6 @@ void main() {
 
         final mockEntries = [mockDbEntry1, mockDbEntry2];
         final mockLinksQuery = MockSelectableLinkedDbEntry();
-        final mockIdsQuery = MockSelectableString();
 
         // Mock the linksFromId query
         when(
@@ -1375,13 +1538,10 @@ void main() {
         // Mock the journalEntityIdsByDateFromDesc query to return an ID that doesn't exist
         // in our links map to test the nonNulls filtering
         when(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
-        ).thenReturn(mockIdsQuery);
-        when(
-          mockIdsQuery.get,
         ).thenAnswer((_) async => ['to-id-3', 'to-id-2', 'to-id-1']);
 
         // Act
@@ -1396,7 +1556,7 @@ void main() {
         expect(result[1].toId, equals('to-id-1'));
         verify(() => mockJournalDb.linksFromId(fromId, [false])).called(1);
         verify(
-          () => mockJournalDb.journalEntityIdsByDateFromDesc([
+          () => mockJournalDb.getJournalEntityIdsSortedByDateFromDesc([
             'to-id-1',
             'to-id-2',
           ]),
@@ -1710,15 +1870,11 @@ void main() {
           ),
         );
 
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
         final mockDbEntities = [dbEntity1, dbEntity2];
 
         // Mock JournalDb
         when(
-          () => mockJournalDb.linkedToJournalEntities(linkedTo),
-        ).thenReturn(mockSelectableJournalDbEntities);
-        when(
-          mockSelectableJournalDbEntities.get,
+          () => mockJournalDb.getLinkedToEntities(linkedTo),
         ).thenAnswer((_) async => mockDbEntities);
 
         // Act
@@ -1731,9 +1887,62 @@ void main() {
         expect((result[0] as JournalEntry).meta.id, equals('entity-1'));
         expect((result[1] as JournalEntry).meta.id, equals('entity-2'));
 
-        verify(() => mockJournalDb.linkedToJournalEntities(linkedTo)).called(1);
-        verify(mockSelectableJournalDbEntities.get).called(1);
+        verify(() => mockJournalDb.getLinkedToEntities(linkedTo)).called(1);
       });
+
+      test(
+        'fetches reverse-linked entities from DB on each call',
+        () async {
+          const linkedTo = 'linked-to-id';
+          final dateTime2023 = DateTime(2023);
+          final dbEntity = JournalDbEntity(
+            id: 'entity-1',
+            createdAt: dateTime2023,
+            updatedAt: dateTime2023,
+            dateFrom: dateTime2023,
+            deleted: false,
+            type: 'JournalEntry',
+            subtype: '',
+            task: false,
+            taskStatus: '',
+            starred: false,
+            private: false,
+            flag: 0,
+            category: 'journal',
+            dateTo: dateTime2023,
+            schemaVersion: 1,
+            serialized: jsonEncode(
+              JournalEntity.journalEntry(
+                entryText: const EntryText(
+                  plainText: 'Entry 1',
+                  markdown: 'Entry 1',
+                ),
+                meta: Metadata(
+                  id: 'entity-1',
+                  createdAt: dateTime2023,
+                  updatedAt: dateTime2023,
+                  dateFrom: dateTime2023,
+                  dateTo: dateTime2023,
+                  starred: false,
+                  private: false,
+                  flag: EntryFlag.none,
+                ),
+              ).toJson(),
+            ),
+          );
+
+          when(
+            () => mockJournalDb.getLinkedToEntities(linkedTo),
+          ).thenAnswer((_) async => [dbEntity]);
+
+          final result = await repository.getLinkedToEntities(
+            linkedTo: linkedTo,
+          );
+
+          expect(result.single.meta.id, 'entity-1');
+          verify(() => mockJournalDb.getLinkedToEntities(linkedTo)).called(1);
+        },
+      );
     });
 
     group('getLinkedImagesForTask', () {
@@ -1954,9 +2163,6 @@ void main() {
           updatedAt: dateTime2023,
         );
 
-        // Create mock selectables
-        final mockSelectableJournalDbEntities = MockSelectableJournalDbEntity();
-
         // Create JournalDbEntity representations for the tasks
         final taskDbEntity1 = JournalDbEntity(
           id: 'task-with-cover',
@@ -2003,10 +2209,7 @@ void main() {
 
         // Mock linkedToJournalEntities to return tasks that link to this image
         when(
-          () => mockJournalDb.linkedToJournalEntities(imageId),
-        ).thenReturn(mockSelectableJournalDbEntities);
-        when(
-          mockSelectableJournalDbEntities.get,
+          () => mockJournalDb.getLinkedToEntities(imageId),
         ).thenAnswer((_) async => [taskDbEntity1, taskDbEntity2]);
 
         // Mock updateTask for clearing coverArtId
@@ -2048,7 +2251,7 @@ void main() {
         verify(() => mockJournalDb.journalEntityById(imageId)).called(1);
 
         // Verify that we looked for tasks that link to this image
-        verify(() => mockJournalDb.linkedToJournalEntities(imageId)).called(1);
+        verify(() => mockJournalDb.getLinkedToEntities(imageId)).called(1);
 
         // Verify updateTask was called once (only for the task with coverArtId)
         verify(

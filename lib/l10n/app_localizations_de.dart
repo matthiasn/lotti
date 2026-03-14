@@ -3865,6 +3865,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Hauptschalter für die gesamte Protokollierung';
 
   @override
+  String get settingsLoggingSlowQueries => 'Langsame Datenbankabfragen';
+
+  @override
+  String get settingsLoggingSlowQueriesSubtitle =>
+      'Langsame Abfragen werden in slow_queries-YYYY-MM-DD.log geschrieben';
+
+  @override
   String get settingsLoggingSync => 'Synchronisation';
 
   @override

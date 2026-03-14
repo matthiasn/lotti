@@ -161,10 +161,15 @@ class ThemingController extends _$ThemingController {
 
   Future<void> _loadSelectedSchemes() async {
     final settingsDb = getIt<SettingsDb>();
+    final storedSettings = await settingsDb.itemsByKeys({
+      darkSchemeNameKey,
+      lightSchemeNameKey,
+      themeModeKey,
+    });
 
-    final darkThemeName = await settingsDb.itemByKey(darkSchemeNameKey);
-    final lightThemeName = await settingsDb.itemByKey(lightSchemeNameKey);
-    final themeModeStr = await settingsDb.itemByKey(themeModeKey);
+    final darkThemeName = storedSettings[darkSchemeNameKey];
+    final lightThemeName = storedSettings[lightSchemeNameKey];
+    final themeModeStr = storedSettings[themeModeKey];
 
     final themeMode = themeModeStr != null
         ? EnumToString.fromString(ThemeMode.values, themeModeStr) ??

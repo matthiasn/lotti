@@ -63,7 +63,8 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await repository.close();
     if (getIt.isRegistered<OutboxService>()) {
       getIt.unregister<OutboxService>();
     }

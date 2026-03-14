@@ -157,7 +157,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -203,7 +203,7 @@ void main() {
         ).thenAnswer((_) async => [link]);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [task]);
 
         final result = await container.read(
@@ -246,7 +246,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -294,7 +294,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -353,7 +353,7 @@ void main() {
         ).thenAnswer((_) async => links);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [task1, task2]);
 
         final result = await container.read(
@@ -383,7 +383,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         // Initial load
@@ -416,7 +416,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         await container.read(timeHistoryHeaderControllerProvider.future);
@@ -454,7 +454,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -477,7 +477,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -507,7 +507,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -547,7 +547,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         final result = await container.read(
@@ -597,7 +597,7 @@ void main() {
           ).thenAnswer((_) async => [link1]);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => [task1]);
 
           // Initial load
@@ -647,7 +647,7 @@ void main() {
           ).thenAnswer((_) async => [link2]);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => [task2]);
 
           final notifier = container.read(
@@ -689,7 +689,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         // Initial load
@@ -729,7 +729,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           // Initial load
@@ -782,7 +782,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         // Initial load succeeds
@@ -834,7 +834,7 @@ void main() {
         when(() => mockDb.linksForEntryIds(any())).thenAnswer((_) async => []);
 
         when(
-          () => mockDb.getJournalEntitiesForIds(any()),
+          () => mockDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => []);
 
         // Initial load succeeds
@@ -937,7 +937,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           final result = await container.read(
@@ -1002,7 +1002,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           final result = await container.read(
@@ -1066,7 +1066,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           // Initial load
@@ -1130,7 +1130,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           final result = await container.read(
@@ -1196,7 +1196,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           when(
-            () => mockDb.getJournalEntitiesForIds(any()),
+            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
           ).thenAnswer((_) async => []);
 
           final result = await container.read(

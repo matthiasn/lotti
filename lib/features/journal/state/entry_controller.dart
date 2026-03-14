@@ -519,7 +519,7 @@ class EntryController extends _$EntryController {
     final task = state.value?.entry;
 
     if (task != null && task is Task) {
-      final checklists = await _journalDb.getJournalEntitiesForIds({
+      final checklists = await _journalDb.getJournalEntitiesForIdsUnordered({
         ...checklistIds,
       });
 

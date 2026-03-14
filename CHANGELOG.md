@@ -6,22 +6,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.920] - 2026-03-13
 ### Changed
-- Sync catch-up: reconnect recovery is now timestamp-first. The client pages
-  backward until the stored timestamp boundary is visible, then replays forward
-  with bounded overlap instead of depending on exact event-id re-anchoring.
-- Sync markers: local `lotti-...` echo ids are no longer persisted as durable
-  remote read-marker ids. Server-assigned Matrix event ids are still kept for
-  remote marker state, while timestamp progress remains the canonical local
-  catch-up anchor.
-- Sync pagination: timestamp-first catch-up now keeps paging even without a
-  stored durable event id, and Matrix history requests now honor the configured
-  page size instead of silently using the SDK default of `30`.
-- Sync backfill: newly detected gaps still become missing work immediately, but
-  the automatic backfill nudge now waits for the surrounding ordered replay
-  batch to finish so transient in-burst holes do not create redundant chatter.
-- Sync startup: if catch-up cannot reach the stored timestamp boundary yet, the
-  receiver now keeps live scans deferred instead of treating incomplete
-  recovery as ready and letting repair traffic start early.
+- Sync catch-up: reconnect recovery is now timestamp-first, paging backward
+  until the stored timestamp boundary is visible, then replaying forward with
+  bounded overlap. Local echo ids are no longer persisted as durable remote
+  markers, and history requests now honor the configured page size.
+- Sync reliability: backfill nudges wait for ordered replay batches to finish,
+  and incomplete catch-up keeps live scans deferred instead of treating partial
+  recovery as ready.
+- Database diagnostics: all Drift-backed databases now log slow queries into
+  daily `slow_queries-YYYY-MM-DD.log` files when the logging domain is enabled.
+- Database indexes: new dedicated indexes for task due-dates, date-sorted task
+  lists, journal browse, definition lists, linked-entry lookups, sync sequence
+  scans, outbox queue scans, and agent database thread/saga/template queries.
+  Index-adding migrations now safely recreate existing indexes to prevent
+  startup failures.
+- Journal query improvements: common browse queries use simplified fast-path
+  SQL, task filters use `EXISTS` predicates instead of `CASE` branches,
+  linked-child lookups use direct joins, and all-starred/all-private paths
+  bypass redundant filters. Empty selections short-circuit before hitting
+  SQLite, and bulk id-based fetches use an unsorted path when order is not
+  needed.
+- Task progress: task-card progress lookups now batch estimates and linked
+  work time spans across visible task IDs through lightweight queries instead
+  of loading full entities.
+- Settings database: reads and writes now use a direct Drift executor instead
+  of a background-isolate hop, and same-value saves return early. Settings-key
+  lookups are cached in-process with concurrent cold reads coalesced.
+- Config flags: `JournalDb` keeps a shared in-memory config-flag snapshot so
+  per-flag consumers no longer re-query SQLite after bootstrap. Startup shell
+  and navigation listeners watch only the flags they need.
+- AI configs: type-based config watchers derive from a shared in-memory
+  snapshot instead of re-querying `ai_config.sqlite`, and label-definition
+  visibility checks use explicit private-status filters.
+- Daily OS: the unified day view now ignores unrelated database notifications
+  instead of reloading its full bundle on every update.
 
 ## [0.9.919] - 2026-03-12
 ### Changed

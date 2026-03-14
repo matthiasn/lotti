@@ -36,7 +36,10 @@ class AppConstants {
 Future<void> main() async {
   await runZonedGuarded(
     () async {
-      getIt.registerSingleton<LoggingService>(LoggingService());
+      getIt.registerSingleton<LoggingService>(
+        LoggingService(),
+        dispose: (service) => service.dispose(),
+      );
 
       WidgetsFlutterBinding.ensureInitialized();
       try {

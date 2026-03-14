@@ -29,16 +29,8 @@ void main() {
     test('emits flag status from database stream', () {
       fakeAsync((async) {
         // Mock database to return flag enabled
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: enableEventsFlag,
-                description: 'Enable Events?',
-                status: true,
-              ),
-            },
-          ]),
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
+          (_) => Stream<bool>.value(true),
         );
 
         container = ProviderContainer(
@@ -64,9 +56,8 @@ void main() {
 
     test('returns false when flag not found', () {
       fakeAsync((async) {
-        // Mock database to return empty set
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
+          (_) => Stream<bool>.value(false),
         );
 
         container = ProviderContainer(
@@ -90,17 +81,8 @@ void main() {
 
     test('returns false when flag status is false', () {
       fakeAsync((async) {
-        // Mock database to return flag disabled
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: enableEventsFlag,
-                description: 'Enable Events?',
-                status: false,
-              ),
-            },
-          ]),
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
+          (_) => Stream<bool>.value(false),
         );
 
         container = ProviderContainer(
@@ -124,9 +106,9 @@ void main() {
 
     test('multiple watchers get independent streams', () {
       fakeAsync((async) {
-        final flagController = StreamController<Set<ConfigFlag>>.broadcast();
+        final flagController = StreamController<bool>.broadcast();
 
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
           (_) => flagController.stream,
         );
 
@@ -148,13 +130,7 @@ void main() {
         );
 
         // Emit initial value
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
+        flagController.add(true);
 
         async.flushMicrotasks();
 
@@ -163,13 +139,7 @@ void main() {
         expect(subscription2.read().value, isTrue);
 
         // Emit new value
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: false,
-          ),
-        });
+        flagController.add(false);
 
         async.flushMicrotasks();
 
@@ -184,8 +154,8 @@ void main() {
     test('handles stream errors gracefully', () {
       fakeAsync((async) {
         // Mock database to emit error
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.error(Exception('Database error')),
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
+          (_) => Stream<bool>.error(Exception('Database error')),
         );
 
         container = ProviderContainer(
@@ -210,10 +180,10 @@ void main() {
 
     test('disposes stream subscription on provider disposal', () {
       fakeAsync((async) {
-        final flagController = StreamController<Set<ConfigFlag>>();
+        final flagController = StreamController<bool>();
         var listenerCalled = false;
 
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
           (_) => flagController.stream,
         );
 
@@ -232,7 +202,7 @@ void main() {
               );
 
         // Emit value - listener should be called
-        flagController.add(<ConfigFlag>{});
+        flagController.add(false);
         async.flushMicrotasks();
         expect(listenerCalled, isTrue);
 
@@ -243,7 +213,7 @@ void main() {
 
         // Reset flag and emit again - listener should NOT be called after disposal
         listenerCalled = false;
-        flagController.add(<ConfigFlag>{});
+        flagController.add(true);
         async.flushMicrotasks();
         expect(
           listenerCalled,
@@ -258,9 +228,9 @@ void main() {
 
     test('emits updates when flag value changes', () {
       fakeAsync((async) {
-        final flagController = StreamController<Set<ConfigFlag>>();
+        final flagController = StreamController<bool>();
 
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
           (_) => flagController.stream,
         );
 
@@ -279,31 +249,13 @@ void main() {
         );
 
         // Emit sequence: false → true → false
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: false,
-          ),
-        });
+        flagController.add(false);
         async.flushMicrotasks();
 
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
+        flagController.add(true);
         async.flushMicrotasks();
 
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: false,
-          ),
-        });
+        flagController.add(false);
         async.flushMicrotasks();
 
         // Assert: All values received
@@ -316,21 +268,11 @@ void main() {
 
     test('different flags have independent values', () {
       fakeAsync((async) {
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: enableEventsFlag,
-                description: 'Enable Events?',
-                status: true,
-              ),
-              const ConfigFlag(
-                name: enableHabitsPageFlag,
-                description: 'Enable Habits?',
-                status: false,
-              ),
-            },
-          ]),
+        when(() => mockDb.watchConfigFlag(enableEventsFlag)).thenAnswer(
+          (_) => Stream<bool>.value(true),
+        );
+        when(() => mockDb.watchConfigFlag(enableHabitsPageFlag)).thenAnswer(
+          (_) => Stream<bool>.value(false),
         );
 
         container = ProviderContainer(
@@ -354,6 +296,37 @@ void main() {
         // Assert: Different flags have different values
         expect(eventsSubscription.read().value, isTrue);
         expect(habitsSubscription.read().value, isFalse);
+      });
+    });
+
+    test('supports legacy tests that only stub watchConfigFlags', () {
+      fakeAsync((async) {
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: enableEventsFlag,
+                description: 'Enable Events?',
+                status: true,
+              ),
+            },
+          ]),
+        );
+
+        container = ProviderContainer(
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        );
+
+        final subscription = container!.listen(
+          configFlagProvider(enableEventsFlag),
+          (previous, next) {},
+        );
+
+        async.flushMicrotasks();
+
+        expect(subscription.read().value, isTrue);
       });
     });
   });

@@ -36,6 +36,7 @@ CREATE INDEX idx_agent_links_from ON agent_links(from_id, type);
 CREATE INDEX idx_agent_links_to ON agent_links(to_id, type);
 CREATE INDEX idx_agent_links_type ON agent_links(type);
 CREATE UNIQUE INDEX idx_unique_improver_per_template ON agent_links(to_id) WHERE type = 'improver_target' AND deleted_at IS NULL;
+CREATE INDEX idx_agent_links_active_from_type_to ON agent_links(from_id, type, to_id) WHERE deleted_at IS NULL;
 
 CREATE TABLE wake_run_log (
   run_key TEXT NOT NULL PRIMARY KEY,
@@ -59,6 +60,7 @@ CREATE TABLE wake_run_log (
 CREATE INDEX idx_wake_run_log_agent ON wake_run_log(agent_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_template ON wake_run_log(template_id, created_at DESC);
 CREATE INDEX idx_wake_run_log_status ON wake_run_log(status);
+CREATE INDEX idx_wake_run_log_agent_thread ON wake_run_log(agent_id, thread_id, created_at DESC);
 
 CREATE TABLE saga_log (
   operation_id TEXT NOT NULL PRIMARY KEY,
@@ -74,6 +76,7 @@ CREATE TABLE saga_log (
 
 CREATE INDEX idx_saga_log_agent ON saga_log(agent_id);
 CREATE INDEX idx_saga_log_status ON saga_log(status, updated_at);
+CREATE INDEX idx_saga_log_status_created_at ON saga_log(status, created_at ASC);
 
 -- Named queries
 

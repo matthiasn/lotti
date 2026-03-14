@@ -54,4 +54,4 @@ final class JournalRepositoryProvider
   }
 }
 
-String _$journalRepositoryHash() => r'3ababcc2f3b598fe79f2fc142bc691b44e3d370f';
+String _$journalRepositoryHash() => r'354be890a14f89f96d5ba213bcdb2432112243e8';

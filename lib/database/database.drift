@@ -31,14 +31,45 @@ CREATE INDEX idx_journal_date_to_asc ON journal (date_to ASC);
 CREATE INDEX idx_journal_date_to_desc ON journal (date_to DESC);
 
 CREATE INDEX idx_journal_tab ON journal(type COLLATE BINARY ASC, starred COLLATE BINARY ASC, flag COLLATE BINARY ASC, private COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
-CREATE INDEX idx_journal_tasks ON journal(
+CREATE INDEX idx_journal_browse ON journal(
+  deleted COLLATE BINARY ASC,
   type COLLATE BINARY ASC,
-  task_status COLLATE BINARY ASC,
-  task_priority_rank COLLATE BINARY ASC,
-  category COLLATE BINARY ASC,
   date_from COLLATE BINARY DESC
 );
+CREATE INDEX idx_journal_tasks ON journal(
+  category COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC,
+  task_priority_rank COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC
+)
+WHERE type = 'Task'
+  AND deleted = FALSE
+  AND task = 1;
+CREATE INDEX idx_journal_tasks_date ON journal(
+  category COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'Task'
+  AND deleted = FALSE
+  AND task = 1;
+CREATE INDEX idx_journal_tasks_date_priority ON journal(
+  category COLLATE BINARY ASC,
+  task_status COLLATE BINARY ASC,
+  task_priority COLLATE BINARY ASC,
+  date_from COLLATE BINARY DESC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'Task'
+  AND deleted = FALSE
+  AND task = 1;
 CREATE INDEX idx_journal_type_subtype ON journal(type COLLATE BINARY ASC, subtype COLLATE BINARY ASC, category COLLATE BINARY ASC, date_from COLLATE BINARY DESC);
+CREATE INDEX idx_journal_tasks_due_active ON journal(
+  type COLLATE BINARY ASC,
+  deleted COLLATE BINARY ASC,
+  json_extract(serialized, '$.data.due') ASC
+);
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -78,6 +109,10 @@ CREATE TABLE habit_definitions (
 CREATE INDEX idx_habit_definitions_id ON habit_definitions (id);
 CREATE INDEX idx_habit_definitions_name ON habit_definitions (name);
 CREATE INDEX idx_habit_definitions_private ON habit_definitions (private);
+CREATE INDEX idx_habit_definitions_deleted_private ON habit_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC
+);
 
 CREATE TABLE category_definitions (
   id TEXT NOT NULL,
@@ -110,6 +145,11 @@ CREATE TABLE label_definitions (
 CREATE INDEX idx_label_definitions_id ON label_definitions (id);
 CREATE INDEX idx_label_definitions_name ON label_definitions (name);
 CREATE INDEX idx_label_definitions_private ON label_definitions (private);
+CREATE INDEX idx_label_definitions_deleted_private_name ON label_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
 
 CREATE TABLE dashboard_definitions (
   id TEXT NOT NULL,
@@ -127,6 +167,11 @@ CREATE TABLE dashboard_definitions (
 CREATE INDEX idx_dashboard_definitions_id ON dashboard_definitions (id);
 CREATE INDEX idx_dashboard_definitions_name ON dashboard_definitions (name);
 CREATE INDEX idx_dashboard_definitions_private ON dashboard_definitions (private);
+CREATE INDEX idx_dashboard_definitions_deleted_private_name ON dashboard_definitions(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  name COLLATE NOCASE ASC
+);
 
 CREATE TABLE config_flags (
   name TEXT NOT NULL UNIQUE,
@@ -154,6 +199,11 @@ CREATE INDEX idx_tag_entities_tag ON tag_entities (tag);
 CREATE INDEX idx_tag_entities_type ON tag_entities (type);
 CREATE INDEX idx_tag_entities_private ON tag_entities (private);
 CREATE INDEX idx_tag_entities_inactive ON tag_entities (inactive);
+CREATE INDEX idx_tag_entities_deleted_private_tag ON tag_entities(
+  deleted COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  tag COLLATE NOCASE ASC
+);
 
 CREATE TABLE tagged (
   id TEXT NOT NULL UNIQUE,
@@ -201,6 +251,11 @@ CREATE INDEX idx_linked_entries_hidden ON linked_entries (hidden);
 
 CREATE INDEX idx_linked_entries_from_id_hidden ON linked_entries(from_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
 CREATE INDEX idx_linked_entries_to_id_hidden ON linked_entries(to_id COLLATE BINARY ASC, hidden COLLATE BINARY ASC);
+CREATE INDEX idx_linked_entries_from_id_hidden_created_at_desc ON linked_entries(
+  from_id COLLATE BINARY ASC,
+  hidden COLLATE BINARY ASC,
+  created_at COLLATE BINARY DESC
+);
 
 /* Queries ----------------------------------------------------- */
 listConfigFlags:
@@ -216,10 +271,26 @@ filteredJournal:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalFast:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalFastAllPrivate:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;
@@ -228,10 +299,28 @@ filteredJournalByCategories:
 SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalByCategoriesFast:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredJournalByCategoriesFastAllPrivate:
+SELECT * FROM journal
+  WHERE type IN :types
+  AND deleted = false
   AND category IN :categories
   ORDER BY date_from DESC
   LIMIT :limit
@@ -241,7 +330,6 @@ filteredJournalIds:
 SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -254,7 +342,6 @@ SELECT id FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -267,7 +354,6 @@ SELECT * FROM journal
   WHERE type IN :types
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   AND starred IN :starredStatuses
   AND private IN :privateStatuses
   AND flag IN :flaggedStatuses
@@ -319,9 +405,9 @@ SELECT * FROM journal
 
 filteredTasks:
 SELECT * FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -334,70 +420,140 @@ SELECT * FROM journal
   -- Note: The :labelIds parameter is never an empty list (see effectiveLabelIds
   --       in database.dart). Using a non-empty list avoids an invalid `IN ()` clause.
   AND (
-    CASE
-      WHEN :filterByLabels THEN
-        CASE
-          WHEN :labelFilterCount > 0 AND id IN (
-            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
-          ) THEN 1
-          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
   -- Priority filtering (AND semantics): when enabled, include rows whose task_priority is in :priorities.
   -- To avoid invalid `IN ()` when :priorities is empty, mirror the label guard
   -- by short-circuiting when :priorityFilterCount = 0.
   AND (
-    CASE
-      WHEN :filterByPriorities THEN
-        CASE
-          WHEN :priorityFilterCount = 0 THEN 1
-          WHEN task_priority IN :priorities THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksFastAllPrivateAllStarred:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksFastAllPrivateAllStarredWithPriorities:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksFast:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksFastWithPriorities:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
   ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
 
 filteredTasks2:
 SELECT * FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
   AND (
-    CASE
-      WHEN :filterByLabels THEN
-        CASE
-          WHEN :labelFilterCount > 0 AND id IN (
-            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
-          ) THEN 1
-          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
   AND (
-    CASE
-      WHEN :filterByPriorities THEN
-        CASE
-          WHEN :priorityFilterCount = 0 THEN 1
-          WHEN task_priority IN :priorities THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksAllPrivateAllStarred:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
+  AND (
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
   ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC
   LIMIT :limit
   OFFSET :offset;
@@ -405,84 +561,154 @@ SELECT * FROM journal
 -- Date-sorted variants (newest first, no priority ordering)
 filteredTasksByDate:
 SELECT * FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
   AND (
-    CASE
-      WHEN :filterByLabels THEN
-        CASE
-          WHEN :labelFilterCount > 0 AND id IN (
-            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
-          ) THEN 1
-          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
   AND (
-    CASE
-      WHEN :filterByPriorities THEN
-        CASE
-          WHEN :priorityFilterCount = 0 THEN 1
-          WHEN task_priority IN :priorities THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateAllPrivateAllStarred:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND (
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
+  AND (
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateFastAllPrivateAllStarred:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateFastAllPrivateAllStarredWithPriorities:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateFast:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  ORDER BY date_from DESC, id ASC
+  LIMIT :limit
+  OFFSET :offset;
+
+filteredTasksByDateFastWithPriorities:
+SELECT * FROM journal
+  WHERE type = 'Task'
+  AND deleted = false
+  AND private IN :privateStatuses
+  AND starred IN :starredStatuses
+  AND task = 1
+  AND task_status IN :taskStatuses
+  AND category IN :categories
+  AND task_priority IN :priorities
   ORDER BY date_from DESC, id ASC
   LIMIT :limit
   OFFSET :offset;
 
 filteredTasksByDate2:
 SELECT * FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
   AND category IN :categories
   AND (
-    CASE
-      WHEN :filterByLabels THEN
-        CASE
-          WHEN :labelFilterCount > 0 AND id IN (
-            SELECT journal_id FROM labeled WHERE label_id IN :labelIds
-          ) THEN 1
-          WHEN :includeUnlabeled AND id NOT IN (SELECT journal_id FROM labeled) THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByLabels
+    OR (
+      (:labelFilterCount > 0 AND EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+          AND labeled.label_id IN :labelIds
+      ))
+      OR (:includeUnlabeled AND NOT EXISTS (
+        SELECT 1 FROM labeled
+          WHERE labeled.journal_id = journal.id
+      ))
+    )
+  )
   AND (
-    CASE
-      WHEN :filterByPriorities THEN
-        CASE
-          WHEN :priorityFilterCount = 0 THEN 1
-          WHEN task_priority IN :priorities THEN 1
-          ELSE 0
-        END
-      ELSE 1
-    END
-  ) = 1
+    NOT :filterByPriorities
+    OR :priorityFilterCount = 0
+    OR task_priority IN :priorities
+  )
   ORDER BY date_from DESC, id ASC
   LIMIT :limit
   OFFSET :offset;
 
 filteredTaskIds:
 SELECT id FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
@@ -492,16 +718,20 @@ SELECT id FROM journal
 
 filteredTaskIds2:
 SELECT id FROM journal
-  WHERE type IN :types
+  WHERE type = 'Task'
   AND deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND starred IN :starredStatuses
   AND task = 1
   AND task_status IN :taskStatuses
   ORDER BY date_from DESC
   LIMIT :limit
   OFFSET :offset;
+
+emptyJournalSelection:
+SELECT * FROM journal
+  WHERE 1 = 0;
 
 orderedJournal:
 SELECT * FROM journal
@@ -633,7 +863,7 @@ SELECT COUNT(*) FROM journal
 countInProgressTasks:
 SELECT COUNT(*) FROM journal
   WHERE deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   AND task = 1
   AND task_status IN :taskStatuses;
 
@@ -681,14 +911,24 @@ SELECT * FROM category_definitions
 allLabelDefinitions:
 SELECT * FROM label_definitions
   WHERE deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  ORDER BY name COLLATE NOCASE;
+
+allLabelDefinitionsByPrivateStatuses:
+SELECT * FROM label_definitions
+  WHERE deleted = false
+  AND private IN :privateStatuses
   ORDER BY name COLLATE NOCASE;
 
 labelDefinitionById:
 SELECT * FROM label_definitions
   WHERE deleted = false
+  AND id = :id;
+
+labelDefinitionByIdByPrivateStatuses:
+SELECT * FROM label_definitions
+  WHERE deleted = false
   AND id = :id
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+  AND private IN :privateStatuses;
 
 matchingTagEntities:
 SELECT * FROM tag_entities
@@ -749,17 +989,33 @@ countLabeled:
 SELECT COUNT(*) FROM labeled;
 
 linkedJournalEntities:
-SELECT * FROM journal
-  WHERE deleted = false
-  AND id IN (SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden = false)
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY date_from DESC;
+SELECT journal.* FROM linked_entries
+  INNER JOIN journal ON journal.id = linked_entries.to_id
+  WHERE linked_entries.from_id = :from_id
+  AND linked_entries.hidden = false
+  AND journal.deleted = false
+  AND journal.private IN :privateStatuses
+  ORDER BY journal.date_from DESC;
+
+linkedJournalEntitiesAllPrivate:
+SELECT journal.* FROM linked_entries
+  INNER JOIN journal ON journal.id = linked_entries.to_id
+  WHERE linked_entries.from_id = :from_id
+  AND linked_entries.hidden = false
+  AND journal.deleted = false
+  ORDER BY journal.date_from DESC;
 
 journalEntityIdsByDateFromDesc:
 SELECT id FROM journal
   WHERE deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC;
+
+journalEntityIdsByDateFromDescAllPrivate:
+SELECT id FROM journal
+  WHERE deleted = false
+  AND id IN :ids
   ORDER BY date_from DESC;
 
 journalEntityIdsByCategory:
@@ -786,8 +1042,25 @@ journalEntitiesByIds:
 SELECT * FROM journal
   WHERE deleted = false
   AND id IN :ids
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
+  AND private IN :privateStatuses
   ORDER BY date_from DESC;
+
+journalEntitiesByIdsAllPrivate:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN :ids
+  ORDER BY date_from DESC;
+
+journalEntitiesByIdsUnordered:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN :ids
+  AND private IN :privateStatuses;
+
+journalEntitiesByIdsUnorderedAllPrivate:
+SELECT * FROM journal
+  WHERE deleted = false
+  AND id IN :ids;
 
 linkedJournalEntityIds:
 SELECT to_id FROM linked_entries WHERE from_id = :from_id AND hidden IN :hidden;
@@ -802,11 +1075,19 @@ SELECT * FROM linked_entries
   ORDER BY created_at DESC;
 
 linkedToJournalEntities:
-SELECT * FROM journal
-  WHERE deleted = false
-  AND id IN (SELECT from_id FROM linked_entries WHERE to_id = :to_id)
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY date_from DESC;
+SELECT journal.* FROM linked_entries
+  INNER JOIN journal ON journal.id = linked_entries.from_id
+  WHERE linked_entries.to_id = :to_id
+  AND journal.deleted = false
+  ORDER BY journal.date_from DESC;
+
+linkedToJournalEntitiesByPrivateStatuses:
+SELECT journal.* FROM linked_entries
+  INNER JOIN journal ON journal.id = linked_entries.from_id
+  WHERE linked_entries.to_id = :to_id
+  AND journal.deleted = false
+  AND journal.private IN :privateStatuses
+  ORDER BY journal.date_from DESC;
 
 
 deleteLink:
@@ -835,8 +1116,14 @@ dayPlanById:
 SELECT * FROM journal
   WHERE type = 'DayPlanEntry'
   AND id = :id
+  AND deleted = false;
+
+dayPlanByIdByPrivateStatuses:
+SELECT * FROM journal
+  WHERE type = 'DayPlanEntry'
+  AND id = :id
   AND deleted = false
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'));
+  AND private IN :privateStatuses;
 
 dayPlansInRange:
 SELECT * FROM journal
@@ -844,29 +1131,16 @@ SELECT * FROM journal
   AND deleted = false
   AND date_from >= :rangeStart
   AND date_to <= :rangeEnd
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   ORDER BY date_from DESC;
 
-tasksDueOnOrBefore:
+dayPlansInRangeByPrivateStatuses:
 SELECT * FROM journal
-  WHERE type = 'Task'
-  AND deleted = 0
-  AND task_status NOT IN ('DONE', 'REJECTED')
-  AND json_extract(serialized, '$.data.due') IS NOT NULL
-  AND json_extract(serialized, '$.data.due') <= :endDate
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY json_extract(serialized, '$.data.due') ASC;
-
-tasksDueOn:
-SELECT * FROM journal
-  WHERE type = 'Task'
-  AND deleted = 0
-  AND task_status NOT IN ('DONE', 'REJECTED')
-  AND json_extract(serialized, '$.data.due') IS NOT NULL
-  AND json_extract(serialized, '$.data.due') >= :startDate
-  AND json_extract(serialized, '$.data.due') <= :endDate
-  AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  ORDER BY json_extract(serialized, '$.data.due') ASC;
+  WHERE type = 'DayPlanEntry'
+  AND deleted = false
+  AND date_from >= :rangeStart
+  AND date_to <= :rangeEnd
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC;
 
 /* Rating queries ------------------------------------------------ */
 

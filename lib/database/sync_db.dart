@@ -39,6 +39,10 @@ enum SyncSequenceStatus {
 }
 
 @DataClassName('OutboxItem')
+@TableIndex.sql(
+  'CREATE INDEX idx_outbox_status_priority_created_at '
+  'ON outbox (status, priority, created_at)',
+)
 class Outbox extends Table {
   IntColumn get id => integer().autoIncrement()();
 
@@ -73,7 +77,23 @@ class Outbox extends Table {
 
 /// Tracks sync sequence entries by (hostId, counter) to detect gaps
 /// and enable backfill requests for missing entries.
+///
+/// The primary key on `(host_id, counter)` already gives us the critical
+/// sequence lookup index. Additional indices focus on the queue-oriented access
+/// paths that would otherwise scan large portions of the table:
+/// - actionable rows ordered by age
+/// - payload-id lookups used to resolve pending hints
 @DataClassName('SyncSequenceLogItem')
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
+  'ON sync_sequence_log (status, created_at) '
+  'WHERE status IN (1, 2)',
+)
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_payload_resolution '
+  'ON sync_sequence_log (entry_id, payload_type, status) '
+  'WHERE entry_id IS NOT NULL',
+)
 class SyncSequenceLog extends Table {
   /// The host UUID whose counter this record tracks
   TextColumn get hostId => text().named('host_id')();
@@ -291,14 +311,15 @@ class SyncDatabase extends _$SyncDatabase {
   /// Watches the count of actionable (pending + in-flight) outbox items.
   /// Used by the badge to show how many items still need to be sent.
   Stream<int> watchOutboxCount() {
-    return (select(outbox)..where(
-          (t) => t.status.isIn([
-            OutboxStatus.pending.index,
-            _outboxSendingStatus,
-          ]),
-        ))
-        .watch()
-        .map((res) => res.length);
+    final query = selectOnly(outbox)
+      ..addColumns([outbox.id.count()])
+      ..where(
+        outbox.status.isIn([
+          OutboxStatus.pending.index,
+          _outboxSendingStatus,
+        ]),
+      );
+    return query.watchSingle().map((row) => row.read(outbox.id.count()) ?? 0);
   }
 
   /// Delete a single outbox item by its ID.
@@ -882,7 +903,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration {
@@ -931,6 +952,27 @@ class SyncDatabase extends _$SyncDatabase {
             '  ${SyncSequencePayloadType.agentEntity.index}, '
             '  ${SyncSequencePayloadType.agentLink.index}'
             ')',
+          );
+        }
+        if (from < 8) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_actionable_status_created_at '
+            'ON sync_sequence_log (status, created_at) '
+            'WHERE status IN (1, 2)',
+          );
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_payload_resolution '
+            'ON sync_sequence_log (entry_id, payload_type, status) '
+            'WHERE entry_id IS NOT NULL',
+          );
+        }
+        if (from < 9) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_outbox_status_priority_created_at '
+            'ON outbox (status, priority, created_at)',
           );
         }
       },

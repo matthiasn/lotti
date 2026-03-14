@@ -1581,6 +1581,8 @@
   "settingsLoggingDomainsTitle": "Dominios de registro",
   "settingsLoggingGlobalToggle": "Activar registro",
   "settingsLoggingGlobalToggleSubtitle": "Interruptor principal para todo el registro",
+  "settingsLoggingSlowQueries": "Consultas lentas de base de datos",
+  "settingsLoggingSlowQueriesSubtitle": "Las consultas lentas se escriben en slow_queries-YYYY-MM-DD.log",
   "settingsLoggingSync": "Sincronización",
   "settingsLoggingSyncSubtitle": "Operaciones de sincronización entre dispositivos",
   "settingsLoggingViewLogsSubtitle": "Explorar y buscar todas las entradas del registro",

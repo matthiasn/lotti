@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -128,7 +130,28 @@ class MockJournalDb extends Mock implements JournalDb {
     } catch (_) {
       // ignore and fall back
     }
-    return Stream<bool>.value(false).asBroadcastStream();
+
+    return Stream<bool>.multi((controller) {
+      StreamSubscription<Set<ConfigFlag>>? subscription;
+
+      try {
+        subscription = watchConfigFlags().listen(
+          (flags) {
+            controller.add(
+              flags.any((flag) => flag.name == flagName && flag.status),
+            );
+          },
+          onError: controller.addError,
+          onDone: controller.close,
+        );
+      } catch (_) {
+        controller
+          ..add(false)
+          ..close();
+      }
+
+      controller.onCancel = () => subscription?.cancel();
+    }, isBroadcast: true);
   }
 }
 
@@ -279,7 +302,20 @@ class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockLinkService extends Mock implements LinkService {}
 
-class MockUpdateNotifications extends Mock implements UpdateNotifications {}
+class MockUpdateNotifications extends Mock implements UpdateNotifications {
+  @override
+  Stream<Set<String>> get updateStream {
+    try {
+      final result = super.noSuchMethod(Invocation.getter(#updateStream));
+      if (result is Stream<Set<String>>) {
+        return result;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+    return const Stream<Set<String>>.empty().asBroadcastStream();
+  }
+}
 
 class MockHealthImport extends Mock implements HealthImport {}
 

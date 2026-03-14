@@ -136,7 +136,9 @@ class VectorSearchRepository {
     // not resolve (deleted entries, agent reports), and trimming first would
     // waste slots on unresolvable hits.
     final entityIds = deduped.map((r) => r.entityId).toSet();
-    final entities = await _journalDb.getJournalEntitiesForIds(entityIds);
+    final entities = await _journalDb.getJournalEntitiesForIdsUnordered(
+      entityIds,
+    );
 
     // Preserve distance ordering, trim to k, and build distance map.
     final entityMap = <String, JournalEntity>{
@@ -251,7 +253,7 @@ class VectorSearchRepository {
 
     final allDirectTaskIds = {...directTaskIds, ...agentReportTaskIds};
     final directEntities = <String, JournalEntity>{
-      for (final e in await _journalDb.getJournalEntitiesForIds(
+      for (final e in await _journalDb.getJournalEntitiesForIdsUnordered(
         allDirectTaskIds,
       ))
         e.meta.id: e,
@@ -279,7 +281,7 @@ class VectorSearchRepository {
     final allParentIds = childToParentIds.values.expand((ids) => ids).toSet();
     final parentEntities = allParentIds.isNotEmpty
         ? <String, JournalEntity>{
-            for (final e in await _journalDb.getJournalEntitiesForIds(
+            for (final e in await _journalDb.getJournalEntitiesForIdsUnordered(
               allParentIds,
             ))
               e.meta.id: e,

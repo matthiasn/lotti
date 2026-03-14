@@ -77,10 +77,19 @@ void main() {
     tester,
   ) async {
     final db = MockJournalDb();
-    // Emit active flags that include enableMatrixFlag
-    when(
-      db.watchActiveConfigFlagNames,
-    ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    when(() => db.watchConfigFlag(any())).thenAnswer((invocation) {
+      final flagName = invocation.positionalArguments.first as String;
+      const enabledFlags = {
+        enableDailyOsPageFlag,
+        enableDashboardsPageFlag,
+        enableHabitsPageFlag,
+        enableMatrixFlag,
+      };
+      if (flagName == enableTooltipFlag) {
+        return Stream<bool>.value(false);
+      }
+      return Stream<bool>.value(enabledFlags.contains(flagName));
+    });
 
     // Register GetIt dependencies used by AppScreen children
     final syncDb = mockSyncDatabaseWithCount(0);
@@ -96,11 +105,6 @@ void main() {
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<SyncDatabase>(syncDb)
       ..registerSingleton<SettingsDb>(settingsDb);
-
-    // ThemingController reads tooltip flag
-    when(
-      () => db.watchConfigFlag(enableTooltipFlag),
-    ).thenAnswer((_) => Stream<bool>.value(false));
 
     // Minimal nav service stub with properly initialized delegates
     final mockNav = MockNavService();

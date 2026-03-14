@@ -48,7 +48,15 @@ class JournalPageController extends _$JournalPageController {
   late final EntitiesCacheService _entitiesCacheService;
 
   // Stream subscriptions
-  StreamSubscription<Set<String>>? _configFlagsSub;
+  StreamSubscription<
+    ({
+      bool events,
+      bool habits,
+      bool dashboards,
+      bool vectorSearch,
+    })
+  >?
+  _configFlagsSub;
   StreamSubscription<bool>? _privateFlagSub;
   StreamSubscription<Set<String>>? _updatesSub;
 
@@ -76,6 +84,12 @@ class JournalPageController extends _$JournalPageController {
   bool _showDistances = false;
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
   Set<String>? _cachedAgentLinkedIds;
+  String? _persistedPerTabTasksFilterValue;
+  String? _persistedLegacyTaskFilterValue;
+  String? _persistedEntryTypesValue;
+  bool _hasLoadedPerTabTasksFilterValue = false;
+  bool _hasLoadedLegacyTaskFilterValue = false;
+  bool _hasLoadedEntryTypesValue = false;
   // Same default for both tabs (matches cubit behavior at journal_page_cubit.dart:266-270)
   Set<String> _selectedTaskStatuses = {
     'OPEN',
@@ -192,61 +206,84 @@ class JournalPageController extends _$JournalPageController {
       _emitState();
     });
 
-    // Listen to active feature flags and update local cache
-    _configFlagsSub = _db.watchActiveConfigFlagNames().listen((configFlags) {
-      // Compute previously allowed types before updating flags
-      final oldAllowed = computeAllowedEntryTypes(
-        events: _enableEvents,
-        habits: _enableHabits,
-        dashboards: _enableDashboards,
-      ).toSet();
+    // Listen to feature flags needed by this controller without loading the
+    // whole config flag table.
+    _configFlagsSub =
+        Rx.combineLatest4<
+              bool,
+              bool,
+              bool,
+              bool,
+              ({bool events, bool habits, bool dashboards, bool vectorSearch})
+            >(
+              _db.watchConfigFlag(enableEventsFlag),
+              _db.watchConfigFlag(enableHabitsPageFlag),
+              _db.watchConfigFlag(enableDashboardsPageFlag),
+              _db.watchConfigFlag(enableVectorSearchFlag),
+              (events, habits, dashboards, vectorSearch) => (
+                events: events,
+                habits: habits,
+                dashboards: dashboards,
+                vectorSearch: vectorSearch,
+              ),
+            )
+            .listen((flags) {
+              // Compute previously allowed types before updating flags
+              final oldAllowed = computeAllowedEntryTypes(
+                events: _enableEvents,
+                habits: _enableHabits,
+                dashboards: _enableDashboards,
+              ).toSet();
 
-      // Update flags
-      _enableEvents = configFlags.contains(enableEventsFlag);
-      _enableHabits = configFlags.contains(enableHabitsPageFlag);
-      _enableDashboards = configFlags.contains(enableDashboardsPageFlag);
-      _enableVectorSearch = configFlags.contains(enableVectorSearchFlag);
-      var shouldRefreshAfterModeFallback = false;
-      if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
-        _searchMode = SearchMode.fullText;
-        shouldRefreshAfterModeFallback = true;
-      }
+              // Update flags
+              _enableEvents = flags.events;
+              _enableHabits = flags.habits;
+              _enableDashboards = flags.dashboards;
+              _enableVectorSearch = flags.vectorSearch;
+              var shouldRefreshAfterModeFallback = false;
+              if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
+                _searchMode = SearchMode.fullText;
+                shouldRefreshAfterModeFallback = true;
+              }
 
-      // Compute newly allowed types based on updated flags
-      final newAllowed = computeAllowedEntryTypes(
-        events: _enableEvents,
-        habits: _enableHabits,
-        dashboards: _enableDashboards,
-      ).toSet();
+              // Compute newly allowed types based on updated flags
+              final newAllowed = computeAllowedEntryTypes(
+                events: _enableEvents,
+                habits: _enableHabits,
+                dashboards: _enableDashboards,
+              ).toSet();
 
-      // Determine if user had ALL previously-allowed types selected
-      final hadAllPreviouslySelected =
-          oldAllowed.isNotEmpty && setEquals(_selectedEntryTypes, oldAllowed);
+              // Determine if user had ALL previously-allowed types selected
+              final hadAllPreviouslySelected =
+                  oldAllowed.isNotEmpty &&
+                  setEquals(_selectedEntryTypes, oldAllowed);
 
-      // Store previous selection for comparison
-      final prevSelection = _selectedEntryTypes;
+              // Store previous selection for comparison
+              final prevSelection = _selectedEntryTypes;
 
-      // Update selection based on user intent:
-      // - If empty or had all previously: adopt newAllowed (maintain "select all" behavior)
-      // - Otherwise: preserve user's partial selection by intersecting with newAllowed
-      if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
-        _selectedEntryTypes = newAllowed;
-      } else {
-        _selectedEntryTypes = _selectedEntryTypes.intersection(newAllowed);
-      }
+              // Update selection based on user intent:
+              // - If empty or had all previously: adopt newAllowed (maintain "select all" behavior)
+              // - Otherwise: preserve user's partial selection by intersecting with newAllowed
+              if (_selectedEntryTypes.isEmpty || hadAllPreviouslySelected) {
+                _selectedEntryTypes = newAllowed;
+              } else {
+                _selectedEntryTypes = _selectedEntryTypes.intersection(
+                  newAllowed,
+                );
+              }
 
-      // Always emit state to update UI
-      _emitState();
+              // Always emit state to update UI
+              _emitState();
 
-      if (shouldRefreshAfterModeFallback) {
-        unawaited(refreshQuery());
-      }
+              if (shouldRefreshAfterModeFallback) {
+                unawaited(refreshQuery());
+              }
 
-      // Only persist if selection actually changed
-      if (!setEquals(prevSelection, _selectedEntryTypes)) {
-        persistEntryTypes();
-      }
-    });
+              // Only persist if selection actually changed
+              if (!setEquals(prevSelection, _selectedEntryTypes)) {
+                persistEntryTypes();
+              }
+            });
 
     // Setup update notifications with throttling
     String idMapper(JournalEntity entity) => entity.meta.id;
@@ -485,12 +522,20 @@ class JournalPageController extends _$JournalPageController {
 
   /// Loads persisted filters with migration from legacy key
   Future<void> _loadPersistedFilters() async {
-    // Try to read from the per-tab key first
     final perTabKey = _getCategoryFiltersKey();
-    var value = await _settingsDb.itemByKey(perTabKey);
+    final perTabValue = await _settingsDb.itemByKey(perTabKey);
+    _persistedPerTabTasksFilterValue = _normalizeTasksFilterValue(perTabValue);
+    _hasLoadedPerTabTasksFilterValue = true;
 
-    // If the new key doesn't exist, fall back to legacy key for migration
-    value ??= await _settingsDb.itemByKey(taskFiltersKey);
+    final legacyValue = _showTasks
+        ? await _settingsDb.itemByKey(taskFiltersKey)
+        : null;
+    if (_showTasks) {
+      _persistedLegacyTaskFilterValue = _normalizeTasksFilterValue(legacyValue);
+      _hasLoadedLegacyTaskFilterValue = true;
+    }
+
+    final value = perTabValue ?? legacyValue;
 
     if (value == null) {
       return;
@@ -531,6 +576,8 @@ class JournalPageController extends _$JournalPageController {
 
   Future<void> _loadPersistedEntryTypes() async {
     final value = await _settingsDb.itemByKey(selectedEntryTypesKey);
+    _persistedEntryTypesValue = _normalizeEntryTypesValue(value);
+    _hasLoadedEntryTypesValue = true;
     if (value == null) {
       return;
     }
@@ -562,31 +609,114 @@ class JournalPageController extends _$JournalPageController {
           ? _agentAssignmentFilter
           : AgentAssignmentFilter.all,
     );
-    final encodedFilter = jsonEncode(filter);
+    final encodedFilter = _encodeTasksFilter(filter);
+    final perTabKey = _getCategoryFiltersKey();
 
-    // Write to the new per-tab key
-    await _settingsDb.saveSettingsItem(
-      _getCategoryFiltersKey(),
-      encodedFilter,
-    );
+    if (!_hasLoadedPerTabTasksFilterValue) {
+      _persistedPerTabTasksFilterValue = _normalizeTasksFilterValue(
+        await _settingsDb.itemByKey(perTabKey),
+      );
+      _hasLoadedPerTabTasksFilterValue = true;
+    }
+
+    if (_persistedPerTabTasksFilterValue != encodedFilter) {
+      await _settingsDb.saveSettingsItem(
+        perTabKey,
+        encodedFilter,
+      );
+      _persistedPerTabTasksFilterValue = encodedFilter;
+    }
 
     // Mirror writes to the legacy key while the migration is in place.
     // Only do this on the tasks tab so journal actions never clobber task filters.
     if (_showTasks) {
-      await _settingsDb.saveSettingsItem(
-        taskFiltersKey,
-        encodedFilter,
-      );
+      if (!_hasLoadedLegacyTaskFilterValue) {
+        _persistedLegacyTaskFilterValue = _normalizeTasksFilterValue(
+          await _settingsDb.itemByKey(taskFiltersKey),
+        );
+        _hasLoadedLegacyTaskFilterValue = true;
+      }
+
+      if (_persistedLegacyTaskFilterValue != encodedFilter) {
+        await _settingsDb.saveSettingsItem(
+          taskFiltersKey,
+          encodedFilter,
+        );
+        _persistedLegacyTaskFilterValue = encodedFilter;
+      }
     }
   }
 
   Future<void> persistEntryTypes() async {
     await refreshQuery();
 
+    if (!_hasLoadedEntryTypesValue) {
+      _persistedEntryTypesValue = _normalizeEntryTypesValue(
+        await _settingsDb.itemByKey(selectedEntryTypesKey),
+      );
+      _hasLoadedEntryTypesValue = true;
+    }
+
+    final encodedEntryTypes = _encodeEntryTypes(_selectedEntryTypes);
+    if (_persistedEntryTypesValue == encodedEntryTypes) {
+      return;
+    }
+
     await _settingsDb.saveSettingsItem(
       selectedEntryTypesKey,
-      jsonEncode(_selectedEntryTypes.toList()),
+      encodedEntryTypes,
     );
+    _persistedEntryTypesValue = encodedEntryTypes;
+  }
+
+  String _encodeTasksFilter(TasksFilter filter) {
+    return jsonEncode(<String, dynamic>{
+      'selectedCategoryIds': _sortedStrings(filter.selectedCategoryIds),
+      'selectedTaskStatuses': _sortedStrings(filter.selectedTaskStatuses),
+      'selectedLabelIds': _sortedStrings(filter.selectedLabelIds),
+      'selectedPriorities': _sortedStrings(filter.selectedPriorities),
+      'sortOption': filter.sortOption.name,
+      'showCreationDate': filter.showCreationDate,
+      'showDueDate': filter.showDueDate,
+      'showCoverArt': filter.showCoverArt,
+      'showDistances': filter.showDistances,
+      'agentAssignmentFilter': filter.agentAssignmentFilter.name,
+    });
+  }
+
+  String _encodeEntryTypes(Set<String> entryTypes) {
+    return jsonEncode(_sortedStrings(entryTypes));
+  }
+
+  String? _normalizeTasksFilterValue(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    try {
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      return _encodeTasksFilter(TasksFilter.fromJson(json));
+    } catch (_) {
+      return value;
+    }
+  }
+
+  String? _normalizeEntryTypesValue(String? value) {
+    if (value == null) {
+      return null;
+    }
+
+    try {
+      final json = jsonDecode(value) as List<dynamic>;
+      return _encodeEntryTypes(List<String>.from(json).toSet());
+    } catch (_) {
+      return value;
+    }
+  }
+
+  List<String> _sortedStrings(Iterable<String> values) {
+    final sorted = values.toList()..sort();
+    return sorted;
   }
 
   // Search and query methods

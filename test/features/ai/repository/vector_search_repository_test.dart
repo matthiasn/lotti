@@ -48,7 +48,7 @@ void main() {
 
     // Default stubs for batch-fetch methods used by _resolveToTasks.
     when(
-      () => mockJournalDb.getJournalEntitiesForIds(any()),
+      () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
     ).thenAnswer((_) async => []);
     when(
       () => mockJournalDb.linksForIds(any()),
@@ -83,7 +83,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTask]);
 
       final result = await sut.searchRelatedTasks(query: 'test query');
@@ -138,7 +138,7 @@ void main() {
           ]),
         );
         when(
-          () => mockJournalDb.getJournalEntitiesForIds(any()),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [testTask]);
 
         final result = await sut.searchRelatedTasks(query: 'semantic query');
@@ -180,7 +180,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTask]);
       when(() => mockJournalDb.linksForIds(any())).thenReturn(
         MockSelectable([
@@ -298,7 +298,7 @@ void main() {
         ]),
       );
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedTasks(query: 'orphan');
@@ -361,7 +361,7 @@ void main() {
         ]);
 
         when(
-          () => mockJournalDb.getJournalEntitiesForIds(any()),
+          () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
         ).thenAnswer((_) async => [testTask]);
 
         final result = await sut.searchRelatedTasks(
@@ -432,7 +432,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTask]);
 
       final result = await sut.searchRelatedTasks(query: 'dedup query');
@@ -474,7 +474,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => []);
 
       DevLogger.clear();
@@ -561,7 +561,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'journal query');
@@ -600,7 +600,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'dedup');
@@ -665,7 +665,7 @@ void main() {
       ]);
 
       when(
-        () => mockJournalDb.getJournalEntitiesForIds(any()),
+        () => mockJournalDb.getJournalEntitiesForIdsUnordered(any()),
       ).thenAnswer((_) async => [testTask, testTextEntry]);
 
       final result = await sut.searchRelatedEntries(query: 'order test');

@@ -174,7 +174,7 @@ void main() {
     ).thenReturn(null);
 
     when(
-      () => mockDb.getJournalEntitiesForIds(any()),
+      () => mockDb.getJournalEntitiesForIdsUnordered(any()),
     ).thenAnswer((_) async => []);
 
     when(() => mockDb.basicLinksForEntryIds(any())).thenAnswer((_) async => []);
@@ -629,7 +629,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -700,7 +700,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -947,7 +947,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1029,7 +1029,8 @@ void main() {
         );
 
         when(
-          () => mockDb.getJournalEntitiesForIds({'task-1', 'rating-1'}),
+          () =>
+              mockDb.getJournalEntitiesForIdsUnordered({'task-1', 'rating-1'}),
         ).thenAnswer((_) async => [ratingEntry, parentTask]);
 
         final result = await container.read(
@@ -1091,7 +1092,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'rating-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'rating-1'}),
       ).thenAnswer((_) async => [ratingEntry]);
 
       final result = await container.read(
@@ -1602,7 +1603,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1689,7 +1690,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [parentTask]);
 
       final result = await container.read(
@@ -1761,7 +1762,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [doneTask]);
 
       final result = await container.read(
@@ -1833,7 +1834,7 @@ void main() {
         );
 
         when(
-          () => mockDb.getJournalEntitiesForIds({'task-1'}),
+          () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
         ).thenAnswer((_) async => [doneTask]);
 
         final result = await container.read(
@@ -1921,7 +1922,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1', 'task-2'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1', 'task-2'}),
       ).thenAnswer((_) async => [task1, task2]);
 
       final result = await container.read(
@@ -2121,7 +2122,7 @@ void main() {
       );
 
       when(
-        () => mockDb.getJournalEntitiesForIds({'task-1'}),
+        () => mockDb.getJournalEntitiesForIdsUnordered({'task-1'}),
       ).thenAnswer((_) async => [taskWithDue]);
 
       when(
@@ -3794,5 +3795,197 @@ void main() {
       // No plan should have been persisted for either date
       verifyNever(() => mockDayPlanRepository.save(any()));
     });
+  });
+  group('UnifiedDailyOsDataController - Update filtering', () {
+    test('ignores unrelated update notifications after initial load', () {
+      fakeAsync((async) {
+        when(
+          () => mockDayPlanRepository.getDayPlan(testDate),
+        ).thenAnswer((_) async => createTestPlan());
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
+
+        updateStreamController.add({'unrelated-entry-id'});
+        async.flushMicrotasks();
+
+        verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(1);
+        verify(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).called(1);
+        verify(() => mockDb.getTasksDueOnOrBefore(testDate)).called(1);
+      });
+    });
+
+    test('refreshes when a tracked day plan id changes', () {
+      fakeAsync((async) {
+        var planCalls = 0;
+        when(
+          () => mockDayPlanRepository.getDayPlan(testDate),
+        ).thenAnswer((_) async {
+          planCalls++;
+          return planCalls == 1
+              ? createTestPlan()
+              : createTestPlan(
+                  plannedBlocks: [
+                    PlannedBlock(
+                      id: 'block-1',
+                      categoryId: 'cat-work',
+                      startTime: DateTime(2026, 1, 15, 9),
+                      endTime: DateTime(2026, 1, 15, 11),
+                    ),
+                  ],
+                );
+        });
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
+
+        updateStreamController.add({planId});
+        async.flushMicrotasks();
+
+        final state = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
+        verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(2);
+      });
+    });
+
+    test('refreshes on task notifications to pick up newly due tasks', () {
+      fakeAsync((async) {
+        var dueTaskCalls = 0;
+        when(
+          () => mockDayPlanRepository.getDayPlan(testDate),
+        ).thenAnswer((_) async => createTestPlan());
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockDb.getTasksDueOnOrBefore(testDate)).thenAnswer((
+          _,
+        ) async {
+          dueTaskCalls++;
+          if (dueTaskCalls == 1) {
+            return [];
+          }
+          return [
+            createTestTask(
+                  id: 'due-task-1',
+                  categoryId: 'cat-work',
+                  dateFrom: DateTime(2026, 1, 15, 8),
+                  dateTo: DateTime(2026, 1, 15, 8, 30),
+                  status: TaskStatus.inProgress(
+                    id: 'status-2',
+                    createdAt: DateTime(2026, 1, 15, 8),
+                    utcOffset: 0,
+                  ),
+                )
+                as Task,
+          ];
+        });
+
+        container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+        async.flushMicrotasks();
+
+        updateStreamController.add({taskNotification});
+        async.flushMicrotasks();
+
+        final state = container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate),
+        );
+        expect(state.value?.budgetProgress, hasLength(1));
+        expect(
+          state
+              .value
+              ?.budgetProgress
+              .first
+              .taskProgressItems
+              .first
+              .task
+              .meta
+              .id,
+          'due-task-1',
+        );
+        verify(() => mockDb.getTasksDueOnOrBefore(testDate)).called(2);
+      });
+    });
+
+    test(
+      'queues one refresh when a notification arrives during initial load',
+      () {
+        fakeAsync((async) {
+          final initialPlanCompleter = Completer<DayPlanEntry?>();
+          var planCalls = 0;
+
+          when(
+            () => mockDayPlanRepository.getDayPlan(testDate),
+          ).thenAnswer((_) {
+            planCalls++;
+            if (planCalls == 1) {
+              return initialPlanCompleter.future;
+            }
+            return Future.value(
+              createTestPlan(
+                plannedBlocks: [
+                  PlannedBlock(
+                    id: 'queued-block',
+                    categoryId: 'cat-work',
+                    startTime: DateTime(2026, 1, 15, 13),
+                    endTime: DateTime(2026, 1, 15, 14),
+                  ),
+                ],
+              ),
+            );
+          });
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          container.read(
+            unifiedDailyOsDataControllerProvider(date: testDate).future,
+          );
+          async.flushMicrotasks();
+
+          updateStreamController.add({planId});
+          async.flushMicrotasks();
+
+          initialPlanCompleter.complete(createTestPlan());
+          async.flushMicrotasks();
+
+          final state = container.read(
+            unifiedDailyOsDataControllerProvider(date: testDate),
+          );
+          expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
+          verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(2);
+        });
+      },
+    );
   });
 }

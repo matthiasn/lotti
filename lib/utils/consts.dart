@@ -20,5 +20,6 @@ const enableVectorSearchFlag = 'enable_vector_search';
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';
 const logSyncFlag = 'log_sync';
+const logSlowQueriesFlag = 'log_slow_queries';
 
 const kDefaultScrollAlignment = 0.3;

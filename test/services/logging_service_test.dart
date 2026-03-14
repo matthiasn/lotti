@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
+import 'package:lotti/database/slow_query_logging.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -47,12 +48,19 @@ void main() {
     when(
       () => journalDb.watchConfigFlag(enableLoggingFlag),
     ).thenAnswer((_) => Stream<bool>.value(true));
+    when(
+      () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+    ).thenAnswer((_) => Stream<bool>.value(false));
+
+    SlowQueryLoggingGate.resetForTest();
 
     logging = getIt<LoggingService>();
     logging.listenToConfigFlag();
     // Allow the stream microtask to flip the internal flag
     await Future<void>.delayed(Duration.zero);
   });
+
+  tearDown(SlowQueryLoggingGate.resetForTest);
 
   test('captureEvent writes to file when enabled', () {
     fakeAsync((async) {
@@ -292,11 +300,16 @@ void main() {
   test('config flag listener dynamically toggles logging', () async {
     // Create a StreamController to control the flag stream
     final flagController = StreamController<bool>();
+    final slowQueryController = StreamController<bool>();
     addTearDown(flagController.close);
+    addTearDown(slowQueryController.close);
 
     when(
       () => journalDb.watchConfigFlag(enableLoggingFlag),
     ).thenAnswer((_) => flagController.stream);
+    when(
+      () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+    ).thenAnswer((_) => slowQueryController.stream);
 
     final svc = LoggingService()..listenToConfigFlag();
 
@@ -335,6 +348,39 @@ void main() {
     final content2 = File(logPath).readAsStringSync();
     expect(content2.contains('should be skipped again'), isFalse);
   });
+
+  test(
+    'slow query gate requires both global logging and slow query flag',
+    () async {
+      final loggingController = StreamController<bool>();
+      final slowQueryController = StreamController<bool>();
+      addTearDown(loggingController.close);
+      addTearDown(slowQueryController.close);
+
+      when(
+        () => journalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => loggingController.stream);
+      when(
+        () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => slowQueryController.stream);
+
+      final svc = LoggingService()..listenToConfigFlag();
+      expect(svc, isNotNull);
+
+      loggingController.add(false);
+      slowQueryController.add(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(SlowQueryLoggingGate.isEnabled, isFalse);
+
+      loggingController.add(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(SlowQueryLoggingGate.isEnabled, isTrue);
+
+      slowQueryController.add(false);
+      await Future<void>.delayed(Duration.zero);
+      expect(SlowQueryLoggingGate.isEnabled, isFalse);
+    },
+  );
 
   test('captureException with null stackTrace handles gracefully', () {
     fakeAsync((async) {
@@ -433,6 +479,9 @@ void main() {
       when(
         () => bufferedJournalDb.watchConfigFlag(enableLoggingFlag),
       ).thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => bufferedJournalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => Stream<bool>.value(false));
 
       bufferedLogging = getIt<LoggingService>()..listenToConfigFlag();
       await Future<void>.delayed(Duration.zero);
