@@ -3886,6 +3886,434 @@ void main() {
       });
     });
 
+    group('getTaskEstimatesByIds -', () {
+      test('returns empty map for empty input', () async {
+        final result = await db!.getTaskEstimatesByIds({});
+        expect(result, isEmpty);
+      });
+
+      test('returns Duration for task with estimate', () async {
+        final base = DateTime(2024, 8, 2);
+        final task = buildTaskEntry(
+          id: 'task-with-estimate',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        // buildTaskEntry copies testTask.data which has estimate: Duration(hours: 4)
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+
+        final result = await db!.getTaskEstimatesByIds({'task-with-estimate'});
+        expect(result, hasLength(1));
+        expect(result['task-with-estimate'], const Duration(hours: 4));
+      });
+
+      test('returns null for task without estimate', () async {
+        final base = DateTime(2024, 8, 2);
+        final taskNoEstimate = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-no-estimate',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+            starred: false,
+            private: false,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-2',
+              createdAt: base,
+              utcOffset: 60,
+            ),
+            title: 'Task without estimate',
+            statusHistory: [],
+            dateFrom: base,
+            dateTo: base,
+          ),
+          entryText: const EntryText(plainText: 'No estimate task'),
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(taskNoEstimate));
+
+        final result = await db!.getTaskEstimatesByIds({'task-no-estimate'});
+        expect(result, hasLength(1));
+        expect(result['task-no-estimate'], isNull);
+      });
+
+      test('excludes non-task entities', () async {
+        final base = DateTime(2024, 8, 2);
+        final journalEntry = buildJournalEntry(
+          id: 'not-a-task',
+          timestamp: base,
+          text: 'Just a journal entry',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(journalEntry));
+
+        final result = await db!.getTaskEstimatesByIds({'not-a-task'});
+        expect(result, isEmpty);
+      });
+
+      test('returns mix of tasks with and without estimates', () async {
+        final base = DateTime(2024, 8, 2);
+        final taskWithEstimate = buildTaskEntry(
+          id: 'task-est-yes',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'status-3',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final taskWithoutEstimate = JournalEntity.task(
+          meta: Metadata(
+            id: 'task-est-no',
+            createdAt: base,
+            updatedAt: base,
+            dateFrom: base,
+            dateTo: base,
+            starred: false,
+            private: false,
+          ),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'status-4',
+              createdAt: base,
+              utcOffset: 60,
+            ),
+            title: 'No estimate',
+            statusHistory: [],
+            dateFrom: base,
+            dateTo: base,
+          ),
+          entryText: const EntryText(plainText: 'No estimate'),
+        );
+        final notATask = buildJournalEntry(
+          id: 'entry-not-task',
+          timestamp: base,
+          text: 'Not a task',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(taskWithEstimate));
+        await db!.upsertJournalDbEntity(toDbEntity(taskWithoutEstimate));
+        await db!.upsertJournalDbEntity(toDbEntity(notATask));
+
+        final result = await db!.getTaskEstimatesByIds({
+          'task-est-yes',
+          'task-est-no',
+          'entry-not-task',
+        });
+        expect(result, hasLength(2));
+        expect(result['task-est-yes'], const Duration(hours: 4));
+        expect(result['task-est-no'], isNull);
+        expect(result.containsKey('entry-not-task'), isFalse);
+      });
+    });
+
+    group('getBulkLinkedTimeSpans -', () {
+      test('returns empty map for empty input', () async {
+        final result = await db!.getBulkLinkedTimeSpans({});
+        expect(result, isEmpty);
+      });
+
+      test('returns time spans for parent with linked journal entry', () async {
+        final base = DateTime(2024, 8, 2);
+        final parent = buildTaskEntry(
+          id: 'ts-parent',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-status-1',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final child = buildJournalEntry(
+          id: 'ts-child',
+          timestamp: base.add(const Duration(hours: 1)),
+          text: 'Time tracking entry',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(parent));
+        await db!.upsertJournalDbEntity(toDbEntity(child));
+
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-1',
+            fromId: parent.meta.id,
+            toId: child.meta.id,
+            timestamp: base,
+          ),
+        );
+
+        final result = await db!.getBulkLinkedTimeSpans({'ts-parent'});
+        expect(result, hasLength(1));
+        expect(result['ts-parent'], hasLength(1));
+        expect(result['ts-parent']!.first.id, 'ts-child');
+        expect(
+          result['ts-parent']!.first.dateFrom,
+          base.add(const Duration(hours: 1)),
+        );
+        expect(
+          result['ts-parent']!.first.dateTo,
+          base.add(const Duration(hours: 1)),
+        );
+      });
+
+      test('excludes tasks linked to parent', () async {
+        final base = DateTime(2024, 8, 2);
+        final parent = buildTaskEntry(
+          id: 'ts-parent-excl',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-status-2',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final linkedTask = buildTaskEntry(
+          id: 'ts-linked-task',
+          timestamp: base.add(const Duration(hours: 1)),
+          status: TaskStatus.open(
+            id: 'ts-status-3',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final linkedEntry = buildJournalEntry(
+          id: 'ts-linked-entry',
+          timestamp: base.add(const Duration(hours: 2)),
+          text: 'Regular entry',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(parent));
+        await db!.upsertJournalDbEntity(toDbEntity(linkedTask));
+        await db!.upsertJournalDbEntity(toDbEntity(linkedEntry));
+
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-task',
+            fromId: parent.meta.id,
+            toId: linkedTask.meta.id,
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-entry',
+            fromId: parent.meta.id,
+            toId: linkedEntry.meta.id,
+            timestamp: base.add(const Duration(minutes: 1)),
+          ),
+        );
+
+        final result = await db!.getBulkLinkedTimeSpans({'ts-parent-excl'});
+        expect(result['ts-parent-excl'], hasLength(1));
+        expect(result['ts-parent-excl']!.first.id, 'ts-linked-entry');
+      });
+
+      test('groups results by multiple parents', () async {
+        final base = DateTime(2024, 8, 2);
+        final parentA = buildTaskEntry(
+          id: 'ts-multi-parent-a',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-status-4',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final parentB = buildTaskEntry(
+          id: 'ts-multi-parent-b',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-status-5',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final childA = buildJournalEntry(
+          id: 'ts-child-a',
+          timestamp: base.add(const Duration(hours: 1)),
+          text: 'Child of A',
+        );
+        final childB1 = buildJournalEntry(
+          id: 'ts-child-b1',
+          timestamp: base.add(const Duration(hours: 2)),
+          text: 'First child of B',
+        );
+        final childB2 = buildJournalEntry(
+          id: 'ts-child-b2',
+          timestamp: base.add(const Duration(hours: 3)),
+          text: 'Second child of B',
+        );
+
+        for (final entry in [parentA, parentB, childA, childB1, childB2]) {
+          await db!.upsertJournalDbEntity(toDbEntity(entry));
+        }
+
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-multi-a',
+            fromId: parentA.meta.id,
+            toId: childA.meta.id,
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-multi-b1',
+            fromId: parentB.meta.id,
+            toId: childB1.meta.id,
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-multi-b2',
+            fromId: parentB.meta.id,
+            toId: childB2.meta.id,
+            timestamp: base.add(const Duration(minutes: 1)),
+          ),
+        );
+
+        final result = await db!.getBulkLinkedTimeSpans({
+          'ts-multi-parent-a',
+          'ts-multi-parent-b',
+        });
+        expect(result['ts-multi-parent-a'], hasLength(1));
+        expect(result['ts-multi-parent-a']!.first.id, 'ts-child-a');
+        expect(result['ts-multi-parent-b'], hasLength(2));
+        expect(
+          result['ts-multi-parent-b']!.map((e) => e.id).toSet(),
+          {'ts-child-b1', 'ts-child-b2'},
+        );
+      });
+
+      test('respects private flag when private is disabled', () async {
+        final base = DateTime(2024, 8, 2);
+        final parent = buildTaskEntry(
+          id: 'ts-priv-parent',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-status-6',
+            createdAt: base,
+            utcOffset: 60,
+          ),
+        );
+        final publicChild = buildJournalEntry(
+          id: 'ts-public-child',
+          timestamp: base.add(const Duration(hours: 1)),
+          text: 'Public child',
+        );
+        final privateChild = buildJournalEntry(
+          id: 'ts-private-child',
+          timestamp: base.add(const Duration(hours: 2)),
+          text: 'Private child',
+          privateFlag: true,
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(parent));
+        await db!.upsertJournalDbEntity(toDbEntity(publicChild));
+        await db!.upsertJournalDbEntity(toDbEntity(privateChild));
+
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-pub',
+            fromId: parent.meta.id,
+            toId: publicChild.meta.id,
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'ts-link-priv',
+            fromId: parent.meta.id,
+            toId: privateChild.meta.id,
+            timestamp: base.add(const Duration(minutes: 1)),
+          ),
+        );
+
+        // Disable private flag
+        final privateCfg = await db!.getConfigFlagByName(privateFlag);
+        await db!.upsertConfigFlag(privateCfg!.copyWith(status: false));
+
+        final result = await db!.getBulkLinkedTimeSpans({'ts-priv-parent'});
+        expect(result['ts-priv-parent'], hasLength(1));
+        expect(result['ts-priv-parent']!.first.id, 'ts-public-child');
+
+        // Re-enable private flag to see both
+        await db!.upsertConfigFlag(privateCfg.copyWith(status: true));
+
+        final resultWithPrivate = await db!.getBulkLinkedTimeSpans({
+          'ts-priv-parent',
+        });
+        expect(resultWithPrivate['ts-priv-parent'], hasLength(2));
+      });
+    });
+
+    group('getJournalEntitiesByIds -', () {
+      test('returns entities for given IDs', () async {
+        final base = DateTime(2024, 8, 2);
+        final entry1 = buildJournalEntry(
+          id: 'by-ids-1',
+          timestamp: base,
+          text: 'First entry',
+        );
+        final entry2 = buildJournalEntry(
+          id: 'by-ids-2',
+          timestamp: base.add(const Duration(hours: 1)),
+          text: 'Second entry',
+        );
+        final entry3 = buildJournalEntry(
+          id: 'by-ids-3',
+          timestamp: base.add(const Duration(hours: 2)),
+          text: 'Third entry',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(entry1));
+        await db!.upsertJournalDbEntity(toDbEntity(entry2));
+        await db!.upsertJournalDbEntity(toDbEntity(entry3));
+
+        final result = await db!.getJournalEntitiesByIds({
+          'by-ids-1',
+          'by-ids-3',
+        });
+        expect(result, hasLength(2));
+        expect(
+          result.map((e) => e.meta.id).toSet(),
+          {'by-ids-1', 'by-ids-3'},
+        );
+      });
+
+      test('returns empty list for empty input', () async {
+        final result = await db!.getJournalEntitiesByIds({});
+        expect(result, isEmpty);
+      });
+
+      test('excludes deleted entities', () async {
+        final base = DateTime(2024, 8, 2);
+        final entry = buildJournalEntry(
+          id: 'by-ids-deleted',
+          timestamp: base,
+          text: 'Will be deleted',
+        );
+        await db!.upsertJournalDbEntity(toDbEntity(entry));
+
+        // Delete the entry
+        final deletedEntry = entry.copyWith(
+          meta: entry.meta.copyWith(
+            deletedAt: base.add(const Duration(hours: 1)),
+          ),
+        );
+        await db!.updateJournalEntity(deletedEntry);
+
+        final result = await db!.getJournalEntitiesByIds({'by-ids-deleted'});
+        expect(result, isEmpty);
+      });
+    });
+
     test(
       'database operations are covered by tests',
       () async {
