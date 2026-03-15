@@ -57,7 +57,7 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
   }) async {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
-      title: context.messages.imageGenerationModalTitle,
+      title: context.messages.generateCoverArt,
       builder: (modalContext) => CoverArtSkillModal(
         entityId: entityId,
         skillId: skillId,

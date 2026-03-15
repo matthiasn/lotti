@@ -1460,7 +1460,7 @@ void main() {
         );
       }
 
-      test('throws StateError when skill is null', () async {
+      test('logs error when skill is null', () async {
         final result = AutomationResult(
           handled: true,
           resolvedProfile: ResolvedProfile(
@@ -1468,34 +1468,48 @@ void main() {
             thinkingProvider: testInferenceProvider(),
           ),
         );
+        stubLoggingException();
 
-        expect(
-          () => runner.runImageGeneration(
-            audioEntryId: 'entry-1',
-            automationResult: result,
-            linkedTaskId: 'task-1',
-          ),
-          throwsStateError,
+        await runner.runImageGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+          linkedTaskId: 'task-1',
         );
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runImageGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
-      test('throws StateError when profile is null', () async {
+      test('logs error when profile is null', () async {
         final result = AutomationResult(
           handled: true,
           skill: testImageGenSkill,
         );
+        stubLoggingException();
 
-        expect(
-          () => runner.runImageGeneration(
-            audioEntryId: 'entry-1',
-            automationResult: result,
-            linkedTaskId: 'task-1',
-          ),
-          throwsStateError,
+        await runner.runImageGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+          linkedTaskId: 'task-1',
         );
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runImageGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
-      test('returns early when no image generation provider', () async {
+      test('logs error when no image generation provider', () async {
         final result = AutomationResult(
           handled: true,
           resolvedProfile: ResolvedProfile(
@@ -1505,6 +1519,7 @@ void main() {
           ),
           skill: testImageGenSkill,
         );
+        stubLoggingException();
 
         await runner.runImageGeneration(
           audioEntryId: 'entry-1',
@@ -1513,6 +1528,14 @@ void main() {
         );
 
         verifyZeroInteractions(mockCloudRepo);
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runImageGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
       });
 
       test('returns early when entity is not JournalAudio', () async {

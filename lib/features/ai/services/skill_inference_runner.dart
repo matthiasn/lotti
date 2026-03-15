@@ -516,30 +516,32 @@ class SkillInferenceRunner {
     required String linkedTaskId,
     List<ProcessedReferenceImage>? referenceImages,
   }) async {
-    final skill = automationResult.skill;
-    final profile = automationResult.resolvedProfile;
-    if (skill == null || profile == null) {
-      throw StateError(
-        'AutomationResult missing skill or profile for $audioEntryId: '
-        'skill=${skill != null}, profile=${profile != null}',
-      );
-    }
-    final provider = profile.imageGenerationProvider;
-    final modelId = profile.imageGenerationModelId;
-    if (provider == null || modelId == null) {
-      developer.log(
-        'Profile missing image generation provider/model for $audioEntryId',
-        name: _logTag,
-      );
-      return;
-    }
-
     await _withStatusTracking(
       entityId: audioEntryId,
-      responseType: skill.skillType.toResponseType,
+      responseType: AiResponseType.imageGeneration,
       subDomain: 'runImageGeneration',
       linkedTaskId: linkedTaskId,
       body: () async {
+        // 0. Validate automation result — inside status tracking so the UI
+        // transitions to running before any early throw/return (prevents the
+        // progress view from spinning forever on misconfigured profiles).
+        final skill = automationResult.skill;
+        final profile = automationResult.resolvedProfile;
+        if (skill == null || profile == null) {
+          throw StateError(
+            'AutomationResult missing skill or profile for $audioEntryId: '
+            'skill=${skill != null}, profile=${profile != null}',
+          );
+        }
+        final provider = profile.imageGenerationProvider;
+        final modelId = profile.imageGenerationModelId;
+        if (provider == null || modelId == null) {
+          throw StateError(
+            'Profile missing image generation provider/model for '
+            '$audioEntryId',
+          );
+        }
+
         // 1. Fetch the audio entity for transcript / voice description.
         final entity = await _aiInputRepository.getEntity(audioEntryId);
         if (entity is! JournalAudio) {
@@ -612,10 +614,15 @@ class SkillInferenceRunner {
 
         // 8. Set the image as cover art on the task.
         final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
-        await getIt<PersistenceLogic>().updateTask(
+        final didUpdate = await getIt<PersistenceLogic>().updateTask(
           journalEntityId: linkedTaskId,
           taskData: updatedData,
         );
+        if (!didUpdate) {
+          throw StateError(
+            'Linked task $linkedTaskId disappeared before cover art update',
+          );
+        }
 
         _loggingService.captureEvent(
           'Skill-based image generation completed for task $linkedTaskId '

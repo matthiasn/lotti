@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +25,7 @@ void main() {
   late Directory mockDocumentsDirectory;
 
   setUp(() async {
-    await getIt.reset();
-    getIt.allowReassignment = true;
+    await setUpTestGetIt();
 
     mockDocumentsDirectory = Directory.systemTemp.createTempSync(
       'cover_art_skill_modal_test_',
@@ -34,7 +34,7 @@ void main() {
   });
 
   tearDown(() async {
-    await getIt.reset();
+    await tearDownTestGetIt();
     try {
       mockDocumentsDirectory.deleteSync(recursive: true);
     } catch (_) {

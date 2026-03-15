@@ -1990,7 +1990,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get coverArtGenerationDismissHint =>
-      'Puteți închide aceasta — generarea continuă în fundal';
+      'Puteți închide acest dialog — generarea continuă în fundal';
 
   @override
   String get coverArtRemove => 'Elimină ca imagine de copertă';

@@ -376,7 +376,7 @@ flowchart TD
 - [x] Update `ReferenceImageSelectionState` with `linkedTaskImageIds` to track image source
 
 ### Phase 3: UI conversion
-- [x] Create `CoverArtSkillModal` (selection-only, fire-and-forget with progress view)
+- [x] Create `CoverArtSkillModal` (reference image selection, then inline progress view; dismissible at any time)
 - [x] Update `UnifiedAiPopUpMenu.onSkillSelected` to open `CoverArtSkillModal` for image gen skills
 - [x] Update `ModernGenerateCoverArtItem` to use the new modal
 - [x] Remove legacy `ImageGenerationReviewModal` and `ImageGenerationController`
@@ -389,7 +389,7 @@ flowchart TD
 - [x] Unit test `SkillInferenceRunner.runImageGeneration()` (success, error, unmount safety)
 - [x] Unit test linked-task cover art discovery in `ReferenceImageSelectionController`
 - [x] Unit test `kMaxReferenceImages` = 5 enforcement
-- [x] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger, progress view)
+- [x] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger, inline progress)
 - [x] Widget test `UnifiedAiPopUpMenu` image generation skill routing
 - [x] Unit test `triggerSkillProvider` image generation routing
 - [ ] Integration test: end-to-end skill trigger → cover art assignment *(deferred — requires device)*

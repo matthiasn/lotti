@@ -218,12 +218,11 @@ class UnifiedAiModal {
     required JournalEntity journalEntity,
     required JournalRepository journalRepo,
     String? preferredTaskId,
-  }) =>
-      _resolveLinkedTask(
-        journalEntity: journalEntity,
-        preferredTaskId: preferredTaskId,
-        journalRepo: journalRepo,
-      );
+  }) => _resolveLinkedTask(
+    journalEntity: journalEntity,
+    preferredTaskId: preferredTaskId,
+    journalRepo: journalRepo,
+  );
 
   static Future<Task?> _resolveLinkedTask({
     required JournalEntity journalEntity,
