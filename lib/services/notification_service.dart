@@ -101,7 +101,7 @@ class NotificationService {
       NotificationConstants.badgeNotificationId,
     );
 
-    if (badgeCount == 0) {
+    if (badgeCount == 0 || !notifyEnabled) {
       await flutterLocalNotificationsPlugin.show(
         NotificationConstants.badgeNotificationId,
         '',
@@ -254,7 +254,9 @@ class NotificationService {
     required int notificationId,
     String? deepLink,
   }) async {
-    if (Platform.isWindows || Platform.isLinux) {
+    final notifyEnabled = await _db.getConfigFlag(enableNotificationsFlag);
+
+    if (!notifyEnabled || Platform.isWindows || Platform.isLinux) {
       return;
     }
 
