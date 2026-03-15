@@ -834,6 +834,8 @@
   "categoryAutomaticPromptsDescription": "Configure prompts that run automatically for different content types",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDefaultLanguageDescription": "Set a default language for tasks in this category",
+  "categoryDefaultProfileHint": "Select a profile…",
+  "categoryDefaultProfileLabel": "Default inference profile",
   "categoryDefaultTemplateHint": "Select a template…",
   "categoryDefaultTemplateLabel": "Default agent template",
   "categoryDeleteConfirm": "YES, DELETE THIS CATEGORY",

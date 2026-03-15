@@ -18,6 +18,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -114,6 +115,7 @@ void main() {
         ..registerSingleton<GeolocationService>(mockGeolocationService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<EntitiesCacheService>(MockEntitiesCacheService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
     });
 

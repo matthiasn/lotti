@@ -35,6 +35,11 @@ class AgentSubscription {
   final bool Function(Set<String> tokens)? predicate;
 }
 
+/// Checks whether a task (by ID) has meaningful content (at least one linked
+/// entry with non-empty text). Used by the content-gating logic for agents
+/// auto-created from category defaults.
+typedef TaskContentChecker = Future<bool> Function(String taskId);
+
 /// Signature for the callback that executes a wake cycle.
 ///
 /// [agentId] is the target agent's ID.
@@ -73,6 +78,7 @@ class WakeOrchestrator {
     this.domainLogger,
     this.wakeExecutor,
     this.onPersistedStateChanged,
+    this.taskContentChecker,
   }) {
     _throttle = _WakeThrottleCoordinator(
       repository: repository,
@@ -94,6 +100,11 @@ class WakeOrchestrator {
   /// [processNext]. When set, the orchestrator delegates to this function
   /// after acquiring the run lock and persisting the wake-run entry.
   WakeExecutor? wakeExecutor;
+
+  /// Optional callback that checks whether a task has meaningful content.
+  /// Used to gate auto-assigned agents (awaitingContent flag) so they don't
+  /// run until the task actually has text content to analyze.
+  TaskContentChecker? taskContentChecker;
 
   /// Optional callback fired when persisted throttle state changes for an
   /// agent (set/clear `nextWakeAt`).
@@ -515,6 +526,57 @@ class WakeOrchestrator {
     return _suppression.isPreRegisteredSuppressed(agentId, matchedTokens);
   }
 
+  // ── Content-gating ────────────────────────────────────────────────────────
+
+  /// Returns `true` if the job should be skipped because the agent is in
+  /// content-awaiting mode and the task doesn't have content yet.
+  ///
+  /// When content IS found, clears the `awaitingContent` flag on the agent
+  /// state so subsequent wakes proceed normally.
+  Future<bool> _shouldSkipForAwaitingContent(WakeJob job) async {
+    try {
+      final state = await repository.getAgentState(job.agentId);
+      if (state == null || !state.awaitingContent) return false;
+
+      final taskId = state.slots.activeTaskId;
+      if (taskId == null) return false;
+
+      final checker = taskContentChecker;
+      if (checker == null) return false;
+
+      final hasContent = await checker(taskId);
+      if (!hasContent) {
+        _log(
+          'content-gate: skipping wake for '
+          '${DomainLogger.sanitizeId(job.agentId)} '
+          '(task has no content yet)',
+          subDomain: 'contentGate',
+        );
+        return true;
+      }
+
+      // Content found — clear the flag and let the wake proceed.
+      _log(
+        'content-gate: activating '
+        '${DomainLogger.sanitizeId(job.agentId)} '
+        '(task now has content)',
+        subDomain: 'contentGate',
+      );
+      await repository.upsertEntity(
+        state.copyWith(awaitingContent: false),
+      );
+      return false;
+    } catch (e) {
+      // Don't let content-check errors block the wake — proceed normally.
+      _log(
+        'content-gate: error checking content for '
+        '${DomainLogger.sanitizeId(job.agentId)}: $e',
+        subDomain: 'contentGate',
+      );
+      return false;
+    }
+  }
+
   // ── Dispatch ───────────────────────────────────────────────────────────────
 
   /// Dequeue and execute pending wake jobs.
@@ -635,6 +697,13 @@ class WakeOrchestrator {
             deferred.add(job);
             continue;
           }
+        }
+
+        // Content-gating: agents auto-assigned from category defaults wait
+        // for the task to have meaningful content before their first run.
+        if (await _shouldSkipForAwaitingContent(job)) {
+          runner.release(job.agentId);
+          continue;
         }
 
         await _executeJob(job);

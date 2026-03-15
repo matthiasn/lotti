@@ -191,6 +191,13 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     runner: ref.watch(wakeRunnerProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: onPersistedStateChanged,
+    taskContentChecker: (taskId) async {
+      final journalDb = ref.read(journalDbProvider);
+      final linked = await journalDb.getLinkedEntities(taskId);
+      return linked.any(
+        (e) => e.entryText?.plainText.trim().isNotEmpty ?? false,
+      );
+    },
   );
 }
 

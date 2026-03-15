@@ -7,36 +7,52 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 
 const _logTag = 'ProfileAutomationResolver';
 
+/// Callback that returns the `profileId` stored on a task, or `null`.
+typedef TaskProfileLookup = Future<String?> Function(String taskId);
+
 /// Resolves the inference profile for a task's agent.
 ///
 /// Wraps [ProfileResolver] with the extra step of looking up the task's agent
 /// identity, template, and version — then delegates to
 /// [ProfileResolver.resolve()] to use the same resolution chain as agent wakes.
 ///
-/// Returns `null` if:
-/// - The task has no agent
-/// - The agent has no template or active version
-/// - The profile cannot be resolved (missing thinking model)
+/// When the agent path yields no result (no agent, no template, etc.) but the
+/// task carries an inherited `profileId` (from its category), the resolver
+/// falls back to direct profile resolution via [ProfileResolver.resolveByProfileId].
+///
+/// Returns `null` if no profile can be resolved through either path.
 class ProfileAutomationResolver {
   const ProfileAutomationResolver({
     required TaskAgentService taskAgentService,
     required AgentTemplateService templateService,
     required ProfileResolver profileResolver,
+    TaskProfileLookup? taskProfileLookup,
   }) : _taskAgentService = taskAgentService,
        _templateService = templateService,
-       _profileResolver = profileResolver;
+       _profileResolver = profileResolver,
+       _taskProfileLookup = taskProfileLookup;
 
   final TaskAgentService _taskAgentService;
   final AgentTemplateService _templateService;
   final ProfileResolver _profileResolver;
+  final TaskProfileLookup? _taskProfileLookup;
 
   /// Resolves the profile for the given [taskId]'s agent.
   ///
-  /// Follows the same resolution chain as agent wakes:
-  /// `agentConfig.profileId ?? version.profileId ?? template.profileId`
-  /// → legacy `modelId` fallback.
+  /// Resolution order:
+  /// 1. Agent path: `agentConfig.profileId ?? version.profileId ??
+  ///    template.profileId` → legacy `modelId` fallback.
+  /// 2. Task fallback: `task.data.profileId` (inherited from category).
   Future<ResolvedProfile?> resolveForTask(String taskId) async {
-    // 1. Find the agent for this task.
+    // 1. Try agent-based resolution.
+    final agentResult = await _resolveViaAgent(taskId);
+    if (agentResult != null) return agentResult;
+
+    // 2. Fall back to the task's own profileId (inherited from category).
+    return _resolveViaTaskProfile(taskId);
+  }
+
+  Future<ResolvedProfile?> _resolveViaAgent(String taskId) async {
     final agent = await _taskAgentService.getTaskAgentForTask(taskId);
     if (agent == null) {
       developer.log(
@@ -46,7 +62,6 @@ class ProfileAutomationResolver {
       return null;
     }
 
-    // 2. Get the agent's template.
     final template = await _templateService.getTemplateForAgent(agent.agentId);
     if (template == null) {
       developer.log(
@@ -56,7 +71,6 @@ class ProfileAutomationResolver {
       return null;
     }
 
-    // 3. Get the active version.
     final version = await _templateService.getActiveVersion(template.id);
     if (version == null) {
       developer.log(
@@ -66,11 +80,30 @@ class ProfileAutomationResolver {
       return null;
     }
 
-    // 4. Delegate to ProfileResolver.
     return _profileResolver.resolve(
       agentConfig: agent.config,
       template: template,
       version: version,
     );
+  }
+
+  Future<ResolvedProfile?> _resolveViaTaskProfile(String taskId) async {
+    final lookup = _taskProfileLookup;
+    if (lookup == null) return null;
+
+    final profileId = await lookup(taskId);
+    if (profileId == null) {
+      developer.log(
+        'No task-level profileId for task $taskId',
+        name: _logTag,
+      );
+      return null;
+    }
+
+    developer.log(
+      'Using task-level profileId $profileId for task $taskId',
+      name: _logTag,
+    );
+    return _profileResolver.resolveByProfileId(profileId);
   }
 }

@@ -77,6 +77,44 @@ profile/skill-driven on the task's agent, while legacy `automaticPrompts` data m
 for backward-compatibility paths. See the
 [Agents README](../agents/README.md#skill-assignments) for details.
 
+## AI Defaults (Profile & Agent Template Inheritance)
+
+Categories can define default AI settings that are automatically inherited by new tasks created
+within the category. This provides a single configuration point for teams or workflows where every
+task should use the same AI profile and/or agent template.
+
+### Default Inference Profile (`defaultProfileId`)
+
+When set, new tasks created in the category inherit this profile ID on `TaskData.profileId`.
+This immediately enables profile-driven automation (speech-to-text, image analysis) without
+requiring an agent to be assigned first. The profile automation system falls back to the task's
+inherited profile when no agent is present.
+
+### Default Agent Template (`defaultTemplateId`)
+
+When set, an agent is automatically created for new tasks in the category using this template.
+The auto-assigned agent enters an `awaitingContent` state and will not execute until the task
+has meaningful content (at least one linked entry with non-empty text). This prevents premature
+agent runs on blank tasks while still pre-assigning the agent so it activates as soon as the
+user adds content.
+
+### Configuration
+
+Both defaults are configured in the category detail page under the **AI Defaults** section.
+The profile picker uses `ProfileSelector` and the template picker uses `TemplateSelector`
+(filtered to `taskAgent` templates only).
+
+### Implementation
+
+- `createTask()` in `create_entry.dart` looks up the category's `defaultProfileId` via
+  `EntitiesCacheService` and sets it on `TaskData.profileId`.
+- `autoAssignCategoryAgent()` is called from widget contexts (with `WidgetRef`) after task
+  creation. It looks up `defaultTemplateId` and creates an agent via `TaskAgentService`.
+- `ProfileAutomationResolver.resolveForTask()` falls back to `task.data.profileId` when
+  agent-based resolution fails (via `TaskProfileLookup` callback).
+- `WakeOrchestrator._shouldSkipForAwaitingContent()` checks the `awaitingContent` flag and
+  skips the wake if the task has no content yet.
+
 ## Speech Dictionary
 
 Categories can store a speech dictionary of domain-specific terms to improve transcription accuracy.

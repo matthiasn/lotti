@@ -687,6 +687,8 @@
   "categoryAutomaticPromptsDescription": "Prompts konfigurieren, die automatisch für verschiedene Inhaltstypen ausgeführt werden",
   "categoryCreationError": "Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.",
   "categoryDefaultLanguageDescription": "Standardsprache für Aufgaben in dieser Kategorie festlegen",
+  "categoryDefaultProfileHint": "Profil auswählen…",
+  "categoryDefaultProfileLabel": "Standard-Inferenzprofil",
   "categoryDefaultTemplateHint": "Vorlage auswählen…",
   "categoryDefaultTemplateLabel": "Standard-Agenten-Vorlage",
   "categoryDeleteConfirm": "JA, DIESE KATEGORIE LÖSCHEN",

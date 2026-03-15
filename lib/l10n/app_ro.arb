@@ -687,6 +687,8 @@
   "categoryAutomaticPromptsDescription": "Configurați prompturi care se execută automat pentru diferite tipuri de conținut",
   "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",
   "categoryDefaultLanguageDescription": "Setați o limbă implicită pentru sarcinile din această categorie",
+  "categoryDefaultProfileHint": "Selectați un profil…",
+  "categoryDefaultProfileLabel": "Profil de inferență implicit",
   "categoryDefaultTemplateHint": "Selectați un șablon…",
   "categoryDefaultTemplateLabel": "Șablon de agent implicit",
   "categoryDeleteConfirm": "DA, ȘTERGE ACEASTĂ CATEGORIE",

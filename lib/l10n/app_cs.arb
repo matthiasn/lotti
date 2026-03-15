@@ -515,6 +515,8 @@
   "categoryAutomaticPromptsDescription": "Nastavte výzvy, které se automaticky spouštějí pro různé typy obsahu",
   "categoryCreationError": "Nepodařilo se vytvořit kategorii.",
   "categoryDefaultLanguageDescription": "Nastavte výchozí jazyk pro úkoly v této kategorii",
+  "categoryDefaultProfileHint": "Vyberte profil…",
+  "categoryDefaultProfileLabel": "Výchozí inferenční profil",
   "categoryDefaultTemplateHint": "Vyberte šablonu…",
   "categoryDefaultTemplateLabel": "Výchozí šablona agenta",
   "categoryDeleteConfirm": "ANO, SMAŽ TUTO KATEGORII",

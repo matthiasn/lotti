@@ -687,6 +687,8 @@
   "categoryAutomaticPromptsDescription": "Configurer les prompts qui s'exécutent automatiquement pour différents types de contenu",
   "categoryCreationError": "Impossible de créer la catégorie. Réessaie s'il te plaît.",
   "categoryDefaultLanguageDescription": "Définir une langue par défaut pour les tâches de cette catégorie",
+  "categoryDefaultProfileHint": "Sélectionner un profil…",
+  "categoryDefaultProfileLabel": "Profil d'inférence par défaut",
   "categoryDefaultTemplateHint": "Sélectionner un modèle…",
   "categoryDefaultTemplateLabel": "Modèle d'agent par défaut",
   "categoryDeleteConfirm": "OUI, SUPPRIMER CETTE CATÉGORIE",

@@ -22,6 +22,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -103,7 +104,10 @@ void main() {
       getIt
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<JournalDb>(mockDb);
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
     });
 
     tearDown(getIt.reset);
@@ -1292,7 +1296,10 @@ void main() {
       getIt
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<JournalDb>(mockDb);
+        ..registerSingleton<JournalDb>(mockDb)
+        ..registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
 
       final testTask = Task(
         meta: Metadata(

@@ -519,6 +519,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     return ProfileSelector(
       selectedProfileId: category.defaultProfileId,
       onProfileSelected: controller.setDefaultProfileId,
+      hintText: context.messages.categoryDefaultProfileHint,
     );
   }
 

@@ -77,7 +77,7 @@ void main() {
       ).called(1);
     });
 
-    test('returns null when task has no agent', () async {
+    test('returns null when task has no agent and no profile lookup', () async {
       when(
         () => mockTaskAgentService.getTaskAgentForTask('task-orphan'),
       ).thenAnswer((_) async => null);
@@ -196,6 +196,106 @@ void main() {
           version: version,
         ),
       ).called(1);
+    });
+  });
+
+  group('task-profile fallback', () {
+    late ProfileAutomationResolver resolverWithLookup;
+
+    setUp(() {
+      resolverWithLookup = ProfileAutomationResolver(
+        taskAgentService: mockTaskAgentService,
+        templateService: mockTemplateService,
+        profileResolver: mockProfileResolver,
+        taskProfileLookup: (taskId) async {
+          if (taskId == 'task-with-profile') return 'inherited-profile-1';
+          return null;
+        },
+      );
+    });
+
+    test('falls back to task profileId when no agent exists', () async {
+      final resolvedProfile = makeResolvedProfile();
+
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask('task-with-profile'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockProfileResolver.resolveByProfileId('inherited-profile-1'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      final result = await resolverWithLookup.resolveForTask(
+        'task-with-profile',
+      );
+
+      expect(result, equals(resolvedProfile));
+      verify(
+        () => mockProfileResolver.resolveByProfileId('inherited-profile-1'),
+      ).called(1);
+    });
+
+    test('prefers agent path over task-profile fallback', () async {
+      final agent = makeTestIdentity(
+        config: const AgentConfig(profileId: 'agent-profile'),
+      );
+      final template = makeTestTemplate();
+      final version = makeTestTemplateVersion();
+      final resolvedProfile = makeResolvedProfile();
+
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask('task-with-profile'),
+      ).thenAnswer((_) async => agent);
+      when(
+        () => mockTemplateService.getTemplateForAgent(agent.agentId),
+      ).thenAnswer((_) async => template);
+      when(
+        () => mockTemplateService.getActiveVersion(template.id),
+      ).thenAnswer((_) async => version);
+      when(
+        () => mockProfileResolver.resolve(
+          agentConfig: agent.config,
+          template: template,
+          version: version,
+        ),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      final result = await resolverWithLookup.resolveForTask(
+        'task-with-profile',
+      );
+
+      expect(result, equals(resolvedProfile));
+      // Agent path was used, not the task fallback.
+      verifyNever(
+        () => mockProfileResolver.resolveByProfileId(any()),
+      );
+    });
+
+    test('returns null when no agent and task has no profileId', () async {
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask('task-no-profile'),
+      ).thenAnswer((_) async => null);
+
+      final result = await resolverWithLookup.resolveForTask('task-no-profile');
+
+      expect(result, isNull);
+      verifyNever(
+        () => mockProfileResolver.resolveByProfileId(any()),
+      );
+    });
+
+    test('returns null when task profileId cannot be resolved', () async {
+      when(
+        () => mockTaskAgentService.getTaskAgentForTask('task-with-profile'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockProfileResolver.resolveByProfileId('inherited-profile-1'),
+      ).thenAnswer((_) async => null);
+
+      final result = await resolverWithLookup.resolveForTask(
+        'task-with-profile',
+      );
+
+      expect(result, isNull);
     });
   });
 }

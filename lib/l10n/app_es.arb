@@ -687,6 +687,8 @@
   "categoryAutomaticPromptsDescription": "Configurar prompts que se ejecutan automáticamente para diferentes tipos de contenido",
   "categoryCreationError": "No se pudo crear la categoría. Por favor, inténtalo de nuevo.",
   "categoryDefaultLanguageDescription": "Establecer un idioma predeterminado para las tareas de esta categoría",
+  "categoryDefaultProfileHint": "Seleccionar un perfil…",
+  "categoryDefaultProfileLabel": "Perfil de inferencia predeterminado",
   "categoryDefaultTemplateHint": "Seleccionar una plantilla…",
   "categoryDefaultTemplateLabel": "Plantilla de agente predeterminada",
   "categoryDeleteConfirm": "SÍ, ELIMINAR ESTA CATEGORÍA",

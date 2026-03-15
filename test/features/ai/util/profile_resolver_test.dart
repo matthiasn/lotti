@@ -348,4 +348,62 @@ void main() {
       );
     });
   });
+
+  group('resolveByProfileId', () {
+    test('resolves valid profile by ID', () async {
+      final profile = testInferenceProfile(id: 'direct-profile');
+      stubProfile(profile);
+      stubModelResolution();
+
+      final result = await resolver.resolveByProfileId('direct-profile');
+
+      expect(result, isNotNull);
+      expect(result!.thinkingModelId, 'models/gemini-3-flash-preview');
+      verify(() => mockAiConfig.getConfigById('direct-profile')).called(1);
+    });
+
+    test('returns null when profile not found', () async {
+      when(
+        () => mockAiConfig.getConfigById('missing-profile'),
+      ).thenAnswer((_) async => null);
+
+      final result = await resolver.resolveByProfileId('missing-profile');
+
+      expect(result, isNull);
+    });
+
+    test('returns null when profile is wrong type', () async {
+      when(
+        () => mockAiConfig.getConfigById('wrong-type'),
+      ).thenAnswer(
+        (_) async => testAiModel(
+          id: 'wrong-type',
+          providerModelId: 'some-model',
+          inferenceProviderId: 'p1',
+        ),
+      );
+
+      final result = await resolver.resolveByProfileId('wrong-type');
+
+      expect(result, isNull);
+    });
+
+    test('carries skill assignments through', () async {
+      const assignments = [
+        SkillAssignment(skillId: 'skill-1', automate: true),
+      ];
+      final profile = testInferenceProfile(
+        id: 'profile-with-skills',
+        skillAssignments: assignments,
+      );
+      stubProfile(profile);
+      stubModelResolution();
+
+      final result = await resolver.resolveByProfileId('profile-with-skills');
+
+      expect(result, isNotNull);
+      expect(result!.skillAssignments, hasLength(1));
+      expect(result.skillAssignments[0].automate, isTrue);
+    });
+  });
 }

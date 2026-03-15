@@ -16,6 +16,7 @@ import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1917,7 +1918,10 @@ void main() {
 
       getIt
         ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+        ..registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
     });
 
     tearDown(() async {
