@@ -2679,6 +2679,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inferenceProfileThinking => 'Thinking';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Thinking (High-End)';
+
+  @override
   String get inferenceProfileThinkingRequired => 'A thinking model is required';
 
   @override

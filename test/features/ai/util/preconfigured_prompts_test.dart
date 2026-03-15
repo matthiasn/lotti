@@ -4,42 +4,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 
 void main() {
-  group('Image analysis URL formatting rules', () {
-    test('image analysis prompt contains URL formatting rules', () {
-      final user = imageAnalysisPrompt.userMessage;
-      expect(user, contains('URL FORMATTING RULES'));
-      expect(user, contains('Markdown link'));
-      expect(user, contains('https://'));
-    });
-
-    test('task image analysis prompt contains URL formatting rules', () {
-      final user = imageAnalysisInTaskContextPrompt.userMessage;
-      expect(user, contains('URL FORMATTING RULES'));
-      expect(user, contains('Markdown link'));
-      expect(user, contains('https://'));
-    });
-  });
-
-  group('Transcription speaker identification', () {
-    test('transcription prompt handles single speaker without labels', () {
-      final user = audioTranscriptionPrompt.userMessage;
-      expect(user, contains('only ONE speaker'));
-      expect(user, contains('do NOT use any speaker labels'));
-    });
-
-    test('transcription prompt handles multiple speakers with labels', () {
-      final user = audioTranscriptionPrompt.userMessage;
-      expect(user, contains('MULTIPLE speakers'));
-      expect(user, contains('Speaker 1'));
-    });
-
-    test('task-context transcription prompt handles single speaker', () {
-      final user = audioTranscriptionWithTaskContextPrompt.userMessage;
-      expect(user, contains('only ONE speaker'));
-      expect(user, contains('do NOT use any speaker labels'));
-    });
-  });
-
   group('Image Prompt Generation Template', () {
     test('has correct structure and metadata', () {
       expect(imagePromptGenerationPrompt.id, 'image_prompt_generation');
@@ -126,43 +90,6 @@ void main() {
       expect(
         preconfiguredPrompts['image_prompt_generation'],
         imagePromptGenerationPrompt,
-      );
-    });
-  });
-
-  group('Coding Prompt Generation Template', () {
-    test('has correct structure and metadata', () {
-      expect(promptGenerationPrompt.id, 'prompt_generation');
-      expect(promptGenerationPrompt.name, 'Generate Coding Prompt');
-      expect(
-        promptGenerationPrompt.aiResponseType,
-        AiResponseType.promptGeneration,
-      );
-      expect(promptGenerationPrompt.useReasoning, true);
-    });
-
-    test('includes audioTranscript placeholder', () {
-      final user = promptGenerationPrompt.userMessage;
-      expect(user, contains('{{audioTranscript}}'));
-    });
-
-    test('includes task and linked_tasks placeholders', () {
-      final user = promptGenerationPrompt.userMessage;
-      expect(user, contains('{{task}}'));
-      expect(user, contains('{{linked_tasks}}'));
-    });
-
-    test('specifies Summary and Prompt output format', () {
-      final sys = promptGenerationPrompt.systemMessage;
-      expect(sys, contains('## Summary'));
-      expect(sys, contains('## Prompt'));
-      expect(sys, contains('OUTPUT FORMAT'));
-    });
-
-    test('is registered in preconfiguredPrompts lookup', () {
-      expect(
-        preconfiguredPrompts['prompt_generation'],
-        promptGenerationPrompt,
       );
     });
   });

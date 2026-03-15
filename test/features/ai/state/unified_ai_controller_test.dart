@@ -1323,9 +1323,11 @@ void main() {
           availableSkillsForEntityProvider(audioEntity.id).future,
         );
 
-        // promptGeneration is not yet supported, so only transcription shows
-        expect(skills.length, 1);
-        expect(skills.first.id, 'skill-transcription');
+        // Both transcription (audio modality) and promptGeneration (text
+        // modality) are supported and pass the modality filter.
+        expect(skills.length, 2);
+        expect(skills.map((s) => s.id), contains('skill-transcription'));
+        expect(skills.map((s) => s.id), contains('skill-text'));
         skillSub.close();
       },
     );
@@ -1394,9 +1396,11 @@ void main() {
           availableSkillsForEntityProvider(imageEntity.id).future,
         );
 
-        // promptGeneration is not yet supported, so only imageAnalysis shows
-        expect(skills.length, 1);
-        expect(skills.first.id, 'skill-image');
+        // Both imageAnalysis (image modality) and promptGeneration (text
+        // modality) are supported and pass the modality filter.
+        expect(skills.length, 2);
+        expect(skills.map((s) => s.id), contains('skill-image'));
+        expect(skills.map((s) => s.id), contains('skill-text'));
         skillSub.close();
       },
     );
@@ -1466,9 +1470,10 @@ void main() {
         availableSkillsForEntityProvider(taskEntity.id).future,
       );
 
-      // Both audio-only (wrong modality) and promptGeneration (unsupported)
-      // are filtered out
-      expect(skills, isEmpty);
+      // Audio-only skill is filtered out (wrong modality for Task entity).
+      // promptGeneration with text modality passes through.
+      expect(skills.length, 1);
+      expect(skills.first.id, 'skill-text');
       skillSub.close();
     });
 
@@ -1886,6 +1891,75 @@ void main() {
           imageEntryId: 'image-entry-1',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-img',
+        ),
+      ).called(1);
+    });
+
+    test('successfully routes prompt generation skill to runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-prompt',
+                name: 'Generate Coding Prompt',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.promptGeneration,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final thinkingProvider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://generativelanguage.googleapis.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: thinkingProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-prompt'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runPromptGeneration(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-prompt').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-entry-2',
+          skillId: 'skill-prompt',
+          linkedTaskId: 'task-prompt',
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runPromptGeneration(
+          audioEntryId: 'audio-entry-2',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-prompt',
         ),
       ).called(1);
     });

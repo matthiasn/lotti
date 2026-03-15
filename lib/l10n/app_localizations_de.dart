@@ -2721,6 +2721,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inferenceProfileThinking => 'Denken';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Denken (High-End)';
+
+  @override
   String get inferenceProfileThinkingRequired =>
       'Ein Denk-Modell ist erforderlich';
 

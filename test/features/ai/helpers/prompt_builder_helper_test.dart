@@ -103,10 +103,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
         );
 
         // Act
@@ -120,7 +120,7 @@ void main() {
         );
 
         // Assert
-        final template = preconfiguredPrompts['image_analysis']!;
+        final template = preconfiguredPrompts['image_prompt_generation']!;
         expect(systemMessage, equals(template.systemMessage));
         expect(userMessage, equals(template.userMessage));
       });
@@ -446,11 +446,16 @@ void main() {
             modelIds: ['model-1'],
             createdAt: testDate,
             useReasoning: false,
-            requiredInputData: [InputDataType.images],
-            aiResponseType: AiResponseType.imageAnalysis,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.imagePromptGeneration,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'image_analysis',
+            preconfiguredPromptId: 'image_prompt_generation',
           );
+
+          const mockTaskJson = '{"id": "task-123", "title": "Test Task"}';
+          when(
+            () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+          ).thenAnswer((_) async => mockTaskJson);
 
           // Act
           final prompt = await promptBuilder.buildPromptWithData(
@@ -462,10 +467,10 @@ void main() {
           expect(prompt, isNotNull);
           // Verify it doesn't contain the custom message (template was used instead)
           expect(prompt, isNot(contains('Custom user message')));
-          // Verify it uses the preconfigured image analysis prompt
+          // Verify it uses the preconfigured image prompt generation template
           expect(
             prompt,
-            contains('Analyze the provided image(s) in detail'),
+            contains('Transform this audio transcription or text entry'),
           );
         },
       );

@@ -4857,6 +4857,12 @@ abstract class AppLocalizations {
   /// **'Thinking'**
   String get inferenceProfileThinking;
 
+  /// No description provided for @inferenceProfileThinkingHighEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking (High-End)'**
+  String get inferenceProfileThinkingHighEnd;
+
   /// No description provided for @inferenceProfileThinkingRequired.
   ///
   /// In en, this message translates to:

@@ -208,24 +208,6 @@ const List<KnownModel> geminiModels = [
 /// Nebius models - High-performance text and image models
 const List<KnownModel> nebiusModels = [
   KnownModel(
-    providerModelId: 'openai/gpt-oss-20b',
-    name: 'Nebius gpt-oss 20B',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description:
-        'State-of-the-art open weights model from OpenAI, small variant.',
-  ),
-  KnownModel(
-    providerModelId: 'openai/gpt-oss-120b',
-    name: 'Nebius gpt-oss 120B',
-    inputModalities: [Modality.text],
-    outputModalities: [Modality.text],
-    isReasoningModel: true,
-    description:
-        'State-of-the-art open weights model from OpenAI, large variant.',
-  ),
-  KnownModel(
     providerModelId: 'google/gemma-3-27b-it-fast',
     name: 'Gemma 3 27B',
     inputModalities: [Modality.text, Modality.image],

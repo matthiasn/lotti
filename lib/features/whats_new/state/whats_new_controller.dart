@@ -29,6 +29,9 @@ WhatsNewService whatsNewService(Ref ref) {
 @riverpod
 Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
   final prefs = await SharedPreferences.getInstance();
+
+  // Check if the What's New feature is enabled.
+  if (!(prefs.getBool('enable_whats_new') ?? false)) return false;
   final packageInfo = await PackageInfo.fromPlatform();
   final currentVersion = packageInfo.version;
 

@@ -79,7 +79,9 @@ void main() {
 
   setUp(() {
     mockService = MockWhatsNewService();
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({
+      'enable_whats_new': true,
+    });
 
     container = ProviderContainer(
       overrides: [
@@ -345,6 +347,7 @@ void main() {
 
     test('returns false when version has not changed', () async {
       SharedPreferences.setMockInitialValues({
+        'enable_whats_new': true,
         'whats_new_last_launched_version': '99.99.99', // Same as mock version
       });
 
@@ -372,6 +375,7 @@ void main() {
 
     test('returns true when version changed and has unseen releases', () async {
       SharedPreferences.setMockInitialValues({
+        'enable_whats_new': true,
         'whats_new_last_launched_version': '98.98.98', // Different from mock
       });
 
@@ -406,6 +410,7 @@ void main() {
 
     test('returns false when version changed but no unseen releases', () async {
       SharedPreferences.setMockInitialValues({
+        'enable_whats_new': true,
         'whats_new_last_launched_version': '98.98.98', // Different from mock
         'whats_new_seen_0.9.980': true, // Already seen
       });
@@ -433,6 +438,7 @@ void main() {
       'returns false when version changed but no releases available',
       () async {
         SharedPreferences.setMockInitialValues({
+          'enable_whats_new': true,
           'whats_new_last_launched_version': '98.98.98',
         });
 

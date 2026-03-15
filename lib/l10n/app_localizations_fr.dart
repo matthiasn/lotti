@@ -2755,6 +2755,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileThinking => 'Réflexion';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Réflexion (haut de gamme)';
+
+  @override
   String get inferenceProfileThinkingRequired =>
       'Un modèle de réflexion est requis';
 

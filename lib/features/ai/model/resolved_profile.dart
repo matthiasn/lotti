@@ -13,6 +13,8 @@ class ResolvedProfile {
   const ResolvedProfile({
     required this.thinkingModelId,
     required this.thinkingProvider,
+    this.thinkingHighEndModelId,
+    this.thinkingHighEndProvider,
     this.imageRecognitionModelId,
     this.imageRecognitionProvider,
     this.transcriptionModelId,
@@ -27,6 +29,14 @@ class ResolvedProfile {
 
   /// The resolved inference provider for thinking.
   final AiConfigInferenceProvider thinkingProvider;
+
+  /// The providerModelId string for high-end thinking (nullable).
+  /// Falls back to [thinkingModelId] when not set.
+  final String? thinkingHighEndModelId;
+
+  /// The resolved inference provider for high-end thinking (nullable).
+  /// Falls back to [thinkingProvider] when not set.
+  final AiConfigInferenceProvider? thinkingHighEndProvider;
 
   /// The providerModelId string for image recognition (nullable).
   final String? imageRecognitionModelId;
@@ -49,6 +59,16 @@ class ResolvedProfile {
   /// Skill assignments from the profile, for downstream automation lookup.
   final List<SkillAssignment> skillAssignments;
 
+  /// Returns the high-end thinking model ID, falling back to the regular
+  /// thinking model ID when the high-end slot is not configured.
+  String get effectiveHighEndModelId =>
+      thinkingHighEndModelId ?? thinkingModelId;
+
+  /// Returns the high-end thinking provider, falling back to the regular
+  /// thinking provider when the high-end slot is not configured.
+  AiConfigInferenceProvider get effectiveHighEndProvider =>
+      thinkingHighEndProvider ?? thinkingProvider;
+
   static const _listEquals = ListEquality<SkillAssignment>();
 
   @override
@@ -58,6 +78,8 @@ class ResolvedProfile {
           runtimeType == other.runtimeType &&
           thinkingModelId == other.thinkingModelId &&
           thinkingProvider == other.thinkingProvider &&
+          thinkingHighEndModelId == other.thinkingHighEndModelId &&
+          thinkingHighEndProvider == other.thinkingHighEndProvider &&
           imageRecognitionModelId == other.imageRecognitionModelId &&
           imageRecognitionProvider == other.imageRecognitionProvider &&
           transcriptionModelId == other.transcriptionModelId &&
@@ -70,6 +92,8 @@ class ResolvedProfile {
   int get hashCode => Object.hash(
     thinkingModelId,
     thinkingProvider,
+    thinkingHighEndModelId,
+    thinkingHighEndProvider,
     imageRecognitionModelId,
     imageRecognitionProvider,
     transcriptionModelId,

@@ -1340,6 +1340,7 @@
   },
   "inferenceProfilesTitle": "Inference Profiles",
   "inferenceProfileThinking": "Thinking",
+  "inferenceProfileThinkingHighEnd": "Thinking (High-End)",
   "inferenceProfileThinkingRequired": "A thinking model is required",
   "inferenceProfileTranscription": "Transcription",
   "inputDataTypeAudioFilesDescription": "Use audio files as input",

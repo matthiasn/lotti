@@ -1193,6 +1193,7 @@
   },
   "inferenceProfilesTitle": "Inferenz-Profile",
   "inferenceProfileThinking": "Denken",
+  "inferenceProfileThinkingHighEnd": "Denken (High-End)",
   "inferenceProfileThinkingRequired": "Ein Denk-Modell ist erforderlich",
   "inferenceProfileTranscription": "Transkription",
   "inputDataTypeAudioFilesDescription": "Audiodateien als Eingabe verwenden",

@@ -2721,6 +2721,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileThinking => 'Gândire';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Gândire (nivel înalt)';
+
+  @override
   String get inferenceProfileThinkingRequired =>
       'Este necesar un model de gândire';
 

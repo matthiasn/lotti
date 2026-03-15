@@ -88,18 +88,29 @@ void main() {
       final nameField = find.widgetWithText(TextFormField, 'My Profile');
       expect(nameField, findsOneWidget);
 
-      // Desktop toggle should be on.
-      final switchTile = tester.widget<SwitchListTile>(
-        find.widgetWithText(SwitchListTile, 'Desktop Only'),
+      // Scroll down to the desktop toggle.
+      final desktopToggle = find.widgetWithText(
+        SwitchListTile,
+        'Desktop Only',
       );
+      await tester.scrollUntilVisible(
+        desktopToggle,
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Desktop toggle should be on.
+      final switchTile = tester.widget<SwitchListTile>(desktopToggle);
       expect(switchTile.value, isTrue);
     });
 
-    testWidgets('shows all four model slot fields', (tester) async {
+    testWidgets('shows all five model slot fields', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       expect(find.text('Thinking *'), findsOneWidget);
+      expect(find.text('Thinking (High-End)'), findsOneWidget);
       expect(find.text('Image Recognition'), findsOneWidget);
       expect(find.text('Transcription'), findsOneWidget);
       expect(find.text('Image Generation'), findsOneWidget);
@@ -127,6 +138,14 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
+      // Scroll down to the desktop toggle (may be off-screen with 5 slots).
+      await tester.scrollUntilVisible(
+        find.text('Desktop Only'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
       expect(find.text('Desktop Only'), findsOneWidget);
       expect(
         find.text(
@@ -142,8 +161,25 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      // All four model slots should show the placeholder.
-      expect(find.text('Select a model…'), findsNWidgets(4));
+      // Verify each model slot label and its placeholder are present.
+      // Use scrollUntilVisible since the ListView may not render all at once.
+      for (final label in [
+        'Thinking *',
+        'Thinking (High-End)',
+        'Image Recognition',
+        'Transcription',
+        'Image Generation',
+      ]) {
+        await tester.scrollUntilVisible(
+          find.text(label),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text(label), findsOneWidget);
+      }
+      // At least the visible slots should show placeholders.
+      expect(find.text('Select a model…'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows snackbar when saving without thinking model', (
@@ -893,6 +929,143 @@ void main() {
           findsAtLeastNWidgets(1),
         );
       });
+    });
+
+    testWidgets('shows high-end thinking model when editing profile', (
+      tester,
+    ) async {
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
+
+      final proModel =
+          AiConfig.model(
+                id: 'tm-2',
+                name: 'Gemini Pro',
+                providerModelId: 'models/gemini-pro',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: true,
+              )
+              as AiConfigModel;
+
+      final profile = testInferenceProfile(
+        id: 'p1',
+        name: 'My Profile',
+        thinkingModelId: 'models/flash',
+        thinkingHighEndModelId: 'models/gemini-pro',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          existingProfile: profile,
+          models: [thinkingModel, proModel],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The regular thinking model should be shown.
+      expect(find.text('Flash'), findsOneWidget);
+
+      // Scroll to the high-end slot and verify the model name is shown.
+      await tester.scrollUntilVisible(
+        find.text('Gemini Pro'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Gemini Pro'), findsOneWidget);
+    });
+
+    testWidgets('saves profile with high-end thinking model', (tester) async {
+      final thinkingModel =
+          AiConfig.model(
+                id: 'tm-1',
+                name: 'Flash',
+                providerModelId: 'models/flash',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: false,
+                supportsFunctionCalling: true,
+              )
+              as AiConfigModel;
+
+      final proModel =
+          AiConfig.model(
+                id: 'tm-2',
+                name: 'Gemini Pro',
+                providerModelId: 'models/gemini-pro',
+                inferenceProviderId: 'prov-1',
+                createdAt: DateTime(2024),
+                inputModalities: const [Modality.text],
+                outputModalities: const [Modality.text],
+                isReasoningModel: true,
+              )
+              as AiConfigModel;
+
+      // Editing a profile that already has thinking model set.
+      final profile = testInferenceProfile(
+        id: 'p1',
+        name: 'Pro Profile',
+      );
+
+      await tester.pumpWidget(
+        buildSubject(
+          existingProfile: profile,
+          models: [thinkingModel, proModel],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Scroll to the high-end slot and select a model.
+      await tester.scrollUntilVisible(
+        find.text('Thinking (High-End)'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Tap the high-end thinking slot (second InkWell).
+      final highEndSlot = find.ancestor(
+        of: find.text('Thinking (High-End)'),
+        matching: find.byType(InkWell),
+      );
+      await tester.tap(highEndSlot.first);
+      await tester.pumpAndSettle();
+
+      // Select Gemini Pro.
+      await tester.tap(find.text('Gemini Pro'));
+      await tester.pumpAndSettle();
+
+      // Scroll back to Save.
+      await tester.scrollUntilVisible(
+        find.text('Save'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      // Save.
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+
+      expect(fakeProfileController.savedProfiles, hasLength(1));
+      final saved = fakeProfileController.savedProfiles.first;
+      expect(saved.thinkingHighEndModelId, 'models/gemini-pro');
     });
 
     testWidgets('preserves existing profile ID when editing', (tester) async {

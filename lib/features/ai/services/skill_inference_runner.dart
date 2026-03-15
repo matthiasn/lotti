@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -389,6 +390,141 @@ class SkillInferenceRunner {
         );
       },
     );
+  }
+
+  /// Run skill-based prompt generation on an audio entry.
+  ///
+  /// Uses the profile's high-end thinking model (falling back to the regular
+  /// thinking model) to transform an audio transcript + task context into a
+  /// detailed coding prompt. The result is saved as an [AiResponseEntry]
+  /// linked to the audio entity.
+  Future<void> runPromptGeneration({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    String? linkedTaskId,
+  }) async {
+    final skill = automationResult.skill;
+    final profile = automationResult.resolvedProfile;
+    if (skill == null || profile == null) {
+      developer.log(
+        'AutomationResult missing skill or profile for $audioEntryId',
+        name: _logTag,
+      );
+      return;
+    }
+    final provider = profile.effectiveHighEndProvider;
+    final modelId = profile.effectiveHighEndModelId;
+
+    await _withStatusTracking(
+      entityId: audioEntryId,
+      responseType: skill.skillType.toResponseType,
+      subDomain: 'runPromptGeneration',
+      linkedTaskId: linkedTaskId,
+      body: () async {
+        // 1. Fetch the audio entity.
+        final entity = await _aiInputRepository.getEntity(audioEntryId);
+        if (entity is! JournalAudio) {
+          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        }
+
+        // 2. Extract the audio transcript.
+        final audioTranscript = _resolveAudioTranscript(entity);
+
+        // 3. Build task context.
+        final taskContext = linkedTaskId != null
+            ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
+            : null;
+        final linkedTasks = linkedTaskId != null
+            ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId)
+            : null;
+
+        // 4. Build prompts via SkillPromptBuilder.
+        const promptBuilder = SkillPromptBuilder();
+        final promptResult = promptBuilder.build(
+          skill: skill,
+          audioTranscript: audioTranscript,
+          taskContext: taskContext,
+          linkedTasks: linkedTasks,
+        );
+
+        // 5. Call inference with text-only (no audio/image upload).
+        final start = DateTime.now();
+        final responseStream = _cloudRepository.generate(
+          promptResult.userMessage,
+          model: modelId,
+          temperature: null,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          provider: provider,
+          systemMessage: promptResult.systemMessage,
+        );
+
+        // 6. Collect streaming response.
+        final buffer = StringBuffer();
+        await for (final chunk in responseStream) {
+          final content = chunk.choices?.firstOrNull?.delta?.content;
+          if (content != null) {
+            buffer.write(content);
+          }
+        }
+
+        final response = buffer.toString().trim();
+        if (response.isEmpty) {
+          throw StateError(
+            'Empty prompt generation response for $audioEntryId',
+          );
+        }
+
+        // 7. Save result as AiResponseEntry.
+        final data = AiResponseData(
+          model: modelId,
+          systemMessage: promptResult.systemMessage,
+          prompt: promptResult.userMessage,
+          thoughts: '',
+          response: response,
+          type: AiResponseType.promptGeneration,
+        );
+
+        await _aiInputRepository.createAiResponseEntry(
+          data: data,
+          start: start,
+          linkedId: audioEntryId,
+          categoryId: entity.meta.categoryId,
+        );
+
+        _loggingService.captureEvent(
+          'Skill-based prompt generation completed for $audioEntryId '
+          '(${response.length} chars)',
+          domain: _logTag,
+          subDomain: 'runPromptGeneration',
+        );
+      },
+    );
+  }
+
+  /// Resolves the audio transcript from a [JournalAudio] entity.
+  ///
+  /// Prioritises user-edited text over the original transcript, matching the
+  /// behaviour of the legacy prompt builder.
+  static String _resolveAudioTranscript(JournalAudio entity) {
+    final editedText = entity.entryText?.plainText.trim();
+    if (editedText != null && editedText.isNotEmpty) {
+      return editedText;
+    }
+
+    final transcripts = entity.data.transcripts;
+    if (transcripts != null && transcripts.isNotEmpty) {
+      final latestTranscript = transcripts.reduce(
+        (current, candidate) =>
+            candidate.created.isAfter(current.created) ? candidate : current,
+      );
+      final transcriptText = latestTranscript.transcript.trim();
+      if (transcriptText.isNotEmpty) {
+        return transcriptText;
+      }
+    }
+
+    return '[No transcription available]';
   }
 
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.

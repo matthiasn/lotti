@@ -204,7 +204,7 @@ final class CheckboxVisibilityProvider
 }
 
 String _$checkboxVisibilityHash() =>
-    r'4e2bc61f503ee7c8a8a0e1d4143f1dc9cc61a11d';
+    r'8917cdbe1b23809bb099c19a9230008ced858ca2';
 
 /// Provider that computes which automatic prompt checkboxes should be visible
 /// in the audio recording modal based on:

@@ -1193,6 +1193,7 @@
   },
   "inferenceProfilesTitle": "Profils d'inférence",
   "inferenceProfileThinking": "Réflexion",
+  "inferenceProfileThinkingHighEnd": "Réflexion (haut de gamme)",
   "inferenceProfileThinkingRequired": "Un modèle de réflexion est requis",
   "inferenceProfileTranscription": "Transcription",
   "inputDataTypeAudioFilesDescription": "Utiliser des fichiers audio comme entrée",

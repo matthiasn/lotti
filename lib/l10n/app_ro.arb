@@ -1193,6 +1193,7 @@
   },
   "inferenceProfilesTitle": "Profile de inferență",
   "inferenceProfileThinking": "Gândire",
+  "inferenceProfileThinkingHighEnd": "Gândire (nivel înalt)",
   "inferenceProfileThinkingRequired": "Este necesar un model de gândire",
   "inferenceProfileTranscription": "Transcriere",
   "inputDataTypeAudioFilesDescription": "Folosește fișiere audio ca intrare",

@@ -79,6 +79,14 @@ class ProfileResolver {
     }
 
     // Resolve optional slots (non-fatal).
+    final thinkingHighEndProvider = config.thinkingHighEndModelId != null
+        ? await resolveInferenceProvider(
+            modelId: config.thinkingHighEndModelId!,
+            aiConfigRepository: _aiConfigRepository,
+            logTag: _logTag,
+          )
+        : null;
+
     final imageRecognitionProvider = config.imageRecognitionModelId != null
         ? await resolveInferenceProvider(
             modelId: config.imageRecognitionModelId!,
@@ -106,6 +114,8 @@ class ProfileResolver {
     return ResolvedProfile(
       thinkingModelId: config.thinkingModelId,
       thinkingProvider: thinkingProvider,
+      thinkingHighEndModelId: config.thinkingHighEndModelId,
+      thinkingHighEndProvider: thinkingHighEndProvider,
       imageRecognitionModelId: config.imageRecognitionModelId,
       imageRecognitionProvider: imageRecognitionProvider,
       transcriptionModelId: config.transcriptionModelId,

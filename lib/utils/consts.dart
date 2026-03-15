@@ -17,6 +17,8 @@ const enableAgentsFlag = 'enable_agents';
 const enableEmbeddingsFlag = 'enable_embeddings';
 const enableVectorSearchFlag = 'enable_vector_search';
 
+const enableWhatsNewFlag = 'enable_whats_new';
+
 const logAgentRuntimeFlag = 'log_agent_runtime';
 const logAgentWorkflowFlag = 'log_agent_workflow';
 const logSyncFlag = 'log_sync';
