@@ -1770,6 +1770,329 @@ void main() {
       );
 
       test(
+        'logs error when linked task not found before cover art save',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-err-1',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'test',
+                      markdown: 'test',
+                    ),
+                  )
+                  as JournalAudio;
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-err-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-err-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-err-1'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-err-1'),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          // Linked task not found
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-err-1'),
+          ).thenAnswer((_) async => null);
+
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            audioEntryId: 'audio-err-1',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-err-1',
+          );
+
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(
+                that: isA<StateError>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('not found before cover art save'),
+                ),
+              ),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runImageGeneration',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'logs error when image import fails',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-err-2',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'test',
+                      markdown: 'test',
+                    ),
+                  )
+                  as JournalAudio;
+
+          final taskEntity = makeTaskEntity('task-err-2');
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-err-2'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-err-2'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-err-2'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-err-2'),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-err-2'),
+          ).thenAnswer((_) async => taskEntity);
+
+          // Mock PersistenceLogic so createDbEntity throws (causing
+          // importGeneratedImageBytes to return null).
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<LoggingService>(mockLoggingService);
+
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img-err2',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+              addTags: any(named: 'addTags'),
+            ),
+          ).thenThrow(Exception('DB write failed'));
+
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            audioEntryId: 'audio-err-2',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-err-2',
+          );
+
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runImageGeneration',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'logs error when task update returns false',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-err-3',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      categoryId: 'cat-1',
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'test',
+                      markdown: 'test',
+                    ),
+                  )
+                  as JournalAudio;
+
+          final taskEntity = makeTaskEntity('task-err-3');
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-err-3'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-err-3'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-err-3'),
+          ).thenAnswer((_) async => '{}');
+          when(
+            () => mockTaskSummaryResolver.resolve('task-err-3'),
+          ).thenAnswer((_) async => null);
+
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47],
+              mimeType: 'image/png',
+            ),
+          );
+
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-err-3'),
+          ).thenAnswer((_) async => taskEntity);
+
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<LoggingService>(mockLoggingService);
+
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img-err3',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+              addTags: any(named: 'addTags'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // updateTask returns false (task disappeared)
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => false);
+
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            audioEntryId: 'audio-err-3',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-err-3',
+          );
+
+          verify(
+            () => mockLoggingService.captureException(
+              any<dynamic>(
+                that: isA<StateError>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('disappeared before cover art update'),
+                ),
+              ),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runImageGeneration',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'happy path with reference images passes them to generateImage',
         () async {
           final audioEntity =

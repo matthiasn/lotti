@@ -281,6 +281,32 @@ void main() {
       expect(state.errorDetail, contains('Database error'));
     });
 
+    test(
+      'gracefully handles error in linked-task cover art fetch',
+      () async {
+        const taskId = 'test-task';
+        final directImage = buildTestImage('direct-img');
+
+        // Direct images load fine
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => [directImage]);
+
+        // Linked-task cover art fetch throws
+        when(
+          () => mockJournalRepo.getLinksFromId(taskId),
+        ).thenAnswer((_) async => throw Exception('Link fetch failed'));
+
+        final state = await waitForLoaded(taskId);
+
+        // Should still have the direct image despite the linked-task error
+        expect(state.isLoading, isFalse);
+        expect(state.availableImages.length, 1);
+        expect(state.availableImages.first.meta.id, 'direct-img');
+        expect(state.errorCode, isNull);
+      },
+    );
+
     test('toggleImageSelection adds image to selection', () async {
       const taskId = 'test-task';
       final images = [buildTestImage('img-1')];

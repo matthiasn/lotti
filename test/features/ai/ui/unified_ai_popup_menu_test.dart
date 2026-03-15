@@ -1170,6 +1170,178 @@ void main() {
     );
   });
 
+  group('resolveLinkedTask', () {
+    late MockJournalRepository mockJournalRepository;
+    final now = DateTime(2024, 3, 15, 10);
+
+    setUp(() {
+      mockJournalRepository = MockJournalRepository();
+    });
+
+    test('returns entity directly when it is a Task', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-direct',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Direct Task',
+          status: TaskStatus.open(
+            id: 'st-1',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: taskEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(taskEntity));
+      verifyZeroInteractions(mockJournalRepository);
+    });
+
+    test('returns preferred task when preferredTaskId is provided', () async {
+      final preferredTask = Task(
+        meta: Metadata(
+          id: 'preferred-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Preferred',
+          status: TaskStatus.open(
+            id: 'st-2',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getJournalEntityById('preferred-task'),
+      ).thenAnswer((_) async => preferredTask);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+        preferredTaskId: 'preferred-task',
+      );
+
+      expect(result, same(preferredTask));
+    });
+
+    test('falls back to outgoing links when no preferred task', () async {
+      final linkedTask = Task(
+        meta: Metadata(
+          id: 'linked-out',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Linked Out',
+          status: TaskStatus.open(
+            id: 'st-3',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => [linkedTask]);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(linkedTask));
+    });
+
+    test('falls back to incoming links when no outgoing task', () async {
+      final incomingTask = Task(
+        meta: Metadata(
+          id: 'linked-in',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Linked In',
+          status: TaskStatus.open(
+            id: 'st-4',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => [incomingTask]);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(incomingTask));
+    });
+
+    test('returns null when no linked task found', () async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, isNull);
+    });
+  });
+
   group('isDefaultPromptSync Tests', () {
     test('returns false when categoryId is null', () {
       final prompt = testPrompts.first;
