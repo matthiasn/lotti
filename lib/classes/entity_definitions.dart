@@ -143,8 +143,6 @@ sealed class EntityDefinition with _$EntityDefinition {
     String? categoryId,
     DateTime? deletedAt,
     String? defaultLanguageCode,
-    List<String>? allowedPromptIds,
-    Map<AiResponseType, List<String>>? automaticPrompts,
     @CategoryIconConverter() CategoryIcon? icon,
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,

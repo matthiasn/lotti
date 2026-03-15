@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
@@ -14,7 +11,6 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart'
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
-import 'package:lotti/features/categories/ui/widgets/category_prompt_selection.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
@@ -337,17 +333,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // AI Model Settings Section
-                    LottiFormSection(
-                      title: context.messages.aiModelSettings,
-                      icon: Icons.psychology_outlined,
-                      description: context.messages.categoryAiModelDescription,
-                      children: [
-                        _buildPromptSelection(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
                     // Speech Dictionary Section
                     LottiFormSection(
                       title: context.messages.speechDictionarySectionTitle,
@@ -509,77 +494,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       searchQuery.dispose();
     }
   }
-
-  Widget _buildPromptSelection(CategoryDefinition category) {
-    final promptsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-    );
-    final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.model),
-    );
-    final providersAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.inferenceProvider,
-      ),
-    );
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return promptsAsync.when(
-      data: (prompts) {
-        final promptConfigs =
-            prompts
-                .whereType<AiConfigPrompt>()
-                .where(
-                  (p) => !p.archived && !p.aiResponseType.isLegacyType,
-                )
-                .toList()
-              ..sort((a, b) => a.name.compareTo(b.name));
-
-        final modelConfigs =
-            modelsAsync.asData?.value.whereType<AiConfigModel>().toList() ?? [];
-        final providerConfigs =
-            providersAsync.asData?.value
-                .whereType<AiConfigInferenceProvider>()
-                .toList() ??
-            [];
-
-        return CategoryPromptSelection(
-          prompts: promptConfigs,
-          models: modelConfigs,
-          providers: providerConfigs,
-          allowedPromptIds: category.allowedPromptIds ?? [],
-          onPromptToggled: (promptId, {required isAllowed}) {
-            final currentAllowedIds = category.allowedPromptIds ?? [];
-            final updatedIds = List<String>.from(currentAllowedIds);
-            if (isAllowed && !updatedIds.contains(promptId)) {
-              updatedIds.add(promptId);
-            } else if (!isAllowed) {
-              updatedIds.remove(promptId);
-            }
-            controller.updateAllowedPromptIds(updatedIds);
-          },
-          isLoading: false,
-        );
-      },
-      loading: () => const CategoryPromptSelection(
-        prompts: [],
-        allowedPromptIds: [],
-        onPromptToggled: _dummyPromptToggle,
-        isLoading: true,
-      ),
-      error: (error, _) => CategoryPromptSelection(
-        prompts: const [],
-        allowedPromptIds: const [],
-        onPromptToggled: _dummyPromptToggle,
-        isLoading: false,
-        error: error.toString(),
-      ),
-    );
-  }
-
-  static void _dummyPromptToggle(String promptId, {required bool isAllowed}) {}
 
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(

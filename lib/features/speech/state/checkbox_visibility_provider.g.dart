@@ -114,9 +114,8 @@ final class HasProfileTranscriptionFamily extends $Family
 }
 
 /// Provider that computes which automatic prompt checkboxes should be visible
-/// in the audio recording modal based on:
-/// - Category configuration (automatic prompts)
-/// - Profile-driven transcription availability (when linked to a task)
+/// in the audio recording modal based on profile-driven transcription
+/// availability (when linked to a task).
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
@@ -125,9 +124,8 @@ final class HasProfileTranscriptionFamily extends $Family
 final checkboxVisibilityProvider = CheckboxVisibilityFamily._();
 
 /// Provider that computes which automatic prompt checkboxes should be visible
-/// in the audio recording modal based on:
-/// - Category configuration (automatic prompts)
-/// - Profile-driven transcription availability (when linked to a task)
+/// in the audio recording modal based on profile-driven transcription
+/// availability (when linked to a task).
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
@@ -141,9 +139,8 @@ final class CheckboxVisibilityProvider
         >
     with $Provider<AutomaticPromptVisibility> {
   /// Provider that computes which automatic prompt checkboxes should be visible
-  /// in the audio recording modal based on:
-  /// - Category configuration (automatic prompts)
-  /// - Profile-driven transcription availability (when linked to a task)
+  /// in the audio recording modal based on profile-driven transcription
+  /// availability (when linked to a task).
   ///
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.
@@ -204,12 +201,11 @@ final class CheckboxVisibilityProvider
 }
 
 String _$checkboxVisibilityHash() =>
-    r'8917cdbe1b23809bb099c19a9230008ced858ca2';
+    r'45973f635e80891127a9f9c9986698f416308302';
 
 /// Provider that computes which automatic prompt checkboxes should be visible
-/// in the audio recording modal based on:
-/// - Category configuration (automatic prompts)
-/// - Profile-driven transcription availability (when linked to a task)
+/// in the audio recording modal based on profile-driven transcription
+/// availability (when linked to a task).
 ///
 /// This extracts the business logic from the widget, making it testable
 /// independently without widget build cycles or timing issues.
@@ -230,9 +226,8 @@ final class CheckboxVisibilityFamily extends $Family
       );
 
   /// Provider that computes which automatic prompt checkboxes should be visible
-  /// in the audio recording modal based on:
-  /// - Category configuration (automatic prompts)
-  /// - Profile-driven transcription availability (when linked to a task)
+  /// in the audio recording modal based on profile-driven transcription
+  /// availability (when linked to a task).
   ///
   /// This extracts the business logic from the widget, making it testable
   /// independently without widget build cycles or timing issues.

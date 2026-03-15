@@ -462,233 +462,103 @@ void main() {
     });
   });
 
-  group('availablePrompts provider', () {
-    test('returns available prompts for entity', () async {
-      final taskEntity = Task(
+  group('hasAvailableSkills provider', () {
+    test('returns true when skills are available', () async {
+      final audioEntity = JournalAudio(
         meta: Metadata(
-          id: 'task-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          id: 'audio-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
-          ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+        data: AudioData(
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          audioFile: 'test.mp3',
+          audioDirectory: '/test',
+          duration: const Duration(minutes: 5),
         ),
       );
 
-      final expectedPrompts = [
-        AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          // ignore: deprecated_member_use_from_same_package
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-      ];
+      final transcriptionSkill =
+          AiConfig.skill(
+                id: 'skill-transcription',
+                name: 'Transcription',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
 
-      // Mock the AI config stream
+      // Mock the AI config stream for skills
       when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) => Stream.value(expectedPrompts));
-
-      when(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).thenAnswer((_) async => expectedPrompts);
+        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
+      ).thenAnswer((_) => Stream.value([transcriptionSkill]));
 
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          createEntryControllerOverride(taskEntity),
+          createEntryControllerOverride(audioEntity),
         ],
       );
       containersToDispose.add(testContainer);
 
       // Keep aiConfigByTypeController alive during the test
-      final configSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
+      final skillConfigSub = testContainer.listen(
+        aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
         (_, _) {},
       );
 
       // Wait for entry controller to be ready
       await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
+        entryControllerProvider(id: audioEntity.id).future,
       );
 
       // Wait for config provider to be ready
       await testContainer.read(
         aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
+          configType: AiConfigType.skill,
         ).future,
       );
 
-      final prompts = await testContainer.read(
-        availablePromptsProvider(taskEntity.id).future,
+      final hasSkills = await testContainer.read(
+        hasAvailableSkillsProvider(audioEntity.id).future,
       );
 
-      expect(prompts, expectedPrompts);
-      verify(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).called(1);
-
-      configSub.close();
-    });
-  });
-
-  group('hasAvailablePrompts provider', () {
-    test('returns true when prompts are available', () async {
-      final taskEntity = Task(
-        meta: Metadata(
-          id: 'task-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
-          ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
-
-      final availablePrompt = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime.now(),
-        useReasoning: false,
-        requiredInputData: [],
-        // ignore: deprecated_member_use_from_same_package
-        aiResponseType: AiResponseType.taskSummary,
-      );
-
-      // Mock the AI config stream
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) => Stream.value([availablePrompt]));
-
-      when(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).thenAnswer((_) async => [availablePrompt]);
-
-      // Create container with entry controller override
-      final testContainer = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          createEntryControllerOverride(taskEntity),
-        ],
-      );
-      containersToDispose.add(testContainer);
-
-      // Keep aiConfigByTypeController alive during the test
-      final configSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, _) {},
-      );
-
-      // Wait for entry controller to be ready
-      await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
-      );
-
-      // Wait for config provider to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
-        ).future,
-      );
-
-      final hasPrompts = await testContainer.read(
-        hasAvailablePromptsProvider(taskEntity.id).future,
-      );
-
-      expect(hasPrompts, true);
-      configSub.close();
+      expect(hasSkills, true);
+      skillConfigSub.close();
     });
 
-    test('returns false when no prompts are available', () async {
+    test('returns false when no skills are available', () async {
       final journalEntry = JournalEntry(
         meta: Metadata(
           id: 'entry-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
         ),
       );
 
-      // Mock the AI config streams for both prompts and skills
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) => Stream.value([]));
-
+      // Mock the AI config stream for skills with empty list
       when(
         () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
       ).thenAnswer((_) => Stream.value([]));
 
-      when(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).thenAnswer((_) async => []);
-
       // Create container with entry controller override
       final testContainer = ProviderContainer(
         overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
           aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
           createEntryControllerOverride(journalEntry),
         ],
       );
       containersToDispose.add(testContainer);
 
-      // Keep aiConfigByTypeControllers alive during the test
-      final configSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, _) {},
-      );
+      // Keep aiConfigByTypeController alive during the test
       final skillConfigSub = testContainer.listen(
         aiConfigByTypeControllerProvider(configType: AiConfigType.skill),
         (_, _) {},
@@ -699,24 +569,18 @@ void main() {
         entryControllerProvider(id: journalEntry.id).future,
       );
 
-      // Wait for config providers to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
-        ).future,
-      );
+      // Wait for config provider to be ready
       await testContainer.read(
         aiConfigByTypeControllerProvider(
           configType: AiConfigType.skill,
         ).future,
       );
 
-      final hasPrompts = await testContainer.read(
-        hasAvailablePromptsProvider(journalEntry.id).future,
+      final hasSkills = await testContainer.read(
+        hasAvailableSkillsProvider(journalEntry.id).future,
       );
 
-      expect(hasPrompts, false);
-      configSub.close();
+      expect(hasSkills, false);
       skillConfigSub.close();
     });
   });
@@ -1018,221 +882,6 @@ void main() {
       // Clean up
       await categoryChangesStream.close();
       subscription.close();
-    });
-  });
-
-  group('availablePrompts with category', () {
-    test('watches for category changes when entity has categoryId', () async {
-      const categoryId = 'test-category';
-      final taskEntity = Task(
-        meta: Metadata(
-          id: 'task-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          categoryId: categoryId, // Entity has a category
-        ),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
-          ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
-
-      final expectedPrompts = [
-        AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          // ignore: deprecated_member_use_from_same_package
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-      ];
-
-      // Mock the AI config stream
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) => Stream.value(expectedPrompts));
-
-      // Mock category watching with an immediate value
-      final testCategory = CategoryDefinition(
-        id: categoryId,
-        name: 'Test Category',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-        private: false,
-        active: true,
-      );
-
-      when(
-        () => mockCategoryRepository.watchCategory(categoryId),
-      ).thenAnswer((_) => Stream.value(testCategory));
-
-      when(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).thenAnswer((_) async => expectedPrompts);
-
-      // Create container with entry controller override
-      final testContainer = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          createEntryControllerOverride(taskEntity),
-        ],
-      );
-      containersToDispose.add(testContainer);
-
-      // Keep aiConfigByTypeController alive during the test
-      final configSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, _) {},
-      );
-
-      // Wait for entry controller to be ready
-      await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
-      );
-
-      // Wait for config provider to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
-        ).future,
-      );
-
-      // Track if categoryChangesProvider was accessed
-      var categoryChangesProviderAccessed = false;
-      testContainer.listen(
-        categoryChangesProvider(categoryId),
-        (previous, next) {
-          categoryChangesProviderAccessed = true;
-        },
-        fireImmediately: true,
-      );
-
-      // Read the provider
-      final prompts = await testContainer.read(
-        availablePromptsProvider(taskEntity.id).future,
-      );
-
-      expect(prompts, expectedPrompts);
-
-      // Verify that categoryChangesProvider was accessed (which triggers category watching)
-      expect(categoryChangesProviderAccessed, true);
-      verify(() => mockCategoryRepository.watchCategory(categoryId)).called(1);
-      configSub.close();
-    });
-
-    test('does not watch category when entity has no categoryId', () async {
-      final taskEntity = Task(
-        meta: Metadata(
-          id: 'task-1',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-          // No categoryId
-        ),
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-1',
-            createdAt: DateTime.now(),
-            utcOffset: 0,
-          ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: DateTime.now(),
-          dateTo: DateTime.now(),
-        ),
-      );
-
-      final expectedPrompts = [
-        AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Task Summary',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime.now(),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          // ignore: deprecated_member_use_from_same_package
-          aiResponseType: AiResponseType.taskSummary,
-        ),
-      ];
-
-      // Mock the AI config stream
-      when(
-        () => mockAiConfigRepository.watchConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) => Stream.value(expectedPrompts));
-
-      when(
-        () => mockRepository.getActivePromptsForContext(
-          entity: any(named: 'entity'),
-        ),
-      ).thenAnswer((_) async => expectedPrompts);
-
-      // Create container with entry controller override
-      final testContainer = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          createEntryControllerOverride(taskEntity),
-        ],
-      );
-      containersToDispose.add(testContainer);
-
-      // Keep aiConfigByTypeController alive during the test
-      final configSub = testContainer.listen(
-        aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-        (_, _) {},
-      );
-
-      // Wait for entry controller to be ready
-      await testContainer.read(
-        entryControllerProvider(id: taskEntity.id).future,
-      );
-
-      // Wait for config provider to be ready
-      await testContainer.read(
-        aiConfigByTypeControllerProvider(
-          configType: AiConfigType.prompt,
-        ).future,
-      );
-
-      // Read the provider
-      final prompts = await testContainer.read(
-        availablePromptsProvider(taskEntity.id).future,
-      );
-
-      expect(prompts, expectedPrompts);
-
-      // Verify that category watching was NOT triggered
-      verifyNever(() => mockCategoryRepository.watchCategory(any()));
-      configSub.close();
     });
   });
 

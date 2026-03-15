@@ -9,10 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/ai/state/inference_status_controller.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/get_it.dart';
@@ -28,30 +25,22 @@ import '../../../mocks/mocks.dart';
 
 class MockNavigatorObserver extends Mock implements NavigatorObserver {}
 
-class MockUnifiedAiInferenceRepository extends Mock
-    implements UnifiedAiInferenceRepository {}
-
 void main() {
   late JournalEntity testTaskEntity;
   late JournalEntity testJournalEntry;
   late JournalEntity testImageEntity;
   late JournalEntity testAudioEntity;
-  late List<AiConfigPrompt> testPrompts;
+  late List<AiConfigSkill> testSkills;
   late MockNavigatorObserver mockNavigatorObserver;
-  late MockUnifiedAiInferenceRepository mockInferenceRepository;
   late MockLoggingService mockLoggingService;
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late List<Override> defaultOverrides;
 
-  setUpAll(() {
-    registerAllFallbackValues();
-    registerFallbackValue(InferenceStatus.idle);
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() {
     mockNavigatorObserver = MockNavigatorObserver();
-    mockInferenceRepository = MockUnifiedAiInferenceRepository();
     mockLoggingService = MockLoggingService();
     mockJournalDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
@@ -171,72 +160,44 @@ void main() {
       ),
     );
 
-    // Create test prompts
-    testPrompts = [
-      AiConfig.prompt(
-            id: 'prompt-1',
-            name: 'Task Summary',
-            systemMessage: 'Summarize this task',
-            userMessage: 'Please summarize the task',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
+    // Create test skills
+    testSkills = [
+      AiConfig.skill(
+            id: 'skill-transcription',
+            name: 'Audio Transcription Skill',
             createdAt: now,
-            useReasoning: false,
-            requiredInputData: [InputDataType.tasksList],
-            // ignore: deprecated_member_use_from_same_package
-            aiResponseType: AiResponseType.taskSummary,
-            description: 'Creates a summary of the task',
+            skillType: SkillType.transcription,
+            requiredInputModalities: [Modality.audio],
+            systemInstructions: 'Transcribe audio',
+            userInstructions: 'Transcribe the audio file',
+            description: 'Skill-based transcription',
           )
-          as AiConfigPrompt,
-      AiConfig.prompt(
-            id: 'prompt-2',
-            name: 'Image Analysis',
-            systemMessage: 'Analyze this image',
-            userMessage: 'Please analyze the image',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
+          as AiConfigSkill,
+      AiConfig.skill(
+            id: 'skill-image-analysis',
+            name: 'Image Analysis Skill',
             createdAt: now,
-            useReasoning: false,
-            requiredInputData: [InputDataType.images],
-            aiResponseType: AiResponseType.imageAnalysis,
-            description: 'Analyzes images in detail',
+            skillType: SkillType.imageAnalysis,
+            requiredInputModalities: [Modality.image],
+            systemInstructions: 'Analyze image',
+            userInstructions: 'Analyze the image',
+            description: 'Skill-based image analysis',
           )
-          as AiConfigPrompt,
-      AiConfig.prompt(
-            id: 'prompt-3',
-            name: 'Audio Transcription',
-            systemMessage: 'Transcribe this audio',
-            userMessage: 'Please transcribe the audio',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
+          as AiConfigSkill,
+      AiConfig.skill(
+            id: 'skill-prompt-gen',
+            name: 'Prompt Generation Skill',
             createdAt: now,
-            useReasoning: false,
-            requiredInputData: [InputDataType.audioFiles],
-            // ignore: deprecated_member_use_from_same_package
-            aiResponseType: AiResponseType.taskSummary,
+            skillType: SkillType.promptGeneration,
+            requiredInputModalities: [Modality.text],
+            systemInstructions: 'Generate a prompt',
+            userInstructions: 'Please generate a prompt',
+            description: 'Generates prompts from context',
           )
-          as AiConfigPrompt,
-      AiConfig.prompt(
-            id: 'prompt-4',
-            name: 'General Chat',
-            systemMessage: 'Chat about this content',
-            userMessage: "Let's chat about this",
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
-            createdAt: now,
-            useReasoning: false,
-            requiredInputData: [],
-            // ignore: deprecated_member_use_from_same_package
-            aiResponseType: AiResponseType.taskSummary,
-          )
-          as AiConfigPrompt,
+          as AiConfigSkill,
     ];
 
     defaultOverrides = [
-      for (final prompt in testPrompts)
-        aiConfigByIdProvider(prompt.id).overrideWith(
-          (ref) async => prompt,
-        ),
       // Override entry controllers for all test entities
       entryControllerProvider(id: 'task-1').overrideWith(
         () => FakeEntryController(testTaskEntity),
@@ -284,7 +245,7 @@ void main() {
   }
 
   group('UnifiedAiPopUpMenu Tests', () {
-    testWidgets('shows assistant icon when prompts are available', (
+    testWidgets('shows assistant icon when skills are available', (
       tester,
     ) async {
       // Arrange
@@ -295,12 +256,12 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(
+            hasAvailableSkillsProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
+            availableSkillsForEntityProvider(
               testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(testPrompts)),
+            ).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
@@ -312,7 +273,7 @@ void main() {
       expect(find.byType(IconButton), findsOneWidget);
     });
 
-    testWidgets('shows nothing when no prompts are available', (tester) async {
+    testWidgets('shows nothing when no skills are available', (tester) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
@@ -321,7 +282,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(
+            hasAvailableSkillsProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => Future.value(false)),
           ],
@@ -347,7 +308,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(
+            hasAvailableSkillsProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => completer.future),
           ],
@@ -375,7 +336,7 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailablePromptsProvider(
+            hasAvailableSkillsProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => Future.error('Test error')),
           ],
@@ -399,12 +360,12 @@ void main() {
             linkedFromId: 'linked-from-1',
           ),
           overrides: [
-            hasAvailablePromptsProvider(
+            hasAvailableSkillsProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
+            availableSkillsForEntityProvider(
               testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(testPrompts)),
+            ).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
@@ -415,27 +376,26 @@ void main() {
       await tester.tap(find.byIcon(Icons.assistant_rounded));
       await tester.pumpAndSettle();
 
-      // Assert - check for the prompts list instead of the modal sheet directly
-      // since WoltModalSheet might not be easily findable in tests
-      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
+      // Assert - check for the skills list
+      expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
     });
   });
 
-  group('UnifiedAiPromptsList Tests', () {
-    testWidgets('displays list of prompts correctly', (tester) async {
+  group('UnifiedAiSkillsList Tests', () {
+    testWidgets('displays list of skills correctly', (tester) async {
       // Arrange
-      final prompts = testPrompts.take(2).toList(); // Use first 2 prompts
+      final skills = testSkills.take(2).toList();
 
       await tester.pumpWidget(
         buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
+          UnifiedAiSkillsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(prompts)),
+            availableSkillsForEntityProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value(skills)),
           ],
         ),
       );
@@ -443,133 +403,51 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Task Summary'), findsOneWidget);
-      expect(find.text('Image Analysis'), findsOneWidget);
-      expect(find.text('Creates a summary of the task'), findsOneWidget);
-      expect(find.text('Analyzes images in detail'), findsOneWidget);
+      expect(find.text('Audio Transcription Skill'), findsOneWidget);
+      expect(find.text('Image Analysis Skill'), findsOneWidget);
+      expect(find.text('Skill-based transcription'), findsOneWidget);
+      expect(find.text('Skill-based image analysis'), findsOneWidget);
       expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
     });
 
-    testWidgets('shows correct icons for different prompt types', (
+    testWidgets('shows section header when skills are present', (
       tester,
     ) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
+          UnifiedAiSkillsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(testPrompts)),
+            availableSkillsForEntityProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value(testSkills)),
           ],
         ),
       );
 
       await tester.pumpAndSettle();
 
-      // Assert - check for the presence of ModernModalPromptItem widgets which should contain the icons
+      // Assert - section header should be present
+      expect(find.text('Skills'), findsOneWidget);
       expect(
         find.byType(ModernModalPromptItem),
-        findsNWidgets(testPrompts.length),
+        findsNWidgets(testSkills.length),
       );
-      expect(find.byType(Icon), findsNWidgets(testPrompts.length));
-
-      // Check for specific prompt names instead of icons which might be harder to match
-      expect(find.text('Task Summary'), findsOneWidget);
-      expect(find.text('Image Analysis'), findsOneWidget);
-      expect(find.text('Audio Transcription'), findsOneWidget);
-      expect(find.text('General Chat'), findsOneWidget);
     });
 
-    testWidgets('handles prompts without descriptions', (tester) async {
-      // Arrange
-      final promptWithoutDescription =
-          AiConfig.prompt(
-                id: 'prompt-no-desc',
-                name: 'No Description Prompt',
-                systemMessage: 'System message',
-                userMessage: 'User message',
-                defaultModelId: 'model-1',
-                modelIds: ['model-1'],
-                createdAt: DateTime(2024, 3, 15, 10),
-                useReasoning: false,
-                requiredInputData: [],
-                // ignore: deprecated_member_use_from_same_package
-                aiResponseType: AiResponseType.taskSummary,
-              )
-              as AiConfigPrompt;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availablePromptsProvider(testTaskEntity.id).overrideWith(
-              (ref) => Future.value([promptWithoutDescription]),
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Assert
-      expect(find.text('No Description Prompt'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
-
-      // Since ModernModalPromptItem always shows description (even if empty),
-      // we just verify the widget is there
-    });
-
-    testWidgets('calls onPromptSelected when prompt is tapped', (tester) async {
-      // Arrange
-      AiConfigPrompt? selectedPrompt;
-      int? selectedIndex;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {
-              selectedPrompt = prompt;
-              selectedIndex = index;
-            },
-          ),
-          overrides: [
-            availablePromptsProvider(testTaskEntity.id).overrideWith(
-              (ref) => Future.value(testPrompts.take(2).toList()),
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Act
-      await tester.tap(find.text('Task Summary'));
-
-      // Assert
-      expect(selectedPrompt, isNotNull);
-      expect(selectedPrompt!.id, 'prompt-1');
-      expect(selectedPrompt!.name, 'Task Summary');
-      expect(selectedIndex, 0);
-    });
-
-    testWidgets('handles empty prompt list', (tester) async {
+    testWidgets('handles empty skills list', (tester) async {
       // Arrange
       await tester.pumpWidget(
         buildTestWidget(
-          UnifiedAiPromptsList(
+          UnifiedAiSkillsList(
             journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
+            onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availablePromptsProvider(
+            availableSkillsForEntityProvider(
               testTaskEntity.id,
             ).overrideWith((ref) => Future.value([])),
           ],
@@ -583,38 +461,106 @@ void main() {
       expect(find.byType(Column), findsOneWidget);
     });
 
+    testWidgets('calls onSkillSelected when skill item is tapped', (
+      tester,
+    ) async {
+      // Arrange
+      AiConfigSkill? selectedSkill;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiSkillsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {
+              selectedSkill = skill;
+            },
+          ),
+          overrides: [
+            availableSkillsForEntityProvider(
+              testAudioEntity.id,
+            ).overrideWith(
+              (ref) => Future.value([testSkills.first]),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act
+      await tester.tap(find.text('Audio Transcription Skill'));
+      await tester.pump();
+
+      // Assert
+      expect(selectedSkill, isNotNull);
+      expect(selectedSkill!.id, 'skill-transcription');
+      expect(selectedSkill!.name, 'Audio Transcription Skill');
+      expect(selectedSkill!.skillType, SkillType.transcription);
+    });
+
+    testWidgets('handles skills without descriptions', (tester) async {
+      // Arrange
+      final skillWithoutDescription =
+          AiConfig.skill(
+                id: 'skill-no-desc',
+                name: 'No Description Skill',
+                createdAt: DateTime(2024, 3, 15, 10),
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System instructions',
+                userInstructions: 'User instructions',
+              )
+              as AiConfigSkill;
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiSkillsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {},
+          ),
+          overrides: [
+            availableSkillsForEntityProvider(testAudioEntity.id).overrideWith(
+              (ref) => Future.value([skillWithoutDescription]),
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Assert
+      expect(find.text('No Description Skill'), findsOneWidget);
+      expect(find.byType(ModernModalPromptItem), findsOneWidget);
+    });
+
     testWidgets('truncates long descriptions correctly', (tester) async {
       // Arrange
-      final longDescriptionPrompt =
-          AiConfig.prompt(
-                id: 'prompt-long',
-                name: 'Long Description Prompt',
-                systemMessage: 'System message',
-                userMessage: 'User message',
-                defaultModelId: 'model-1',
-                modelIds: ['model-1'],
+      final longDescriptionSkill =
+          AiConfig.skill(
+                id: 'skill-long',
+                name: 'Long Description Skill',
                 createdAt: DateTime(2024, 3, 15, 10),
-                useReasoning: false,
-                requiredInputData: [],
-                // ignore: deprecated_member_use_from_same_package
-                aiResponseType: AiResponseType.taskSummary,
+                skillType: SkillType.transcription,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System instructions',
+                userInstructions: 'User instructions',
                 description:
                     'This is a very long description that should be truncated '
                     'when displayed in the UI because it exceeds the maximum number of lines '
                     'that we want to show in the subtitle of the list tile.',
               )
-              as AiConfigPrompt;
+              as AiConfigSkill;
 
       await tester.pumpWidget(
         buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
+          UnifiedAiSkillsList(
+            journalEntity: testAudioEntity,
+            onSkillSelected: (skill) async {},
           ),
           overrides: [
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([longDescriptionPrompt])),
+            availableSkillsForEntityProvider(
+              testAudioEntity.id,
+            ).overrideWith((ref) => Future.value([longDescriptionSkill])),
           ],
         ),
       );
@@ -630,7 +576,7 @@ void main() {
       // Find the description Text widget within the ModernModalPromptItem
       final descriptionTextFinder = find.descendant(
         of: find.byType(ModernModalPromptItem),
-        matching: find.text(longDescriptionPrompt.description!),
+        matching: find.text(longDescriptionSkill.description!),
       );
       expect(descriptionTextFinder, findsOneWidget);
 
@@ -642,7 +588,6 @@ void main() {
 
   group('UnifiedAiModal Tests', () {
     testWidgets('creates modal with correct structure', (tester) async {
-      // Mock the navigator to prevent navigation issues in tests
       await tester.pumpWidget(
         buildTestWidget(
           Consumer(
@@ -661,8 +606,8 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id).overrideWith(
-              (ref) => Future.value(testPrompts.take(2).toList()),
+            availableSkillsForEntityProvider(testTaskEntity.id).overrideWith(
+              (ref) => Future.value(testSkills.take(2).toList()),
             ),
           ],
         ),
@@ -674,15 +619,15 @@ void main() {
       await tester.tap(find.text('Show Modal'));
       await tester.pumpAndSettle();
 
-      // Assert - Look for the prompt list instead of the modal sheet
-      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
-      expect(find.text('Task Summary'), findsOneWidget);
+      // Assert - Look for the skills list
+      expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+      expect(find.text('Audio Transcription Skill'), findsOneWidget);
     });
 
     testWidgets('handles context not mounted scenario', (tester) async {
       // Arrange - This test simulates a scenario where context becomes unmounted
-      // by resolving the prompts after the widget tree has already unmounted.
-      final promptsCompleter = Completer<List<AiConfigPrompt>>();
+      // by resolving the skills after the widget tree has already unmounted.
+      final skillsCompleter = Completer<List<AiConfigSkill>>();
       await tester.pumpWidget(
         buildTestWidget(
           Consumer(
@@ -702,8 +647,8 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(testTaskEntity.id).overrideWith(
-              (ref) => promptsCompleter.future,
+            availableSkillsForEntityProvider(testTaskEntity.id).overrideWith(
+              (ref) => skillsCompleter.future,
             ),
           ],
         ),
@@ -717,264 +662,11 @@ void main() {
 
       // Dispose the widget tree to simulate context becoming unmounted
       await tester.pumpWidget(const SizedBox());
-      promptsCompleter.complete(testPrompts.take(2).toList());
+      skillsCompleter.complete(testSkills.take(2).toList());
       await tester.pump();
 
       // Assert - no exception should be thrown and test should complete successfully
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('creates individual prompt pages correctly', (tester) async {
-      // Arrange
-      // Mock the inference repository
-      when(
-        () => mockInferenceRepository.runInference(
-          entityId: any(named: 'entityId'),
-          promptConfig: any(named: 'promptConfig'),
-          onProgress: any(named: 'onProgress'),
-          onStatusChange: any(named: 'onStatusChange'),
-        ),
-      ).thenAnswer((invocation) async {
-        // Just complete successfully
-      });
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          Consumer(
-            builder: (context, ref, child) {
-              return ElevatedButton(
-                onPressed: () async {
-                  await UnifiedAiModal.show<void>(
-                    context: context,
-                    journalEntity: testTaskEntity,
-                    linkedFromId: null,
-                    ref: ref,
-                  );
-                },
-                child: const Text('Show Modal'),
-              );
-            },
-          ),
-          overrides: [
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) async => [testPrompts.first]),
-            unifiedAiInferenceRepositoryProvider.overrideWithValue(
-              mockInferenceRepository,
-            ),
-            // Note: aiConfigByIdProvider is already overridden in defaultOverrides
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Act
-      await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
-
-      // Just verify the modal opens with the prompt list
-      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
-      expect(find.text('Task Summary'), findsOneWidget);
-
-      // Close the modal to clean up
-      await tester.tapAt(Offset.zero); // Tap outside to dismiss
-      await tester.pumpAndSettle();
-    });
-  });
-
-  group('UnifiedAiModal onPromptSelected callback', () {
-    testWidgets('triggers inference when prompt is selected from modal', (
-      tester,
-    ) async {
-      // Arrange
-      var inferenceTriggered = false;
-      String? capturedEntityId;
-      String? capturedPromptId;
-      String? capturedLinkedEntityId;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          Consumer(
-            builder: (context, ref, child) {
-              return Column(
-                children: [
-                  UnifiedAiPopUpMenu(
-                    journalEntity: testTaskEntity,
-                    linkedFromId: 'linked-test-id',
-                  ),
-                  // Override the trigger provider to capture the call
-                  Builder(
-                    builder: (context) {
-                      // This is just to set up the override
-                      return const SizedBox();
-                    },
-                  ),
-                ],
-              );
-            },
-          ),
-          overrides: [
-            hasAvailablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testPrompts.first])),
-            triggerNewInferenceProvider((
-              entityId: testTaskEntity.id,
-              promptId: testPrompts.first.id,
-              linkedEntityId: 'linked-test-id',
-            )).overrideWith((ref) async {
-              inferenceTriggered = true;
-              capturedEntityId = testTaskEntity.id;
-              capturedPromptId = testPrompts.first.id;
-              capturedLinkedEntityId = 'linked-test-id';
-            }),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Act - Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
-
-      // Select a prompt
-      await tester.tap(find.text('Task Summary'));
-      await tester.pumpAndSettle();
-
-      // Assert
-      expect(inferenceTriggered, isTrue);
-      expect(capturedEntityId, equals(testTaskEntity.id));
-      expect(capturedPromptId, equals(testPrompts.first.id));
-      expect(capturedLinkedEntityId, equals('linked-test-id'));
-    });
-
-    testWidgets('closes modal after prompt selection', (tester) async {
-      // Arrange
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPopUpMenu(
-            journalEntity: testTaskEntity,
-            linkedFromId: null,
-          ),
-          overrides: [
-            hasAvailablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testPrompts.first])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Act - Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
-
-      // Verify modal is open
-      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
-
-      // Select a prompt
-      await tester.tap(find.text('Task Summary'));
-      await tester.pumpAndSettle();
-
-      // Assert - Modal should be closed
-      expect(find.byType(UnifiedAiPromptsList), findsNothing);
-    });
-
-    testWidgets('handles null linkedFromId correctly', (tester) async {
-      // Arrange
-      String? capturedLinkedEntityId;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          Consumer(
-            builder: (context, ref, child) {
-              return UnifiedAiPopUpMenu(
-                journalEntity: testTaskEntity,
-                linkedFromId: null, // Explicitly null
-              );
-            },
-          ),
-          overrides: [
-            hasAvailablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testPrompts.first])),
-            triggerNewInferenceProvider((
-              entityId: testTaskEntity.id,
-              promptId: testPrompts.first.id,
-              linkedEntityId: null,
-            )).overrideWith((ref) async {
-              capturedLinkedEntityId = null;
-            }),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Act - Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
-
-      // Select a prompt
-      await tester.tap(find.text('Task Summary'));
-      await tester.pumpAndSettle();
-
-      // Assert
-      expect(capturedLinkedEntityId, isNull);
-    });
-
-    testWidgets('uses entry id for linkedEntityId when launching from audio', (
-      tester,
-    ) async {
-      var triggered = false;
-      String? capturedLinkedEntityId;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPopUpMenu(
-            journalEntity: testAudioEntity,
-            linkedFromId: 'parent-task',
-          ),
-          overrides: [
-            hasAvailablePromptsProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value(true)),
-            availablePromptsProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value([testPrompts.first])),
-            triggerNewInferenceProvider((
-              entityId: testAudioEntity.id,
-              promptId: testPrompts.first.id,
-              linkedEntityId: testAudioEntity.id,
-            )).overrideWith((ref) async {
-              triggered = true;
-              capturedLinkedEntityId = testAudioEntity.id;
-            }),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Task Summary'));
-      await tester.pumpAndSettle();
-
-      expect(triggered, isTrue);
-      expect(capturedLinkedEntityId, equals(testAudioEntity.id));
     });
 
     testWidgets('modal show method with ScrollController parameter', (
@@ -1003,9 +695,9 @@ void main() {
             },
           ),
           overrides: [
-            availablePromptsProvider(
+            availableSkillsForEntityProvider(
               testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([testPrompts.first])),
+            ).overrideWith((ref) => Future.value([testSkills.first])),
           ],
         ),
       );
@@ -1017,10 +709,46 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert - Modal should open
-      expect(find.byType(UnifiedAiPromptsList), findsOneWidget);
+      expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
 
       // Clean up
       scrollController.dispose();
+    });
+
+    testWidgets('closes modal after skill selection', (tester) async {
+      // Arrange
+      await tester.pumpWidget(
+        buildTestWidget(
+          UnifiedAiPopUpMenu(
+            journalEntity: testTaskEntity,
+            linkedFromId: null,
+          ),
+          overrides: [
+            hasAvailableSkillsProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value(true)),
+            availableSkillsForEntityProvider(
+              testTaskEntity.id,
+            ).overrideWith((ref) => Future.value([testSkills.last])),
+          ],
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Act - Open the modal
+      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify modal is open
+      expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+
+      // Select a skill
+      await tester.tap(find.text('Prompt Generation Skill'));
+      await tester.pumpAndSettle();
+
+      // Assert - Modal should be closed
+      expect(find.byType(UnifiedAiSkillsList), findsNothing);
     });
   });
 
@@ -1051,7 +779,7 @@ void main() {
               linkedFromId: null,
             ),
             overrides: [
-              hasAvailablePromptsProvider(
+              hasAvailableSkillsProvider(
                 testAudioEntity.id,
               ).overrideWith((ref) => Future.value(true)),
               availableSkillsForEntityProvider(
@@ -1059,9 +787,6 @@ void main() {
               ).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
               ),
-              availablePromptsProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value([])),
             ],
           ),
         );
@@ -1078,7 +803,7 @@ void main() {
 
         // Modal should close without showing CoverArtSkillModal since there's
         // no linked task
-        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+        expect(find.byType(UnifiedAiSkillsList), findsNothing);
       },
     );
 
@@ -1134,7 +859,7 @@ void main() {
               linkedFromId: null,
             ),
             overrides: [
-              hasAvailablePromptsProvider(
+              hasAvailableSkillsProvider(
                 testAudioEntity.id,
               ).overrideWith((ref) => Future.value(true)),
               availableSkillsForEntityProvider(
@@ -1142,9 +867,6 @@ void main() {
               ).overrideWith(
                 (ref) => Future.value([imageGenSkill]),
               ),
-              availablePromptsProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value([])),
             ],
           ),
         );
@@ -1163,9 +885,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(seconds: 1));
 
-        // The original prompt list modal should be closed and the cover
+        // The original skills list modal should be closed and the cover
         // art modal should be visible (showing loading state).
-        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+        expect(find.byType(UnifiedAiSkillsList), findsNothing);
       },
     );
   });
@@ -1339,318 +1061,6 @@ void main() {
       );
 
       expect(result, isNull);
-    });
-  });
-
-  group('isDefaultPromptSync Tests', () {
-    test('returns false when categoryId is null', () {
-      final prompt = testPrompts.first;
-      final result = isDefaultPromptSync(null, prompt);
-      expect(result, isFalse);
-    });
-
-    test('returns false when category is not found', () {
-      final prompt = testPrompts.first;
-      final result = isDefaultPromptSync('non-existent-category', prompt);
-      expect(result, isFalse);
-    });
-  });
-
-  group('Icon Mapping Tests', () {
-    testWidgets('maps task input data to checklist icon', (tester) async {
-      // Arrange
-      final taskPrompt = testPrompts.firstWhere(
-        (p) => p.requiredInputData.contains(InputDataType.tasksList),
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([taskPrompt])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Assert - Just check the prompt is displayed correctly
-      expect(find.text('Task Summary'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
-      // Icons are rendered within ModernIconContainer
-      expect(find.byType(Icon), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('maps image input data to image icon', (tester) async {
-      // Arrange
-      final imagePrompt = testPrompts.firstWhere(
-        (p) => p.requiredInputData.contains(InputDataType.images),
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testImageEntity,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availablePromptsProvider(
-              testImageEntity.id,
-            ).overrideWith((ref) => Future.value([imagePrompt])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Assert - Just check the prompt is displayed correctly
-      expect(find.text('Image Analysis'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
-      // Icons are rendered within ModernIconContainer
-      expect(find.byType(Icon), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('maps audio input data to mic icon', (tester) async {
-      // Arrange
-      final audioPrompt = testPrompts.firstWhere(
-        (p) => p.requiredInputData.contains(InputDataType.audioFiles),
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testAudioEntity,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availablePromptsProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value([audioPrompt])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Assert - Just check the prompt is displayed correctly
-      expect(find.text('Audio Transcription'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
-      // Icons are rendered within ModernIconContainer
-      expect(find.byType(Icon), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('maps no specific input data to chat icon', (tester) async {
-      // Arrange
-      final generalPrompt = testPrompts.firstWhere(
-        (p) => p.requiredInputData.isEmpty,
-      );
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testJournalEntry,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availablePromptsProvider(
-              testJournalEntry.id,
-            ).overrideWith((ref) => Future.value([generalPrompt])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Assert - Just check the prompt is displayed correctly
-      expect(find.text('General Chat'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsOneWidget);
-      // Icons are rendered within ModernIconContainer
-      expect(find.byType(Icon), findsAtLeastNWidgets(1));
-    });
-  });
-
-  group('Popup menu with skills and prompts sections', () {
-    late List<AiConfigSkill> testSkills;
-
-    setUp(() {
-      final now = DateTime(2024, 3, 15, 10);
-      testSkills = [
-        AiConfig.skill(
-              id: 'skill-transcription',
-              name: 'Audio Transcription Skill',
-              createdAt: now,
-              skillType: SkillType.transcription,
-              requiredInputModalities: [Modality.audio],
-              systemInstructions: 'Transcribe audio',
-              userInstructions: 'Transcribe the audio file',
-              description: 'Skill-based transcription',
-            )
-            as AiConfigSkill,
-        AiConfig.skill(
-              id: 'skill-image-analysis',
-              name: 'Image Analysis Skill',
-              createdAt: now,
-              skillType: SkillType.imageAnalysis,
-              requiredInputModalities: [Modality.image],
-              systemInstructions: 'Analyze image',
-              userInstructions: 'Analyze the image',
-              description: 'Skill-based image analysis',
-            )
-            as AiConfigSkill,
-      ];
-    });
-
-    testWidgets(
-      'renders skills section header and items when skills available',
-      (
-        tester,
-      ) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPromptsList(
-              journalEntity: testAudioEntity,
-              onPromptSelected: (prompt, index) async {},
-            ),
-            overrides: [
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith(
-                (ref) => Future.value([testSkills.first]),
-              ),
-              availablePromptsProvider(
-                testAudioEntity.id,
-              ).overrideWith((ref) => Future.value([])),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Verify the skills section header is rendered
-        expect(find.text('Skills'), findsOneWidget);
-        // Verify the skill item is rendered
-        expect(find.text('Audio Transcription Skill'), findsOneWidget);
-        expect(find.text('Skill-based transcription'), findsOneWidget);
-        expect(find.byType(ModernModalPromptItem), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'renders legacy prompts section header when both skills and prompts',
-      (tester) async {
-        await tester.pumpWidget(
-          buildTestWidget(
-            UnifiedAiPromptsList(
-              journalEntity: testAudioEntity,
-              onPromptSelected: (prompt, index) async {},
-            ),
-            overrides: [
-              availableSkillsForEntityProvider(
-                testAudioEntity.id,
-              ).overrideWith(
-                (ref) => Future.value([testSkills.first]),
-              ),
-              availablePromptsProvider(
-                testAudioEntity.id,
-              ).overrideWith(
-                (ref) => Future.value([testPrompts.first]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Both section headers should appear
-        expect(find.text('Skills'), findsOneWidget);
-        expect(find.text('Legacy Prompts'), findsOneWidget);
-
-        // Both items should appear
-        expect(find.text('Audio Transcription Skill'), findsOneWidget);
-        expect(find.text('Task Summary'), findsOneWidget);
-
-        // Two ModernModalPromptItems total (1 skill + 1 prompt)
-        expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
-      },
-    );
-
-    testWidgets('does not render legacy header when only prompts (no skills)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testTaskEntity,
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availableSkillsForEntityProvider(
-              testTaskEntity.id,
-            ).overrideWith((ref) => Future.value([])),
-            availablePromptsProvider(
-              testTaskEntity.id,
-            ).overrideWith(
-              (ref) => Future.value(testPrompts.take(2).toList()),
-            ),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // No section headers should appear when there are only prompts
-      expect(find.text('Skills'), findsNothing);
-      expect(find.text('Legacy Prompts'), findsNothing);
-
-      // Prompts should still render
-      expect(find.text('Task Summary'), findsOneWidget);
-      expect(find.text('Image Analysis'), findsOneWidget);
-      expect(find.byType(ModernModalPromptItem), findsNWidgets(2));
-    });
-
-    testWidgets('calls onSkillSelected when skill item tapped', (
-      tester,
-    ) async {
-      AiConfigSkill? selectedSkill;
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          UnifiedAiPromptsList(
-            journalEntity: testAudioEntity,
-            onSkillSelected: (skill) async {
-              selectedSkill = skill;
-            },
-            onPromptSelected: (prompt, index) async {},
-          ),
-          overrides: [
-            availableSkillsForEntityProvider(
-              testAudioEntity.id,
-            ).overrideWith(
-              (ref) => Future.value([testSkills.first]),
-            ),
-            availablePromptsProvider(
-              testAudioEntity.id,
-            ).overrideWith((ref) => Future.value([])),
-          ],
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Tap the skill item
-      await tester.tap(find.text('Audio Transcription Skill'));
-      await tester.pump();
-
-      // Verify onSkillSelected was called with the correct skill
-      expect(selectedSkill, isNotNull);
-      expect(selectedSkill!.id, 'skill-transcription');
-      expect(selectedSkill!.name, 'Audio Transcription Skill');
-      expect(selectedSkill!.skillType, SkillType.transcription);
     });
   });
 }

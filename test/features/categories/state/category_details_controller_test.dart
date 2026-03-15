@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -304,64 +303,6 @@ void main() {
       subscription.close();
     });
 
-    test('updates allowed prompt IDs', () async {
-      final category = CategoryTestUtils.createTestCategory(
-        allowedPromptIds: ['prompt1'],
-      );
-      final completer = Completer<void>();
-
-      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-        (_) => Stream.value(category),
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future.timeout(const Duration(milliseconds: 100));
-
-      // Update allowed prompt IDs
-      controller.updateAllowedPromptIds(['prompt1', 'prompt2']);
-
-      final state = container.read(
-        categoryDetailsControllerProvider(testCategoryId),
-      );
-
-      expect(state.hasChanges, isTrue);
-      expect(state.category?.allowedPromptIds, equals(['prompt1', 'prompt2']));
-
-      // Test setting empty list
-      controller.updateAllowedPromptIds([]);
-      expect(
-        container
-            .read(categoryDetailsControllerProvider(testCategoryId))
-            .category
-            ?.allowedPromptIds,
-        isNull,
-      );
-
-      subscription.close();
-    });
-
     test('updates speech dictionary', () async {
       final category = CategoryTestUtils.createTestCategory(
         speechDictionary: ['term1'],
@@ -465,75 +406,6 @@ void main() {
         container
             .read(categoryDetailsControllerProvider(testCategoryId))
             .hasChanges,
-        isFalse,
-      );
-
-      subscription.close();
-    });
-
-    test('updates automatic prompts', () async {
-      final category = CategoryTestUtils.createTestCategory();
-      final completer = Completer<void>();
-
-      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-        (_) => Stream.value(category),
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          categoryRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      // Wait for initial load
-      final subscription = container.listen(
-        categoryDetailsControllerProvider(testCategoryId),
-        (_, next) {
-          if (!next.isLoading &&
-              next.category != null &&
-              !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      final controller = container.read(
-        categoryDetailsControllerProvider(testCategoryId).notifier,
-      );
-
-      await completer.future.timeout(const Duration(milliseconds: 100));
-
-      // Add automatic prompt
-      controller.updateAutomaticPrompts(
-        AiResponseType.audioTranscription,
-        ['prompt1'],
-      );
-
-      var state = container.read(
-        categoryDetailsControllerProvider(testCategoryId),
-      );
-
-      expect(state.hasChanges, isTrue);
-      expect(
-        state.category?.automaticPrompts?[AiResponseType.audioTranscription],
-        equals(['prompt1']),
-      );
-
-      // Remove prompt
-      controller.updateAutomaticPrompts(
-        AiResponseType.audioTranscription,
-        [],
-      );
-
-      state = container.read(
-        categoryDetailsControllerProvider(testCategoryId),
-      );
-      expect(
-        state.category?.automaticPrompts?.containsKey(
-              AiResponseType.audioTranscription,
-            ) ??
-            false,
         isFalse,
       );
 

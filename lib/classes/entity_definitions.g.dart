@@ -269,16 +269,6 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
           ? null
           : DateTime.parse(json['deletedAt'] as String),
       defaultLanguageCode: json['defaultLanguageCode'] as String?,
-      allowedPromptIds: (json['allowedPromptIds'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-      automaticPrompts: (json['automaticPrompts'] as Map<String, dynamic>?)
-          ?.map(
-            (k, e) => MapEntry(
-              $enumDecode(_$AiResponseTypeEnumMap, k),
-              (e as List<dynamic>).map((e) => e as String).toList(),
-            ),
-          ),
       icon: const CategoryIconConverter().fromJson(json['icon'] as String?),
       speechDictionary: (json['speechDictionary'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -306,25 +296,11 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'categoryId': instance.categoryId,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'defaultLanguageCode': instance.defaultLanguageCode,
-      'allowedPromptIds': instance.allowedPromptIds,
-      'automaticPrompts': instance.automaticPrompts?.map(
-        (k, e) => MapEntry(_$AiResponseTypeEnumMap[k]!, e),
-      ),
       'icon': const CategoryIconConverter().toJson(instance.icon),
       'speechDictionary': instance.speechDictionary,
       'correctionExamples': instance.correctionExamples,
       'runtimeType': instance.$type,
     };
-
-const _$AiResponseTypeEnumMap = {
-  AiResponseType.taskSummary: 'TaskSummary',
-  AiResponseType.imageAnalysis: 'ImageAnalysis',
-  AiResponseType.audioTranscription: 'AudioTranscription',
-  AiResponseType.checklistUpdates: 'ChecklistUpdates',
-  AiResponseType.promptGeneration: 'PromptGeneration',
-  AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
-  AiResponseType.imageGeneration: 'ImageGeneration',
-};
 
 LabelDefinition _$LabelDefinitionFromJson(Map<String, dynamic> json) =>
     LabelDefinition(
@@ -526,6 +502,16 @@ Map<String, dynamic> _$AiResponseDataToJson(_AiResponseData instance) =>
       'cachedInputTokens': instance.cachedInputTokens,
       'durationMs': instance.durationMs,
     };
+
+const _$AiResponseTypeEnumMap = {
+  AiResponseType.taskSummary: 'TaskSummary',
+  AiResponseType.imageAnalysis: 'ImageAnalysis',
+  AiResponseType.audioTranscription: 'AudioTranscription',
+  AiResponseType.checklistUpdates: 'ChecklistUpdates',
+  AiResponseType.promptGeneration: 'PromptGeneration',
+  AiResponseType.imagePromptGeneration: 'ImagePromptGeneration',
+  AiResponseType.imageGeneration: 'ImageGeneration',
+};
 
 _WorkoutData _$WorkoutDataFromJson(Map<String, dynamic> json) => _WorkoutData(
   dateFrom: DateTime.parse(json['dateFrom'] as String),
