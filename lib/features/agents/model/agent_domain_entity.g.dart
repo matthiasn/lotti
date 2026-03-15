@@ -98,6 +98,7 @@ AgentStateEntity _$AgentStateEntityFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, (e as num).toInt()),
           ) ??
           const {},
+      awaitingContent: json['awaitingContent'] as bool? ?? false,
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -121,6 +122,7 @@ Map<String, dynamic> _$AgentStateEntityToJson(AgentStateEntity instance) =>
       'consecutiveFailureCount': instance.consecutiveFailureCount,
       'wakeCounter': instance.wakeCounter,
       'processedCounterByHost': instance.processedCounterByHost,
+      'awaitingContent': instance.awaitingContent,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

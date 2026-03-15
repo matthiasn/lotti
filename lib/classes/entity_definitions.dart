@@ -146,6 +146,14 @@ sealed class EntityDefinition with _$EntityDefinition {
     @CategoryIconConverter() CategoryIcon? icon,
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
+
+    /// Default inference profile ID for new tasks in this category.
+    /// Enables speech-to-text and image analysis immediately on task creation.
+    String? defaultProfileId,
+
+    /// Default agent template ID for new tasks in this category.
+    /// An agent is auto-created from this template when a task is created.
+    String? defaultTemplateId,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.labelDefinition({

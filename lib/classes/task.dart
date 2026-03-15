@@ -160,6 +160,10 @@ abstract class TaskData with _$TaskData {
     /// Horizontal offset for square thumbnail crop from 2:1 cover art.
     /// 0.0 = left edge, 0.5 = center (default), 1.0 = right edge.
     @Default(0.5) double coverArtCropX,
+
+    /// Inference profile ID inherited from the category at task creation.
+    /// Enables speech-to-text and image analysis independently of any agent.
+    String? profileId,
   }) = _TaskData;
 
   factory TaskData.fromJson(Map<String, dynamic> json) =>
