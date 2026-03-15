@@ -47,7 +47,7 @@ void main() {
   }
 
   test(
-    'stays not ready on incomplete catch-up and becomes ready after timestamp-boundary replay succeeds',
+    'becomes ready on initial catch-up via best-effort when server boundary is unreachable',
     () async {
       final session = MockMatrixSessionManager();
       final roomManager = MockSyncRoomManager();
@@ -74,61 +74,44 @@ void main() {
         () => processor.processOrdered(any<List<Event>>()),
       ).thenAnswer((_) async {});
 
-      var serverBoundaryAvailable = false;
-      var events = <Event>[event('cached-old', 400), event('cached-new', 3000)];
+      final events = <Event>[
+        event('cached-old', 400),
+        event('cached-new', 3000),
+      ];
       when(() => timeline.events).thenAnswer((_) => events);
 
-      final coordinator =
-          MatrixStreamCatchUpCoordinator(
-              sessionManager: session,
-              roomManager: roomManager,
-              loggingService: logger,
-              metrics: metrics,
-              collectMetrics: true,
-              skipSyncWait: true,
-              processor: processor,
-              flushDeferredLiveScan: flushedSources.add,
-              withInstance: (message) => message,
-              backfill:
-                  ({
-                    required Timeline timeline,
-                    required String? lastEventId,
-                    required int pageSize,
-                    required int? maxPages,
-                    required LoggingService logging,
-                    num? untilTimestamp,
-                  }) async {
-                    if (!serverBoundaryAvailable) {
-                      return false;
-                    }
-                    events = [
-                      event('cached-old', 400),
-                      event('server-gap', 450),
-                      event('cached-new', 3000),
-                    ];
-                    return true;
-                  },
-            )
-            ..startupMarkers = (
-              eventId: 'legacy-marker',
-              timestamp: 1500,
-            );
+      final coordinator = MatrixStreamCatchUpCoordinator(
+        sessionManager: session,
+        roomManager: roomManager,
+        loggingService: logger,
+        metrics: metrics,
+        collectMetrics: true,
+        skipSyncWait: true,
+        processor: processor,
+        flushDeferredLiveScan: flushedSources.add,
+        withInstance: (message) => message,
+        backfill: ({
+          required Timeline timeline,
+          required String? lastEventId,
+          required int pageSize,
+          required int? maxPages,
+          required LoggingService logging,
+          num? untilTimestamp,
+        }) async =>
+            false, // Server boundary always unreachable
+      )..startupMarkers = (
+        eventId: 'legacy-marker',
+        timestamp: 1500,
+      );
 
       await coordinator.runInitialCatchUpIfReady();
 
-      expect(coordinator.initialCatchUpReady, isFalse);
-      expect(coordinator.initialCatchUpCompleted, isFalse);
-      verifyNever(() => processor.processOrdered(any()));
-      verify(
-        () => logger.captureEvent(
-          any<Object>(that: contains('catchup.initial.incomplete')),
-          domain: syncLoggingDomain,
-          subDomain: 'catchup',
-        ),
-      ).called(1);
-
-      serverBoundaryAvailable = true;
-      await coordinator.runGuardedCatchUp('manual');
+      // Best-effort fallback returns available events as timestampAnchored,
+      // so initial catch-up succeeds immediately.
+      expect(coordinator.initialCatchUpReady, isTrue);
+      expect(coordinator.initialCatchUpCompleted, isTrue);
+      expect(coordinator.handleClientStreamSignal(), isFalse);
+      expect(coordinator.handleFirstStreamEvent(), isFalse);
 
       verifyNever(
         () => logger.captureException(
@@ -138,19 +121,13 @@ void main() {
           stackTrace: any<StackTrace?>(named: 'stackTrace'),
         ),
       );
-      expect(coordinator.initialCatchUpReady, isTrue);
-      expect(coordinator.initialCatchUpCompleted, isTrue);
-      expect(coordinator.handleClientStreamSignal(), isFalse);
-      expect(coordinator.handleFirstStreamEvent(), isFalse);
-      expect(flushedSources, contains('runGuardedCatchUp'));
 
       final captured =
           verify(
                 () => processor.processOrdered(captureAny<List<Event>>()),
               ).captured.single
               as List<Event>;
-      expect(captured.any((event) => event.eventId == 'server-gap'), isTrue);
-      expect(captured.any((event) => event.eventId == 'cached-new'), isTrue);
+      expect(captured.any((e) => e.eventId == 'cached-new'), isTrue);
       verify(
         () => logger.captureEvent(
           any<Object>(

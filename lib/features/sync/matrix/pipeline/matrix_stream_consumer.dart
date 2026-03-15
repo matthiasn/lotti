@@ -330,4 +330,12 @@ class MatrixStreamConsumer implements SyncPipeline {
   set scanLiveTimelineTestHook(void Function(void Function())? fn) {
     _liveScan.scanLiveTimelineTestHook = fn;
   }
+
+  /// Test-only: bypass the sync wait in catch-up to avoid 30s timeouts
+  /// when driving sync externally.
+  @visibleForTesting
+  bool get skipSyncWait => _catchUp.skipSyncWait;
+
+  @visibleForTesting
+  set skipSyncWait(bool value) => _catchUp.skipSyncWait = value;
 }

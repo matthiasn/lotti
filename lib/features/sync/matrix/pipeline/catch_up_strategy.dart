@@ -191,14 +191,18 @@ class CatchUpStrategy {
           current.length >= limit &&
           limit < maxLookback;
 
-      while (!requiresServerBoundary &&
-          !pagingSatisfied &&
-          needsMore(ordered)) {
+      // When backfill alone didn't reach the boundary (either because the SDK
+      // reported end-of-timeline prematurely, or there was no server gap),
+      // expand the local timeline with larger limits. The SDK may have cached
+      // more events locally than the initial limit returned.
+      while (!boundarySatisfied && needsMore(ordered)) {
         final doubled = limit * 2;
         limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);
         try {
-          pagingSatisfied = await pageUntilBoundary(next);
+          if (!pagingSatisfied) {
+            pagingSatisfied = await pageUntilBoundary(next);
+          }
           ordered = TimelineEventOrdering.sortStableByTimestamp(next.events);
           boundarySatisfied = reachedTimestampBoundary(ordered);
         } finally {
@@ -208,7 +212,7 @@ class CatchUpStrategy {
         }
       }
 
-      if (boundarySatisfied && (!requiresServerBoundary || pagingSatisfied)) {
+      if (boundarySatisfied) {
         final start = _startIndexForTimestampBoundary(
           ordered,
           preContextSinceTs: preContextSinceTs,
@@ -218,12 +222,37 @@ class CatchUpStrategy {
           'catchup.timestampBoundary '
           'snapshot=${ordered.length} '
           'lastEventId=${lastEventId ?? 'null'} '
-          'startIndex=$start',
+          'startIndex=$start '
+          'pagingSatisfied=$pagingSatisfied '
+          'requiresServerBoundary=$requiresServerBoundary',
           domain: syncLoggingDomain,
           subDomain: 'catchup.timestampBoundary',
         );
         return CatchUpCollection.timestampAnchored(
           events: ordered.sublist(start),
+          snapshotSize: ordered.length,
+        );
+      }
+
+      // The timestamp boundary was not reached, but we exhausted all
+      // available history (backfill + local expansion). Rather than returning
+      // empty and stalling the pipeline, return all visible events as a
+      // best-effort catch-up. The pipeline's deduplication and vector clock
+      // logic will handle any overlap, and marking catch-up as complete lets
+      // live scans take over for subsequent events.
+      if (ordered.isNotEmpty) {
+        logging.captureEvent(
+          'catchup.bestEffort lastEventId=$lastEventId '
+          'snapshot=${ordered.length} '
+          'reason=timestampBoundaryUnreachable '
+          'reachedTimestampBoundary=$boundarySatisfied '
+          'requiresServerBoundary=$requiresServerBoundary '
+          'pagingSatisfied=$pagingSatisfied',
+          domain: syncLoggingDomain,
+          subDomain: 'catchup.bestEffort',
+        );
+        return CatchUpCollection.timestampAnchored(
+          events: ordered,
           snapshotSize: ordered.length,
         );
       }
