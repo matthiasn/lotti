@@ -2887,6 +2887,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkedFromLabel => 'LEGAT DE LA';
 
   @override
+  String get linkedTaskImageBadge => 'Din sarcina legată';
+
+  @override
   String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
 
   @override

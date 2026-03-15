@@ -2924,6 +2924,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get linkedFromLabel => 'VINCULADO DESDE';
 
   @override
+  String get linkedTaskImageBadge => 'De tarea vinculada';
+
+  @override
   String get linkedTasksMenuTooltip => 'Opciones de tareas vinculadas';
 
   @override

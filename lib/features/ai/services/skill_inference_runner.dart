@@ -584,14 +584,24 @@ class SkillInferenceRunner {
           referenceImages: referenceImages,
         );
 
-        // 6. Import the generated image as a JournalImage linked to the task.
+        // 6. Verify linked task still exists and get its category.
+        final taskEntity = await _journalRepository.getJournalEntityById(
+          linkedTaskId,
+        );
+        if (taskEntity is! Task) {
+          throw StateError(
+            'Linked task $linkedTaskId not found before cover art save',
+          );
+        }
+
+        // 7. Import the generated image as a JournalImage linked to the task.
         final extension =
             generatedImage.mimeType.split('/').lastOrNull ?? 'png';
         final imageId = await importGeneratedImageBytes(
           data: Uint8List.fromList(generatedImage.bytes),
           fileExtension: extension,
           linkedId: linkedTaskId,
-          categoryId: entity.meta.categoryId,
+          categoryId: taskEntity.meta.categoryId,
         );
 
         if (imageId == null) {
@@ -600,17 +610,12 @@ class SkillInferenceRunner {
           );
         }
 
-        // 7. Set the image as cover art on the task.
-        final taskEntity = await _journalRepository.getJournalEntityById(
-          linkedTaskId,
+        // 8. Set the image as cover art on the task.
+        final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
+        await getIt<PersistenceLogic>().updateTask(
+          journalEntityId: linkedTaskId,
+          taskData: updatedData,
         );
-        if (taskEntity is Task) {
-          final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
-          await getIt<PersistenceLogic>().updateTask(
-            journalEntityId: linkedTaskId,
-            taskData: updatedData,
-          );
-        }
 
         _loggingService.captureEvent(
           'Skill-based image generation completed for task $linkedTaskId '
@@ -619,7 +624,7 @@ class SkillInferenceRunner {
           subDomain: 'runImageGeneration',
         );
 
-        // 8. Trigger automatic image analysis on the newly created cover art,
+        // 9. Trigger automatic image analysis on the newly created cover art,
         // treating it exactly like a manual photo drop.
         unawaited(
           _ref

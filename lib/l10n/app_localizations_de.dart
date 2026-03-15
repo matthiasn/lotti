@@ -2887,6 +2887,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedFromLabel => 'VERKNÜPFT VON';
 
   @override
+  String get linkedTaskImageBadge => 'Von verknüpfter Aufgabe';
+
+  @override
   String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
 
   @override

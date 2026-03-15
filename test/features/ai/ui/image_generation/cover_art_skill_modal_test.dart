@@ -344,7 +344,8 @@ void main() {
             ),
             triggerSkillProvider.overrideWith(
               (ref, params) {
-                // Set running, then immediately idle (simulates fast completion)
+                // Set running first so _hasObservedRunning becomes true,
+                // then idle to simulate completion.
                 ref
                     .read(
                       inferenceStatusControllerProvider(
@@ -352,7 +353,7 @@ void main() {
                         aiResponseType: AiResponseType.imageGeneration,
                       ).notifier,
                     )
-                    .setStatus(InferenceStatus.idle);
+                    .setStatus(InferenceStatus.running);
                 return Future<void>.value();
               },
             ),
@@ -365,9 +366,23 @@ void main() {
         ),
       );
 
-      // Auto-skip flow
+      // Auto-skip flow — trigger generation
       await tester.pump();
       await tester.pump();
+      await tester.pump();
+
+      // Now transition to idle (completion)
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(_CoverArtSkillModalHost)),
+      );
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testLinkedTaskId,
+              aiResponseType: AiResponseType.imageGeneration,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.idle);
       await tester.pump();
 
       // Should show completion state
@@ -390,6 +405,7 @@ void main() {
             ),
             triggerSkillProvider.overrideWith(
               (ref, params) {
+                // Set running first so _hasObservedRunning becomes true.
                 ref
                     .read(
                       inferenceStatusControllerProvider(
@@ -397,7 +413,7 @@ void main() {
                         aiResponseType: AiResponseType.imageGeneration,
                       ).notifier,
                     )
-                    .setStatus(InferenceStatus.error);
+                    .setStatus(InferenceStatus.running);
                 return Future<void>.value();
               },
             ),
@@ -412,6 +428,20 @@ void main() {
 
       await tester.pump();
       await tester.pump();
+      await tester.pump();
+
+      // Now transition to error
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(_CoverArtSkillModalHost)),
+      );
+      container
+          .read(
+            inferenceStatusControllerProvider(
+              id: testLinkedTaskId,
+              aiResponseType: AiResponseType.imageGeneration,
+            ).notifier,
+          )
+          .setStatus(InferenceStatus.error);
       await tester.pump();
 
       // Should show error state

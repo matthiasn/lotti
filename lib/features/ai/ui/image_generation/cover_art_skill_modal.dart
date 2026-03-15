@@ -131,9 +131,13 @@ class _CoverArtSkillModalState extends ConsumerState<CoverArtSkillModal> {
 /// Progress view shown while cover art is being generated in the background.
 ///
 /// Watches [InferenceStatusController] for the linked task to reflect
-/// generation status. The user can dismiss the modal at any time — the
-/// generation continues via `ref.keepAlive()` in `triggerSkillProvider`.
-class _CoverArtProgressView extends ConsumerWidget {
+/// generation status. Uses a `_hasObservedRunning` flag to avoid showing
+/// stale idle/error states from a previous run — completion and error are
+/// only displayed after the current invocation has been observed as running.
+///
+/// The user can dismiss the modal at any time — the generation continues
+/// via `ref.keepAlive()` in `triggerSkillProvider`.
+class _CoverArtProgressView extends ConsumerStatefulWidget {
   const _CoverArtProgressView({
     required this.entityId,
     required this.linkedTaskId,
@@ -145,18 +149,35 @@ class _CoverArtProgressView extends ConsumerWidget {
   final int referenceImageCount;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CoverArtProgressView> createState() =>
+      _CoverArtProgressViewState();
+}
+
+class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
+  /// Tracks whether we've seen [InferenceStatus.running] for this invocation.
+  /// Until this is true, idle/error are treated as "not yet started" rather
+  /// than completion/failure from a previous run.
+  bool _hasObservedRunning = false;
+
+  @override
+  Widget build(BuildContext context) {
     final status = ref.watch(
       inferenceStatusControllerProvider(
-        id: linkedTaskId,
+        id: widget.linkedTaskId,
         aiResponseType: AiResponseType.imageGeneration,
       ),
     );
 
+    // Track whether we've observed the running state at least once.
+    if (status == InferenceStatus.running && !_hasObservedRunning) {
+      _hasObservedRunning = true;
+    }
+
     final colorScheme = context.colorScheme;
-    final isComplete = status == InferenceStatus.idle;
-    final isError = status == InferenceStatus.error;
-    final isRunning = status == InferenceStatus.running;
+    // Only treat idle/error as final if we've seen running first.
+    final isComplete = _hasObservedRunning && status == InferenceStatus.idle;
+    final isError = _hasObservedRunning && status == InferenceStatus.error;
+    final isRunning = status == InferenceStatus.running || !_hasObservedRunning;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -185,14 +206,18 @@ class _CoverArtProgressView extends ConsumerWidget {
           const SizedBox(height: 24),
           // Status text
           Text(
-            _statusText(context, status),
+            _statusText(context, isComplete: isComplete, isError: isError),
             textAlign: TextAlign.center,
             style: context.textTheme.titleMedium,
           ),
           const SizedBox(height: 8),
           // Subtitle with reference image count
           Text(
-            _subtitleText(context, status),
+            _subtitleText(
+              context,
+              isComplete: isComplete,
+              isError: isError,
+            ),
             textAlign: TextAlign.center,
             style: context.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
@@ -204,25 +229,28 @@ class _CoverArtProgressView extends ConsumerWidget {
     );
   }
 
-  String _statusText(BuildContext context, InferenceStatus status) {
-    return switch (status) {
-      InferenceStatus.running => context.messages.imageGenerationGenerating,
-      InferenceStatus.error => context.messages.imageGenerationError,
-      InferenceStatus.idle => context.messages.coverArtGenerationComplete,
-    };
+  String _statusText(
+    BuildContext context, {
+    required bool isComplete,
+    required bool isError,
+  }) {
+    if (isError) return context.messages.imageGenerationError;
+    if (isComplete) return context.messages.coverArtGenerationComplete;
+    return context.messages.imageGenerationGenerating;
   }
 
-  String _subtitleText(BuildContext context, InferenceStatus status) {
-    if (status == InferenceStatus.error) {
-      return context.messages.coverArtGenerationDismissHint;
-    }
-    if (status == InferenceStatus.idle) {
+  String _subtitleText(
+    BuildContext context, {
+    required bool isComplete,
+    required bool isError,
+  }) {
+    if (isError || isComplete) {
       return context.messages.coverArtGenerationDismissHint;
     }
     // Running
-    if (referenceImageCount > 0) {
+    if (widget.referenceImageCount > 0) {
       return context.messages.imageGenerationWithReferences(
-        referenceImageCount,
+        widget.referenceImageCount,
       );
     }
     return context.messages.coverArtGenerationDismissHint;

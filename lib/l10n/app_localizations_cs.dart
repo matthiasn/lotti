@@ -2859,6 +2859,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedFromLabel => 'PROPOJENO Z';
 
   @override
+  String get linkedTaskImageBadge => 'Z propojené úlohy';
+
+  @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
 
   @override

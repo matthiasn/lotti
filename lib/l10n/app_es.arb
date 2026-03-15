@@ -1246,6 +1246,7 @@
   "journalUnlinkQuestion": "¿Estás seguro de que quieres desvincular esta entrada?",
   "legacyPromptsSectionTitle": "Prompts heredados",
   "linkedFromLabel": "VINCULADO DESDE",
+  "linkedTaskImageBadge": "De tarea vinculada",
   "linkedTasksMenuTooltip": "Opciones de tareas vinculadas",
   "linkedTasksTitle": "Tareas vinculadas",
   "linkedToLabel": "VINCULADO A",

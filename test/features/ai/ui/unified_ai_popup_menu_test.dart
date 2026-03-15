@@ -1157,11 +1157,14 @@ void main() {
 
         // Tap the image generation skill
         await tester.tap(find.text('Generate Cover Art'));
-        await tester.pumpAndSettle();
+        // Pump through the modal close animation and cover art modal open.
+        // Use pump(duration) instead of pumpAndSettle() because the cover
+        // art modal contains animations that never settle.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-        // The CoverArtSkillModal should have been opened (look for its
-        // content — it shows the ReferenceImageSelectionWidget loading state)
-        // At minimum, the original prompt list modal should be closed
+        // The original prompt list modal should be closed and the cover
+        // art modal should be visible (showing loading state).
         expect(find.byType(UnifiedAiPromptsList), findsNothing);
       },
     );

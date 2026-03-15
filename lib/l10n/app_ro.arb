@@ -1246,6 +1246,7 @@
   "journalUnlinkQuestion": "Sigur doriți să despărțiți această intrare?",
   "legacyPromptsSectionTitle": "Prompturi vechi",
   "linkedFromLabel": "LEGAT DE LA",
+  "linkedTaskImageBadge": "Din sarcina legată",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
   "linkedTasksTitle": "Sarcini legate",
   "linkedToLabel": "LEGAT LA",

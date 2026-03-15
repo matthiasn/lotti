@@ -1246,6 +1246,7 @@
   "journalUnlinkQuestion": "Möchtest du diesen Eintrag wirklich trennen?",
   "legacyPromptsSectionTitle": "Alte Prompts",
   "linkedFromLabel": "VERKNÜPFT VON",
+  "linkedTaskImageBadge": "Von verknüpfter Aufgabe",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
   "linkedToLabel": "VERKNÜPFT MIT",

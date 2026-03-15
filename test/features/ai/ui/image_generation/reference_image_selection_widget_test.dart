@@ -586,8 +586,13 @@ void main() {
         ),
       );
 
-      // Tap the first image tile via GestureDetector
-      final gestureFinders = find.byType(GestureDetector);
+      // Scope to GestureDetectors within the GridView to avoid picking up
+      // unrelated GestureDetectors from surrounding widgets.
+      final gridFinder = find.byType(GridView);
+      final gestureFinders = find.descendant(
+        of: gridFinder,
+        matching: find.byType(GestureDetector),
+      );
       expect(gestureFinders, findsWidgets);
 
       // Tap the first GestureDetector in the grid
@@ -640,9 +645,13 @@ void main() {
         ),
       );
 
-      // Find all GestureDetectors in the grid - the 6th one (img-6) should
-      // be non-selectable since max is reached
-      final gestureFinders = find.byType(GestureDetector);
+      // Scope to GestureDetectors within the GridView to avoid picking up
+      // unrelated GestureDetectors from surrounding widgets.
+      final gridFinder = find.byType(GridView);
+      final gestureFinders = find.descendant(
+        of: gridFinder,
+        matching: find.byType(GestureDetector),
+      );
       final sixthTile = gestureFinders.at(5);
 
       // Scroll into view since 6th tile is on the third grid row

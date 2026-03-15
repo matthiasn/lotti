@@ -1033,6 +1033,7 @@
   "journalUnlinkQuestion": "Opravdu chcete tento záznam odepnout?",
   "legacyPromptsSectionTitle": "Starší prompty",
   "linkedFromLabel": "PROPOJENO Z",
+  "linkedTaskImageBadge": "Z propojené úlohy",
   "linkedTasksMenuTooltip": "Možnosti propojených úkolů",
   "linkedTasksTitle": "Propojené úkoly",
   "linkedToLabel": "PROPOJENO NA",

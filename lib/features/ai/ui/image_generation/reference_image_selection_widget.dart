@@ -282,18 +282,21 @@ class _ImageGridTile extends StatelessWidget {
                 Positioned(
                   bottom: 4,
                   left: 4,
-                  child: Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondaryContainer.withValues(
-                        alpha: 0.85,
+                  child: Tooltip(
+                    message: context.messages.linkedTaskImageBadge,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer.withValues(
+                          alpha: 0.85,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(
-                      Icons.link_rounded,
-                      size: 14,
-                      color: colorScheme.onSecondaryContainer,
+                      child: Icon(
+                        Icons.link_rounded,
+                        size: 14,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
                     ),
                   ),
                 ),

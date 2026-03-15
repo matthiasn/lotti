@@ -2842,6 +2842,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get linkedFromLabel => 'LINKED FROM';
 
   @override
+  String get linkedTaskImageBadge => 'From linked task';
+
+  @override
   String get linkedTasksMenuTooltip => 'Linked tasks options';
 
   @override

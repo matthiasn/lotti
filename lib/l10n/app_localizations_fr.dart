@@ -2924,6 +2924,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedFromLabel => 'LIÉ DEPUIS';
 
   @override
+  String get linkedTaskImageBadge => 'De la tâche liée';
+
+  @override
   String get linkedTasksMenuTooltip => 'Options des tâches liées';
 
   @override
@@ -3573,7 +3576,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Choisissez jusqu\'à 5 images pour guider le style visuel de l\'IA';
+      'Choisis jusqu\'à 5 images pour guider le style visuel de l\'IA';
 
   @override
   String get referenceImageSelectionTitle =>

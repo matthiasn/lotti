@@ -107,6 +107,7 @@ class UnifiedAiModal {
             await _handleImageGenerationSkill(
               context: context,
               journalEntity: journalEntity,
+              preferredTaskId: linkedTaskId,
               skill: skill,
               ref: ref,
             );
@@ -173,12 +174,14 @@ class UnifiedAiModal {
   static Future<void> _handleImageGenerationSkill({
     required BuildContext context,
     required JournalEntity journalEntity,
+    required String? preferredTaskId,
     required AiConfigSkill skill,
     required WidgetRef ref,
   }) async {
     final journalRepo = ref.read(journalRepositoryProvider);
     final linkedTask = await _resolveLinkedTask(
       journalEntity: journalEntity,
+      preferredTaskId: preferredTaskId,
       journalRepo: journalRepo,
     );
 
@@ -202,19 +205,50 @@ class UnifiedAiModal {
     );
   }
 
-  /// Resolves the linked task for an entity, checking both link directions.
+  /// Resolves the linked task for an entity.
+  ///
+  /// Priority:
+  /// 1. If the entity itself is a Task, return it directly.
+  /// 2. If [preferredTaskId] is provided (from the caller's context), look it
+  ///    up and return it if it's a Task.
+  /// 3. Fallback: search outgoing links (entity → task) then incoming links
+  ///    (task → entity) via the link graph.
+  @visibleForTesting
+  static Future<Task?> resolveLinkedTask({
+    required JournalEntity journalEntity,
+    required JournalRepository journalRepo,
+    String? preferredTaskId,
+  }) =>
+      _resolveLinkedTask(
+        journalEntity: journalEntity,
+        preferredTaskId: preferredTaskId,
+        journalRepo: journalRepo,
+      );
+
   static Future<Task?> _resolveLinkedTask({
     required JournalEntity journalEntity,
     required JournalRepository journalRepo,
+    String? preferredTaskId,
   }) async {
-    // First try: find tasks that this entry links TO (entry → task)
+    // If the entity itself is a Task, use it directly.
+    if (journalEntity is Task) return journalEntity;
+
+    // If the caller already knows the target task, prefer it.
+    if (preferredTaskId != null) {
+      final preferred = await journalRepo.getJournalEntityById(
+        preferredTaskId,
+      );
+      if (preferred is Task) return preferred;
+    }
+
+    // Outgoing links: entities this entry links TO (entry → task).
     final linkedEntities = await journalRepo.getLinkedEntities(
       linkedTo: journalEntity.id,
     );
     final linkedTask = linkedEntities.whereType<Task>().firstOrNull;
     if (linkedTask != null) return linkedTask;
 
-    // Fallback: find tasks that link TO this entry (task → entry)
+    // Incoming links: entities that link TO this entry (task → entry).
     final fallbackEntities = await journalRepo.getLinkedToEntities(
       linkedTo: journalEntity.id,
     );

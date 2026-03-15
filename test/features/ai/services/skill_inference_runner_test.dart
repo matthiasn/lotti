@@ -26,9 +26,6 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
 
-class MockAutomaticImageAnalysisTrigger extends Mock
-    implements AutomaticImageAnalysisTrigger {}
-
 void main() {
   late MockCloudInferenceRepository mockCloudRepo;
   late MockAiInputRepository mockAiInputRepo;

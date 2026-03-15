@@ -1246,6 +1246,7 @@
   "journalUnlinkQuestion": "Es-tu sûr de vouloir dissocier cette entrée ?",
   "legacyPromptsSectionTitle": "Anciens prompts",
   "linkedFromLabel": "LIÉ DEPUIS",
+  "linkedTaskImageBadge": "De la tâche liée",
   "linkedTasksMenuTooltip": "Options des tâches liées",
   "linkedTasksTitle": "Tâches liées",
   "linkedToLabel": "LIÉ À",
@@ -1479,7 +1480,7 @@
     }
   },
   "referenceImageLoadError": "Échec du chargement des images. Réessaie s'il te plaît.",
-  "referenceImageSelectionSubtitle": "Choisissez jusqu'à 5 images pour guider le style visuel de l'IA",
+  "referenceImageSelectionSubtitle": "Choisis jusqu'à 5 images pour guider le style visuel de l'IA",
   "referenceImageSelectionTitle": "Sélectionner des images de référence",
   "referenceImageSkip": "Passer",
   "saveButton": "Enregistrer",

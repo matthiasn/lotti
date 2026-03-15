@@ -5175,6 +5175,12 @@ abstract class AppLocalizations {
   /// **'LINKED FROM'**
   String get linkedFromLabel;
 
+  /// No description provided for @linkedTaskImageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'From linked task'**
+  String get linkedTaskImageBadge;
+
   /// No description provided for @linkedTasksMenuTooltip.
   ///
   /// In en, this message translates to:

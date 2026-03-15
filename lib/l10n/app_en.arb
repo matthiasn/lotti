@@ -1393,6 +1393,7 @@
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
   "legacyPromptsSectionTitle": "Legacy Prompts",
   "linkedFromLabel": "LINKED FROM",
+  "linkedTaskImageBadge": "From linked task",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToLabel": "LINKED TO",

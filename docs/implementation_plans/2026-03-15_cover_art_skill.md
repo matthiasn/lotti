@@ -46,7 +46,7 @@ then requires an explicit "Accept" click. This creates unnecessary friction:
 
 ### How the skill system works today
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                       UnifiedAiPopUpMenu                        │
 │  Shows skills + legacy prompts for a given JournalEntity        │
@@ -222,7 +222,7 @@ Update to open `CoverArtSkillModal` instead.
 
 Update the skill's `userInstructions` in `skill_seeding_service.dart` to include the visual theme:
 
-```
+```text
 Default visual theme (use when the user provides no specific direction):
 A whimsical default visual character being summoned from an ornate bottle,
 floating above a canvas and painting the task's visual story. The genie
@@ -372,31 +372,33 @@ flowchart TD
 - [x] Change `kMaxReferenceImages` from 3 to 5
 - [x] Implement `_fetchLinkedTaskCoverArt()` in `ReferenceImageSelectionController`
 - [x] Deduplicate direct images and linked-task cover art
-- [ ] Add link icon overlay for linked-task cover art in `ReferenceImageSelectionWidget` *(deferred — cosmetic)*
-- [ ] Update `ReferenceImageSelectionState` if needed (e.g., track image source) *(deferred — cosmetic)*
+- [x] Add link icon overlay for linked-task cover art in `ReferenceImageSelectionWidget`
+- [x] Update `ReferenceImageSelectionState` with `linkedTaskImageIds` to track image source
 
 ### Phase 3: UI conversion
-- [x] Create `CoverArtSkillModal` (selection-only, fire-and-forget)
+- [x] Create `CoverArtSkillModal` (selection-only, fire-and-forget with progress view)
 - [x] Update `UnifiedAiPopUpMenu.onSkillSelected` to open `CoverArtSkillModal` for image gen skills
 - [x] Update `ModernGenerateCoverArtItem` to use the new modal
-- [ ] Remove or deprecate the generation/review/accept states from `ImageGenerationReviewModal` *(deferred — legacy still used by prompt path)*
-- [ ] Clean up `ImageGenerationController` if it becomes unused *(deferred — legacy still used)*
+- [x] Remove legacy `ImageGenerationReviewModal` and `ImageGenerationController`
+- [x] Mark `AiResponseType.imageGeneration` as `isLegacyType` to filter from prompt list
 
 ### Phase 4: Prompt theme
-- [x] Update `skillImageGenId` user instructions with default visual theme in `skill_seeding_service.dart`
-- [ ] Update `coverArtGenerationPrompt` in `preconfigured_prompts.dart` for consistency *(deferred — legacy prompt)*
+- [x] Update `skillImageGenId` user instructions in `skill_seeding_service.dart`
 
 ### Phase 5: Testing
 - [x] Unit test `SkillInferenceRunner.runImageGeneration()` (success, error, unmount safety)
 - [x] Unit test linked-task cover art discovery in `ReferenceImageSelectionController`
 - [x] Unit test `kMaxReferenceImages` = 5 enforcement
-- [x] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger)
-- [x] Update existing `ImageGenerationReviewModal` tests or replace with new modal tests
+- [x] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger, progress view)
+- [x] Widget test `UnifiedAiPopUpMenu` image generation skill routing
+- [x] Unit test `triggerSkillProvider` image generation routing
 - [ ] Integration test: end-to-end skill trigger → cover art assignment *(deferred — requires device)*
 
 ### Localization
-- [x] No new ARB entries needed — modal reuses existing `imageGenerationModalTitle` and reference image labels
-- [x] Existing labels (`referenceImageContinue`, `referenceImageSkip`, etc.) cover the new modal
+- [x] Added `coverArtGenerationComplete` and `coverArtGenerationDismissHint` keys in all locale ARB files
+- [x] Added `linkedTaskImageBadge` key for accessibility on linked-task cover art badge
+- [x] Updated `referenceImageSelectionSubtitle` from "3" to "5" in all locales
+- [x] Existing labels (`referenceImageContinue`, `referenceImageSkip`, etc.) cover the modal
 
 ### Documentation
 - [x] Update `lib/features/ai/README.md` — updated with cover art skill details
