@@ -3679,7 +3679,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsWhatsNewSubtitle =>
-      'Vedeți cele mai recente actualizări și funcționalități';
+      'Vezi cele mai recente actualizări și funcționalități';
 
   @override
   String get settingsWhatsNewTitle => 'Ce este nou';

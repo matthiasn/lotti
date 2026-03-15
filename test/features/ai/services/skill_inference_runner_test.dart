@@ -272,40 +272,46 @@ void main() {
 
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
-      test('returns early when skill is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          resolvedProfile: ResolvedProfile(
-            thinkingModelId: 'models/gemini-3-flash-preview',
-            thinkingProvider: testInferenceProvider(),
-            transcriptionModelId: 'whisper-1',
-            transcriptionProvider: testInferenceProvider(id: 'p-audio'),
-          ),
-        );
+      test(
+        'throws StateError when skill is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'whisper-1',
+              transcriptionProvider: testInferenceProvider(id: 'p-audio'),
+            ),
+          );
 
-        await runner.runTranscription(
-          audioEntryId: 'entry-1',
-          automationResult: result,
-        );
+          expect(
+            () => runner.runTranscription(
+              audioEntryId: 'entry-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+      test(
+        'throws StateError when profile is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            skill: testSkill,
+          );
 
-      test('returns early when profile is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          skill: testSkill,
-        );
-
-        await runner.runTranscription(
-          audioEntryId: 'entry-1',
-          automationResult: result,
-        );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+          expect(
+            () => runner.runTranscription(
+              audioEntryId: 'entry-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
       test('returns early when transcription provider is null', () async {
         final result = AutomationResult(
@@ -559,40 +565,46 @@ void main() {
     });
 
     group('runImageAnalysis', () {
-      test('returns early when skill is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          resolvedProfile: ResolvedProfile(
-            thinkingModelId: 'models/gemini-3-flash-preview',
-            thinkingProvider: testInferenceProvider(),
-            imageRecognitionModelId: 'vision-model',
-            imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
-          ),
-        );
+      test(
+        'throws StateError when skill is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              imageRecognitionModelId: 'vision-model',
+              imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
+            ),
+          );
 
-        await runner.runImageAnalysis(
-          imageEntryId: 'img-1',
-          automationResult: result,
-        );
+          expect(
+            () => runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+      test(
+        'throws StateError when profile is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            skill: testImageSkill,
+          );
 
-      test('returns early when profile is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          skill: testImageSkill,
-        );
-
-        await runner.runImageAnalysis(
-          imageEntryId: 'img-1',
-          automationResult: result,
-        );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+          expect(
+            () => runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
       test(
         'returns early when image recognition provider is null',
@@ -962,7 +974,7 @@ void main() {
     });
 
     group('runPromptGeneration', () {
-      test('returns early when skill is null', () async {
+      test('throws StateError when skill is null', () async {
         final result = AutomationResult(
           handled: true,
           resolvedProfile: ResolvedProfile(
@@ -971,28 +983,28 @@ void main() {
           ),
         );
 
-        await runner.runPromptGeneration(
-          audioEntryId: 'entry-1',
-          automationResult: result,
+        expect(
+          () => runner.runPromptGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+          ),
+          throwsStateError,
         );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
       });
 
-      test('returns early when profile is null', () async {
+      test('throws StateError when profile is null', () async {
         final result = AutomationResult(
           handled: true,
           skill: testPromptGenSkill,
         );
 
-        await runner.runPromptGeneration(
-          audioEntryId: 'entry-1',
-          automationResult: result,
+        expect(
+          () => runner.runPromptGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+          ),
+          throwsStateError,
         );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
       });
 
       test('returns early when entity is not JournalAudio', () async {
@@ -1251,91 +1263,93 @@ void main() {
         expect(categoryId, 'cat-1');
       });
 
-      test('extracts transcript from latest transcript when no entryText',
-          () async {
-        final audioEntity =
-            JournalEntity.journalAudio(
-                  meta: Metadata(
-                    id: 'audio-transcript',
-                    createdAt: DateTime(2024),
-                    updatedAt: DateTime(2024),
-                    dateFrom: DateTime(2024),
-                    dateTo: DateTime(2024),
-                  ),
-                  data: AudioData(
-                    dateFrom: DateTime(2024),
-                    dateTo: DateTime(2024),
-                    duration: const Duration(minutes: 1),
-                    audioDirectory: '/audio/',
-                    audioFile: 'test.aac',
-                    transcripts: [
-                      AudioTranscript(
-                        created: DateTime(2024),
-                        library: 'whisper',
-                        model: 'whisper-1',
-                        detectedLanguage: 'en',
-                        transcript: 'Old transcript',
-                        processingTime: const Duration(seconds: 5),
-                      ),
-                      AudioTranscript(
-                        created: DateTime(2024, 6),
-                        library: 'whisper',
-                        model: 'whisper-2',
-                        detectedLanguage: 'en',
-                        transcript: 'Latest transcript',
-                        processingTime: const Duration(seconds: 3),
-                      ),
-                    ],
-                  ),
-                )
-                as JournalAudio;
+      test(
+        'extracts transcript from latest transcript when no entryText',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-transcript',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                      transcripts: [
+                        AudioTranscript(
+                          created: DateTime(2024),
+                          library: 'whisper',
+                          model: 'whisper-1',
+                          detectedLanguage: 'en',
+                          transcript: 'Old transcript',
+                          processingTime: const Duration(seconds: 5),
+                        ),
+                        AudioTranscript(
+                          created: DateTime(2024, 6),
+                          library: 'whisper',
+                          model: 'whisper-2',
+                          detectedLanguage: 'en',
+                          transcript: 'Latest transcript',
+                          processingTime: const Duration(seconds: 3),
+                        ),
+                      ],
+                    ),
+                  )
+                  as JournalAudio;
 
-        when(
-          () => mockAiInputRepo.getEntity('audio-transcript'),
-        ).thenAnswer((_) async => audioEntity);
-        when(
-          () => mockCloudRepo.generate(
-            any(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
-            systemMessage: any(named: 'systemMessage'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.fromIterable([makeStreamChunk('Generated prompt')]),
-        );
-        when(
-          () => mockAiInputRepo.createAiResponseEntry(
-            data: any(named: 'data'),
-            start: any(named: 'start'),
-            linkedId: any(named: 'linkedId'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
-        stubLoggingEvent();
+          when(
+            () => mockAiInputRepo.getEntity('audio-transcript'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Generated prompt')]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
 
-        await runner.runPromptGeneration(
-          audioEntryId: 'audio-transcript',
-          automationResult: makePromptGenerationResult(),
-        );
+          await runner.runPromptGeneration(
+            audioEntryId: 'audio-transcript',
+            automationResult: makePromptGenerationResult(),
+          );
 
-        // Verify the user message contains the latest transcript.
-        final generateCall = verify(
-          () => mockCloudRepo.generate(
-            captureAny(),
-            model: any(named: 'model'),
-            temperature: any(named: 'temperature'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
-            systemMessage: any(named: 'systemMessage'),
-          ),
-        ).captured;
-        final userMessage = generateCall.first as String;
-        expect(userMessage, contains('Latest transcript'));
-      });
+          // Verify the user message contains the latest transcript.
+          final generateCall = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).captured;
+          final userMessage = generateCall.first as String;
+          expect(userMessage, contains('Latest transcript'));
+        },
+      );
 
       test('returns early on empty response', () async {
         final audioEntity =

@@ -116,7 +116,7 @@ final class ShouldAutoShowWhatsNewProvider
 }
 
 String _$shouldAutoShowWhatsNewHash() =>
-    r'faa9c790f85939d2d8fd300a28a9aab890712116';
+    r'92b8a1e042f827341790c8cf3c97c941d0b6d56e';
 
 /// Controller for the "What's New" feature.
 ///

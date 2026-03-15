@@ -137,11 +137,10 @@ class SkillInferenceRunner {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
     if (skill == null || profile == null) {
-      developer.log(
-        'AutomationResult missing skill or profile for $audioEntryId',
-        name: _logTag,
+      throw StateError(
+        'AutomationResult missing skill or profile for $audioEntryId: '
+        'skill=${skill != null}, profile=${profile != null}',
       );
-      return;
     }
     final provider = profile.transcriptionProvider;
     final modelId = profile.transcriptionModelId;
@@ -275,11 +274,10 @@ class SkillInferenceRunner {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
     if (skill == null || profile == null) {
-      developer.log(
-        'AutomationResult missing skill or profile for $imageEntryId',
-        name: _logTag,
+      throw StateError(
+        'AutomationResult missing skill or profile for $imageEntryId: '
+        'skill=${skill != null}, profile=${profile != null}',
       );
-      return;
     }
     final provider = profile.imageRecognitionProvider;
     final modelId = profile.imageRecognitionModelId;
@@ -406,11 +404,10 @@ class SkillInferenceRunner {
     final skill = automationResult.skill;
     final profile = automationResult.resolvedProfile;
     if (skill == null || profile == null) {
-      developer.log(
-        'AutomationResult missing skill or profile for $audioEntryId',
-        name: _logTag,
+      throw StateError(
+        'AutomationResult missing skill or profile for $audioEntryId: '
+        'skill=${skill != null}, profile=${profile != null}',
       );
-      return;
     }
     final provider = profile.effectiveHighEndProvider;
     final modelId = profile.effectiveHighEndModelId;

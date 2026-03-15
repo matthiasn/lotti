@@ -1,10 +1,10 @@
 import 'dart:async';
 
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -31,7 +31,7 @@ WhatsNewService whatsNewService(Ref ref) {
 @riverpod
 Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
   // Check if the What's New feature is enabled via the DB config flag.
-  final db = getIt<JournalDb>();
+  final db = ref.watch(journalDbProvider);
   final isEnabled = await db.getConfigFlag(enableWhatsNewFlag);
   if (!isEnabled) return false;
 

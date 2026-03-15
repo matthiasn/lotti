@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.d
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -233,6 +234,10 @@ void main() {
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
           ),
+          // Prevent What's New from creating pending timers
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -284,6 +289,9 @@ void main() {
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
           ),
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -305,6 +313,7 @@ void main() {
     tester,
   ) async {
     final db = MockJournalDb();
+    when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
       db.watchActiveConfigFlagNames,
     ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
@@ -357,6 +366,9 @@ void main() {
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
           ),
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -388,6 +400,7 @@ void main() {
     tester,
   ) async {
     final db = MockJournalDb();
+    when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
       db.watchActiveConfigFlagNames,
     ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
@@ -441,6 +454,9 @@ void main() {
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
           ),
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -472,6 +488,9 @@ void main() {
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
           ),
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
+          ),
         ],
         child: MaterialApp.router(
           supportedLocales: AppLocalizations.supportedLocales,
@@ -497,6 +516,9 @@ void main() {
           outboxServiceProvider.overrideWithValue(mockOutboxService),
           aiSetupPromptServiceProvider.overrideWith(
             _MockAiSetupPromptService.new,
+          ),
+          shouldAutoShowWhatsNewProvider.overrideWith(
+            (ref) async => false,
           ),
         ],
         child: MaterialApp.router(

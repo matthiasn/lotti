@@ -198,8 +198,10 @@ void main() {
     // Dialog UI, cancel, prompt creation, and snackbar groups are no longer
     // applicable — all provider types now return empty prompt configs in
     // offerPromptSetup, so the method short-circuits before showing a dialog.
-    // The actual prompt creation happens via the FTUE extensions (tested in
-    // the FTUE-specific groups below).
+    // Prompt creation for supported providers goes through the FTUE path
+    // instead (see OpenAI, Mistral, and Alibaba FTUE Setup groups below).
+    // Gemini FTUE setup is tested via GeminiFtueResult value-object tests;
+    // the full setup path is not exercised here.
 
     group('Edge Cases', () {
       testWidgets(
