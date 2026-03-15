@@ -28,6 +28,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   late final TextEditingController _descriptionController;
 
   String? _thinkingModelId;
+  String? _thinkingHighEndModelId;
   String? _imageRecognitionModelId;
   String? _transcriptionModelId;
   String? _imageGenerationModelId;
@@ -44,6 +45,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     _nameController = TextEditingController(text: p?.name ?? '');
     _descriptionController = TextEditingController(text: p?.description ?? '');
     _thinkingModelId = p?.thinkingModelId;
+    _thinkingHighEndModelId = p?.thinkingHighEndModelId;
     _imageRecognitionModelId = p?.imageRecognitionModelId;
     _transcriptionModelId = p?.transcriptionModelId;
     _imageGenerationModelId = p?.imageGenerationModelId;
@@ -117,6 +119,16 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
               required: true,
               filter: (m) => m.supportsFunctionCalling,
               onModelSelected: (id) => setState(() => _thinkingModelId = id),
+            ),
+            const SizedBox(height: 16),
+
+            // High-end thinking model (optional)
+            _ModelSlotField(
+              label: context.messages.inferenceProfileThinkingHighEnd,
+              modelId: _thinkingHighEndModelId,
+              filter: (m) => m.inputModalities.contains(Modality.text),
+              onModelSelected: (id) =>
+                  setState(() => _thinkingHighEndModelId = id),
             ),
             const SizedBox(height: 16),
 
@@ -297,6 +309,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
                 id: widget.existingProfile?.id ?? const Uuid().v4(),
                 name: _nameController.text.trim(),
                 thinkingModelId: _thinkingModelId!,
+                thinkingHighEndModelId: _thinkingHighEndModelId,
                 imageRecognitionModelId: _imageRecognitionModelId,
                 transcriptionModelId: _transcriptionModelId,
                 imageGenerationModelId: _imageGenerationModelId,

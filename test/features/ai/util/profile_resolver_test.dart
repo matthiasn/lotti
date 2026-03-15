@@ -149,6 +149,7 @@ void main() {
       final profile = testInferenceProfile(
         id: 'profile-full',
         thinkingModelId: 'thinking-model',
+        thinkingHighEndModelId: 'thinking-pro-model',
         imageRecognitionModelId: 'vision-model',
         transcriptionModelId: 'audio-model',
         imageGenerationModelId: 'image-gen-model',
@@ -162,6 +163,11 @@ void main() {
             id: 'm1',
             providerModelId: 'thinking-model',
             inferenceProviderId: 'p1',
+          ),
+          testAiModel(
+            id: 'm1-pro',
+            providerModelId: 'thinking-pro-model',
+            inferenceProviderId: 'p1-pro',
           ),
           testAiModel(
             id: 'm2',
@@ -184,6 +190,9 @@ void main() {
         () => mockAiConfig.getConfigById('p1'),
       ).thenAnswer((_) async => testInferenceProvider(id: 'p1'));
       when(
+        () => mockAiConfig.getConfigById('p1-pro'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'p1-pro'));
+      when(
         () => mockAiConfig.getConfigById('p2'),
       ).thenAnswer((_) async => testInferenceProvider(id: 'p2'));
       when(
@@ -202,12 +211,36 @@ void main() {
       expect(result, isNotNull);
       expect(result!.thinkingModelId, 'thinking-model');
       expect(result.thinkingProvider.id, 'p1');
+      expect(result.thinkingHighEndModelId, 'thinking-pro-model');
+      expect(result.thinkingHighEndProvider, isNotNull);
+      expect(result.thinkingHighEndProvider!.id, 'p1-pro');
       expect(result.imageRecognitionModelId, 'vision-model');
       expect(result.imageRecognitionProvider, isNotNull);
       expect(result.transcriptionModelId, 'audio-model');
       expect(result.transcriptionProvider, isNotNull);
       expect(result.imageGenerationModelId, 'image-gen-model');
       expect(result.imageGenerationProvider, isNotNull);
+    });
+
+    test('high-end thinking slot fails gracefully when not set', () async {
+      final profile = testInferenceProfile(
+        id: 'profile-no-highend',
+        thinkingModelId: 'thinking-model',
+      );
+      stubProfile(profile);
+      stubModelResolution(modelId: 'thinking-model');
+
+      final result = await resolver.resolve(
+        agentConfig: const AgentConfig(profileId: 'profile-no-highend'),
+        template: makeTestTemplate(),
+        version: makeTestTemplateVersion(),
+      );
+
+      expect(result, isNotNull);
+      expect(result!.thinkingHighEndModelId, isNull);
+      expect(result.thinkingHighEndProvider, isNull);
+      // Fallback accessors should return regular thinking slot.
+      expect(result.effectiveHighEndModelId, 'thinking-model');
     });
 
     test('non-thinking slots fail gracefully when model missing', () async {

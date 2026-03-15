@@ -2721,6 +2721,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileThinking => 'Gândire';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Gândire (nivel înalt)';
+
+  @override
   String get inferenceProfileThinkingRequired =>
       'Este necesar un model de gândire';
 
@@ -3673,6 +3676,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsAiApiKeys => 'Furnizori de inferență AI';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Vezi cele mai recente actualizări și funcționalități';
+
+  @override
+  String get settingsWhatsNewTitle => 'Ce este nou';
 
   @override
   String get settingsAiModels => 'Modele AI';

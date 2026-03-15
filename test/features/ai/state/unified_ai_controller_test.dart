@@ -1282,17 +1282,17 @@ void main() {
           skillType: SkillType.transcription,
           modalities: [Modality.audio],
         );
-        final textSkill = createSkill(
-          id: 'skill-text',
-          name: 'Text Analysis',
+        final promptSkill = createSkill(
+          id: 'skill-prompt',
+          name: 'Coding Prompt',
           skillType: SkillType.promptGeneration,
-          modalities: [Modality.text],
+          modalities: [Modality.audio],
         );
 
         when(
           () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
         ).thenAnswer(
-          (_) => Stream.value([transcriptionSkill, textSkill]),
+          (_) => Stream.value([transcriptionSkill, promptSkill]),
         );
 
         final testContainer = ProviderContainer(
@@ -1323,9 +1323,11 @@ void main() {
           availableSkillsForEntityProvider(audioEntity.id).future,
         );
 
-        // promptGeneration is not yet supported, so only transcription shows
-        expect(skills.length, 1);
-        expect(skills.first.id, 'skill-transcription');
+        // Both transcription and promptGeneration require audio modality
+        // and pass the filter for JournalAudio entities.
+        expect(skills.length, 2);
+        expect(skills.map((s) => s.id), contains('skill-transcription'));
+        expect(skills.map((s) => s.id), contains('skill-prompt'));
         skillSub.close();
       },
     );
@@ -1355,16 +1357,16 @@ void main() {
           skillType: SkillType.imageAnalysis,
           modalities: [Modality.image],
         );
-        final textSkill = createSkill(
-          id: 'skill-text',
-          name: 'Text Analysis',
+        final promptSkill = createSkill(
+          id: 'skill-prompt',
+          name: 'Coding Prompt',
           skillType: SkillType.promptGeneration,
-          modalities: [Modality.text],
+          modalities: [Modality.audio],
         );
 
         when(
           () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-        ).thenAnswer((_) => Stream.value([imageSkill, textSkill]));
+        ).thenAnswer((_) => Stream.value([imageSkill, promptSkill]));
 
         final testContainer = ProviderContainer(
           overrides: [
@@ -1394,9 +1396,10 @@ void main() {
           availableSkillsForEntityProvider(imageEntity.id).future,
         );
 
-        // promptGeneration is not yet supported, so only imageAnalysis shows
+        // Only imageAnalysis passes — promptGeneration requires audio
+        // modality, which is filtered out for JournalImage entities.
         expect(skills.length, 1);
-        expect(skills.first.id, 'skill-image');
+        expect(skills.map((s) => s.id), contains('skill-image'));
         skillSub.close();
       },
     );
@@ -1429,16 +1432,16 @@ void main() {
         skillType: SkillType.transcription,
         modalities: [Modality.audio],
       );
-      final textSkill = createSkill(
-        id: 'skill-text',
-        name: 'Text Skill',
+      final promptSkill = createSkill(
+        id: 'skill-prompt',
+        name: 'Coding Prompt',
         skillType: SkillType.promptGeneration,
-        modalities: [Modality.text],
+        modalities: [Modality.audio],
       );
 
       when(
         () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([audioOnlySkill, textSkill]));
+      ).thenAnswer((_) => Stream.value([audioOnlySkill, promptSkill]));
 
       final testContainer = ProviderContainer(
         overrides: [
@@ -1466,8 +1469,8 @@ void main() {
         availableSkillsForEntityProvider(taskEntity.id).future,
       );
 
-      // Both audio-only (wrong modality) and promptGeneration (unsupported)
-      // are filtered out
+      // Both audio-only skills are filtered out for Task entities —
+      // transcription and promptGeneration both require audio modality.
       expect(skills, isEmpty);
       skillSub.close();
     });
@@ -1886,6 +1889,75 @@ void main() {
           imageEntryId: 'image-entry-1',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-img',
+        ),
+      ).called(1);
+    });
+
+    test('successfully routes prompt generation skill to runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-prompt',
+                name: 'Generate Coding Prompt',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.promptGeneration,
+                requiredInputModalities: [Modality.audio],
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final thinkingProvider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://generativelanguage.googleapis.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: thinkingProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-prompt'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runPromptGeneration(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-prompt').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-entry-2',
+          skillId: 'skill-prompt',
+          linkedTaskId: 'task-prompt',
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runPromptGeneration(
+          audioEntryId: 'audio-entry-2',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-prompt',
         ),
       ).called(1);
     });

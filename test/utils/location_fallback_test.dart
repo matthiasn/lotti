@@ -11,6 +11,8 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/fallbacks.dart';
+
 class MockLocation extends Mock implements Location {}
 
 class MockJournalDb extends Mock implements JournalDb {}
@@ -57,6 +59,7 @@ void main() {
   late DeviceLocation deviceLocation;
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(FakeException());
   });
 

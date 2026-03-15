@@ -39,10 +39,10 @@ void main() {
           modelIds: ['model1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
         );
 
         when(
@@ -58,7 +58,8 @@ void main() {
         );
 
         // Get the preconfigured prompt
-        final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
+        final preconfiguredPrompt =
+            preconfiguredPrompts['image_prompt_generation']!;
 
         // Toggle tracking off
         controller.toggleTrackPreconfigured(false);
@@ -100,10 +101,10 @@ void main() {
         modelIds: ['model1'],
         createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
-        requiredInputData: [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.imagePromptGeneration,
         trackPreconfigured: true,
-        preconfiguredPromptId: 'image_analysis',
+        preconfiguredPromptId: 'image_prompt_generation',
       );
 
       when(
@@ -119,7 +120,8 @@ void main() {
       );
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
+      final preconfiguredPrompt =
+          preconfiguredPrompts['image_prompt_generation']!;
 
       // Verify the controllers loaded the preconfigured values
       expect(
@@ -143,9 +145,9 @@ void main() {
         modelIds: ['model1'],
         createdAt: DateTime(2024, 3, 15),
         useReasoning: false,
-        requiredInputData: [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
-        preconfiguredPromptId: 'image_analysis',
+        requiredInputData: [InputDataType.task],
+        aiResponseType: AiResponseType.imagePromptGeneration,
+        preconfiguredPromptId: 'image_prompt_generation',
       );
 
       when(
@@ -174,7 +176,8 @@ void main() {
       controller.toggleTrackPreconfigured(true);
 
       // Get the preconfigured prompt
-      final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
+      final preconfiguredPrompt =
+          preconfiguredPrompts['image_prompt_generation']!;
 
       // Should now have preconfigured values
       expect(

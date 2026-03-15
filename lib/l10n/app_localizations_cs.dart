@@ -2695,6 +2695,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileThinking => 'Thinking';
 
   @override
+  String get inferenceProfileThinkingHighEnd => 'Thinking (High-End)';
+
+  @override
   String get inferenceProfileThinkingRequired => 'A thinking model is required';
 
   @override
@@ -3651,6 +3654,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAiApiKeys => 'Poskytovatelé AI inferencí';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Podívej se na nejnovější aktualizace a funkce';
+
+  @override
+  String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
   String get settingsAiModels => 'AI modely';

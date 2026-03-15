@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -54,6 +55,36 @@ void main() {
             createdAt: DateTime(2024),
           )
           as AiConfigSkill;
+
+  final testPromptGenSkill =
+      AiConfig.skill(
+            id: 'skill-prompt-gen',
+            name: 'Generate Coding Prompt',
+            skillType: SkillType.promptGeneration,
+            requiredInputModalities: const [Modality.audio],
+            contextPolicy: ContextPolicy.fullTask,
+            systemInstructions: 'You are a prompt engineer.',
+            userInstructions: 'Generate a coding prompt.',
+            useReasoning: true,
+            createdAt: DateTime(2024),
+          )
+          as AiConfigSkill;
+
+  AutomationResult makePromptGenerationResult({
+    String? thinkingHighEndModelId,
+    AiConfigInferenceProvider? thinkingHighEndProvider,
+  }) {
+    return AutomationResult(
+      handled: true,
+      resolvedProfile: ResolvedProfile(
+        thinkingModelId: 'models/gemini-flash',
+        thinkingProvider: testInferenceProvider(id: 'p-flash'),
+        thinkingHighEndModelId: thinkingHighEndModelId,
+        thinkingHighEndProvider: thinkingHighEndProvider,
+      ),
+      skill: testPromptGenSkill,
+    );
+  }
 
   AutomationResult makeTranscriptionResult() {
     return AutomationResult(
@@ -241,40 +272,46 @@ void main() {
 
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
-      test('returns early when skill is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          resolvedProfile: ResolvedProfile(
-            thinkingModelId: 'models/gemini-3-flash-preview',
-            thinkingProvider: testInferenceProvider(),
-            transcriptionModelId: 'whisper-1',
-            transcriptionProvider: testInferenceProvider(id: 'p-audio'),
-          ),
-        );
+      test(
+        'throws StateError when skill is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'whisper-1',
+              transcriptionProvider: testInferenceProvider(id: 'p-audio'),
+            ),
+          );
 
-        await runner.runTranscription(
-          audioEntryId: 'entry-1',
-          automationResult: result,
-        );
+          expect(
+            () => runner.runTranscription(
+              audioEntryId: 'entry-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+      test(
+        'throws StateError when profile is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            skill: testSkill,
+          );
 
-      test('returns early when profile is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          skill: testSkill,
-        );
-
-        await runner.runTranscription(
-          audioEntryId: 'entry-1',
-          automationResult: result,
-        );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+          expect(
+            () => runner.runTranscription(
+              audioEntryId: 'entry-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
       test('returns early when transcription provider is null', () async {
         final result = AutomationResult(
@@ -528,40 +565,46 @@ void main() {
     });
 
     group('runImageAnalysis', () {
-      test('returns early when skill is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          resolvedProfile: ResolvedProfile(
-            thinkingModelId: 'models/gemini-3-flash-preview',
-            thinkingProvider: testInferenceProvider(),
-            imageRecognitionModelId: 'vision-model',
-            imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
-          ),
-        );
+      test(
+        'throws StateError when skill is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              imageRecognitionModelId: 'vision-model',
+              imageRecognitionProvider: testInferenceProvider(id: 'p-vision'),
+            ),
+          );
 
-        await runner.runImageAnalysis(
-          imageEntryId: 'img-1',
-          automationResult: result,
-        );
+          expect(
+            () => runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+      test(
+        'throws StateError when profile is null in AutomationResult',
+        () async {
+          final result = AutomationResult(
+            handled: true,
+            skill: testImageSkill,
+          );
 
-      test('returns early when profile is null in AutomationResult', () async {
-        final result = AutomationResult(
-          handled: true,
-          skill: testImageSkill,
-        );
-
-        await runner.runImageAnalysis(
-          imageEntryId: 'img-1',
-          automationResult: result,
-        );
-
-        verifyZeroInteractions(mockCloudRepo);
-        verifyZeroInteractions(mockAiInputRepo);
-      });
+          expect(
+            () => runner.runImageAnalysis(
+              imageEntryId: 'img-1',
+              automationResult: result,
+            ),
+            throwsStateError,
+          );
+        },
+      );
 
       test(
         'returns early when image recognition provider is null',
@@ -924,6 +967,461 @@ void main() {
             any<dynamic>(),
             domain: 'SkillInferenceRunner',
             subDomain: 'runImageAnalysis',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('runPromptGeneration', () {
+      test('throws StateError when skill is null', () async {
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-flash',
+            thinkingProvider: testInferenceProvider(),
+          ),
+        );
+
+        expect(
+          () => runner.runPromptGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+          ),
+          throwsStateError,
+        );
+      });
+
+      test('throws StateError when profile is null', () async {
+        final result = AutomationResult(
+          handled: true,
+          skill: testPromptGenSkill,
+        );
+
+        expect(
+          () => runner.runPromptGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+          ),
+          throwsStateError,
+        );
+      });
+
+      test('returns early when entity is not JournalAudio', () async {
+        when(
+          () => mockAiInputRepo.getEntity('entry-1'),
+        ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+
+        await runner.runPromptGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+      });
+
+      test('uses high-end thinking model when configured', () async {
+        final audioEntity =
+            JournalEntity.journalAudio(
+                  meta: Metadata(
+                    id: 'audio-prompt',
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                  ),
+                  data: AudioData(
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                    duration: const Duration(minutes: 1),
+                    audioDirectory: '/audio/',
+                    audioFile: 'test.aac',
+                  ),
+                  entryText: const EntryText(
+                    plainText: 'Fix the login bug',
+                    markdown: 'Fix the login bug',
+                  ),
+                )
+                as JournalAudio;
+
+        final highEndProvider = testInferenceProvider(id: 'p-pro');
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-prompt'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-1'),
+        ).thenAnswer((_) async => '{"id": "task-1", "title": "Login"}');
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson('task-1'),
+        ).thenAnswer((_) async => '{"linked": []}');
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('## Summary\nFix login\n\n'),
+            makeStreamChunk('## Prompt\nPlease fix the login bug'),
+          ]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+
+        await runner.runPromptGeneration(
+          audioEntryId: 'audio-prompt',
+          automationResult: makePromptGenerationResult(
+            thinkingHighEndModelId: 'models/gemini-pro',
+            thinkingHighEndProvider: highEndProvider,
+          ),
+          linkedTaskId: 'task-1',
+        );
+
+        // Verify it used the high-end model, not the regular thinking model.
+        verify(
+          () => mockCloudRepo.generate(
+            any(),
+            model: 'models/gemini-pro',
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).called(1);
+      });
+
+      test('falls back to thinking model when high-end not set', () async {
+        final audioEntity =
+            JournalEntity.journalAudio(
+                  meta: Metadata(
+                    id: 'audio-fallback',
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                  ),
+                  data: AudioData(
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                    duration: const Duration(minutes: 1),
+                    audioDirectory: '/audio/',
+                    audioFile: 'test.aac',
+                  ),
+                  entryText: const EntryText(
+                    plainText: 'Some transcript',
+                    markdown: 'Some transcript',
+                  ),
+                )
+                as JournalAudio;
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-fallback'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('## Summary\nDo something\n\n## Prompt\nDo it'),
+          ]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+
+        // No high-end model configured — should fall back to regular thinking.
+        await runner.runPromptGeneration(
+          audioEntryId: 'audio-fallback',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        verify(
+          () => mockCloudRepo.generate(
+            any(),
+            model: 'models/gemini-flash',
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).called(1);
+      });
+
+      test('happy path: generates prompt and saves AiResponseEntry', () async {
+        final audioEntity =
+            JournalEntity.journalAudio(
+                  meta: Metadata(
+                    id: 'audio-happy',
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                    categoryId: 'cat-1',
+                  ),
+                  data: AudioData(
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                    duration: const Duration(minutes: 1),
+                    audioDirectory: '/audio/',
+                    audioFile: 'test.aac',
+                  ),
+                  entryText: const EntryText(
+                    plainText: 'Fix the login bug on mobile',
+                    markdown: 'Fix the login bug on mobile',
+                  ),
+                )
+                as JournalAudio;
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-happy'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-happy'),
+        ).thenAnswer((_) async => '{"id": "task-happy"}');
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson('task-happy'),
+        ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer(
+          (_) => Stream.fromIterable([
+            makeStreamChunk('## Summary\nFix login bug\n\n'),
+            makeStreamChunk('## Prompt\nFix the login bug on mobile'),
+          ]),
+        );
+        when(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => null);
+        stubLoggingEvent();
+
+        await runner.runPromptGeneration(
+          audioEntryId: 'audio-happy',
+          automationResult: makePromptGenerationResult(),
+          linkedTaskId: 'task-happy',
+        );
+
+        // Verify AiResponseEntry was created with correct data.
+        final captured = verify(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: captureAny(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: captureAny(named: 'linkedId'),
+            categoryId: captureAny(named: 'categoryId'),
+          ),
+        ).captured;
+
+        final data = captured[0] as AiResponseData;
+        expect(data.type, AiResponseType.promptGeneration);
+        expect(data.response, contains('Fix login bug'));
+        expect(data.model, 'models/gemini-flash');
+
+        final linkedId = captured[1] as String;
+        expect(linkedId, 'audio-happy');
+
+        final categoryId = captured[2] as String?;
+        expect(categoryId, 'cat-1');
+      });
+
+      test(
+        'extracts transcript from latest transcript when no entryText',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-transcript',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                      transcripts: [
+                        AudioTranscript(
+                          created: DateTime(2024),
+                          library: 'whisper',
+                          model: 'whisper-1',
+                          detectedLanguage: 'en',
+                          transcript: 'Old transcript',
+                          processingTime: const Duration(seconds: 5),
+                        ),
+                        AudioTranscript(
+                          created: DateTime(2024, 6),
+                          library: 'whisper',
+                          model: 'whisper-2',
+                          detectedLanguage: 'en',
+                          transcript: 'Latest transcript',
+                          processingTime: const Duration(seconds: 3),
+                        ),
+                      ],
+                    ),
+                  )
+                  as JournalAudio;
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-transcript'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Generated prompt')]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            audioEntryId: 'audio-transcript',
+            automationResult: makePromptGenerationResult(),
+          );
+
+          // Verify the user message contains the latest transcript.
+          final generateCall = verify(
+            () => mockCloudRepo.generate(
+              captureAny(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).captured;
+          final userMessage = generateCall.first as String;
+          expect(userMessage, contains('Latest transcript'));
+        },
+      );
+
+      test('returns early on empty response', () async {
+        final audioEntity =
+            JournalEntity.journalAudio(
+                  meta: Metadata(
+                    id: 'audio-empty',
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                  ),
+                  data: AudioData(
+                    dateFrom: DateTime(2024),
+                    dateTo: DateTime(2024),
+                    duration: const Duration(minutes: 1),
+                    audioDirectory: '/audio/',
+                    audioFile: 'test.aac',
+                  ),
+                  entryText: const EntryText(
+                    plainText: 'Some text',
+                    markdown: 'Some text',
+                  ),
+                )
+                as JournalAudio;
+
+        when(
+          () => mockAiInputRepo.getEntity('audio-empty'),
+        ).thenAnswer((_) async => audioEntity);
+        when(
+          () => mockCloudRepo.generate(
+            any(),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+            provider: any(named: 'provider'),
+            systemMessage: any(named: 'systemMessage'),
+          ),
+        ).thenAnswer((_) => Stream.fromIterable([]));
+        stubLoggingException();
+
+        await runner.runPromptGeneration(
+          audioEntryId: 'audio-empty',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        verifyNever(
+          () => mockAiInputRepo.createAiResponseEntry(
+            data: any(named: 'data'),
+            start: any(named: 'start'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      });
+
+      test('logs exception on failure', () async {
+        when(
+          () => mockAiInputRepo.getEntity('entry-1'),
+        ).thenThrow(Exception('DB error'));
+        stubLoggingException();
+
+        await runner.runPromptGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: makePromptGenerationResult(),
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runPromptGeneration',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);

@@ -96,6 +96,11 @@ sealed class AiConfig with _$AiConfig {
     /// providerModelId string for agentic thinking (tool calling, reasoning).
     required String thinkingModelId,
 
+    /// providerModelId string for high-end thinking tasks (e.g. coding prompt
+    /// generation) where quality matters more than speed/cost.
+    /// Falls back to the regular thinking model when not set.
+    String? thinkingHighEndModelId,
+
     /// providerModelId string for image recognition / vision tasks.
     String? imageRecognitionModelId,
 

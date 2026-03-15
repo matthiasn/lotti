@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.923] - 2026-03-15
+### Added
+- Inference profiles: new "Thinking (High-End)" model slot for tasks where
+  quality matters more than speed/cost (e.g. coding prompt generation). Falls
+  back to the regular thinking model when not configured.
+
 ## [0.9.922] - 2026-03-15
 ### Changed
 - AI popup menu: skills now appear in a dedicated top section above legacy

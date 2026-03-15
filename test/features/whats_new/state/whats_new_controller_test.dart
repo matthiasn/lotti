@@ -1,14 +1,19 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockWhatsNewService extends Mock implements WhatsNewService {}
+
+class MockJournalDb extends Mock implements JournalDb {}
 
 class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}
 
@@ -308,6 +313,21 @@ void main() {
   });
 
   group('shouldAutoShowWhatsNew', () {
+    /// Creates a fresh container with the config flag overridden.
+    ProviderContainer createContainerWithFlag({required bool enabled}) {
+      final mockDb = MockJournalDb();
+      when(
+        () => mockDb.getConfigFlag(enableWhatsNewFlag),
+      ).thenAnswer((_) async => enabled);
+
+      return ProviderContainer(
+        overrides: [
+          whatsNewServiceProvider.overrideWithValue(mockService),
+          journalDbProvider.overrideWithValue(mockDb),
+        ],
+      );
+    }
+
     test(
       'returns true on first launch when there are unseen releases',
       () async {
@@ -318,7 +338,10 @@ void main() {
           () => mockService.fetchContent(testRelease1),
         ).thenAnswer((_) async => testContent1);
 
-        final shouldShow = await container.read(
+        final c = createContainerWithFlag(enabled: true);
+        addTearDown(c.dispose);
+
+        final shouldShow = await c.read(
           shouldAutoShowWhatsNewProvider.future,
         );
 
@@ -336,7 +359,10 @@ void main() {
     test('returns false on first launch when no releases available', () async {
       when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
 
-      final shouldShow = await container.read(
+      final c = createContainerWithFlag(enabled: true);
+      addTearDown(c.dispose);
+
+      final shouldShow = await c.read(
         shouldAutoShowWhatsNewProvider.future,
       );
 
@@ -348,14 +374,7 @@ void main() {
         'whats_new_last_launched_version': '99.99.99', // Same as mock version
       });
 
-      container.dispose();
       mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
-
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
@@ -363,7 +382,10 @@ void main() {
         () => mockService.fetchContent(testRelease1),
       ).thenAnswer((_) async => testContent1);
 
-      final shouldShow = await container.read(
+      final c = createContainerWithFlag(enabled: true);
+      addTearDown(c.dispose);
+
+      final shouldShow = await c.read(
         shouldAutoShowWhatsNewProvider.future,
       );
 
@@ -375,14 +397,7 @@ void main() {
         'whats_new_last_launched_version': '98.98.98', // Different from mock
       });
 
-      container.dispose();
       mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
-
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
@@ -390,7 +405,10 @@ void main() {
         () => mockService.fetchContent(testRelease1),
       ).thenAnswer((_) async => testContent1);
 
-      final shouldShow = await container.read(
+      final c = createContainerWithFlag(enabled: true);
+      addTearDown(c.dispose);
+
+      final shouldShow = await c.read(
         shouldAutoShowWhatsNewProvider.future,
       );
 
@@ -410,19 +428,15 @@ void main() {
         'whats_new_seen_0.9.980': true, // Already seen
       });
 
-      container.dispose();
       mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
-
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
 
-      final shouldShow = await container.read(
+      final c = createContainerWithFlag(enabled: true);
+      addTearDown(c.dispose);
+
+      final shouldShow = await c.read(
         shouldAutoShowWhatsNewProvider.future,
       );
 
@@ -436,22 +450,39 @@ void main() {
           'whats_new_last_launched_version': '98.98.98',
         });
 
-        container.dispose();
         mockService = MockWhatsNewService();
-        container = ProviderContainer(
-          overrides: [
-            whatsNewServiceProvider.overrideWithValue(mockService),
-          ],
-        );
-
         when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
 
-        final shouldShow = await container.read(
+        final c = createContainerWithFlag(enabled: true);
+        addTearDown(c.dispose);
+
+        final shouldShow = await c.read(
           shouldAutoShowWhatsNewProvider.future,
         );
 
         expect(shouldShow, isFalse);
       },
     );
+
+    test('returns false when config flag is disabled', () async {
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+
+      final c = createContainerWithFlag(enabled: false);
+      addTearDown(c.dispose);
+
+      final shouldShow = await c.read(
+        shouldAutoShowWhatsNewProvider.future,
+      );
+
+      expect(shouldShow, isFalse);
+
+      // Should not have checked version or fetched releases
+      verifyNever(() => mockService.fetchIndex());
+    });
   });
 }

@@ -563,10 +563,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
         );
 
         when(
@@ -641,10 +641,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
         );
 
         when(
@@ -673,7 +673,8 @@ void main() {
         expect(systemPromptField, findsOneWidget);
 
         // Get initial text (should be the preconfigured prompt's system message)
-        final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
+        final preconfiguredPrompt =
+            preconfiguredPrompts['image_prompt_generation']!;
         final textField = tester.widget<TextFormField>(systemPromptField);
         expect(
           textField.controller?.text,
@@ -707,10 +708,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
         );
 
         when(
@@ -795,10 +796,10 @@ void main() {
           modelIds: ['model-1'],
           createdAt: DateTime.now(),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
+          preconfiguredPromptId: 'image_prompt_generation',
           description: 'Test description',
         );
 
@@ -833,7 +834,7 @@ void main() {
         expect(savedPrompt.trackPreconfigured, isTrue);
         expect(
           savedPrompt.preconfiguredPromptId,
-          equals('image_analysis'),
+          equals('image_prompt_generation'),
         );
         expect(savedPrompt.name, equals('Updated Tracked Prompt'));
       });

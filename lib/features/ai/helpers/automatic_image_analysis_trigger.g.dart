@@ -74,4 +74,4 @@ final class AutomaticImageAnalysisTriggerProvider
 }
 
 String _$automaticImageAnalysisTriggerHash() =>
-    r'25e5e327a02460f5fb1425b4474c64d8e0991c01';
+    r'af6116353e182281e2594a4b995e25712ce47da2';

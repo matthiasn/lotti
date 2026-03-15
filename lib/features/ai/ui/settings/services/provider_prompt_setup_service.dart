@@ -96,6 +96,9 @@ class ProviderPromptSetupService {
       modelSelection: modelSelection,
     );
 
+    // No prompts to create for this provider type — nothing to do.
+    if (promptConfigs.isEmpty) return false;
+
     final previewInfos = _getPromptPreviews(
       providerType: provider.inferenceProviderType,
       modelSelection: modelSelection,
@@ -244,37 +247,9 @@ class ProviderPromptSetupService {
     required _ModelSelection modelSelection,
   }) {
     return switch (providerType) {
-      InferenceProviderType.alibaba => [
-        if (modelSelection.audioModel != null)
-          PromptConfig(
-            template: audioTranscriptionPrompt,
-            model: modelSelection.audioModel!,
-          ),
-        if (modelSelection.imageModel != null)
-          PromptConfig(
-            template: imageAnalysisInTaskContextPrompt,
-            model: modelSelection.imageModel!,
-          ),
-      ],
-      InferenceProviderType.gemini => [
-        if (modelSelection.audioModel != null)
-          PromptConfig(
-            template: audioTranscriptionPrompt,
-            model: modelSelection.audioModel!,
-          ),
-        if (modelSelection.imageModel != null)
-          PromptConfig(
-            template: imageAnalysisInTaskContextPrompt,
-            model: modelSelection.imageModel!,
-          ),
-      ],
-      InferenceProviderType.ollama => [
-        if (modelSelection.imageModel != null)
-          PromptConfig(
-            template: imageAnalysisInTaskContextPrompt,
-            model: modelSelection.imageModel!,
-          ),
-      ],
+      InferenceProviderType.alibaba => [],
+      InferenceProviderType.gemini => [],
+      InferenceProviderType.ollama => [],
       _ => [],
     };
   }
@@ -285,42 +260,9 @@ class ProviderPromptSetupService {
     required _ModelSelection modelSelection,
   }) {
     return switch (providerType) {
-      InferenceProviderType.alibaba => [
-        if (modelSelection.audioModel != null)
-          PromptPreviewInfo(
-            icon: Icons.mic,
-            name: 'Audio Transcript',
-            modelName: modelSelection.audioModel!.name,
-          ),
-        if (modelSelection.imageModel != null)
-          PromptPreviewInfo(
-            icon: Icons.image,
-            name: 'Image Analysis',
-            modelName: modelSelection.imageModel!.name,
-          ),
-      ],
-      InferenceProviderType.gemini => [
-        if (modelSelection.audioModel != null)
-          PromptPreviewInfo(
-            icon: Icons.mic,
-            name: 'Audio Transcript',
-            modelName: modelSelection.audioModel!.name,
-          ),
-        if (modelSelection.imageModel != null)
-          PromptPreviewInfo(
-            icon: Icons.image,
-            name: 'Image Analysis',
-            modelName: modelSelection.imageModel!.name,
-          ),
-      ],
-      InferenceProviderType.ollama => [
-        if (modelSelection.imageModel != null)
-          PromptPreviewInfo(
-            icon: Icons.image,
-            name: 'Image Analysis',
-            modelName: modelSelection.imageModel!.name,
-          ),
-      ],
+      InferenceProviderType.alibaba => [],
+      InferenceProviderType.gemini => [],
+      InferenceProviderType.ollama => [],
       _ => [],
     };
   }
@@ -634,8 +576,7 @@ class FtuePromptConfig {
 
   final PreconfiguredPrompt template;
 
-  /// Which model to use: 'flash', 'pro', 'reasoning', 'audio', 'vision',
-  /// or 'image'.
+  /// Which model to use: 'flash', 'pro', 'reasoning', or 'image'.
   final String modelVariant;
   final String promptName;
 }
@@ -646,7 +587,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Three models (Flash, Pro, Nano Banana Pro) if they don't exist
-  /// 2. 18 prompts (Flash and Pro variants for 9 prompt types)
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [GeminiFtueResult] with details of what was created.
@@ -862,49 +803,13 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Gets all prompt configurations for FTUE.
+  /// Gets all prompt configurations for Gemini FTUE.
   ///
   /// Model assignments:
-  /// - Gemini Pro: Cover Art, Coding, Image Prompts, Checklists (complex reasoning)
-  /// - Gemini Flash: All other text prompts (fast processing)
-  /// - Nano Banana Pro: Image generation (cover art output)
+  /// - Gemini Pro: Image Prompt Generation (complex reasoning)
+  /// - Nano Banana Pro: Cover Art Generation (image output)
   List<FtuePromptConfig> _getFtuePromptConfigs() {
     return const [
-      // Audio Transcription -> Flash (fast processing)
-      FtuePromptConfig(
-        template: audioTranscriptionPrompt,
-        modelVariant: 'flash',
-        promptName: 'Audio Transcription Gemini Flash',
-      ),
-
-      // Audio Transcription with Task Context -> Flash (fast processing)
-      FtuePromptConfig(
-        template: audioTranscriptionWithTaskContextPrompt,
-        modelVariant: 'flash',
-        promptName: 'Audio Transcription (Task Context) Gemini Flash',
-      ),
-
-      // Image Analysis -> Flash (fast processing)
-      FtuePromptConfig(
-        template: imageAnalysisPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis Gemini Flash',
-      ),
-
-      // Image Analysis in Task Context -> Flash (fast processing)
-      FtuePromptConfig(
-        template: imageAnalysisInTaskContextPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis (Task Context) Gemini Flash',
-      ),
-
-      // Generate Coding Prompt -> Pro (complex reasoning needed)
-      FtuePromptConfig(
-        template: promptGenerationPrompt,
-        modelVariant: 'pro',
-        promptName: 'Coding Prompt Gemini Pro',
-      ),
-
       // Generate Image Prompt -> Pro (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
@@ -1009,27 +914,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
           ?.id;
     }
 
-    // Audio Transcription -> Flash (fast processing)
-    final audioFlash = findPromptId('audio_transcription', flashModelId);
-    if (audioFlash != null) {
-      map[AiResponseType.audioTranscription] = [audioFlash];
-    }
-
-    // Image Analysis (task context) -> Flash (fast processing)
-    final imageFlash = findPromptId(
-      'image_analysis_task_context',
-      flashModelId,
-    );
-    if (imageFlash != null) {
-      map[AiResponseType.imageAnalysis] = [imageFlash];
-    }
-
-    // Prompt Generation -> Pro (complex reasoning needed for code prompts)
-    final promptGenPro = findPromptId('prompt_generation', proModelId);
-    if (promptGenPro != null) {
-      map[AiResponseType.promptGeneration] = [promptGenPro];
-    }
-
     // Image Prompt Generation -> Pro (complex reasoning needed)
     final imagePromptPro = findPromptId('image_prompt_generation', proModelId);
     if (imagePromptPro != null) {
@@ -1117,7 +1001,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o Transcribe, Image/GPT Image 1.5)
-  /// 2. 9 prompts with appropriate model assignments
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [OpenAiFtueResult] with details of what was created.
@@ -1156,7 +1040,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       repository: repository,
       flashModel: modelResult.flash,
       reasoningModel: modelResult.reasoning,
-      audioModel: modelResult.audio,
       imageModel: modelResult.image,
     );
 
@@ -1169,7 +1052,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       prompts: promptResult.allPrompts,
       flashModelId: modelResult.flash.id,
       reasoningModelId: modelResult.reasoning.id,
-      audioModelId: modelResult.audio.id,
       imageModelId: modelResult.image.id,
     );
 
@@ -1271,7 +1153,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     required AiConfigRepository repository,
     required AiConfigModel flashModel,
     required AiConfigModel reasoningModel,
-    required AiConfigModel audioModel,
     required AiConfigModel imageModel,
   }) async {
     final created = <AiConfigPrompt>[];
@@ -1296,7 +1177,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       final model = switch (config.modelVariant) {
         'flash' => flashModel,
         'reasoning' => reasoningModel,
-        'audio' => audioModel,
         'image' => imageModel,
         _ => flashModel,
       };
@@ -1347,47 +1227,10 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   /// Gets all prompt configurations for OpenAI FTUE.
   ///
   /// Model assignments:
-  /// - GPT-5.2 (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
-  /// - GPT-5 Nano (Flash): Task Summary, Image Analysis (fast processing)
-  /// - GPT-4o Transcribe: Audio transcription tasks
+  /// - GPT-5.2 (Reasoning): Image Prompt (complex reasoning)
   /// - GPT Image 1.5: Image generation (cover art output)
   List<FtuePromptConfig> _getOpenAiFtuePromptConfigs() {
     return const [
-      // Audio Transcription -> Audio model (dedicated transcription)
-      FtuePromptConfig(
-        template: audioTranscriptionPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription OpenAI',
-      ),
-
-      // Audio Transcription with Task Context -> Audio model
-      FtuePromptConfig(
-        template: audioTranscriptionWithTaskContextPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription (Task Context) OpenAI',
-      ),
-
-      // Image Analysis -> Flash (fast processing)
-      FtuePromptConfig(
-        template: imageAnalysisPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis OpenAI GPT-5 Nano',
-      ),
-
-      // Image Analysis in Task Context -> Flash (fast processing)
-      FtuePromptConfig(
-        template: imageAnalysisInTaskContextPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis (Task Context) OpenAI GPT-5 Nano',
-      ),
-
-      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: promptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Coding Prompt OpenAI GPT-5.2',
-      ),
-
       // Generate Image Prompt -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
@@ -1410,7 +1253,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     required List<AiConfigPrompt> prompts,
     required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
     required String imageModelId,
   }) async {
     const categoryName = ftueOpenAiCategoryName;
@@ -1423,7 +1265,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       prompts,
       flashModelId: flashModelId,
       reasoningModelId: reasoningModelId,
-      audioModelId: audioModelId,
       imageModelId: imageModelId,
     );
 
@@ -1466,7 +1307,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     List<AiConfigPrompt> prompts, {
     required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
     required String imageModelId,
   }) {
     final map = <AiResponseType, List<String>>{};
@@ -1479,27 +1319,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
                 p.defaultModelId == modelId,
           )
           ?.id;
-    }
-
-    // Audio Transcription -> Audio model
-    final audioTranscript = findPromptId('audio_transcription', audioModelId);
-    if (audioTranscript != null) {
-      map[AiResponseType.audioTranscription] = [audioTranscript];
-    }
-
-    // Image Analysis (task context) -> Flash (fast processing)
-    final imageAnalysis = findPromptId(
-      'image_analysis_task_context',
-      flashModelId,
-    );
-    if (imageAnalysis != null) {
-      map[AiResponseType.imageAnalysis] = [imageAnalysis];
-    }
-
-    // Prompt Generation -> Reasoning (complex reasoning needed)
-    final promptGen = findPromptId('prompt_generation', reasoningModelId);
-    if (promptGen != null) {
-      map[AiResponseType.promptGeneration] = [promptGen];
     }
 
     // Image Prompt Generation -> Reasoning (complex reasoning needed)
@@ -1576,7 +1395,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium, Audio/Voxtral Small)
-  /// 2. 8 prompts with appropriate model assignments (no image generation)
+  /// 2. 1 prompt (Image Prompt Generation; no image generation model available)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [MistralFtueResult] with details of what was created.
@@ -1615,7 +1434,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       repository: repository,
       flashModel: modelResult.flash,
       reasoningModel: modelResult.reasoning,
-      audioModel: modelResult.audio,
     );
 
     // Step 3: Create or update category with auto-selection
@@ -1625,9 +1443,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     ) = await _createOrUpdateMistralFtueCategory(
       categoryRepository: categoryRepository,
       prompts: promptResult.allPrompts,
-      flashModelId: modelResult.flash.id,
       reasoningModelId: modelResult.reasoning.id,
-      audioModelId: modelResult.audio.id,
     );
 
     return MistralFtueResult(
@@ -1721,7 +1537,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     required AiConfigRepository repository,
     required AiConfigModel flashModel,
     required AiConfigModel reasoningModel,
-    required AiConfigModel audioModel,
   }) async {
     final created = <AiConfigPrompt>[];
     final allPrompts = <AiConfigPrompt>[];
@@ -1745,7 +1560,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       final model = switch (config.modelVariant) {
         'flash' => flashModel,
         'reasoning' => reasoningModel,
-        'audio' => audioModel,
         _ => flashModel,
       };
 
@@ -1794,47 +1608,10 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// Gets all prompt configurations for Mistral FTUE.
   ///
   /// Model assignments:
-  /// - Magistral Medium (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
-  /// - Mistral Small (Flash): Task Summary, Image Analysis (fast processing)
-  /// - Voxtral Small (Audio): Audio transcription tasks
+  /// - Magistral Medium (Reasoning): Image Prompt (complex reasoning)
   /// Note: No image generation model available for Mistral
   List<FtuePromptConfig> _getMistralFtuePromptConfigs() {
     return const [
-      // Audio Transcription -> Audio model (dedicated transcription)
-      FtuePromptConfig(
-        template: audioTranscriptionPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription Mistral Voxtral',
-      ),
-
-      // Audio Transcription with Task Context -> Audio model
-      FtuePromptConfig(
-        template: audioTranscriptionWithTaskContextPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription (Task Context) Mistral Voxtral',
-      ),
-
-      // Image Analysis -> Flash (fast processing with vision)
-      FtuePromptConfig(
-        template: imageAnalysisPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis Mistral Small',
-      ),
-
-      // Image Analysis in Task Context -> Flash (fast processing)
-      FtuePromptConfig(
-        template: imageAnalysisInTaskContextPrompt,
-        modelVariant: 'flash',
-        promptName: 'Image Analysis (Task Context) Mistral Small',
-      ),
-
-      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: promptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Coding Prompt Mistral Magistral',
-      ),
-
       // Generate Image Prompt -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
@@ -1850,9 +1627,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   Future<(CategoryDefinition?, bool)> _createOrUpdateMistralFtueCategory({
     required CategoryRepository categoryRepository,
     required List<AiConfigPrompt> prompts,
-    required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
   }) async {
     const categoryName = ftueMistralCategoryName;
 
@@ -1862,9 +1637,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     // Build automaticPrompts map with auto-selection logic
     final automaticPrompts = _buildMistralFtueAutomaticPrompts(
       prompts,
-      flashModelId: flashModelId,
       reasoningModelId: reasoningModelId,
-      audioModelId: audioModelId,
     );
 
     // Check if category already exists
@@ -1904,9 +1677,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   /// Builds the automaticPrompts map for Mistral FTUE auto-selection.
   Map<AiResponseType, List<String>> _buildMistralFtueAutomaticPrompts(
     List<AiConfigPrompt> prompts, {
-    required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
   }) {
     final map = <AiResponseType, List<String>>{};
 
@@ -1918,27 +1689,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
                 p.defaultModelId == modelId,
           )
           ?.id;
-    }
-
-    // Audio Transcription -> Audio model (Voxtral)
-    final audioTranscript = findPromptId('audio_transcription', audioModelId);
-    if (audioTranscript != null) {
-      map[AiResponseType.audioTranscription] = [audioTranscript];
-    }
-
-    // Image Analysis (task context) -> Flash (Mistral Small with vision)
-    final imageAnalysis = findPromptId(
-      'image_analysis_task_context',
-      flashModelId,
-    );
-    if (imageAnalysis != null) {
-      map[AiResponseType.imageAnalysis] = [imageAnalysis];
-    }
-
-    // Prompt Generation -> Reasoning (Magistral)
-    final promptGen = findPromptId('prompt_generation', reasoningModelId);
-    if (promptGen != null) {
-      map[AiResponseType.promptGeneration] = [promptGen];
     }
 
     // Image Prompt Generation -> Reasoning (Magistral)
@@ -2009,7 +1759,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen3 Max, Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
-  /// 2. 9 prompts with appropriate model assignments (including cover art generation)
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [AlibabaFtueResult] with details of what was created.
@@ -2048,8 +1798,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       repository: repository,
       flashModel: modelResult.flash,
       reasoningModel: modelResult.reasoning,
-      audioModel: modelResult.audio,
-      visionModel: modelResult.vision,
       imageModel: modelResult.image,
     );
 
@@ -2060,10 +1808,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     ) = await _createOrUpdateAlibabaFtueCategory(
       categoryRepository: categoryRepository,
       prompts: promptResult.allPrompts,
-      flashModelId: modelResult.flash.id,
       reasoningModelId: modelResult.reasoning.id,
-      audioModelId: modelResult.audio.id,
-      visionModelId: modelResult.vision.id,
       imageModelId: modelResult.image.id,
     );
 
@@ -2179,8 +1924,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     required AiConfigRepository repository,
     required AiConfigModel flashModel,
     required AiConfigModel reasoningModel,
-    required AiConfigModel audioModel,
-    required AiConfigModel visionModel,
     required AiConfigModel imageModel,
   }) async {
     final created = <AiConfigPrompt>[];
@@ -2205,8 +1948,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       final model = switch (config.modelVariant) {
         'flash' => flashModel,
         'reasoning' => reasoningModel,
-        'audio' => audioModel,
-        'vision' => visionModel,
         'image' => imageModel,
         _ => flashModel,
       };
@@ -2256,48 +1997,10 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   /// Gets all prompt configurations for Alibaba FTUE.
   ///
   /// Model assignments:
-  /// - Qwen3 Max (Reasoning): Checklists, Coding Prompt, Image Prompt (complex reasoning)
-  /// - Qwen Flash (Flash): Task Summary (fast processing)
-  /// - Qwen3 Omni Flash (Audio): Audio transcription tasks
-  /// - Qwen3 VL Flash (Vision): Image analysis tasks
+  /// - Qwen3 Max (Reasoning): Image Prompt (complex reasoning)
   /// - Wan 2.6 (Image): Cover art / image generation
   List<FtuePromptConfig> _getAlibabaFtuePromptConfigs() {
     return const [
-      // Audio Transcription -> Audio model (dedicated transcription)
-      FtuePromptConfig(
-        template: audioTranscriptionPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription Alibaba Qwen3 Omni',
-      ),
-
-      // Audio Transcription with Task Context -> Audio model
-      FtuePromptConfig(
-        template: audioTranscriptionWithTaskContextPrompt,
-        modelVariant: 'audio',
-        promptName: 'Audio Transcription (Task Context) Alibaba Qwen3 Omni',
-      ),
-
-      // Image Analysis -> Vision (fast vision model)
-      FtuePromptConfig(
-        template: imageAnalysisPrompt,
-        modelVariant: 'vision',
-        promptName: 'Image Analysis Alibaba Qwen3 VL',
-      ),
-
-      // Image Analysis in Task Context -> Vision (fast vision model)
-      FtuePromptConfig(
-        template: imageAnalysisInTaskContextPrompt,
-        modelVariant: 'vision',
-        promptName: 'Image Analysis (Task Context) Alibaba Qwen3 VL',
-      ),
-
-      // Generate Coding Prompt -> Reasoning (complex reasoning needed)
-      FtuePromptConfig(
-        template: promptGenerationPrompt,
-        modelVariant: 'reasoning',
-        promptName: 'Coding Prompt Alibaba Qwen3 Max',
-      ),
-
       // Generate Image Prompt -> Reasoning (complex reasoning needed)
       FtuePromptConfig(
         template: imagePromptGenerationPrompt,
@@ -2318,10 +2021,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   Future<(CategoryDefinition?, bool)> _createOrUpdateAlibabaFtueCategory({
     required CategoryRepository categoryRepository,
     required List<AiConfigPrompt> prompts,
-    required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
-    required String visionModelId,
     required String imageModelId,
   }) async {
     const categoryName = ftueAlibabaCategoryName;
@@ -2332,10 +2032,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     // Build automaticPrompts map with auto-selection logic
     final automaticPrompts = _buildAlibabaFtueAutomaticPrompts(
       prompts,
-      flashModelId: flashModelId,
       reasoningModelId: reasoningModelId,
-      audioModelId: audioModelId,
-      visionModelId: visionModelId,
       imageModelId: imageModelId,
     );
 
@@ -2376,10 +2073,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   /// Builds the automaticPrompts map for Alibaba FTUE auto-selection.
   Map<AiResponseType, List<String>> _buildAlibabaFtueAutomaticPrompts(
     List<AiConfigPrompt> prompts, {
-    required String flashModelId,
     required String reasoningModelId,
-    required String audioModelId,
-    required String visionModelId,
     required String imageModelId,
   }) {
     final map = <AiResponseType, List<String>>{};
@@ -2392,27 +2086,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
                 p.defaultModelId == modelId,
           )
           ?.id;
-    }
-
-    // Audio Transcription -> Audio model (Qwen3 Omni Flash)
-    final audioTranscript = findPromptId('audio_transcription', audioModelId);
-    if (audioTranscript != null) {
-      map[AiResponseType.audioTranscription] = [audioTranscript];
-    }
-
-    // Image Analysis (task context) -> Vision (Qwen3 VL Flash)
-    final imageAnalysis = findPromptId(
-      'image_analysis_task_context',
-      visionModelId,
-    );
-    if (imageAnalysis != null) {
-      map[AiResponseType.imageAnalysis] = [imageAnalysis];
-    }
-
-    // Prompt Generation -> Reasoning (Qwen3 Max)
-    final promptGen = findPromptId('prompt_generation', reasoningModelId);
-    if (promptGen != null) {
-      map[AiResponseType.promptGeneration] = [promptGen];
     }
 
     // Image Prompt Generation -> Reasoning (Qwen3 Max)

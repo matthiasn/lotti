@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.923" date="2026-03-15">
+      <description>
+          <p>Inference profiles: new "Thinking (High-End)" model slot for tasks where quality matters more than speed/cost (e.g. coding prompt generation). Falls back to the regular thinking model when not configured.</p>
+      </description>
+    </release>
     <release version="0.9.922" date="2026-03-15">
       <description>
           <p>AI popup menu: skills now appear in a dedicated top section above legacy prompts, with two-section layout and profile-based skill triggering.</p>

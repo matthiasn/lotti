@@ -12,6 +12,8 @@ import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../helpers/fallbacks.dart';
+
 // Mocks
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
@@ -39,6 +41,7 @@ void main() {
     late Directory testTempDir;
 
     setUpAll(() async {
+      registerAllFallbackValues();
       registerFallbackValue(StackTrace.current);
       testTempDir = await Directory.systemTemp.createTemp(
         'platform_screenshot_test',

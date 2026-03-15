@@ -52,6 +52,8 @@ void main() {
       final a = ResolvedProfile(
         thinkingModelId: 'thinking',
         thinkingProvider: provider1,
+        thinkingHighEndModelId: 'thinking-pro',
+        thinkingHighEndProvider: provider2,
         imageRecognitionModelId: 'vision',
         imageRecognitionProvider: provider2,
         transcriptionModelId: 'audio',
@@ -62,6 +64,8 @@ void main() {
       final b = ResolvedProfile(
         thinkingModelId: 'thinking',
         thinkingProvider: provider1,
+        thinkingHighEndModelId: 'thinking-pro',
+        thinkingHighEndProvider: provider2,
         imageRecognitionModelId: 'vision',
         imageRecognitionProvider: provider2,
         transcriptionModelId: 'audio',
@@ -86,6 +90,45 @@ void main() {
       );
 
       expect(a, isNot(equals(b)));
+    });
+
+    test('different thinkingHighEndModelId are not equal', () {
+      final a = ResolvedProfile(
+        thinkingModelId: 'model-a',
+        thinkingProvider: provider1,
+        thinkingHighEndModelId: 'pro-1',
+        thinkingHighEndProvider: provider2,
+      );
+      final b = ResolvedProfile(
+        thinkingModelId: 'model-a',
+        thinkingProvider: provider1,
+        thinkingHighEndModelId: 'pro-2',
+        thinkingHighEndProvider: provider2,
+      );
+
+      expect(a, isNot(equals(b)));
+    });
+
+    test('effectiveHighEndModelId returns high-end when set', () {
+      final profile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: provider1,
+        thinkingHighEndModelId: 'pro',
+        thinkingHighEndProvider: provider2,
+      );
+
+      expect(profile.effectiveHighEndModelId, 'pro');
+      expect(profile.effectiveHighEndProvider, provider2);
+    });
+
+    test('effectiveHighEndModelId falls back to thinking when not set', () {
+      final profile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: provider1,
+      );
+
+      expect(profile.effectiveHighEndModelId, 'flash');
+      expect(profile.effectiveHighEndProvider, provider1);
     });
 
     test('is not equal to a non-ResolvedProfile object', () {

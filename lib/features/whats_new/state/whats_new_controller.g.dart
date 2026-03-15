@@ -58,9 +58,9 @@ String _$whatsNewServiceHash() => r'27677070cf0a2d1f1e8a639a38e3eb9dbc9b4dbb';
 /// Provider that checks if the What's New modal should auto-show.
 ///
 /// Returns true when:
-/// 1. This is the first app launch ever, OR
-/// 2. The app version has changed since last launch
-/// AND there are unseen releases to show.
+/// 1. The `enable_whats_new` config flag is enabled, AND
+/// 2. This is the first app launch ever OR the app version has changed, AND
+/// 3. There are unseen releases to show.
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
@@ -71,9 +71,9 @@ final shouldAutoShowWhatsNewProvider = ShouldAutoShowWhatsNewProvider._();
 /// Provider that checks if the What's New modal should auto-show.
 ///
 /// Returns true when:
-/// 1. This is the first app launch ever, OR
-/// 2. The app version has changed since last launch
-/// AND there are unseen releases to show.
+/// 1. The `enable_whats_new` config flag is enabled, AND
+/// 2. This is the first app launch ever OR the app version has changed, AND
+/// 3. There are unseen releases to show.
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
@@ -84,9 +84,9 @@ final class ShouldAutoShowWhatsNewProvider
   /// Provider that checks if the What's New modal should auto-show.
   ///
   /// Returns true when:
-  /// 1. This is the first app launch ever, OR
-  /// 2. The app version has changed since last launch
-  /// AND there are unseen releases to show.
+  /// 1. The `enable_whats_new` config flag is enabled, AND
+  /// 2. This is the first app launch ever OR the app version has changed, AND
+  /// 3. There are unseen releases to show.
   ///
   /// Once read, this provider marks the current version as "launched"
   /// so subsequent checks return false until the next version change.
@@ -116,7 +116,7 @@ final class ShouldAutoShowWhatsNewProvider
 }
 
 String _$shouldAutoShowWhatsNewHash() =>
-    r'f4adab6b8082737fb701aba6a9c502f77f82a798';
+    r'92b8a1e042f827341790c8cf3c97c941d0b6d56e';
 
 /// Controller for the "What's New" feature.
 ///

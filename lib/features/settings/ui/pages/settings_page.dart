@@ -25,6 +25,8 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(configFlagProvider(enableDashboardsPageFlag)).value ?? false;
     final enableAgents =
         ref.watch(configFlagProvider(enableAgentsFlag)).value ?? false;
+    final enableWhatsNew =
+        ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false;
     final themingState = ref.watch(themingControllerProvider);
     final brightness = Theme.of(context).brightness;
     final useGamey = themingState.isGameyThemeForBrightness(brightness);
@@ -54,22 +56,24 @@ class SettingsPage extends ConsumerWidget {
     return SliverBoxAdapterPage(
       title: context.messages.navTabTitleSettings,
       actions: [
-        GestureDetector(
-          onTap: () => WhatsNewModal.show(context, ref),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8),
-            child: WhatsNewIndicator(),
+        if (enableWhatsNew)
+          GestureDetector(
+            onTap: () => WhatsNewModal.show(context, ref),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8),
+              child: WhatsNewIndicator(),
+            ),
           ),
-        ),
       ],
       child: Column(
         children: [
-          settingsCard(
-            title: "What's New",
-            subtitle: 'See the latest updates and features',
-            icon: Icons.new_releases_outlined,
-            onTap: () => WhatsNewModal.show(context, ref),
-          ),
+          if (enableWhatsNew)
+            settingsCard(
+              title: context.messages.settingsWhatsNewTitle,
+              subtitle: context.messages.settingsWhatsNewSubtitle,
+              icon: Icons.new_releases_outlined,
+              onTap: () => WhatsNewModal.show(context, ref),
+            ),
           settingsCard(
             title: 'AI Settings',
             subtitle: 'Configure AI providers, models, and prompts',

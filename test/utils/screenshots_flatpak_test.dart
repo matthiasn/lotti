@@ -11,6 +11,8 @@ import 'package:lotti/utils/screenshot_consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../helpers/fallbacks.dart';
+
 // Mocks
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
@@ -55,6 +57,7 @@ void main() {
     late ScreenshotPortalService portalService;
 
     setUpAll(() async {
+      registerAllFallbackValues();
       registerFallbackValue(StackTrace.current);
       registerFallbackValue(FakeDBusObjectPath('/test'));
       registerFallbackValue(FakeDBusSignature());

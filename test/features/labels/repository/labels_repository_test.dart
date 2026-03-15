@@ -46,6 +46,7 @@ void main() {
   final baseTime = DateTime.utc(1970);
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(
       LabelDefinition(

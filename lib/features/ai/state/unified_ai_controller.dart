@@ -423,6 +423,7 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
         const supportedTypes = {
           SkillType.transcription,
           SkillType.imageAnalysis,
+          SkillType.promptGeneration,
         };
 
         final skills = allConfigs.whereType<AiConfigSkill>().where((skill) {
@@ -549,6 +550,11 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 linkedTaskId: params.linkedTaskId,
               );
             case SkillType.promptGeneration:
+              await runner.runPromptGeneration(
+                audioEntryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: params.linkedTaskId,
+              );
             case SkillType.imagePromptGeneration:
             case SkillType.imageGeneration:
               developer.log(

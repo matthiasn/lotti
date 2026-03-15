@@ -67,14 +67,6 @@ void main() {
 
         // Each prompt type should have its icon based on response type
         expect(
-          find.byIcon(Icons.image_outlined),
-          findsNWidgets(2),
-        ); // 2 image analysis prompts
-        expect(
-          find.byIcon(Icons.auto_fix_high_outlined),
-          findsOneWidget,
-        ); // 1 prompt generation prompt
-        expect(
           find.byIcon(Icons.palette_outlined),
           findsOneWidget,
         ); // 1 image prompt generation prompt

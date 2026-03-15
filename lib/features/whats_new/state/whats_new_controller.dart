@@ -4,7 +4,9 @@ import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,14 +22,19 @@ WhatsNewService whatsNewService(Ref ref) {
 /// Provider that checks if the What's New modal should auto-show.
 ///
 /// Returns true when:
-/// 1. This is the first app launch ever, OR
-/// 2. The app version has changed since last launch
-/// AND there are unseen releases to show.
+/// 1. The `enable_whats_new` config flag is enabled, AND
+/// 2. This is the first app launch ever OR the app version has changed, AND
+/// 3. There are unseen releases to show.
 ///
 /// Once read, this provider marks the current version as "launched"
 /// so subsequent checks return false until the next version change.
 @riverpod
 Future<bool> shouldAutoShowWhatsNew(Ref ref) async {
+  // Check if the What's New feature is enabled via the DB config flag.
+  final db = ref.watch(journalDbProvider);
+  final isEnabled = await db.getConfigFlag(enableWhatsNewFlag);
+  if (!isEnabled) return false;
+
   final prefs = await SharedPreferences.getInstance();
   final packageInfo = await PackageInfo.fromPlatform();
   final currentVersion = packageInfo.version;

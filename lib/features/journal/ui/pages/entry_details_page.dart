@@ -176,6 +176,7 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
                 responseTypes: const {
                   AiResponseType.imageAnalysis,
                   AiResponseType.audioTranscription,
+                  AiResponseType.promptGeneration,
                 },
               ),
             ),

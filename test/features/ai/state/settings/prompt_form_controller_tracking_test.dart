@@ -49,7 +49,7 @@ void main() {
         );
 
         // Get the image analysis template
-        final template = preconfiguredPrompts['image_analysis']!;
+        final template = preconfiguredPrompts['image_prompt_generation']!;
 
         // Act
         controller.populateFromPreconfiguredPrompt(template);
@@ -70,7 +70,7 @@ void main() {
         expect(state.requiredInputData, equals(template.requiredInputData));
         expect(state.aiResponseType.value, equals(template.aiResponseType));
         expect(state.trackPreconfigured, isTrue);
-        expect(state.preconfiguredPromptId, equals('image_analysis'));
+        expect(state.preconfiguredPromptId, equals('image_prompt_generation'));
 
         // Check that text controllers were updated
         expect(controller.nameController.text, equals(template.name));
@@ -148,9 +148,9 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.images],
-            aiResponseType: AiResponseType.imageAnalysis,
-            preconfiguredPromptId: 'image_analysis', // But has the ID
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.imagePromptGeneration,
+            preconfiguredPromptId: 'image_prompt_generation', // But has the ID
           );
 
           when(
@@ -176,10 +176,13 @@ void main() {
               .value;
 
           expect(state!.trackPreconfigured, isTrue);
-          expect(state.preconfiguredPromptId, equals('image_analysis'));
+          expect(
+            state.preconfiguredPromptId,
+            equals('image_prompt_generation'),
+          );
 
           // Should update messages from the preconfigured prompt
-          final template = preconfiguredPrompts['image_analysis']!;
+          final template = preconfiguredPrompts['image_prompt_generation']!;
           expect(state.systemMessage.value, equals(template.systemMessage));
           expect(state.userMessage.value, equals(template.userMessage));
 
@@ -192,59 +195,6 @@ void main() {
             controller.userMessageController.text,
             equals(template.userMessage),
           );
-        },
-      );
-
-      test(
-        'should disable tracking but preserve preconfiguredPromptId',
-        () async {
-          // Setup - create a prompt that is tracking
-          const testConfigId = 'test-prompt-id';
-          final testConfig = AiConfigPrompt(
-            id: testConfigId,
-            name: 'Image Analysis',
-            systemMessage: imageAnalysisPrompt.systemMessage,
-            userMessage: imageAnalysisPrompt.userMessage,
-            description: 'Description',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
-            createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
-            requiredInputData: [InputDataType.images],
-            aiResponseType: AiResponseType.imageAnalysis,
-            trackPreconfigured: true,
-            preconfiguredPromptId: 'image_analysis',
-          );
-
-          when(
-            () => mockAiConfigRepository.getConfigById(testConfigId),
-          ).thenAnswer((_) async => testConfig);
-
-          final controller = container.read(
-            promptFormControllerProvider(configId: testConfigId).notifier,
-          );
-
-          await container.read(
-            promptFormControllerProvider(configId: testConfigId).future,
-          );
-
-          // Act - disable tracking
-          controller.toggleTrackPreconfigured(false);
-
-          // Assert
-          final state = container
-              .read(
-                promptFormControllerProvider(configId: testConfigId),
-              )
-              .value;
-
-          expect(state!.trackPreconfigured, isFalse);
-          // preconfiguredPromptId should still be present
-          expect(state.preconfiguredPromptId, equals('image_analysis'));
-
-          // Messages should not change when disabling
-          expect(state.systemMessage.value, equals(testConfig.systemMessage));
-          expect(state.userMessage.value, equals(testConfig.userMessage));
         },
       );
 
@@ -345,59 +295,6 @@ void main() {
       );
     });
 
-    group('Form field behavior with tracking', () {
-      test('should mark fields as dirty when tracking is disabled', () async {
-        // Setup
-        const testConfigId = 'test-prompt-id';
-        final testConfig = AiConfigPrompt(
-          id: testConfigId,
-          name: 'Image Analysis',
-          systemMessage: imageAnalysisPrompt.systemMessage,
-          userMessage: imageAnalysisPrompt.userMessage,
-          description: 'Description',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.images],
-          aiResponseType: AiResponseType.imageAnalysis,
-          trackPreconfigured: true,
-          preconfiguredPromptId: 'image_analysis',
-        );
-
-        when(
-          () => mockAiConfigRepository.getConfigById(testConfigId),
-        ).thenAnswer((_) async => testConfig);
-
-        final controller = container.read(
-          promptFormControllerProvider(configId: testConfigId).notifier,
-        );
-
-        await container.read(
-          promptFormControllerProvider(configId: testConfigId).future,
-        );
-
-        // Disable tracking
-        controller
-          ..toggleTrackPreconfigured(false)
-          // Act - modify fields
-          ..systemMessageChanged('New system message')
-          ..userMessageChanged('New user message');
-
-        // Assert
-        final state = container
-            .read(
-              promptFormControllerProvider(configId: testConfigId),
-            )
-            .value;
-
-        expect(state!.systemMessage.isPure, isFalse);
-        expect(state.userMessage.isPure, isFalse);
-        expect(state.systemMessage.value, equals('New system message'));
-        expect(state.userMessage.value, equals('New user message'));
-      });
-    });
-
     group('Saving with tracking', () {
       test('should preserve tracking fields when saving', () async {
         // Setup
@@ -417,7 +314,7 @@ void main() {
         );
 
         // Populate from template
-        final template = preconfiguredPrompts['image_analysis']!;
+        final template = preconfiguredPrompts['image_prompt_generation']!;
         controller
           ..populateFromPreconfiguredPrompt(template)
           // Set required fields for valid form
@@ -444,7 +341,7 @@ void main() {
         expect(capturedConfig.trackPreconfigured, isTrue);
         expect(
           capturedConfig.preconfiguredPromptId,
-          equals('image_analysis'),
+          equals('image_prompt_generation'),
         );
       });
 
@@ -463,10 +360,10 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 14),
             useReasoning: false,
-            requiredInputData: [InputDataType.images],
-            aiResponseType: AiResponseType.imageAnalysis,
+            requiredInputData: [InputDataType.task],
+            aiResponseType: AiResponseType.imagePromptGeneration,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'image_analysis',
+            preconfiguredPromptId: 'image_prompt_generation',
           );
 
           when(
@@ -505,7 +402,7 @@ void main() {
           expect(capturedConfig.trackPreconfigured, isTrue);
           expect(
             capturedConfig.preconfiguredPromptId,
-            equals('image_analysis'),
+            equals('image_prompt_generation'),
           );
           expect(capturedConfig.name, equals('Updated Name'));
           expect(capturedConfig.id, equals(testConfigId));

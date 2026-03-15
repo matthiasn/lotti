@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/logging_types.dart';
@@ -227,4 +228,15 @@ void registerAllFallbackValues() {
   registerFallbackValue(Float32List(0));
   registerFallbackValue(<int>[]);
   registerFallbackValue(<String>[]);
+
+  // AI response data fallback
+  registerFallbackValue(
+    const AiResponseData(
+      model: 'fallback-model',
+      systemMessage: '',
+      prompt: '',
+      thoughts: '',
+      response: '',
+    ),
+  );
 }
