@@ -9,7 +9,6 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
-import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -135,16 +134,6 @@ class UnifiedAiModal {
             name: 'UnifiedAiPopUpMenu',
           );
 
-          // Handle image generation separately
-          if (prompt.aiResponseType == AiResponseType.imageGeneration) {
-            await _handleImageGeneration(
-              context: context,
-              journalEntity: journalEntity,
-              ref: ref,
-            );
-            return;
-          }
-
           final targetLinkedEntityId = journalEntity is Task
               ? linkedFromId
               : journalEntity.id;
@@ -210,37 +199,6 @@ class UnifiedAiModal {
       linkedTaskId: linkedTask.id,
       categoryId: linkedTask.meta.categoryId,
       ref: ref,
-    );
-  }
-
-  /// Handles image generation prompts separately from the unified inference
-  /// flow (legacy path).
-  static Future<void> _handleImageGeneration({
-    required BuildContext context,
-    required JournalEntity journalEntity,
-    required WidgetRef ref,
-  }) async {
-    final journalRepo = ref.read(journalRepositoryProvider);
-    final linkedTask = await _resolveLinkedTask(
-      journalEntity: journalEntity,
-      journalRepo: journalRepo,
-    );
-
-    if (linkedTask == null) {
-      developer.log(
-        'No linked task found for entity: ${journalEntity.id}',
-        name: 'UnifiedAiPopUpMenu',
-      );
-      return;
-    }
-
-    if (!context.mounted) return;
-
-    await ImageGenerationReviewModal.show(
-      context: context,
-      entityId: journalEntity.id,
-      linkedTaskId: linkedTask.id,
-      categoryId: linkedTask.meta.categoryId,
     );
   }
 

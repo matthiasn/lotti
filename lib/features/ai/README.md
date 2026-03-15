@@ -682,38 +682,27 @@ The system supports five active AI response types (two legacy types — `taskSum
 
 ### Overview
 
-The AI system supports native image generation for creating task cover art. There are two paths:
+The AI system supports native image generation for creating task cover art via the skill system.
 
-1. **Skill-based (preferred)**: Fire-and-forget background generation via `SkillInferenceRunner.runImageGeneration()`. The modal closes immediately after reference image selection; generation, import, and cover art assignment happen asynchronously.
-2. **Legacy prompt-based**: Interactive generation via `ImageGenerationController` and `ImageGenerationReviewModal`, where the user reviews/edits the prompt and accepts the result.
-
-### Skill-Based Workflow
+### Workflow
 
 1. **Trigger**: User selects the image generation skill from the AI popup menu on an audio entry linked to a task
 2. **Reference Image Selection**: `CoverArtSkillModal` shows a selection grid of:
    - Images directly linked to the task
    - Cover art from linked tasks (discovered via bidirectional task graph traversal)
    - Up to `kMaxReferenceImages` (5) can be selected
-3. **Fire-and-Forget**: Modal closes immediately; `triggerSkillProvider` invokes `SkillInferenceRunner.runImageGeneration()` which:
+3. **Progress**: After selection, the modal transitions to a progress view showing a Siri waveform animation while `triggerSkillProvider` invokes `SkillInferenceRunner.runImageGeneration()` which:
    - Builds a prompt via `SkillPromptBuilder` using audio transcript, task context, and skill instructions
    - Calls `CloudInferenceRepository.generateImage()` with optional reference images
    - Auto-imports the generated image via `importGeneratedImageBytes()`
    - Auto-assigns the image as task cover art via `PersistenceLogic.updateTask(coverArtId:)`
-   - Tracks status via `InferenceStatusController` (Siri waveform animation)
-4. **User-Directed**: The user's audio recording provides the creative direction for the generated image
-
-### Legacy Prompt-Based Workflow
-
-1. **Trigger**: User selects "Generate cover art" from an audio entry's action menu (when no image generation skill is available)
-2. **Prompt Building**: `ImageGenerationController` constructs a prompt from audio transcript and task context
-3. **Generation**: Gemini image generation model creates the image
-4. **Review Modal**: User can accept, edit prompt, or cancel
-5. **Import**: Accepted images are saved and set as cover art
+   - Auto-triggers image analysis on the new cover art (if an image analysis skill with `automate: true` is configured)
+   - Tracks status via `InferenceStatusController`
+4. **User-Directed**: The user's audio recording provides the creative direction for the generated image. The user can dismiss the modal at any time — generation continues in the background via `keepAlive()`.
 
 ### Implementation Components
 
 #### State Management
-- **`ImageGenerationController`**: Riverpod controller for legacy generation state (initial/generating/success/error)
 - **`ReferenceImageSelectionController`**: Manages image selection state, including linked-task cover art discovery
 
 #### Repository Layer
@@ -722,8 +711,7 @@ The AI system supports native image generation for creating task cover art. Ther
 - **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 16:9 aspect ratio and 2K resolution
 
 #### UI Components
-- **`CoverArtSkillModal`**: Selection-only modal for skill-based path — shows reference images, fires `triggerSkillProvider`, and closes immediately
-- **`ImageGenerationReviewModal`**: Full-screen modal for legacy prompt path — shows generation progress, image review, and prompt editing
+- **`CoverArtSkillModal`**: Modal for skill-based image generation — shows reference image selection, then transitions to a progress view with Siri waveform animation
 - **`ReferenceImageSelectionWidget`**: Shared grid widget for selecting up to 5 reference images
 - **`ModernGenerateCoverArtItem`**: Action menu item for triggering generation
 
