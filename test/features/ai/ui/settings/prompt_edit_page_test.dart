@@ -695,7 +695,7 @@ void main() {
       testWidgets('can toggle tracking on and off', (
         WidgetTester tester,
       ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1400));
+        await tester.binding.setSurfaceSize(const Size(1024, 2200));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
         // Create prompt with tracking enabled
