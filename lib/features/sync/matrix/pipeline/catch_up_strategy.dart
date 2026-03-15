@@ -142,7 +142,14 @@ class CatchUpStrategy {
           } finally {
             try {
               next.cancelSubscriptions();
-            } catch (_) {}
+            } catch (e, st) {
+              logging.captureException(
+                e,
+                domain: syncLoggingDomain,
+                subDomain: 'catchup.noAnchor.cleanup',
+                stackTrace: st,
+              );
+            }
           }
         }
         return CatchUpCollection.complete(
