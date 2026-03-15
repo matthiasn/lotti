@@ -123,9 +123,31 @@ class CatchUpStrategy {
         snapshot.events,
       );
       if (preContextSinceTs == null) {
+        // No anchor — first-ever catch-up. Expand the local timeline until
+        // we have all available events so we don't miss events from other
+        // devices when the latest page contains only self-sent events.
+        var ordered = events;
+        while (ordered.length >= limit && limit < maxLookback) {
+          final doubled = limit * 2;
+          limit = doubled > maxLookback ? maxLookback : doubled;
+          final next = await room.getTimeline(limit: limit);
+          try {
+            final nextEvents = TimelineEventOrdering.sortStableByTimestamp(
+              next.events,
+            );
+            if (nextEvents.length <= ordered.length) {
+              break; // no more events available
+            }
+            ordered = nextEvents;
+          } finally {
+            try {
+              next.cancelSubscriptions();
+            } catch (_) {}
+          }
+        }
         return CatchUpCollection.complete(
-          events: events,
-          snapshotSize: events.length,
+          events: ordered,
+          snapshotSize: ordered.length,
         );
       }
 

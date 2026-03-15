@@ -481,80 +481,231 @@ void main() {
       }
     });
 
-    test('with no marker id, returns snapshot events (no rewind)', () async {
-      final room = MockRoom();
-      final log = MockLoggingService();
-      final tl = MockTimeline();
+    test(
+      'no anchor returns small snapshot without expansion when under limit',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final tl = MockTimeline();
 
-      // Start with newer window (ts 300..309), then page older (200..209), then (100..109)
-      final window300 = List<Event>.generate(10, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e3_$i');
-        when(
-          () => e.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(300 + i));
-        return e;
-      });
-      final window200 = List<Event>.generate(10, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e2_$i');
-        when(
-          () => e.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(200 + i));
-        return e;
-      });
-      final window100 = List<Event>.generate(10, (i) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn('e1_$i');
-        when(
-          () => e.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
-        return e;
-      });
+        // 10 events — well under the default initialLimit of 200,
+        // so no expansion loop should run.
+        final events = List<Event>.generate(10, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100 + i));
+          return e;
+        });
 
-      // Events getter returns current window snapshot
-      var current = window300;
-      when(() => tl.events).thenAnswer((_) => current);
-      when(() => tl.cancelSubscriptions()).thenReturn(null);
-      when(
-        () => room.getTimeline(limit: any(named: 'limit')),
-      ).thenAnswer((_) async => tl);
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenReturn(events);
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
 
-      // Allow pagination twice
-      var page = 0;
-      when(() => tl.canRequestHistory).thenAnswer((_) => page < 2);
-      when(() => tl.requestHistory()).thenAnswer((_) async {
-        if (page == 0) {
-          current = window200;
-        } else if (page == 1) {
-          current = window100;
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: null,
+          logging: log,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async => true,
+        );
+
+        expect(result.incomplete, isFalse);
+        expect(result.events.length, 10);
+        expect(result.events.first.eventId, 'e0');
+        expect(result.events.last.eventId, 'e9');
+        // Only the initial getTimeline call — no expansion.
+        verify(() => room.getTimeline(limit: any(named: 'limit'))).called(1);
+        verify(() => tl.cancelSubscriptions()).called(1);
+      },
+    );
+
+    test(
+      'no anchor expands timeline by doubling until all events are fetched',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final created = <MockTimeline>[];
+
+        // 15 events total. initialLimit=5 so the first page is full and
+        // the expansion loop doubles to 10, then 20 (capped at 15 actual).
+        final all = List<Event>.generate(15, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+          return e;
+        });
+
+        when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+          invocation,
+        ) async {
+          final tl = MockTimeline();
+          created.add(tl);
+          final limit = invocation.namedArguments[#limit] as int? ?? 200;
+          final start = all.length > limit ? all.length - limit : 0;
+          when(() => tl.events).thenReturn(all.sublist(start));
+          when(() => tl.cancelSubscriptions()).thenReturn(null);
+          return tl;
+        });
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: null,
+          logging: log,
+          initialLimit: 5,
+          maxLookback: 100,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async => true,
+        );
+
+        expect(result.incomplete, isFalse);
+        // All 15 events returned
+        expect(result.events.length, 15);
+        expect(result.events.first.eventId, 'e0');
+        expect(result.events.last.eventId, 'e14');
+        // initial(5) → double(10) → double(20) → returns 15 < 20 so stops
+        expect(created.length, 3);
+        // All expansion timelines are cleaned up
+        for (final tl in created.skip(1)) {
+          verify(() => tl.cancelSubscriptions()).called(1);
         }
-        page++;
-      });
+      },
+    );
 
-      final result = await CatchUpStrategy.collectEventsForCatchUp(
-        room: room,
-        lastEventId: null,
-        logging: log,
-        backfill:
-            ({
-              required Timeline timeline,
-              required String? lastEventId,
-              required int pageSize,
-              required int? maxPages,
-              required LoggingService logging,
-              num? untilTimestamp,
-            }) async => true,
-      );
+    test(
+      'no anchor expansion stops at maxLookback',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final created = <MockTimeline>[];
 
-      final slice = result.events;
-      expect(slice, isNotEmpty);
-      // No time anchor available, so catch-up returns the current visible
-      // window without paging older history.
-      expect(slice.first.originServerTs.millisecondsSinceEpoch, 300);
-      expect(slice.last.originServerTs.millisecondsSinceEpoch, 309);
-      verify(() => tl.cancelSubscriptions()).called(1);
-    });
+        // 500 events, but maxLookback=100 should cap the expansion.
+        final all = List<Event>.generate(500, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+          return e;
+        });
+
+        when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+          invocation,
+        ) async {
+          final tl = MockTimeline();
+          created.add(tl);
+          final limit = invocation.namedArguments[#limit] as int? ?? 200;
+          final start = all.length > limit ? all.length - limit : 0;
+          when(() => tl.events).thenReturn(all.sublist(start));
+          when(() => tl.cancelSubscriptions()).thenReturn(null);
+          return tl;
+        });
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: null,
+          logging: log,
+          initialLimit: 10,
+          maxLookback: 100,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async => true,
+        );
+
+        expect(result.incomplete, isFalse);
+        // Returns last 100 events (capped by maxLookback)
+        expect(result.events.length, 100);
+        expect(result.events.first.eventId, 'e400');
+        expect(result.events.last.eventId, 'e499');
+        // initial(10) → 20 → 40 → 80 → 100(capped) → still full so
+        // loop condition (limit < maxLookback) is false, exits
+        for (final tl in created.skip(1)) {
+          verify(() => tl.cancelSubscriptions()).called(1);
+        }
+      },
+    );
+
+    test(
+      'no anchor expansion stops when no new events are returned',
+      () async {
+        final room = MockRoom();
+        final log = MockLoggingService();
+        final created = <MockTimeline>[];
+
+        // Exactly 5 events. initialLimit=5 makes the first page "full",
+        // triggering expansion. The second page (limit=10) returns the
+        // same 5 events, so expansion stops.
+        final all = List<Event>.generate(5, (i) {
+          final e = MockEvent();
+          when(() => e.eventId).thenReturn('e$i');
+          when(
+            () => e.originServerTs,
+          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(i));
+          return e;
+        });
+
+        when(() => room.getTimeline(limit: any(named: 'limit'))).thenAnswer((
+          invocation,
+        ) async {
+          final tl = MockTimeline();
+          created.add(tl);
+          // Always returns all 5 events regardless of limit
+          when(() => tl.events).thenReturn(all);
+          when(() => tl.cancelSubscriptions()).thenReturn(null);
+          return tl;
+        });
+
+        final result = await CatchUpStrategy.collectEventsForCatchUp(
+          room: room,
+          lastEventId: null,
+          logging: log,
+          initialLimit: 5,
+          maxLookback: 100,
+          backfill:
+              ({
+                required Timeline timeline,
+                required String? lastEventId,
+                required int pageSize,
+                required int? maxPages,
+                required LoggingService logging,
+                num? untilTimestamp,
+              }) async => true,
+        );
+
+        expect(result.incomplete, isFalse);
+        expect(result.events.length, 5);
+        // initial(5) → double(10) returns same 5 → breaks
+        expect(created.length, 2);
+        for (final tl in created.skip(1)) {
+          verify(() => tl.cancelSubscriptions()).called(1);
+        }
+      },
+    );
 
     test(
       'includes pre-context by count around the timestamp boundary',
