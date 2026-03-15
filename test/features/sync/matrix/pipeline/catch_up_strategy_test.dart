@@ -18,7 +18,7 @@ void main() {
 
   group('CatchUpStrategy', () {
     test(
-      'returns incomplete recovery when timestamp boundary stays unreachable and snapshot is full',
+      'returns best-effort events when timestamp boundary stays unreachable and snapshot is full',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -52,7 +52,8 @@ void main() {
         });
 
         // Backfill attempts happen, but the requested timestamp boundary is
-        // still older than the oldest visible event.
+        // still older than the oldest visible event. Best-effort returns all
+        // visible events rather than stalling.
         final result = await CatchUpStrategy.collectEventsForCatchUp(
           room: room,
           lastEventId: 'legacy-marker',
@@ -70,10 +71,10 @@ void main() {
           maxLookback: 5000,
         );
 
-        expect(result.incomplete, isTrue);
-        expect(result.events, isEmpty);
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events, hasLength(5000));
         expect(result.snapshotSize, 5000);
-        expect(result.visibleTailCount, 1000);
         for (final tl in created) {
           verify(() => tl.cancelSubscriptions()).called(1);
         }
@@ -81,7 +82,7 @@ void main() {
     );
 
     test(
-      'returns incomplete recovery without escalating when timestamp boundary is unreachable and snapshot not full',
+      'returns best-effort events without escalating when timestamp boundary is unreachable and snapshot not full',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -120,16 +121,18 @@ void main() {
           maxLookback: 1000,
         );
 
-        expect(result.incomplete, isTrue);
-        expect(result.events, isEmpty);
+        // Best-effort: returns all visible events even though the boundary
+        // was not reached, preventing pipeline stalls.
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events, hasLength(150));
         expect(result.snapshotSize, 150);
-        expect(result.visibleTailCount, 150);
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
 
     test(
-      'reports configurable visible tail when timestamp boundary is unreachable',
+      'returns best-effort events when timestamp boundary is unreachable regardless of fallback limit',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -167,10 +170,10 @@ void main() {
           preContextSinceTs: 50,
         );
 
-        expect(result.incomplete, isTrue);
-        expect(result.events, isEmpty);
-        expect(result.visibleTailCount, 3);
-        expect(result.fallbackLimit, 3);
+        // Best-effort: returns all visible events to prevent stalls.
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events, hasLength(20));
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
@@ -269,7 +272,11 @@ void main() {
         maxLookback: 1000,
       );
 
-      expect(result.incomplete, isTrue);
+      // Best-effort: returns all visible events up to maxLookback even
+      // though the boundary was not reached.
+      expect(result.incomplete, isFalse);
+      expect(result.timestampAnchored, isTrue);
+      expect(result.events, hasLength(1000));
       expect(result.snapshotSize, 1000);
       for (final tl in created) {
         verify(() => tl.cancelSubscriptions()).called(1);
@@ -322,7 +329,8 @@ void main() {
     });
 
     test(
-      'stays incomplete when cached history crosses the timestamp boundary but server history is still advertised',
+      'returns timestampAnchored when cached history crosses the timestamp '
+      'boundary even if server backfill reports end-of-timeline',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -361,9 +369,17 @@ void main() {
           preContextSinceTs: 150,
         );
 
-        expect(result.incomplete, isTrue);
-        expect(result.events, isEmpty);
-        expect(result.reachedTimestampBoundary, isTrue);
+        // The local timeline already satisfies the timestamp boundary
+        // (cached-old at ts=100 < anchor ts=150), so events are returned
+        // even though server backfill reported end-of-timeline.
+        // Only events at or after the anchor timestamp are included
+        // (preContextCount defaults to 0).
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(
+          result.events.map((event) => event.eventId),
+          ['cached-new'],
+        );
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
@@ -902,7 +918,7 @@ void main() {
     );
 
     test(
-      'timestamp boundary stays incomplete when older history is not reachable',
+      'returns best-effort events when older history is not reachable',
       () async {
         final room = MockRoom();
         final log = MockLoggingService();
@@ -941,10 +957,12 @@ void main() {
           preContextSinceTs: 50,
         );
 
-        expect(result.incomplete, isTrue);
-        expect(result.events, isEmpty);
+        // Best-effort: returns all 3 visible events even though the
+        // timestamp boundary (50) was not reached.
+        expect(result.incomplete, isFalse);
+        expect(result.timestampAnchored, isTrue);
+        expect(result.events, hasLength(3));
         expect(result.snapshotSize, events.length);
-        expect(result.reachedTimestampBoundary, isFalse);
         verify(() => tl.cancelSubscriptions()).called(1);
       },
     );
