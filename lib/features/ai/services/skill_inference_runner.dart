@@ -430,13 +430,13 @@ class SkillInferenceRunner {
         // 2. Extract the audio transcript.
         final audioTranscript = _resolveAudioTranscript(entity);
 
-        // 3. Build task context.
-        final taskContext = linkedTaskId != null
-            ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
-            : null;
-        final linkedTasks = linkedTaskId != null
-            ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId)
-            : null;
+        // 3. Build task context (parallel for independent calls).
+        final (String? taskContext, String? linkedTasks) = linkedTaskId != null
+            ? await (
+                _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
+                _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
+              ).wait
+            : (null, null);
 
         // 4. Build prompts via SkillPromptBuilder.
         const promptBuilder = SkillPromptBuilder();

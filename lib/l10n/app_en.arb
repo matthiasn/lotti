@@ -1689,6 +1689,8 @@
   "settingsAdvancedOutboxSubtitle": "Manage sync items",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsAiApiKeys": "AI Inference Providers",
+  "settingsWhatsNewSubtitle": "See the latest updates and features",
+  "settingsWhatsNewTitle": "What's New",
   "settingsAiModels": "AI Models",
   "settingsCategoriesAddTooltip": "Add Category",
   "settingsCategoriesDetailsLabel": "Category Details",

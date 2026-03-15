@@ -1282,17 +1282,17 @@ void main() {
           skillType: SkillType.transcription,
           modalities: [Modality.audio],
         );
-        final textSkill = createSkill(
-          id: 'skill-text',
-          name: 'Text Analysis',
+        final promptSkill = createSkill(
+          id: 'skill-prompt',
+          name: 'Coding Prompt',
           skillType: SkillType.promptGeneration,
-          modalities: [Modality.text],
+          modalities: [Modality.audio],
         );
 
         when(
           () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
         ).thenAnswer(
-          (_) => Stream.value([transcriptionSkill, textSkill]),
+          (_) => Stream.value([transcriptionSkill, promptSkill]),
         );
 
         final testContainer = ProviderContainer(
@@ -1323,11 +1323,11 @@ void main() {
           availableSkillsForEntityProvider(audioEntity.id).future,
         );
 
-        // Both transcription (audio modality) and promptGeneration (text
-        // modality) are supported and pass the modality filter.
+        // Both transcription and promptGeneration require audio modality
+        // and pass the filter for JournalAudio entities.
         expect(skills.length, 2);
         expect(skills.map((s) => s.id), contains('skill-transcription'));
-        expect(skills.map((s) => s.id), contains('skill-text'));
+        expect(skills.map((s) => s.id), contains('skill-prompt'));
         skillSub.close();
       },
     );
@@ -1357,16 +1357,16 @@ void main() {
           skillType: SkillType.imageAnalysis,
           modalities: [Modality.image],
         );
-        final textSkill = createSkill(
-          id: 'skill-text',
-          name: 'Text Analysis',
+        final promptSkill = createSkill(
+          id: 'skill-prompt',
+          name: 'Coding Prompt',
           skillType: SkillType.promptGeneration,
-          modalities: [Modality.text],
+          modalities: [Modality.audio],
         );
 
         when(
           () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-        ).thenAnswer((_) => Stream.value([imageSkill, textSkill]));
+        ).thenAnswer((_) => Stream.value([imageSkill, promptSkill]));
 
         final testContainer = ProviderContainer(
           overrides: [
@@ -1396,11 +1396,10 @@ void main() {
           availableSkillsForEntityProvider(imageEntity.id).future,
         );
 
-        // Both imageAnalysis (image modality) and promptGeneration (text
-        // modality) are supported and pass the modality filter.
-        expect(skills.length, 2);
+        // Only imageAnalysis passes — promptGeneration requires audio
+        // modality, which is filtered out for JournalImage entities.
+        expect(skills.length, 1);
         expect(skills.map((s) => s.id), contains('skill-image'));
-        expect(skills.map((s) => s.id), contains('skill-text'));
         skillSub.close();
       },
     );
@@ -1433,16 +1432,16 @@ void main() {
         skillType: SkillType.transcription,
         modalities: [Modality.audio],
       );
-      final textSkill = createSkill(
-        id: 'skill-text',
-        name: 'Text Skill',
+      final promptSkill = createSkill(
+        id: 'skill-prompt',
+        name: 'Coding Prompt',
         skillType: SkillType.promptGeneration,
-        modalities: [Modality.text],
+        modalities: [Modality.audio],
       );
 
       when(
         () => mockAiConfigRepository.watchConfigsByType(AiConfigType.skill),
-      ).thenAnswer((_) => Stream.value([audioOnlySkill, textSkill]));
+      ).thenAnswer((_) => Stream.value([audioOnlySkill, promptSkill]));
 
       final testContainer = ProviderContainer(
         overrides: [
@@ -1470,10 +1469,9 @@ void main() {
         availableSkillsForEntityProvider(taskEntity.id).future,
       );
 
-      // Audio-only skill is filtered out (wrong modality for Task entity).
-      // promptGeneration with text modality passes through.
-      expect(skills.length, 1);
-      expect(skills.first.id, 'skill-text');
+      // Both audio-only skills are filtered out for Task entities —
+      // transcription and promptGeneration both require audio modality.
+      expect(skills, isEmpty);
       skillSub.close();
     });
 

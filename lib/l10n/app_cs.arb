@@ -1315,6 +1315,8 @@
   "settingsAdvancedOutboxSubtitle": "Spravujte položky synchronizace",
   "settingsAdvancedTitle": "Pokročilá nastavení",
   "settingsAiApiKeys": "Poskytovatelé AI inferencí",
+  "settingsWhatsNewSubtitle": "Podívej se na nejnovější aktualizace a funkce",
+  "settingsWhatsNewTitle": "Co je nového",
   "settingsAiModels": "AI modely",
   "settingsCategoriesAddTooltip": "Přidat kategorii",
   "settingsCategoriesDetailsLabel": "Detaily kategorie",

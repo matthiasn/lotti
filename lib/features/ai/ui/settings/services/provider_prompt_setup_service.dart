@@ -96,6 +96,9 @@ class ProviderPromptSetupService {
       modelSelection: modelSelection,
     );
 
+    // No prompts to create for this provider type — nothing to do.
+    if (promptConfigs.isEmpty) return false;
+
     final previewInfos = _getPromptPreviews(
       providerType: provider.inferenceProviderType,
       modelSelection: modelSelection,
@@ -584,7 +587,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Three models (Flash, Pro, Nano Banana Pro) if they don't exist
-  /// 2. 18 prompts (Flash and Pro variants for 9 prompt types)
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [GeminiFtueResult] with details of what was created.
@@ -800,12 +803,11 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     );
   }
 
-  /// Gets all prompt configurations for FTUE.
+  /// Gets all prompt configurations for Gemini FTUE.
   ///
   /// Model assignments:
-  /// - Gemini Pro: Cover Art, Coding, Image Prompts, Checklists (complex reasoning)
-  /// - Gemini Flash: All other text prompts (fast processing)
-  /// - Nano Banana Pro: Image generation (cover art output)
+  /// - Gemini Pro: Image Prompt Generation (complex reasoning)
+  /// - Nano Banana Pro: Cover Art Generation (image output)
   List<FtuePromptConfig> _getFtuePromptConfigs() {
     return const [
       // Generate Image Prompt -> Pro (complex reasoning needed)
@@ -999,7 +1001,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Four models (Flash/GPT-5 Nano, Reasoning/GPT-5.2, Audio/GPT-4o Transcribe, Image/GPT Image 1.5)
-  /// 2. 9 prompts with appropriate model assignments
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [OpenAiFtueResult] with details of what was created.
@@ -1393,7 +1395,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Three models (Fast/Mistral Small, Reasoning/Magistral Medium, Audio/Voxtral Small)
-  /// 2. 8 prompts with appropriate model assignments (no image generation)
+  /// 2. 1 prompt (Image Prompt Generation; no image generation model available)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [MistralFtueResult] with details of what was created.
@@ -1757,7 +1759,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   ///
   /// This creates:
   /// 1. Five models (Flash/Qwen Flash, Reasoning/Qwen3 Max, Audio/Qwen3 Omni Flash, Vision/Qwen3 VL Flash, Image/Wan 2.6)
-  /// 2. 9 prompts with appropriate model assignments (including cover art generation)
+  /// 2. 2 prompts (Image Prompt Generation + Cover Art Generation)
   /// 3. A test category with all prompts enabled and auto-selection configured
   ///
   /// Returns [AlibabaFtueResult] with details of what was created.

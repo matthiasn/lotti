@@ -3668,6 +3668,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsAiApiKeys => 'AI-Inferenz-Anbieter';
 
   @override
+  String get settingsWhatsNewSubtitle =>
+      'Sieh dir die neuesten Updates und Funktionen an';
+
+  @override
+  String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
+
+  @override
   String get settingsAiModels => 'AI-Modelle';
 
   @override

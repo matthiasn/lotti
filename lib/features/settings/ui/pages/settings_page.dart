@@ -69,8 +69,8 @@ class SettingsPage extends ConsumerWidget {
         children: [
           if (enableWhatsNew)
             settingsCard(
-              title: "What's New",
-              subtitle: 'See the latest updates and features',
+              title: context.messages.settingsWhatsNewTitle,
+              subtitle: context.messages.settingsWhatsNewSubtitle,
               icon: Icons.new_releases_outlined,
               onTap: () => WhatsNewModal.show(context, ref),
             ),

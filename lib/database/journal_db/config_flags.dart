@@ -163,5 +163,13 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableWhatsNewFlag,
+      description: "Enable What's New feature?",
+      status: true,
+    ),
+  );
+
   // No additional flags for label guardrails: always-on behavior.
 }

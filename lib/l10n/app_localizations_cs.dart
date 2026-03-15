@@ -3656,6 +3656,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAiApiKeys => 'Poskytovatelé AI inferencí';
 
   @override
+  String get settingsWhatsNewSubtitle =>
+      'Podívej se na nejnovější aktualizace a funkce';
+
+  @override
+  String get settingsWhatsNewTitle => 'Co je nového';
+
+  @override
   String get settingsAiModels => 'AI modely';
 
   @override

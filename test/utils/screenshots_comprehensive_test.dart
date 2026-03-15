@@ -15,6 +15,8 @@ import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../helpers/fallbacks.dart';
+
 // Mocks
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
@@ -48,6 +50,7 @@ void main() {
     setUpAll(() async {
       TestWidgetsFlutterBinding.ensureInitialized();
 
+      registerAllFallbackValues();
       registerFallbackValue(StackTrace.current);
       registerFallbackValue(FakeDBusObjectPath());
       registerFallbackValue(FakeDBusMethodCall());

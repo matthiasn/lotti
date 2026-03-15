@@ -9,6 +9,8 @@ import 'package:lotti/utils/screenshots.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../helpers/fallbacks.dart';
+
 // Mocks
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
@@ -36,6 +38,7 @@ void main() {
     late MockDirectory mockDirectory;
 
     setUpAll(() {
+      registerAllFallbackValues();
       registerFallbackValue(StackTrace.current);
     });
 

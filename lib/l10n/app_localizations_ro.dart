@@ -3678,6 +3678,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAiApiKeys => 'Furnizori de inferență AI';
 
   @override
+  String get settingsWhatsNewSubtitle =>
+      'Vedeți cele mai recente actualizări și funcționalități';
+
+  @override
+  String get settingsWhatsNewTitle => 'Ce este nou';
+
+  @override
   String get settingsAiModels => 'Modele AI';
 
   @override

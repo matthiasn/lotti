@@ -3606,6 +3606,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAiApiKeys => 'AI Inference Providers';
 
   @override
+  String get settingsWhatsNewSubtitle => 'See the latest updates and features';
+
+  @override
+  String get settingsWhatsNewTitle => 'What\'s New';
+
+  @override
   String get settingsAiModels => 'AI Models';
 
   @override

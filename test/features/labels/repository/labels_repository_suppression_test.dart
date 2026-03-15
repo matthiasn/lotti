@@ -9,6 +9,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+
 class MockJournalDb extends Mock implements JournalDb {}
 
 class MockPersistenceLogic extends Mock implements PersistenceLogic {}
@@ -34,6 +36,7 @@ class MockUpdateNotifications extends Mock implements UpdateNotifications {}
 
 void main() {
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(
       Metadata(
         id: 'm',

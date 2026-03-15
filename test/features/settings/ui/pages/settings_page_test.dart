@@ -4,6 +4,7 @@ import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_indicator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
@@ -228,6 +229,72 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets(
+      "shows What's New card and indicator when enableWhatsNewFlag is ON",
+      (tester) async {
+        when(mockJournalDb.watchConfigFlags).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([
+            {
+              const ConfigFlag(
+                name: enableWhatsNewFlag,
+                description: "Enable What's New feature?",
+                status: true,
+              ),
+            },
+          ]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SettingsPage(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              whatsNewControllerProvider.overrideWith(
+                _TestWhatsNewController.new,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Settings card with title and subtitle
+        expect(find.text("What's New"), findsOneWidget);
+        expect(
+          find.text('See the latest updates and features'),
+          findsOneWidget,
+        );
+        // The WhatsNewIndicator is rendered in the app bar actions
+        expect(find.byType(WhatsNewIndicator), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      "hides What's New card and indicator when enableWhatsNewFlag is OFF",
+      (tester) async {
+        when(mockJournalDb.watchConfigFlags).thenAnswer(
+          (_) => Stream<Set<ConfigFlag>>.fromIterable([<ConfigFlag>{}]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const SettingsPage(),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              whatsNewControllerProvider.overrideWith(
+                _TestWhatsNewController.new,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        expect(find.text("What's New"), findsNothing);
+        expect(find.byType(WhatsNewIndicator), findsNothing);
+      },
+    );
 
     testWidgets(
       'hides Dashboards and Measurable Types when enableDashboardsPageFlag is OFF',

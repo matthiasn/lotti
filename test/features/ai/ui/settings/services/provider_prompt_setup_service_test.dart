@@ -134,219 +134,9 @@ void main() {
         expect(find.text('Set Up Default Prompts?'), findsNothing);
       });
 
-      testWidgets('should show dialog for Gemini provider', (
+      testWidgets('should return false for Gemini (empty prompt configs)', (
         WidgetTester tester,
       ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => geminiModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: geminiProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-      });
-
-      testWidgets('should show dialog for Ollama provider', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => ollamaModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-      });
-    });
-
-    group('Gemini - Dialog UI', () {
-      testWidgets('should display correct prompts for Gemini', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => geminiModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: geminiProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-        expect(find.text('Get started quickly with Gemini'), findsOneWidget);
-        expect(find.text('Prompts to create:'), findsOneWidget);
-
-        // Gemini now creates no prompts via offerPromptSetup (empty previews)
-        expect(find.text('Audio Transcript'), findsNothing);
-        expect(find.text('Image Analysis'), findsNothing);
-        expect(find.text('Checklist Updates'), findsNothing);
-        expect(find.text('Task Summary'), findsNothing);
-      });
-
-      testWidgets('should display correct icons for Gemini prompts', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => geminiModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: geminiProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        // No prompt icons shown (empty previews)
-        expect(find.byIcon(Icons.mic), findsNothing);
-        expect(find.byIcon(Icons.image), findsNothing);
-        expect(find.byIcon(Icons.checklist), findsNothing);
-        expect(find.byIcon(Icons.summarize), findsNothing);
-      });
-    });
-
-    group('Ollama - Dialog UI', () {
-      testWidgets('should display correct prompts for Ollama (no audio)', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => ollamaModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-        expect(
-          find.text('Get started quickly with Ollama (local)'),
-          findsOneWidget,
-        );
-        expect(find.text('Prompts to create:'), findsOneWidget);
-
-        // Ollama now creates no prompts via offerPromptSetup (empty previews)
-        expect(find.text('Audio Transcript'), findsNothing);
-        expect(find.text('Image Analysis'), findsNothing);
-        expect(find.text('Checklist Updates'), findsNothing);
-        expect(find.text('Task Summary'), findsNothing);
-      });
-
-      testWidgets('should display correct icons for Ollama prompts', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => ollamaModels);
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        // No prompt icons shown (empty previews)
-        expect(find.byIcon(Icons.mic), findsNothing);
-        expect(find.byIcon(Icons.image), findsNothing);
-        expect(find.byIcon(Icons.checklist), findsNothing);
-        expect(find.byIcon(Icons.summarize), findsNothing);
-      });
-    });
-
-    group('User Interaction - Cancel', () {
-      testWidgets('should return false when user taps "No Thanks"', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
         when(
           () => mockRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => geminiModels);
@@ -367,178 +157,49 @@ void main() {
         );
 
         await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        await tester.tap(find.text('No Thanks'));
-        await tester.pumpAndSettle();
-
-        expect(result, isFalse);
+        // No dialog shown — prompt configs are empty.
         expect(find.text('Set Up Default Prompts?'), findsNothing);
-        verifyNever(() => mockRepository.saveConfig(any()));
+        expect(result, isFalse);
+      });
+
+      testWidgets('should return false for Ollama (empty prompt configs)', (
+        WidgetTester tester,
+      ) async {
+        when(
+          () => mockRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => ollamaModels);
+
+        bool? result;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            child: const Text('Test Button'),
+            onPressed: (context, ref) async {
+              result = await setupService.offerPromptSetup(
+                context: context,
+                ref: ref,
+                provider: ollamaProvider,
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.text('Test Button'));
+        await tester.pump();
+
+        // No dialog shown — prompt configs are empty.
+        expect(find.text('Set Up Default Prompts?'), findsNothing);
+        expect(result, isFalse);
       });
     });
 
-    group('Gemini - Prompt Creation', () {
-      testWidgets(
-        'should create 0 prompts for Gemini via offerPromptSetup '
-        '(prompts moved to FTUE)',
-        (WidgetTester tester) async {
-          await tester.binding.setSurfaceSize(const Size(1024, 900));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => geminiModels);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async {});
-
-          bool? result;
-
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const Text('Test Button'),
-              onPressed: (context, ref) async {
-                result = await setupService.offerPromptSetup(
-                  context: context,
-                  ref: ref,
-                  provider: geminiProvider,
-                );
-              },
-            ),
-          );
-
-          await tester.tap(find.text('Test Button'));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Set Up Prompts'));
-          await tester.pump();
-
-          // No prompts created via offerPromptSetup (empty prompt configs)
-          expect(result, isFalse);
-          verifyNever(() => mockRepository.saveConfig(any()));
-        },
-      );
-    });
-
-    group('Ollama - Prompt Creation', () {
-      testWidgets(
-        'should create 0 prompts for Ollama via offerPromptSetup '
-        '(empty prompt configs)',
-        (WidgetTester tester) async {
-          await tester.binding.setSurfaceSize(const Size(1024, 900));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => ollamaModels);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async {});
-
-          bool? result;
-
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const Text('Test Button'),
-              onPressed: (context, ref) async {
-                result = await setupService.offerPromptSetup(
-                  context: context,
-                  ref: ref,
-                  provider: ollamaProvider,
-                );
-              },
-            ),
-          );
-
-          await tester.tap(find.text('Test Button'));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Set Up Prompts'));
-          await tester.pump();
-
-          // No prompts created via offerPromptSetup (empty prompt configs)
-          expect(result, isFalse);
-          verifyNever(() => mockRepository.saveConfig(any()));
-        },
-      );
-    });
-
-    group('Snackbar Feedback', () {
-      testWidgets(
-        'should not show snackbar for Gemini (0 prompts via offerPromptSetup)',
-        (WidgetTester tester) async {
-          await tester.binding.setSurfaceSize(const Size(1024, 900));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => geminiModels);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async {});
-
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const Text('Test Button'),
-              onPressed: (context, ref) async {
-                await setupService.offerPromptSetup(
-                  context: context,
-                  ref: ref,
-                  provider: geminiProvider,
-                );
-              },
-            ),
-          );
-
-          await tester.tap(find.text('Test Button'));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Set Up Prompts'));
-          await tester.pump();
-
-          // No snackbar shown because 0 prompts were created
-          expect(find.byIcon(Icons.check_circle), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'should not show snackbar for Ollama (0 prompts via offerPromptSetup)',
-        (WidgetTester tester) async {
-          await tester.binding.setSurfaceSize(const Size(1024, 900));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => ollamaModels);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async {});
-
-          await tester.pumpWidget(
-            createTestWidget(
-              child: const Text('Test Button'),
-              onPressed: (context, ref) async {
-                await setupService.offerPromptSetup(
-                  context: context,
-                  ref: ref,
-                  provider: ollamaProvider,
-                );
-              },
-            ),
-          );
-
-          await tester.tap(find.text('Test Button'));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Set Up Prompts'));
-          await tester.pump();
-
-          // No snackbar shown because 0 prompts were created
-          expect(find.byIcon(Icons.check_circle), findsNothing);
-        },
-      );
-    });
+    // Dialog UI, cancel, prompt creation, and snackbar groups are no longer
+    // applicable — all provider types now return empty prompt configs in
+    // offerPromptSetup, so the method short-circuits before showing a dialog.
+    // The actual prompt creation happens via the FTUE extensions (tested in
+    // the FTUE-specific groups below).
 
     group('Edge Cases', () {
       testWidgets(
@@ -575,96 +236,84 @@ void main() {
         },
       );
 
-      testWidgets('should handle models from different providers', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+      testWidgets(
+        'should return false for Ollama with mixed models (empty configs)',
+        (WidgetTester tester) async {
+          final mixedModels = [
+            ...ollamaModels,
+            AiTestDataFactory.createTestModel(
+              id: 'other-model',
+              name: 'Other Model',
+              inferenceProviderId: 'other-provider-id',
+            ),
+          ];
 
-        final mixedModels = [
-          ...ollamaModels,
-          AiTestDataFactory.createTestModel(
-            id: 'other-model',
-            name: 'Other Model',
-            inferenceProviderId: 'other-provider-id',
-          ),
-        ];
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => mixedModels);
 
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => mixedModels);
+          bool? result;
 
-        final savedConfigs = <AiConfig>[];
-        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
-          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
-          return Future.value();
-        });
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Test Button'),
+              onPressed: (context, ref) async {
+                result = await setupService.offerPromptSetup(
+                  context: context,
+                  ref: ref,
+                  provider: ollamaProvider,
+                );
+              },
+            ),
+          );
 
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
+          await tester.tap(find.text('Test Button'));
+          await tester.pump();
 
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
+          // Short-circuits: empty prompt configs → no dialog, returns false.
+          expect(result, isFalse);
+          verifyNever(() => mockRepository.saveConfig(any()));
+        },
+      );
 
-        await tester.tap(find.text('Set Up Prompts'));
-        await tester.pump();
+      testWidgets(
+        'should return false for Ollama with fallback model (empty configs)',
+        (WidgetTester tester) async {
+          final fallbackModels = [
+            AiTestDataFactory.createTestModel(
+              id: 'ollama-fallback-only',
+              name: 'Some Other Model',
+              inferenceProviderId: ollamaProvider.id,
+              inputModalities: [Modality.text, Modality.image],
+            ),
+          ];
 
-        final ollamaModelIds = ollamaModels.map((m) => m.id).toSet();
-        for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
-          expect(config.defaultModelId, isNot('other-model'));
-          expect(ollamaModelIds.contains(config.defaultModelId), isTrue);
-        }
-      });
+          when(
+            () => mockRepository.getConfigsByType(AiConfigType.model),
+          ).thenAnswer((_) async => fallbackModels);
 
-      testWidgets('should fallback to first model when Qwen not found', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+          bool? result;
 
-        final fallbackModels = [
-          AiTestDataFactory.createTestModel(
-            id: 'ollama-fallback-only',
-            name: 'Some Other Model',
-            inferenceProviderId: ollamaProvider.id,
-            inputModalities: [Modality.text, Modality.image],
-          ),
-        ];
+          await tester.pumpWidget(
+            createTestWidget(
+              child: const Text('Test Button'),
+              onPressed: (context, ref) async {
+                result = await setupService.offerPromptSetup(
+                  context: context,
+                  ref: ref,
+                  provider: ollamaProvider,
+                );
+              },
+            ),
+          );
 
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => fallbackModels);
+          await tester.tap(find.text('Test Button'));
+          await tester.pump();
 
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        // Dialog shows but no prompt previews (empty prompt configs)
-        expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-        expect(find.text('Uses Some Other Model'), findsNothing);
-      });
+          // Short-circuits: empty prompt configs → no dialog, returns false.
+          expect(result, isFalse);
+        },
+      );
     });
 
     group('Service Construction', () {
@@ -698,62 +347,20 @@ void main() {
     });
 
     group('Prompt Configuration', () {
-      testWidgets('should set trackPreconfigured to true for all prompts', (
-        WidgetTester tester,
-      ) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => ollamaModels);
-
-        final savedConfigs = <AiConfig>[];
-        when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
-          savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
-          return Future.value();
-        });
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: ollamaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Set Up Prompts'));
-        await tester.pump();
-
-        for (final config in savedConfigs.whereType<AiConfigPrompt>()) {
-          expect(config.trackPreconfigured, isTrue);
-        }
-      });
-
       testWidgets(
-        'should create no prompts via offerPromptSetup '
-        '(prompt configs are empty)',
+        'should return false without creating prompts (empty configs)',
         (WidgetTester tester) async {
-          await tester.binding.setSurfaceSize(const Size(1024, 900));
-          addTearDown(() => tester.binding.setSurfaceSize(null));
-
           when(
             () => mockRepository.getConfigsByType(AiConfigType.model),
           ).thenAnswer((_) async => ollamaModels);
+
+          bool? result;
 
           await tester.pumpWidget(
             createTestWidget(
               child: const Text('Test Button'),
               onPressed: (context, ref) async {
-                await setupService.offerPromptSetup(
+                result = await setupService.offerPromptSetup(
                   context: context,
                   ref: ref,
                   provider: ollamaProvider,
@@ -763,12 +370,10 @@ void main() {
           );
 
           await tester.tap(find.text('Test Button'));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.text('Set Up Prompts'));
           await tester.pump();
 
-          // No prompts created (empty prompt configs)
+          // Short-circuits: empty configs → no dialog, no saves.
+          expect(result, isFalse);
           verifyNever(() => mockRepository.saveConfig(any()));
         },
       );
@@ -2119,118 +1724,12 @@ void main() {
       );
     }
 
-    testWidgets('should show dialog for Alibaba provider', (
+    testWidgets('should return false for Alibaba (empty prompt configs)', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
       when(
         () => mockRepository.getConfigsByType(AiConfigType.model),
       ).thenAnswer((_) async => alibabaModels);
-
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: alibabaProvider,
-            );
-          },
-        ),
-      );
-
-      await tester.tap(find.text('Test Button'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-    });
-
-    testWidgets('should display correct prompts for Alibaba', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => alibabaModels);
-
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: alibabaProvider,
-            );
-          },
-        ),
-      );
-
-      await tester.tap(find.text('Test Button'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Set Up Default Prompts?'), findsOneWidget);
-      expect(
-        find.text('Get started quickly with Alibaba Cloud (Qwen)'),
-        findsOneWidget,
-      );
-      expect(find.text('Prompts to create:'), findsOneWidget);
-
-      // Alibaba now creates no prompts via offerPromptSetup (empty previews)
-      expect(find.text('Audio Transcript'), findsNothing);
-      expect(find.text('Image Analysis'), findsNothing);
-      expect(find.text('Checklist Updates'), findsNothing);
-      expect(find.text('Task Summary'), findsNothing);
-    });
-
-    testWidgets('should display correct icons for Alibaba prompts', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => alibabaModels);
-
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: alibabaProvider,
-            );
-          },
-        ),
-      );
-
-      await tester.tap(find.text('Test Button'));
-      await tester.pumpAndSettle();
-
-      // No prompt icons shown (empty previews)
-      expect(find.byIcon(Icons.mic), findsNothing);
-      expect(find.byIcon(Icons.image), findsNothing);
-      expect(find.byIcon(Icons.checklist), findsNothing);
-      expect(find.byIcon(Icons.summarize), findsNothing);
-    });
-
-    testWidgets('should create 0 prompts for Alibaba via offerPromptSetup', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => alibabaModels);
-      when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
 
       bool? result;
 
@@ -2248,96 +1747,13 @@ void main() {
       );
 
       await tester.tap(find.text('Test Button'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Set Up Prompts'));
       await tester.pump();
 
-      // No prompts created via offerPromptSetup (empty prompt configs)
+      // Short-circuits: empty prompt configs → no dialog, returns false.
+      expect(find.text('Set Up Default Prompts?'), findsNothing);
       expect(result, isFalse);
       verifyNever(() => mockRepository.saveConfig(any()));
     });
-
-    testWidgets('should create no prompts with names for Alibaba', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 900));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
-
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => alibabaModels);
-
-      final savedConfigs = <AiConfig>[];
-      when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
-        savedConfigs.add(invocation.positionalArguments[0] as AiConfig);
-        return Future.value();
-      });
-
-      await tester.pumpWidget(
-        createTestWidget(
-          child: const Text('Test Button'),
-          onPressed: (context, ref) async {
-            await setupService.offerPromptSetup(
-              context: context,
-              ref: ref,
-              provider: alibabaProvider,
-            );
-          },
-        ),
-      );
-
-      await tester.tap(find.text('Test Button'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Set Up Prompts'));
-      await tester.pump();
-
-      final promptNames = savedConfigs
-          .whereType<AiConfigPrompt>()
-          .map((p) => p.name)
-          .toList();
-
-      // No prompts created via offerPromptSetup (empty prompt configs)
-      expect(promptNames, isEmpty);
-    });
-
-    testWidgets(
-      'should not show snackbar for Alibaba (0 prompts via offerPromptSetup)',
-      (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 900));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => alibabaModels);
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async {});
-
-        await tester.pumpWidget(
-          createTestWidget(
-            child: const Text('Test Button'),
-            onPressed: (context, ref) async {
-              await setupService.offerPromptSetup(
-                context: context,
-                ref: ref,
-                provider: alibabaProvider,
-              );
-            },
-          ),
-        );
-
-        await tester.tap(find.text('Test Button'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Set Up Prompts'));
-        await tester.pump();
-
-        // No snackbar shown because 0 prompts were created
-        expect(find.byIcon(Icons.check_circle), findsNothing);
-      },
-    );
   });
 
   group('Alibaba FTUE Setup - performAlibabaFtueSetup', () {

@@ -1528,6 +1528,8 @@
   "settingsAdvancedOutboxSubtitle": "Elemente anzeigen und verwalten, die auf Synchronisierung warten",
   "settingsAdvancedTitle": "Erweiterte Einstellungen",
   "settingsAiApiKeys": "AI-Inferenz-Anbieter",
+  "settingsWhatsNewSubtitle": "Sieh dir die neuesten Updates und Funktionen an",
+  "settingsWhatsNewTitle": "Was gibt's Neues",
   "settingsAiModels": "AI-Modelle",
   "settingsCategoriesAddTooltip": "Kategorie hinzufügen",
   "settingsCategoriesDetailsLabel": "Kategoriedetails",

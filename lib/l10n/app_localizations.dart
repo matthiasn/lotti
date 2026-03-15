@@ -6541,6 +6541,18 @@ abstract class AppLocalizations {
   /// **'AI Inference Providers'**
   String get settingsAiApiKeys;
 
+  /// No description provided for @settingsWhatsNewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See the latest updates and features'**
+  String get settingsWhatsNewSubtitle;
+
+  /// No description provided for @settingsWhatsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s New'**
+  String get settingsWhatsNewTitle;
+
   /// No description provided for @settingsAiModels.
   ///
   /// In en, this message translates to:

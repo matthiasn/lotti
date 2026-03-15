@@ -114,13 +114,21 @@ class ProfileResolver {
     return ResolvedProfile(
       thinkingModelId: config.thinkingModelId,
       thinkingProvider: thinkingProvider,
-      thinkingHighEndModelId: config.thinkingHighEndModelId,
+      thinkingHighEndModelId: thinkingHighEndProvider != null
+          ? config.thinkingHighEndModelId
+          : null,
       thinkingHighEndProvider: thinkingHighEndProvider,
-      imageRecognitionModelId: config.imageRecognitionModelId,
+      imageRecognitionModelId: imageRecognitionProvider != null
+          ? config.imageRecognitionModelId
+          : null,
       imageRecognitionProvider: imageRecognitionProvider,
-      transcriptionModelId: config.transcriptionModelId,
+      transcriptionModelId: transcriptionProvider != null
+          ? config.transcriptionModelId
+          : null,
       transcriptionProvider: transcriptionProvider,
-      imageGenerationModelId: config.imageGenerationModelId,
+      imageGenerationModelId: imageGenerationProvider != null
+          ? config.imageGenerationModelId
+          : null,
       imageGenerationProvider: imageGenerationProvider,
       skillAssignments: config.skillAssignments,
     );
