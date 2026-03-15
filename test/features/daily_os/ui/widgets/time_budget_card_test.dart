@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -1893,6 +1894,7 @@ void main() {
   group('TimeBudgetCard - Quick Create Task Button', () {
     late MockNavService mockNavService;
     late MockPersistenceLogic mockPersistenceLogic;
+    late MockTaskAgentService mockTaskAgentService;
 
     setUpAll(() {
       registerFallbackValue(
@@ -1915,13 +1917,15 @@ void main() {
       await getIt.reset();
       mockNavService = MockNavService();
       mockPersistenceLogic = MockPersistenceLogic();
+      mockTaskAgentService = MockTaskAgentService();
+
+      final mockEntitiesCache = MockEntitiesCacheService();
+      when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
 
       getIt
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<EntitiesCacheService>(
-          MockEntitiesCacheService(),
-        );
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCache);
     });
 
     tearDown(() async {
@@ -1982,6 +1986,10 @@ void main() {
           createTestWidget(
             progress: createProgress(),
             selectedDate: testDate,
+            overrides: [
+              taskAgentServiceProvider
+                  .overrideWithValue(mockTaskAgentService),
+            ],
           ),
         );
         await tester.pump();
@@ -2056,6 +2064,10 @@ void main() {
         createTestWidget(
           progress: createProgress(),
           selectedDate: selectedDate,
+          overrides: [
+            taskAgentServiceProvider
+                .overrideWithValue(mockTaskAgentService),
+          ],
         ),
       );
       await tester.pump();
@@ -2153,7 +2165,13 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestWidget(progress: progressWithoutCategory),
+        createTestWidget(
+          progress: progressWithoutCategory,
+          overrides: [
+            taskAgentServiceProvider
+                .overrideWithValue(mockTaskAgentService),
+          ],
+        ),
       );
       await tester.pump();
 

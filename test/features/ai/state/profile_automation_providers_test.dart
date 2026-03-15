@@ -92,8 +92,7 @@ void main() {
       return container;
     }
 
-    test('resolveForTask falls back to task profileId when no agent',
-        () async {
+    test('resolveForTask falls back to task profileId when no agent', () async {
       // No agent for this task — agent path returns null.
       when(
         () => mockTaskAgentService.getTaskAgentForTask('task-1'),

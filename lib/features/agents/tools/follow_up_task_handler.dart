@@ -4,8 +4,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// Creates a follow-up task linked to the source task.
@@ -83,6 +85,11 @@ class FollowUpTaskHandler {
     }
     final description = args['description'];
 
+    // Look up category defaults for profile inheritance.
+    final category = categoryId != null
+        ? getIt<EntitiesCacheService>().getCategoryById(categoryId)
+        : null;
+
     // Build task data.
     final taskData = TaskData(
       status: TaskStatus.open(
@@ -96,6 +103,7 @@ class FollowUpTaskHandler {
       title: title.trim(),
       priority: priority!,
       due: dueDate,
+      profileId: category?.defaultProfileId,
     );
 
     final entryText = EntryText(

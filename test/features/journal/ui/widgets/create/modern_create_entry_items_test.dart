@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
@@ -101,13 +102,14 @@ void main() {
         ]),
       );
 
+      final mockEntitiesCache = MockEntitiesCacheService();
+      when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
+
       getIt
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<EntitiesCacheService>(
-          MockEntitiesCacheService(),
-        );
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCache);
     });
 
     tearDown(getIt.reset);
@@ -217,6 +219,8 @@ void main() {
             ),
             overrides: [
               journalDbProvider.overrideWithValue(mockDb),
+              taskAgentServiceProvider
+                  .overrideWithValue(MockTaskAgentService()),
             ],
           ),
         );
@@ -284,6 +288,8 @@ void main() {
             ),
             overrides: [
               journalDbProvider.overrideWithValue(mockDb),
+              taskAgentServiceProvider
+                  .overrideWithValue(MockTaskAgentService()),
             ],
           ),
         );
@@ -1293,13 +1299,14 @@ void main() {
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
       );
 
+      final mockEntitiesCache = MockEntitiesCacheService();
+      when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
+
       getIt
         ..registerSingleton<NavService>(mockNavService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<EntitiesCacheService>(
-          MockEntitiesCacheService(),
-        );
+        ..registerSingleton<EntitiesCacheService>(mockEntitiesCache);
 
       final testTask = Task(
         meta: Metadata(
@@ -1336,7 +1343,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const CreateTaskItem(null, categoryId: 'cat-id'),
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            taskAgentServiceProvider
+                .overrideWithValue(MockTaskAgentService()),
+          ],
         ),
       );
 

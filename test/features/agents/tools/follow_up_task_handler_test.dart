@@ -1,9 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -70,10 +73,17 @@ void main() {
 
   late MockDomainLogger mockDomainLogger;
 
-  setUp(() {
+  late MockEntitiesCacheService mockEntitiesCache;
+
+  setUp(() async {
+    await getIt.reset();
+    mockEntitiesCache = MockEntitiesCacheService();
+    getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCache);
+
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
     mockDomainLogger = MockDomainLogger();
+
     handler = FollowUpTaskHandler(
       persistenceLogic: mockPersistenceLogic,
       journalDb: mockJournalDb,
@@ -85,6 +95,27 @@ void main() {
     when(
       () => mockJournalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
+
+    // Stub EntitiesCacheService.getCategoryById — returns a category with
+    // defaultProfileId for the known categoryId, null otherwise.
+    when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+      CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        color: '#0000FFFF',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        active: true,
+        private: false,
+        defaultProfileId: 'profile-from-category',
+      ),
+    );
+    when(
+      () => mockEntitiesCache.getCategoryById(
+        any(that: isNot(equals(categoryId))),
+      ),
+    ).thenReturn(null);
 
     // Stub DomainLogger methods so verification works.
     when(
@@ -103,6 +134,10 @@ void main() {
         stackTrace: any(named: 'stackTrace'),
       ),
     ).thenReturn(null);
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   group('FollowUpTaskHandler', () {
@@ -532,6 +567,94 @@ void main() {
     });
 
     group('category inheritance', () {
+      test('inherits profileId from category defaults', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-profile');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'Profile Inherited'},
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: captureAny(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+
+          final taskData = captured[0] as TaskData;
+          expect(taskData.profileId, 'profile-from-category');
+        });
+      });
+
+      test('sets null profileId when source has no category', () async {
+        final sourceTask = makeSourceTask(taskCategoryId: null);
+        final newTask = makeNewTask('new-task-no-profile');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'No Profile'},
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: captureAny(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+
+          final taskData = captured[0] as TaskData;
+          expect(taskData.profileId, isNull);
+        });
+      });
+
       test('inherits null category when source has none', () async {
         final sourceTask = makeSourceTask(taskCategoryId: null);
         final newTask = makeNewTask('new-task-006');
