@@ -475,83 +475,103 @@ final triggerSkillProvider = FutureProvider.autoDispose
         // Keep alive until completion so fire-and-forget callers don't
         // cause the provider to be disposed mid-execution.
         final link = ref.keepAlive();
-        developer.log(
-          'triggerSkill: entityId=${params.entityId}, '
-          'skillId=${params.skillId}, linkedTaskId=${params.linkedTaskId}',
-          name: 'UnifiedAiController',
-        );
-
-        final config = await ref.read(
-          aiConfigByIdProvider(params.skillId).future,
-        );
-        if (config == null || config is! AiConfigSkill) {
-          throw Exception('Skill not found: ${params.skillId}');
-        }
-        final skill = config;
-
-        // Resolve the profile for the linked task.
-        if (params.linkedTaskId == null) {
-          throw Exception(
-            'No linked task for skill invocation. '
-            'Skills require a task with an assigned agent profile.',
+        final loggingService = getIt<LoggingService>();
+        try {
+          developer.log(
+            'triggerSkill: entityId=${params.entityId}, '
+            'skillId=${params.skillId}, linkedTaskId=${params.linkedTaskId}',
+            name: 'UnifiedAiController',
           );
-        }
 
-        final resolver = ref.read(profileAutomationResolverProvider);
-        final resolvedProfile = await resolver.resolveForTask(
-          params.linkedTaskId!,
-        );
-        if (resolvedProfile == null) {
-          throw Exception(
-            'No agent profile configured for this task. '
-            'Assign an agent with a profile first.',
+          final config = await ref.read(
+            aiConfigByIdProvider(params.skillId).future,
           );
+          if (config == null || config is! AiConfigSkill) {
+            loggingService.captureEvent(
+              'Skill not found: ${params.skillId}',
+              domain: 'UnifiedAiController',
+              subDomain: 'triggerSkillProvider',
+            );
+            return;
+          }
+          final skill = config;
+
+          // Resolve the profile for the linked task.
+          if (params.linkedTaskId == null) {
+            loggingService.captureEvent(
+              'Skipping ${params.skillId} for ${params.entityId}: '
+              'no linked task',
+              domain: 'UnifiedAiController',
+              subDomain: 'triggerSkillProvider',
+            );
+            return;
+          }
+
+          final resolver = ref.read(profileAutomationResolverProvider);
+          final resolvedProfile = await resolver.resolveForTask(
+            params.linkedTaskId!,
+          );
+          if (resolvedProfile == null) {
+            loggingService.captureEvent(
+              'Skipping ${params.skillId} for ${params.linkedTaskId}: '
+              'no profile configured',
+              domain: 'UnifiedAiController',
+              subDomain: 'triggerSkillProvider',
+            );
+            return;
+          }
+
+          developer.log(
+            'triggerSkill: resolved profile for ${params.linkedTaskId}, '
+            'running ${skill.skillType}',
+            name: 'UnifiedAiController',
+          );
+
+          final automationResult = AutomationResult(
+            handled: true,
+            skill: skill,
+            resolvedProfile: resolvedProfile,
+          );
+
+          final runner = ref.read(skillInferenceRunnerProvider);
+
+          switch (skill.skillType) {
+            case SkillType.transcription:
+              await runner.runTranscription(
+                audioEntryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: params.linkedTaskId,
+              );
+            case SkillType.imageAnalysis:
+              await runner.runImageAnalysis(
+                imageEntryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: params.linkedTaskId,
+              );
+            case SkillType.promptGeneration:
+            case SkillType.imagePromptGeneration:
+            case SkillType.imageGeneration:
+              developer.log(
+                'Skill type ${skill.skillType} not yet supported for '
+                'direct invocation via triggerSkillProvider',
+                name: 'UnifiedAiController',
+              );
+          }
+
+          developer.log(
+            'triggerSkill: completed for ${params.entityId}',
+            name: 'UnifiedAiController',
+          );
+        } catch (error, stackTrace) {
+          loggingService.captureException(
+            error,
+            domain: 'UnifiedAiController',
+            subDomain: 'triggerSkillProvider',
+            stackTrace: stackTrace,
+          );
+        } finally {
+          link.close();
         }
-
-        developer.log(
-          'triggerSkill: resolved profile for ${params.linkedTaskId}, '
-          'running ${skill.skillType}',
-          name: 'UnifiedAiController',
-        );
-
-        final automationResult = AutomationResult(
-          handled: true,
-          skill: skill,
-          resolvedProfile: resolvedProfile,
-        );
-
-        final runner = ref.read(skillInferenceRunnerProvider);
-
-        switch (skill.skillType) {
-          case SkillType.transcription:
-            await runner.runTranscription(
-              audioEntryId: params.entityId,
-              automationResult: automationResult,
-              linkedTaskId: params.linkedTaskId,
-            );
-          case SkillType.imageAnalysis:
-            await runner.runImageAnalysis(
-              imageEntryId: params.entityId,
-              automationResult: automationResult,
-              linkedTaskId: params.linkedTaskId,
-            );
-          case SkillType.promptGeneration:
-          case SkillType.imagePromptGeneration:
-          case SkillType.imageGeneration:
-            developer.log(
-              'Skill type ${skill.skillType} not yet supported for '
-              'direct invocation via triggerSkillProvider',
-              name: 'UnifiedAiController',
-            );
-        }
-
-        developer.log(
-          'triggerSkill: completed for ${params.entityId}',
-          name: 'UnifiedAiController',
-        );
-
-        // Allow auto-dispose now that the work is done.
-        link.close();
       },
     );
 

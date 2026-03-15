@@ -538,7 +538,7 @@ Example output in summaries:
 
 ## Automatic Image Analysis Trigger
 
-When images are added to a task (via drag-and-drop, paste, or import), the system can automatically trigger image analysis if the task's category has image analysis prompts configured.
+When images are added to a task (via drag-and-drop, paste, or import), the system can automatically trigger image analysis if the task's agent profile has an image analysis skill configured.
 
 ### How It Works
 

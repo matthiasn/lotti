@@ -1628,7 +1628,7 @@ void main() {
       mockRunner = MockSkillInferenceRunner();
     });
 
-    test('errors when skill not found', () async {
+    test('returns early when skill not found', () async {
       final testContainer = ProviderContainer(
         overrides: [
           aiConfigByIdProvider('nonexistent-skill').overrideWith(
@@ -1640,25 +1640,19 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
-      final provider = triggerSkillProvider((
-        entityId: 'entity-1',
-        skillId: 'nonexistent-skill',
-        linkedTaskId: 'task-1',
-      ));
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'entity-1',
+          skillId: 'nonexistent-skill',
+          linkedTaskId: 'task-1',
+        )).future,
+      );
 
-      // Wait for the provider to settle into error state
-      final completer = Completer<void>();
-      testContainer.listen(provider, (_, next) {
-        if (next.hasError && !completer.isCompleted) completer.complete();
-      });
-      await completer.future;
-
-      final state = testContainer.read(provider);
-      expect(state.error, isA<Exception>());
-      expect(state.error.toString(), contains('Skill not found'));
+      // Should return early without invoking the runner
+      verifyZeroInteractions(mockRunner);
     });
 
-    test('errors when no linkedTaskId provided', () async {
+    test('returns early when no linkedTaskId provided', () async {
       final skill =
           AiConfig.skill(
                 id: 'skill-1',
@@ -1682,24 +1676,19 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
-      final provider = triggerSkillProvider((
-        entityId: 'entity-1',
-        skillId: 'skill-1',
-        linkedTaskId: null,
-      ));
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'entity-1',
+          skillId: 'skill-1',
+          linkedTaskId: null,
+        )).future,
+      );
 
-      final completer = Completer<void>();
-      testContainer.listen(provider, (_, next) {
-        if (next.hasError && !completer.isCompleted) completer.complete();
-      });
-      await completer.future;
-
-      final state = testContainer.read(provider);
-      expect(state.error, isA<Exception>());
-      expect(state.error.toString(), contains('No linked task'));
+      // Should return early without invoking the runner
+      verifyZeroInteractions(mockRunner);
     });
 
-    test('errors when no profile configured for task', () async {
+    test('returns early when no profile configured for task', () async {
       final skill =
           AiConfig.skill(
                 id: 'skill-2',
@@ -1727,21 +1716,16 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
-      final provider = triggerSkillProvider((
-        entityId: 'audio-1',
-        skillId: 'skill-2',
-        linkedTaskId: 'task-no-profile',
-      ));
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-1',
+          skillId: 'skill-2',
+          linkedTaskId: 'task-no-profile',
+        )).future,
+      );
 
-      final completer = Completer<void>();
-      testContainer.listen(provider, (_, next) {
-        if (next.hasError && !completer.isCompleted) completer.complete();
-      });
-      await completer.future;
-
-      final state = testContainer.read(provider);
-      expect(state.error, isA<Exception>());
-      expect(state.error.toString(), contains('No agent profile configured'));
+      // Should return early without invoking the runner
+      verifyZeroInteractions(mockRunner);
     });
 
     test('successfully routes transcription skill to runner', () async {

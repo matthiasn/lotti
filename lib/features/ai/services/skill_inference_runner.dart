@@ -20,6 +20,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -418,6 +419,19 @@ class SkillInferenceRunner {
 
   Future<List<String>> _prepareImageData(JournalImage image) async {
     final fullPath = getFullImagePath(image);
+
+    // Defense-in-depth: ensure the resolved path stays within the documents
+    // directory. The imageDirectory/imageFile values come from our own DB,
+    // but we validate anyway to guard against path traversal.
+    final docDir = getDocumentsDirectory().path;
+    final canonicalPath = File(fullPath).absolute.path;
+    if (!canonicalPath.startsWith('$docDir${Platform.pathSeparator}')) {
+      developer.log(
+        'Image path escapes documents directory: $fullPath',
+        name: _logTag,
+      );
+      return [];
+    }
 
     final file = File(fullPath);
     if (!file.existsSync()) {

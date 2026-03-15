@@ -14,7 +14,7 @@ The Categories feature allows users to create, manage, and assign categories to 
 4. **Favorites**: Mark frequently used categories as favorites for quick access
 5. **AI Integration**: Configure which AI prompts are available per category
 6. **Speech Dictionary**: Store domain-specific terms for improved transcription accuracy
-8. **Correction Examples**: Learn from user corrections to improve AI suggestions over time
+7. **Correction Examples**: Learn from user corrections to improve AI suggestions over time
 
 ## Architecture
 
@@ -72,9 +72,9 @@ class CategoryDefinition {
 ### Automatic Processing (Legacy)
 
 The `automaticPrompts` field on `CategoryDefinition` is retained in the data model for backward
-compatibility but is no longer exposed in the category detail UI. Automatic AI processing (audio
-transcription, image analysis) is now driven exclusively by inference profiles and skill
-assignments on the task's agent. See the
+compatibility and is no longer configurable in the category detail UI. New automation setup is
+profile/skill-driven on the task's agent, while legacy `automaticPrompts` data may still be read
+for backward-compatibility paths. See the
 [Agents README](../agents/README.md#skill-assignments) for details.
 
 ## Speech Dictionary

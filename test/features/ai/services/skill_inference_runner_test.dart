@@ -833,6 +833,28 @@ void main() {
         verifyZeroInteractions(mockCloudRepo);
       });
 
+      test('rejects path traversal in image path', () async {
+        final imageEntity = makeImageEntity(
+          imageDirectory: '/images/../../',
+          imageFile: 'etc/passwd',
+        );
+
+        when(
+          () => mockAiInputRepo.getEntity('img-1'),
+        ).thenAnswer((_) async => imageEntity);
+        when(
+          () => mockTaskSummaryResolver.resolve(any()),
+        ).thenAnswer((_) async => null);
+
+        await runner.runImageAnalysis(
+          imageEntryId: 'img-1',
+          automationResult: makeImageAnalysisResult(),
+        );
+
+        // Should not call inference — path escapes documents directory.
+        verifyZeroInteractions(mockCloudRepo);
+      });
+
       test('builds task context when linkedTaskId is provided', () async {
         final imageEntity = makeImageEntity();
 

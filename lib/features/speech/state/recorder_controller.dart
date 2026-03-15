@@ -275,8 +275,8 @@ class AudioRecorderController extends _$AudioRecorderController {
         final entryId = journalAudio?.meta.id;
         _audioNote = null; // Reset audio note after processing
 
-        // Trigger automatic prompts in the background if configured for the category
-        if (entryId != null && _categoryId != null) {
+        // Trigger automatic prompts in the background via profile-driven automation
+        if (entryId != null && linkedTaskId != null) {
           // Don't await - let it run in the background so the modal can close immediately
           unawaited(
             _triggerAutomaticPrompts(
@@ -536,7 +536,7 @@ class AudioRecorderController extends _$AudioRecorderController {
       }
 
       // Trigger automatic prompts, but skip batch transcription
-      if (entryId != null && _categoryId != null) {
+      if (entryId != null && linkedTaskId != null) {
         unawaited(
           _triggerAutomaticPrompts(
             entryId,
