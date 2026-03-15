@@ -36,10 +36,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addActionAddText => 'Textový záznam';
 
   @override
-  String get addActionAddTimeRecording => 'Záznam času';
+  String get addActionAddTimer => 'Časovač';
 
   @override
-  String get addActionAddTimer => 'Časovač';
+  String get addActionAddTimeRecording => 'Záznam času';
 
   @override
   String get addActionImportImage => 'Importovat obrázek';
@@ -568,10 +568,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Template';
 
   @override
-  String get agentTemplateCreateTitle => 'Create Template';
+  String get agentTemplateCreatedSuccess => 'Template created';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Template created';
+  String get agentTemplateCreateTitle => 'Create Template';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -651,6 +651,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateNoMetrics => 'No performance data yet';
 
   @override
+  String get agentTemplateNoneAssigned => 'No template assigned';
+
+  @override
   String get agentTemplateNoSuitableModels => 'No suitable models found';
 
   @override
@@ -658,13 +661,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'No templates available. Create one in Settings first.';
 
   @override
-  String get agentTemplateNoVersions => 'No versions';
-
-  @override
-  String get agentTemplateNoneAssigned => 'No template assigned';
-
-  @override
   String get agentTemplateNotFound => 'Template not found';
+
+  @override
+  String get agentTemplateNoVersions => 'No versions';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -710,6 +710,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateStatusArchived => 'Archived';
 
   @override
+  String get agentTemplatesTitle => 'Agent Templates';
+
+  @override
   String get agentTemplateSwitchHint =>
       'To use a different template, destroy this agent and create a new one.';
 
@@ -723,9 +726,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'New version saved';
-
-  @override
-  String get agentTemplatesTitle => 'Agent Templates';
 
   @override
   String get agentThreadReportLabel => 'Report produced during this wake';
@@ -1184,6 +1184,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiResponseTypeTaskSummary => 'Shrnutí úkolu';
 
   @override
+  String get aiSettingsAddedLabel => 'Přidáno';
+
+  @override
   String get aiSettingsAddModelButton => 'Přidat model';
 
   @override
@@ -1198,9 +1201,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Přidat poskytovatele';
-
-  @override
-  String get aiSettingsAddedLabel => 'Přidáno';
 
   @override
   String get aiSettingsClearAllFiltersTooltip => 'Vymazat všechny filtry';
@@ -1371,13 +1371,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get audioRecordingRealtime => 'Živý přepis';
 
   @override
+  String get audioRecordings => 'Audiozáznamy';
+
+  @override
   String get audioRecordingStandard => 'Standardní';
 
   @override
   String get audioRecordingStop => 'STOP';
-
-  @override
-  String get audioRecordings => 'Audiozáznamy';
 
   @override
   String get automaticPrompts => 'Automatické výzvy';
@@ -1695,10 +1695,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get checklistItemArchiveUndo => 'Zpět';
+  String get checklistItemArchived => 'Položka archivována';
 
   @override
-  String get checklistItemArchived => 'Položka archivována';
+  String get checklistItemArchiveUndo => 'Zpět';
 
   @override
   String get checklistItemDelete => 'Smazat položku kontrolního seznamu?';
@@ -1710,10 +1710,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Potvrdit';
 
   @override
-  String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
+  String get checklistItemDeleted => 'Položka smazána';
 
   @override
-  String get checklistItemDeleted => 'Položka smazána';
+  String get checklistItemDeleteWarning => 'Tuto akci nelze vrátit zpět.';
 
   @override
   String get checklistItemDrag => 'Přetáhněte návrhy do kontrolního seznamu';
@@ -1735,6 +1735,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get checklistShareHint => 'Dlouhé stisknutí pro sdílení';
 
   @override
+  String get checklistsReorder => 'Přeuspořádat';
+
+  @override
+  String get checklistsTitle => 'Kontrolní seznamy';
+
+  @override
   String get checklistSuggestionsOutdated => 'Zastaralé';
 
   @override
@@ -1746,12 +1752,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checklistUpdates => 'Aktualizace kontrolního seznamu';
-
-  @override
-  String get checklistsReorder => 'Přeuspořádat';
-
-  @override
-  String get checklistsTitle => 'Kontrolní seznamy';
 
   @override
   String get clearButton => 'Vymazat';
@@ -1932,13 +1932,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictsEmptyTitle => 'Nebyly zjištěny žádné konflikty';
 
   @override
+  String get conflictsResolved => 'vyřešeno';
+
+  @override
   String get conflictsResolveLocalVersion => 'Vyřešit s místní verzí';
 
   @override
   String get conflictsResolveRemoteVersion => 'Vyřešit se vzdálenou verzí';
-
-  @override
-  String get conflictsResolved => 'vyřešeno';
 
   @override
   String get conflictsUnresolved => 'nevyřešeno';
@@ -2185,14 +2185,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNearLimit => 'Blízko limitu';
 
   @override
-  String get dailyOsNoBudgetWarning => 'Žádný časový rozpočet';
-
-  @override
   String get dailyOsNoBudgets => 'Žádné časové rozpočty';
 
   @override
   String get dailyOsNoBudgetsHint =>
       'Přidejte rozpočty pro sledování, jak trávíte čas napříč kategoriemi.';
+
+  @override
+  String get dailyOsNoBudgetWarning => 'Žádný časový rozpočet';
+
+  @override
+  String get dailyOsNote => 'Poznámka';
 
   @override
   String get dailyOsNoTimeline => 'Žádné záznamy v časové ose';
@@ -2202,19 +2205,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Spustit časovač nebo přidat plánované bloky, abyste viděli svůj den.';
 
   @override
-  String get dailyOsNote => 'Poznámka';
-
-  @override
   String get dailyOsOnTrack => 'Na správné cestě';
 
   @override
   String get dailyOsOver => 'Překročeno';
 
   @override
-  String get dailyOsOverBudget => 'Překročení rozpočtu';
+  String get dailyOsOverallProgress => 'Celkový pokrok';
 
   @override
-  String get dailyOsOverallProgress => 'Celkový pokrok';
+  String get dailyOsOverBudget => 'Překročení rozpočtu';
 
   @override
   String get dailyOsOverdue => 'Zpožděné';
@@ -2267,15 +2267,15 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsTimeline => 'Časová osa';
+
+  @override
   String dailyOsTimeOver(String time) {
     return '+$time navíc';
   }
 
   @override
   String get dailyOsTimeRange => 'Časový rozsah';
-
-  @override
-  String get dailyOsTimeline => 'Časová osa';
 
   @override
   String get dailyOsTimesUp => 'Čas vypršel';
@@ -2369,13 +2369,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odstranit zařízení';
 
   @override
-  String deviceDeleteFailed(String error) {
-    return 'Zařízení se nepodařilo odstranit: $error';
+  String deviceDeletedSuccess(String deviceName) {
+    return 'Zařízení $deviceName bylo úspěšně odstraněno';
   }
 
   @override
-  String deviceDeletedSuccess(String deviceName) {
-    return 'Zařízení $deviceName bylo úspěšně odstraněno';
+  String deviceDeleteFailed(String error) {
+    return 'Zařízení se nepodařilo odstranit: $error';
   }
 
   @override
@@ -2570,12 +2570,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitPriorityLabel => 'Priorita:';
 
   @override
-  String get habitShowAlertAtLabel => 'Zobrazit upozornění v';
-
-  @override
-  String get habitShowFromLabel => 'Zobrazit od';
-
-  @override
   String get habitsCompletedHeader => 'Dokončeno';
 
   @override
@@ -2589,6 +2583,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsFilterPendingLater => 'později';
+
+  @override
+  String get habitShowAlertAtLabel => 'Zobrazit upozornění v';
+
+  @override
+  String get habitShowFromLabel => 'Zobrazit od';
 
   @override
   String get habitsOpenHeader => 'K splnění';
@@ -2699,9 +2699,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Select a model…';
 
   @override
+  String get inferenceProfilesEmpty => 'No inference profiles yet';
+
+  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Vyžaduje nastavení modelu $slotName';
   }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Automatizované dovednosti';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -2709,7 +2715,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfileSkillsSection => 'Automatizované dovednosti';
+  String get inferenceProfilesTitle => 'Inference Profiles';
 
   @override
   String get inferenceProfileThinking => 'Thinking';
@@ -2722,12 +2728,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inferenceProfileTranscription => 'Transcription';
-
-  @override
-  String get inferenceProfilesEmpty => 'No inference profiles yet';
-
-  @override
-  String get inferenceProfilesTitle => 'Inference Profiles';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -2800,12 +2800,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalHideMapHint => 'Skrýt mapu';
 
   @override
-  String get journalLinkFromHint => 'Odkaz z';
-
-  @override
-  String get journalLinkToHint => 'Odkaz na';
-
-  @override
   String get journalLinkedEntriesAiLabel => 'Zobrazit záznamy generované AI:';
 
   @override
@@ -2816,6 +2810,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Odkaz z:';
+
+  @override
+  String get journalLinkFromHint => 'Odkaz z';
+
+  @override
+  String get journalLinkToHint => 'Odkaz na';
 
   @override
   String get journalPrivateTooltip => 'pouze soukromé';
@@ -2875,9 +2875,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get legacyPromptsSectionTitle => 'Starší prompty';
 
   @override
-  String get linkExistingTask => 'Propojit existující úkol...';
-
-  @override
   String get linkedFromLabel => 'PROPOJENO Z';
 
   @override
@@ -2891,6 +2888,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get linkedToLabel => 'PROPOJENO NA';
+
+  @override
+  String get linkExistingTask => 'Propojit existující úkol...';
 
   @override
   String logsFoundCount(int count) {
@@ -3050,13 +3050,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Jste si jistý, že chcete vymazat všechny smazané položky? Tuto akci nelze vzít zpět.';
 
   @override
-  String get maintenanceReSync => 'Znovu synchronizovat zprávy';
-
-  @override
-  String get maintenanceReSyncDescription =>
-      'Znovu synchronizovat zprávy ze serveru';
-
-  @override
   String get maintenanceRecreateFts5 => 'Znovu vytvořit index plného textu';
 
   @override
@@ -3069,6 +3062,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get maintenanceRecreateFts5Message =>
       'Opravdu chcete znovu vytvořit index fulltextového vyhledávání? Toto může chvíli trvat.';
+
+  @override
+  String get maintenanceReSync => 'Znovu synchronizovat zprávy';
+
+  @override
+  String get maintenanceReSyncDescription =>
+      'Znovu synchronizovat zprávy ze serveru';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -3392,13 +3392,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get promptSelectInputTypeHint => 'Vyberte typ vstupu';
 
   @override
+  String get promptSelectionModalTitle => 'Vyberte přednastavenou výzvu';
+
+  @override
   String get promptSelectModelsButton => 'Vybrat modely';
 
   @override
   String get promptSelectResponseTypeHint => 'Vyberte typ odpovědi';
-
-  @override
-  String get promptSelectionModalTitle => 'Vyberte přednastavenou výzvu';
 
   @override
   String get promptSetDefaultButton => 'Nastavit jako výchozí';
@@ -3616,12 +3616,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get sessionRatingViewAction => 'Zobrazit hodnocení';
-
-  @override
-  String get settingThemingDark => 'Tmavé téma';
-
-  @override
-  String get settingThemingLight => 'Světlé téma';
 
   @override
   String get settingsAboutAppInformation => 'Informace o aplikaci';
@@ -3976,11 +3970,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixEnterValidUrl => 'Zadejte platnou URL';
 
   @override
-  String get settingsMatrixHomeServerLabel => 'Domácí server';
-
-  @override
   String get settingsMatrixHomeserverConfigTitle =>
       'Nastavení Matrix domácího serveru';
+
+  @override
+  String get settingsMatrixHomeServerLabel => 'Domácí server';
 
   @override
   String get settingsMatrixLastUpdated => 'Naposledy aktualizováno:';
@@ -4131,10 +4125,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Uložit';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné):';
+  String get settingsMeasurablesTitle => 'Typy měřitelných veličin';
 
   @override
-  String get settingsMeasurablesTitle => 'Typy měřitelných veličin';
+  String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné):';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';
@@ -4254,6 +4248,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
+  String get settingThemingDark => 'Tmavé téma';
+
+  @override
+  String get settingThemingLight => 'Světlé téma';
+
+  @override
   String get showCompleted => 'Zobrazit dokončené';
 
   @override
@@ -4307,10 +4307,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Chcete smazat konfiguraci synchronizace?';
 
   @override
-  String get syncDiscoverRoomsButton => 'Objevit existující místnosti';
+  String get syncDiscoveringRooms => 'Objevování synchronizačních místností...';
 
   @override
-  String get syncDiscoveringRooms => 'Objevování synchronizačních místností...';
+  String get syncDiscoverRoomsButton => 'Objevit existující místnosti';
 
   @override
   String get syncDiscoveryError => 'Nepodařilo se objevit místnosti';
@@ -4693,36 +4693,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get taskStatusAll => 'Vše';
-
-  @override
-  String get taskStatusBlocked => 'Blokováno';
-
-  @override
-  String get taskStatusDone => 'Hotovo';
-
-  @override
-  String get taskStatusGroomed => 'Připraveno';
-
-  @override
-  String get taskStatusInProgress => 'Probíhá';
-
-  @override
-  String get taskStatusLabel => 'Stav:';
-
-  @override
-  String get taskStatusOnHold => 'Pozastaveno';
-
-  @override
-  String get taskStatusOpen => 'Otevřeno';
-
-  @override
-  String get taskStatusRejected => 'Odmítnuto';
-
-  @override
-  String get taskSummaries => 'Souhrny úkolů';
-
-  @override
   String get tasksAddLabelButton => 'Přidat štítek';
 
   @override
@@ -4844,6 +4814,36 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Priorita';
+
+  @override
+  String get taskStatusAll => 'Vše';
+
+  @override
+  String get taskStatusBlocked => 'Blokováno';
+
+  @override
+  String get taskStatusDone => 'Hotovo';
+
+  @override
+  String get taskStatusGroomed => 'Připraveno';
+
+  @override
+  String get taskStatusInProgress => 'Probíhá';
+
+  @override
+  String get taskStatusLabel => 'Stav:';
+
+  @override
+  String get taskStatusOnHold => 'Pozastaveno';
+
+  @override
+  String get taskStatusOpen => 'Otevřeno';
+
+  @override
+  String get taskStatusRejected => 'Odmítnuto';
+
+  @override
+  String get taskSummaries => 'Souhrny úkolů';
 
   @override
   String get thinkingDisclosureCopied => 'Úvaha zkopírována';

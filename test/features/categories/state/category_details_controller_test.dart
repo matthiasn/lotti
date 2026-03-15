@@ -1164,6 +1164,161 @@ void main() {
       subscription.close();
     });
 
+    test('setDefaultProfileId updates profile and marks changes', () async {
+      final category = CategoryTestUtils.createTestCategory();
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      controller.setDefaultProfileId('profile-123');
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+      expect(state.hasChanges, isTrue);
+      expect(state.category?.defaultProfileId, equals('profile-123'));
+
+      // Clear by setting null
+      controller.setDefaultProfileId(null);
+      final cleared = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+      expect(cleared.category?.defaultProfileId, isNull);
+      // Back to original → no changes
+      expect(cleared.hasChanges, isFalse);
+
+      subscription.close();
+    });
+
+    test('setDefaultTemplateId updates template and marks changes', () async {
+      final category = CategoryTestUtils.createTestCategory();
+      final completer = Completer<void>();
+
+      when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+        (_) => Stream.value(category),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final subscription = container.listen(
+        categoryDetailsControllerProvider(testCategoryId),
+        (_, next) {
+          if (!next.isLoading &&
+              next.category != null &&
+              !completer.isCompleted) {
+            completer.complete();
+          }
+        },
+      );
+
+      final controller = container.read(
+        categoryDetailsControllerProvider(testCategoryId).notifier,
+      );
+
+      await completer.future.timeout(const Duration(milliseconds: 100));
+
+      controller.setDefaultTemplateId('template-456');
+
+      final state = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+      expect(state.hasChanges, isTrue);
+      expect(state.category?.defaultTemplateId, equals('template-456'));
+
+      // Clear by setting null
+      controller.setDefaultTemplateId(null);
+      final cleared = container.read(
+        categoryDetailsControllerProvider(testCategoryId),
+      );
+      expect(cleared.category?.defaultTemplateId, isNull);
+      expect(cleared.hasChanges, isFalse);
+
+      subscription.close();
+    });
+
+    test(
+      'no changes when setting same defaultProfileId and defaultTemplateId',
+      () async {
+        final category = CategoryTestUtils.createTestCategory(
+          defaultProfileId: 'existing-profile',
+          defaultTemplateId: 'existing-template',
+        );
+        final completer = Completer<void>();
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            categoryRepositoryProvider.overrideWithValue(mockRepository),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final subscription = container.listen(
+          categoryDetailsControllerProvider(testCategoryId),
+          (_, next) {
+            if (!next.isLoading &&
+                next.category != null &&
+                !completer.isCompleted) {
+              completer.complete();
+            }
+          },
+        );
+
+        final controller = container.read(
+          categoryDetailsControllerProvider(testCategoryId).notifier,
+        );
+
+        await completer.future.timeout(const Duration(milliseconds: 100));
+
+        controller
+          ..setDefaultProfileId('existing-profile')
+          ..setDefaultTemplateId('existing-template');
+
+        expect(
+          container
+              .read(categoryDetailsControllerProvider(testCategoryId))
+              .hasChanges,
+          isFalse,
+        );
+
+        subscription.close();
+      },
+    );
+
     test('disposes stream subscription', () async {
       final streamController =
           StreamController<CategoryDefinition?>.broadcast();

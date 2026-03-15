@@ -91,14 +91,16 @@ Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) async {
     if (categoryId == null) return;
 
     final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-    final templateId = category?.defaultTemplateId;
+    if (category == null) return;
+
+    final templateId = category.defaultTemplateId;
     if (templateId == null) return;
 
     final service = ref.read(taskAgentServiceProvider);
     await service.createTaskAgent(
       taskId: task.meta.id,
       templateId: templateId,
-      profileId: category?.defaultProfileId,
+      profileId: category.defaultProfileId,
       allowedCategoryIds: {categoryId},
       awaitContent: true,
     );

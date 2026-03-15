@@ -292,7 +292,7 @@ classDiagram
 | **Use `defaultTemplateId`** (not `defaultAgentId`) on category | Agents are per-task instances. Templates are reusable blueprints. The category stores the blueprint; each task gets its own agent instance. |
 | **`awaitingContent` flag on `AgentStateEntity`** | Minimal change to existing wake infrastructure. Avoids new lifecycle states or wake reasons. Content check happens at drain time — cheap and non-invasive. |
 | **No database migration needed** | Both `CategoryDefinition` and `TaskData` are stored as serialized JSON. Freezed handles new nullable fields gracefully on deserialization of existing data. |
-| **Content check = "at least one linked entry with non-empty text"** | Aligns with the stated requirement. The wake orchestrator already has access to journal queries. A simple existence check avoids over-engineering. |
+| **Content check = "non-empty title, non-empty body text, or at least one linked entry with non-empty text"** | Covers all ways a task can gain meaningful content. The wake orchestrator already has access to journal queries. A simple existence check avoids over-engineering. |
 | **Lazy `journalDbProvider` resolution** | `ref.read()` inside closures instead of `ref.watch()` at construction time. Avoids tight coupling and test override requirements for unrelated tests. |
 | **Try-catch in `_shouldSkipForAwaitingContent`** | DB errors during content check shouldn't block agent wakes. Fail-open is safer than fail-closed here. |
 | **`ProfileSelector.hintText` parameter** | Allows different hint text in different contexts (agent settings vs. category defaults) without changing shared l10n strings. |
