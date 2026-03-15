@@ -3685,13 +3685,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAiApiKeys => 'Furnizori de inferență AI';
 
   @override
-  String get settingsWhatsNewSubtitle =>
-      'Vezi cele mai recente actualizări și funcționalități';
-
-  @override
-  String get settingsWhatsNewTitle => 'Ce este nou';
-
-  @override
   String get settingsAiModels => 'Modele AI';
 
   @override
@@ -4251,6 +4244,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Tematică';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Vezi cele mai recente actualizări și funcționalități';
+
+  @override
+  String get settingsWhatsNewTitle => 'Ce este nou';
 
   @override
   String get settingThemingDark => 'Temă întunecată';

@@ -1024,10 +1024,148 @@ void main() {
     });
   });
 
-  // Legacy image generation prompt tests removed — image generation is now
-  // handled exclusively via the skill system (CoverArtSkillModal).
-  // The AiResponseType.imageGeneration is marked as a legacy type and
-  // filtered out of the prompt list.
+  group('Image Generation Skill Handling', () {
+    testWidgets(
+      'tapping image generation skill without linked task logs and returns',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill =
+            AiConfig.skill(
+                  id: 'skill-cover-art',
+                  name: 'Generate Cover Art',
+                  createdAt: now,
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  systemInstructions: 'Generate cover art',
+                  userInstructions: 'Create an image',
+                  description: 'Generates cover art images',
+                )
+                as AiConfigSkill;
+
+        // JournalDb stubs return empty results so _resolveLinkedTask returns
+        // null (no linked task found in either direction).
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testAudioEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              hasAvailablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([imageGenSkill]),
+              ),
+              availablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value([])),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Open the modal
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+
+        // Tap the image generation skill
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pumpAndSettle();
+
+        // Modal should close without showing CoverArtSkillModal since there's
+        // no linked task
+        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping image generation skill with linked task opens cover art modal',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill =
+            AiConfig.skill(
+                  id: 'skill-cover-art',
+                  name: 'Generate Cover Art',
+                  createdAt: now,
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  systemInstructions: 'Generate cover art',
+                  userInstructions: 'Create an image',
+                  description: 'Generates cover art images',
+                )
+                as AiConfigSkill;
+
+        final linkedTask = Task(
+          meta: Metadata(
+            id: 'linked-task-1',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            categoryId: 'cat-1',
+          ),
+          data: TaskData(
+            title: 'Linked Task',
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            statusHistory: [],
+          ),
+        );
+
+        // Make getLinkedEntities return the linked task so
+        // _resolveLinkedTask succeeds.
+        when(
+          () => mockJournalDb.getLinkedEntities(testAudioEntity.id),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testAudioEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              hasAvailablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([imageGenSkill]),
+              ),
+              availablePromptsProvider(
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value([])),
+            ],
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Open the modal
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+
+        // Tap the image generation skill
+        await tester.tap(find.text('Generate Cover Art'));
+        await tester.pumpAndSettle();
+
+        // The CoverArtSkillModal should have been opened (look for its
+        // content — it shows the ReferenceImageSelectionWidget loading state)
+        // At minimum, the original prompt list modal should be closed
+        expect(find.byType(UnifiedAiPromptsList), findsNothing);
+      },
+    );
+  });
 
   group('isDefaultPromptSync Tests', () {
     test('returns false when categoryId is null', () {

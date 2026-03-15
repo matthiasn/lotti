@@ -3740,13 +3740,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsAiApiKeys => 'Fournisseurs d\'inférence AI';
 
   @override
-  String get settingsWhatsNewSubtitle =>
-      'Découvre les dernières mises à jour et fonctionnalités';
-
-  @override
-  String get settingsWhatsNewTitle => 'Quoi de neuf';
-
-  @override
   String get settingsAiModels => 'Modèles AI';
 
   @override
@@ -4312,6 +4305,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Thème';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Découvre les dernières mises à jour et fonctionnalités';
+
+  @override
+  String get settingsWhatsNewTitle => 'Quoi de neuf';
 
   @override
   String get settingThemingDark => 'Thème sombre';

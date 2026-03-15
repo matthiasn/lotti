@@ -7,19 +7,27 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../agents/test_utils.dart';
+
+class MockAutomaticImageAnalysisTrigger extends Mock
+    implements AutomaticImageAnalysisTrigger {}
 
 void main() {
   late MockCloudInferenceRepository mockCloudRepo;
@@ -1551,6 +1559,363 @@ void main() {
           ),
         ).called(1);
       });
+
+      test(
+        'happy path: generates cover art, imports image, and updates task',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-gen',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      categoryId: 'cat-1',
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'A sunset over a mountain landscape',
+                      markdown: 'A sunset over a mountain landscape',
+                    ),
+                  )
+                  as JournalAudio;
+
+          final taskEntity = makeTaskEntity('task-gen');
+
+          // Stub entity fetching.
+          when(
+            () => mockAiInputRepo.getEntity('audio-gen'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-gen'),
+          ).thenAnswer((_) async => '{"id": "task-gen"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-gen'),
+          ).thenAnswer(
+            (_) async => '{"linked_from": [], "linked_to": []}',
+          );
+          when(
+            () => mockTaskSummaryResolver.resolve('task-gen'),
+          ).thenAnswer((_) async => 'A task about mountain photography');
+
+          // Stub image generation.
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0x89, 0x50, 0x4E, 0x47], // PNG header
+              mimeType: 'image/png',
+            ),
+          );
+
+          // Register PersistenceLogic mock in getIt for importGeneratedImageBytes
+          // and task update.
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<LoggingService>(mockLoggingService);
+
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'generated-img-id',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+              categoryId: 'cat-1',
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+              addTags: any(named: 'addTags'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // Stub task fetching for cover art assignment.
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-gen'),
+          ).thenAnswer((_) async => taskEntity);
+
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          stubLoggingEvent();
+
+          // Create a container with the trigger provider overridden.
+          final mockTrigger = MockAutomaticImageAnalysisTrigger();
+          when(
+            () => mockTrigger.triggerAutomaticImageAnalysis(
+              imageEntryId: any(named: 'imageEntryId'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          // Rebuild runner with a container that has the trigger override.
+          final testContainer = ProviderContainer(
+            overrides: [
+              automaticImageAnalysisTriggerProvider.overrideWithValue(
+                mockTrigger,
+              ),
+            ],
+          );
+          addTearDown(testContainer.dispose);
+
+          late final Ref capturedRef;
+          final refProvider = Provider<void>((ref) {
+            capturedRef = ref;
+          });
+          testContainer.read(refProvider);
+
+          final testRunner = SkillInferenceRunner(
+            ref: capturedRef,
+            cloudRepository: mockCloudRepo,
+            aiInputRepository: mockAiInputRepo,
+            journalRepository: mockJournalRepo,
+            loggingService: mockLoggingService,
+            promptBuilderHelper: mockPromptBuilderHelper,
+            taskSummaryResolver: mockTaskSummaryResolver,
+          );
+
+          await testRunner.runImageGeneration(
+            audioEntryId: 'audio-gen',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-gen',
+          );
+
+          // Verify image generation was called.
+          verify(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: 'models/gemini-image',
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).called(1);
+
+          // Verify task was updated with cover art.
+          verify(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: 'task-gen',
+              taskData: any(named: 'taskData'),
+            ),
+          ).called(1);
+
+          // Verify success event was logged.
+          verify(
+            () => mockLoggingService.captureEvent(
+              any<String>(that: contains('image generation completed')),
+              domain: 'SkillInferenceRunner',
+              subDomain: 'runImageGeneration',
+            ),
+          ).called(1);
+
+          // Verify automatic image analysis was triggered.
+          verify(
+            () => mockTrigger.triggerAutomaticImageAnalysis(
+              imageEntryId: any(named: 'imageEntryId'),
+              linkedTaskId: 'task-gen',
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'happy path with reference images passes them to generateImage',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-ref',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'Like the previous style',
+                      markdown: 'Like the previous style',
+                    ),
+                  )
+                  as JournalAudio;
+
+          final taskEntity = makeTaskEntity('task-ref');
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-ref'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-ref'),
+          ).thenAnswer((_) async => '{"id": "task-ref"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-ref'),
+          ).thenAnswer(
+            (_) async => '{"linked_from": [], "linked_to": []}',
+          );
+          when(
+            () => mockTaskSummaryResolver.resolve('task-ref'),
+          ).thenAnswer((_) async => null);
+
+          const refImages = [
+            ProcessedReferenceImage(
+              base64Data: 'abc123',
+              mimeType: 'image/jpeg',
+              originalId: 'ref-img-1',
+            ),
+          ];
+
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenAnswer(
+            (_) async => const GeneratedImage(
+              bytes: [0xFF, 0xD8, 0xFF, 0xE0], // JPEG header
+              mimeType: 'image/jpeg',
+            ),
+          );
+
+          // Register PersistenceLogic mock if not already registered.
+          if (!getIt.isRegistered<PersistenceLogic>()) {
+            final mockPersistenceLogic = MockPersistenceLogic();
+            getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+
+            when(
+              () => mockPersistenceLogic.createMetadata(
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+                uuidV5Input: any(named: 'uuidV5Input'),
+                flag: any(named: 'flag'),
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).thenAnswer(
+              (_) async => Metadata(
+                id: 'gen-img-ref',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+              ),
+            );
+            when(
+              () => mockPersistenceLogic.createDbEntity(
+                any(),
+                linkedId: any(named: 'linkedId'),
+                shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+                enqueueSync: any(named: 'enqueueSync'),
+                addTags: any(named: 'addTags'),
+              ),
+            ).thenAnswer((_) async => true);
+            when(
+              () => mockPersistenceLogic.updateTask(
+                journalEntityId: any(named: 'journalEntityId'),
+                taskData: any(named: 'taskData'),
+              ),
+            ).thenAnswer((_) async => true);
+          }
+
+          if (!getIt.isRegistered<LoggingService>()) {
+            getIt.registerSingleton<LoggingService>(mockLoggingService);
+          }
+
+          when(
+            () => mockJournalRepo.getJournalEntityById('task-ref'),
+          ).thenAnswer((_) async => taskEntity);
+
+          stubLoggingEvent();
+
+          final mockTrigger = MockAutomaticImageAnalysisTrigger();
+          when(
+            () => mockTrigger.triggerAutomaticImageAnalysis(
+              imageEntryId: any(named: 'imageEntryId'),
+              linkedTaskId: any(named: 'linkedTaskId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          final testContainer = ProviderContainer(
+            overrides: [
+              automaticImageAnalysisTriggerProvider.overrideWithValue(
+                mockTrigger,
+              ),
+            ],
+          );
+          addTearDown(testContainer.dispose);
+
+          late final Ref capturedRef;
+          final refProvider = Provider<void>((ref) {
+            capturedRef = ref;
+          });
+          testContainer.read(refProvider);
+
+          final testRunner = SkillInferenceRunner(
+            ref: capturedRef,
+            cloudRepository: mockCloudRepo,
+            aiInputRepository: mockAiInputRepo,
+            journalRepository: mockJournalRepo,
+            loggingService: mockLoggingService,
+            promptBuilderHelper: mockPromptBuilderHelper,
+            taskSummaryResolver: mockTaskSummaryResolver,
+          );
+
+          await testRunner.runImageGeneration(
+            audioEntryId: 'audio-ref',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-ref',
+            referenceImages: refImages,
+          );
+
+          // Verify reference images were passed through.
+          verify(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: 'models/gemini-image',
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: refImages,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('AutomationResult', () {
