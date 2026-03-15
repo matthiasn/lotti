@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/preconfigured_prompts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
@@ -840,17 +839,6 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
   }) async {
     const categoryName = ftueGeminiCategoryName;
 
-    // Build allowedPromptIds from all created prompts
-    final allowedPromptIds = prompts.map((p) => p.id).toList();
-
-    // Build automaticPrompts map with auto-selection logic
-    final automaticPrompts = _buildFtueAutomaticPrompts(
-      prompts,
-      flashModelId: flashModelId,
-      proModelId: proModelId,
-      imageModelId: imageModelId,
-    );
-
     // Check if category already exists
     final allCategories = await categoryRepository.getAllCategories();
     final existingCategory = allCategories
@@ -858,14 +846,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
         .firstOrNull;
 
     if (existingCategory != null) {
-      // Update existing category with new prompts
-      final updatedCategory = existingCategory.copyWith(
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-
-      await categoryRepository.updateCategory(updatedCategory);
-      return (updatedCategory, false); // false = was updated, not created
+      return (existingCategory, false); // false = was updated, not created
     }
 
     // Create new category
@@ -874,59 +855,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       color: ftueGeminiCategoryColor,
     );
 
-    // Update with prompts configuration
-    final updatedCategory = category.copyWith(
-      allowedPromptIds: allowedPromptIds,
-      automaticPrompts: automaticPrompts,
-    );
-
-    await categoryRepository.updateCategory(updatedCategory);
-
-    return (updatedCategory, true); // true = was created
-  }
-
-  /// Builds the automaticPrompts map with FTUE auto-selection logic.
-  ///
-  /// Uses stable identifiers (preconfiguredPromptId + modelId) for matching
-  /// instead of fragile name-based matching.
-  ///
-  /// Auto-selection rules:
-  /// - Checklist, Coding Prompt, Image Prompt: Pro model (complex reasoning)
-  /// - Image Generation: Nano Banana Pro (image model with reasoning enabled)
-  /// - Everything else: Flash (fast processing)
-  Map<AiResponseType, List<String>> _buildFtueAutomaticPrompts(
-    List<AiConfigPrompt> prompts, {
-    required String flashModelId,
-    required String proModelId,
-    required String imageModelId,
-  }) {
-    final map = <AiResponseType, List<String>>{};
-
-    // Helper to find prompt by preconfiguredPromptId + modelId
-    // This is more stable than name-based matching
-    String? findPromptId(String preconfiguredId, String modelId) {
-      return prompts
-          .firstWhereOrNull(
-            (p) =>
-                p.preconfiguredPromptId == preconfiguredId &&
-                p.defaultModelId == modelId,
-          )
-          ?.id;
-    }
-
-    // Image Prompt Generation -> Pro (complex reasoning needed)
-    final imagePromptPro = findPromptId('image_prompt_generation', proModelId);
-    if (imagePromptPro != null) {
-      map[AiResponseType.imagePromptGeneration] = [imagePromptPro];
-    }
-
-    // Image Generation -> Nano Banana Pro (image model with reasoning enabled)
-    final imageGenImage = findPromptId('cover_art_generation', imageModelId);
-    if (imageGenImage != null) {
-      map[AiResponseType.imageGeneration] = [imageGenImage];
-    }
-
-    return map;
+    return (category, true); // true = was created
   }
 }
 
@@ -1257,17 +1186,6 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
   }) async {
     const categoryName = ftueOpenAiCategoryName;
 
-    // Build allowedPromptIds from all created prompts
-    final allowedPromptIds = prompts.map((p) => p.id).toList();
-
-    // Build automaticPrompts map with auto-selection logic
-    final automaticPrompts = _buildOpenAiFtueAutomaticPrompts(
-      prompts,
-      flashModelId: flashModelId,
-      reasoningModelId: reasoningModelId,
-      imageModelId: imageModelId,
-    );
-
     // Check if category already exists
     final allCategories = await categoryRepository.getAllCategories();
     final existingCategory = allCategories
@@ -1275,14 +1193,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
         .firstOrNull;
 
     if (existingCategory != null) {
-      // Update existing category with new prompts
-      final updatedCategory = existingCategory.copyWith(
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-
-      await categoryRepository.updateCategory(updatedCategory);
-      return (updatedCategory, false);
+      return (existingCategory, false);
     }
 
     // Create new category
@@ -1291,52 +1202,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       color: ftueOpenAiCategoryColor,
     );
 
-    // Update with prompts configuration
-    final updatedCategory = category.copyWith(
-      allowedPromptIds: allowedPromptIds,
-      automaticPrompts: automaticPrompts,
-    );
-
-    await categoryRepository.updateCategory(updatedCategory);
-
-    return (updatedCategory, true);
-  }
-
-  /// Builds the automaticPrompts map for OpenAI FTUE auto-selection.
-  Map<AiResponseType, List<String>> _buildOpenAiFtueAutomaticPrompts(
-    List<AiConfigPrompt> prompts, {
-    required String flashModelId,
-    required String reasoningModelId,
-    required String imageModelId,
-  }) {
-    final map = <AiResponseType, List<String>>{};
-
-    String? findPromptId(String preconfiguredId, String modelId) {
-      return prompts
-          .firstWhereOrNull(
-            (p) =>
-                p.preconfiguredPromptId == preconfiguredId &&
-                p.defaultModelId == modelId,
-          )
-          ?.id;
-    }
-
-    // Image Prompt Generation -> Reasoning (complex reasoning needed)
-    final imagePrompt = findPromptId(
-      'image_prompt_generation',
-      reasoningModelId,
-    );
-    if (imagePrompt != null) {
-      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
-    }
-
-    // Image Generation -> Image model
-    final imageGen = findPromptId('cover_art_generation', imageModelId);
-    if (imageGen != null) {
-      map[AiResponseType.imageGeneration] = [imageGen];
-    }
-
-    return map;
+    return (category, true);
   }
 }
 
@@ -1631,15 +1497,6 @@ extension MistralFtueSetup on ProviderPromptSetupService {
   }) async {
     const categoryName = ftueMistralCategoryName;
 
-    // Build allowedPromptIds from all created prompts
-    final allowedPromptIds = prompts.map((p) => p.id).toList();
-
-    // Build automaticPrompts map with auto-selection logic
-    final automaticPrompts = _buildMistralFtueAutomaticPrompts(
-      prompts,
-      reasoningModelId: reasoningModelId,
-    );
-
     // Check if category already exists
     final allCategories = await categoryRepository.getAllCategories();
     final existingCategory = allCategories
@@ -1647,14 +1504,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
         .firstOrNull;
 
     if (existingCategory != null) {
-      // Update existing category with new prompts
-      final updatedCategory = existingCategory.copyWith(
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-
-      await categoryRepository.updateCategory(updatedCategory);
-      return (updatedCategory, false);
+      return (existingCategory, false);
     }
 
     // Create new category
@@ -1663,46 +1513,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       color: ftueMistralCategoryColor,
     );
 
-    // Update with prompts configuration
-    final updatedCategory = category.copyWith(
-      allowedPromptIds: allowedPromptIds,
-      automaticPrompts: automaticPrompts,
-    );
-
-    await categoryRepository.updateCategory(updatedCategory);
-
-    return (updatedCategory, true);
-  }
-
-  /// Builds the automaticPrompts map for Mistral FTUE auto-selection.
-  Map<AiResponseType, List<String>> _buildMistralFtueAutomaticPrompts(
-    List<AiConfigPrompt> prompts, {
-    required String reasoningModelId,
-  }) {
-    final map = <AiResponseType, List<String>>{};
-
-    String? findPromptId(String preconfiguredId, String modelId) {
-      return prompts
-          .firstWhereOrNull(
-            (p) =>
-                p.preconfiguredPromptId == preconfiguredId &&
-                p.defaultModelId == modelId,
-          )
-          ?.id;
-    }
-
-    // Image Prompt Generation -> Reasoning (Magistral)
-    final imagePrompt = findPromptId(
-      'image_prompt_generation',
-      reasoningModelId,
-    );
-    if (imagePrompt != null) {
-      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
-    }
-
-    // Note: No image generation - Mistral has no image generation model
-
-    return map;
+    return (category, true);
   }
 }
 
@@ -2026,16 +1837,6 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
   }) async {
     const categoryName = ftueAlibabaCategoryName;
 
-    // Build allowedPromptIds from all created prompts
-    final allowedPromptIds = prompts.map((p) => p.id).toList();
-
-    // Build automaticPrompts map with auto-selection logic
-    final automaticPrompts = _buildAlibabaFtueAutomaticPrompts(
-      prompts,
-      reasoningModelId: reasoningModelId,
-      imageModelId: imageModelId,
-    );
-
     // Check if category already exists
     final allCategories = await categoryRepository.getAllCategories();
     final existingCategory = allCategories
@@ -2043,14 +1844,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
         .firstOrNull;
 
     if (existingCategory != null) {
-      // Update existing category with new prompts
-      final updatedCategory = existingCategory.copyWith(
-        allowedPromptIds: allowedPromptIds,
-        automaticPrompts: automaticPrompts,
-      );
-
-      await categoryRepository.updateCategory(updatedCategory);
-      return (updatedCategory, false);
+      return (existingCategory, false);
     }
 
     // Create new category
@@ -2059,51 +1853,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       color: ftueAlibabaCategoryColor,
     );
 
-    // Update with prompts configuration
-    final updatedCategory = category.copyWith(
-      allowedPromptIds: allowedPromptIds,
-      automaticPrompts: automaticPrompts,
-    );
-
-    await categoryRepository.updateCategory(updatedCategory);
-
-    return (updatedCategory, true);
-  }
-
-  /// Builds the automaticPrompts map for Alibaba FTUE auto-selection.
-  Map<AiResponseType, List<String>> _buildAlibabaFtueAutomaticPrompts(
-    List<AiConfigPrompt> prompts, {
-    required String reasoningModelId,
-    required String imageModelId,
-  }) {
-    final map = <AiResponseType, List<String>>{};
-
-    String? findPromptId(String preconfiguredId, String modelId) {
-      return prompts
-          .firstWhereOrNull(
-            (p) =>
-                p.preconfiguredPromptId == preconfiguredId &&
-                p.defaultModelId == modelId,
-          )
-          ?.id;
-    }
-
-    // Image Prompt Generation -> Reasoning (Qwen3 Max)
-    final imagePrompt = findPromptId(
-      'image_prompt_generation',
-      reasoningModelId,
-    );
-    if (imagePrompt != null) {
-      map[AiResponseType.imagePromptGeneration] = [imagePrompt];
-    }
-
-    // Image Generation -> Image model (Wan 2.6)
-    final imageGen = findPromptId('cover_art_generation', imageModelId);
-    if (imageGen != null) {
-      map[AiResponseType.imageGeneration] = [imageGen];
-    }
-
-    return map;
+    return (category, true);
   }
 }
 

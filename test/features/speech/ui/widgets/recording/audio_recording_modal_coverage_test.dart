@@ -13,12 +13,13 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/speech/helpers/automatic_prompt_visibility.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
+import 'package:lotti/features/speech/state/checkbox_visibility_provider.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
@@ -49,16 +50,6 @@ class FakePlayable extends Fake implements Playable {}
 
 // Fake implementations for testing
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {
-  FakeCategoryDefinition({
-    this.includeTranscriptionPrompts = true,
-    this.includeChecklistPrompts = true,
-    this.includeTaskSummaryPrompts = true,
-  });
-
-  final bool includeTranscriptionPrompts;
-  final bool includeChecklistPrompts;
-  final bool includeTaskSummaryPrompts;
-
   @override
   String get id => 'test-category';
 
@@ -87,31 +78,7 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   String? get defaultLanguageCode => null;
 
   @override
-  List<String>? get allowedPromptIds => null;
-
-  @override
   List<String>? get speechDictionary => null;
-
-  @override
-  Map<AiResponseType, List<String>>? get automaticPrompts {
-    final prompts = <AiResponseType, List<String>>{};
-
-    if (includeTranscriptionPrompts) {
-      prompts[AiResponseType.audioTranscription] = ['transcription-prompt'];
-    }
-
-    if (includeTaskSummaryPrompts) {
-      // ignore: deprecated_member_use_from_same_package
-      prompts[AiResponseType.taskSummary] = ['summary-prompt'];
-    }
-
-    if (includeChecklistPrompts) {
-      // ignore: deprecated_member_use_from_same_package
-      prompts[AiResponseType.checklistUpdates] = ['checklist-prompt'];
-    }
-
-    return prompts.isEmpty ? null : prompts;
-  }
 
   @override
   CategoryIcon? get icon => null;
@@ -542,6 +509,15 @@ void main() {
           audioRecorderRepo: mockAudioRecorderRepository,
           categoryRepo: mockCategoryRepository,
           player: mockPlayer,
+          linkedId: 'task-1',
+          extraOverrides: [
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'task-1',
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
+            ),
+          ],
         );
 
         await tester.pumpAndSettle();

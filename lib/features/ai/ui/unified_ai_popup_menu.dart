@@ -9,16 +9,13 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
-import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
-/// Unified AI popup menu that shows available prompts for the current entity
+/// Unified AI popup menu that shows available skills for the current entity
 class UnifiedAiPopUpMenu extends ConsumerWidget {
   const UnifiedAiPopUpMenu({
     required this.journalEntity,
@@ -36,7 +33,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasPromptsAsync = ref.watch(
-      hasAvailablePromptsProvider(journalEntity.id),
+      hasAvailableSkillsProvider(journalEntity.id),
     );
 
     // Use hasValue to preserve the icon during refresh states.
@@ -84,7 +81,7 @@ class UnifiedAiModal {
   }) async {
     return ModalUtils.showSinglePageModal<void>(
       context: context,
-      builder: (modalSheetContext) => UnifiedAiPromptsList(
+      builder: (modalSheetContext) => UnifiedAiSkillsList(
         journalEntity: journalEntity,
         linkedFromId: linkedFromId,
         onSkillSelected: (skill) async {
@@ -123,42 +120,6 @@ class UnifiedAiModal {
                 linkedTaskId: linkedTaskId,
                 referenceImages: null,
               )).future,
-            ),
-          );
-        },
-        onPromptSelected: (prompt, index) async {
-          // Close the current modal first
-          Navigator.of(modalSheetContext).pop();
-
-          developer.log(
-            'AI popup menu trigger: entity=${journalEntity.id}, prompt=${prompt.id}, linkedFrom=$linkedFromId, index=$index',
-            name: 'UnifiedAiPopUpMenu',
-          );
-
-          final targetLinkedEntityId = journalEntity is Task
-              ? linkedFromId
-              : journalEntity.id;
-
-          // Trigger inference in the background
-          unawaited(
-            ref.read(
-              triggerNewInferenceProvider((
-                entityId: journalEntity.id,
-                promptId: prompt.id,
-                linkedEntityId: targetLinkedEntityId,
-              )).future,
-            ),
-          );
-
-          // Show the progress modal immediately
-          await ModalUtils.showSingleSliverPageModal<void>(
-            context: context,
-            builder: (ctx) => UnifiedAiProgressUtils.progressPage(
-              context: ctx,
-              prompt: prompt,
-              entityId: journalEntity.id,
-              onTapBack: () => Navigator.of(ctx).pop(),
-              triggerOnOpen: false,
             ),
           );
         },
@@ -255,24 +216,20 @@ class UnifiedAiModal {
   }
 }
 
-/// List of available AI actions (skills + legacy prompts) for the current
-/// entity, split into two labelled sections.
-class UnifiedAiPromptsList extends ConsumerWidget {
-  const UnifiedAiPromptsList({
+/// List of available AI skills for the current entity.
+class UnifiedAiSkillsList extends ConsumerWidget {
+  const UnifiedAiSkillsList({
     required this.journalEntity,
-    required this.onPromptSelected,
+    required this.onSkillSelected,
     this.linkedFromId,
-    this.onSkillSelected,
     super.key,
   });
 
   final JournalEntity journalEntity;
   final String? linkedFromId;
-  final Future<void> Function(AiConfigPrompt prompt, int index)
-  onPromptSelected;
 
-  /// Called when a skill is tapped. If null, tapping a skill is a no-op.
-  final Future<void> Function(AiConfigSkill skill)? onSkillSelected;
+  /// Called when a skill is tapped.
+  final Future<void> Function(AiConfigSkill skill) onSkillSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -280,18 +237,9 @@ class UnifiedAiPromptsList extends ConsumerWidget {
         ref.watch(availableSkillsForEntityProvider(journalEntity.id)).value ??
         [];
 
-    final prompts =
-        ref.watch(availablePromptsProvider(journalEntity.id)).value ?? [];
-
-    final categoryId = journalEntity.meta.categoryId;
-    if (categoryId != null) {
-      ref.watch(categoryChangesProvider(categoryId));
-    }
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Skills section
         if (skills.isNotEmpty) ...[
           _SectionHeader(title: context.messages.skillsSectionTitle),
           ...skills.map(
@@ -299,46 +247,13 @@ class UnifiedAiPromptsList extends ConsumerWidget {
               title: skill.name,
               description: skill.description ?? '',
               icon: skill.skillType.toResponseType.icon,
-              onTap: () => onSkillSelected?.call(skill),
+              onTap: () => onSkillSelected(skill),
             ),
           ),
         ],
-
-        // Legacy prompts section
-        if (prompts.isNotEmpty) ...[
-          if (skills.isNotEmpty)
-            _SectionHeader(title: context.messages.legacyPromptsSectionTitle),
-          ...prompts.asMap().entries.map((entry) {
-            final index = entry.key;
-            final prompt = entry.value;
-            final isDefault = isDefaultPromptSync(categoryId, prompt);
-
-            return ModernModalPromptItem(
-              title: prompt.name,
-              description: prompt.description ?? '',
-              icon: _getIconForPrompt(prompt),
-              onTap: () => onPromptSelected(prompt, index),
-              isDefault: isDefault,
-              iconColor: isDefault ? const Color(0xFFD4AF37) : null,
-            );
-          }),
-        ],
-
         const SizedBox(height: 24),
       ],
     );
-  }
-
-  IconData _getIconForPrompt(AiConfigPrompt prompt) {
-    if (prompt.requiredInputData.contains(InputDataType.images)) {
-      return Icons.image;
-    } else if (prompt.requiredInputData.contains(InputDataType.audioFiles)) {
-      return Icons.mic;
-    } else if (prompt.requiredInputData.contains(InputDataType.tasksList)) {
-      return Icons.checklist;
-    } else {
-      return Icons.chat_rounded;
-    }
   }
 }
 
@@ -364,34 +279,4 @@ class _SectionHeader extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Check if a prompt is configured as an automatic default for the category
-/// This is a synchronous version that uses the category cache
-@visibleForTesting
-bool isDefaultPromptSync(
-  String? categoryId,
-  AiConfigPrompt prompt,
-) {
-  if (categoryId == null) return false;
-
-  try {
-    final cacheService = getIt<EntitiesCacheService>();
-    final category = cacheService.getCategoryById(categoryId);
-
-    if (category?.automaticPrompts == null) return false;
-
-    // Check if this prompt is the first in any automatic prompt list
-    for (final entry in category!.automaticPrompts!.entries) {
-      final promptIds = entry.value;
-      if (promptIds.isNotEmpty && promptIds.first == prompt.id) {
-        return true;
-      }
-    }
-  } catch (e) {
-    // If we can't get the category, just return false
-    return false;
-  }
-
-  return false;
 }

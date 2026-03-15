@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -326,13 +325,12 @@ void main() {
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
       });
 
-      testWidgets('displays category with AI settings subtitle', (
+      testWidgets('displays category with language settings subtitle', (
         tester,
       ) async {
         final categories = [
           CategoryTestUtils.createTestCategory(
             name: 'AI Category',
-            allowedPromptIds: ['prompt1', 'prompt2'],
             defaultLanguageCode: 'en',
           ),
         ];
@@ -431,28 +429,6 @@ void main() {
           find.byIcon(Icons.visibility_off_outlined),
           findsOneWidget,
         ); // Archived is inactive
-      });
-
-      testWidgets('handles categories with automatic prompts', (tester) async {
-        final categories = [
-          CategoryTestUtils.createTestCategory(
-            name: 'AI Enhanced',
-            automaticPrompts: {
-              AiResponseType.audioTranscription: ['prompt1'],
-              AiResponseType.imageAnalysis: ['prompt2'],
-            },
-          ),
-        ];
-
-        when(() => mockRepository.watchCategories()).thenAnswer(
-          (_) => Stream.value(categories),
-        );
-
-        await pumpCategoriesListPage(tester);
-
-        // Should display the category with subtitle showing it has automatic prompts
-        final listTile = tester.widget<ListTile>(find.byType(ListTile));
-        expect(listTile.subtitle, isNotNull);
       });
     });
 
@@ -614,10 +590,6 @@ void main() {
             private: true,
             active: false,
             defaultLanguageCode: 'en',
-            allowedPromptIds: ['prompt1'],
-            automaticPrompts: {
-              AiResponseType.audioTranscription: ['prompt2'],
-            },
           ),
         ];
 

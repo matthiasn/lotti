@@ -4,7 +4,6 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -232,8 +231,6 @@ void main() {
         expect(result.active, isTrue);
         expect(result.favorite, isNull);
         expect(result.defaultLanguageCode, isNull);
-        expect(result.allowedPromptIds, isNull);
-        expect(result.automaticPrompts, isNull);
 
         final captured =
             verify(
@@ -323,11 +320,6 @@ void main() {
           active: false,
           favorite: true,
           defaultLanguageCode: 'de',
-          allowedPromptIds: ['prompt1', 'prompt2'],
-          automaticPrompts: {
-            AiResponseType.audioTranscription: ['prompt3'],
-            AiResponseType.imageAnalysis: ['prompt4'],
-          },
         );
 
         when(
@@ -352,8 +344,6 @@ void main() {
           captured.defaultLanguageCode,
           equals(category.defaultLanguageCode),
         );
-        expect(captured.allowedPromptIds, equals(category.allowedPromptIds));
-        expect(captured.automaticPrompts, equals(category.automaticPrompts));
       });
     });
 
@@ -454,11 +444,6 @@ void main() {
           active: false,
           favorite: true,
           defaultLanguageCode: 'en',
-          allowedPromptIds: ['prompt1', 'prompt2'],
-          automaticPrompts: {
-            // ignore: deprecated_member_use_from_same_package
-            AiResponseType.taskSummary: ['prompt1'],
-          },
         );
 
         // Mock category exists
@@ -487,14 +472,6 @@ void main() {
         expect(captured.active, isFalse);
         expect(captured.favorite, isTrue);
         expect(captured.defaultLanguageCode, equals('en'));
-        expect(captured.allowedPromptIds, equals(['prompt1', 'prompt2']));
-        expect(
-          captured.automaticPrompts,
-          equals({
-            // ignore: deprecated_member_use_from_same_package
-            AiResponseType.taskSummary: ['prompt1'],
-          }),
-        );
         expect(captured.deletedAt, isNotNull);
         expect(captured.updatedAt, isNotNull);
       });

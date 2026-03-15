@@ -1,5 +1,4 @@
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:uuid/uuid.dart';
@@ -17,8 +16,6 @@ class CategoryTestUtils {
     bool active = true,
     bool? favorite,
     String? defaultLanguageCode,
-    List<String>? allowedPromptIds,
-    Map<AiResponseType, List<String>>? automaticPrompts,
     List<String>? speechDictionary,
     List<ChecklistCorrectionExample>? correctionExamples,
     CategoryIcon? icon,
@@ -40,8 +37,6 @@ class CategoryTestUtils {
       deletedAt: deletedAt,
       vectorClock: vectorClock,
       defaultLanguageCode: defaultLanguageCode,
-      allowedPromptIds: allowedPromptIds,
-      automaticPrompts: automaticPrompts,
       speechDictionary: speechDictionary,
       correctionExamples: correctionExamples,
       icon: icon,

@@ -361,42 +361,6 @@ class UnifiedAiController extends Notifier<UnifiedAiState> {
   }
 }
 
-/// Provider to get available prompts for a given entity.
-/// Uses entityId as key for stable provider identity across entity updates.
-final availablePromptsProvider = FutureProvider.autoDispose
-    .family<List<AiConfigPrompt>, String>(
-      (ref, entityId) async {
-        // Watch the entry controller to get the entity and react to updates
-        final entryState = ref
-            .watch(entryControllerProvider(id: entityId))
-            .value;
-        final entity = entryState?.entry;
-
-        // Return empty list if entity not available yet
-        if (entity == null) {
-          return [];
-        }
-
-        // Watch for changes in AI prompt configurations
-        // This will trigger a rebuild when any prompt configuration changes
-        await ref.watch(
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.prompt,
-          ).future,
-        );
-
-        // If the entity has a category, watch for changes to that specific category
-        final categoryId = entity.meta.categoryId;
-        if (categoryId != null) {
-          // Watch the category - this will trigger rebuilds when the category changes
-          await ref.watch(categoryChangesProvider(categoryId).future);
-        }
-
-        final repository = ref.watch(unifiedAiInferenceRepositoryProvider);
-        return repository.getActivePromptsForContext(entity: entity);
-      },
-    );
-
 /// Provider to get available skills for a given entity.
 ///
 /// Filters skills by matching the entity type to the skill's
@@ -444,16 +408,10 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
       },
     );
 
-/// Provider to check if there are any AI actions (skills or prompts)
-/// available for an entity.
-final hasAvailablePromptsProvider = FutureProvider.autoDispose
+/// Provider to check if there are any AI skills available for an entity.
+final hasAvailableSkillsProvider = FutureProvider.autoDispose
     .family<bool, String>(
       (ref, entityId) async {
-        final prompts = await ref.watch(
-          availablePromptsProvider(entityId).future,
-        );
-        if (prompts.isNotEmpty) return true;
-
         final skills = await ref.watch(
           availableSkillsForEntityProvider(entityId).future,
         );

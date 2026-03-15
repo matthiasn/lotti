@@ -31,7 +31,6 @@ import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/utils/checklist_validation.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
@@ -146,25 +145,6 @@ class UnifiedAiInferenceRepository {
     AiConfigPrompt prompt,
     JournalEntity entity,
   ) async {
-    // First check category restrictions
-    final categoryId = entity.meta.categoryId;
-    if (categoryId != null) {
-      final categoryRepo = ref.read(categoryRepositoryProvider);
-      final category = await categoryRepo.getCategoryById(categoryId);
-
-      if (category != null) {
-        // If allowedPromptIds is null or empty, no prompts are allowed
-        if (category.allowedPromptIds?.isEmpty ?? true) {
-          return false;
-        }
-
-        // Check if this prompt is in the allowed list
-        if (!category.allowedPromptIds!.contains(prompt.id)) {
-          return false;
-        }
-      }
-    }
-
     // Check if prompt requires specific input data types
     final hasTask = prompt.requiredInputData.contains(InputDataType.task);
     final hasImages = prompt.requiredInputData.contains(InputDataType.images);

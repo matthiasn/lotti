@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 
@@ -102,20 +101,12 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
         _hasListChanges(
-          _pendingCategory!.allowedPromptIds,
-          _originalCategory!.allowedPromptIds,
-        ) ||
-        _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
         ) ||
         _hasCorrectionExamplesChanges(
           _pendingCategory!.correctionExamples,
           _originalCategory!.correctionExamples,
-        ) ||
-        _hasMapChanges(
-          _pendingCategory!.automaticPrompts,
-          _originalCategory!.automaticPrompts,
         );
   }
 
@@ -136,22 +127,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     final originalSet = original.toSet();
     return !currentSet.containsAll(originalSet) ||
         !originalSet.containsAll(currentSet);
-  }
-
-  bool _hasMapChanges(
-    Map<AiResponseType, List<String>>? current,
-    Map<AiResponseType, List<String>>? original,
-  ) {
-    if (current == null && original == null) return false;
-    if (current == null || original == null) return true;
-    if (current.length != original.length) return true;
-
-    for (final key in current.keys) {
-      if (!original.containsKey(key)) return true;
-      if (_hasListChanges(current[key], original[key])) return true;
-    }
-
-    return false;
   }
 
   void updateFormField({
@@ -257,46 +232,6 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   void updateDefaultLanguage(String? languageCode) {
     // This method is kept for backward compatibility but now just updates form fields
     updateFormField(defaultLanguageCode: languageCode);
-  }
-
-  void updateAllowedPromptIds(List<String> promptIds) {
-    if (_pendingCategory == null) return;
-
-    _pendingCategory = _pendingCategory!.copyWith(
-      allowedPromptIds: promptIds.isEmpty ? null : promptIds,
-    );
-
-    state = state.copyWith(
-      category: _pendingCategory,
-      hasChanges: _hasChanges(_pendingCategory),
-    );
-  }
-
-  void updateAutomaticPrompts(
-    AiResponseType responseType,
-    List<String> promptIds,
-  ) {
-    if (_pendingCategory == null) return;
-
-    final currentPrompts = _pendingCategory!.automaticPrompts ?? {};
-    final updatedPrompts = Map<AiResponseType, List<String>>.from(
-      currentPrompts,
-    );
-
-    if (promptIds.isEmpty) {
-      updatedPrompts.remove(responseType);
-    } else {
-      updatedPrompts[responseType] = promptIds;
-    }
-
-    _pendingCategory = _pendingCategory!.copyWith(
-      automaticPrompts: updatedPrompts.isEmpty ? null : updatedPrompts,
-    );
-
-    state = state.copyWith(
-      category: _pendingCategory,
-      hasChanges: _hasChanges(_pendingCategory),
-    );
   }
 
   void updateSpeechDictionary(List<String> terms) {

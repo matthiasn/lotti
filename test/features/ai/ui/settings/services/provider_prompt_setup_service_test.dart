@@ -984,7 +984,7 @@ void main() {
       },
     );
 
-    testWidgets('should update existing category instead of creating new one', (
+    testWidgets('should reuse existing category instead of creating new one', (
       WidgetTester tester,
     ) async {
       when(
@@ -998,8 +998,8 @@ void main() {
       final existingCategory = CategoryDefinition(
         id: 'existing-category-id',
         name: 'Test Category OpenAI Enabled',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
         private: false,
         active: true,
@@ -1007,10 +1007,6 @@ void main() {
       when(
         () => mockCategoryRepository.getAllCategories(),
       ).thenAnswer((_) async => [existingCategory]);
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-        (invocation) async =>
-            invocation.positionalArguments[0] as CategoryDefinition,
-      );
 
       OpenAiFtueResult? result;
       await tester.pumpWidget(
@@ -1033,7 +1029,7 @@ void main() {
       expect(result!.categoryUpdated, isTrue);
       expect(result!.categoryName, equals('Test Category OpenAI Enabled'));
 
-      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.updateCategory(any()));
       verifyNever(
         () => mockCategoryRepository.createCategory(
           name: any(named: 'name'),
@@ -1470,7 +1466,7 @@ void main() {
       },
     );
 
-    testWidgets('should update existing category instead of creating new one', (
+    testWidgets('should reuse existing category instead of creating new one', (
       WidgetTester tester,
     ) async {
       when(
@@ -1484,8 +1480,8 @@ void main() {
       final existingCategory = CategoryDefinition(
         id: 'existing-category-id',
         name: 'Test Category Mistral Enabled',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
         vectorClock: null,
         private: false,
         active: true,
@@ -1493,10 +1489,6 @@ void main() {
       when(
         () => mockCategoryRepository.getAllCategories(),
       ).thenAnswer((_) async => [existingCategory]);
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-        (invocation) async =>
-            invocation.positionalArguments[0] as CategoryDefinition,
-      );
 
       MistralFtueResult? result;
       await tester.pumpWidget(
@@ -1519,7 +1511,7 @@ void main() {
       expect(result!.categoryUpdated, isTrue);
       expect(result!.categoryName, equals('Test Category Mistral Enabled'));
 
-      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.updateCategory(any()));
       verifyNever(
         () => mockCategoryRepository.createCategory(
           name: any(named: 'name'),
@@ -2123,7 +2115,7 @@ void main() {
       },
     );
 
-    testWidgets('should update existing category instead of creating new one', (
+    testWidgets('should reuse existing category instead of creating new one', (
       WidgetTester tester,
     ) async {
       when(
@@ -2146,10 +2138,6 @@ void main() {
       when(
         () => mockCategoryRepository.getAllCategories(),
       ).thenAnswer((_) async => [existingCategory]);
-      when(() => mockCategoryRepository.updateCategory(any())).thenAnswer(
-        (invocation) async =>
-            invocation.positionalArguments[0] as CategoryDefinition,
-      );
 
       AlibabaFtueResult? result;
       await tester.pumpWidget(
@@ -2172,7 +2160,7 @@ void main() {
       expect(result!.categoryUpdated, isTrue);
       expect(result!.categoryName, equals(ftueAlibabaCategoryName));
 
-      verify(() => mockCategoryRepository.updateCategory(any())).called(1);
+      verifyNever(() => mockCategoryRepository.updateCategory(any()));
       verifyNever(
         () => mockCategoryRepository.createCategory(
           name: any(named: 'name'),

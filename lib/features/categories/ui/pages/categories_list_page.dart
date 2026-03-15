@@ -280,14 +280,6 @@ class _CategoryListTile extends StatelessWidget {
       features.add(context.messages.settingsCategoriesHasDefaultLanguage);
     }
 
-    if (category.allowedPromptIds?.isNotEmpty ?? false) {
-      features.add(context.messages.settingsCategoriesHasAiSettings);
-    }
-
-    if (category.automaticPrompts?.isNotEmpty ?? false) {
-      features.add(context.messages.settingsCategoriesHasAutomaticPrompts);
-    }
-
     if (features.isEmpty) {
       return null;
     }

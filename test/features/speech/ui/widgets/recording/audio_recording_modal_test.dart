@@ -12,7 +12,6 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -92,16 +91,6 @@ class FakeEntryController extends EntryController {
 }
 
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {
-  FakeCategoryDefinition({
-    this.includeTranscriptionPrompts = true,
-    this.includeChecklistPrompts = true,
-    this.includeTaskSummaryPrompts = true,
-  });
-
-  final bool includeTranscriptionPrompts;
-  final bool includeChecklistPrompts;
-  final bool includeTaskSummaryPrompts;
-
   @override
   String get id => 'test-category';
 
@@ -109,10 +98,10 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   String get name => 'Test Category';
 
   @override
-  DateTime get createdAt => DateTime.now();
+  DateTime get createdAt => DateTime(2024);
 
   @override
-  DateTime get updatedAt => DateTime.now();
+  DateTime get updatedAt => DateTime(2024);
 
   @override
   bool get private => false;
@@ -130,31 +119,7 @@ class FakeCategoryDefinition extends Fake implements CategoryDefinition {
   String? get defaultLanguageCode => null;
 
   @override
-  List<String>? get allowedPromptIds => null;
-
-  @override
   List<String>? get speechDictionary => null;
-
-  @override
-  Map<AiResponseType, List<String>>? get automaticPrompts {
-    final prompts = <AiResponseType, List<String>>{};
-
-    if (includeTranscriptionPrompts) {
-      prompts[AiResponseType.audioTranscription] = ['transcription-prompt'];
-    }
-
-    if (includeTaskSummaryPrompts) {
-      // ignore: deprecated_member_use_from_same_package
-      prompts[AiResponseType.taskSummary] = ['summary-prompt'];
-    }
-
-    if (includeChecklistPrompts) {
-      // ignore: deprecated_member_use_from_same_package
-      prompts[AiResponseType.checklistUpdates] = ['checklist-prompt'];
-    }
-
-    return prompts.isEmpty ? null : prompts;
-  }
 
   @override
   CategoryIcon? get icon => null;
@@ -277,6 +242,7 @@ void main() {
     CategoryDefinition? category,
     String? linkedTaskId,
     bool provideCategory = true,
+    bool showSpeechCheckbox = false,
   }) {
     final categoryToUse = category ?? FakeCategoryDefinition();
 
@@ -336,6 +302,18 @@ void main() {
       );
     }
 
+    // Override checkbox visibility when speech checkbox should be shown
+    if (showSpeechCheckbox) {
+      overrides.add(
+        checkboxVisibilityProvider(
+          categoryId: provideCategory ? 'test-category' : null,
+          linkedId: linkedTaskId,
+        ).overrideWithValue(
+          const AutomaticPromptVisibility(speech: true),
+        ),
+      );
+    }
+
     return ProviderScope(
       overrides: overrides,
       child: Builder(
@@ -365,10 +343,15 @@ void main() {
   }
 
   group('AudioRecordingModal - Speech Recognition Checkbox', () {
-    testWidgets('shows checkbox when transcription prompts exist', (
+    testWidgets('shows checkbox when profile transcription available', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget());
+      await tester.pumpWidget(
+        createTestWidget(
+          linkedTaskId: 'task-1',
+          showSpeechCheckbox: true,
+        ),
+      );
       await tester.pump();
       // Extra pump for Riverpod async provider resolution
       await tester.pump();
@@ -382,9 +365,7 @@ void main() {
     testWidgets('hides checkbox when transcription prompts are absent', (
       tester,
     ) async {
-      final category = FakeCategoryDefinition(
-        includeTranscriptionPrompts: false,
-      );
+      final category = FakeCategoryDefinition();
 
       await tester.pumpWidget(createTestWidget(category: category));
       await tester.pump();
@@ -448,6 +429,7 @@ void main() {
           state: state,
           category: category,
           linkedTaskId: 'task-1',
+          showSpeechCheckbox: true,
         ),
       );
       await tester.pump(); // Build initial frame
@@ -463,12 +445,8 @@ void main() {
       );
     });
 
-    testWidgets('hides section when automaticPrompts is empty', (tester) async {
-      final category = FakeCategoryDefinition(
-        includeTranscriptionPrompts: false,
-        includeChecklistPrompts: false,
-        includeTaskSummaryPrompts: false,
-      );
+    testWidgets('hides section when no profile transcription', (tester) async {
+      final category = FakeCategoryDefinition();
 
       await tester.pumpWidget(
         createTestWidget(
@@ -501,6 +479,7 @@ void main() {
       JournalEntity? linkedEntry,
       CategoryDefinition? category,
       bool shouldError = false,
+      bool showSpeechCheckbox = false,
     }) {
       final categoryToUse = category ?? FakeCategoryDefinition();
 
@@ -521,6 +500,13 @@ void main() {
               shouldError: shouldError,
             ),
           ),
+          if (showSpeechCheckbox)
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: linkedId,
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
+            ),
         ],
         child: Builder(
           builder: (context) {
@@ -566,6 +552,7 @@ void main() {
         createTestWidgetWithEntry(
           linkedId: 'task-123',
           linkedEntry: mockTask,
+          showSpeechCheckbox: true,
         ),
       );
       await tester.pump();
@@ -620,6 +607,12 @@ void main() {
             // Override entryControllerProvider to return an Event
             entryControllerProvider(id: 'event-123').overrideWith(
               () => FakeEntryController(mockEntry: mockEvent),
+            ),
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'event-123',
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
             ),
           ],
           child: Builder(
@@ -694,6 +687,12 @@ void main() {
             entryControllerProvider(id: 'journal-123').overrideWith(
               () => FakeEntryController(mockEntry: mockJournalEntry),
             ),
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'journal-123',
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
+            ),
           ],
           child: Builder(
             builder: (context) {
@@ -761,6 +760,12 @@ void main() {
             // Return null entry
             entryControllerProvider(id: 'nonexistent-123').overrideWith(
               () => FakeEntryController(mockEntry: null),
+            ),
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'nonexistent-123',
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
             ),
           ],
           child: Builder(
@@ -831,6 +836,12 @@ void main() {
               // Return AsyncValue with null value
               entryControllerProvider(id: 'null-value-123').overrideWith(
                 () => FakeEntryController(mockEntry: null),
+              ),
+              checkboxVisibilityProvider(
+                categoryId: 'test-category',
+                linkedId: 'null-value-123',
+              ).overrideWithValue(
+                const AutomaticPromptVisibility(speech: true),
               ),
             ],
             child: Builder(
@@ -903,6 +914,12 @@ void main() {
             entryControllerProvider(id: 'loading-123').overrideWith(
               () => FakeEntryController(isLoading: true),
             ),
+            checkboxVisibilityProvider(
+              categoryId: 'test-category',
+              linkedId: 'loading-123',
+            ).overrideWithValue(
+              const AutomaticPromptVisibility(speech: true),
+            ),
           ],
           child: Builder(
             builder: (context) {
@@ -972,6 +989,7 @@ void main() {
             // so only speech checkbox is visible
             checkboxVisibilityProvider(
               categoryId: 'test-category',
+              linkedId: 'error-123',
             ).overrideWithValue(
               const AutomaticPromptVisibility(
                 speech: true,
@@ -1037,10 +1055,7 @@ void main() {
           ),
         );
 
-        final categoryWithoutPrompts = FakeCategoryDefinition(
-          includeChecklistPrompts: false,
-          includeTaskSummaryPrompts: false,
-        );
+        final categoryWithoutPrompts = FakeCategoryDefinition();
 
         // Set up category mock BEFORE creating widget
         when(
@@ -1070,6 +1085,12 @@ void main() {
               playerFactoryProvider.overrideWithValue(() => mockPlayer),
               entryControllerProvider(id: 'task-123').overrideWith(
                 () => FakeEntryController(mockEntry: mockTask),
+              ),
+              checkboxVisibilityProvider(
+                categoryId: 'test-category',
+                linkedId: 'task-123',
+              ).overrideWithValue(
+                const AutomaticPromptVisibility(speech: true),
               ),
             ],
             child: Builder(
@@ -1101,7 +1122,7 @@ void main() {
         // Extra pump for Riverpod async provider resolution
         await tester.pump();
 
-        // Task type detected but category config prevents checkboxes
+        // Speech checkbox visible via profile-driven transcription
         expect(
           find.widgetWithText(LottiAnimatedCheckbox, 'Speech Recognition'),
           findsOneWidget,
