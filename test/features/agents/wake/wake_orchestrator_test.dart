@@ -3498,7 +3498,7 @@ void main() {
         });
       });
 
-      test('skips when state has no activeTaskId', () {
+      test('proceeds when state has no activeTaskId', () {
         fakeAsync((async) {
           final state = makeTestState(
             agentId: 'agent-cg6',

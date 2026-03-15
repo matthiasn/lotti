@@ -2290,11 +2290,13 @@ void main() {
       });
 
       ProviderContainer createCheckerContainer() {
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
         final container = ProviderContainer(
           overrides: [
             agentRepositoryProvider.overrideWithValue(mockRepo),
             wakeQueueProvider.overrideWithValue(WakeQueue()),
-            wakeRunnerProvider.overrideWithValue(WakeRunner()),
+            wakeRunnerProvider.overrideWithValue(runner),
             domainLoggerProvider.overrideWithValue(
               DomainLogger(loggingService: LoggingService()),
             ),

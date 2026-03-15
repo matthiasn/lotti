@@ -209,6 +209,7 @@ classDiagram
 ## 4. Implementation Steps (Ordered)
 
 ### Step 1: Data Model Changes ✅
+
 | File | Change | Status |
 |------|--------|--------|
 | `lib/classes/entity_definitions.dart` | Added `defaultProfileId`, `defaultTemplateId` to `CategoryDefinition` | Done |
@@ -217,6 +218,7 @@ classDiagram
 | `make build_runner` | Regenerated freezed/json code | Done |
 
 ### Step 2: Category UI — Profile & Template Pickers ✅
+
 | File | Change | Status |
 |------|--------|--------|
 | `lib/features/categories/ui/pages/category_details_page.dart` | Added "AI Defaults" section with Profile picker and Template picker | Done |
@@ -226,6 +228,7 @@ classDiagram
 | `lib/l10n/app_*.arb` | Added `categoryAiDefaultsTitle`, `categoryAiDefaultsDescription`, `categoryDefaultTemplateLabel`, `categoryDefaultTemplateHint`, `categoryDefaultProfileHint`, `categoryDefaultProfileLabel` across all 6 locales | Done |
 
 ### Step 3: Task Creation — Inherit Category Defaults ✅
+
 | File | Change | Status |
 |------|--------|--------|
 | `lib/logic/create/create_entry.dart` | `createTask()`: looks up category via `EntitiesCacheService`, passes `defaultProfileId` to `TaskData.profileId` | Done |
@@ -241,6 +244,7 @@ classDiagram
 **Design decision:** `createTask()` uses `EntitiesCacheService` (synchronous, via GetIt) for profile inheritance. Agent auto-creation uses `autoAssignCategoryAgent()` called from widget contexts that have `WidgetRef`, keeping Riverpod access out of the non-Riverpod `createTask()` function. `desktop_menu.dart` was intentionally left unchanged (creates tasks without `categoryId`, is a `StatelessWidget` without `ref`).
 
 ### Step 4: Agent Content-Gating Logic ✅
+
 | File | Change | Status |
 |------|--------|--------|
 | `lib/features/agents/service/task_agent_service.dart` | Added `awaitContent` parameter to `createTaskAgent()`. When true: sets `awaitingContent=true`, skips creation wake | Done |
@@ -250,6 +254,7 @@ classDiagram
 **Key implementation detail:** The `taskContentChecker` callback resolves `journalDbProvider` lazily inside the closure (using `ref.read` instead of `ref.watch`), so the orchestrator provider doesn't eagerly depend on `journalDbProvider`. This avoids forcing all existing orchestrator tests to add a `journalDbProvider` override.
 
 ### Step 5: Profile Resolution for Tasks ✅
+
 | File | Change | Status |
 |------|--------|--------|
 | `lib/features/ai/util/profile_resolver.dart` | Added `resolveByProfileId()` public method for direct profile-by-ID resolution. Refactored `_resolveFromProfile` to use shared `_buildResolvedProfile()` (DRY) | Done |
@@ -261,6 +266,7 @@ classDiagram
 2. Task fallback: `task.data.profileId` (inherited from category at creation time)
 
 ### Step 6: Tests ✅
+
 | Scope | Status |
 |-------|--------|
 | `ProfileResolver.resolveByProfileId` — 4 new tests (valid profile, not found, wrong type, skill assignments) | Done |
@@ -273,6 +279,7 @@ classDiagram
 | All 6,911 tests across agents/AI/categories/daily_os/journal/create pass | Verified |
 
 ### Step 7: Localization, CHANGELOG, README ✅
+
 | Item | Status |
 |------|--------|
 | L10n strings added across all 6 locales (en, de, fr, es, cs, ro) | Done |
