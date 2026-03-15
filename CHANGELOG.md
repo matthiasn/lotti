@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.925] - 2026-03-15
+### Fixed
+- Notifications: honor the notification config flag across all notification
+  methods. Previously, the "tasks in progress" badge notification and
+  general show notifications were sent even when notifications were disabled.
+
 ## [0.9.924] - 2026-03-15
 ### Added
 - Cover art skill: image generation now runs as a background skill via the

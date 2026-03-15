@@ -502,18 +502,18 @@ void main() {
       expect(result.totalPrompts, equals(0));
     });
 
-    test('should include optional categoryUpdated and categoryName', () {
+    test('should include optional categoryReused and categoryName', () {
       const result = GeminiFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 9,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryUpdated: true,
+        categoryReused: true,
         categoryName: 'Test Category',
       );
 
-      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category'));
     });
 
@@ -577,18 +577,18 @@ void main() {
       expect(result.totalPrompts, equals(0));
     });
 
-    test('should include optional categoryUpdated and categoryName', () {
+    test('should include optional categoryReused and categoryName', () {
       const result = OpenAiFtueResult(
         modelsCreated: 4,
         modelsVerified: 0,
         promptsCreated: 9,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryUpdated: true,
+        categoryReused: true,
         categoryName: 'Test Category OpenAI',
       );
 
-      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category OpenAI'));
     });
 
@@ -1026,7 +1026,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals('Test Category OpenAI Enabled'));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));
@@ -1092,18 +1092,18 @@ void main() {
       expect(result.totalPrompts, equals(0));
     });
 
-    test('should include optional categoryUpdated and categoryName', () {
+    test('should include optional categoryReused and categoryName', () {
       const result = MistralFtueResult(
         modelsCreated: 3,
         modelsVerified: 0,
         promptsCreated: 8,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryUpdated: true,
+        categoryReused: true,
         categoryName: 'Test Category Mistral',
       );
 
-      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category Mistral'));
     });
 
@@ -1508,7 +1508,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals('Test Category Mistral Enabled'));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));
@@ -1622,18 +1622,18 @@ void main() {
       expect(result.totalPrompts, equals(0));
     });
 
-    test('should include optional categoryUpdated and categoryName', () {
+    test('should include optional categoryReused and categoryName', () {
       const result = AlibabaFtueResult(
         modelsCreated: 5,
         modelsVerified: 0,
         promptsCreated: 9,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryUpdated: true,
+        categoryReused: true,
         categoryName: 'Test Category Alibaba',
       );
 
-      expect(result.categoryUpdated, isTrue);
+      expect(result.categoryReused, isTrue);
       expect(result.categoryName, equals('Test Category Alibaba'));
     });
 
@@ -2157,7 +2157,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.categoryCreated, isFalse);
-      expect(result!.categoryUpdated, isTrue);
+      expect(result!.categoryReused, isTrue);
       expect(result!.categoryName, equals(ftueAlibabaCategoryName));
 
       verifyNever(() => mockCategoryRepository.updateCategory(any()));

@@ -547,7 +547,7 @@ class GeminiFtueResult {
     required this.promptsCreated,
     required this.promptsSkipped,
     required this.categoryCreated,
-    this.categoryUpdated = false,
+    this.categoryReused = false,
     this.categoryName,
     this.errors = const [],
   });
@@ -557,7 +557,7 @@ class GeminiFtueResult {
   final int promptsCreated;
   final int promptsSkipped;
   final bool categoryCreated;
-  final bool categoryUpdated;
+  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
@@ -629,12 +629,8 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     );
 
     // Step 3: Create or update category with auto-selection (uses all prompts)
-    final (category, categoryWasCreated) = await _createOrUpdateFtueCategory(
+    final (category, categoryWasCreated) = await _createOrReuseFtueCategory(
       categoryRepository: categoryRepository,
-      prompts: promptResult.allPrompts,
-      flashModelId: modelResult.flash.id,
-      proModelId: modelResult.pro.id,
-      imageModelId: modelResult.image.id,
     );
 
     return GeminiFtueResult(
@@ -643,7 +639,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
       promptsCreated: promptResult.created.length,
       promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
-      categoryUpdated: !categoryWasCreated && category != null,
+      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }
@@ -825,17 +821,13 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
     ];
   }
 
-  /// Creates or updates the FTUE test category with all prompts enabled and auto-selection.
+  /// Creates or reuses the FTUE test category.
   ///
-  /// If the category already exists, it will be updated with the new prompts.
+  /// If the category already exists, it is reused as-is.
   /// Returns a tuple of (category, wasCreated) where wasCreated is true if
-  /// a new category was created, false if an existing one was updated.
-  Future<(CategoryDefinition?, bool)> _createOrUpdateFtueCategory({
+  /// a new category was created, false if an existing one was reused.
+  Future<(CategoryDefinition?, bool)> _createOrReuseFtueCategory({
     required CategoryRepository categoryRepository,
-    required List<AiConfigPrompt> prompts,
-    required String flashModelId,
-    required String proModelId,
-    required String imageModelId,
   }) async {
     const categoryName = ftueGeminiCategoryName;
 
@@ -846,7 +838,7 @@ extension GeminiFtueSetup on ProviderPromptSetupService {
         .firstOrNull;
 
     if (existingCategory != null) {
-      return (existingCategory, false); // false = was updated, not created
+      return (existingCategory, false); // false = reused, not created
     }
 
     // Create new category
@@ -906,7 +898,7 @@ class OpenAiFtueResult {
     required this.promptsCreated,
     required this.promptsSkipped,
     required this.categoryCreated,
-    this.categoryUpdated = false,
+    this.categoryReused = false,
     this.categoryName,
     this.errors = const [],
   });
@@ -916,7 +908,7 @@ class OpenAiFtueResult {
   final int promptsCreated;
   final int promptsSkipped;
   final bool categoryCreated;
-  final bool categoryUpdated;
+  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
@@ -976,12 +968,8 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     final (
       category,
       categoryWasCreated,
-    ) = await _createOrUpdateOpenAiFtueCategory(
+    ) = await _createOrReuseOpenAiFtueCategory(
       categoryRepository: categoryRepository,
-      prompts: promptResult.allPrompts,
-      flashModelId: modelResult.flash.id,
-      reasoningModelId: modelResult.reasoning.id,
-      imageModelId: modelResult.image.id,
     );
 
     return OpenAiFtueResult(
@@ -990,7 +978,7 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
       promptsCreated: promptResult.created.length,
       promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
-      categoryUpdated: !categoryWasCreated && category != null,
+      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }
@@ -1176,13 +1164,12 @@ extension OpenAiFtueSetup on ProviderPromptSetupService {
     ];
   }
 
-  /// Creates or updates the FTUE test category for OpenAI.
-  Future<(CategoryDefinition?, bool)> _createOrUpdateOpenAiFtueCategory({
+  /// Creates or reuses the FTUE test category for OpenAI.
+  ///
+  /// If the category already exists, it is reused as-is.
+  /// Returns a tuple of (category, wasCreated).
+  Future<(CategoryDefinition?, bool)> _createOrReuseOpenAiFtueCategory({
     required CategoryRepository categoryRepository,
-    required List<AiConfigPrompt> prompts,
-    required String flashModelId,
-    required String reasoningModelId,
-    required String imageModelId,
   }) async {
     const categoryName = ftueOpenAiCategoryName;
 
@@ -1237,7 +1224,7 @@ class MistralFtueResult {
     required this.promptsCreated,
     required this.promptsSkipped,
     required this.categoryCreated,
-    this.categoryUpdated = false,
+    this.categoryReused = false,
     this.categoryName,
     this.errors = const [],
   });
@@ -1247,7 +1234,7 @@ class MistralFtueResult {
   final int promptsCreated;
   final int promptsSkipped;
   final bool categoryCreated;
-  final bool categoryUpdated;
+  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
@@ -1306,10 +1293,8 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     final (
       category,
       categoryWasCreated,
-    ) = await _createOrUpdateMistralFtueCategory(
+    ) = await _createOrReuseMistralFtueCategory(
       categoryRepository: categoryRepository,
-      prompts: promptResult.allPrompts,
-      reasoningModelId: modelResult.reasoning.id,
     );
 
     return MistralFtueResult(
@@ -1318,7 +1303,7 @@ extension MistralFtueSetup on ProviderPromptSetupService {
       promptsCreated: promptResult.created.length,
       promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
-      categoryUpdated: !categoryWasCreated && category != null,
+      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }
@@ -1489,11 +1474,12 @@ extension MistralFtueSetup on ProviderPromptSetupService {
     ];
   }
 
-  /// Creates or updates the FTUE test category for Mistral.
-  Future<(CategoryDefinition?, bool)> _createOrUpdateMistralFtueCategory({
+  /// Creates or reuses the FTUE test category for Mistral.
+  ///
+  /// If the category already exists, it is reused as-is.
+  /// Returns a tuple of (category, wasCreated).
+  Future<(CategoryDefinition?, bool)> _createOrReuseMistralFtueCategory({
     required CategoryRepository categoryRepository,
-    required List<AiConfigPrompt> prompts,
-    required String reasoningModelId,
   }) async {
     const categoryName = ftueMistralCategoryName;
 
@@ -1546,7 +1532,7 @@ class AlibabaFtueResult {
     required this.promptsCreated,
     required this.promptsSkipped,
     required this.categoryCreated,
-    this.categoryUpdated = false,
+    this.categoryReused = false,
     this.categoryName,
     this.errors = const [],
   });
@@ -1556,7 +1542,7 @@ class AlibabaFtueResult {
   final int promptsCreated;
   final int promptsSkipped;
   final bool categoryCreated;
-  final bool categoryUpdated;
+  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 
@@ -1616,11 +1602,8 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     final (
       category,
       categoryWasCreated,
-    ) = await _createOrUpdateAlibabaFtueCategory(
+    ) = await _createOrReuseAlibabaFtueCategory(
       categoryRepository: categoryRepository,
-      prompts: promptResult.allPrompts,
-      reasoningModelId: modelResult.reasoning.id,
-      imageModelId: modelResult.image.id,
     );
 
     return AlibabaFtueResult(
@@ -1629,7 +1612,7 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
       promptsCreated: promptResult.created.length,
       promptsSkipped: promptResult.skipped,
       categoryCreated: categoryWasCreated,
-      categoryUpdated: !categoryWasCreated && category != null,
+      categoryReused: !categoryWasCreated && category != null,
       categoryName: category?.name,
     );
   }
@@ -1828,12 +1811,12 @@ extension AlibabaFtueSetup on ProviderPromptSetupService {
     ];
   }
 
-  /// Creates or updates the FTUE test category for Alibaba.
-  Future<(CategoryDefinition?, bool)> _createOrUpdateAlibabaFtueCategory({
+  /// Creates or reuses the FTUE test category for Alibaba.
+  ///
+  /// If the category already exists, it is reused as-is.
+  /// Returns a tuple of (category, wasCreated).
+  Future<(CategoryDefinition?, bool)> _createOrReuseAlibabaFtueCategory({
     required CategoryRepository categoryRepository,
-    required List<AiConfigPrompt> prompts,
-    required String reasoningModelId,
-    required String imageModelId,
   }) async {
     const categoryName = ftueAlibabaCategoryName;
 

@@ -12,7 +12,7 @@ void main() {
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
-        categoryUpdated: false,
+        categoryReused: false,
         categoryName: 'Test Category Gemini Enabled',
       );
 
@@ -41,7 +41,7 @@ void main() {
         promptsCreated: 15,
         promptsSkipped: 3,
         categoryCreated: true,
-        categoryUpdated: false,
+        categoryReused: false,
         categoryName: 'Test Category',
         errors: ['Failed to create prompt: Audio Transcription'],
       );
@@ -74,7 +74,7 @@ void main() {
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: true,
-        categoryUpdated: false,
+        categoryReused: false,
         categoryName: 'Test Category',
       );
 
@@ -90,7 +90,7 @@ void main() {
       expect(find.text('None'), findsOneWidget);
     });
 
-    testWidgets('shows category as updated when categoryUpdated is true', (
+    testWidgets('shows category as reused when categoryReused is true', (
       tester,
     ) async {
       const result = FtueResultData(
@@ -99,7 +99,7 @@ void main() {
         promptsCreated: 0,
         promptsSkipped: 18,
         categoryCreated: false,
-        categoryUpdated: true,
+        categoryReused: true,
         categoryName: 'Test Category',
       );
 
@@ -111,7 +111,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Test Category (updated)'), findsOneWidget);
+      expect(find.text('Test Category (reused)'), findsOneWidget);
       expect(find.byIcon(Icons.folder_outlined), findsOneWidget);
     });
 
@@ -124,7 +124,7 @@ void main() {
         promptsCreated: 18,
         promptsSkipped: 0,
         categoryCreated: false,
-        categoryUpdated: false,
+        categoryReused: false,
       );
 
       await tester.pumpWidget(
@@ -229,7 +229,7 @@ void main() {
       expect(data.promptsCreated, equals(9));
       expect(data.promptsSkipped, equals(0));
       expect(data.categoryCreated, isTrue);
-      expect(data.categoryUpdated, isFalse);
+      expect(data.categoryReused, isFalse);
       expect(data.categoryName, equals('Test Category Alibaba Enabled'));
       expect(data.errors, contains('Test error'));
     });
@@ -291,7 +291,7 @@ void main() {
       expect(data.promptsCreated, equals(8));
       expect(data.promptsSkipped, equals(0));
       expect(data.categoryCreated, isTrue);
-      expect(data.categoryUpdated, isFalse);
+      expect(data.categoryReused, isFalse);
       expect(data.categoryName, equals('Test Category Mistral Enabled'));
       expect(data.errors, contains('Test error'));
     });
