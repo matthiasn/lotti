@@ -1569,6 +1569,20 @@ class AppLocalizationsEs extends AppLocalizations {
       'Establecer un idioma predeterminado para las tareas de esta categoría';
 
   @override
+  String get categoryAiDefaultsTitle => 'Valores predeterminados de IA';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Establecer el perfil de IA y la plantilla de agente predeterminados para nuevas tareas en esta categoría';
+
+  @override
+  String get categoryDefaultTemplateLabel =>
+      'Plantilla de agente predeterminada';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Seleccionar una plantilla…';
+
+  @override
   String get categoryDeleteConfirm => 'SÍ, ELIMINAR ESTA CATEGORÍA';
 
   @override

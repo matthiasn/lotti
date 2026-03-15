@@ -1543,6 +1543,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Setați o limbă implicită pentru sarcinile din această categorie';
 
   @override
+  String get categoryAiDefaultsTitle => 'Setări implicite AI';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Setați profilul AI și șablonul de agent implicit pentru sarcinile noi din această categorie';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Șablon de agent implicit';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Selectați un șablon…';
+
+  @override
   String get categoryDeleteConfirm => 'DA, ȘTERGE ACEASTĂ CATEGORIE';
 
   @override

@@ -60,6 +60,7 @@ class TaskAgentService {
     String? templateId,
     String? profileId,
     String? displayName,
+    bool awaitContent = false,
   }) async {
     // Resolve template: use the provided ID or fall back to the first
     // available template from the repository.
@@ -117,6 +118,7 @@ class TaskAgentService {
       final now = clock.now();
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(activeTaskId: taskId),
+        awaitingContent: awaitContent,
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);
@@ -153,17 +155,22 @@ class TaskAgentService {
     // Register subscription for changes to this task.
     _registerTaskSubscription(identity.agentId, taskId);
 
-    // Enqueue the initial wake so the agent runs immediately after creation.
-    orchestrator.enqueueManualWake(
-      agentId: identity.agentId,
-      reason: WakeReason.creation.name,
-      triggerTokens: {taskId},
-    );
+    // When awaitContent is true (auto-assigned from category defaults), skip
+    // the creation wake. The agent will wake on the first subscription trigger
+    // once the task has meaningful content. See WakeOrchestrator's content check.
+    if (!awaitContent) {
+      orchestrator.enqueueManualWake(
+        agentId: identity.agentId,
+        reason: WakeReason.creation.name,
+        triggerTokens: {taskId},
+      );
+    }
 
     domainLogger?.log(
       LogDomains.agentRuntime,
       'created task agent ${DomainLogger.sanitizeId(identity.agentId)} '
-      'for task ${DomainLogger.sanitizeId(taskId)}',
+      'for task ${DomainLogger.sanitizeId(taskId)}'
+      '${awaitContent ? ' (awaiting content)' : ''}',
       subDomain: 'lifecycle',
     );
 

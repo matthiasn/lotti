@@ -1532,6 +1532,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastavte výchozí jazyk pro úkoly v této kategorii';
 
   @override
+  String get categoryAiDefaultsTitle => 'Výchozí hodnoty AI';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Nastavte výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Výchozí šablona agenta';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Vyberte šablonu…';
+
+  @override
   String get categoryDeleteConfirm => 'ANO, SMAŽ TUTO KATEGORII';
 
   @override

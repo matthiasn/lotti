@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
@@ -154,7 +156,7 @@ class LinkedTasksHeader extends ConsumerWidget {
     );
 
     if (newTask != null && context.mounted) {
-      // Navigate to the new task
+      unawaited(autoAssignCategoryAgent(ref, newTask));
       tasksBeamerDelegate.beamToNamed('/tasks/${newTask.meta.id}');
     }
   }

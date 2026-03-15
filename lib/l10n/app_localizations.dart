@@ -2763,6 +2763,30 @@ abstract class AppLocalizations {
   /// **'Set a default language for tasks in this category'**
   String get categoryDefaultLanguageDescription;
 
+  /// No description provided for @categoryAiDefaultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Defaults'**
+  String get categoryAiDefaultsTitle;
+
+  /// No description provided for @categoryAiDefaultsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set default AI profile and agent template for new tasks in this category'**
+  String get categoryAiDefaultsDescription;
+
+  /// No description provided for @categoryDefaultTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default agent template'**
+  String get categoryDefaultTemplateLabel;
+
+  /// No description provided for @categoryDefaultTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a template…'**
+  String get categoryDefaultTemplateHint;
+
   /// No description provided for @categoryDeleteConfirm.
   ///
   /// In en, this message translates to:

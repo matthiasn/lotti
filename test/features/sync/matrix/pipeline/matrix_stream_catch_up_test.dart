@@ -80,29 +80,31 @@ void main() {
       ];
       when(() => timeline.events).thenAnswer((_) => events);
 
-      final coordinator = MatrixStreamCatchUpCoordinator(
-        sessionManager: session,
-        roomManager: roomManager,
-        loggingService: logger,
-        metrics: metrics,
-        collectMetrics: true,
-        skipSyncWait: true,
-        processor: processor,
-        flushDeferredLiveScan: flushedSources.add,
-        withInstance: (message) => message,
-        backfill: ({
-          required Timeline timeline,
-          required String? lastEventId,
-          required int pageSize,
-          required int? maxPages,
-          required LoggingService logging,
-          num? untilTimestamp,
-        }) async =>
-            false, // Server boundary always unreachable
-      )..startupMarkers = (
-        eventId: 'legacy-marker',
-        timestamp: 1500,
-      );
+      final coordinator =
+          MatrixStreamCatchUpCoordinator(
+              sessionManager: session,
+              roomManager: roomManager,
+              loggingService: logger,
+              metrics: metrics,
+              collectMetrics: true,
+              skipSyncWait: true,
+              processor: processor,
+              flushDeferredLiveScan: flushedSources.add,
+              withInstance: (message) => message,
+              backfill:
+                  ({
+                    required Timeline timeline,
+                    required String? lastEventId,
+                    required int pageSize,
+                    required int? maxPages,
+                    required LoggingService logging,
+                    num? untilTimestamp,
+                  }) async => false, // Server boundary always unreachable
+            )
+            ..startupMarkers = (
+              eventId: 'legacy-marker',
+              timestamp: 1500,
+            );
 
       await coordinator.runInitialCatchUpIfReady();
 

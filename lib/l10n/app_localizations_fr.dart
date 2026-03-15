@@ -1570,6 +1570,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Définir une langue par défaut pour les tâches de cette catégorie';
 
   @override
+  String get categoryAiDefaultsTitle => 'Paramètres IA par défaut';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Définir le profil IA et le modèle d\'agent par défaut pour les nouvelles tâches de cette catégorie';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Modèle d\'agent par défaut';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Sélectionner un modèle…';
+
+  @override
   String get categoryDeleteConfirm => 'OUI, SUPPRIMER CETTE CATÉGORIE';
 
   @override

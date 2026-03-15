@@ -1544,6 +1544,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Standardsprache für Aufgaben in dieser Kategorie festlegen';
 
   @override
+  String get categoryAiDefaultsTitle => 'KI-Standardwerte';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Standard-KI-Profil und Agenten-Vorlage für neue Aufgaben in dieser Kategorie festlegen';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Standard-Agenten-Vorlage';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Vorlage auswählen…';
+
+  @override
   String get categoryDeleteConfirm => 'JA, DIESE KATEGORIE LÖSCHEN';
 
   @override

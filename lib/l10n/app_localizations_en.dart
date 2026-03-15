@@ -1518,6 +1518,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set a default language for tasks in this category';
 
   @override
+  String get categoryAiDefaultsTitle => 'AI Defaults';
+
+  @override
+  String get categoryAiDefaultsDescription =>
+      'Set default AI profile and agent template for new tasks in this category';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Default agent template';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Select a template…';
+
+  @override
   String get categoryDeleteConfirm => 'YES, DELETE THIS CATEGORY';
 
   @override

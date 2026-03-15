@@ -100,6 +100,10 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.icon != _originalCategory!.icon ||
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
+        _pendingCategory!.defaultProfileId !=
+            _originalCategory!.defaultProfileId ||
+        _pendingCategory!.defaultTemplateId !=
+            _originalCategory!.defaultTemplateId ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -150,6 +154,38 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
       defaultLanguageCode:
           defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
       icon: icon ?? _pendingCategory!.icon,
+    );
+
+    // Update the displayed category to reflect pending changes
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  /// Updates the default inference profile for new tasks in this category.
+  /// Pass `null` to clear the default.
+  void setDefaultProfileId(String? profileId) {
+    if (_pendingCategory == null) return;
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      defaultProfileId: profileId,
+    );
+
+    // Update the displayed category to reflect pending changes
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  /// Updates the default agent template for new tasks in this category.
+  /// Pass `null` to clear the default.
+  void setDefaultTemplateId(String? templateId) {
+    if (_pendingCategory == null) return;
+
+    _pendingCategory = _pendingCategory!.copyWith(
+      defaultTemplateId: templateId,
     );
 
     // Update the displayed category to reflect pending changes
