@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -2276,6 +2279,183 @@ void main() {
         ).called(1);
       },
     );
+
+    group('taskContentChecker', () {
+      late MockAgentRepository mockRepo;
+      late MockJournalDb mockDb;
+
+      setUp(() {
+        mockRepo = MockAgentRepository();
+        mockDb = MockJournalDb();
+      });
+
+      ProviderContainer createCheckerContainer() {
+        final container = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(mockRepo),
+            wakeQueueProvider.overrideWithValue(WakeQueue()),
+            wakeRunnerProvider.overrideWithValue(WakeRunner()),
+            domainLoggerProvider.overrideWithValue(
+              DomainLogger(loggingService: LoggingService()),
+            ),
+            journalDbProvider.overrideWithValue(mockDb),
+          ],
+        );
+        addTearDown(container.dispose);
+        return container;
+      }
+
+      test('returns true when task has non-empty title', () async {
+        when(() => mockDb.journalEntityById('task-1')).thenAnswer(
+          (_) async => JournalEntity.task(
+            meta: Metadata(
+              id: 'task-1',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+            data: TaskData(
+              status: taskStatusFromString(''),
+              title: 'Has a title',
+              statusHistory: [],
+              dateTo: DateTime(2024),
+              dateFrom: DateTime(2024),
+              estimate: Duration.zero,
+            ),
+          ),
+        );
+
+        final container = createCheckerContainer();
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        final result = await orchestrator.taskContentChecker!('task-1');
+        expect(result, isTrue);
+      });
+
+      test('returns true when task has non-empty body text', () async {
+        when(() => mockDb.journalEntityById('task-2')).thenAnswer(
+          (_) async => JournalEntity.task(
+            meta: Metadata(
+              id: 'task-2',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+            data: TaskData(
+              status: taskStatusFromString(''),
+              title: '',
+              statusHistory: [],
+              dateTo: DateTime(2024),
+              dateFrom: DateTime(2024),
+              estimate: Duration.zero,
+            ),
+            entryText: const EntryText(plainText: 'Some body text'),
+          ),
+        );
+
+        final container = createCheckerContainer();
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        final result = await orchestrator.taskContentChecker!('task-2');
+        expect(result, isTrue);
+      });
+
+      test('returns true when linked entry has text', () async {
+        when(() => mockDb.journalEntityById('task-3')).thenAnswer(
+          (_) async => JournalEntity.task(
+            meta: Metadata(
+              id: 'task-3',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+            data: TaskData(
+              status: taskStatusFromString(''),
+              title: '',
+              statusHistory: [],
+              dateTo: DateTime(2024),
+              dateFrom: DateTime(2024),
+              estimate: Duration.zero,
+            ),
+          ),
+        );
+        when(() => mockDb.getLinkedEntities('task-3')).thenAnswer(
+          (_) async => [
+            JournalEntity.journalEntry(
+              meta: Metadata(
+                id: 'linked-1',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+              ),
+              entryText: const EntryText(plainText: 'Linked content'),
+            ),
+          ],
+        );
+
+        final container = createCheckerContainer();
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        final result = await orchestrator.taskContentChecker!('task-3');
+        expect(result, isTrue);
+      });
+
+      test(
+        'returns false when task and linked entries have no content',
+        () async {
+          when(() => mockDb.journalEntityById('task-4')).thenAnswer(
+            (_) async => JournalEntity.task(
+              meta: Metadata(
+                id: 'task-4',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+              ),
+              data: TaskData(
+                status: taskStatusFromString(''),
+                title: '',
+                statusHistory: [],
+                dateTo: DateTime(2024),
+                dateFrom: DateTime(2024),
+                estimate: Duration.zero,
+              ),
+            ),
+          );
+          when(() => mockDb.getLinkedEntities('task-4')).thenAnswer(
+            (_) async => <JournalEntity>[],
+          );
+
+          final container = createCheckerContainer();
+          final orchestrator = container.read(wakeOrchestratorProvider);
+          final result = await orchestrator.taskContentChecker!('task-4');
+          expect(result, isFalse);
+        },
+      );
+
+      test('returns false when entity is not a Task', () async {
+        when(() => mockDb.journalEntityById('entry-1')).thenAnswer(
+          (_) async => JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'entry-1',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          ),
+        );
+        when(() => mockDb.getLinkedEntities('entry-1')).thenAnswer(
+          (_) async => <JournalEntity>[],
+        );
+
+        final container = createCheckerContainer();
+        final orchestrator = container.read(wakeOrchestratorProvider);
+        final result = await orchestrator.taskContentChecker!('entry-1');
+        expect(result, isFalse);
+      });
+    });
   });
 
   group('agentServiceProvider', () {
