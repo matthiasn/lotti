@@ -1,11 +1,13 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -85,7 +87,18 @@ Future<Task?> createTask({
 /// so it won't run until the task has meaningful content.
 ///
 /// Call this after [createTask] from contexts that have Riverpod [WidgetRef].
-Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) async {
+Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) =>
+    autoAssignCategoryAgentWith(ref.read(taskAgentServiceProvider), task);
+
+/// Testable core of [autoAssignCategoryAgent].
+///
+/// Accepts a [TaskAgentService] directly so tests can call it without
+/// needing a [WidgetRef].
+@visibleForTesting
+Future<void> autoAssignCategoryAgentWith(
+  TaskAgentService service,
+  Task task,
+) async {
   try {
     final categoryId = task.meta.categoryId;
     if (categoryId == null) return;
@@ -96,7 +109,6 @@ Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) async {
     final templateId = category.defaultTemplateId;
     if (templateId == null) return;
 
-    final service = ref.read(taskAgentServiceProvider);
     await service.createTaskAgent(
       taskId: task.meta.id,
       templateId: templateId,

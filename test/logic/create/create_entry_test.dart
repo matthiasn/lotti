@@ -10,10 +10,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -33,6 +29,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/agents/test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
@@ -446,7 +443,7 @@ void main() {
     });
 
     test(
-      'autoAssignCategoryAgent creates agent for category with template',
+      'autoAssignCategoryAgentWith creates agent for category with template',
       () async {
         const categoryId = 'cat-with-template';
         const templateId = 'template-xyz';
@@ -467,12 +464,9 @@ void main() {
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
-        // Create a real task first
-        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
         final task = await createTask(categoryId: categoryId);
         expect(task, isNotNull);
 
-        // Mock the TaskAgentService
         final mockService = MockTaskAgentService();
         when(
           () => mockService.createTaskAgent(
@@ -483,44 +477,10 @@ void main() {
             awaitContent: any(named: 'awaitContent'),
           ),
         ).thenAnswer(
-          (_) async =>
-              AgentDomainEntity.agent(
-                    id: 'agent-1',
-                    agentId: 'agent-1',
-                    kind: 'task_agent',
-                    displayName: 'Test',
-                    lifecycle: AgentLifecycle.active,
-                    mode: AgentInteractionMode.autonomous,
-                    allowedCategoryIds: {categoryId},
-                    currentStateId: 'state-1',
-                    config: const AgentConfig(),
-                    createdAt: DateTime(2024),
-                    updatedAt: DateTime(2024),
-                    vectorClock: null,
-                  )
-                  as AgentIdentityEntity,
+          (_) async => makeTestIdentity(id: 'agent-1'),
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            taskAgentServiceProvider.overrideWithValue(mockService),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        // Use container.read to simulate ref
-        // We need a WidgetRef, but can test via ProviderContainer
-        // Instead, call autoAssignCategoryAgent indirectly through the function
-        // by creating a minimal ref-like wrapper.
-        // Since autoAssignCategoryAgent needs WidgetRef, test the logic directly.
-        final service = container.read(taskAgentServiceProvider);
-        await service.createTaskAgent(
-          taskId: task!.meta.id,
-          templateId: templateId,
-          profileId: profileId,
-          allowedCategoryIds: {categoryId},
-          awaitContent: true,
-        );
+        await autoAssignCategoryAgentWith(mockService, task!);
 
         verify(
           () => mockService.createTaskAgent(
@@ -534,36 +494,27 @@ void main() {
       },
     );
 
-    test('autoAssignCategoryAgent does nothing when no categoryId', () async {
-      // Create task without category
-      final task = await createTask();
-      expect(task, isNotNull);
-      expect(task!.meta.categoryId, isNull);
+    test(
+      'autoAssignCategoryAgentWith does nothing when no categoryId',
+      () async {
+        final task = await createTask();
+        expect(task, isNotNull);
 
-      final mockService = MockTaskAgentService();
-      final container = ProviderContainer(
-        overrides: [
-          taskAgentServiceProvider.overrideWithValue(mockService),
-        ],
-      );
-      addTearDown(container.dispose);
+        final mockService = MockTaskAgentService();
+        await autoAssignCategoryAgentWith(mockService, task!);
 
-      // The function should return early without calling createTaskAgent.
-      // We can't call autoAssignCategoryAgent directly (needs WidgetRef),
-      // so test the guard logic:
-      expect(task.meta.categoryId, isNull);
-      // With null categoryId, the function returns immediately.
-      verifyNever(
-        () => mockService.createTaskAgent(
-          taskId: any(named: 'taskId'),
-          templateId: any(named: 'templateId'),
-          allowedCategoryIds: any(named: 'allowedCategoryIds'),
-        ),
-      );
-    });
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
 
     test(
-      'autoAssignCategoryAgent does nothing when no defaultTemplateId',
+      'autoAssignCategoryAgentWith does nothing when no defaultTemplateId',
       () async {
         const categoryId = 'cat-no-template';
         final mockCache =
@@ -577,14 +528,61 @@ void main() {
           createdAt: DateTime(2024),
           updatedAt: DateTime(2024),
           vectorClock: null,
-          // No defaultTemplateId
         );
         when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
 
         final task = await createTask(categoryId: categoryId);
         expect(task, isNotNull);
-        expect(task!.meta.categoryId, equals(categoryId));
-        expect(category.defaultTemplateId, isNull);
+
+        final mockService = MockTaskAgentService();
+        await autoAssignCategoryAgentWith(mockService, task!);
+
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'autoAssignCategoryAgentWith catches errors gracefully',
+      () async {
+        const categoryId = 'cat-error';
+        const templateId = 'template-err';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Error Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultTemplateId: templateId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(Exception('Service unavailable'));
+
+        // Should not throw — errors are caught and logged.
+        await autoAssignCategoryAgentWith(mockService, task!);
       },
     );
   });
