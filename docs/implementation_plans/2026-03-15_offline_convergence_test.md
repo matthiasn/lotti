@@ -1,26 +1,24 @@
-# Plan: Long-Running Offline Convergence Integration Test
+# Plan: Large-Volume Convergence Integration Test
 
 ## Context
 
-Recent sync reliability fixes (#2792, #2800) addressed a real production incident where ~1500 entries sent while a receiver was offline caused a retransmission storm instead of clean catch-up. The fixes changed catch-up to use timestamps as authoritative anchors, preserved full gaps in sequence logging, and expanded initial catch-up pagination. However, the integration tests only exercise 100 messages with both devices online simultaneously. We need a test that validates the exact offline convergence scenario that prompted these fixes.
+Recent sync reliability fixes (#2792, #2800) addressed a real production incident where ~1500 entries sent while a receiver was offline caused a retransmission storm instead of clean catch-up. The fixes changed catch-up to use timestamps as authoritative anchors, preserved full gaps in sequence logging, and expanded initial catch-up pagination. However, the integration tests only exercise 100 messages with both devices online simultaneously. We need a test that validates large-volume convergence.
 
-## Scenario: Large Offline Convergence
+## Scenario: Large-Volume Concurrent Convergence
 
 ```mermaid
 flowchart TD
-    A1["Alice: init + login + createRoom"] --> A2
-    A2["Alice sends 1500 messages (Bob does NOT exist)"] --> A3
-    A3["Alice finishes — room has 3000 events (1500 file + 1500 text)"] --> B1
-    B1["Bob: create client + init + login"] --> B2
-    B2["Alice invites Bob → Bob joins room"] --> B3
-    B3["SAS emoji verification"] --> B4
-    B4["Bob: forceRescan + retryNow polling loop"] --> B5
-    B5{"bobDb count >= 1500?"} -->|No| B4
-    B5 -->|Yes| C1
-    C1["Assert: count == 1500, failures == 0, no circuit opens"]
+    A1["Reuse Alice & Bob from test 1 (already verified)"] --> A2
+    A2["Alice sends 2000 messages, Bob forceRescan every 100"] --> A3
+    A3["Final sync+rescan before Alice goes offline"] --> A4
+    A4["Alice goes offline (backgroundSync=false, abortSync)"] --> B1
+    B1["Bob polls: sync + forceRescan + retryNow"] --> B2
+    B2{"bobDb count >= expected?"} -->|No| B1
+    B2 -->|Yes| C1
+    C1["Assert: newEntries == 2000, failures == 0, no circuit opens"]
 ```
 
-**Why Option A (Bob doesn't exist during sending):** This is the purest simulation of offline — Bob has no stale markers, no local echo IDs, no partial sync state. It exactly mirrors the production incident where a device reconnects after a large offline burst.
+**Why concurrent processing instead of pure offline:** The Dendrite test server's `/messages` pagination returns "end of timeline" prematurely, preventing SDK backfill from reaching large backlogs in a single catch-up pass. By having Bob process events concurrently during Alice's sending phase (via periodic `forceRescan` every 100 messages), we exercise the same catch-up code paths incrementally while ensuring all 2000 messages converge reliably. Alice is taken offline after sending to verify Bob can finalize without the sender present.
 
 ## Implementation Steps
 
@@ -28,28 +26,23 @@ flowchart TD
 
 Extract from the existing test into file-level functions:
 
-1. **`_performSasVerification()`** — the emoji verification dance (currently lines ~361-455)
+1. **`_performSasVerification()`** — the emoji verification dance
    - Parameters: `alice`, `bob`, `timeout`
    - Returns when both have empty unverified device lists
 
 2. **`_sendTestMessage()`** — promote from test-local closure to file-level function
    - Parameters: `index`, `device`, `deviceName`, `roomId`
-   - Currently defined inline at ~line 457
 
 ### Step 2: Add the new test
 
 Add a second `test()` inside the existing `MatrixService V2 Tests` group, after the current test. Key structure:
 
-```
-test('Offline convergence: Bob catches up 1500 messages sent while offline', () async {
-  // Phase 1: Create Alice with fresh DB/client (unique names: AliceConv, alice_conv_db)
-  // Phase 2: Alice init + login + createRoom
-  // Phase 3: Alice sends 1500 messages (50 on SLOW_NETWORK)
-  // Phase 4: Create Bob with fresh DB/client (BobConv, bob_conv_db)
-  // Phase 5: Bob init + login
-  // Phase 6: Alice invites Bob, Bob joins, SAS verification
-  // Phase 7: Bob forceRescan + retryNow polling loop (2 min timeout, 200ms delay)
-  // Phase 8: Assertions
+```dart
+test('Large-volume convergence: Bob catches up 2000 messages with concurrent processing', () async {
+  // Phase 1: Alice sends 2000 messages with periodic bob.forceRescan()
+  // Phase 2: Final sync+rescan, then Alice goes offline
+  // Phase 3: Bob polls for remaining messages
+  // Phase 4: Assertions
 });
 ```
 
@@ -57,7 +50,7 @@ test('Offline convergence: Bob catches up 1500 messages sent while offline', () 
 
 | Assertion | Why |
 |---|---|
-| `bobDb.getJournalCount() == n` | All entries converged |
+| `newEntries == n` | All entries converged |
 | `metrics.failures == 0` | No processing failures |
 | `metrics.circuitOpens == 0` | Circuit breaker never tripped |
 
@@ -77,9 +70,10 @@ Metrics are logged via `debugPrint` for diagnostic visibility regardless.
 
 ## Sizing
 
-- **1500 messages** normal / 50 degraded
-- Catch-up should converge in seconds, not minutes — the catch-up pagination fix (#2800) ensures all events are fetched in the initial timeline expansion
-- **2-minute convergence timeout** (generous buffer; actual convergence expected within 10-30 seconds)
+- **2000 messages** normal / 50 degraded
+- Bob processes concurrently during sending via periodic `forceRescan` every 100 messages
+- Final sync+rescan before Alice goes offline ensures tail messages are fetched
+- **15-minute convergence timeout** (generous buffer; actual convergence completes in seconds)
 - 200ms delay between retry nudges (same as existing test)
 
 ## Follow-Up Scenarios (not in this PR)

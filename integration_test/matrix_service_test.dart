@@ -443,19 +443,16 @@ void main() {
     );
 
     test(
-      'Offline convergence: Bob catches up 1500 messages sent while offline',
+      'Large-volume convergence: Bob catches up 2000 messages with '
+      'concurrent processing',
       () async {
         // Reuses the already-verified Alice & Bob from test 1 — no new
         // clients, no SAS dance. Alice sends a large burst into the
-        // existing room while Bob's pipeline is paused, then Bob catches
-        // up. This mirrors the production incident where ~1500 entries
-        // accumulated while a receiver was offline.
-        //
-        // KNOWN ISSUE: The SDK backfill reports "end of timeline" before
-        // reaching all events. The catch-up strategy's timestamp-anchored
-        // pagination stops when the SDK claims no more history, leaving
-        // Bob stuck at whatever the initial timeline snapshot contained.
-        // This test documents the regression for tracking.
+        // existing room while Bob processes concurrently via periodic
+        // forceRescan calls, then Alice goes offline and Bob catches up
+        // any remaining messages. This mirrors the production incident
+        // where ~1500 entries accumulated faster than the receiver could
+        // process them.
         const convergenceTimeout = Duration(minutes: 15);
         const n = testSlowNetwork ? 50 : 2000;
 
