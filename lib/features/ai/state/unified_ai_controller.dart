@@ -559,10 +559,17 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 linkedTaskId: params.linkedTaskId,
               );
             case SkillType.imageGeneration:
+              final linkedTaskId = params.linkedTaskId;
+              if (linkedTaskId == null) {
+                throw StateError(
+                  'Image generation requires a linkedTaskId, '
+                  'but it was null for entity ${params.entityId}',
+                );
+              }
               await runner.runImageGeneration(
                 audioEntryId: params.entityId,
                 automationResult: automationResult,
-                linkedTaskId: params.linkedTaskId!,
+                linkedTaskId: linkedTaskId,
                 referenceImages: params.referenceImages,
               );
             case SkillType.imagePromptGeneration:

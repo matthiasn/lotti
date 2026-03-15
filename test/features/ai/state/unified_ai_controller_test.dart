@@ -2127,5 +2127,9 @@ void main() {
         ),
       ).called(1);
     });
+
+    // Note: null linkedTaskId is already guarded by an early return before
+    // the skill type switch. The image generation case has a redundant
+    // null check as defense-in-depth, but it's unreachable.
   });
 }
