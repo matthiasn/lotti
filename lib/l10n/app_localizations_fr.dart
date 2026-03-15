@@ -2759,6 +2759,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Sélectionner un modèle…';
 
   @override
+  String get inferenceProfileSelectProfile => 'Sélectionner un profil…';
+
+  @override
   String get inferenceProfilesEmpty => 'Aucun profil d\'inférence';
 
   @override

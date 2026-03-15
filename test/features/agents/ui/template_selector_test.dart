@@ -153,8 +153,9 @@ void main() {
       expect(inkWell.onTap, isNull);
     });
 
-    testWidgets('shows check icon for selected template in picker',
-        (tester) async {
+    testWidgets('shows check icon for selected template in picker', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildWidget(
           selectedTemplateId: 'tpl-1',

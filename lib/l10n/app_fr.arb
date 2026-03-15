@@ -1181,6 +1181,7 @@
   "inferenceProfileNameRequired": "Un nom de profil est requis",
   "inferenceProfileSaveButton": "Enregistrer",
   "inferenceProfileSelectModel": "Sélectionner un modèle…",
+  "inferenceProfileSelectProfile": "Sélectionner un profil…",
   "inferenceProfilesEmpty": "Aucun profil d'inférence",
   "inferenceProfileSkillModelRequired": "Nécessite le modèle {slotName}",
   "@inferenceProfileSkillModelRequired": {

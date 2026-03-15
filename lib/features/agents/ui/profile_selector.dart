@@ -23,7 +23,7 @@ class ProfileSelector extends ConsumerWidget {
   final ValueChanged<String?> onProfileSelected;
 
   /// Optional hint text shown when no profile is selected. Defaults to
-  /// `context.messages.inferenceProfileSelectModel`.
+  /// `context.messages.inferenceProfileSelectProfile`.
   final String? hintText;
 
   @override
@@ -75,7 +75,7 @@ class ProfileSelector extends ConsumerWidget {
                 style: context.textTheme.bodyLarge,
               )
             : Text(
-                hintText ?? context.messages.inferenceProfileSelectModel,
+                hintText ?? context.messages.inferenceProfileSelectProfile,
                 style: context.textTheme.bodyLarge?.copyWith(
                   color: context.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),

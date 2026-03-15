@@ -1328,6 +1328,7 @@
   "inferenceProfileNameRequired": "A profile name is required",
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Select a model…",
+  "inferenceProfileSelectProfile": "Select a profile…",
   "inferenceProfilesEmpty": "No inference profiles yet",
   "inferenceProfileSkillModelRequired": "Requires {slotName} model to be set",
   "@inferenceProfileSkillModelRequired": {

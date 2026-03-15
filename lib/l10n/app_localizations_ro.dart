@@ -2725,6 +2725,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Selectați un model…';
 
   @override
+  String get inferenceProfileSelectProfile => 'Selectați un profil…';
+
+  @override
   String get inferenceProfilesEmpty => 'Niciun profil de inferență';
 
   @override
@@ -4862,7 +4865,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskStatusLabel => 'Starea Sarcinii:';
 
   @override
-  String get taskStatusOnHold => 'N AŞTEPTARE';
+  String get taskStatusOnHold => 'ÎN AȘTEPTARE';
 
   @override
   String get taskStatusOpen => 'DESCHIS';

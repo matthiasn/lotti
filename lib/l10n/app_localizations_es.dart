@@ -39,7 +39,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addActionAddTimer => 'Temporizador';
 
   @override
-  String get addActionAddTimeRecording => 'Entrada de temporizador';
+  String get addActionAddTimeRecording => 'Registro de tiempo';
 
   @override
   String get addActionImportImage => 'Importar imagen';
@@ -2763,6 +2763,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Seleccionar un modelo…';
 
   @override
+  String get inferenceProfileSelectProfile => 'Seleccionar un perfil…';
+
+  @override
   String get inferenceProfilesEmpty => 'Aún no hay perfiles de inferencia';
 
   @override
@@ -4053,10 +4056,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMatrixHomeserverConfigTitle =>
-      'Configuración del servidor doméstico Matrix';
+      'Configuración del homeserver Matrix';
 
   @override
-  String get settingsMatrixHomeServerLabel => 'Servidor doméstico';
+  String get settingsMatrixHomeServerLabel => 'Homeserver';
 
   @override
   String get settingsMatrixLastUpdated => 'Última actualización:';

@@ -974,6 +974,7 @@
   "imagePromptGenerationExpandTooltip": "Zobrazit celý prompt",
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
+  "inferenceProfileSelectProfile": "Vyberte profil…",
   "inferenceProfileSkillModelRequired": "Vyžaduje nastavení modelu {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {

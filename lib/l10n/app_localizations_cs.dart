@@ -2699,6 +2699,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inferenceProfileSelectModel => 'Select a model…';
 
   @override
+  String get inferenceProfileSelectProfile => 'Vyberte profil…';
+
+  @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';
 
   @override

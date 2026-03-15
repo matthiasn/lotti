@@ -4869,6 +4869,12 @@ abstract class AppLocalizations {
   /// **'Select a model…'**
   String get inferenceProfileSelectModel;
 
+  /// No description provided for @inferenceProfileSelectProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a profile…'**
+  String get inferenceProfileSelectProfile;
+
   /// No description provided for @inferenceProfilesEmpty.
   ///
   /// In en, this message translates to:

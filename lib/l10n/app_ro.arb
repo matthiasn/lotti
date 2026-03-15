@@ -1181,6 +1181,7 @@
   "inferenceProfileNameRequired": "Este necesar un nume de profil",
   "inferenceProfileSaveButton": "Salvați",
   "inferenceProfileSelectModel": "Selectați un model…",
+  "inferenceProfileSelectProfile": "Selectați un profil…",
   "inferenceProfilesEmpty": "Niciun profil de inferență",
   "inferenceProfileSkillModelRequired": "Necesită modelul {slotName}",
   "@inferenceProfileSkillModelRequired": {
@@ -1966,7 +1967,7 @@
   "taskStatusGroomed": "PREGĂTIT",
   "taskStatusInProgress": "ÎN PROGRES",
   "taskStatusLabel": "Starea Sarcinii:",
-  "taskStatusOnHold": "N AŞTEPTARE",
+  "taskStatusOnHold": "ÎN AȘTEPTARE",
   "taskStatusOpen": "DESCHIS",
   "taskStatusRejected": "RESPINS",
   "taskSummaries": "Rezumate sarcini",

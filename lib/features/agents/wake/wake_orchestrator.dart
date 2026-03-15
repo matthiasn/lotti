@@ -563,15 +563,19 @@ class WakeOrchestrator {
         subDomain: 'contentGate',
       );
       await repository.upsertEntity(
-        state.copyWith(awaitingContent: false),
+        state.copyWith(
+          awaitingContent: false,
+          updatedAt: clock.now(),
+        ),
       );
       return false;
-    } catch (e) {
+    } catch (e, s) {
       // Don't let content-check errors block the wake — proceed normally.
-      _log(
+      _logError(
         'content-gate: error checking content for '
-        '${DomainLogger.sanitizeId(job.agentId)}: $e',
-        subDomain: 'contentGate',
+        '${DomainLogger.sanitizeId(job.agentId)}',
+        error: e,
+        stackTrace: s,
       );
       return false;
     }

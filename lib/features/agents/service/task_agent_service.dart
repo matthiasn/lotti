@@ -155,16 +155,15 @@ class TaskAgentService {
     // Register subscription for changes to this task.
     _registerTaskSubscription(identity.agentId, taskId);
 
-    // When awaitContent is true (auto-assigned from category defaults), skip
-    // the creation wake. The agent will wake on the first subscription trigger
-    // once the task has meaningful content. See WakeOrchestrator's content check.
-    if (!awaitContent) {
-      orchestrator.enqueueManualWake(
-        agentId: identity.agentId,
-        reason: WakeReason.creation.name,
-        triggerTokens: {taskId},
-      );
-    }
+    // Always enqueue the creation wake. The content gate in
+    // WakeOrchestrator._shouldSkipForAwaitingContent() will defer execution
+    // for blank tasks and immediately activate agents whose task already has
+    // meaningful content.
+    orchestrator.enqueueManualWake(
+      agentId: identity.agentId,
+      reason: WakeReason.creation.name,
+      triggerTokens: {taskId},
+    );
 
     domainLogger?.log(
       LogDomains.agentRuntime,
