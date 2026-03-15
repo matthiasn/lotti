@@ -11,7 +11,7 @@ class FtueResultData {
     required this.promptsCreated,
     required this.promptsSkipped,
     required this.categoryCreated,
-    required this.categoryUpdated,
+    required this.categoryReused,
     this.categoryName,
     this.errors = const [],
   });
@@ -24,7 +24,7 @@ class FtueResultData {
         promptsCreated: result.promptsCreated,
         promptsSkipped: result.promptsSkipped,
         categoryCreated: result.categoryCreated,
-        categoryUpdated: result.categoryUpdated,
+        categoryReused: result.categoryReused,
         categoryName: result.categoryName,
         errors: result.errors,
       );
@@ -36,7 +36,7 @@ class FtueResultData {
     promptsCreated: result.promptsCreated,
     promptsSkipped: result.promptsSkipped,
     categoryCreated: result.categoryCreated,
-    categoryUpdated: result.categoryUpdated,
+    categoryReused: result.categoryReused,
     categoryName: result.categoryName,
     errors: result.errors,
   );
@@ -48,7 +48,7 @@ class FtueResultData {
     promptsCreated: result.promptsCreated,
     promptsSkipped: result.promptsSkipped,
     categoryCreated: result.categoryCreated,
-    categoryUpdated: result.categoryUpdated,
+    categoryReused: result.categoryReused,
     categoryName: result.categoryName,
     errors: result.errors,
   );
@@ -61,7 +61,7 @@ class FtueResultData {
         promptsCreated: result.promptsCreated,
         promptsSkipped: result.promptsSkipped,
         categoryCreated: result.categoryCreated,
-        categoryUpdated: result.categoryUpdated,
+        categoryReused: result.categoryReused,
         categoryName: result.categoryName,
         errors: result.errors,
       );
@@ -71,7 +71,7 @@ class FtueResultData {
   final int promptsCreated;
   final int promptsSkipped;
   final bool categoryCreated;
-  final bool categoryUpdated;
+  final bool categoryReused;
   final String? categoryName;
   final List<String> errors;
 }
@@ -174,7 +174,7 @@ class FtueResultDialog extends StatelessWidget {
               label: 'Prompts',
               value: _buildPromptValue(),
             ),
-            if (result.categoryCreated || result.categoryUpdated) ...[
+            if (result.categoryCreated || result.categoryReused) ...[
               const SizedBox(height: 8),
               _buildResultItem(
                 context,
@@ -257,8 +257,8 @@ class FtueResultDialog extends StatelessWidget {
     if (result.categoryCreated) {
       return '$name (created)';
     }
-    if (result.categoryUpdated) {
-      return '$name (updated)';
+    if (result.categoryReused) {
+      return '$name (reused)';
     }
     return name;
   }
