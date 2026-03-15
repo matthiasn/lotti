@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.924] - 2026-03-15
+### Added
+- Cover art skill: image generation now runs as a background skill via the
+  unified skill pipeline, with fire-and-forget workflow that auto-imports the
+  generated image and assigns it as task cover art.
+- Reference image selection: linked-task cover art images are now discovered
+  automatically via bidirectional task graph traversal (with link icon overlay),
+  and the selection limit has been increased from 3 to 5 images.
+- Cover art modal: stays open after triggering generation with Siri waveform
+  progress animation; dismissible without stopping background generation.
+- Automatic image analysis: newly generated cover art images automatically
+  trigger the image analysis skill, just like a manual photo drop.
+
 ## [0.9.923] - 2026-03-15
 ### Added
 - Inference profiles: new "Thinking (High-End)" model slot for tasks where

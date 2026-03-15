@@ -682,31 +682,39 @@ The system supports five active AI response types (two legacy types — `taskSum
 
 ### Overview
 
-The AI system supports native image generation for creating task cover art. This feature uses Gemini's image generation model (Nano Banana Pro) to generate images based on task context and user voice descriptions.
+The AI system supports native image generation for creating task cover art. There are two paths:
 
-### How It Works
+1. **Skill-based (preferred)**: Fire-and-forget background generation via `SkillInferenceRunner.runImageGeneration()`. The modal closes immediately after reference image selection; generation, import, and cover art assignment happen asynchronously.
+2. **Legacy prompt-based**: Interactive generation via `ImageGenerationController` and `ImageGenerationReviewModal`, where the user reviews/edits the prompt and accepts the result.
 
-1. **Trigger**: User selects "Generate cover art" from an audio entry's action menu (when linked to a task)
-2. **Prompt Building**: System constructs a prompt from:
-   - Audio transcript (user's verbal description of desired image)
-   - Task title and status
-   - System message from preconfigured cover art generation prompt
+### Skill-Based Workflow
+
+1. **Trigger**: User selects the image generation skill from the AI popup menu on an audio entry linked to a task
+2. **Reference Image Selection**: `CoverArtSkillModal` shows a selection grid of:
+   - Images directly linked to the task
+   - Cover art from linked tasks (discovered via bidirectional task graph traversal)
+   - Up to `kMaxReferenceImages` (5) can be selected
+3. **Fire-and-Forget**: Modal closes immediately; `triggerSkillProvider` invokes `SkillInferenceRunner.runImageGeneration()` which:
+   - Builds a prompt via `SkillPromptBuilder` using audio transcript, task context, and skill instructions
+   - Calls `CloudInferenceRepository.generateImage()` with optional reference images
+   - Auto-imports the generated image via `importGeneratedImageBytes()`
+   - Auto-assigns the image as task cover art via `PersistenceLogic.updateTask(coverArtId:)`
+   - Tracks status via `InferenceStatusController` (Siri waveform animation)
+4. **User-Directed**: The user's audio recording provides the creative direction for the generated image
+
+### Legacy Prompt-Based Workflow
+
+1. **Trigger**: User selects "Generate cover art" from an audio entry's action menu (when no image generation skill is available)
+2. **Prompt Building**: `ImageGenerationController` constructs a prompt from audio transcript and task context
 3. **Generation**: Gemini image generation model creates the image
-4. **Review Modal**: User can:
-   - Accept the image as cover art
-   - Edit the prompt and regenerate
-   - Cancel without saving
-5. **Import**: Accepted images are saved as journal entries and set as the task's cover art
+4. **Review Modal**: User can accept, edit prompt, or cancel
+5. **Import**: Accepted images are saved and set as cover art
 
 ### Implementation Components
 
 #### State Management
-- **`ImageGenerationController`**: Riverpod controller managing generation state
-- **`ImageGenerationState`**: Freezed union type with states:
-  - `initial`: Idle state before generation
-  - `generating`: In-progress with prompt
-  - `success`: Completed with image bytes and MIME type
-  - `error`: Failed with error message
+- **`ImageGenerationController`**: Riverpod controller for legacy generation state (initial/generating/success/error)
+- **`ReferenceImageSelectionController`**: Manages image selection state, including linked-task cover art discovery
 
 #### Repository Layer
 - **`GeminiInferenceRepository.generateImage()`**: Direct Gemini API call for image generation
@@ -714,11 +722,9 @@ The AI system supports native image generation for creating task cover art. This
 - **`GeminiUtils.buildImageGenerationRequestBody()`**: Builds request with 16:9 aspect ratio and 2K resolution
 
 #### UI Components
-- **`ImageGenerationReviewModal`**: Full-screen modal for image review
-  - Shows generation progress with spinner
-  - Displays generated image with accept/edit actions
-  - Provides prompt editor for modifications
-  - Handles error states with retry option
+- **`CoverArtSkillModal`**: Selection-only modal for skill-based path — shows reference images, fires `triggerSkillProvider`, and closes immediately
+- **`ImageGenerationReviewModal`**: Full-screen modal for legacy prompt path — shows generation progress, image review, and prompt editing
+- **`ReferenceImageSelectionWidget`**: Shared grid widget for selecting up to 5 reference images
 - **`ModernGenerateCoverArtItem`**: Action menu item for triggering generation
 
 #### Image Import
@@ -742,14 +748,15 @@ const KnownModel(
 )
 ```
 
-### Preconfigured Prompt
+### Preconfigured Prompt & Skill Instructions
 
-The cover art generation system prompt guides the AI to:
+The cover art generation guides the AI to:
 - Generate visually striking, artistic images
 - Use 16:9 aspect ratio at 2K resolution for task cover art
 - Incorporate task context, user descriptions, and visual metaphors for learnings/annoyances
 - Avoid text in generated images
 - Create unique, creative interpretations
+- Follow the user's audio description as the primary creative direction
 
 ## Function Calling and Tool Use
 

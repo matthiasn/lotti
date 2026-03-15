@@ -1986,6 +1986,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get coverArtChipSet => 'Setează coperta';
 
   @override
+  String get coverArtGenerationComplete => 'Coperta este gata!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Puteți închide aceasta — generarea continuă în fundal';
+
+  @override
   String get coverArtRemove => 'Elimină ca imagine de copertă';
 
   @override
@@ -3514,7 +3521,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Alege până la 3 imagini pentru a ghida stilul vizual al IA';
+      'Alege până la 5 imagini pentru a ghida stilul vizual al IA';
 
   @override
   String get referenceImageSelectionTitle => 'Selectează imagini de referință';

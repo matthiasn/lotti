@@ -2019,6 +2019,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get coverArtChipSet => 'Establecer portada';
 
   @override
+  String get coverArtGenerationComplete => '¡Arte de portada listo!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Puedes cerrar esto — la generación continúa en segundo plano';
+
+  @override
   String get coverArtRemove => 'Eliminar imagen de portada';
 
   @override
@@ -3567,7 +3574,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Elige hasta 3 imágenes para guiar el estilo visual de la IA';
+      'Elige hasta 5 imágenes para guiar el estilo visual de la IA';
 
   @override
   String get referenceImageSelectionTitle =>

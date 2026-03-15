@@ -30,7 +30,7 @@ then requires an explicit "Accept" click. This creates unnecessary friction:
 3. **Linked-task cover art as references**: Auto-discover cover art from linked tasks and present
    them alongside directly-linked images.
 4. **Increase reference limit**: From 3 to 5 images.
-5. **Themed default prompt**: Default visual theme of a "minion genie being summoned from a bottle
+5. **Themed default prompt**: Default visual theme of a "default visual being summoned from a bottle
    to paint."
 
 ### Out of scope (follow-up tasks)
@@ -224,7 +224,7 @@ Update the skill's `userInstructions` in `skill_seeding_service.dart` to include
 
 ```
 Default visual theme (use when the user provides no specific direction):
-A whimsical minion genie character being summoned from an ornate bottle,
+A whimsical default visual character being summoned from an ornate bottle,
 floating above a canvas and painting the task's visual story. The genie
 should reflect the emotional tone of the task.
 ```
@@ -356,52 +356,52 @@ flowchart TD
 ## Implementation Checklist
 
 ### Phase 1: Skill pipeline wiring
-- [ ] Add `SkillType.imageGeneration` to `supportedTypes` in `availableSkillsForEntityProvider`
-- [ ] Extend `TriggerSkillParams` with optional `referenceImages` field
-- [ ] Add `case SkillType.imageGeneration` in `triggerSkillProvider` switch
-- [ ] Implement `SkillInferenceRunner.runImageGeneration()`:
+- [x] Add `SkillType.imageGeneration` to `supportedTypes` in `availableSkillsForEntityProvider`
+- [x] Extend `TriggerSkillParams` with optional `referenceImages` field
+- [x] Add `case SkillType.imageGeneration` in `triggerSkillProvider` switch
+- [x] Implement `SkillInferenceRunner.runImageGeneration()`:
   - Prompt building via `SkillPromptBuilder`
   - Image generation via `CloudInferenceRepository`
   - Auto-import via `importGeneratedImageBytes`
   - Auto-assign cover art via `PersistenceLogic.updateTask`
   - Status tracking via `InferenceStatusController`
-- [ ] Add `SkillPromptBuilder` support for `SkillType.imageGeneration` context injection
-- [ ] Resolve image generation provider/model from `ResolvedProfile` (add
-  `imageGenerationModelId` / `imageGenerationProvider` fields if not already present)
+- [x] Add `SkillPromptBuilder` support for `SkillType.imageGeneration` context injection
+- [x] Resolve image generation provider/model from `ResolvedProfile` (already present)
 
 ### Phase 2: Reference image enhancements
-- [ ] Change `kMaxReferenceImages` from 3 to 5
-- [ ] Implement `_fetchLinkedTaskCoverArt()` in `ReferenceImageSelectionController`
-- [ ] Deduplicate direct images and linked-task cover art
-- [ ] Add link icon overlay for linked-task cover art in `ReferenceImageSelectionWidget`
-- [ ] Update `ReferenceImageSelectionState` if needed (e.g., track image source)
+- [x] Change `kMaxReferenceImages` from 3 to 5
+- [x] Implement `_fetchLinkedTaskCoverArt()` in `ReferenceImageSelectionController`
+- [x] Deduplicate direct images and linked-task cover art
+- [ ] Add link icon overlay for linked-task cover art in `ReferenceImageSelectionWidget` *(deferred — cosmetic)*
+- [ ] Update `ReferenceImageSelectionState` if needed (e.g., track image source) *(deferred — cosmetic)*
 
 ### Phase 3: UI conversion
-- [ ] Create `CoverArtSkillModal` (selection-only, fire-and-forget)
-- [ ] Update `UnifiedAiPopUpMenu.onSkillSelected` to open `CoverArtSkillModal` for image gen skills
-- [ ] Update `ModernGenerateCoverArtItem` to use the new modal
-- [ ] Remove or deprecate the generation/review/accept states from `ImageGenerationReviewModal`
-- [ ] Clean up `ImageGenerationController` if it becomes unused
+- [x] Create `CoverArtSkillModal` (selection-only, fire-and-forget)
+- [x] Update `UnifiedAiPopUpMenu.onSkillSelected` to open `CoverArtSkillModal` for image gen skills
+- [x] Update `ModernGenerateCoverArtItem` to use the new modal
+- [ ] Remove or deprecate the generation/review/accept states from `ImageGenerationReviewModal` *(deferred — legacy still used by prompt path)*
+- [ ] Clean up `ImageGenerationController` if it becomes unused *(deferred — legacy still used)*
 
 ### Phase 4: Prompt theme
-- [ ] Update `skillImageGenId` user instructions with minion genie theme in `skill_seeding_service.dart`
-- [ ] Update `coverArtGenerationPrompt` in `preconfigured_prompts.dart` for consistency
+- [x] Update `skillImageGenId` user instructions with default visual theme in `skill_seeding_service.dart`
+- [ ] Update `coverArtGenerationPrompt` in `preconfigured_prompts.dart` for consistency *(deferred — legacy prompt)*
 
 ### Phase 5: Testing
-- [ ] Unit test `SkillInferenceRunner.runImageGeneration()` (success, error, unmount safety)
-- [ ] Unit test linked-task cover art discovery in `ReferenceImageSelectionController`
-- [ ] Unit test `kMaxReferenceImages` = 5 enforcement
-- [ ] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger)
-- [ ] Update existing `ImageGenerationReviewModal` tests or replace with new modal tests
-- [ ] Integration test: end-to-end skill trigger → cover art assignment
+- [x] Unit test `SkillInferenceRunner.runImageGeneration()` (success, error, unmount safety)
+- [x] Unit test linked-task cover art discovery in `ReferenceImageSelectionController`
+- [x] Unit test `kMaxReferenceImages` = 5 enforcement
+- [x] Widget test `CoverArtSkillModal` (selection, fire-and-forget trigger)
+- [x] Update existing `ImageGenerationReviewModal` tests or replace with new modal tests
+- [ ] Integration test: end-to-end skill trigger → cover art assignment *(deferred — requires device)*
 
 ### Localization
-- [ ] Add/update ARB entries for new modal title, generate button text, linked-task image labels
-- [ ] Run `make l10n` and `make sort_arb_files`
+- [x] No new ARB entries needed — modal reuses existing `imageGenerationModalTitle` and reference image labels
+- [x] Existing labels (`referenceImageContinue`, `referenceImageSkip`, etc.) cover the new modal
 
 ### Documentation
-- [ ] Update `lib/features/ai/README.md` if it exists
-- [ ] Add CHANGELOG entry under current version
+- [x] Update `lib/features/ai/README.md` — updated with cover art skill details
+- [x] Add CHANGELOG entry under 0.9.924
+- [x] Update `flatpak/com.matthiasn.lotti.metainfo.xml`
 
 ---
 

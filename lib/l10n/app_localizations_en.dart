@@ -1950,6 +1950,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coverArtChipSet => 'Set cover';
 
   @override
+  String get coverArtGenerationComplete => 'Cover art ready!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'You can close this — generation continues in the background';
+
+  @override
   String get coverArtRemove => 'Remove as cover art';
 
   @override
@@ -3443,7 +3450,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Choose up to 3 images to guide the AI\'s visual style';
+      'Choose up to 5 images to guide the AI\'s visual style';
 
   @override
   String get referenceImageSelectionTitle => 'Select Reference Images';

@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
@@ -16,8 +19,11 @@ import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/image_import.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -494,6 +500,134 @@ class SkillInferenceRunner {
           '(${response.length} chars)',
           domain: _logTag,
           subDomain: 'runPromptGeneration',
+        );
+      },
+    );
+  }
+
+  /// Run skill-based image generation on an audio entry.
+  ///
+  /// Generates a cover art image using the task context and optional reference
+  /// images. The generated image is automatically imported as a
+  /// [JournalImage] and set as the task's cover art.
+  Future<void> runImageGeneration({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    required String linkedTaskId,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) async {
+    final skill = automationResult.skill;
+    final profile = automationResult.resolvedProfile;
+    if (skill == null || profile == null) {
+      throw StateError(
+        'AutomationResult missing skill or profile for $audioEntryId: '
+        'skill=${skill != null}, profile=${profile != null}',
+      );
+    }
+    final provider = profile.imageGenerationProvider;
+    final modelId = profile.imageGenerationModelId;
+    if (provider == null || modelId == null) {
+      developer.log(
+        'Profile missing image generation provider/model for $audioEntryId',
+        name: _logTag,
+      );
+      return;
+    }
+
+    await _withStatusTracking(
+      entityId: audioEntryId,
+      responseType: skill.skillType.toResponseType,
+      subDomain: 'runImageGeneration',
+      linkedTaskId: linkedTaskId,
+      body: () async {
+        // 1. Fetch the audio entity for transcript / voice description.
+        final entity = await _aiInputRepository.getEntity(audioEntryId);
+        if (entity is! JournalAudio) {
+          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        }
+
+        // 2. Extract the audio transcript (user's voice description).
+        final audioTranscript = _resolveAudioTranscript(entity);
+
+        // 3. Build task context and summary in parallel.
+        final (taskContext, linkedTasks) = await (
+          _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId),
+          _aiInputRepository.buildLinkedTasksJson(linkedTaskId),
+        ).wait;
+        final currentTaskSummary = await _buildCurrentTaskSummary(
+          entity,
+          linkedTaskId,
+        );
+
+        // 4. Build prompts via SkillPromptBuilder.
+        const promptBuilder = SkillPromptBuilder();
+        final promptResult = promptBuilder.build(
+          skill: skill,
+          audioTranscript: audioTranscript,
+          taskContext: taskContext,
+          linkedTasks: linkedTasks,
+          currentTaskSummary: currentTaskSummary,
+        );
+
+        // 5. Generate image via the cloud inference repository.
+        developer.log(
+          'Generating cover art for task $linkedTaskId '
+          '(${referenceImages?.length ?? 0} reference images)',
+          name: _logTag,
+        );
+
+        final generatedImage = await _cloudRepository.generateImage(
+          prompt: promptResult.userMessage,
+          model: modelId,
+          provider: provider,
+          systemMessage: promptResult.systemMessage,
+          referenceImages: referenceImages,
+        );
+
+        // 6. Import the generated image as a JournalImage linked to the task.
+        final extension =
+            generatedImage.mimeType.split('/').lastOrNull ?? 'png';
+        final imageId = await importGeneratedImageBytes(
+          data: Uint8List.fromList(generatedImage.bytes),
+          fileExtension: extension,
+          linkedId: linkedTaskId,
+          categoryId: entity.meta.categoryId,
+        );
+
+        if (imageId == null) {
+          throw StateError(
+            'Failed to import generated image for task $linkedTaskId',
+          );
+        }
+
+        // 7. Set the image as cover art on the task.
+        final taskEntity = await _journalRepository.getJournalEntityById(
+          linkedTaskId,
+        );
+        if (taskEntity is Task) {
+          final updatedData = taskEntity.data.copyWith(coverArtId: imageId);
+          await getIt<PersistenceLogic>().updateTask(
+            journalEntityId: linkedTaskId,
+            taskData: updatedData,
+          );
+        }
+
+        _loggingService.captureEvent(
+          'Skill-based image generation completed for task $linkedTaskId '
+          '(imageId: $imageId)',
+          domain: _logTag,
+          subDomain: 'runImageGeneration',
+        );
+
+        // 8. Trigger automatic image analysis on the newly created cover art,
+        // treating it exactly like a manual photo drop.
+        unawaited(
+          _ref
+              .read(automaticImageAnalysisTriggerProvider)
+              .triggerAutomaticImageAnalysis(
+                imageEntryId: imageId,
+                linkedTaskId: linkedTaskId,
+              ),
         );
       },
     );

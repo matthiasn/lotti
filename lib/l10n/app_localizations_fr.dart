@@ -2015,6 +2015,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get coverArtChipSet => 'Définir couverture';
 
   @override
+  String get coverArtGenerationComplete => 'Couverture prête !';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Tu peux fermer ceci — la génération continue en arrière-plan';
+
+  @override
   String get coverArtRemove => 'Retirer comme couverture';
 
   @override
@@ -3566,7 +3573,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Choisissez jusqu\'à 3 images pour guider le style visuel de l\'IA';
+      'Choisissez jusqu\'à 5 images pour guider le style visuel de l\'IA';
 
   @override
   String get referenceImageSelectionTitle =>

@@ -3549,6 +3549,18 @@ abstract class AppLocalizations {
   /// **'Set cover'**
   String get coverArtChipSet;
 
+  /// No description provided for @coverArtGenerationComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover art ready!'**
+  String get coverArtGenerationComplete;
+
+  /// No description provided for @coverArtGenerationDismissHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can close this — generation continues in the background'**
+  String get coverArtGenerationDismissHint;
+
   /// No description provided for @coverArtRemove.
   ///
   /// In en, this message translates to:
@@ -6238,7 +6250,7 @@ abstract class AppLocalizations {
   /// No description provided for @referenceImageSelectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose up to 3 images to guide the AI\'s visual style'**
+  /// **'Choose up to 5 images to guide the AI\'s visual style'**
   String get referenceImageSelectionSubtitle;
 
   /// No description provided for @referenceImageSelectionTitle.

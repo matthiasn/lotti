@@ -1428,6 +1428,131 @@ void main() {
       });
     });
 
+    group('runImageGeneration', () {
+      final testImageGenSkill =
+          AiConfig.skill(
+                id: 'skill-image-gen',
+                name: 'Generate Cover Art',
+                skillType: SkillType.imageGeneration,
+                requiredInputModalities: const [Modality.text],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'You are a visual artist.',
+                userInstructions: 'Generate a cover art image.',
+                createdAt: DateTime(2024),
+              )
+              as AiConfigSkill;
+
+      AutomationResult makeImageGenResult() {
+        return AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-flash',
+            thinkingProvider: testInferenceProvider(),
+            imageGenerationModelId: 'models/gemini-image',
+            imageGenerationProvider: testInferenceProvider(id: 'p-image'),
+          ),
+          skill: testImageGenSkill,
+        );
+      }
+
+      test('throws StateError when skill is null', () async {
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-flash',
+            thinkingProvider: testInferenceProvider(),
+          ),
+        );
+
+        expect(
+          () => runner.runImageGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+            linkedTaskId: 'task-1',
+          ),
+          throwsStateError,
+        );
+      });
+
+      test('throws StateError when profile is null', () async {
+        final result = AutomationResult(
+          handled: true,
+          skill: testImageGenSkill,
+        );
+
+        expect(
+          () => runner.runImageGeneration(
+            audioEntryId: 'entry-1',
+            automationResult: result,
+            linkedTaskId: 'task-1',
+          ),
+          throwsStateError,
+        );
+      });
+
+      test('returns early when no image generation provider', () async {
+        final result = AutomationResult(
+          handled: true,
+          resolvedProfile: ResolvedProfile(
+            thinkingModelId: 'models/gemini-flash',
+            thinkingProvider: testInferenceProvider(),
+            // imageGenerationProvider/ModelId intentionally omitted
+          ),
+          skill: testImageGenSkill,
+        );
+
+        await runner.runImageGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: result,
+          linkedTaskId: 'task-1',
+        );
+
+        verifyZeroInteractions(mockCloudRepo);
+      });
+
+      test('returns early when entity is not JournalAudio', () async {
+        when(
+          () => mockAiInputRepo.getEntity('entry-1'),
+        ).thenAnswer((_) async => makeTaskEntity('entry-1'));
+
+        await runner.runImageGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: makeImageGenResult(),
+          linkedTaskId: 'task-1',
+        );
+
+        verifyNever(
+          () => mockCloudRepo.generateImage(
+            prompt: any(named: 'prompt'),
+            model: any(named: 'model'),
+            provider: any(named: 'provider'),
+          ),
+        );
+      });
+
+      test('logs exception on failure', () async {
+        when(
+          () => mockAiInputRepo.getEntity('entry-1'),
+        ).thenThrow(Exception('DB error'));
+        stubLoggingException();
+
+        await runner.runImageGeneration(
+          audioEntryId: 'entry-1',
+          automationResult: makeImageGenResult(),
+          linkedTaskId: 'task-1',
+        );
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<dynamic>(),
+            domain: 'SkillInferenceRunner',
+            subDomain: 'runImageGeneration',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      });
+    });
+
     group('AutomationResult', () {
       test('transcription result has correct fields', () {
         final result = makeTranscriptionResult();

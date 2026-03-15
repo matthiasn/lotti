@@ -1648,6 +1648,7 @@ void main() {
           entityId: 'entity-1',
           skillId: 'nonexistent-skill',
           linkedTaskId: 'task-1',
+          referenceImages: null,
         )).future,
       );
 
@@ -1684,6 +1685,7 @@ void main() {
           entityId: 'entity-1',
           skillId: 'skill-1',
           linkedTaskId: null,
+          referenceImages: null,
         )).future,
       );
 
@@ -1724,6 +1726,7 @@ void main() {
           entityId: 'audio-1',
           skillId: 'skill-2',
           linkedTaskId: 'task-no-profile',
+          referenceImages: null,
         )).future,
       );
 
@@ -1800,6 +1803,7 @@ void main() {
           entityId: 'audio-entry-1',
           skillId: 'skill-transcribe',
           linkedTaskId: 'task-1',
+          referenceImages: null,
         )).future,
       );
 
@@ -1881,6 +1885,7 @@ void main() {
           entityId: 'image-entry-1',
           skillId: 'skill-image',
           linkedTaskId: 'task-img',
+          referenceImages: null,
         )).future,
       );
 
@@ -1950,6 +1955,7 @@ void main() {
           entityId: 'audio-entry-2',
           skillId: 'skill-prompt',
           linkedTaskId: 'task-prompt',
+          referenceImages: null,
         )).future,
       );
 

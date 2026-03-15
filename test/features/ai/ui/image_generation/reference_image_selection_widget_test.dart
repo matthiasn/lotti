@@ -196,7 +196,7 @@ void main() {
 
       // Subtitle should be visible
       expect(
-        find.text("Choose up to 3 images to guide the AI's visual style"),
+        find.text("Choose up to 5 images to guide the AI's visual style"),
         findsOneWidget,
       );
     });
@@ -600,15 +600,23 @@ void main() {
     testWidgets('tapping non-selectable image tile does not toggle', (
       tester,
     ) async {
-      // All 3 slots taken, img-4 is not selected and cannot be toggled
+      // All 5 slots taken, img-6 is not selected and cannot be toggled
       final stateAtMax = ReferenceImageSelectionState(
         availableImages: [
           buildTestImage('img-1'),
           buildTestImage('img-2'),
           buildTestImage('img-3'),
           buildTestImage('img-4'),
+          buildTestImage('img-5'),
+          buildTestImage('img-6'),
         ],
-        selectedImageIds: const {'img-1', 'img-2', 'img-3'},
+        selectedImageIds: const {
+          'img-1',
+          'img-2',
+          'img-3',
+          'img-4',
+          'img-5',
+        },
       );
 
       final trackingController = _TrackingMockReferenceImageSelectionController(
@@ -632,21 +640,21 @@ void main() {
         ),
       );
 
-      // Find all GestureDetectors in the grid - the 4th one (img-4) should
+      // Find all GestureDetectors in the grid - the 6th one (img-6) should
       // be non-selectable since max is reached
       final gestureFinders = find.byType(GestureDetector);
-      final fourthTile = gestureFinders.at(3);
+      final sixthTile = gestureFinders.at(5);
 
-      // Scroll into view since 4th tile is on the second grid row
-      await tester.ensureVisible(fourthTile);
+      // Scroll into view since 6th tile is on the third grid row
+      await tester.ensureVisible(sixthTile);
       await tester.pumpAndSettle();
 
-      // Tap the last image tile (img-4, which is not selected and at max)
-      await tester.tap(fourthTile);
+      // Tap the last image tile (img-6, which is not selected and at max)
+      await tester.tap(sixthTile);
       await tester.pump();
 
-      // img-4 should NOT have been toggled since it's non-selectable
-      expect(trackingController.toggledImageIds, isNot(contains('img-4')));
+      // img-6 should NOT have been toggled since it's non-selectable
+      expect(trackingController.toggledImageIds, isNot(contains('img-6')));
     });
 
     testWidgets('tapping already-selected image tile toggles deselection', (
@@ -759,6 +767,73 @@ void main() {
       await tester.pump();
 
       expect(skipCalled, isTrue);
+    });
+
+    testWidgets('shows link icon on linked-task cover art images', (
+      tester,
+    ) async {
+      final stateWithLinkedImage = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('direct-img'),
+          buildTestImage('linked-img'),
+        ],
+        linkedTaskImageIds: const {'linked-img'},
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
+              () => _MockReferenceImageSelectionController(
+                stateWithLinkedImage,
+              ),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // Should show exactly one link icon (for the linked-task image)
+      expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+    });
+
+    testWidgets('does not show link icon on direct images', (tester) async {
+      final stateWithDirectOnly = ReferenceImageSelectionState(
+        availableImages: [
+          buildTestImage('direct-1'),
+          buildTestImage('direct-2'),
+        ],
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(
+              taskId: testTaskId,
+            ).overrideWith(
+              () => _MockReferenceImageSelectionController(stateWithDirectOnly),
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      // No link icons should appear for directly linked images
+      expect(find.byIcon(Icons.link_rounded), findsNothing);
     });
   });
 }

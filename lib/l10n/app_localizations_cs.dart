@@ -1968,6 +1968,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get coverArtChipSet => 'Nastavit obal';
 
   @override
+  String get coverArtGenerationComplete => 'Obálka je připravena!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Můžeš to zavřít — generování pokračuje na pozadí';
+
+  @override
   String get coverArtRemove => 'Odebrat jako obal';
 
   @override
@@ -3493,7 +3500,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Vyberte až 3 obrázky pro vedení vizuálního stylu AI';
+      'Vyberte až 5 obrázků pro vedení vizuálního stylu AI';
 
   @override
   String get referenceImageSelectionTitle => 'Vyberte referenční obrázky';

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/ai/ui/image_generation/image_generation_review_modal.dart';
+import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/ai/util/skill_seeding_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
@@ -553,9 +554,9 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
 
         await _openImageGenerationModal(
           context: context,
-          audioEntry: entry,
           linkedTaskId: linkedTaskId,
           linkedTask: linkedEntry,
+          ref: ref,
         );
       },
     );
@@ -563,17 +564,17 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
 
   Future<void> _openImageGenerationModal({
     required BuildContext context,
-    required JournalAudio audioEntry,
     required String linkedTaskId,
     required Task linkedTask,
+    required WidgetRef ref,
   }) async {
-    // The modal builds the full prompt using PromptBuilderHelper
-    // for complete task context (checklists, labels, linked tasks, etc.)
-    await ImageGenerationReviewModal.show(
+    await CoverArtSkillModal.show(
       context: context,
       entityId: entryId,
+      skillId: skillImageGenId,
       linkedTaskId: linkedTaskId,
       categoryId: linkedTask.meta.categoryId,
+      ref: ref,
     );
   }
 }
