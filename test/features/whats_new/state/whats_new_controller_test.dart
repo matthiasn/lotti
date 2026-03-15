@@ -1,14 +1,19 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockWhatsNewService extends Mock implements WhatsNewService {}
+
+class MockJournalDb extends Mock implements JournalDb {}
 
 class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}
 
@@ -79,9 +84,7 @@ void main() {
 
   setUp(() {
     mockService = MockWhatsNewService();
-    SharedPreferences.setMockInitialValues({
-      'enable_whats_new': true,
-    });
+    SharedPreferences.setMockInitialValues({});
 
     container = ProviderContainer(
       overrides: [
@@ -310,6 +313,19 @@ void main() {
   });
 
   group('shouldAutoShowWhatsNew', () {
+    late MockJournalDb mockJournalDb;
+
+    setUp(() {
+      mockJournalDb = MockJournalDb();
+      when(
+        () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+      ).thenAnswer((_) async => true);
+
+      getIt.registerSingleton<JournalDb>(mockJournalDb);
+    });
+
+    tearDown(getIt.reset);
+
     test(
       'returns true on first launch when there are unseen releases',
       () async {
@@ -347,7 +363,6 @@ void main() {
 
     test('returns false when version has not changed', () async {
       SharedPreferences.setMockInitialValues({
-        'enable_whats_new': true,
         'whats_new_last_launched_version': '99.99.99', // Same as mock version
       });
 
@@ -375,7 +390,6 @@ void main() {
 
     test('returns true when version changed and has unseen releases', () async {
       SharedPreferences.setMockInitialValues({
-        'enable_whats_new': true,
         'whats_new_last_launched_version': '98.98.98', // Different from mock
       });
 
@@ -410,7 +424,6 @@ void main() {
 
     test('returns false when version changed but no unseen releases', () async {
       SharedPreferences.setMockInitialValues({
-        'enable_whats_new': true,
         'whats_new_last_launched_version': '98.98.98', // Different from mock
         'whats_new_seen_0.9.980': true, // Already seen
       });
@@ -438,7 +451,6 @@ void main() {
       'returns false when version changed but no releases available',
       () async {
         SharedPreferences.setMockInitialValues({
-          'enable_whats_new': true,
           'whats_new_last_launched_version': '98.98.98',
         });
 
@@ -459,5 +471,27 @@ void main() {
         expect(shouldShow, isFalse);
       },
     );
+
+    test('returns false when config flag is disabled', () async {
+      when(
+        () => mockJournalDb.getConfigFlag(enableWhatsNewFlag),
+      ).thenAnswer((_) async => false);
+
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+
+      final shouldShow = await container.read(
+        shouldAutoShowWhatsNewProvider.future,
+      );
+
+      expect(shouldShow, isFalse);
+
+      // Should not have checked version or fetched releases
+      verifyNever(() => mockService.fetchIndex());
+    });
   });
 }
