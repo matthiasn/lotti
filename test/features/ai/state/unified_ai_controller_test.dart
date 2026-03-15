@@ -1323,9 +1323,9 @@ void main() {
           availableSkillsForEntityProvider(audioEntity.id).future,
         );
 
-        expect(skills.length, 2);
-        expect(skills.map((s) => s.id), contains('skill-transcription'));
-        expect(skills.map((s) => s.id), contains('skill-text'));
+        // promptGeneration is not yet supported, so only transcription shows
+        expect(skills.length, 1);
+        expect(skills.first.id, 'skill-transcription');
         skillSub.close();
       },
     );
@@ -1394,9 +1394,9 @@ void main() {
           availableSkillsForEntityProvider(imageEntity.id).future,
         );
 
-        expect(skills.length, 2);
-        expect(skills.map((s) => s.id), contains('skill-image'));
-        expect(skills.map((s) => s.id), contains('skill-text'));
+        // promptGeneration is not yet supported, so only imageAnalysis shows
+        expect(skills.length, 1);
+        expect(skills.first.id, 'skill-image');
         skillSub.close();
       },
     );
@@ -1466,8 +1466,9 @@ void main() {
         availableSkillsForEntityProvider(taskEntity.id).future,
       );
 
-      expect(skills.length, 1);
-      expect(skills.first.id, 'skill-text');
+      // Both audio-only (wrong modality) and promptGeneration (unsupported)
+      // are filtered out
+      expect(skills, isEmpty);
       skillSub.close();
     });
 

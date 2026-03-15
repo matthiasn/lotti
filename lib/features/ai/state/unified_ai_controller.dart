@@ -419,7 +419,14 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           ).future,
         );
 
+        // Only show skill types that have a working implementation.
+        const supportedTypes = {
+          SkillType.transcription,
+          SkillType.imageAnalysis,
+        };
+
         final skills = allConfigs.whereType<AiConfigSkill>().where((skill) {
+          if (!supportedTypes.contains(skill.skillType)) return false;
           final modalities = skill.requiredInputModalities;
           if (modalities.contains(Modality.audio) && entity is! JournalAudio) {
             return false;
