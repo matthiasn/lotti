@@ -22,7 +22,7 @@ class MatrixStreamCatchUpCoordinator {
     required LoggingService loggingService,
     required MetricsCounters metrics,
     required bool collectMetrics,
-    required bool skipSyncWait,
+    required this.skipSyncWait,
     required MatrixStreamProcessor processor,
     required void Function(String source) flushDeferredLiveScan,
     required String Function(String message) withInstance,
@@ -40,7 +40,6 @@ class MatrixStreamCatchUpCoordinator {
        _loggingService = loggingService,
        _metrics = metrics,
        _collectMetrics = collectMetrics,
-       _skipSyncWait = skipSyncWait,
        _processor = processor,
        _flushDeferredLiveScan = flushDeferredLiveScan,
        _withInstance = withInstance,
@@ -51,7 +50,7 @@ class MatrixStreamCatchUpCoordinator {
   final LoggingService _loggingService;
   final MetricsCounters _metrics;
   final bool _collectMetrics;
-  final bool _skipSyncWait;
+  bool skipSyncWait;
   final MatrixStreamProcessor _processor;
   final void Function(String source) _flushDeferredLiveScan;
   final String Function(String message) _withInstance;
@@ -324,7 +323,7 @@ class MatrixStreamCatchUpCoordinator {
   /// If timeout occurs, sets up a listener to trigger another catch-up when
   /// sync eventually completes (handles slow networks gracefully).
   Future<bool> _waitForSyncCompletion({Duration? timeout}) async {
-    if (_skipSyncWait) return true;
+    if (skipSyncWait) return true;
 
     final effectiveTimeout = timeout ?? SyncTuning.catchupSyncWaitTimeout;
     final client = _sessionManager.client;

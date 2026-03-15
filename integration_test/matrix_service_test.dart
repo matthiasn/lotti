@@ -463,7 +463,12 @@ void main() {
         final bobCountBefore = await bobDb.getJournalCount();
         debugPrint('Bob DB count before convergence test: $bobCountBefore');
 
-        // Phase 1: Alice sends n messages into the existing room
+        // Skip the 30s sync wait in catch-up — we drive sync explicitly
+        bob.debugPipeline!.skipSyncWait = true;
+
+        // Phase 1: Alice sends n messages while Bob processes concurrently.
+        // Bob's background sync receives events during sending, and periodic
+        // forceRescan calls process them into the DB.
         debugPrint('\n--- Phase 1: Alice sends $n messages');
         final sendStopwatch = Stopwatch()..start();
         for (var i = 0; i < n; i++) {
@@ -475,6 +480,8 @@ void main() {
           );
           if ((i + 1) % 100 == 0) {
             debugPrint('  Sent ${i + 1}/$n messages');
+            // Periodically nudge Bob to process accumulated sync events
+            await bob.forceRescan();
           }
         }
         sendStopwatch.stop();
@@ -483,22 +490,31 @@ void main() {
           'in ${sendStopwatch.elapsed.inSeconds}s',
         );
 
+        // Final sync+rescan so Bob picks up the last batch before Alice
+        // goes offline. Without this, the tail messages (after the last
+        // periodic forceRescan) may not have been fetched yet.
+        await bob.client.sync();
+        await bob.forceRescan();
+        await bob.retryNow();
+        final countAfterFinalSync = await bobDb.getJournalCount();
+        debugPrint(
+          'Bob count after final pre-offline sync: $countAfterFinalSync '
+          '(+${countAfterFinalSync - bobCountBefore}/$n new)',
+        );
+
         // Take Alice offline so Bob catches up purely from the server
         alice.client.backgroundSync = false;
         await alice.client.abortSync();
         debugPrint('Alice is now offline (sync stopped)');
 
-        // Phase 2: Bob catches up via forceRescan + retryNow polling
+        // Phase 2: Bob catches up remaining messages
         debugPrint('\n--- Phase 2: Bob catching up $n messages');
         final expectedTotal = bobCountBefore + n;
         final catchupStopwatch = Stopwatch()..start();
 
-        // Launch sync concurrently so it fires during forceRescan's
-        // internal _waitForSyncCompletion listener.
         debugPrint('Triggering Bob SDK sync + forceRescan...');
-        final initialSyncFuture = bob.client.sync();
+        await bob.client.sync();
         await bob.forceRescan();
-        await initialSyncFuture;
         debugPrint(
           'Bob initial sync+rescan done, '
           'syncPending=${bob.client.syncPending}, '
@@ -527,12 +543,8 @@ void main() {
               lastBobCount = currentCount;
             }
             if (currentCount < expectedTotal) {
-              // Launch sync concurrently so it fires during forceRescan's
-              // internal _waitForSyncCompletion — avoids 30s timeout per
-              // iteration when sync completes before the listener subscribes.
-              final syncFuture = bob.client.sync();
+              await bob.client.sync();
               await bob.forceRescan();
-              await syncFuture;
               await bob.retryNow();
               // Log metrics every ~30s to diagnose stalls
               final elapsed = catchupStopwatch.elapsed.inSeconds;
