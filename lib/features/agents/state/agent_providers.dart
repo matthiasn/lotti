@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -193,6 +194,15 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     onPersistedStateChanged: onPersistedStateChanged,
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
+
+      // Check the task's own content (title and body text).
+      final task = await journalDb.journalEntityById(taskId);
+      if (task is Task) {
+        if (task.data.title.trim().isNotEmpty) return true;
+        if (task.entryText?.plainText.trim().isNotEmpty ?? false) return true;
+      }
+
+      // Check linked entries for content.
       final linked = await journalDb.getLinkedEntities(taskId);
       return linked.any(
         (e) => e.entryText?.plainText.trim().isNotEmpty ?? false,

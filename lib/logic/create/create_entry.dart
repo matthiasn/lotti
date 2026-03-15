@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -84,21 +86,30 @@ Future<Task?> createTask({
 ///
 /// Call this after [createTask] from contexts that have Riverpod [WidgetRef].
 Future<void> autoAssignCategoryAgent(WidgetRef ref, Task task) async {
-  final categoryId = task.meta.categoryId;
-  if (categoryId == null) return;
+  try {
+    final categoryId = task.meta.categoryId;
+    if (categoryId == null) return;
 
-  final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
-  final templateId = category?.defaultTemplateId;
-  if (templateId == null) return;
+    final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
+    final templateId = category?.defaultTemplateId;
+    if (templateId == null) return;
 
-  final service = ref.read(taskAgentServiceProvider);
-  await service.createTaskAgent(
-    taskId: task.meta.id,
-    templateId: templateId,
-    profileId: category?.defaultProfileId,
-    allowedCategoryIds: {categoryId},
-    awaitContent: true,
-  );
+    final service = ref.read(taskAgentServiceProvider);
+    await service.createTaskAgent(
+      taskId: task.meta.id,
+      templateId: templateId,
+      profileId: category?.defaultProfileId,
+      allowedCategoryIds: {categoryId},
+      awaitContent: true,
+    );
+  } catch (e, stackTrace) {
+    developer.log(
+      'Failed to auto-assign agent for task ${task.meta.id}: $e',
+      name: 'autoAssignCategoryAgent',
+      error: e,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 Future<JournalEvent?> createEvent({String? linkedId, String? categoryId}) =>

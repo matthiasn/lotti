@@ -94,9 +94,9 @@ inherited profile when no agent is present.
 
 When set, an agent is automatically created for new tasks in the category using this template.
 The auto-assigned agent enters an `awaitingContent` state and will not execute until the task
-has meaningful content (at least one linked entry with non-empty text). This prevents premature
-agent runs on blank tasks while still pre-assigning the agent so it activates as soon as the
-user adds content.
+has meaningful content: a non-empty title, non-empty body text, or at least one linked entry
+with non-empty text. This prevents premature agent runs on blank tasks while still
+pre-assigning the agent so it activates as soon as the user adds content.
 
 ### Configuration
 

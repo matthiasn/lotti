@@ -52,16 +52,8 @@ class ProfileResolver {
   /// has no legacy `modelId` fallback. Returns `null` if the profile cannot be
   /// found or the thinking slot cannot be resolved.
   Future<ResolvedProfile?> resolveByProfileId(String profileId) async {
-    final config = await _aiConfigRepository.getConfigById(profileId);
-
-    if (config is! AiConfigInferenceProfile) {
-      developer.log(
-        'Profile $profileId not found or wrong type',
-        name: _logTag,
-      );
-      return null;
-    }
-
+    final config = await _fetchProfile(profileId);
+    if (config == null) return null;
     return _buildResolvedProfile(config);
   }
 
@@ -70,19 +62,27 @@ class ProfileResolver {
     AgentTemplateEntity template,
     AgentTemplateVersionEntity version,
   ) async {
-    final config = await _aiConfigRepository.getConfigById(profileId);
-
-    if (config is! AiConfigInferenceProfile) {
-      developer.log(
-        'Profile $profileId not found or wrong type, '
-        'falling back to legacy modelId',
-        name: _logTag,
-      );
+    final config = await _fetchProfile(profileId);
+    if (config == null) {
       // Fallback to legacy path when profile not found (e.g., sync race).
       return _resolveFromModelId(version.modelId ?? template.modelId);
     }
-
     return _buildResolvedProfile(config);
+  }
+
+  /// Fetches and type-checks a profile config by [profileId].
+  ///
+  /// Returns `null` if the config is not found or is not an inference profile.
+  Future<AiConfigInferenceProfile?> _fetchProfile(String profileId) async {
+    final config = await _aiConfigRepository.getConfigById(profileId);
+    if (config is! AiConfigInferenceProfile) {
+      developer.log(
+        'Profile $profileId not found or wrong type',
+        name: _logTag,
+      );
+      return null;
+    }
+    return config;
   }
 
   Future<ResolvedProfile?> _buildResolvedProfile(
