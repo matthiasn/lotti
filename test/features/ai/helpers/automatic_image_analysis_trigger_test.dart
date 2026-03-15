@@ -91,7 +91,6 @@ void main() {
 
       await trigger.triggerAutomaticImageAnalysis(
         imageEntryId: 'image-1',
-        categoryId: 'category-1',
       );
 
       verify(
@@ -114,7 +113,6 @@ void main() {
 
       await trigger.triggerAutomaticImageAnalysis(
         imageEntryId: 'image-1',
-        categoryId: null,
       );
 
       verify(
@@ -137,7 +135,6 @@ void main() {
 
       await trigger.triggerAutomaticImageAnalysis(
         imageEntryId: 'image-1',
-        categoryId: 'category-1',
         linkedTaskId: 'task-1',
       );
 
@@ -175,7 +172,6 @@ void main() {
 
         await trigger.triggerAutomaticImageAnalysis(
           imageEntryId: imageEntryId,
-          categoryId: 'category-1',
           linkedTaskId: taskId,
         );
 
@@ -208,7 +204,6 @@ void main() {
 
         await trigger.triggerAutomaticImageAnalysis(
           imageEntryId: imageEntryId,
-          categoryId: 'category-1',
           linkedTaskId: taskId,
         );
 
@@ -252,7 +247,6 @@ void main() {
 
         await trigger.triggerAutomaticImageAnalysis(
           imageEntryId: imageEntryId,
-          categoryId: null,
           linkedTaskId: taskId,
         );
 

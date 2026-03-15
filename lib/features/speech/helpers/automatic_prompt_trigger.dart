@@ -25,9 +25,7 @@ class AutomaticPromptTrigger {
   /// skill assigned. If no profile handles it, logs and returns silently.
   Future<void> triggerAutomaticPrompts(
     String entryId,
-    String categoryId,
     AudioRecorderState state, {
-    required bool isLinkedToTask,
     String? linkedTaskId,
     bool realtimeTranscriptProvided = false,
   }) async {

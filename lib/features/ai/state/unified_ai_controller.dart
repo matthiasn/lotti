@@ -462,10 +462,12 @@ typedef TriggerSkillParams = ({
 ///
 /// Resolves the profile via `ProfileAutomationResolver`, then routes to the
 /// appropriate `SkillInferenceRunner` method based on the skill type.
-/// Note: Not autoDispose — this is a fire-and-forget action that must
-/// survive until completion even when no widget is watching.
-final triggerSkillProvider = FutureProvider.family<void, TriggerSkillParams>(
+final triggerSkillProvider = FutureProvider.autoDispose
+    .family<void, TriggerSkillParams>(
       (ref, params) async {
+        // Keep alive until completion so fire-and-forget callers don't
+        // cause the provider to be disposed mid-execution.
+        final link = ref.keepAlive();
         developer.log(
           'triggerSkill: entityId=${params.entityId}, '
           'skillId=${params.skillId}, linkedTaskId=${params.linkedTaskId}',
@@ -540,6 +542,9 @@ final triggerSkillProvider = FutureProvider.family<void, TriggerSkillParams>(
           'triggerSkill: completed for ${params.entityId}',
           name: 'UnifiedAiController',
         );
+
+        // Allow auto-dispose now that the work is done.
+        link.close();
       },
     );
 

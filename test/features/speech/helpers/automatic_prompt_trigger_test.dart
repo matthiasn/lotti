@@ -105,9 +105,7 @@ void main() {
 
       await trigger.triggerAutomaticPrompts(
         'entry-1',
-        'category-1',
         stoppedState(),
-        isLinkedToTask: false,
       );
 
       verify(
@@ -138,9 +136,7 @@ void main() {
 
       await trigger.triggerAutomaticPrompts(
         'entry-1',
-        'category-1',
         stoppedState(),
-        isLinkedToTask: true,
         linkedTaskId: 'task-1',
       );
 
@@ -181,9 +177,7 @@ void main() {
 
         await trigger.triggerAutomaticPrompts(
           entryId,
-          'category-1',
           stoppedState(),
-          isLinkedToTask: true,
           linkedTaskId: taskId,
         );
 
@@ -222,9 +216,7 @@ void main() {
 
         await trigger.triggerAutomaticPrompts(
           entryId,
-          'category-1',
           stoppedState(),
-          isLinkedToTask: true,
           linkedTaskId: taskId,
           realtimeTranscriptProvided: true,
         );
@@ -264,9 +256,7 @@ void main() {
 
         await trigger.triggerAutomaticPrompts(
           entryId,
-          'category-1',
           stoppedState(),
-          isLinkedToTask: true,
           linkedTaskId: taskId,
         );
 
@@ -294,9 +284,7 @@ void main() {
 
         await trigger.triggerAutomaticPrompts(
           'entry-1',
-          'category-1',
           stoppedState(enableSpeechRecognition: false),
-          isLinkedToTask: true,
           linkedTaskId: taskId,
         );
 

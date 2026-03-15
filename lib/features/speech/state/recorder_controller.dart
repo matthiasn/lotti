@@ -270,7 +270,6 @@ class AudioRecorderController extends _$AudioRecorderController {
           linkedId: _linkedId,
           categoryId: _categoryId,
         );
-        final wasLinkedToTask = _linkedId != null;
         final linkedTaskId = _linkedId;
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
@@ -282,8 +281,6 @@ class AudioRecorderController extends _$AudioRecorderController {
           unawaited(
             _triggerAutomaticPrompts(
               entryId,
-              _categoryId!,
-              isLinkedToTask: wasLinkedToTask,
               linkedTaskId: linkedTaskId,
             ),
           );
@@ -521,7 +518,6 @@ class AudioRecorderController extends _$AudioRecorderController {
             )
           : null;
 
-      final wasLinkedToTask = _linkedId != null;
       final linkedTaskId = _linkedId;
       _linkedId = null;
       final entryId = journalAudio?.meta.id;
@@ -544,8 +540,6 @@ class AudioRecorderController extends _$AudioRecorderController {
         unawaited(
           _triggerAutomaticPrompts(
             entryId,
-            _categoryId!,
-            isLinkedToTask: wasLinkedToTask,
             linkedTaskId: linkedTaskId,
             realtimeTranscriptProvided: true,
           ),
@@ -709,18 +703,14 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   /// Triggers automatic prompts based on category settings and user preferences
   Future<void> _triggerAutomaticPrompts(
-    String entryId,
-    String categoryId, {
-    required bool isLinkedToTask,
+    String entryId, {
     String? linkedTaskId,
     bool realtimeTranscriptProvided = false,
   }) async {
     final trigger = ref.read(automaticPromptTriggerProvider);
     await trigger.triggerAutomaticPrompts(
       entryId,
-      categoryId,
       state,
-      isLinkedToTask: isLinkedToTask,
       linkedTaskId: linkedTaskId,
       realtimeTranscriptProvided: realtimeTranscriptProvided,
     );

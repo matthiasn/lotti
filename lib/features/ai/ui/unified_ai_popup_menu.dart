@@ -252,8 +252,7 @@ class UnifiedAiPromptsList extends ConsumerWidget {
   final Future<void> Function(AiConfigPrompt prompt, int index)
   onPromptSelected;
 
-  /// Called when a skill is tapped. If null, skills are still shown but
-  /// tapping them triggers [triggerSkillProvider] directly.
+  /// Called when a skill is tapped. If null, tapping a skill is a no-op.
   final Future<void> Function(AiConfigSkill skill)? onSkillSelected;
 
   @override

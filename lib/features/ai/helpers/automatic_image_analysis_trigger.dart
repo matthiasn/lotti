@@ -27,7 +27,6 @@ class AutomaticImageAnalysisTrigger {
   /// silently.
   Future<void> triggerAutomaticImageAnalysis({
     required String imageEntryId,
-    required String? categoryId,
     String? linkedTaskId,
   }) async {
     try {

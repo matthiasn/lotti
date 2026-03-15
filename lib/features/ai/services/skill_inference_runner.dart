@@ -84,170 +84,184 @@ class SkillInferenceRunner {
     }
   }
 
-  /// Run skill-based transcription on an audio entry.
-  Future<void> runTranscription({
-    required String audioEntryId,
-    required AutomationResult automationResult,
+  /// Wraps a skill inference body with status tracking.
+  ///
+  /// Sets status to [InferenceStatus.running] before [body], then
+  /// [InferenceStatus.idle] on success or [InferenceStatus.error] on failure.
+  /// This guarantees the status is always reset, even on early returns.
+  Future<void> _withStatusTracking({
+    required String entityId,
+    required AiResponseType responseType,
+    required String subDomain,
+    required Future<void> Function() body,
     String? linkedTaskId,
   }) async {
-    const responseType = AiResponseType.audioTranscription;
+    _setStatus(
+      InferenceStatus.running,
+      entityId: entityId,
+      responseType: responseType,
+      linkedTaskId: linkedTaskId,
+    );
     try {
-      final skill = automationResult.skill;
-      final profile = automationResult.resolvedProfile;
-      if (skill == null || profile == null) {
-        developer.log(
-          'AutomationResult missing skill or profile for $audioEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-      final provider = profile.transcriptionProvider;
-      final modelId = profile.transcriptionModelId;
-      if (provider == null || modelId == null) {
-        developer.log(
-          'Profile missing transcription provider/model for $audioEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-
-      _setStatus(
-        InferenceStatus.running,
-        entityId: audioEntryId,
-        responseType: responseType,
-        linkedTaskId: linkedTaskId,
-      );
-
-      // 1. Fetch the audio entity.
-      final entity = await _aiInputRepository.getEntity(audioEntryId);
-      if (entity is! JournalAudio) {
-        developer.log(
-          'Entity $audioEntryId is not a JournalAudio',
-          name: _logTag,
-        );
-        return;
-      }
-
-      // 2. Build context for prompts (fetch terms once, reuse for both
-      // prompt text and provider-level context biasing).
-      final speechDictionaryTerms = await _promptBuilderHelper
-          .getSpeechDictionaryTerms(entity);
-      final speechDictionary = _formatSpeechDictionaryText(
-        speechDictionaryTerms,
-      );
-      final taskContext = linkedTaskId != null
-          ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
-          : null;
-      final currentTaskSummary = await _buildCurrentTaskSummary(
-        entity,
-        linkedTaskId,
-      );
-
-      // 3. Build prompts via SkillPromptBuilder.
-      const promptBuilder = SkillPromptBuilder();
-      final promptResult = promptBuilder.build(
-        skill: skill,
-        speechDictionary: speechDictionary,
-        taskContext: taskContext,
-        currentTaskSummary: currentTaskSummary,
-      );
-
-      // 4. Prepare audio data.
-      final fullPath = await AudioUtils.getFullAudioPath(entity);
-      final file = File(fullPath);
-      final bytes = await file.readAsBytes();
-      final audioBase64 = base64Encode(bytes);
-
-      // 5. Call inference with separate system/user messages.
-      final start = DateTime.now();
-      final responseStream = _cloudRepository.generateWithAudio(
-        promptResult.userMessage,
-        model: modelId,
-        audioBase64: audioBase64,
-        baseUrl: provider.baseUrl,
-        apiKey: provider.apiKey,
-        provider: provider,
-        systemMessage: promptResult.systemMessage,
-        speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
-            ? speechDictionaryTerms
-            : null,
-      );
-
-      // 7. Collect streaming response.
-      final buffer = StringBuffer();
-      await for (final chunk in responseStream) {
-        final content = chunk.choices?.firstOrNull?.delta?.content;
-        if (content != null) {
-          buffer.write(content);
-        }
-      }
-
-      final response = buffer.toString().trim();
-      if (response.isEmpty) {
-        developer.log(
-          'Empty transcription response for $audioEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-
-      // 8. Save result — create AudioTranscript + update entryText.
-      final currentAudio =
-          await EntityStateHelper.getCurrentEntityState<JournalAudio>(
-            entityId: audioEntryId,
-            aiInputRepo: _aiInputRepository,
-            entityTypeName: 'audio transcription',
-          );
-      if (currentAudio == null) return;
-
-      final transcript = AudioTranscript(
-        created: DateTime.now(),
-        library: provider.name,
-        model: modelId,
-        detectedLanguage: '-',
-        transcript: response,
-        processingTime: DateTime.now().difference(start),
-      );
-
-      final existingTranscripts = currentAudio.data.transcripts ?? [];
-      final updated = currentAudio.copyWith(
-        data: currentAudio.data.copyWith(
-          transcripts: [...existingTranscripts, transcript],
-        ),
-        entryText: EntryText(
-          plainText: response,
-          markdown: response,
-        ),
-      );
-      await _journalRepository.updateJournalEntity(updated);
-
-      _loggingService.captureEvent(
-        'Skill-based transcription completed for $audioEntryId '
-        '(${response.length} chars)',
-        domain: _logTag,
-        subDomain: 'runTranscription',
-      );
-
+      await body();
       _setStatus(
         InferenceStatus.idle,
-        entityId: audioEntryId,
+        entityId: entityId,
         responseType: responseType,
         linkedTaskId: linkedTaskId,
       );
     } catch (e, stack) {
       _setStatus(
         InferenceStatus.error,
-        entityId: audioEntryId,
+        entityId: entityId,
         responseType: responseType,
         linkedTaskId: linkedTaskId,
       );
       _loggingService.captureException(
         e,
         domain: _logTag,
-        subDomain: 'runTranscription',
+        subDomain: subDomain,
         stackTrace: stack,
       );
     }
+  }
+
+  /// Run skill-based transcription on an audio entry.
+  Future<void> runTranscription({
+    required String audioEntryId,
+    required AutomationResult automationResult,
+    String? linkedTaskId,
+  }) async {
+    final skill = automationResult.skill;
+    final profile = automationResult.resolvedProfile;
+    if (skill == null || profile == null) {
+      developer.log(
+        'AutomationResult missing skill or profile for $audioEntryId',
+        name: _logTag,
+      );
+      return;
+    }
+    final provider = profile.transcriptionProvider;
+    final modelId = profile.transcriptionModelId;
+    if (provider == null || modelId == null) {
+      developer.log(
+        'Profile missing transcription provider/model for $audioEntryId',
+        name: _logTag,
+      );
+      return;
+    }
+
+    await _withStatusTracking(
+      entityId: audioEntryId,
+      responseType: skill.skillType.toResponseType,
+      subDomain: 'runTranscription',
+      linkedTaskId: linkedTaskId,
+      body: () async {
+        // 1. Fetch the audio entity.
+        final entity = await _aiInputRepository.getEntity(audioEntryId);
+        if (entity is! JournalAudio) {
+          throw StateError('Entity $audioEntryId is not a JournalAudio');
+        }
+
+        // 2. Build context for prompts (fetch terms once, reuse for both
+        // prompt text and provider-level context biasing).
+        final speechDictionaryTerms = await _promptBuilderHelper
+            .getSpeechDictionaryTerms(entity);
+        final speechDictionary = _formatSpeechDictionaryText(
+          speechDictionaryTerms,
+        );
+        final taskContext = linkedTaskId != null
+            ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
+            : null;
+        final currentTaskSummary = await _buildCurrentTaskSummary(
+          entity,
+          linkedTaskId,
+        );
+
+        // 3. Build prompts via SkillPromptBuilder.
+        const promptBuilder = SkillPromptBuilder();
+        final promptResult = promptBuilder.build(
+          skill: skill,
+          speechDictionary: speechDictionary,
+          taskContext: taskContext,
+          currentTaskSummary: currentTaskSummary,
+        );
+
+        // 4. Prepare audio data.
+        final fullPath = await AudioUtils.getFullAudioPath(entity);
+        final file = File(fullPath);
+        final bytes = await file.readAsBytes();
+        final audioBase64 = base64Encode(bytes);
+
+        // 5. Call inference with separate system/user messages.
+        final start = DateTime.now();
+        final responseStream = _cloudRepository.generateWithAudio(
+          promptResult.userMessage,
+          model: modelId,
+          audioBase64: audioBase64,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          provider: provider,
+          systemMessage: promptResult.systemMessage,
+          speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
+              ? speechDictionaryTerms
+              : null,
+        );
+
+        // 6. Collect streaming response.
+        final buffer = StringBuffer();
+        await for (final chunk in responseStream) {
+          final content = chunk.choices?.firstOrNull?.delta?.content;
+          if (content != null) {
+            buffer.write(content);
+          }
+        }
+
+        final response = buffer.toString().trim();
+        if (response.isEmpty) {
+          throw StateError('Empty transcription response for $audioEntryId');
+        }
+
+        // 7. Save result — create AudioTranscript + update entryText.
+        final currentAudio =
+            await EntityStateHelper.getCurrentEntityState<JournalAudio>(
+              entityId: audioEntryId,
+              aiInputRepo: _aiInputRepository,
+              entityTypeName: 'audio transcription',
+            );
+        if (currentAudio == null) {
+          throw StateError('Audio entity $audioEntryId disappeared mid-run');
+        }
+
+        final transcript = AudioTranscript(
+          created: DateTime.now(),
+          library: provider.name,
+          model: modelId,
+          detectedLanguage: '-',
+          transcript: response,
+          processingTime: DateTime.now().difference(start),
+        );
+
+        final existingTranscripts = currentAudio.data.transcripts ?? [];
+        final updated = currentAudio.copyWith(
+          data: currentAudio.data.copyWith(
+            transcripts: [...existingTranscripts, transcript],
+          ),
+          entryText: EntryText(
+            plainText: response,
+            markdown: response,
+          ),
+        );
+        await _journalRepository.updateJournalEntity(updated);
+
+        _loggingService.captureEvent(
+          'Skill-based transcription completed for $audioEntryId '
+          '(${response.length} chars)',
+          domain: _logTag,
+          subDomain: 'runTranscription',
+        );
+      },
+    );
   }
 
   /// Run skill-based image analysis on an image entry.
@@ -256,154 +270,124 @@ class SkillInferenceRunner {
     required AutomationResult automationResult,
     String? linkedTaskId,
   }) async {
-    const responseType = AiResponseType.imageAnalysis;
-    try {
-      final skill = automationResult.skill;
-      final profile = automationResult.resolvedProfile;
-      if (skill == null || profile == null) {
-        developer.log(
-          'AutomationResult missing skill or profile for $imageEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-      final provider = profile.imageRecognitionProvider;
-      final modelId = profile.imageRecognitionModelId;
-      if (provider == null || modelId == null) {
-        developer.log(
-          'Profile missing image recognition provider/model for $imageEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-
-      _setStatus(
-        InferenceStatus.running,
-        entityId: imageEntryId,
-        responseType: responseType,
-        linkedTaskId: linkedTaskId,
+    final skill = automationResult.skill;
+    final profile = automationResult.resolvedProfile;
+    if (skill == null || profile == null) {
+      developer.log(
+        'AutomationResult missing skill or profile for $imageEntryId',
+        name: _logTag,
       );
-
-      // 1. Fetch the image entity.
-      final entity = await _aiInputRepository.getEntity(imageEntryId);
-      if (entity is! JournalImage) {
-        developer.log(
-          'Entity $imageEntryId is not a JournalImage',
-          name: _logTag,
-        );
-        return;
-      }
-
-      // 2. Build context for prompts.
-      final taskContext = linkedTaskId != null
-          ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
-          : null;
-      final linkedTasks = linkedTaskId != null
-          ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId)
-          : null;
-      final currentTaskSummary = await _buildCurrentTaskSummary(
-        entity,
-        linkedTaskId,
-      );
-
-      // 3. Build prompts via SkillPromptBuilder.
-      const promptBuilder = SkillPromptBuilder();
-      final promptResult = promptBuilder.build(
-        skill: skill,
-        taskContext: taskContext,
-        linkedTasks: linkedTasks,
-        currentTaskSummary: currentTaskSummary,
-      );
-
-      // 4. Prepare image data.
-      final images = await _prepareImageData(entity);
-      if (images.isEmpty) {
-        developer.log(
-          'No image data available for $imageEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-
-      // 5. Call inference with separate system/user messages.
-      final responseStream = _cloudRepository.generateWithImages(
-        promptResult.userMessage,
-        baseUrl: provider.baseUrl,
-        apiKey: provider.apiKey,
-        model: modelId,
-        temperature: null,
-        images: images,
-        provider: provider,
-        systemMessage: promptResult.systemMessage,
-      );
-
-      // 6. Collect streaming response.
-      final buffer = StringBuffer();
-      await for (final chunk in responseStream) {
-        final content = chunk.choices?.firstOrNull?.delta?.content;
-        if (content != null) {
-          buffer.write(content);
-        }
-      }
-
-      final response = buffer.toString().trim();
-      if (response.isEmpty) {
-        developer.log(
-          'Empty image analysis response for $imageEntryId',
-          name: _logTag,
-        );
-        return;
-      }
-
-      // 7. Save result — append to entryText.
-      final currentImage =
-          await EntityStateHelper.getCurrentEntityState<JournalImage>(
-            entityId: imageEntryId,
-            aiInputRepo: _aiInputRepository,
-            entityTypeName: 'image analysis',
-          );
-      if (currentImage == null) return;
-
-      final originalText = currentImage.entryText?.markdown ?? '';
-      final amendedText = originalText.isEmpty
-          ? response
-          : '$originalText\n\n$response';
-
-      final updated = currentImage.copyWith(
-        entryText: EntryText(
-          plainText: amendedText,
-          markdown: amendedText,
-        ),
-      );
-      await _journalRepository.updateJournalEntity(updated);
-
-      _loggingService.captureEvent(
-        'Skill-based image analysis completed for $imageEntryId '
-        '(${response.length} chars)',
-        domain: _logTag,
-        subDomain: 'runImageAnalysis',
-      );
-
-      _setStatus(
-        InferenceStatus.idle,
-        entityId: imageEntryId,
-        responseType: responseType,
-        linkedTaskId: linkedTaskId,
-      );
-    } catch (e, stack) {
-      _setStatus(
-        InferenceStatus.error,
-        entityId: imageEntryId,
-        responseType: responseType,
-        linkedTaskId: linkedTaskId,
-      );
-      _loggingService.captureException(
-        e,
-        domain: _logTag,
-        subDomain: 'runImageAnalysis',
-        stackTrace: stack,
-      );
+      return;
     }
+    final provider = profile.imageRecognitionProvider;
+    final modelId = profile.imageRecognitionModelId;
+    if (provider == null || modelId == null) {
+      developer.log(
+        'Profile missing image recognition provider/model for $imageEntryId',
+        name: _logTag,
+      );
+      return;
+    }
+
+    await _withStatusTracking(
+      entityId: imageEntryId,
+      responseType: skill.skillType.toResponseType,
+      subDomain: 'runImageAnalysis',
+      linkedTaskId: linkedTaskId,
+      body: () async {
+        // 1. Fetch the image entity.
+        final entity = await _aiInputRepository.getEntity(imageEntryId);
+        if (entity is! JournalImage) {
+          throw StateError('Entity $imageEntryId is not a JournalImage');
+        }
+
+        // 2. Build context for prompts.
+        final taskContext = linkedTaskId != null
+            ? await _aiInputRepository.buildTaskDetailsJson(id: linkedTaskId)
+            : null;
+        final linkedTasks = linkedTaskId != null
+            ? await _aiInputRepository.buildLinkedTasksJson(linkedTaskId)
+            : null;
+        final currentTaskSummary = await _buildCurrentTaskSummary(
+          entity,
+          linkedTaskId,
+        );
+
+        // 3. Build prompts via SkillPromptBuilder.
+        const promptBuilder = SkillPromptBuilder();
+        final promptResult = promptBuilder.build(
+          skill: skill,
+          taskContext: taskContext,
+          linkedTasks: linkedTasks,
+          currentTaskSummary: currentTaskSummary,
+        );
+
+        // 4. Prepare image data.
+        final images = await _prepareImageData(entity);
+        if (images.isEmpty) {
+          throw StateError('No image data available for $imageEntryId');
+        }
+
+        // 5. Call inference with separate system/user messages.
+        final responseStream = _cloudRepository.generateWithImages(
+          promptResult.userMessage,
+          baseUrl: provider.baseUrl,
+          apiKey: provider.apiKey,
+          model: modelId,
+          temperature: null,
+          images: images,
+          provider: provider,
+          systemMessage: promptResult.systemMessage,
+        );
+
+        // 6. Collect streaming response.
+        final buffer = StringBuffer();
+        await for (final chunk in responseStream) {
+          final content = chunk.choices?.firstOrNull?.delta?.content;
+          if (content != null) {
+            buffer.write(content);
+          }
+        }
+
+        final response = buffer.toString().trim();
+        if (response.isEmpty) {
+          throw StateError(
+            'Empty image analysis response for $imageEntryId',
+          );
+        }
+
+        // 7. Save result — append to entryText.
+        final currentImage =
+            await EntityStateHelper.getCurrentEntityState<JournalImage>(
+              entityId: imageEntryId,
+              aiInputRepo: _aiInputRepository,
+              entityTypeName: 'image analysis',
+            );
+        if (currentImage == null) {
+          throw StateError('Image entity $imageEntryId disappeared mid-run');
+        }
+
+        final originalText = currentImage.entryText?.markdown ?? '';
+        final amendedText = originalText.isEmpty
+            ? response
+            : '$originalText\n\n$response';
+
+        final updated = currentImage.copyWith(
+          entryText: EntryText(
+            plainText: amendedText,
+            markdown: amendedText,
+          ),
+        );
+        await _journalRepository.updateJournalEntity(updated);
+
+        _loggingService.captureEvent(
+          'Skill-based image analysis completed for $imageEntryId '
+          '(${response.length} chars)',
+          domain: _logTag,
+          subDomain: 'runImageAnalysis',
+        );
+      },
+    );
   }
 
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.
