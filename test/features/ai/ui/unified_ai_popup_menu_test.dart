@@ -1024,41 +1024,44 @@ void main() {
     });
   });
 
-  group('Image Generation Handling Tests', () {
+  group('Image Generation Skill Handling', () {
     testWidgets(
-      'image generation prompt from non-audio entry returns early without modal',
+      'tapping image generation skill without linked task logs and returns',
       (tester) async {
-        // Create an image generation prompt
-        final imageGenPrompt =
-            AiConfig.prompt(
-                  id: 'img-gen-prompt',
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill =
+            AiConfig.skill(
+                  id: 'skill-cover-art',
                   name: 'Generate Cover Art',
-                  systemMessage: 'Generate cover art',
-                  userMessage: 'Generate cover art for this task',
-                  defaultModelId: 'model-1',
-                  modelIds: ['model-1'],
-                  createdAt: DateTime(2024, 3, 15, 10),
-                  useReasoning: false,
-                  requiredInputData: [],
-                  aiResponseType:
-                      AiResponseType.imageGeneration, // Image generation type
-                  description: 'Generate cover art',
+                  createdAt: now,
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  systemInstructions: 'Generate cover art',
+                  userInstructions: 'Create an image',
+                  description: 'Generates cover art images',
                 )
-                as AiConfigPrompt;
+                as AiConfigSkill;
 
+        // JournalDb stubs return empty results so _resolveLinkedTask returns
+        // null (no linked task found in either direction).
         await tester.pumpWidget(
           buildTestWidget(
             UnifiedAiPopUpMenu(
-              journalEntity: testImageEntity, // Not an audio entry
-              linkedFromId: 'some-task-id',
+              journalEntity: testAudioEntity,
+              linkedFromId: null,
             ),
             overrides: [
               hasAvailablePromptsProvider(
-                testImageEntity.id,
+                testAudioEntity.id,
               ).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([imageGenSkill]),
+              ),
               availablePromptsProvider(
-                testImageEntity.id,
-              ).overrideWith((ref) => Future.value([imageGenPrompt])),
+                testAudioEntity.id,
+              ).overrideWith((ref) => Future.value([])),
             ],
           ),
         );
@@ -1069,49 +1072,79 @@ void main() {
         await tester.tap(find.byIcon(Icons.assistant_rounded));
         await tester.pumpAndSettle();
 
-        // Select the image generation prompt
+        // Tap the image generation skill
         await tester.tap(find.text('Generate Cover Art'));
         await tester.pumpAndSettle();
 
-        // The modal should close and no ImageGenerationReviewModal should appear
-        // because the entity is not a JournalAudio
+        // Modal should close without showing CoverArtSkillModal since there's
+        // no linked task
         expect(find.byType(UnifiedAiPromptsList), findsNothing);
       },
     );
 
     testWidgets(
-      'image generation prompt from audio entry without linked task',
+      'tapping image generation skill with linked task opens cover art modal',
       (tester) async {
-        // Create an image generation prompt
-        final imageGenPrompt =
-            AiConfig.prompt(
-                  id: 'img-gen-prompt',
+        final now = DateTime(2024, 3, 15, 10);
+        final imageGenSkill =
+            AiConfig.skill(
+                  id: 'skill-cover-art',
                   name: 'Generate Cover Art',
-                  systemMessage: 'Generate cover art',
-                  userMessage: 'Generate cover art for this task',
-                  defaultModelId: 'model-1',
-                  modelIds: ['model-1'],
-                  createdAt: DateTime(2024, 3, 15, 10),
-                  useReasoning: false,
-                  requiredInputData: [],
-                  aiResponseType: AiResponseType.imageGeneration,
-                  description: 'Generate cover art',
+                  createdAt: now,
+                  skillType: SkillType.imageGeneration,
+                  requiredInputModalities: [Modality.text],
+                  systemInstructions: 'Generate cover art',
+                  userInstructions: 'Create an image',
+                  description: 'Generates cover art images',
                 )
-                as AiConfigPrompt;
+                as AiConfigSkill;
+
+        final linkedTask = Task(
+          meta: Metadata(
+            id: 'linked-task-1',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            categoryId: 'cat-1',
+          ),
+          data: TaskData(
+            title: 'Linked Task',
+            status: TaskStatus.open(
+              id: 'status-1',
+              createdAt: now,
+              utcOffset: 0,
+            ),
+            dateFrom: now,
+            dateTo: now.add(const Duration(hours: 1)),
+            statusHistory: [],
+          ),
+        );
+
+        // Make getLinkedEntities return the linked task so
+        // _resolveLinkedTask succeeds.
+        when(
+          () => mockJournalDb.getLinkedEntities(testAudioEntity.id),
+        ).thenAnswer((_) async => [linkedTask]);
 
         await tester.pumpWidget(
           buildTestWidget(
             UnifiedAiPopUpMenu(
               journalEntity: testAudioEntity,
-              linkedFromId: null, // No linked task
+              linkedFromId: null,
             ),
             overrides: [
               hasAvailablePromptsProvider(
                 testAudioEntity.id,
               ).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider(
+                testAudioEntity.id,
+              ).overrideWith(
+                (ref) => Future.value([imageGenSkill]),
+              ),
               availablePromptsProvider(
                 testAudioEntity.id,
-              ).overrideWith((ref) => Future.value([imageGenPrompt])),
+              ).overrideWith((ref) => Future.value([])),
             ],
           ),
         );
@@ -1122,14 +1155,191 @@ void main() {
         await tester.tap(find.byIcon(Icons.assistant_rounded));
         await tester.pumpAndSettle();
 
-        // Select the image generation prompt
+        // Tap the image generation skill
         await tester.tap(find.text('Generate Cover Art'));
-        await tester.pumpAndSettle();
+        // Pump through the modal close animation and cover art modal open.
+        // Use pump(duration) instead of pumpAndSettle() because the cover
+        // art modal contains animations that never settle.
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
 
-        // Should handle gracefully without crashing
+        // The original prompt list modal should be closed and the cover
+        // art modal should be visible (showing loading state).
         expect(find.byType(UnifiedAiPromptsList), findsNothing);
       },
     );
+  });
+
+  group('resolveLinkedTask', () {
+    late MockJournalRepository mockJournalRepository;
+    final now = DateTime(2024, 3, 15, 10);
+
+    setUp(() {
+      mockJournalRepository = MockJournalRepository();
+    });
+
+    test('returns entity directly when it is a Task', () async {
+      final taskEntity = Task(
+        meta: Metadata(
+          id: 'task-direct',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Direct Task',
+          status: TaskStatus.open(
+            id: 'st-1',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: taskEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(taskEntity));
+      verifyZeroInteractions(mockJournalRepository);
+    });
+
+    test('returns preferred task when preferredTaskId is provided', () async {
+      final preferredTask = Task(
+        meta: Metadata(
+          id: 'preferred-task',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Preferred',
+          status: TaskStatus.open(
+            id: 'st-2',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getJournalEntityById('preferred-task'),
+      ).thenAnswer((_) async => preferredTask);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+        preferredTaskId: 'preferred-task',
+      );
+
+      expect(result, same(preferredTask));
+    });
+
+    test('falls back to outgoing links when no preferred task', () async {
+      final linkedTask = Task(
+        meta: Metadata(
+          id: 'linked-out',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Linked Out',
+          status: TaskStatus.open(
+            id: 'st-3',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => [linkedTask]);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(linkedTask));
+    });
+
+    test('falls back to incoming links when no outgoing task', () async {
+      final incomingTask = Task(
+        meta: Metadata(
+          id: 'linked-in',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now,
+        ),
+        data: TaskData(
+          title: 'Linked In',
+          status: TaskStatus.open(
+            id: 'st-4',
+            createdAt: now,
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+          dateFrom: now,
+          dateTo: now,
+        ),
+      );
+
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => [incomingTask]);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, same(incomingTask));
+    });
+
+    test('returns null when no linked task found', () async {
+      when(
+        () => mockJournalRepository.getLinkedEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepository.getLinkedToEntities(
+          linkedTo: testAudioEntity.id,
+        ),
+      ).thenAnswer((_) async => []);
+
+      final result = await UnifiedAiModal.resolveLinkedTask(
+        journalEntity: testAudioEntity,
+        journalRepo: mockJournalRepository,
+      );
+
+      expect(result, isNull);
+    });
   });
 
   group('isDefaultPromptSync Tests', () {

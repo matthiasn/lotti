@@ -22,6 +22,7 @@ sealed class ReferenceImageSelectionState with _$ReferenceImageSelectionState {
   const factory ReferenceImageSelectionState({
     @Default([]) List<JournalImage> availableImages,
     @Default({}) Set<String> selectedImageIds,
+    @Default({}) Set<String> linkedTaskImageIds,
     @Default(false) bool isLoading,
     @Default(false) bool isProcessing,
 
@@ -51,13 +52,40 @@ class ReferenceImageSelectionController
   Future<void> _loadAvailableImages() async {
     try {
       final journalRepository = ref.read(journalRepositoryProvider);
-      final images = await journalRepository.getLinkedImagesForTask(taskId);
 
-      // Check if still mounted after async operation
+      // 1. Directly linked images (existing behavior).
+      final directImages = await journalRepository.getLinkedImagesForTask(
+        taskId,
+      );
+
       if (!ref.mounted) return;
 
+      // 2. Cover art from linked tasks.
+      final linkedTaskCoverArt = await _fetchLinkedTaskCoverArt(
+        journalRepository,
+      );
+
+      if (!ref.mounted) return;
+
+      // 3. Deduplicate (a directly linked image might also be a linked
+      // task's cover art).
+      final directIds = directImages.map((img) => img.meta.id).toSet();
+      final seen = <String>{};
+      final combined = <JournalImage>[];
+      final linkedIds = <String>{};
+      for (final img in [...directImages, ...linkedTaskCoverArt]) {
+        if (seen.add(img.meta.id)) {
+          combined.add(img);
+          // Mark as linked-task image only if it wasn't directly linked.
+          if (!directIds.contains(img.meta.id)) {
+            linkedIds.add(img.meta.id);
+          }
+        }
+      }
+
       state = state.copyWith(
-        availableImages: images,
+        availableImages: combined,
+        linkedTaskImageIds: linkedIds,
         isLoading: false,
       );
     } catch (e) {
@@ -76,6 +104,55 @@ class ReferenceImageSelectionController
         errorDetail: e.toString(),
       );
     }
+  }
+
+  /// Fetches cover art images from tasks linked to this task (both
+  /// directions: outgoing and incoming links).
+  Future<List<JournalImage>> _fetchLinkedTaskCoverArt(
+    JournalRepository journalRepository,
+  ) async {
+    final coverArtImages = <JournalImage>[];
+
+    try {
+      // Get outgoing links (this task → other entities)
+      final outgoingLinks = await journalRepository.getLinksFromId(taskId);
+      // Get incoming links (other entities → this task)
+      final incomingLinks = await journalRepository.getLinkedToEntities(
+        linkedTo: taskId,
+      );
+
+      if (!ref.mounted) return coverArtImages;
+
+      // Collect unique linked entity IDs
+      final linkedEntityIds = <String>{
+        ...outgoingLinks.map((link) => link.toId),
+        ...incomingLinks.map((entity) => entity.id),
+      };
+
+      // For each linked entity that is a Task with cover art, fetch the image.
+      for (final entityId in linkedEntityIds) {
+        if (!ref.mounted) return coverArtImages;
+
+        final entity = await journalRepository.getJournalEntityById(entityId);
+        if (entity is Task && entity.data.coverArtId != null) {
+          final coverArtImage = await journalRepository.getJournalEntityById(
+            entity.data.coverArtId!,
+          );
+          if (coverArtImage is JournalImage) {
+            coverArtImages.add(coverArtImage);
+          }
+        }
+      }
+    } catch (e) {
+      developer.log(
+        'Failed to fetch linked task cover art for $taskId: $e',
+        name: 'ReferenceImageSelectionController',
+        error: e,
+      );
+      // Non-fatal: return whatever we collected so far.
+    }
+
+    return coverArtImages;
   }
 
   void toggleImageSelection(String imageId) {

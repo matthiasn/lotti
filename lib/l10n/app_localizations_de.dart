@@ -1980,6 +1980,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get coverArtChipSet => 'Titelbild setzen';
 
   @override
+  String get coverArtGenerationComplete => 'Cover-Art fertig!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Du kannst dies schließen — die Generierung läuft im Hintergrund weiter';
+
+  @override
   String get coverArtRemove => 'Titelbild entfernen';
 
   @override
@@ -2880,6 +2887,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get linkedFromLabel => 'VERKNÜPFT VON';
 
   @override
+  String get linkedTaskImageBadge => 'Von verknüpfter Aufgabe';
+
+  @override
   String get linkedTasksMenuTooltip => 'Optionen für verknüpfte Aufgaben';
 
   @override
@@ -3503,7 +3513,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Wähle bis zu 3 Bilder, um den visuellen Stil der KI zu leiten';
+      'Wähle bis zu 5 Bilder, um den visuellen Stil der KI zu leiten';
 
   @override
   String get referenceImageSelectionTitle => 'Referenzbilder auswählen';
@@ -3666,13 +3676,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsAiApiKeys => 'AI-Inferenz-Anbieter';
-
-  @override
-  String get settingsWhatsNewSubtitle =>
-      'Sieh dir die neuesten Updates und Funktionen an';
-
-  @override
-  String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
 
   @override
   String get settingsAiModels => 'AI-Modelle';
@@ -4231,6 +4234,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Farbschema';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Sieh dir die neuesten Updates und Funktionen an';
+
+  @override
+  String get settingsWhatsNewTitle => 'Was gibt\'s Neues';
 
   @override
   String get settingThemingDark => 'Dunkles Design';

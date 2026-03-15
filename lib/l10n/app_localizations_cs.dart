@@ -1968,6 +1968,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get coverArtChipSet => 'Nastavit obal';
 
   @override
+  String get coverArtGenerationComplete => 'Obálka je připravena!';
+
+  @override
+  String get coverArtGenerationDismissHint =>
+      'Můžeš to zavřít — generování pokračuje na pozadí';
+
+  @override
   String get coverArtRemove => 'Odebrat jako obal';
 
   @override
@@ -2852,6 +2859,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedFromLabel => 'PROPOJENO Z';
 
   @override
+  String get linkedTaskImageBadge => 'Z propojené úlohy';
+
+  @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
 
   @override
@@ -3493,7 +3503,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get referenceImageSelectionSubtitle =>
-      'Vyberte až 3 obrázky pro vedení vizuálního stylu AI';
+      'Vyberte až 5 obrázků pro vedení vizuálního stylu AI';
 
   @override
   String get referenceImageSelectionTitle => 'Vyberte referenční obrázky';
@@ -3654,13 +3664,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsAiApiKeys => 'Poskytovatelé AI inferencí';
-
-  @override
-  String get settingsWhatsNewSubtitle =>
-      'Podívej se na nejnovější aktualizace a funkce';
-
-  @override
-  String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
   String get settingsAiModels => 'AI modely';
@@ -4217,6 +4220,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsThemingTitle => 'Vzhled';
+
+  @override
+  String get settingsWhatsNewSubtitle =>
+      'Podívej se na nejnovější aktualizace a funkce';
+
+  @override
+  String get settingsWhatsNewTitle => 'Co je nového';
 
   @override
   String get settingThemingDark => 'Tmavé téma';

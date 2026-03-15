@@ -16,6 +16,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/util/ai_error_utils.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -424,6 +425,7 @@ final availableSkillsForEntityProvider = FutureProvider.autoDispose
           SkillType.transcription,
           SkillType.imageAnalysis,
           SkillType.promptGeneration,
+          SkillType.imageGeneration,
         };
 
         final skills = allConfigs.whereType<AiConfigSkill>().where((skill) {
@@ -464,6 +466,7 @@ typedef TriggerSkillParams = ({
   String entityId,
   String skillId,
   String? linkedTaskId,
+  List<ProcessedReferenceImage>? referenceImages,
 });
 
 /// Provider to trigger a skill-based inference run.
@@ -555,8 +558,21 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
               );
-            case SkillType.imagePromptGeneration:
             case SkillType.imageGeneration:
+              final linkedTaskId = params.linkedTaskId;
+              if (linkedTaskId == null) {
+                throw StateError(
+                  'Image generation requires a linkedTaskId, '
+                  'but it was null for entity ${params.entityId}',
+                );
+              }
+              await runner.runImageGeneration(
+                audioEntryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: linkedTaskId,
+                referenceImages: params.referenceImages,
+              );
+            case SkillType.imagePromptGeneration:
               developer.log(
                 'Skill type ${skill.skillType} not yet supported for '
                 'direct invocation via triggerSkillProvider',

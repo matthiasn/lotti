@@ -166,11 +166,15 @@ class _ReferenceImageSelectionWidgetState
                   image.meta.id,
                 );
                 final canSelect = state.canSelectMore || isSelected;
+                final isFromLinkedTask = state.linkedTaskImageIds.contains(
+                  image.meta.id,
+                );
 
                 return _ImageGridTile(
                   image: image,
                   isSelected: isSelected,
                   canSelect: canSelect,
+                  isFromLinkedTask: isFromLinkedTask,
                   onTap: () => controller.toggleImageSelection(image.meta.id),
                 );
               },
@@ -207,12 +211,14 @@ class _ImageGridTile extends StatelessWidget {
     required this.image,
     required this.isSelected,
     required this.canSelect,
+    required this.isFromLinkedTask,
     required this.onTap,
   });
 
   final JournalImage image;
   final bool isSelected;
   final bool canSelect;
+  final bool isFromLinkedTask;
   final VoidCallback onTap;
 
   @override
@@ -268,6 +274,29 @@ class _ImageGridTile extends StatelessWidget {
                       Icons.check,
                       size: 16,
                       color: colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              // Linked-task indicator
+              if (isFromLinkedTask)
+                Positioned(
+                  bottom: 4,
+                  left: 4,
+                  child: Tooltip(
+                    message: context.messages.linkedTaskImageBadge,
+                    child: Container(
+                      padding: const EdgeInsets.all(3),
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondaryContainer.withValues(
+                          alpha: 0.85,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Icon(
+                        Icons.link_rounded,
+                        size: 14,
+                        color: colorScheme.onSecondaryContainer,
+                      ),
                     ),
                   ),
                 ),

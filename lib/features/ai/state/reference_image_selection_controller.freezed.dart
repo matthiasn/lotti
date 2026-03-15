@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$ReferenceImageSelectionState {
 
- List<JournalImage> get availableImages; Set<String> get selectedImageIds; bool get isLoading; bool get isProcessing;/// Error code for display (to be localized by the widget layer).
+ List<JournalImage> get availableImages; Set<String> get selectedImageIds; Set<String> get linkedTaskImageIds; bool get isLoading; bool get isProcessing;/// Error code for display (to be localized by the widget layer).
  ReferenceImageSelectionError? get errorCode;/// Raw error details for logging/debugging (not for display).
  String? get errorDetail;
 /// Create a copy of ReferenceImageSelectionState
@@ -27,16 +27,16 @@ $ReferenceImageSelectionStateCopyWith<ReferenceImageSelectionState> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReferenceImageSelectionState&&const DeepCollectionEquality().equals(other.availableImages, availableImages)&&const DeepCollectionEquality().equals(other.selectedImageIds, selectedImageIds)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isProcessing, isProcessing) || other.isProcessing == isProcessing)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorDetail, errorDetail) || other.errorDetail == errorDetail));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ReferenceImageSelectionState&&const DeepCollectionEquality().equals(other.availableImages, availableImages)&&const DeepCollectionEquality().equals(other.selectedImageIds, selectedImageIds)&&const DeepCollectionEquality().equals(other.linkedTaskImageIds, linkedTaskImageIds)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isProcessing, isProcessing) || other.isProcessing == isProcessing)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorDetail, errorDetail) || other.errorDetail == errorDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(availableImages),const DeepCollectionEquality().hash(selectedImageIds),isLoading,isProcessing,errorCode,errorDetail);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(availableImages),const DeepCollectionEquality().hash(selectedImageIds),const DeepCollectionEquality().hash(linkedTaskImageIds),isLoading,isProcessing,errorCode,errorDetail);
 
 @override
 String toString() {
-  return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
+  return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, linkedTaskImageIds: $linkedTaskImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
 }
 
 
@@ -47,7 +47,7 @@ abstract mixin class $ReferenceImageSelectionStateCopyWith<$Res>  {
   factory $ReferenceImageSelectionStateCopyWith(ReferenceImageSelectionState value, $Res Function(ReferenceImageSelectionState) _then) = _$ReferenceImageSelectionStateCopyWithImpl;
 @useResult
 $Res call({
- List<JournalImage> availableImages, Set<String> selectedImageIds, bool isLoading, bool isProcessing, ReferenceImageSelectionError? errorCode, String? errorDetail
+ List<JournalImage> availableImages, Set<String> selectedImageIds, Set<String> linkedTaskImageIds, bool isLoading, bool isProcessing, ReferenceImageSelectionError? errorCode, String? errorDetail
 });
 
 
@@ -64,10 +64,11 @@ class _$ReferenceImageSelectionStateCopyWithImpl<$Res>
 
 /// Create a copy of ReferenceImageSelectionState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? availableImages = null,Object? selectedImageIds = null,Object? isLoading = null,Object? isProcessing = null,Object? errorCode = freezed,Object? errorDetail = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? availableImages = null,Object? selectedImageIds = null,Object? linkedTaskImageIds = null,Object? isLoading = null,Object? isProcessing = null,Object? errorCode = freezed,Object? errorDetail = freezed,}) {
   return _then(_self.copyWith(
 availableImages: null == availableImages ? _self.availableImages : availableImages // ignore: cast_nullable_to_non_nullable
 as List<JournalImage>,selectedImageIds: null == selectedImageIds ? _self.selectedImageIds : selectedImageIds // ignore: cast_nullable_to_non_nullable
+as Set<String>,linkedTaskImageIds: null == linkedTaskImageIds ? _self.linkedTaskImageIds : linkedTaskImageIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isProcessing: null == isProcessing ? _self.isProcessing : isProcessing // ignore: cast_nullable_to_non_nullable
 as bool,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  Set<String> linkedTaskImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _ReferenceImageSelectionState() when $default != null:
-return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);case _:
+return $default(_that.availableImages,_that.selectedImageIds,_that.linkedTaskImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  Set<String> linkedTaskImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)  $default,) {final _that = this;
 switch (_that) {
 case _ReferenceImageSelectionState():
-return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);}
+return $default(_that.availableImages,_that.selectedImageIds,_that.linkedTaskImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -192,10 +193,10 @@ return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_th
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<JournalImage> availableImages,  Set<String> selectedImageIds,  Set<String> linkedTaskImageIds,  bool isLoading,  bool isProcessing,  ReferenceImageSelectionError? errorCode,  String? errorDetail)?  $default,) {final _that = this;
 switch (_that) {
 case _ReferenceImageSelectionState() when $default != null:
-return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);case _:
+return $default(_that.availableImages,_that.selectedImageIds,_that.linkedTaskImageIds,_that.isLoading,_that.isProcessing,_that.errorCode,_that.errorDetail);case _:
   return null;
 
 }
@@ -207,7 +208,7 @@ return $default(_that.availableImages,_that.selectedImageIds,_that.isLoading,_th
 
 
 class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
-  const _ReferenceImageSelectionState({final  List<JournalImage> availableImages = const [], final  Set<String> selectedImageIds = const {}, this.isLoading = false, this.isProcessing = false, this.errorCode, this.errorDetail}): _availableImages = availableImages,_selectedImageIds = selectedImageIds;
+  const _ReferenceImageSelectionState({final  List<JournalImage> availableImages = const [], final  Set<String> selectedImageIds = const {}, final  Set<String> linkedTaskImageIds = const {}, this.isLoading = false, this.isProcessing = false, this.errorCode, this.errorDetail}): _availableImages = availableImages,_selectedImageIds = selectedImageIds,_linkedTaskImageIds = linkedTaskImageIds;
   
 
  final  List<JournalImage> _availableImages;
@@ -222,6 +223,13 @@ class _ReferenceImageSelectionState implements ReferenceImageSelectionState {
   if (_selectedImageIds is EqualUnmodifiableSetView) return _selectedImageIds;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableSetView(_selectedImageIds);
+}
+
+ final  Set<String> _linkedTaskImageIds;
+@override@JsonKey() Set<String> get linkedTaskImageIds {
+  if (_linkedTaskImageIds is EqualUnmodifiableSetView) return _linkedTaskImageIds;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableSetView(_linkedTaskImageIds);
 }
 
 @override@JsonKey() final  bool isLoading;
@@ -241,16 +249,16 @@ _$ReferenceImageSelectionStateCopyWith<_ReferenceImageSelectionState> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReferenceImageSelectionState&&const DeepCollectionEquality().equals(other._availableImages, _availableImages)&&const DeepCollectionEquality().equals(other._selectedImageIds, _selectedImageIds)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isProcessing, isProcessing) || other.isProcessing == isProcessing)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorDetail, errorDetail) || other.errorDetail == errorDetail));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ReferenceImageSelectionState&&const DeepCollectionEquality().equals(other._availableImages, _availableImages)&&const DeepCollectionEquality().equals(other._selectedImageIds, _selectedImageIds)&&const DeepCollectionEquality().equals(other._linkedTaskImageIds, _linkedTaskImageIds)&&(identical(other.isLoading, isLoading) || other.isLoading == isLoading)&&(identical(other.isProcessing, isProcessing) || other.isProcessing == isProcessing)&&(identical(other.errorCode, errorCode) || other.errorCode == errorCode)&&(identical(other.errorDetail, errorDetail) || other.errorDetail == errorDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableImages),const DeepCollectionEquality().hash(_selectedImageIds),isLoading,isProcessing,errorCode,errorDetail);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_availableImages),const DeepCollectionEquality().hash(_selectedImageIds),const DeepCollectionEquality().hash(_linkedTaskImageIds),isLoading,isProcessing,errorCode,errorDetail);
 
 @override
 String toString() {
-  return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
+  return 'ReferenceImageSelectionState(availableImages: $availableImages, selectedImageIds: $selectedImageIds, linkedTaskImageIds: $linkedTaskImageIds, isLoading: $isLoading, isProcessing: $isProcessing, errorCode: $errorCode, errorDetail: $errorDetail)';
 }
 
 
@@ -261,7 +269,7 @@ abstract mixin class _$ReferenceImageSelectionStateCopyWith<$Res> implements $Re
   factory _$ReferenceImageSelectionStateCopyWith(_ReferenceImageSelectionState value, $Res Function(_ReferenceImageSelectionState) _then) = __$ReferenceImageSelectionStateCopyWithImpl;
 @override @useResult
 $Res call({
- List<JournalImage> availableImages, Set<String> selectedImageIds, bool isLoading, bool isProcessing, ReferenceImageSelectionError? errorCode, String? errorDetail
+ List<JournalImage> availableImages, Set<String> selectedImageIds, Set<String> linkedTaskImageIds, bool isLoading, bool isProcessing, ReferenceImageSelectionError? errorCode, String? errorDetail
 });
 
 
@@ -278,10 +286,11 @@ class __$ReferenceImageSelectionStateCopyWithImpl<$Res>
 
 /// Create a copy of ReferenceImageSelectionState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? availableImages = null,Object? selectedImageIds = null,Object? isLoading = null,Object? isProcessing = null,Object? errorCode = freezed,Object? errorDetail = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? availableImages = null,Object? selectedImageIds = null,Object? linkedTaskImageIds = null,Object? isLoading = null,Object? isProcessing = null,Object? errorCode = freezed,Object? errorDetail = freezed,}) {
   return _then(_ReferenceImageSelectionState(
 availableImages: null == availableImages ? _self._availableImages : availableImages // ignore: cast_nullable_to_non_nullable
 as List<JournalImage>,selectedImageIds: null == selectedImageIds ? _self._selectedImageIds : selectedImageIds // ignore: cast_nullable_to_non_nullable
+as Set<String>,linkedTaskImageIds: null == linkedTaskImageIds ? _self._linkedTaskImageIds : linkedTaskImageIds // ignore: cast_nullable_to_non_nullable
 as Set<String>,isLoading: null == isLoading ? _self.isLoading : isLoading // ignore: cast_nullable_to_non_nullable
 as bool,isProcessing: null == isProcessing ? _self.isProcessing : isProcessing // ignore: cast_nullable_to_non_nullable
 as bool,errorCode: freezed == errorCode ? _self.errorCode : errorCode // ignore: cast_nullable_to_non_nullable

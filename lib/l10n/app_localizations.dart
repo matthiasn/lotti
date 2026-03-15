@@ -3549,6 +3549,18 @@ abstract class AppLocalizations {
   /// **'Set cover'**
   String get coverArtChipSet;
 
+  /// No description provided for @coverArtGenerationComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Cover art ready!'**
+  String get coverArtGenerationComplete;
+
+  /// No description provided for @coverArtGenerationDismissHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You can close this — generation continues in the background'**
+  String get coverArtGenerationDismissHint;
+
   /// No description provided for @coverArtRemove.
   ///
   /// In en, this message translates to:
@@ -5163,6 +5175,12 @@ abstract class AppLocalizations {
   /// **'LINKED FROM'**
   String get linkedFromLabel;
 
+  /// No description provided for @linkedTaskImageBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'From linked task'**
+  String get linkedTaskImageBadge;
+
   /// No description provided for @linkedTasksMenuTooltip.
   ///
   /// In en, this message translates to:
@@ -6238,7 +6256,7 @@ abstract class AppLocalizations {
   /// No description provided for @referenceImageSelectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose up to 3 images to guide the AI\'s visual style'**
+  /// **'Choose up to 5 images to guide the AI\'s visual style'**
   String get referenceImageSelectionSubtitle;
 
   /// No description provided for @referenceImageSelectionTitle.
@@ -6540,18 +6558,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Inference Providers'**
   String get settingsAiApiKeys;
-
-  /// No description provided for @settingsWhatsNewSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'See the latest updates and features'**
-  String get settingsWhatsNewSubtitle;
-
-  /// No description provided for @settingsWhatsNewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'What\'s New'**
-  String get settingsWhatsNewTitle;
 
   /// No description provided for @settingsAiModels.
   ///
@@ -7545,6 +7551,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Theming'**
   String get settingsThemingTitle;
+
+  /// No description provided for @settingsWhatsNewSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See the latest updates and features'**
+  String get settingsWhatsNewSubtitle;
+
+  /// No description provided for @settingsWhatsNewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s New'**
+  String get settingsWhatsNewTitle;
 
   /// No description provided for @settingThemingDark.
   ///

@@ -97,8 +97,8 @@ void main() {
       expect(kMaxReferenceDimension, 2000);
     });
 
-    test('kMaxReferenceImages is 3', () {
-      expect(kMaxReferenceImages, 3);
+    test('kMaxReferenceImages is 5', () {
+      expect(kMaxReferenceImages, 5);
     });
 
     test('kMaxReferenceDimension is a positive integer', () {

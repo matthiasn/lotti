@@ -113,7 +113,8 @@ extension AiResponseTypeDisplay on AiResponseType {
       // ignore: deprecated_member_use_from_same_package
       this == AiResponseType.taskSummary ||
       // ignore: deprecated_member_use_from_same_package
-      this == AiResponseType.checklistUpdates;
+      this == AiResponseType.checklistUpdates ||
+      this == AiResponseType.imageGeneration;
 
   /// Returns true if this is a prompt generation type (coding or image).
   /// These types share common behavior:

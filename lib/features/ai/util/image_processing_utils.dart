@@ -10,7 +10,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 const int kMaxReferenceDimension = 2000;
 
 /// Maximum number of reference images allowed.
-const int kMaxReferenceImages = 3;
+const int kMaxReferenceImages = 5;
 
 /// Represents a processed reference image ready for API submission.
 class ProcessedReferenceImage {

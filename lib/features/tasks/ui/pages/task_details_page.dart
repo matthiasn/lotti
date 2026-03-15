@@ -182,6 +182,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                   AiResponseType.imageAnalysis,
                   AiResponseType.audioTranscription,
                   AiResponseType.promptGeneration,
+                  AiResponseType.imageGeneration,
                 },
               ),
             ),

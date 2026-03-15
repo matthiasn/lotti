@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -1648,6 +1649,7 @@ void main() {
           entityId: 'entity-1',
           skillId: 'nonexistent-skill',
           linkedTaskId: 'task-1',
+          referenceImages: null,
         )).future,
       );
 
@@ -1684,6 +1686,7 @@ void main() {
           entityId: 'entity-1',
           skillId: 'skill-1',
           linkedTaskId: null,
+          referenceImages: null,
         )).future,
       );
 
@@ -1724,6 +1727,7 @@ void main() {
           entityId: 'audio-1',
           skillId: 'skill-2',
           linkedTaskId: 'task-no-profile',
+          referenceImages: null,
         )).future,
       );
 
@@ -1800,6 +1804,7 @@ void main() {
           entityId: 'audio-entry-1',
           skillId: 'skill-transcribe',
           linkedTaskId: 'task-1',
+          referenceImages: null,
         )).future,
       );
 
@@ -1881,6 +1886,7 @@ void main() {
           entityId: 'image-entry-1',
           skillId: 'skill-image',
           linkedTaskId: 'task-img',
+          referenceImages: null,
         )).future,
       );
 
@@ -1950,6 +1956,7 @@ void main() {
           entityId: 'audio-entry-2',
           skillId: 'skill-prompt',
           linkedTaskId: 'task-prompt',
+          referenceImages: null,
         )).future,
       );
 
@@ -1961,5 +1968,168 @@ void main() {
         ),
       ).called(1);
     });
+
+    test('successfully routes image generation skill to runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-imggen',
+                name: 'Generate Cover Art',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.imageGeneration,
+                requiredInputModalities: [Modality.text],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final imageGenProvider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://generativelanguage.googleapis.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: imageGenProvider,
+        imageGenerationModelId: 'imagen-model',
+        imageGenerationProvider: imageGenProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-imggen'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runImageGeneration(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-imggen').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-entry-3',
+          skillId: 'skill-imggen',
+          linkedTaskId: 'task-imggen',
+          referenceImages: null,
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runImageGeneration(
+          audioEntryId: 'audio-entry-3',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-imggen',
+          // ignore: avoid_redundant_argument_values
+          referenceImages: null,
+        ),
+      ).called(1);
+    });
+
+    test('passes reference images to image generation runner', () async {
+      final skill =
+          AiConfig.skill(
+                id: 'skill-imggen2',
+                name: 'Generate Cover Art',
+                createdAt: DateTime(2024, 3, 15),
+                skillType: SkillType.imageGeneration,
+                requiredInputModalities: [Modality.text],
+                contextPolicy: ContextPolicy.fullTask,
+                systemInstructions: 'System',
+                userInstructions: 'User',
+              )
+              as AiConfigSkill;
+
+      final imageGenProvider =
+          AiConfig.inferenceProvider(
+                id: 'gemini-prov',
+                name: 'Gemini',
+                inferenceProviderType: InferenceProviderType.gemini,
+                apiKey: 'key',
+                baseUrl: 'https://generativelanguage.googleapis.com',
+                createdAt: DateTime(2024, 3, 15),
+              )
+              as AiConfigInferenceProvider;
+
+      final resolvedProfile = ResolvedProfile(
+        thinkingModelId: 'flash',
+        thinkingProvider: imageGenProvider,
+        imageGenerationModelId: 'imagen-model',
+        imageGenerationProvider: imageGenProvider,
+      );
+
+      when(
+        () => mockResolver.resolveForTask('task-imggen2'),
+      ).thenAnswer((_) async => resolvedProfile);
+
+      when(
+        () => mockRunner.runImageGeneration(
+          audioEntryId: any(named: 'audioEntryId'),
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: any(named: 'linkedTaskId'),
+          referenceImages: any(named: 'referenceImages'),
+        ),
+      ).thenAnswer((_) async {});
+
+      const refImages = [
+        ProcessedReferenceImage(
+          base64Data: 'abc123',
+          mimeType: 'image/png',
+          originalId: 'ref-1',
+        ),
+      ];
+
+      final testContainer = ProviderContainer(
+        overrides: [
+          aiConfigByIdProvider('skill-imggen2').overrideWith(
+            (ref) => Future<AiConfig?>.value(skill),
+          ),
+          profileAutomationResolverProvider.overrideWithValue(mockResolver),
+          skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+        ],
+      );
+      containersToDispose.add(testContainer);
+
+      await testContainer.read(
+        triggerSkillProvider((
+          entityId: 'audio-entry-4',
+          skillId: 'skill-imggen2',
+          linkedTaskId: 'task-imggen2',
+          referenceImages: refImages,
+        )).future,
+      );
+
+      verify(
+        () => mockRunner.runImageGeneration(
+          audioEntryId: 'audio-entry-4',
+          automationResult: any(named: 'automationResult'),
+          linkedTaskId: 'task-imggen2',
+          referenceImages: refImages,
+        ),
+      ).called(1);
+    });
+
+    // Note: null linkedTaskId is already guarded by an early return before
+    // the skill type switch. The image generation case has a redundant
+    // null check as defense-in-depth, but it's unreachable.
   });
 }

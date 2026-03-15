@@ -36,6 +36,7 @@ import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart'
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
+import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/helpers/profile_automation_resolver.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -497,5 +498,8 @@ class MockProfileAutomationService extends Mock
     implements ProfileAutomationService {}
 
 class MockSkillInferenceRunner extends Mock implements SkillInferenceRunner {}
+
+class MockAutomaticImageAnalysisTrigger extends Mock
+    implements AutomaticImageAnalysisTrigger {}
 
 class MockPromptBuilderHelper extends Mock implements PromptBuilderHelper {}

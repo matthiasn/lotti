@@ -177,9 +177,7 @@ class UnifiedAiInferenceRepository {
       if (entity is Task) {
         // Prompt generation types require an audio entry as input (for the
         // transcript) so they should not appear on task-level menus.
-        // Same for imageGeneration which uses audio descriptions/notes.
-        if (prompt.aiResponseType.isPromptGenerationType ||
-            prompt.aiResponseType == AiResponseType.imageGeneration) {
+        if (prompt.aiResponseType.isPromptGenerationType) {
           return false;
         }
         // Direct task entity - always valid as long as additional modality
@@ -199,13 +197,11 @@ class UnifiedAiInferenceRepository {
         return linkedEntities.any((e) => e is Task);
       }
 
-      // Special case: Certain prompts may be triggered from an audio entry
-      // popup even though they only require task context (not audio file upload).
-      // - prompt generation types: use {{audioTranscript}} placeholder
-      // - imageGeneration: generates cover art from audio description/notes
+      // Special case: Prompt generation types may be triggered from an audio
+      // entry popup even though they only require task context (not audio file
+      // upload) — they use the {{audioTranscript}} placeholder.
       if (entity is JournalAudio &&
-          (prompt.aiResponseType == AiResponseType.imageGeneration ||
-              prompt.aiResponseType.isPromptGenerationType)) {
+          prompt.aiResponseType.isPromptGenerationType) {
         final linkedEntities = await ref
             .read(journalRepositoryProvider)
             .getLinkedToEntities(linkedTo: entity.id);
@@ -859,8 +855,8 @@ class UnifiedAiInferenceRepository {
           name: 'UnifiedAiInferenceRepository',
         );
       case AiResponseType.imageGeneration:
-        // Image generation is handled separately via ImageGenerationController
-        // This case should not be reached in normal flow
+        // Image generation is now handled via skills (SkillInferenceRunner).
+        // This case should not be reached in normal flow.
         developer.log(
           'Image generation type received in response processing - no-op',
           name: 'UnifiedAiInferenceRepository',

@@ -31,6 +31,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.924" date="2026-03-15">
+      <description>
+          <p>Cover art skill: image generation now runs as a background skill via the unified skill pipeline, with fire-and-forget workflow that auto-imports the generated image and assigns it as task cover art.</p>
+          <p>Reference image selection: linked-task cover art images are now discovered automatically via bidirectional task graph traversal (with link icon overlay), and the selection limit has been increased from 3 to 5 images.</p>
+          <p>Cover art modal: stays open after triggering generation with Siri waveform progress animation; dismissible without stopping background generation.</p>
+          <p>Automatic image analysis: newly generated cover art images automatically trigger the image analysis skill, just like a manual photo drop.</p>
+      </description>
+    </release>
     <release version="0.9.923" date="2026-03-15">
       <description>
           <p>Inference profiles: new "Thinking (High-End)" model slot for tasks where quality matters more than speed/cost (e.g. coding prompt generation). Falls back to the regular thinking model when not configured.</p>

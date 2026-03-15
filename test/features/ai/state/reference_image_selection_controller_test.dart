@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -19,6 +21,7 @@ void main() {
 
       expect(state.availableImages, isEmpty);
       expect(state.selectedImageIds, isEmpty);
+      expect(state.linkedTaskImageIds, isEmpty);
       expect(state.isLoading, isFalse);
       expect(state.isProcessing, isFalse);
       expect(state.errorCode, isNull);
@@ -51,7 +54,7 @@ void main() {
 
     test('canSelectMore returns false when at limit', () {
       const state = ReferenceImageSelectionState(
-        selectedImageIds: {'id1', 'id2', 'id3'},
+        selectedImageIds: {'id1', 'id2', 'id3', 'id4', 'id5'},
       );
 
       expect(state.canSelectMore, isFalse);
@@ -139,6 +142,17 @@ void main() {
       getIt.registerSingleton<Directory>(mockDocumentsDirectory);
 
       mockJournalRepo = MockJournalRepository();
+
+      // Default stubs for linked-task cover art discovery (no linked tasks).
+      when(
+        () => mockJournalRepo.getLinksFromId(any()),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getLinkedToEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+
       container = ProviderContainer(
         overrides: [
           journalRepositoryProvider.overrideWithValue(mockJournalRepo),
@@ -187,6 +201,72 @@ void main() {
       expect(state.availableImages.length, 2);
     });
 
+    test('populates linkedTaskImageIds for linked-task cover art', () async {
+      const taskId = 'test-task';
+      final directImage = buildTestImage('direct-img');
+      final coverArtImage = buildTestImage('cover-art-img');
+
+      // Direct images
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => [directImage]);
+
+      // Linked task with cover art
+      final linkedTask = Task(
+        meta: Metadata(
+          id: 'linked-task',
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2025),
+            utcOffset: 0,
+          ),
+          title: 'Linked Task',
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+          statusHistory: [],
+          coverArtId: 'cover-art-img',
+        ),
+      );
+
+      when(
+        () => mockJournalRepo.getLinksFromId(taskId),
+      ).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: taskId,
+            toId: 'linked-task',
+            createdAt: DateTime(2025),
+            updatedAt: DateTime(2025),
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => mockJournalRepo.getLinkedToEntities(
+          linkedTo: any(named: 'linkedTo'),
+        ),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalRepo.getJournalEntityById('linked-task'),
+      ).thenAnswer((_) async => linkedTask);
+      when(
+        () => mockJournalRepo.getJournalEntityById('cover-art-img'),
+      ).thenAnswer((_) async => coverArtImage);
+
+      final state = await waitForLoaded(taskId);
+
+      expect(state.availableImages.length, 2);
+      expect(state.linkedTaskImageIds, contains('cover-art-img'));
+      expect(state.linkedTaskImageIds, isNot(contains('direct-img')));
+    });
+
     test('handles error when loading images fails', () async {
       const taskId = 'test-task';
 
@@ -200,6 +280,32 @@ void main() {
       expect(state.errorCode, ReferenceImageSelectionError.loadImagesFailed);
       expect(state.errorDetail, contains('Database error'));
     });
+
+    test(
+      'gracefully handles error in linked-task cover art fetch',
+      () async {
+        const taskId = 'test-task';
+        final directImage = buildTestImage('direct-img');
+
+        // Direct images load fine
+        when(
+          () => mockJournalRepo.getLinkedImagesForTask(taskId),
+        ).thenAnswer((_) async => [directImage]);
+
+        // Linked-task cover art fetch throws
+        when(
+          () => mockJournalRepo.getLinksFromId(taskId),
+        ).thenAnswer((_) async => throw Exception('Link fetch failed'));
+
+        final state = await waitForLoaded(taskId);
+
+        // Should still have the direct image despite the linked-task error
+        expect(state.isLoading, isFalse);
+        expect(state.availableImages.length, 1);
+        expect(state.availableImages.first.meta.id, 'direct-img');
+        expect(state.errorCode, isNull);
+      },
+    );
 
     test('toggleImageSelection adds image to selection', () async {
       const taskId = 'test-task';
@@ -259,6 +365,8 @@ void main() {
         buildTestImage('img-2'),
         buildTestImage('img-3'),
         buildTestImage('img-4'),
+        buildTestImage('img-5'),
+        buildTestImage('img-6'),
       ];
 
       when(
@@ -268,21 +376,23 @@ void main() {
       // Wait for loading to complete
       await waitForLoaded(taskId);
 
-      // Try to select all 4 images (should only allow 3)
+      // Try to select all 6 images (should only allow 5)
       container.read(
           referenceImageSelectionControllerProvider(taskId: taskId).notifier,
         )
         ..toggleImageSelection('img-1')
         ..toggleImageSelection('img-2')
         ..toggleImageSelection('img-3')
-        ..toggleImageSelection('img-4'); // Should be ignored
+        ..toggleImageSelection('img-4')
+        ..toggleImageSelection('img-5')
+        ..toggleImageSelection('img-6'); // Should be ignored
 
       final state = container.read(
         referenceImageSelectionControllerProvider(taskId: taskId),
       );
 
       expect(state.selectedImageIds.length, kMaxReferenceImages);
-      expect(state.selectedImageIds.contains('img-4'), isFalse);
+      expect(state.selectedImageIds.contains('img-6'), isFalse);
     });
 
     test('clearSelection removes all selections', () async {
