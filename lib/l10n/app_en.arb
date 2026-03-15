@@ -1388,6 +1388,7 @@
   "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "journalUnlinkHint": "Unlink",
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
+  "legacyPromptsSectionTitle": "Legacy Prompts",
   "linkedFromLabel": "LINKED FROM",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
@@ -1521,6 +1522,7 @@
       }
     }
   },
+  "noAgentProfileError": "No agent profile configured for this task. Assign an agent with a profile first.",
   "noDefaultLanguage": "No default language",
   "noPromptsAvailable": "No prompts available",
   "noPromptsForType": "No prompts available for this type",
@@ -1888,6 +1890,7 @@
   "settingThemingDark": "Dark Theme",
   "settingThemingLight": "Light Theme",
   "showCompleted": "Show completed",
+  "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Semicolon-separated terms (max 50 chars) for better speech recognition",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Speech Dictionary",

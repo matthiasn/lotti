@@ -1241,6 +1241,7 @@
   "journalUnlinkConfirm": "DA, DESPĂRȚIȚI INTRAREA",
   "journalUnlinkHint": "Despărțiți",
   "journalUnlinkQuestion": "Sigur doriți să despărțiți această intrare?",
+  "legacyPromptsSectionTitle": "Prompturi vechi",
   "linkedFromLabel": "LEGAT DE LA",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
   "linkedTasksTitle": "Sarcini legate",
@@ -1360,6 +1361,7 @@
       }
     }
   },
+  "noAgentProfileError": "Niciun profil de agent configurat pentru această sarcină. Atribuiți mai întâi un agent cu un profil.",
   "noDefaultLanguage": "Fără limbă implicită",
   "noPromptsAvailable": "Nu există prompturi disponibile",
   "noPromptsForType": "Nu există prompturi disponibile pentru acest tip",
@@ -1727,6 +1729,7 @@
   "settingThemingDark": "Temă întunecată",
   "settingThemingLight": "Temă luminoasă",
   "showCompleted": "Afișează finalizate",
+  "skillsSectionTitle": "Competențe",
   "speechDictionaryHelper": "Termeni separați prin punct și virgulă (max 50 caractere) pentru o mai bună recunoaștere vocală",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Dicționar vocal",

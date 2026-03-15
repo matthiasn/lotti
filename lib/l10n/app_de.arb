@@ -1241,6 +1241,7 @@
   "journalUnlinkConfirm": "JA, EINTRAG TRENNEN",
   "journalUnlinkHint": "Trennen",
   "journalUnlinkQuestion": "Möchtest du diesen Eintrag wirklich trennen?",
+  "legacyPromptsSectionTitle": "Alte Prompts",
   "linkedFromLabel": "VERKNÜPFT VON",
   "linkedTasksMenuTooltip": "Optionen für verknüpfte Aufgaben",
   "linkedTasksTitle": "Verknüpfte Aufgaben",
@@ -1360,6 +1361,7 @@
       }
     }
   },
+  "noAgentProfileError": "Kein Agentenprofil für diese Aufgabe konfiguriert. Weise zuerst einen Agenten mit einem Profil zu.",
   "noDefaultLanguage": "Keine Standardsprache",
   "noPromptsAvailable": "Keine Prompts verfügbar",
   "noPromptsForType": "Keine Prompts für diesen Typ verfügbar",
@@ -1727,6 +1729,7 @@
   "settingThemingDark": "Dunkles Design",
   "settingThemingLight": "Helles Design",
   "showCompleted": "Abgeschlossene anzeigen",
+  "skillsSectionTitle": "Skills",
   "speechDictionaryHelper": "Durch Semikolon getrennte Begriffe (max. 50 Zeichen) für bessere Spracherkennung",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Sprachwörterbuch",

@@ -48,8 +48,8 @@ void main() {
           promptFormControllerProvider(configId: null).future,
         );
 
-        // Get the audio transcription template
-        final template = preconfiguredPrompts['audio_transcription']!;
+        // Get the image analysis template
+        final template = preconfiguredPrompts['image_analysis']!;
 
         // Act
         controller.populateFromPreconfiguredPrompt(template);
@@ -70,7 +70,7 @@ void main() {
         expect(state.requiredInputData, equals(template.requiredInputData));
         expect(state.aiResponseType.value, equals(template.aiResponseType));
         expect(state.trackPreconfigured, isTrue);
-        expect(state.preconfiguredPromptId, equals('audio_transcription'));
+        expect(state.preconfiguredPromptId, equals('image_analysis'));
 
         // Check that text controllers were updated
         expect(controller.nameController.text, equals(template.name));
@@ -140,7 +140,7 @@ void main() {
           const testConfigId = 'test-prompt-id';
           final testConfig = AiConfigPrompt(
             id: testConfigId,
-            name: 'Modified Checklist Updates',
+            name: 'Modified Image Analysis',
             systemMessage: 'Modified system message',
             userMessage: 'Modified user message',
             description: 'Modified description',
@@ -148,9 +148,9 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
-            preconfiguredPromptId: 'audio_transcription', // But has the ID
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+            preconfiguredPromptId: 'image_analysis', // But has the ID
           );
 
           when(
@@ -176,10 +176,10 @@ void main() {
               .value;
 
           expect(state!.trackPreconfigured, isTrue);
-          expect(state.preconfiguredPromptId, equals('audio_transcription'));
+          expect(state.preconfiguredPromptId, equals('image_analysis'));
 
           // Should update messages from the preconfigured prompt
-          final template = preconfiguredPrompts['audio_transcription']!;
+          final template = preconfiguredPrompts['image_analysis']!;
           expect(state.systemMessage.value, equals(template.systemMessage));
           expect(state.userMessage.value, equals(template.userMessage));
 
@@ -202,18 +202,18 @@ void main() {
           const testConfigId = 'test-prompt-id';
           final testConfig = AiConfigPrompt(
             id: testConfigId,
-            name: 'Audio Transcription',
-            systemMessage: audioTranscriptionPrompt.systemMessage,
-            userMessage: audioTranscriptionPrompt.userMessage,
+            name: 'Image Analysis',
+            systemMessage: imageAnalysisPrompt.systemMessage,
+            userMessage: imageAnalysisPrompt.userMessage,
             description: 'Description',
             defaultModelId: 'model-1',
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
             useReasoning: false,
-            requiredInputData: [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'audio_transcription',
+            preconfiguredPromptId: 'image_analysis',
           );
 
           when(
@@ -240,7 +240,7 @@ void main() {
 
           expect(state!.trackPreconfigured, isFalse);
           // preconfiguredPromptId should still be present
-          expect(state.preconfiguredPromptId, equals('audio_transcription'));
+          expect(state.preconfiguredPromptId, equals('image_analysis'));
 
           // Messages should not change when disabling
           expect(state.systemMessage.value, equals(testConfig.systemMessage));
@@ -351,18 +351,18 @@ void main() {
         const testConfigId = 'test-prompt-id';
         final testConfig = AiConfigPrompt(
           id: testConfigId,
-          name: 'Audio Transcription',
-          systemMessage: audioTranscriptionPrompt.systemMessage,
-          userMessage: audioTranscriptionPrompt.userMessage,
+          name: 'Image Analysis',
+          systemMessage: imageAnalysisPrompt.systemMessage,
+          userMessage: imageAnalysisPrompt.userMessage,
           description: 'Description',
           defaultModelId: 'model-1',
           modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
           useReasoning: false,
-          requiredInputData: [InputDataType.audioFiles],
-          aiResponseType: AiResponseType.audioTranscription,
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         when(
@@ -417,7 +417,7 @@ void main() {
         );
 
         // Populate from template
-        final template = preconfiguredPrompts['audio_transcription']!;
+        final template = preconfiguredPrompts['image_analysis']!;
         controller
           ..populateFromPreconfiguredPrompt(template)
           // Set required fields for valid form
@@ -444,7 +444,7 @@ void main() {
         expect(capturedConfig.trackPreconfigured, isTrue);
         expect(
           capturedConfig.preconfiguredPromptId,
-          equals('audio_transcription'),
+          equals('image_analysis'),
         );
       });
 
@@ -455,7 +455,7 @@ void main() {
           const testConfigId = 'test-prompt-id';
           final existingConfig = AiConfigPrompt(
             id: testConfigId,
-            name: 'Audio Transcription',
+            name: 'Image Analysis',
             systemMessage: 'System',
             userMessage: 'User',
             description: 'Description',
@@ -463,10 +463,10 @@ void main() {
             modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 14),
             useReasoning: false,
-            requiredInputData: [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
             trackPreconfigured: true,
-            preconfiguredPromptId: 'audio_transcription',
+            preconfiguredPromptId: 'image_analysis',
           );
 
           when(
@@ -505,7 +505,7 @@ void main() {
           expect(capturedConfig.trackPreconfigured, isTrue);
           expect(
             capturedConfig.preconfiguredPromptId,
-            equals('audio_transcription'),
+            equals('image_analysis'),
           );
           expect(capturedConfig.name, equals('Updated Name'));
           expect(capturedConfig.id, equals(testConfigId));

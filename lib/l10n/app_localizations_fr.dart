@@ -2908,6 +2908,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Es-tu sûr de vouloir dissocier cette entrée ?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Anciens prompts';
+
+  @override
   String get linkedFromLabel => 'LIÉ DEPUIS';
 
   @override
@@ -3208,6 +3211,10 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$count réponse$_temp0 AI';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'Aucun profil d\'agent configuré pour cette tâche. Assigne d\'abord un agent avec un profil.';
 
   @override
   String get noDefaultLanguage => 'Aucune langue par défaut';
@@ -4297,6 +4304,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get showCompleted => 'Afficher les terminées';
+
+  @override
+  String get skillsSectionTitle => 'Compétences';
 
   @override
   String get speechDictionaryHelper =>

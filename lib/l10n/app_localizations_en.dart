@@ -2826,6 +2826,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to unlink this entry?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Legacy Prompts';
+
+  @override
   String get linkedFromLabel => 'LINKED FROM';
 
   @override
@@ -3095,6 +3098,10 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$count AI response$_temp0';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'No agent profile configured for this task. Assign an agent with a profile first.';
 
   @override
   String get noDefaultLanguage => 'No default language';
@@ -4151,6 +4158,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showCompleted => 'Show completed';
+
+  @override
+  String get skillsSectionTitle => 'Skills';
 
   @override
   String get speechDictionaryHelper =>

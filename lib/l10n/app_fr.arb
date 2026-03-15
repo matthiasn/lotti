@@ -1241,6 +1241,7 @@
   "journalUnlinkConfirm": "OUI, DISSOCIER L'ENTRÉE",
   "journalUnlinkHint": "Dissocier",
   "journalUnlinkQuestion": "Es-tu sûr de vouloir dissocier cette entrée ?",
+  "legacyPromptsSectionTitle": "Anciens prompts",
   "linkedFromLabel": "LIÉ DEPUIS",
   "linkedTasksMenuTooltip": "Options des tâches liées",
   "linkedTasksTitle": "Tâches liées",
@@ -1360,6 +1361,7 @@
       }
     }
   },
+  "noAgentProfileError": "Aucun profil d'agent configuré pour cette tâche. Assigne d'abord un agent avec un profil.",
   "noDefaultLanguage": "Aucune langue par défaut",
   "noPromptsAvailable": "Aucun prompt disponible",
   "noPromptsForType": "Aucun prompt disponible pour ce type",
@@ -1727,6 +1729,7 @@
   "settingThemingDark": "Thème sombre",
   "settingThemingLight": "Thème clair",
   "showCompleted": "Afficher les terminées",
+  "skillsSectionTitle": "Compétences",
   "speechDictionaryHelper": "Termes séparés par des points-virgules (max 50 caractères) pour une meilleure reconnaissance vocale",
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Dictionnaire vocal",

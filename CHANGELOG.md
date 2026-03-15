@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.922] - 2026-03-15
+### Changed
+- AI popup menu: skills now appear in a dedicated top section above legacy
+  prompts, with two-section layout and profile-based skill triggering.
+- Automatic AI processing: only profile-driven automation runs automatically
+  for audio transcription and image analysis; the legacy category-based
+  automatic prompt fallback has been removed.
+- Category details UI: removed the "Automatic Prompts" configuration section
+  (data remains in DB for backward compatibility).
+- Skill inference status: SkillInferenceRunner now updates
+  InferenceStatusController so the Siri waveform animation shows during
+  skill-driven inference.
+- AI popup visibility: hasAvailablePromptsProvider now considers both skills
+  and legacy prompts when deciding whether to show the AI assistant button.
+- Preconfigured prompts: stopped seeding `audio_transcription` and
+  `audio_transcription_task_context` legacy ASR prompts.
+
 ## [0.9.921] - 2026-03-14
 ### Changed
 - Sync catch-up: reconnect recovery is now timestamp-first, paging backward

@@ -566,7 +566,7 @@ void main() {
           requiredInputData: [InputDataType.audioFiles],
           aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         when(
@@ -644,7 +644,7 @@ void main() {
           requiredInputData: [InputDataType.audioFiles],
           aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         when(
@@ -673,8 +673,7 @@ void main() {
         expect(systemPromptField, findsOneWidget);
 
         // Get initial text (should be the preconfigured prompt's system message)
-        final preconfiguredPrompt =
-            preconfiguredPrompts['audio_transcription']!;
+        final preconfiguredPrompt = preconfiguredPrompts['image_analysis']!;
         final textField = tester.widget<TextFormField>(systemPromptField);
         expect(
           textField.controller?.text,
@@ -711,7 +710,7 @@ void main() {
           requiredInputData: [InputDataType.audioFiles],
           aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
         );
 
         when(
@@ -799,7 +798,7 @@ void main() {
           requiredInputData: [InputDataType.audioFiles],
           aiResponseType: AiResponseType.audioTranscription,
           trackPreconfigured: true,
-          preconfiguredPromptId: 'audio_transcription',
+          preconfiguredPromptId: 'image_analysis',
           description: 'Test description',
         );
 
@@ -834,7 +833,7 @@ void main() {
         expect(savedPrompt.trackPreconfigured, isTrue);
         expect(
           savedPrompt.preconfiguredPromptId,
-          equals('audio_transcription'),
+          equals('image_analysis'),
         );
         expect(savedPrompt.name, equals('Updated Tracked Prompt'));
       });

@@ -93,8 +93,8 @@ void main() {
         dateFrom: any(named: 'dateFrom'),
         dateTo: any(named: 'dateTo'),
         uuidV5Input: any(named: 'uuidV5Input'),
-        flag: any(named: 'flag'),
         categoryId: any(named: 'categoryId'),
+        flag: any(named: 'flag'),
       ),
     ).thenAnswer(
       (_) async => Metadata(
@@ -415,21 +415,19 @@ void main() {
       when(
         () => mockTrigger.triggerAutomaticImageAnalysis(
           imageEntryId: any(named: 'imageEntryId'),
-          categoryId: any(named: 'categoryId'),
           linkedTaskId: any(named: 'linkedTaskId'),
         ),
       ).thenAnswer((_) async {});
     });
 
     test('returns null when analysisTrigger is null', () {
-      final callback = createAnalysisCallback(null, 'category', 'linked');
+      final callback = createAnalysisCallback(null, 'linked');
       expect(callback, isNull);
     });
 
     test('returns callback when analysisTrigger is provided', () {
       final callback = createAnalysisCallback(
         mockTrigger,
-        'category',
         'linked',
       );
       expect(callback, isNotNull);
@@ -438,7 +436,6 @@ void main() {
     test('callback triggers analysis with correct parameters', () {
       final callback = createAnalysisCallback(
         mockTrigger,
-        'cat-123',
         'linked-456',
       );
 
@@ -463,14 +460,13 @@ void main() {
       verify(
         () => mockTrigger.triggerAutomaticImageAnalysis(
           imageEntryId: 'image-789',
-          categoryId: 'cat-123',
           linkedTaskId: 'linked-456',
         ),
       ).called(1);
     });
 
-    test('callback works with null categoryId and linkedId', () {
-      final callback = createAnalysisCallback(mockTrigger, null, null);
+    test('callback works with null linkedId', () {
+      final callback = createAnalysisCallback(mockTrigger, null);
 
       final testEntity = JournalImage(
         meta: Metadata(
@@ -493,7 +489,6 @@ void main() {
       verify(
         () => mockTrigger.triggerAutomaticImageAnalysis(
           imageEntryId: 'image-abc',
-          categoryId: null,
         ),
       ).called(1);
     });

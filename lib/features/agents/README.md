@@ -263,8 +263,8 @@ are added to a task:
   other types are seeded but not yet exposed in the UI.
 - When a skill is toggled on in the profile and an asset (audio recording, image) is added to a
   task whose agent uses that profile, `ProfileAutomationService` fires the skill automatically.
-  The legacy `category.automaticPrompts` path serves as a fallback when no profile-driven skill
-  is configured.
+  The legacy `category.automaticPrompts` fallback has been removed — only profile-driven
+  automation runs automatically.
 
 ## Architecture Decision Records
 

@@ -1,11 +1,5 @@
-import 'dart:async';
-
-import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
-import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -14,91 +8,47 @@ part 'automatic_image_analysis_trigger.g.dart';
 
 /// Helper class to handle automatic image analysis after image import.
 ///
-/// When an image is added to a task (via drag-and-drop, paste, or menu import),
-/// this trigger checks if the category has automatic image analysis configured
-/// and triggers the analysis if so.
+/// Uses the profile-driven automation path exclusively. When a task has an
+/// agent with a profile that includes an image analysis skill, the skill is
+/// invoked via [SkillInferenceRunner]. Otherwise, nothing happens.
 class AutomaticImageAnalysisTrigger {
   AutomaticImageAnalysisTrigger({
     required this.ref,
     required this.loggingService,
-    required this.categoryRepository,
   });
 
   final Ref ref;
   final LoggingService loggingService;
-  final CategoryRepository categoryRepository;
 
-  /// Triggers automatic image analysis if configured for the category.
+  /// Triggers automatic image analysis via profile-driven automation.
   ///
-  /// Parameters:
-  /// - [imageEntryId]: The ID of the newly created image entry
-  /// - [categoryId]: The category of the image (from linked task or direct)
-  /// - [linkedTaskId]: Optional task ID if image is linked to a task
-  ///
-  /// Does nothing if:
-  /// - No profile-driven skill matches AND categoryId is null
-  /// - Category has no automatic prompts configured
-  /// - Category has no image analysis prompts configured
-  /// - No platform-compatible prompts are available
+  /// Requires a [linkedTaskId] whose agent has a profile with an image
+  /// analysis skill assigned. If no profile handles it, logs and returns
+  /// silently.
   Future<void> triggerAutomaticImageAnalysis({
     required String imageEntryId,
-    required String? categoryId,
     String? linkedTaskId,
   }) async {
     try {
-      // Profile-driven path: check if task's agent profile handles
-      // image analysis. When handled, skip the entire legacy path.
-      if (linkedTaskId != null) {
-        try {
-          final automationService = ref.read(profileAutomationServiceProvider);
-          final result = await automationService.tryAnalyzeImage(
-            taskId: linkedTaskId,
-          );
-          if (result.handled) {
-            loggingService.captureEvent(
-              'Profile-driven image analysis for task $linkedTaskId '
-              'using skill "${result.skill!.id}"',
-              domain: 'automatic_image_analysis_trigger',
-              subDomain: 'triggerAutomaticImageAnalysis',
-            );
-            final runner = ref.read(skillInferenceRunnerProvider);
-            await runner.runImageAnalysis(
-              imageEntryId: imageEntryId,
-              automationResult: result,
-              linkedTaskId: linkedTaskId,
-            );
-            return; // Skip legacy path
-          }
-        } catch (profileException, profileStackTrace) {
-          loggingService.captureException(
-            profileException,
-            domain: 'automatic_image_analysis_trigger',
-            subDomain: 'profilePreflight',
-            stackTrace: profileStackTrace,
-          );
-          // Fall through to legacy path.
-        }
-      }
-
-      // Legacy path: use category-configured automatic prompts.
-      if (categoryId == null) return;
-      final category = await categoryRepository.getCategoryById(categoryId);
-      final imageAnalysisPromptIds =
-          category?.automaticPrompts?[AiResponseType.imageAnalysis];
-
-      if (imageAnalysisPromptIds == null || imageAnalysisPromptIds.isEmpty) {
+      if (linkedTaskId == null) {
+        loggingService.captureEvent(
+          'No linked task for image $imageEntryId — skipping automatic '
+          'image analysis',
+          domain: 'automatic_image_analysis_trigger',
+          subDomain: 'triggerAutomaticImageAnalysis',
+        );
         return;
       }
 
-      // Get the first available prompt for the current platform
-      final capabilityFilter = ref.read(promptCapabilityFilterProvider);
-      final availablePrompt = await capabilityFilter.getFirstAvailablePrompt(
-        imageAnalysisPromptIds,
+      final automationService = ref.read(profileAutomationServiceProvider);
+      final result = await automationService.tryAnalyzeImage(
+        taskId: linkedTaskId,
       );
 
-      if (availablePrompt == null) {
+      if (!result.handled) {
         loggingService.captureEvent(
-          'No available image analysis prompts for current platform',
+          'Profile automation did not handle image analysis for '
+          'task $linkedTaskId',
           domain: 'automatic_image_analysis_trigger',
           subDomain: 'triggerAutomaticImageAnalysis',
         );
@@ -106,17 +56,17 @@ class AutomaticImageAnalysisTrigger {
       }
 
       loggingService.captureEvent(
-        'Triggering automatic image analysis for image $imageEntryId',
+        'Profile-driven image analysis for task $linkedTaskId '
+        'using skill "${result.skill!.id}"',
         domain: 'automatic_image_analysis_trigger',
         subDomain: 'triggerAutomaticImageAnalysis',
       );
 
-      await ref.read(
-        triggerNewInferenceProvider((
-          entityId: imageEntryId,
-          promptId: availablePrompt.id,
-          linkedEntityId: linkedTaskId,
-        )).future,
+      final runner = ref.read(skillInferenceRunnerProvider);
+      await runner.runImageAnalysis(
+        imageEntryId: imageEntryId,
+        automationResult: result,
+        linkedTaskId: linkedTaskId,
       );
     } catch (exception, stackTrace) {
       loggingService.captureException(
@@ -139,6 +89,5 @@ AutomaticImageAnalysisTrigger automaticImageAnalysisTrigger(Ref ref) {
   return AutomaticImageAnalysisTrigger(
     ref: ref,
     loggingService: getIt<LoggingService>(),
-    categoryRepository: ref.read(categoryRepositoryProvider),
   );
 }

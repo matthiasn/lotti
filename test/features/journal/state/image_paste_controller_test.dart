@@ -165,7 +165,6 @@ void main() {
     when(
       () => mockImageAnalysisTrigger.triggerAutomaticImageAnalysis(
         imageEntryId: any(named: 'imageEntryId'),
-        categoryId: any(named: 'categoryId'),
         linkedTaskId: any(named: 'linkedTaskId'),
       ),
     ).thenAnswer((_) async {});

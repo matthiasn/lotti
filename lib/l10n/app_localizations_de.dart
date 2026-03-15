@@ -2871,6 +2871,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du diesen Eintrag wirklich trennen?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Alte Prompts';
+
+  @override
   String get linkedFromLabel => 'VERKNÜPFT VON';
 
   @override
@@ -3146,6 +3149,10 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$count KI-Antwort$_temp0';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'Kein Agentenprofil für diese Aufgabe konfiguriert. Weise zuerst einen Agenten mit einem Profil zu.';
 
   @override
   String get noDefaultLanguage => 'Keine Standardsprache';
@@ -4223,6 +4230,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get showCompleted => 'Abgeschlossene anzeigen';
+
+  @override
+  String get skillsSectionTitle => 'Skills';
 
   @override
   String get speechDictionaryHelper =>

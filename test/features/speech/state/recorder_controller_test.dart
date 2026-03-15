@@ -1579,8 +1579,6 @@ void main() {
           () => mockTrigger.triggerAutomaticPrompts(
             any(),
             any(),
-            any(),
-            isLinkedToTask: any(named: 'isLinkedToTask'),
             linkedTaskId: any(named: 'linkedTaskId'),
             realtimeTranscriptProvided: any(
               named: 'realtimeTranscriptProvided',
@@ -1649,9 +1647,7 @@ void main() {
         verify(
           () => mockTrigger.triggerAutomaticPrompts(
             'test-entry-id',
-            'test-category',
             any(),
-            isLinkedToTask: true,
             linkedTaskId: 'task-id',
             realtimeTranscriptProvided: true,
           ),

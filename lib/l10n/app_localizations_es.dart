@@ -2908,6 +2908,9 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres desvincular esta entrada?';
 
   @override
+  String get legacyPromptsSectionTitle => 'Prompts heredados';
+
+  @override
   String get linkedFromLabel => 'VINCULADO DESDE';
 
   @override
@@ -3207,6 +3210,10 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$count respuesta$_temp0 AI';
   }
+
+  @override
+  String get noAgentProfileError =>
+      'No hay perfil de agente configurado para esta tarea. Asigna primero un agente con un perfil.';
 
   @override
   String get noDefaultLanguage => 'Sin idioma predeterminado';
@@ -4296,6 +4303,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get showCompleted => 'Mostrar completadas';
+
+  @override
+  String get skillsSectionTitle => 'Habilidades';
 
   @override
   String get speechDictionaryHelper =>

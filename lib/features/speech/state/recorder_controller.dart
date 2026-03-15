@@ -270,20 +270,17 @@ class AudioRecorderController extends _$AudioRecorderController {
           linkedId: _linkedId,
           categoryId: _categoryId,
         );
-        final wasLinkedToTask = _linkedId != null;
         final linkedTaskId = _linkedId;
         _linkedId = null;
         final entryId = journalAudio?.meta.id;
         _audioNote = null; // Reset audio note after processing
 
-        // Trigger automatic prompts in the background if configured for the category
-        if (entryId != null && _categoryId != null) {
+        // Trigger automatic prompts in the background via profile-driven automation
+        if (entryId != null && linkedTaskId != null) {
           // Don't await - let it run in the background so the modal can close immediately
           unawaited(
             _triggerAutomaticPrompts(
               entryId,
-              _categoryId!,
-              isLinkedToTask: wasLinkedToTask,
               linkedTaskId: linkedTaskId,
             ),
           );
@@ -521,7 +518,6 @@ class AudioRecorderController extends _$AudioRecorderController {
             )
           : null;
 
-      final wasLinkedToTask = _linkedId != null;
       final linkedTaskId = _linkedId;
       _linkedId = null;
       final entryId = journalAudio?.meta.id;
@@ -540,12 +536,10 @@ class AudioRecorderController extends _$AudioRecorderController {
       }
 
       // Trigger automatic prompts, but skip batch transcription
-      if (entryId != null && _categoryId != null) {
+      if (entryId != null && linkedTaskId != null) {
         unawaited(
           _triggerAutomaticPrompts(
             entryId,
-            _categoryId!,
-            isLinkedToTask: wasLinkedToTask,
             linkedTaskId: linkedTaskId,
             realtimeTranscriptProvided: true,
           ),
@@ -709,18 +703,14 @@ class AudioRecorderController extends _$AudioRecorderController {
 
   /// Triggers automatic prompts based on category settings and user preferences
   Future<void> _triggerAutomaticPrompts(
-    String entryId,
-    String categoryId, {
-    required bool isLinkedToTask,
+    String entryId, {
     String? linkedTaskId,
     bool realtimeTranscriptProvided = false,
   }) async {
     final trigger = ref.read(automaticPromptTriggerProvider);
     await trigger.triggerAutomaticPrompts(
       entryId,
-      categoryId,
       state,
-      isLinkedToTask: isLinkedToTask,
       linkedTaskId: linkedTaskId,
       realtimeTranscriptProvided: realtimeTranscriptProvided,
     );

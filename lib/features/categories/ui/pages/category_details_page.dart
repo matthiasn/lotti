@@ -8,7 +8,6 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
-import 'package:lotti/features/categories/ui/widgets/category_automatic_prompts.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_correction_examples.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
@@ -349,18 +348,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Automatic Prompts Section
-                    LottiFormSection(
-                      title: context.messages.automaticPrompts,
-                      icon: Icons.auto_awesome_outlined,
-                      description:
-                          context.messages.categoryAutomaticPromptsDescription,
-                      children: [
-                        _buildAutomaticPromptSettings(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
                     // Speech Dictionary Section
                     LottiFormSection(
                       title: context.messages.speechDictionarySectionTitle,
@@ -594,61 +581,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
   static void _dummyPromptToggle(String promptId, {required bool isAllowed}) {}
 
-  Widget _buildAutomaticPromptSettings(CategoryDefinition category) {
-    final promptsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-    );
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return promptsAsync.when(
-      data: (prompts) {
-        final promptList = prompts.whereType<AiConfigPrompt>().toList();
-
-        // Build configs for each response type
-        final configs = [
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
-            AiResponseType.audioTranscription,
-            context.messages.audioRecordings,
-            Icons.mic_outlined,
-          ),
-          _buildAutomaticPromptConfig(
-            category,
-            promptList,
-            AiResponseType.imageAnalysis,
-            context.messages.images,
-            Icons.image_outlined,
-          ),
-        ];
-
-        return CategoryAutomaticPrompts(
-          configs: configs,
-          onPromptChanged: controller.updateAutomaticPrompts,
-          isLoading: false,
-        );
-      },
-      loading: () => const CategoryAutomaticPrompts(
-        configs: [],
-        onPromptChanged: _dummyAutomaticPromptChanged,
-        isLoading: true,
-      ),
-      error: (error, _) => CategoryAutomaticPrompts(
-        configs: const [],
-        onPromptChanged: _dummyAutomaticPromptChanged,
-        isLoading: false,
-        error: error.toString(),
-      ),
-    );
-  }
-
-  static void _dummyAutomaticPromptChanged(
-    AiResponseType responseType,
-    List<String> selectedPromptIds,
-  ) {}
-
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
@@ -668,36 +600,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     return CategoryCorrectionExamples(
       examples: category.correctionExamples,
       onDeleteAt: controller.deleteCorrectionExampleAt,
-    );
-  }
-
-  AutomaticPromptConfig _buildAutomaticPromptConfig(
-    CategoryDefinition category,
-    List<AiConfigPrompt> allPrompts,
-    AiResponseType responseType,
-    String title,
-    IconData icon,
-  ) {
-    final validPrompts =
-        allPrompts
-            .where(
-              (p) =>
-                  !p.archived &&
-                  p.aiResponseType == responseType &&
-                  category.allowedPromptIds != null &&
-                  category.allowedPromptIds!.contains(p.id),
-            )
-            .toList()
-          ..sort((a, b) => a.name.compareTo(b.name));
-
-    final selectedPromptIds = category.automaticPrompts?[responseType] ?? [];
-
-    return AutomaticPromptConfig(
-      responseType: responseType,
-      title: title,
-      icon: icon,
-      availablePrompts: validPrompts,
-      selectedPromptIds: selectedPromptIds,
     );
   }
 

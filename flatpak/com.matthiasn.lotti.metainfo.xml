@@ -31,6 +31,16 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.922" date="2026-03-15">
+      <description>
+          <p>AI popup menu: skills now appear in a dedicated top section above legacy prompts, with two-section layout and profile-based skill triggering.</p>
+          <p>Automatic AI processing: only profile-driven automation runs automatically for audio transcription and image analysis. The legacy category-based automatic prompt fallback has been removed.</p>
+          <p>Category details UI: removed the "Automatic Prompts" configuration section. Existing data remains in the database for backward compatibility.</p>
+          <p>Skill inference status: SkillInferenceRunner now updates InferenceStatusController so the Siri waveform animation shows during skill-driven inference.</p>
+          <p>AI popup visibility: the AI assistant button now appears when either skills or legacy prompts are available for the current entity.</p>
+          <p>Preconfigured prompts: stopped seeding <code>audio_transcription</code> and <code>audio_transcription_task_context</code> legacy ASR prompts.</p>
+      </description>
+    </release>
     <release version="0.9.920" date="2026-03-13">
       <description>
           <p>Sync catch-up: reconnect recovery is now timestamp-first. The client pages backward until the stored timestamp boundary is visible, then replays forward with bounded overlap instead of depending on exact event-id re-anchoring.</p>

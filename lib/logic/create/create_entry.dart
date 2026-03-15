@@ -93,7 +93,7 @@ Future<JournalEntity?> createScreenshot({
     imageData,
     linkedId: linkedId,
     categoryId: categoryId,
-    onCreated: createAnalysisCallback(analysisTrigger, categoryId, linkedId),
+    onCreated: createAnalysisCallback(analysisTrigger, linkedId),
   );
 
   if (entry != null) {

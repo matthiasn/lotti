@@ -165,9 +165,9 @@ surface color instead of the dark-mode gradient to keep the card feeling clean.
 7. **Modal Dismissal**: If user navigates away, floating indicator appears
 8. **Recording Stop**: User taps stop button
 9. **Entry Creation**: Audio file is saved and journal entry created
-10. **Transcription**: If enabled, ASR service processes the audio
+10. **Transcription**: If enabled, profile-driven automation triggers transcription via the task's agent profile skill assignment
 11. **Linked Entity Support**: If recording is linked to a task, both entities track the transcription progress
-12. **Provider Selection**: Transcription can use Whisper or Voxtral (local) providers based on configuration
+12. **Provider Selection**: The model is determined by the profile's transcription model slot
 
 ## Testing
 
@@ -248,13 +248,14 @@ When an audio recording is linked to another entity (e.g., a task), the speech f
 ### Features
 - **Task Context**: When linked to a task, the transcription uses task context for better accuracy with names and concepts
 - **Dual Progress Tracking**: Both the audio entry and the linked task show transcription progress indicators
-- **Automatic Inference**: The AI system automatically triggers transcription when an audio entry is created with a linked entity
-- **Visual Indicators**: Both entities display inference animations during transcription
+- **Automatic Inference**: Profile-driven automation triggers transcription when the task's agent profile has a transcription skill with `automate: true`
+- **Visual Indicators**: Both entities display inference animations (Siri waveform) during transcription, driven by `InferenceStatusController` updates from `SkillInferenceRunner`
 
 ### Implementation
 The speech feature coordinates with the AI system's linked entity tracking:
 - Creates audio entry with `linkedId` parameter
-- AI system creates active inference entries for both entities
+- `AutomaticPromptTrigger` invokes `ProfileAutomationService.tryTranscribe()` to resolve the profile and run the skill
+- `SkillInferenceRunner` updates `InferenceStatusController` so both entities show the waveform animation
 - Both entities receive status updates (running, complete, error)
 - UI components on both entities show appropriate indicators
 
