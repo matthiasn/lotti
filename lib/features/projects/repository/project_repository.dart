@@ -103,7 +103,7 @@ class ProjectRepository {
     ]);
     final project = results[0] as ProjectEntry?;
     final task = results[1];
-    if (project == null || task == null) return false;
+    if (project == null || task is! Task) return false;
     if (project.meta.categoryId != task.meta.categoryId) return false;
 
     // Remove existing project link if the task is already in another project
@@ -113,7 +113,7 @@ class ProjectRepository {
         return true; // already linked to this project
       }
       // Soft-delete the old link
-      await _softDeleteLink(existingLink);
+      if (!await _softDeleteLink(existingLink)) return false;
     }
 
     // Create the new project link
@@ -154,7 +154,7 @@ class ProjectRepository {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  Future<void> _softDeleteLink(EntryLink link) async {
+  Future<bool> _softDeleteLink(EntryLink link) async {
     final now = DateTime.now();
     final deleted = link.copyWith(
       deletedAt: now,
@@ -162,9 +162,11 @@ class ProjectRepository {
       hidden: true,
       vectorClock: await _vectorClockService.getNextVectorClock(),
     );
-    await _journalDb.upsertEntryLink(deleted);
+    final res = await _journalDb.upsertEntryLink(deleted);
+    if (res == 0) return false;
     _updateNotifications.notify({link.fromId, link.toId});
     await _enqueueLinkSync(deleted, SyncEntryStatus.update);
+    return true;
   }
 
   Future<void> _enqueueLinkSync(

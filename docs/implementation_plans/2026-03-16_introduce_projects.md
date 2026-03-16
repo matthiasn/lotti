@@ -27,7 +27,7 @@ Projects fill the structural gap between Categories and Tasks, giving the user a
 
 ### 2.1 Current Hierarchy
 
-```
+```text
 Category
   └── Task (via metadata.categoryId)
         └── ChecklistItem (via ChecklistData.linkedChecklistItems)
@@ -36,7 +36,7 @@ Category
 
 ### 2.2 Proposed Hierarchy
 
-```
+```text
 Category
   └── Project (via metadata.categoryId on JournalEntity.project)
         └── Task (via EntryLink.project from project → task)
@@ -533,7 +533,7 @@ flowchart TD
 
 The **primary** interaction with projects happens on the Tasks page — not in Settings.
 
-```
+```text
 Bottom Nav: Tasks tab
   └── Tasks List (existing, with category filter)
         └── When single category selected:
@@ -766,7 +766,7 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 ### Modified Files
 - `lib/classes/journal_entities.dart` — Add `project` variant
 - `lib/classes/entry_link.dart` — Add `project` variant
-- `lib/database/database.drift` — Schema migration + queries
+- `lib/database/database.drift` — Named queries (no schema migration needed)
 - `lib/database/conversions.dart` — Type mappings
 - `lib/classes/entity_definitions.dart` — Add `defaultProjectTemplateId` to CategoryDefinition
 - `lib/features/agents/model/agent_enums.dart` — Add `projectAgent` kind

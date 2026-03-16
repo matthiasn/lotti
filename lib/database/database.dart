@@ -1766,10 +1766,13 @@ class JournalDb extends _$JournalDb {
 
   /// Returns the project linked to a task, or null if unlinked.
   Future<ProjectEntry?> getProjectForTask(String taskId) async {
+    final privateStatuses = await _visiblePrivateStatuses();
     final res = await projectForTask(taskId).get();
     if (res.isEmpty) return null;
     final entity = fromDbEntity(res.first);
-    return entity is ProjectEntry ? entity : null;
+    if (entity is! ProjectEntry) return null;
+    if (!privateStatuses.contains(entity.meta.private)) return null;
+    return entity;
   }
 
   /// Returns the existing ProjectLink for a task, or null.

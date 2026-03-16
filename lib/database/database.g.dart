@@ -8398,7 +8398,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> tasksForProject(String projectId) {
     return customSelect(
-      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Task\' ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
       variables: [Variable<String>(projectId)],
       readsFrom: {journal, linkedEntries},
     ).asyncMap(journal.mapFromRow);
@@ -8415,7 +8415,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += privateStatuses.length;
     return customSelect(
-      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.private IN ($expandedprivateStatuses) ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Task\' AND j.private IN ($expandedprivateStatuses) ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
       variables: [
         Variable<String>(projectId),
         for (var $ in privateStatuses) Variable<bool>($),
@@ -8426,7 +8426,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<LinkedDbEntry> projectLinkForTask(String taskId) {
     return customSelect(
-      'SELECT * FROM linked_entries WHERE to_id = ?1 AND type = \'ProjectLink\' AND COALESCE(hidden, FALSE) = FALSE LIMIT 1',
+      'SELECT * FROM linked_entries WHERE to_id = ?1 AND type = \'ProjectLink\' AND COALESCE(hidden, FALSE) = FALSE ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT 1',
       variables: [Variable<String>(taskId)],
       readsFrom: {linkedEntries},
     ).asyncMap(linkedEntries.mapFromRow);
@@ -8434,7 +8434,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> projectForTask(String taskId) {
     return customSelect(
-      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.from_id = j.id WHERE le.to_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE LIMIT 1',
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.from_id = j.id WHERE le.to_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Project\' ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC LIMIT 1',
       variables: [Variable<String>(taskId)],
       readsFrom: {journal, linkedEntries},
     ).asyncMap(journal.mapFromRow);
