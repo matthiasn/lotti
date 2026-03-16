@@ -27,6 +27,13 @@ void main() {
           stackTrace: any<StackTrace>(named: 'stackTrace'),
         ),
       ).thenAnswer((_) async {});
+      when(
+        () => logging.captureEvent(
+          any<String>(),
+          domain: any<String>(named: 'domain'),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
     }
 
     test(
@@ -220,6 +227,49 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'does not short-circuit on marker when untilTimestamp is set',
+      () async {
+        final timeline = MockTimeline();
+        final room = MockRoom();
+        final logging = MockLoggingService();
+
+        // Events contain the marker but don't cross the timestamp boundary
+        final events = [event('marker-id', 200), event('new', 300)];
+        var current = events;
+        final older = [event('old', 40)];
+        var requested = 0;
+
+        stubLogging(logging);
+        when(() => room.prev_batch).thenReturn(null);
+        when(() => timeline.room).thenReturn(room);
+        when(() => timeline.events).thenAnswer((_) => current);
+        when(() => timeline.canRequestHistory).thenAnswer((_) => requested < 1);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          current = [...current, ...older];
+          requested++;
+        });
+
+        final result = await SdkPaginationCompat.backfillUntilContains(
+          timeline: timeline,
+          lastEventId: 'marker-id',
+          pageSize: 200,
+          maxPages: null,
+          logging: logging,
+          untilTimestamp: 50,
+        );
+
+        // Should have paged to reach the timestamp boundary, not stopped at
+        // the marker
+        expect(result, isTrue);
+        expect(requested, 1);
+      },
+    );
 
     test('returns false when paging makes no progress', () async {
       final timeline = MockTimeline();

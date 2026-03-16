@@ -82,7 +82,9 @@ class SdkPaginationCompat {
           return true;
         }
         markerReached = events.any((e) => e.eventId == lastEventId);
-        if (markerReached && !requireServerBoundaryPage) {
+        if (markerReached &&
+            !requireServerBoundaryPage &&
+            untilTimestamp == null) {
           logging.captureEvent(
             'backfill.markerReached events=${events.length} pages=$pages',
             domain: syncLoggingDomain,
@@ -136,6 +138,9 @@ class SdkPaginationCompat {
         if (TimelineEventOrdering.timestamp(events.first) <= untilTimestamp) {
           return true;
         }
+      }
+      if (untilTimestamp != null) {
+        return boundaryReached;
       }
       return markerReached || boundaryReached;
     } catch (e, st) {

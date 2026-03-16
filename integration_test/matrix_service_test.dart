@@ -207,6 +207,7 @@ void main() {
       sharedAiConfigRepository = AiConfigRepository(aiConfigDb);
       sharedLoggingService = LoggingService();
       sharedUserActivityService = UserActivityService();
+      bobSettingsDb = SettingsDb(inMemoryDatabase: true);
 
       // Register essential dependencies
       getIt
@@ -242,6 +243,7 @@ void main() {
       try {
         await aliceDb.close();
         await bobDb.close();
+        await bobSettingsDb.close();
         await aiConfigDb.close();
       } catch (e) {
         debugPrint('Error during database cleanup: $e');
@@ -308,7 +310,6 @@ void main() {
         );
 
         debugPrint('\n--- Bob goes live');
-        bobSettingsDb = SettingsDb(inMemoryDatabase: true);
         bob = await _createBobService(
           documentsDirectory: sharedDocumentsDirectory,
           config: config2,
