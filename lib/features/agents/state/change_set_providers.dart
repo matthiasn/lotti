@@ -97,6 +97,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       labelsRepository: labelsRepository,
       persistenceLogic: getIt<PersistenceLogic>(),
       domainLogger: logger,
+      taskAgentService: ref.watch(taskAgentServiceProvider),
     ),
     labelsRepository: labelsRepository,
     domainLogger: logger,

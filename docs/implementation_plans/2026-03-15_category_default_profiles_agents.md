@@ -95,8 +95,8 @@ sequenceDiagram
     alt Category has defaultTemplateId
         CreateFn->>TAS: createTaskAgent(taskId, templateId, profileId, awaitContent: true)
         TAS->>TAS: Create agent + state (awaitingContent=true)
-        TAS->>WO: Register subscription (skip creation wake)
-        TAS-->>CreateFn: Agent created (dormant)
+        TAS->>WO: Register subscription & enqueue creation wake
+        TAS-->>CreateFn: Agent created (wake gated by orchestrator)
     end
 
     CreateFn-->>TaskUI: Task ready (profile active, agent waiting)
@@ -247,7 +247,7 @@ classDiagram
 
 | File | Change | Status |
 |------|--------|--------|
-| `lib/features/agents/service/task_agent_service.dart` | Added `awaitContent` parameter to `createTaskAgent()`. When true: sets `awaitingContent=true`, skips creation wake | Done |
+| `lib/features/agents/service/task_agent_service.dart` | Added `awaitContent` parameter to `createTaskAgent()`. When true: sets `awaitingContent=true`. The creation wake is always enqueued, but its execution is gated by `WakeOrchestrator` | Done |
 | `lib/features/agents/wake/wake_orchestrator.dart` | Added `TaskContentChecker` callback, `_shouldSkipForAwaitingContent()` method with try-catch for resilience. Checks task content before executing wake for awaiting agents. Clears flag when content found | Done |
 | `lib/features/agents/state/agent_providers.dart` | Wired `taskContentChecker` in `wakeOrchestratorProvider` using lazy `ref.read(journalDbProvider)` inside closure (avoids eager dependency) | Done |
 

@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -39,6 +40,11 @@ class AgentSubscription {
 /// entry with non-empty text). Used by the content-gating logic for agents
 /// auto-created from category defaults.
 typedef TaskContentChecker = Future<bool> Function(String taskId);
+
+/// Sync-aware entity writer that stamps the vector clock and enqueues
+/// an outbox message. Used when the orchestrator needs to persist a
+/// state mutation that must propagate to other devices.
+typedef SyncEntityWriter = Future<void> Function(AgentDomainEntity entity);
 
 /// Signature for the callback that executes a wake cycle.
 ///
@@ -79,6 +85,7 @@ class WakeOrchestrator {
     this.wakeExecutor,
     this.onPersistedStateChanged,
     this.taskContentChecker,
+    this.syncEntityWriter,
   }) {
     _throttle = _WakeThrottleCoordinator(
       repository: repository,
@@ -105,6 +112,11 @@ class WakeOrchestrator {
   /// Used to gate auto-assigned agents (awaitingContent flag) so they don't
   /// run until the task actually has text content to analyze.
   TaskContentChecker? taskContentChecker;
+
+  /// Optional sync-aware entity writer for state mutations that must
+  /// propagate across devices (e.g. clearing the `awaitingContent` flag).
+  /// When null, falls back to the raw [repository] write.
+  SyncEntityWriter? syncEntityWriter;
 
   /// Optional callback fired when persisted throttle state changes for an
   /// agent (set/clear `nextWakeAt`).
@@ -556,18 +568,23 @@ class WakeOrchestrator {
       }
 
       // Content found — clear the flag and let the wake proceed.
+      // Use syncEntityWriter so the transition propagates to other devices.
       _log(
         'content-gate: activating '
         '${DomainLogger.sanitizeId(job.agentId)} '
         '(task now has content)',
         subDomain: 'contentGate',
       );
-      await repository.upsertEntity(
-        state.copyWith(
-          awaitingContent: false,
-          updatedAt: clock.now(),
-        ),
+      final cleared = state.copyWith(
+        awaitingContent: false,
+        updatedAt: clock.now(),
       );
+      final writer = syncEntityWriter;
+      if (writer != null) {
+        await writer(cleared);
+      } else {
+        await repository.upsertEntity(cleared);
+      }
       return false;
     } catch (e, s) {
       // Don't let content-check errors block the wake — proceed normally.

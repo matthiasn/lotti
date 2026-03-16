@@ -192,6 +192,8 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
     runner: ref.watch(wakeRunnerProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: onPersistedStateChanged,
+    syncEntityWriter: (entity) =>
+        ref.read(agentSyncServiceProvider).upsertEntity(entity),
     taskContentChecker: (taskId) async {
       final journalDb = ref.read(journalDbProvider);
 
@@ -837,6 +839,7 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
     domainLogger: ref.watch(domainLoggerProvider),
     embeddingStore: embeddingStore,
     embeddingRepository: embeddingRepository,
+    taskAgentService: ref.watch(taskAgentServiceProvider),
   );
 }
 

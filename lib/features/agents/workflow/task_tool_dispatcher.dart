@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
@@ -41,6 +42,7 @@ class TaskToolDispatcher {
     required this.labelsRepository,
     required this.persistenceLogic,
     this.domainLogger,
+    this.taskAgentService,
   });
 
   final JournalDb journalDb;
@@ -49,6 +51,7 @@ class TaskToolDispatcher {
   final LabelsRepository labelsRepository;
   final PersistenceLogic persistenceLogic;
   final DomainLogger? domainLogger;
+  final TaskAgentService? taskAgentService;
 
   static const _uuid = Uuid();
 
@@ -513,6 +516,7 @@ class TaskToolDispatcher {
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
       domainLogger: domainLogger,
+      taskAgentService: taskAgentService,
     );
     return handler.handle(sourceTaskId, args);
   }

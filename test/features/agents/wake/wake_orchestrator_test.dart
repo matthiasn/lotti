@@ -3371,7 +3371,8 @@ void main() {
 
           expect(wakeExecuted, isTrue);
 
-          // Verify awaitingContent was cleared.
+          // Verify awaitingContent was cleared via raw repository (no
+          // syncEntityWriter provided).
           verify(
             () => mockRepository.upsertEntity(
               any(
@@ -3383,6 +3384,68 @@ void main() {
               ),
             ),
           ).called(1);
+
+          cg.stop();
+        });
+      });
+
+      test('uses syncEntityWriter instead of raw repository when provided', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg-sync',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-sync'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg-sync'),
+          ).thenAnswer((_) async => state);
+
+          AgentDomainEntity? writtenEntity;
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async => true,
+                syncEntityWriter: (entity) async {
+                  writtenEntity = entity;
+                },
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg-sync',
+                reason: 'creation',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(wakeExecuted, isTrue);
+
+          // syncEntityWriter was called with the cleared state.
+          expect(writtenEntity, isA<AgentStateEntity>());
+          final cleared = writtenEntity! as AgentStateEntity;
+          expect(cleared.awaitingContent, isFalse);
+          expect(cleared.agentId, 'agent-cg-sync');
+
+          // Raw repository.upsertEntity should NOT have been called for the
+          // content-gate clearing (it may be called for other purposes like
+          // wake-run status updates, so we verify the specific entity was not
+          // passed to it).
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.awaitingContent,
+                  'awaitingContent',
+                  isFalse,
+                ),
+              ),
+            ),
+          );
 
           cg.stop();
         });
