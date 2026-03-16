@@ -637,6 +637,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTemplateKindImprover => 'Améliorateur de modèle';
 
   @override
+  String get agentTemplateKindProjectAgent => 'Agent de projet';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Agent de tâches';
 
   @override

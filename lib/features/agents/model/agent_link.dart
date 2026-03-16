@@ -86,6 +86,16 @@ abstract class AgentLink with _$AgentLink {
     DateTime? deletedAt,
   }) = ImproverTargetLink;
 
+  const factory AgentLink.agentProject({
+    required String id,
+    required String fromId,
+    required String toId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = AgentProjectLink;
+
   factory AgentLink.fromJson(Map<String, dynamic> json) =>
       _$AgentLinkFromJson(json);
 }

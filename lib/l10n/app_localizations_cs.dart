@@ -629,6 +629,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateKindImprover => 'Zlepšovač šablon';
 
   @override
+  String get agentTemplateKindProjectAgent => 'Agent projektu';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Agent úkolů';
 
   @override

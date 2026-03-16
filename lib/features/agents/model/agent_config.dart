@@ -28,6 +28,9 @@ abstract class AgentSlots with _$AgentSlots {
     /// The journal-domain task ID this agent is working on.
     String? activeTaskId,
 
+    /// The project ID this agent is working on.
+    String? activeProjectId,
+
     /// The template ID this improver agent manages.
     String? activeTemplateId,
 
@@ -45,6 +48,15 @@ abstract class AgentSlots with _$AgentSlots {
 
     /// Recursion depth: 0 = task improver, 1 = meta-improver.
     int? recursionDepth,
+
+    /// When the last daily wake completed for project agents.
+    DateTime? lastDailyWakeAt,
+
+    /// When the last weekly review completed for project agents.
+    DateTime? lastWeeklyReviewAt,
+
+    /// Total weekly review sessions completed by this project agent.
+    int? weeklyReviewCount,
   }) = _AgentSlots;
 
   factory AgentSlots.fromJson(Map<String, dynamic> json) =>

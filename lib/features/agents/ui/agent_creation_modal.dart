@@ -112,6 +112,8 @@ class _TemplateSelectionPage extends StatelessWidget {
         context.messages.agentTemplateKindTaskAgent,
       AgentTemplateKind.templateImprover =>
         context.messages.agentTemplateKindImprover,
+      AgentTemplateKind.projectAgent =>
+        context.messages.agentTemplateKindProjectAgent,
     };
   }
 }
