@@ -1768,7 +1768,8 @@ class JournalDb extends _$JournalDb {
   Future<ProjectEntry?> getProjectForTask(String taskId) async {
     final res = await projectForTask(taskId).get();
     if (res.isEmpty) return null;
-    return fromDbEntity(res.first) as ProjectEntry;
+    final entity = fromDbEntity(res.first);
+    return entity is ProjectEntry ? entity : null;
   }
 
   /// Returns the existing ProjectLink for a task, or null.

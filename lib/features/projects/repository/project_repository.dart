@@ -1,7 +1,8 @@
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -21,13 +22,16 @@ class ProjectRepository {
     required JournalDb journalDb,
     required PersistenceLogic persistenceLogic,
     required UpdateNotifications updateNotifications,
+    required VectorClockService vectorClockService,
   }) : _journalDb = journalDb,
        _persistenceLogic = persistenceLogic,
-       _updateNotifications = updateNotifications;
+       _updateNotifications = updateNotifications,
+       _vectorClockService = vectorClockService;
 
   final JournalDb _journalDb;
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
+  final VectorClockService _vectorClockService;
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
 
@@ -63,8 +67,8 @@ class ProjectRepository {
   Future<ProjectEntry?> createProject({
     required ProjectEntry project,
   }) async {
-    await _persistenceLogic.createDbEntity(project);
-    return project;
+    final success = await _persistenceLogic.createDbEntity(project);
+    return (success ?? false) ? project : null;
   }
 
   // ── Update ─────────────────────────────────────────────────────────────────
@@ -92,9 +96,13 @@ class ProjectRepository {
     required String projectId,
     required String taskId,
   }) async {
-    // Validate same-category constraint
-    final project = await getProjectById(projectId);
-    final task = await _journalDb.journalEntityById(taskId);
+    // Validate same-category constraint (parallel fetch)
+    final results = await Future.wait([
+      getProjectById(projectId),
+      _journalDb.journalEntityById(taskId),
+    ]);
+    final project = results[0] as ProjectEntry?;
+    final task = results[1];
     if (project == null || task == null) return false;
     if (project.meta.categoryId != task.meta.categoryId) return false;
 
@@ -116,12 +124,13 @@ class ProjectRepository {
       toId: taskId,
       createdAt: now,
       updatedAt: now,
-      vectorClock: await _nextVectorClock(),
+      vectorClock: await _vectorClockService.getNextVectorClock(),
     );
 
     final res = await _journalDb.upsertEntryLink(link);
     if (res != 0) {
       _updateNotifications.notify({projectId, taskId});
+      await _enqueueLinkSync(link, SyncEntryStatus.initial);
     }
     return res != 0;
   }
@@ -147,17 +156,26 @@ class ProjectRepository {
 
   Future<void> _softDeleteLink(EntryLink link) async {
     final now = DateTime.now();
-    final deleted = link.map(
-      basic: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-      rating: (l) => l.copyWith(deletedAt: now, updatedAt: now),
-      project: (l) => l.copyWith(deletedAt: now, updatedAt: now),
+    final deleted = link.copyWith(
+      deletedAt: now,
+      updatedAt: now,
+      hidden: true,
     );
     await _journalDb.upsertEntryLink(deleted);
     _updateNotifications.notify({link.fromId, link.toId});
+    await _enqueueLinkSync(deleted, SyncEntryStatus.update);
   }
 
-  Future<VectorClock> _nextVectorClock() async {
-    return getIt<VectorClockService>().getNextVectorClock();
+  Future<void> _enqueueLinkSync(
+    EntryLink link,
+    SyncEntryStatus status,
+  ) async {
+    await getIt<OutboxService>().enqueueMessage(
+      SyncMessage.entryLink(
+        entryLink: link,
+        status: status,
+      ),
+    );
   }
 }
 
@@ -167,5 +185,6 @@ ProjectRepository projectRepository(Ref ref) {
     journalDb: getIt<JournalDb>(),
     persistenceLogic: getIt<PersistenceLogic>(),
     updateNotifications: getIt<UpdateNotifications>(),
+    vectorClockService: getIt<VectorClockService>(),
   );
 }

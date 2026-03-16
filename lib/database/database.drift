@@ -1205,6 +1205,7 @@ SELECT j.* FROM journal j
   INNER JOIN linked_entries le ON le.to_id = j.id
   WHERE le.from_id = :projectId
   AND le.type = 'ProjectLink'
+  AND COALESCE(le.hidden, false) = false
   AND j.deleted = false
   ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;
 
@@ -1213,6 +1214,7 @@ SELECT j.* FROM journal j
   INNER JOIN linked_entries le ON le.to_id = j.id
   WHERE le.from_id = :projectId
   AND le.type = 'ProjectLink'
+  AND COALESCE(le.hidden, false) = false
   AND j.deleted = false
   AND j.private IN :privateStatuses
   ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;

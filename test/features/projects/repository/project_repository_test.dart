@@ -4,13 +4,13 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -18,6 +18,8 @@ void main() {
   late MockJournalDb mockDb;
   late MockPersistenceLogic mockPersistence;
   late MockUpdateNotifications mockNotifications;
+  late MockVectorClockService mockVectorClockService;
+  late MockOutboxService mockOutboxService;
   late ProjectRepository repository;
 
   final projectMeta = Metadata(
@@ -67,31 +69,32 @@ void main() {
     ),
   );
 
-  setUpAll(() {
-    registerFallbackValue(
-      EntryLink.basic(
-        id: 'fallback-link',
-        fromId: 'fallback-from',
-        toId: 'fallback-to',
-        createdAt: DateTime(2024),
-        updatedAt: DateTime(2024),
-        vectorClock: null,
-      ),
-    );
-    registerFallbackValue(projectEntry as JournalEntity);
-    registerFallbackValue(projectMeta);
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     mockDb = MockJournalDb();
     mockPersistence = MockPersistenceLogic();
     mockNotifications = MockUpdateNotifications();
+    mockVectorClockService = MockVectorClockService();
+    mockOutboxService = MockOutboxService();
+
+    // Register OutboxService in GetIt (used by _enqueueLinkSync)
+    await getIt.reset();
+    getIt.registerSingleton<OutboxService>(mockOutboxService);
+    when(
+      () => mockOutboxService.enqueueMessage(any()),
+    ).thenAnswer((_) async {});
 
     repository = ProjectRepository(
       journalDb: mockDb,
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
+      vectorClockService: mockVectorClockService,
     );
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   group('getProjectById', () {
@@ -169,7 +172,7 @@ void main() {
   });
 
   group('createProject', () {
-    test('persists via PersistenceLogic', () async {
+    test('persists via PersistenceLogic and returns project', () async {
       when(
         () => mockPersistence.createDbEntity(projectEntry),
       ).thenAnswer((_) async => true);
@@ -178,6 +181,16 @@ void main() {
 
       expect(result, isA<ProjectEntry>());
       verify(() => mockPersistence.createDbEntity(projectEntry)).called(1);
+    });
+
+    test('returns null when persistence fails', () async {
+      when(
+        () => mockPersistence.createDbEntity(projectEntry),
+      ).thenAnswer((_) async => false);
+
+      final result = await repository.createProject(project: projectEntry);
+
+      expect(result, isNull);
     });
   });
 
@@ -268,7 +281,6 @@ void main() {
       );
 
       expect(result, isTrue);
-      // Should not create a new link
       verifyNever(() => mockDb.upsertEntryLink(any()));
     });
 
@@ -294,21 +306,10 @@ void main() {
           () => mockDb.getProjectLinkForTask('task-001'),
         ).thenAnswer((_) async => oldLink);
         when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-
-        final mockVectorClockService = MockVectorClockService();
+        when(() => mockNotifications.notify(any())).thenReturn(null);
         when(
           mockVectorClockService.getNextVectorClock,
         ).thenAnswer((_) async => const VectorClock({'d': 1}));
-
-        await setUpTestGetIt(
-          additionalSetup: () {
-            getIt.registerSingleton<VectorClockService>(
-              mockVectorClockService,
-            );
-          },
-        );
-
-        when(() => mockNotifications.notify(any())).thenReturn(null);
 
         final result = await repository.linkTaskToProject(
           projectId: 'project-001',
@@ -319,8 +320,8 @@ void main() {
         // Should have called upsertEntryLink twice: once for soft-delete,
         // once for new link
         verify(() => mockDb.upsertEntryLink(any())).called(2);
-
-        await tearDownTestGetIt();
+        // Verify sync was enqueued for both operations
+        verify(() => mockOutboxService.enqueueMessage(any())).called(2);
       },
     );
   });
@@ -336,7 +337,7 @@ void main() {
       expect(result, isFalse);
     });
 
-    test('soft-deletes existing link', () async {
+    test('soft-deletes existing link with hidden flag', () async {
       final existingLink = EntryLink.project(
         id: 'link-001',
         fromId: 'project-001',
@@ -359,6 +360,9 @@ void main() {
           verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
               as EntryLink;
       expect(captured.deletedAt, isNotNull);
+      expect(captured.hidden, isTrue);
+      // Verify sync was enqueued
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
   });
 }
