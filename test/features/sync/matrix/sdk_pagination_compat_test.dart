@@ -271,6 +271,115 @@ void main() {
       },
     );
 
+    test(
+      'returns true immediately when marker is found and no timestamp is set',
+      () async {
+        final timeline = MockTimeline();
+        final room = MockRoom();
+        final logging = MockLoggingService();
+
+        final visibleEvents = [event('target-id', 200), event('other', 300)];
+
+        stubLogging(logging);
+        when(() => room.prev_batch).thenReturn(null);
+        when(() => timeline.room).thenReturn(room);
+        when(() => timeline.events).thenReturn(visibleEvents);
+
+        final result = await SdkPaginationCompat.backfillUntilContains(
+          timeline: timeline,
+          lastEventId: 'target-id',
+          pageSize: 200,
+          maxPages: null,
+          logging: logging,
+        );
+
+        expect(result, isTrue);
+        verifyNever(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'returns true via fallback when marker is found after paging '
+      'without timestamp',
+      () async {
+        final timeline = MockTimeline();
+        final room = MockRoom();
+        final logging = MockLoggingService();
+
+        final initial = <Event>[event('other', 200)];
+        final withMarker = <Event>[
+          event('other', 200),
+          event('target-id', 100),
+        ];
+        var current = initial;
+        var requested = 0;
+
+        stubLogging(logging);
+        when(() => room.prev_batch).thenReturn(null);
+        when(() => timeline.room).thenReturn(room);
+        when(() => timeline.events).thenAnswer((_) => current);
+        when(
+          () => timeline.canRequestHistory,
+        ).thenAnswer((_) => requested < 1);
+        when(
+          () => timeline.requestHistory(
+            historyCount: any(named: 'historyCount'),
+          ),
+        ).thenAnswer((_) async {
+          current = withMarker;
+          requested++;
+        });
+
+        final result = await SdkPaginationCompat.backfillUntilContains(
+          timeline: timeline,
+          lastEventId: 'target-id',
+          pageSize: 200,
+          maxPages: null,
+          logging: logging,
+        );
+
+        // Marker found on second iteration but canRequestHistory is false,
+        // so it falls through the loop and returns via markerReached fallback
+        expect(result, isTrue);
+        expect(requested, 1);
+      },
+    );
+
+    test(
+      'returns false via boundaryReached fallback when timestamp boundary '
+      'is not reached and history is exhausted',
+      () async {
+        final timeline = MockTimeline();
+        final room = MockRoom();
+        final logging = MockLoggingService();
+
+        // Events don't cross the timestamp boundary (all newer than 50)
+        final visibleEvents = [event('e1', 200), event('e2', 300)];
+
+        stubLogging(logging);
+        when(() => room.prev_batch).thenReturn(null);
+        when(() => timeline.room).thenReturn(room);
+        when(() => timeline.events).thenReturn(visibleEvents);
+        when(() => timeline.canRequestHistory).thenReturn(false);
+
+        final result = await SdkPaginationCompat.backfillUntilContains(
+          timeline: timeline,
+          lastEventId: null,
+          pageSize: 200,
+          maxPages: null,
+          logging: logging,
+          untilTimestamp: 50,
+        );
+
+        // untilTimestamp is set, boundaryReached is false → returns false
+        expect(result, isFalse);
+      },
+    );
+
     test('returns false when paging makes no progress', () async {
       final timeline = MockTimeline();
       final room = MockRoom();
