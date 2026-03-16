@@ -1517,6 +1517,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Neaktivní kategorie se nebudou zobrazovat ve výběrových seznamech';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Nastavte výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii';
+
+  @override
+  String get categoryAiDefaultsTitle => 'Výchozí hodnoty AI';
+
+  @override
   String get categoryAiModelDescription =>
       'Určete, které AI výzvy lze použít s touto kategorií';
 
@@ -1530,6 +1537,18 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Nastavte výchozí jazyk pro úkoly v této kategorii';
+
+  @override
+  String get categoryDefaultProfileHint => 'Vyberte profil…';
+
+  @override
+  String get categoryDefaultProfileLabel => 'Výchozí inferenční profil';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Vyberte šablonu…';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Výchozí šablona agenta';
 
   @override
   String get categoryDeleteConfirm => 'ANO, SMAŽ TUTO KATEGORII';
@@ -2678,6 +2697,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Select a model…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Vyberte profil…';
 
   @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';

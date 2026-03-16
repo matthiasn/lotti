@@ -279,6 +279,8 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
                 ChecklistCorrectionExample.fromJson(e as Map<String, dynamic>),
           )
           .toList(),
+      defaultProfileId: json['defaultProfileId'] as String?,
+      defaultTemplateId: json['defaultTemplateId'] as String?,
       $type: json['runtimeType'] as String?,
     );
 
@@ -299,6 +301,8 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'icon': const CategoryIconConverter().toJson(instance.icon),
       'speechDictionary': instance.speechDictionary,
       'correctionExamples': instance.correctionExamples,
+      'defaultProfileId': instance.defaultProfileId,
+      'defaultTemplateId': instance.defaultTemplateId,
       'runtimeType': instance.$type,
     };
 

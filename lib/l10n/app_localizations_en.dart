@@ -1502,6 +1502,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Inactive categories won\'t appear in selection lists';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Set default AI profile and agent template for new tasks in this category';
+
+  @override
+  String get categoryAiDefaultsTitle => 'AI Defaults';
+
+  @override
   String get categoryAiModelDescription =>
       'Control which AI prompts can be used with this category';
 
@@ -1516,6 +1523,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Set a default language for tasks in this category';
+
+  @override
+  String get categoryDefaultProfileHint => 'Select a profile…';
+
+  @override
+  String get categoryDefaultProfileLabel => 'Default inference profile';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Select a template…';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Default agent template';
 
   @override
   String get categoryDeleteConfirm => 'YES, DELETE THIS CATEGORY';
@@ -2662,6 +2681,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Select a model…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Select a profile…';
 
   @override
   String get inferenceProfilesEmpty => 'No inference profiles yet';

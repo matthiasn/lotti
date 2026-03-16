@@ -187,6 +187,7 @@ _TaskData _$TaskDataFromJson(Map<String, dynamic> json) => _TaskData(
       TaskPriority.p2Medium,
   coverArtId: json['coverArtId'] as String?,
   coverArtCropX: (json['coverArtCropX'] as num?)?.toDouble() ?? 0.5,
+  profileId: json['profileId'] as String?,
 );
 
 Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
@@ -204,6 +205,7 @@ Map<String, dynamic> _$TaskDataToJson(_TaskData instance) => <String, dynamic>{
   'priority': _$TaskPriorityEnumMap[instance.priority]!,
   'coverArtId': instance.coverArtId,
   'coverArtCropX': instance.coverArtCropX,
+  'profileId': instance.profileId,
 };
 
 const _$ChangeSourceEnumMap = {

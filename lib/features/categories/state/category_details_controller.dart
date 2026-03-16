@@ -100,6 +100,10 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.icon != _originalCategory!.icon ||
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
+        _pendingCategory!.defaultProfileId !=
+            _originalCategory!.defaultProfileId ||
+        _pendingCategory!.defaultTemplateId !=
+            _originalCategory!.defaultTemplateId ||
         _hasListChanges(
           _pendingCategory!.speechDictionary,
           _originalCategory!.speechDictionary,
@@ -153,6 +157,35 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     );
 
     // Update the displayed category to reflect pending changes
+    state = state.copyWith(
+      category: _pendingCategory,
+      hasChanges: _hasChanges(_pendingCategory),
+    );
+  }
+
+  /// Updates the default inference profile for new tasks in this category.
+  /// Pass `null` to clear the default.
+  void setDefaultProfileId(String? profileId) {
+    _updatePendingCategory(
+      (c) => c.copyWith(defaultProfileId: profileId),
+    );
+  }
+
+  /// Updates the default agent template for new tasks in this category.
+  /// Pass `null` to clear the default.
+  void setDefaultTemplateId(String? templateId) {
+    _updatePendingCategory(
+      (c) => c.copyWith(defaultTemplateId: templateId),
+    );
+  }
+
+  /// Applies [updater] to `_pendingCategory` and refreshes state.
+  void _updatePendingCategory(
+    CategoryDefinition Function(CategoryDefinition) updater,
+  ) {
+    if (_pendingCategory == null) return;
+
+    _pendingCategory = updater(_pendingCategory!);
     state = state.copyWith(
       category: _pendingCategory,
       hasChanges: _hasChanges(_pendingCategory),
@@ -235,15 +268,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   }
 
   void updateSpeechDictionary(List<String> terms) {
-    if (_pendingCategory == null) return;
-
-    _pendingCategory = _pendingCategory!.copyWith(
-      speechDictionary: terms.isEmpty ? null : terms,
-    );
-
-    state = state.copyWith(
-      category: _pendingCategory,
-      hasChanges: _hasChanges(_pendingCategory),
+    _updatePendingCategory(
+      (c) => c.copyWith(speechDictionary: terms.isEmpty ? null : terms),
     );
   }
 
@@ -263,13 +289,10 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
 
     final updatedExamples = [...currentExamples]..removeAt(index);
 
-    _pendingCategory = _pendingCategory!.copyWith(
-      correctionExamples: updatedExamples.isEmpty ? null : updatedExamples,
-    );
-
-    state = state.copyWith(
-      category: _pendingCategory,
-      hasChanges: _hasChanges(_pendingCategory),
+    _updatePendingCategory(
+      (c) => c.copyWith(
+        correctionExamples: updatedExamples.isEmpty ? null : updatedExamples,
+      ),
     );
   }
 

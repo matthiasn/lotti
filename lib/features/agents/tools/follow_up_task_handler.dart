@@ -1,11 +1,15 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:uuid/uuid.dart';
 
 /// Creates a follow-up task linked to the source task.
@@ -21,13 +25,16 @@ class FollowUpTaskHandler {
     required PersistenceLogic persistenceLogic,
     required JournalDb journalDb,
     DomainLogger? domainLogger,
+    TaskAgentService? taskAgentService,
   }) : _persistenceLogic = persistenceLogic,
        _journalDb = journalDb,
-       _domainLogger = domainLogger;
+       _domainLogger = domainLogger,
+       _taskAgentService = taskAgentService;
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
   final DomainLogger? _domainLogger;
+  final TaskAgentService? _taskAgentService;
 
   static const _uuid = Uuid();
   static const _sub = 'FollowUpTaskHandler';
@@ -83,6 +90,11 @@ class FollowUpTaskHandler {
     }
     final description = args['description'];
 
+    // Look up category defaults for profile inheritance.
+    final category = categoryId != null
+        ? getIt<EntitiesCacheService>().getCategoryById(categoryId)
+        : null;
+
     // Build task data.
     final taskData = TaskData(
       status: TaskStatus.open(
@@ -96,6 +108,7 @@ class FollowUpTaskHandler {
       title: title.trim(),
       priority: priority!,
       due: dueDate,
+      profileId: category?.defaultProfileId,
     );
 
     final entryText = EntryText(
@@ -129,6 +142,15 @@ class FollowUpTaskHandler {
     );
 
     final warnings = <String>[];
+
+    // Auto-assign an agent from the category's default template, matching
+    // the behavior of UI-created tasks in create_entry.dart.
+    await _tryAutoAssignAgent(
+      newTask,
+      categoryId: categoryId,
+      category: category,
+      warnings: warnings,
+    );
 
     // Link source task → new task. Wrapped in try-catch so a link failure
     // does not lose the already-created task ID. Also checks the bool return
@@ -182,5 +204,41 @@ class FollowUpTaskHandler {
       return DateTime.tryParse(value);
     }
     return null;
+  }
+
+  /// Auto-assigns an agent from the category's default template.
+  ///
+  /// Mirrors the logic in `autoAssignCategoryAgentWith` from
+  /// `create_entry.dart`. Failures are captured as warnings so they
+  /// never prevent the follow-up task from being returned to the caller.
+  Future<void> _tryAutoAssignAgent(
+    Task newTask, {
+    required String? categoryId,
+    required CategoryDefinition? category,
+    required List<String> warnings,
+  }) async {
+    final service = _taskAgentService;
+    if (service == null || categoryId == null || category == null) return;
+
+    final templateId = category.defaultTemplateId;
+    if (templateId == null) return;
+
+    try {
+      await service.createTaskAgent(
+        taskId: newTask.meta.id,
+        templateId: templateId,
+        profileId: category.defaultProfileId,
+        allowedCategoryIds: {categoryId},
+        awaitContent: true,
+      );
+    } catch (e) {
+      _domainLogger?.error(
+        LogDomains.agentWorkflow,
+        'Failed to auto-assign agent for follow-up ${newTask.meta.id}',
+        error: e,
+        subDomain: _sub,
+      );
+      warnings.add('Warning: failed to auto-assign agent');
+    }
   }
 }

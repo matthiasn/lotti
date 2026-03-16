@@ -1528,6 +1528,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Inaktive Kategorien erscheinen nicht in Auswahllisten';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Standard-KI-Profil und Agenten-Vorlage für neue Aufgaben in dieser Kategorie festlegen';
+
+  @override
+  String get categoryAiDefaultsTitle => 'KI-Standardwerte';
+
+  @override
   String get categoryAiModelDescription =>
       'Steuere, welche AI-Prompts mit dieser Kategorie verwendet werden können';
 
@@ -1542,6 +1549,18 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Standardsprache für Aufgaben in dieser Kategorie festlegen';
+
+  @override
+  String get categoryDefaultProfileHint => 'Profil auswählen…';
+
+  @override
+  String get categoryDefaultProfileLabel => 'Standard-Inferenzprofil';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Vorlage auswählen…';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Standard-Agenten-Vorlage';
 
   @override
   String get categoryDeleteConfirm => 'JA, DIESE KATEGORIE LÖSCHEN';
@@ -2704,6 +2723,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Modell auswählen…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Profil auswählen…';
 
   @override
   String get inferenceProfilesEmpty => 'Noch keine Inferenz-Profile';

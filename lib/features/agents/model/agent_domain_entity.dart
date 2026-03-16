@@ -44,6 +44,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(0) int consecutiveFailureCount,
     @Default(0) int wakeCounter,
     @Default({}) Map<String, int> processedCounterByHost,
+
+    /// When true, the agent was auto-created from a category default and is
+    /// waiting for the task to contain meaningful content before its first run.
+    @Default(false) bool awaitingContent,
     DateTime? deletedAt,
   }) = AgentStateEntity;
 

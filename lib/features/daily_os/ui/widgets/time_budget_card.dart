@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/task.dart';
@@ -267,6 +269,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
 
     // Navigate to the newly created task
     if (task != null && context.mounted) {
+      unawaited(autoAssignCategoryAgent(ref, task));
       beamToNamed('/tasks/${task.meta.id}');
     }
   }

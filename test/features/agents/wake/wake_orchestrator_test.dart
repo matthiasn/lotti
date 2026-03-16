@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -3295,6 +3296,306 @@ void main() {
         ).called(1);
 
         loggedOrchestrator.stop();
+      });
+    });
+
+    group('content gating', () {
+      test(
+        'skips wake when agent is awaitingContent and task has no content',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-cg',
+              awaitingContent: true,
+              slots: const AgentSlots(activeTaskId: 'task-1'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-cg'),
+            ).thenAnswer((_) async => state);
+
+            var wakeExecuted = false;
+            final cg =
+                WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: WakeRunner(),
+                  taskContentChecker: (taskId) async => false,
+                  wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                    wakeExecuted = true;
+                    return null;
+                  },
+                )..enqueueManualWake(
+                  agentId: 'agent-cg',
+                  reason: 'creation',
+                );
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            expect(wakeExecuted, isFalse);
+
+            cg.stop();
+          });
+        },
+      );
+
+      test('allows wake and clears flag when task has content', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg2',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-2'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg2'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async => true,
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg2',
+                reason: 'creation',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(wakeExecuted, isTrue);
+
+          // Verify awaitingContent was cleared via raw repository (no
+          // syncEntityWriter provided).
+          verify(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.awaitingContent,
+                  'awaitingContent',
+                  isFalse,
+                ),
+              ),
+            ),
+          ).called(1);
+
+          cg.stop();
+        });
+      });
+
+      test('uses syncEntityWriter instead of raw repository when provided', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg-sync',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-sync'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg-sync'),
+          ).thenAnswer((_) async => state);
+
+          AgentDomainEntity? writtenEntity;
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async => true,
+                syncEntityWriter: (entity) async {
+                  writtenEntity = entity;
+                },
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg-sync',
+                reason: 'creation',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(wakeExecuted, isTrue);
+
+          // syncEntityWriter was called with the cleared state.
+          expect(writtenEntity, isA<AgentStateEntity>());
+          final cleared = writtenEntity! as AgentStateEntity;
+          expect(cleared.awaitingContent, isFalse);
+          expect(cleared.agentId, 'agent-cg-sync');
+
+          // Raw repository.upsertEntity should NOT have been called for the
+          // content-gate clearing (it may be called for other purposes like
+          // wake-run status updates, so we verify the specific entity was not
+          // passed to it).
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.awaitingContent,
+                  'awaitingContent',
+                  isFalse,
+                ),
+              ),
+            ),
+          );
+
+          cg.stop();
+        });
+      });
+
+      test('proceeds normally when awaitingContent is false', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg3',
+            slots: const AgentSlots(activeTaskId: 'task-3'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg3'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async => false,
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg3',
+                reason: 'subscription',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(wakeExecuted, isTrue);
+
+          cg.stop();
+        });
+      });
+
+      test('proceeds when taskContentChecker is null', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg4',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-4'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg4'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                // taskContentChecker is null
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg4',
+                reason: 'creation',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          // No checker → cannot gate, so wake proceeds.
+          expect(wakeExecuted, isTrue);
+
+          cg.stop();
+        });
+      });
+
+      test('proceeds when content check throws (fail-open)', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg5',
+            awaitingContent: true,
+            slots: const AgentSlots(activeTaskId: 'task-5'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg5'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async =>
+                    throw Exception('DB error'),
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg5',
+                reason: 'subscription',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          // Error → fail-open, wake proceeds.
+          expect(wakeExecuted, isTrue);
+
+          cg.stop();
+        });
+      });
+
+      test('proceeds when state has no activeTaskId', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-cg6',
+            awaitingContent: true,
+            // No activeTaskId
+          );
+          when(
+            () => mockRepository.getAgentState('agent-cg6'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg =
+              WakeOrchestrator(
+                repository: mockRepository,
+                queue: queue,
+                runner: WakeRunner(),
+                taskContentChecker: (taskId) async => false,
+                wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                  wakeExecuted = true;
+                  return null;
+                },
+              )..enqueueManualWake(
+                agentId: 'agent-cg6',
+                reason: 'creation',
+              );
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          // No activeTaskId → cannot check content → proceeds.
+          expect(wakeExecuted, isTrue);
+
+          cg.stop();
+        });
       });
     });
   });

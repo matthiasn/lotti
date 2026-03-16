@@ -1,9 +1,15 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -70,10 +76,17 @@ void main() {
 
   late MockDomainLogger mockDomainLogger;
 
-  setUp(() {
+  late MockEntitiesCacheService mockEntitiesCache;
+
+  setUp(() async {
+    await getIt.reset();
+    mockEntitiesCache = MockEntitiesCacheService();
+    getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCache);
+
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
     mockDomainLogger = MockDomainLogger();
+
     handler = FollowUpTaskHandler(
       persistenceLogic: mockPersistenceLogic,
       journalDb: mockJournalDb,
@@ -85,6 +98,27 @@ void main() {
     when(
       () => mockJournalDb.journalEntityById(any()),
     ).thenAnswer((_) async => null);
+
+    // Stub EntitiesCacheService.getCategoryById — returns a category with
+    // defaultProfileId for the known categoryId, null otherwise.
+    when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+      CategoryDefinition(
+        id: categoryId,
+        name: 'Test Category',
+        color: '#0000FFFF',
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        active: true,
+        private: false,
+        defaultProfileId: 'profile-from-category',
+      ),
+    );
+    when(
+      () => mockEntitiesCache.getCategoryById(
+        any(that: isNot(equals(categoryId))),
+      ),
+    ).thenReturn(null);
 
     // Stub DomainLogger methods so verification works.
     when(
@@ -103,6 +137,10 @@ void main() {
         stackTrace: any(named: 'stackTrace'),
       ),
     ).thenReturn(null);
+  });
+
+  tearDown(() async {
+    await getIt.reset();
   });
 
   group('FollowUpTaskHandler', () {
@@ -532,6 +570,130 @@ void main() {
     });
 
     group('category inheritance', () {
+      test('inherits profileId from category defaults', () async {
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-profile');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'Profile Inherited'},
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: captureAny(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+
+          final taskData = captured[0] as TaskData;
+          expect(taskData.profileId, 'profile-from-category');
+        });
+      });
+
+      test('sets null profileId when source has no category', () async {
+        final sourceTask = makeSourceTask(taskCategoryId: null);
+        final newTask = makeNewTask('new-task-no-profile');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'No Profile'},
+          );
+
+          expect(result.success, isTrue);
+
+          final captured = verify(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: captureAny(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+
+          final taskData = captured[0] as TaskData;
+          expect(taskData.profileId, isNull);
+        });
+      });
+
+      test('does not auto-assign when no taskAgentService provided', () async {
+        // handler is constructed without taskAgentService (default setUp).
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-no-autoassign');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {'title': 'No Auto-Assign'},
+          );
+
+          expect(result.success, isTrue);
+          // No warnings about auto-assign since there's no service.
+          expect(result.output, isNot(contains('auto-assign')));
+        });
+      });
+
       test('inherits null category when source has none', () async {
         final sourceTask = makeSourceTask(taskCategoryId: null);
         final newTask = makeNewTask('new-task-006');
@@ -570,6 +732,260 @@ void main() {
           ).captured;
 
           expect(captured[0], isNull);
+        });
+      });
+    });
+
+    group('agent auto-assignment', () {
+      late MockTaskAgentService mockTaskAgentService;
+      late FollowUpTaskHandler handlerWithAgent;
+
+      setUp(() {
+        mockTaskAgentService = MockTaskAgentService();
+
+        handlerWithAgent = FollowUpTaskHandler(
+          persistenceLogic: mockPersistenceLogic,
+          journalDb: mockJournalDb,
+          domainLogger: mockDomainLogger,
+          taskAgentService: mockTaskAgentService,
+        );
+
+        when(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.agent(
+                    id: 'agent-id',
+                    agentId: 'agent-id',
+                    kind: 'task_agent',
+                    displayName: 'Auto-Assigned Agent',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: {},
+                    currentStateId: 'state-1',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2024),
+                    updatedAt: DateTime(2024),
+                    vectorClock: null,
+                  )
+                  as AgentIdentityEntity,
+        );
+      });
+
+      test('calls createTaskAgent with category defaults', () async {
+        // Override the category stub to include a defaultTemplateId.
+        when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+          CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            color: '#0000FFFF',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            active: true,
+            private: false,
+            defaultProfileId: 'profile-from-category',
+            defaultTemplateId: 'template-from-category',
+          ),
+        );
+
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-autoassign');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'Auto-Assigned Task'},
+          );
+
+          expect(result.success, isTrue);
+          expect(result.output, isNot(contains('auto-assign')));
+
+          verify(
+            () => mockTaskAgentService.createTaskAgent(
+              taskId: 'new-task-autoassign',
+              templateId: 'template-from-category',
+              profileId: 'profile-from-category',
+              allowedCategoryIds: {categoryId},
+              awaitContent: true,
+            ),
+          ).called(1);
+        });
+      });
+
+      test(
+        'skips auto-assign when category has no defaultTemplateId',
+        () async {
+          // Default stub has no defaultTemplateId.
+          final sourceTask = makeSourceTask();
+          final newTask = makeNewTask('new-task-no-template');
+
+          when(
+            () => mockJournalDb.journalEntityById(sourceTaskId),
+          ).thenAnswer((_) async => sourceTask);
+
+          when(
+            () => mockPersistenceLogic.createTaskEntry(
+              data: any(named: 'data'),
+              entryText: any(named: 'entryText'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => newTask);
+
+          when(
+            () => mockPersistenceLogic.createLink(
+              fromId: any(named: 'fromId'),
+              toId: any(named: 'toId'),
+            ),
+          ).thenAnswer((_) async => true);
+
+          await withClock(Clock.fixed(testDate), () async {
+            final result = await handlerWithAgent.handle(
+              sourceTaskId,
+              {'title': 'No Template Task'},
+            );
+
+            expect(result.success, isTrue);
+
+            verifyNever(
+              () => mockTaskAgentService.createTaskAgent(
+                taskId: any(named: 'taskId'),
+                templateId: any(named: 'templateId'),
+                profileId: any(named: 'profileId'),
+                allowedCategoryIds: any(named: 'allowedCategoryIds'),
+                awaitContent: any(named: 'awaitContent'),
+              ),
+            );
+          });
+        },
+      );
+
+      test('surfaces warning when createTaskAgent throws', () async {
+        when(() => mockEntitiesCache.getCategoryById(categoryId)).thenReturn(
+          CategoryDefinition(
+            id: categoryId,
+            name: 'Test Category',
+            color: '#0000FFFF',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            vectorClock: null,
+            active: true,
+            private: false,
+            defaultProfileId: 'profile-from-category',
+            defaultTemplateId: 'template-from-category',
+          ),
+        );
+
+        when(
+          () => mockTaskAgentService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(Exception('Agent creation failed'));
+
+        final sourceTask = makeSourceTask();
+        final newTask = makeNewTask('new-task-agent-fail');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'Agent Fail Task'},
+          );
+
+          // Task creation still succeeds — agent failure is a warning.
+          expect(result.success, isTrue);
+          expect(result.mutatedEntityId, 'new-task-agent-fail');
+          expect(result.output, contains('failed to auto-assign agent'));
+        });
+      });
+
+      test('skips auto-assign when source has no category', () async {
+        final sourceTask = makeSourceTask(taskCategoryId: null);
+        final newTask = makeNewTask('new-task-no-cat-agent');
+
+        when(
+          () => mockJournalDb.journalEntityById(sourceTaskId),
+        ).thenAnswer((_) async => sourceTask);
+
+        when(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) async => newTask);
+
+        when(
+          () => mockPersistenceLogic.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        await withClock(Clock.fixed(testDate), () async {
+          final result = await handlerWithAgent.handle(
+            sourceTaskId,
+            {'title': 'No Cat Agent Task'},
+          );
+
+          expect(result.success, isTrue);
+
+          verifyNever(
+            () => mockTaskAgentService.createTaskAgent(
+              taskId: any(named: 'taskId'),
+              templateId: any(named: 'templateId'),
+              profileId: any(named: 'profileId'),
+              allowedCategoryIds: any(named: 'allowedCategoryIds'),
+              awaitContent: any(named: 'awaitContent'),
+            ),
+          );
         });
       });
     });

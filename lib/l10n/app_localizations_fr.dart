@@ -1554,6 +1554,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les catégories inactives n\'apparaîtront pas dans les listes de sélection';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Définir le profil IA et le modèle d\'agent par défaut pour les nouvelles tâches de cette catégorie';
+
+  @override
+  String get categoryAiDefaultsTitle => 'Paramètres IA par défaut';
+
+  @override
   String get categoryAiModelDescription =>
       'Contrôler quels prompts AI peuvent être utilisés avec cette catégorie';
 
@@ -1568,6 +1575,18 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Définir une langue par défaut pour les tâches de cette catégorie';
+
+  @override
+  String get categoryDefaultProfileHint => 'Sélectionner un profil…';
+
+  @override
+  String get categoryDefaultProfileLabel => 'Profil d\'inférence par défaut';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Sélectionner un modèle…';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Modèle d\'agent par défaut';
 
   @override
   String get categoryDeleteConfirm => 'OUI, SUPPRIMER CETTE CATÉGORIE';
@@ -2738,6 +2757,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Sélectionner un modèle…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Sélectionner un profil…';
 
   @override
   String get inferenceProfilesEmpty => 'Aucun profil d\'inférence';

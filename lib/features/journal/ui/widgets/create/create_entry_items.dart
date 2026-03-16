@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -95,6 +97,7 @@ class CreateTaskItem extends ConsumerWidget {
           return;
         }
         if (task != null) {
+          unawaited(autoAssignCategoryAgent(ref, task));
           beamToNamed('/tasks/${task.meta.id}');
         }
         Navigator.of(context).pop();

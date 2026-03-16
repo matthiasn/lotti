@@ -50,7 +50,7 @@ void main() {
 
     final context = tester.element(find.byType(ProfileSelector));
     expect(
-      find.text(context.messages.inferenceProfileSelectModel),
+      find.text(context.messages.inferenceProfileSelectProfile),
       findsOneWidget,
     );
     expect(find.text(profile.name), findsNothing);
@@ -184,7 +184,7 @@ void main() {
 
     final context = tester.element(find.byType(ProfileSelector));
     expect(
-      find.text(context.messages.inferenceProfileSelectModel),
+      find.text(context.messages.inferenceProfileSelectProfile),
       findsOneWidget,
     );
     // The dropdown arrow is still visible but InkWell.onTap is null.

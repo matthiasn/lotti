@@ -334,6 +334,7 @@ void main() {
           ),
           labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
         ],
       );
       addTearDown(container.dispose);

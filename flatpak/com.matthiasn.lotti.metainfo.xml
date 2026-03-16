@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.926" date="2026-03-15">
+      <description>
+          <p>Category AI defaults: categories can now define a default inference profile and agent template. New tasks inherit the profile for speech-to-text/image analysis, and get an agent auto-assigned that waits for content before activating.</p>
+      </description>
+    </release>
     <release version="0.9.925" date="2026-03-15">
       <description>
           <p>Fixed: Notifications now properly honor the notification config flag. Previously, "tasks in progress" and general notifications were sent even when notifications were disabled.</p>

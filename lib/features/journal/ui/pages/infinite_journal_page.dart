@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -42,6 +44,7 @@ class InfiniteJournalPage extends ConsumerWidget {
                 createFn: () async {
                   final task = await createTask(categoryId: categoryId);
                   if (task != null) {
+                    unawaited(autoAssignCategoryAgent(ref, task));
                     getIt<NavService>().beamToNamed('/tasks/${task.meta.id}');
                   }
                 },

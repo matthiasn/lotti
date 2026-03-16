@@ -2739,6 +2739,18 @@ abstract class AppLocalizations {
   /// **'Inactive categories won\'t appear in selection lists'**
   String get categoryActiveDescription;
 
+  /// No description provided for @categoryAiDefaultsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Set default AI profile and agent template for new tasks in this category'**
+  String get categoryAiDefaultsDescription;
+
+  /// No description provided for @categoryAiDefaultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Defaults'**
+  String get categoryAiDefaultsTitle;
+
   /// No description provided for @categoryAiModelDescription.
   ///
   /// In en, this message translates to:
@@ -2762,6 +2774,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set a default language for tasks in this category'**
   String get categoryDefaultLanguageDescription;
+
+  /// No description provided for @categoryDefaultProfileHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a profile…'**
+  String get categoryDefaultProfileHint;
+
+  /// No description provided for @categoryDefaultProfileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default inference profile'**
+  String get categoryDefaultProfileLabel;
+
+  /// No description provided for @categoryDefaultTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a template…'**
+  String get categoryDefaultTemplateHint;
+
+  /// No description provided for @categoryDefaultTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default agent template'**
+  String get categoryDefaultTemplateLabel;
 
   /// No description provided for @categoryDeleteConfirm.
   ///
@@ -4832,6 +4868,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a model…'**
   String get inferenceProfileSelectModel;
+
+  /// No description provided for @inferenceProfileSelectProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a profile…'**
+  String get inferenceProfileSelectProfile;
 
   /// No description provided for @inferenceProfilesEmpty.
   ///

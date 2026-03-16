@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
@@ -27,6 +29,7 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../features/agents/test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../../helpers/path_provider.dart';
 import '../../mocks/mocks.dart';
@@ -114,6 +117,7 @@ void main() {
         ..registerSingleton<GeolocationService>(mockGeolocationService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<NavService>(mockNavService)
+        ..registerSingleton<EntitiesCacheService>(MockEntitiesCacheService())
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
     });
 
@@ -382,5 +386,204 @@ void main() {
         );
       }
     });
+
+    test('createTask inherits defaultProfileId from category', () async {
+      const categoryId = 'cat-with-profile';
+      const profileId = 'profile-abc';
+      final mockCache =
+          getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+      final category = CategoryDefinition(
+        id: categoryId,
+        name: 'Test',
+        private: false,
+        active: true,
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        vectorClock: null,
+        defaultProfileId: profileId,
+      );
+      when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+      final task = await createTask(categoryId: categoryId);
+
+      expect(task, isNotNull);
+      expect(task!.data.profileId, equals(profileId));
+    });
+
+    test(
+      'createTask has null profileId when category has no default',
+      () async {
+        const categoryId = 'cat-no-profile';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Plain',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+
+        expect(task, isNotNull);
+        expect(task!.data.profileId, isNull);
+      },
+    );
+
+    test('createTask has null profileId when no categoryId', () async {
+      final task = await createTask();
+      expect(task, isNotNull);
+      expect(task!.data.profileId, isNull);
+    });
+
+    test(
+      'autoAssignCategoryAgentWith creates agent for category with template',
+      () async {
+        const categoryId = 'cat-with-template';
+        const templateId = 'template-xyz';
+        const profileId = 'profile-xyz';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'AI Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultTemplateId: templateId,
+          defaultProfileId: profileId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenAnswer(
+          (_) async => makeTestIdentity(id: 'agent-1'),
+        );
+
+        await autoAssignCategoryAgentWith(mockService, task!);
+
+        verify(
+          () => mockService.createTaskAgent(
+            taskId: task.meta.id,
+            templateId: templateId,
+            profileId: profileId,
+            allowedCategoryIds: {categoryId},
+            awaitContent: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'autoAssignCategoryAgentWith does nothing when no categoryId',
+      () async {
+        final task = await createTask();
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        await autoAssignCategoryAgentWith(mockService, task!);
+
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'autoAssignCategoryAgentWith does nothing when no defaultTemplateId',
+      () async {
+        const categoryId = 'cat-no-template';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'No Template',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        await autoAssignCategoryAgentWith(mockService, task!);
+
+        verifyNever(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'autoAssignCategoryAgentWith catches errors gracefully',
+      () async {
+        const categoryId = 'cat-error';
+        const templateId = 'template-err';
+        final mockCache =
+            getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+
+        final category = CategoryDefinition(
+          id: categoryId,
+          name: 'Error Cat',
+          private: false,
+          active: true,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          defaultTemplateId: templateId,
+        );
+        when(() => mockCache.getCategoryById(categoryId)).thenReturn(category);
+
+        final task = await createTask(categoryId: categoryId);
+        expect(task, isNotNull);
+
+        final mockService = MockTaskAgentService();
+        when(
+          () => mockService.createTaskAgent(
+            taskId: any(named: 'taskId'),
+            templateId: any(named: 'templateId'),
+            profileId: any(named: 'profileId'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            awaitContent: any(named: 'awaitContent'),
+          ),
+        ).thenThrow(Exception('Service unavailable'));
+
+        // Should not throw — errors are caught and logged.
+        await autoAssignCategoryAgentWith(mockService, task!);
+      },
+    );
   });
 }

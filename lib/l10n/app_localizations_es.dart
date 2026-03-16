@@ -39,7 +39,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addActionAddTimer => 'Temporizador';
 
   @override
-  String get addActionAddTimeRecording => 'Entrada de temporizador';
+  String get addActionAddTimeRecording => 'Registro de tiempo';
 
   @override
   String get addActionImportImage => 'Importar imagen';
@@ -1553,6 +1553,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las categorías inactivas no aparecerán en las listas de selección';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Establecer el perfil de IA y la plantilla de agente predeterminados para nuevas tareas en esta categoría';
+
+  @override
+  String get categoryAiDefaultsTitle => 'Valores predeterminados de IA';
+
+  @override
   String get categoryAiModelDescription =>
       'Controlar qué prompts AI se pueden usar con esta categoría';
 
@@ -1567,6 +1574,20 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Establecer un idioma predeterminado para las tareas de esta categoría';
+
+  @override
+  String get categoryDefaultProfileHint => 'Seleccionar un perfil…';
+
+  @override
+  String get categoryDefaultProfileLabel =>
+      'Perfil de inferencia predeterminado';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Seleccionar una plantilla…';
+
+  @override
+  String get categoryDefaultTemplateLabel =>
+      'Plantilla de agente predeterminada';
 
   @override
   String get categoryDeleteConfirm => 'SÍ, ELIMINAR ESTA CATEGORÍA';
@@ -2740,6 +2761,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Seleccionar un modelo…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Seleccionar un perfil…';
 
   @override
   String get inferenceProfilesEmpty => 'Aún no hay perfiles de inferencia';
@@ -4032,10 +4056,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMatrixHomeserverConfigTitle =>
-      'Configuración del servidor doméstico Matrix';
+      'Configuración del homeserver Matrix';
 
   @override
-  String get settingsMatrixHomeServerLabel => 'Servidor doméstico';
+  String get settingsMatrixHomeServerLabel => 'Homeserver';
 
   @override
   String get settingsMatrixLastUpdated => 'Última actualización:';

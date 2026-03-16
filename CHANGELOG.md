@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.926] - 2026-03-15
+### Added
+- Category AI defaults: categories can now define a default inference profile
+  and agent template. New tasks created in the category automatically inherit
+  the profile (for speech-to-text and image analysis) and get an agent
+  auto-assigned from the template.
+- Agent content-gating: auto-assigned agents enter a "waiting" state and only
+  activate once the task has meaningful content (linked entries with non-empty
+  text), preventing premature agent runs on blank tasks.
+- Task-level profile fallback: when a task has no agent, the profile automation
+  system falls back to the task's inherited profile for skill automation
+  (transcription, image analysis).
+
 ## [0.9.925] - 2026-03-15
 ### Fixed
 - Notifications: honor the notification config flag across all notification

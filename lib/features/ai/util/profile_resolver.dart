@@ -46,23 +46,48 @@ class ProfileResolver {
     return _resolveFromModelId(version.modelId ?? template.modelId);
   }
 
+  /// Resolves a [ResolvedProfile] directly from a [profileId].
+  ///
+  /// Unlike [resolve], this does not use the agent/template/version chain and
+  /// has no legacy `modelId` fallback. Returns `null` if the profile cannot be
+  /// found or the thinking slot cannot be resolved.
+  Future<ResolvedProfile?> resolveByProfileId(String profileId) async {
+    final config = await _fetchProfile(profileId);
+    if (config == null) return null;
+    return _buildResolvedProfile(config);
+  }
+
   Future<ResolvedProfile?> _resolveFromProfile(
     String profileId,
     AgentTemplateEntity template,
     AgentTemplateVersionEntity version,
   ) async {
-    final config = await _aiConfigRepository.getConfigById(profileId);
-
-    if (config is! AiConfigInferenceProfile) {
-      developer.log(
-        'Profile $profileId not found or wrong type, '
-        'falling back to legacy modelId',
-        name: _logTag,
-      );
+    final config = await _fetchProfile(profileId);
+    if (config == null) {
       // Fallback to legacy path when profile not found (e.g., sync race).
       return _resolveFromModelId(version.modelId ?? template.modelId);
     }
+    return _buildResolvedProfile(config);
+  }
 
+  /// Fetches and type-checks a profile config by [profileId].
+  ///
+  /// Returns `null` if the config is not found or is not an inference profile.
+  Future<AiConfigInferenceProfile?> _fetchProfile(String profileId) async {
+    final config = await _aiConfigRepository.getConfigById(profileId);
+    if (config is! AiConfigInferenceProfile) {
+      developer.log(
+        'Profile $profileId not found or wrong type',
+        name: _logTag,
+      );
+      return null;
+    }
+    return config;
+  }
+
+  Future<ResolvedProfile?> _buildResolvedProfile(
+    AiConfigInferenceProfile config,
+  ) async {
     // Resolve thinking slot (fatal if missing).
     final thinkingProvider = await resolveInferenceProvider(
       modelId: config.thinkingModelId,
@@ -72,7 +97,7 @@ class ProfileResolver {
     if (thinkingProvider == null) {
       developer.log(
         'Cannot resolve thinking model ${config.thinkingModelId} '
-        'for profile $profileId',
+        'for profile ${config.id}',
         name: _logTag,
       );
       return null;

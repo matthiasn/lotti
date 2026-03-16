@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -80,6 +81,7 @@ class TaskAgentWorkflow {
     this.domainLogger,
     this.embeddingStore,
     this.embeddingRepository,
+    this.taskAgentService,
   });
 
   final AgentRepository agentRepository;
@@ -105,6 +107,9 @@ class TaskAgentWorkflow {
   /// non-essential — if unavailable, reports are still persisted normally.
   final EmbeddingStore? embeddingStore;
   final OllamaEmbeddingRepository? embeddingRepository;
+
+  /// Optional task agent service for auto-assigning agents to follow-up tasks.
+  final TaskAgentService? taskAgentService;
 
   static const _uuid = Uuid();
 
@@ -310,6 +315,7 @@ class TaskAgentWorkflow {
         checklistRepository: checklistRepository,
         labelsRepository: labelsRepository,
         persistenceLogic: getIt<PersistenceLogic>(),
+        taskAgentService: taskAgentService,
       );
 
       final changeSetBuilder = ChangeSetBuilder(

@@ -15,11 +15,16 @@ class ProfileSelector extends ConsumerWidget {
   const ProfileSelector({
     required this.selectedProfileId,
     required this.onProfileSelected,
+    this.hintText,
     super.key,
   });
 
   final String? selectedProfileId;
   final ValueChanged<String?> onProfileSelected;
+
+  /// Optional hint text shown when no profile is selected. Defaults to
+  /// `context.messages.inferenceProfileSelectProfile`.
+  final String? hintText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +75,7 @@ class ProfileSelector extends ConsumerWidget {
                 style: context.textTheme.bodyLarge,
               )
             : Text(
-                context.messages.inferenceProfileSelectModel,
+                hintText ?? context.messages.inferenceProfileSelectProfile,
                 style: context.textTheme.bodyLarge?.copyWith(
                   color: context.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),

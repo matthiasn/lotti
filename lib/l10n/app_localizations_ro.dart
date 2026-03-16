@@ -1527,6 +1527,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Categoriile inactive nu vor apărea în listele de selecție';
 
   @override
+  String get categoryAiDefaultsDescription =>
+      'Setați profilul AI și șablonul de agent implicit pentru sarcinile noi din această categorie';
+
+  @override
+  String get categoryAiDefaultsTitle => 'Setări implicite AI';
+
+  @override
   String get categoryAiModelDescription =>
       'Controlați ce prompturi AI pot fi folosite cu această categorie';
 
@@ -1541,6 +1548,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get categoryDefaultLanguageDescription =>
       'Setați o limbă implicită pentru sarcinile din această categorie';
+
+  @override
+  String get categoryDefaultProfileHint => 'Selectați un profil…';
+
+  @override
+  String get categoryDefaultProfileLabel => 'Profil de inferență implicit';
+
+  @override
+  String get categoryDefaultTemplateHint => 'Selectați un șablon…';
+
+  @override
+  String get categoryDefaultTemplateLabel => 'Șablon de agent implicit';
 
   @override
   String get categoryDeleteConfirm => 'DA, ȘTERGE ACEASTĂ CATEGORIE';
@@ -2704,6 +2723,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inferenceProfileSelectModel => 'Selectați un model…';
+
+  @override
+  String get inferenceProfileSelectProfile => 'Selectați un profil…';
 
   @override
   String get inferenceProfilesEmpty => 'Niciun profil de inferență';
@@ -4843,7 +4865,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskStatusLabel => 'Starea Sarcinii:';
 
   @override
-  String get taskStatusOnHold => 'N AŞTEPTARE';
+  String get taskStatusOnHold => 'ÎN AȘTEPTARE';
 
   @override
   String get taskStatusOpen => 'DESCHIS';

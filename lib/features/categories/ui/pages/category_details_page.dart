@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/ui/profile_selector.dart';
+import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
@@ -333,6 +335,20 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                     ),
                     const SizedBox(height: 24),
 
+                    // AI Defaults Section
+                    LottiFormSection(
+                      title: context.messages.categoryAiDefaultsTitle,
+                      icon: Icons.smart_toy_outlined,
+                      description:
+                          context.messages.categoryAiDefaultsDescription,
+                      children: [
+                        _buildDefaultProfilePicker(category),
+                        const SizedBox(height: 16),
+                        _buildDefaultTemplatePicker(category),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+
                     // Speech Dictionary Section
                     LottiFormSection(
                       title: context.messages.speechDictionarySectionTitle,
@@ -493,6 +509,29 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       searchController.dispose();
       searchQuery.dispose();
     }
+  }
+
+  Widget _buildDefaultProfilePicker(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return ProfileSelector(
+      selectedProfileId: category.defaultProfileId,
+      onProfileSelected: controller.setDefaultProfileId,
+      hintText: context.messages.categoryDefaultProfileHint,
+    );
+  }
+
+  Widget _buildDefaultTemplatePicker(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return TemplateSelector(
+      selectedTemplateId: category.defaultTemplateId,
+      onTemplateSelected: controller.setDefaultTemplateId,
+    );
   }
 
   Widget _buildSpeechDictionary(CategoryDefinition category) {
