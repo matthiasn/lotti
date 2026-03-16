@@ -42,15 +42,17 @@ class Container:
 
     def _create_tigerbeetle_client(self) -> Any:
         """Create TigerBeetle client"""
+        import socket
+
         from .services.tigerbeetle_client import TigerBeetleClient
 
         cluster_id = int(os.getenv("TIGERBEETLE_CLUSTER_ID", "0"))
         host = os.getenv("TIGERBEETLE_HOST", "localhost")
         port = os.getenv("TIGERBEETLE_PORT", "3000")
 
-        # TigerBeetle Python client expects just port for localhost, or "host:port" format
-        # For localhost, just use port
-        addresses = port if host in ("localhost", "127.0.0.1") else f"{host}:{port}"
+        # TigerBeetle client requires IP addresses, not hostnames — resolve DNS first
+        resolved_host = socket.gethostbyname(host)
+        addresses = port if resolved_host in ("127.0.0.1",) else f"{resolved_host}:{port}"
 
         return TigerBeetleClient(cluster_id=cluster_id, addresses=addresses)
 

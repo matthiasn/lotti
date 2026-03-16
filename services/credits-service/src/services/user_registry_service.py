@@ -65,6 +65,8 @@ class UserRegistryService(IUserRegistryService):
         return await asyncio.to_thread(self._get_user_sync, user_id)
 
     def _list_users_sync(self, page: int, page_size: int) -> tuple[list[dict], int]:
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:

@@ -54,8 +54,14 @@ class TransactionLogService(ITransactionLogService):
         balance_after: Decimal,
         description: str | None,
     ) -> None:
-        amount_cents = int(amount * CURRENCY_PRECISION)
-        balance_after_cents = int(balance_after * CURRENCY_PRECISION)
+        amount_scaled = amount * CURRENCY_PRECISION
+        balance_scaled = balance_after * CURRENCY_PRECISION
+        if amount_scaled != int(amount_scaled):
+            raise ValueError(f"amount must be whole cents, got {amount}")
+        if balance_scaled != int(balance_scaled):
+            raise ValueError(f"balance_after must be whole cents, got {balance_after}")
+        amount_cents = int(amount_scaled)
+        balance_after_cents = int(balance_scaled)
         conn = sqlite3.connect(self.db_path)
         try:
             conn.execute(
@@ -91,6 +97,8 @@ class TransactionLogService(ITransactionLogService):
     def _get_transactions_sync(
         self, user_id: str, page: int, page_size: int
     ) -> tuple[list[dict], int]:
+        page = max(1, page)
+        page_size = max(1, min(100, page_size))
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
