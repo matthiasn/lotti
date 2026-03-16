@@ -215,9 +215,70 @@ void main() {
       expect(result, isTrue);
       verify(() => mockPersistence.updateMetadata(projectMeta)).called(1);
     });
+
+    test('returns false when persistence fails', () async {
+      final updatedMeta = projectMeta.copyWith(
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: const VectorClock({'device-1': 2}),
+      );
+
+      when(
+        () => mockPersistence.updateMetadata(projectMeta),
+      ).thenAnswer((_) async => updatedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: updatedMeta),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final result = await repository.updateProject(projectEntry);
+
+      expect(result, isFalse);
+    });
   });
 
   group('linkTaskToProject', () {
+    test('creates new link when task has no existing project', () async {
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+      when(
+        () => mockDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async => taskEntry);
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+      when(() => mockNotifications.notify(any())).thenReturn(null);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isTrue);
+
+      // Verify link was created with correct fromId/toId
+      final captured =
+          verify(() => mockDb.upsertEntryLink(captureAny())).captured.single
+              as EntryLink;
+      expect(captured, isA<ProjectLink>());
+      expect(captured.fromId, 'project-001');
+      expect(captured.toId, 'task-001');
+      expect(captured.hidden, isNull);
+
+      // Verify notifications sent with correct IDs
+      verify(
+        () => mockNotifications.notify({'project-001', 'task-001'}),
+      ).called(1);
+
+      // Verify sync enqueued
+      verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+
     test('rejects cross-category linking', () async {
       final crossCategoryTask = Task(
         meta: taskMeta.copyWith(categoryId: 'cat-different'),
