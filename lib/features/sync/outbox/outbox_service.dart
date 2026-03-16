@@ -1546,25 +1546,26 @@ class OutboxService {
     }
 
     // Enrich covered VCs from the sequence log for already-sent predecessors.
+    final initialCovered = switch (enrichedMessage) {
+      final SyncAgentEntity e => e.coveredVectorClocks,
+      final SyncAgentLink l => l.coveredVectorClocks,
+      _ => null,
+    };
     final enrichedAgentCovered = await _enrichCoveredVcsFromSequenceLog(
       id,
-      enrichedMessage is SyncAgentEntity
-          ? enrichedMessage.coveredVectorClocks
-          : enrichedMessage is SyncAgentLink
-          ? enrichedMessage.coveredVectorClocks
-          : null,
+      initialCovered,
     );
     var outboxAgentMsg = enrichedMessage;
-    if (enrichedAgentCovered != null) {
-      if (outboxAgentMsg case final SyncAgentEntity entity) {
-        outboxAgentMsg = entity.copyWith(
+    if (enrichedAgentCovered != initialCovered) {
+      outboxAgentMsg = switch (outboxAgentMsg) {
+        final SyncAgentEntity e => e.copyWith(
           coveredVectorClocks: enrichedAgentCovered,
-        );
-      } else if (outboxAgentMsg case final SyncAgentLink link) {
-        outboxAgentMsg = link.copyWith(
+        ),
+        final SyncAgentLink l => l.copyWith(
           coveredVectorClocks: enrichedAgentCovered,
-        );
-      }
+        ),
+        _ => outboxAgentMsg,
+      };
     }
     final outboxAgentJson = json.encode(outboxAgentMsg.toJson());
     final outboxAgentSize = utf8.encode(outboxAgentJson).length;
