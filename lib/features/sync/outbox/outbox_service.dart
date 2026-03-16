@@ -937,9 +937,19 @@ class OutboxService {
       }
     }
 
-    // No existing item or merge failed - create new outbox item with entryId
-    // Add file attachment size to the JSON payload size
-    final totalPayloadSize = (commonFields.payloadSize.value ?? 0) + fileLength;
+    // No existing item or merge failed - create new outbox item with entryId.
+    // Enrich covered VCs from the sequence log so receivers can resolve
+    // intermediate counters even when the predecessor was already sent.
+    final enrichedCovered = await _enrichCoveredVcsFromSequenceLog(
+      msg.id,
+      msg.coveredVectorClocks,
+    );
+    var outboxMsg = msg;
+    if (enrichedCovered != msg.coveredVectorClocks) {
+      outboxMsg = msg.copyWith(coveredVectorClocks: enrichedCovered);
+    }
+    final outboxJson = json.encode(outboxMsg.toJson());
+    final outboxSize = utf8.encode(outboxJson).length + fileLength;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         filePath: Value(
@@ -947,7 +957,8 @@ class OutboxService {
         ),
         subject: Value('$hostHash:$localCounter'),
         outboxEntryId: Value(msg.id),
-        payloadSize: Value(totalPayloadSize),
+        message: Value(outboxJson),
+        payloadSize: Value(outboxSize),
       ),
     );
     _loggingService.captureEvent(
@@ -975,6 +986,33 @@ class OutboxService {
     }
 
     return false; // No merge - caller should call enqueueNextSendRequest
+  }
+
+  /// Looks up the last sent vector clock for [entryId] from the sequence log
+  /// and merges it into [existingCovered].  Returns [existingCovered] unchanged
+  /// when no previous send is found or the sequence log service is absent.
+  Future<List<VectorClock>?> _enrichCoveredVcsFromSequenceLog(
+    String entryId,
+    List<VectorClock>? existingCovered,
+  ) async {
+    if (_sequenceLogService == null) return existingCovered;
+    try {
+      final lastSentVc = await _sequenceLogService
+          .getLastSentVectorClockForEntry(entryId);
+      if (lastSentVc == null) return existingCovered;
+      return VectorClock.mergeUniqueClocks([
+        ...?existingCovered,
+        lastSentVc,
+      ]);
+    } catch (e, st) {
+      _loggingService.captureException(
+        e,
+        domain: 'SYNC_SEQUENCE',
+        subDomain: 'enrichCoveredVcs',
+        stackTrace: st,
+      );
+      return existingCovered;
+    }
   }
 
   /// Enqueues a SyncEntryLink. Returns true if merge happened (caller should
@@ -1107,11 +1145,24 @@ class OutboxService {
       }
     }
 
-    // No existing item or merge failed - create new outbox item with entryId
+    // No existing item or merge failed - create new outbox item with entryId.
+    // Enrich covered VCs from the sequence log for already-sent predecessors.
+    final enrichedLinkCovered = await _enrichCoveredVcsFromSequenceLog(
+      linkId,
+      msg.coveredVectorClocks,
+    );
+    var outboxLinkMsg = msg;
+    if (enrichedLinkCovered != msg.coveredVectorClocks) {
+      outboxLinkMsg = msg.copyWith(coveredVectorClocks: enrichedLinkCovered);
+    }
+    final outboxLinkJson = json.encode(outboxLinkMsg.toJson());
+    final outboxLinkSize = utf8.encode(outboxLinkJson).length;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         subject: Value(subject),
         outboxEntryId: Value(linkId),
+        message: Value(outboxLinkJson),
+        payloadSize: Value(outboxLinkSize),
       ),
     );
     _loggingService.captureEvent(
@@ -1350,9 +1401,6 @@ class OutboxService {
       return false;
     }
 
-    final enrichedJson = json.encode(enrichedMessage.toJson());
-    final enrichedSize = utf8.encode(enrichedJson).length;
-
     final existingItem = await _syncDatabase.findPendingByEntryId(id);
 
     if (existingItem != null) {
@@ -1497,12 +1545,35 @@ class OutboxService {
       return true;
     }
 
+    // Enrich covered VCs from the sequence log for already-sent predecessors.
+    final enrichedAgentCovered = await _enrichCoveredVcsFromSequenceLog(
+      id,
+      enrichedMessage is SyncAgentEntity
+          ? enrichedMessage.coveredVectorClocks
+          : enrichedMessage is SyncAgentLink
+          ? enrichedMessage.coveredVectorClocks
+          : null,
+    );
+    var outboxAgentMsg = enrichedMessage;
+    if (enrichedAgentCovered != null) {
+      if (outboxAgentMsg case final SyncAgentEntity entity) {
+        outboxAgentMsg = entity.copyWith(
+          coveredVectorClocks: enrichedAgentCovered,
+        );
+      } else if (outboxAgentMsg case final SyncAgentLink link) {
+        outboxAgentMsg = link.copyWith(
+          coveredVectorClocks: enrichedAgentCovered,
+        );
+      }
+    }
+    final outboxAgentJson = json.encode(outboxAgentMsg.toJson());
+    final outboxAgentSize = utf8.encode(outboxAgentJson).length;
     await _syncDatabase.addOutboxItem(
       commonFields.copyWith(
         subject: Value(subject),
-        message: Value(enrichedJson),
+        message: Value(outboxAgentJson),
         outboxEntryId: Value(id),
-        payloadSize: Value(enrichedSize),
+        payloadSize: Value(outboxAgentSize),
       ),
     );
     _loggingService.captureEvent(

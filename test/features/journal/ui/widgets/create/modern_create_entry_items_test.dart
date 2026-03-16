@@ -219,8 +219,9 @@ void main() {
             ),
             overrides: [
               journalDbProvider.overrideWithValue(mockDb),
-              taskAgentServiceProvider
-                  .overrideWithValue(MockTaskAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
             ],
           ),
         );
@@ -288,8 +289,9 @@ void main() {
             ),
             overrides: [
               journalDbProvider.overrideWithValue(mockDb),
-              taskAgentServiceProvider
-                  .overrideWithValue(MockTaskAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
             ],
           ),
         );
@@ -1345,8 +1347,7 @@ void main() {
           const CreateTaskItem(null, categoryId: 'cat-id'),
           overrides: [
             journalDbProvider.overrideWithValue(mockDb),
-            taskAgentServiceProvider
-                .overrideWithValue(MockTaskAgentService()),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
           ],
         ),
       );

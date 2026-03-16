@@ -1987,8 +1987,7 @@ void main() {
             progress: createProgress(),
             selectedDate: testDate,
             overrides: [
-              taskAgentServiceProvider
-                  .overrideWithValue(mockTaskAgentService),
+              taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
             ],
           ),
         );
@@ -2065,8 +2064,7 @@ void main() {
           progress: createProgress(),
           selectedDate: selectedDate,
           overrides: [
-            taskAgentServiceProvider
-                .overrideWithValue(mockTaskAgentService),
+            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           ],
         ),
       );
@@ -2168,8 +2166,7 @@ void main() {
         createTestWidget(
           progress: progressWithoutCategory,
           overrides: [
-            taskAgentServiceProvider
-                .overrideWithValue(mockTaskAgentService),
+            taskAgentServiceProvider.overrideWithValue(mockTaskAgentService),
           ],
         ),
       );

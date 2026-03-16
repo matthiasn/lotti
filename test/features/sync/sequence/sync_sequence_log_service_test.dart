@@ -3543,6 +3543,186 @@ void main() {
       },
     );
   });
+
+  group('getLastSentVectorClockForEntry', () {
+    test('returns null when host is not available', () async {
+      when(() => mockVcService.getHost()).thenAnswer((_) async => null);
+
+      final result = await service.getLastSentVectorClockForEntry('entry-1');
+      expect(result, isNull);
+    });
+
+    test('returns null when no sent counter exists for the entry', () async {
+      when(
+        () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-1'),
+      ).thenAnswer((_) async => null);
+
+      final result = await service.getLastSentVectorClockForEntry('entry-1');
+      expect(result, isNull);
+    });
+
+    test('returns vector clock with the last sent counter', () async {
+      when(
+        () => mockDb.getLastSentCounterForEntry(myHostId, 'entry-1'),
+      ).thenAnswer((_) async => 42);
+
+      final result = await service.getLastSentVectorClockForEntry('entry-1');
+      expect(result, isNotNull);
+      expect(result!.vclock, {myHostId: 42});
+    });
+  });
+
+  group('cache invalidation after marking covered counters', () {
+    test(
+      'covered counters invalidate watermark cache so gap detection '
+      'sees updated watermark on second call',
+      () async {
+        // Scenario: Two consecutive recordReceivedEntry calls from alice.
+        // 1st call: counter=2 → populates cache with watermark=2
+        // 2nd call: counter=5 with covered VC {alice: 3}
+        //   - covered VC marks counter 3 as received and invalidates cache
+        //   - gap detection re-queries DB → watermark=3
+        //   - only counter 4 is detected as gap (not 3)
+
+        // First call: alice counter 2, sequential, no gaps
+        when(() => mockDb.getLastCounterForHost(aliceHostId)).thenAnswer(
+          (_) async => 1,
+        );
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({aliceHostId: 2}),
+          originatingHostId: aliceHostId,
+        );
+
+        // Cache is now populated with watermark=2 for alice (invalidated
+        // and then re-populated during gap detection).
+        // Reset mock to return 3 on next DB query (simulating that
+        // counter 3 was marked as received by covered VC processing).
+        reset(mockDb);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(() => mockDb.getLastCounterForHost(aliceHostId)).thenAnswer(
+          (_) async => 3,
+        );
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final gaps = await service.recordReceivedEntry(
+          entryId: 'entry-5',
+          vectorClock: const VectorClock({aliceHostId: 5}),
+          originatingHostId: aliceHostId,
+          coveredVectorClocks: const [
+            VectorClock({aliceHostId: 3}),
+          ],
+        );
+
+        // Without cache invalidation, the stale cache (watermark=2 from
+        // the first call) would cause gap detection to see counters 3-4
+        // as missing. With invalidation, the DB is re-queried (returns 3),
+        // so only counter 4 is detected as a gap.
+        verify(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).called(1);
+        expect(gaps.length, 1);
+        expect(gaps[0], (hostId: aliceHostId, counter: 4));
+      },
+    );
+
+    test(
+      'without covered VCs, stale cache causes wider gap detection',
+      () async {
+        // Control test: same scenario but WITHOUT covered VCs.
+        // Cache is stale (watermark=2), so gap detection sees 3-4 as missing.
+
+        // First call: populates cache with watermark=1 → becomes 2 after
+        when(() => mockDb.getLastCounterForHost(aliceHostId)).thenAnswer(
+          (_) async => 1,
+        );
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 2),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        await service.recordReceivedEntry(
+          entryId: 'entry-2',
+          vectorClock: const VectorClock({aliceHostId: 2}),
+          originatingHostId: aliceHostId,
+        );
+
+        // Don't reset the mock — cache stays at watermark=2
+        // (invalidation happened at end of first call, but the cache
+        // was NOT re-populated since we didn't query again)
+        // On next call, cache miss → re-queries DB
+        // But this time mock returns 2 (no covered VC to advance it)
+        reset(mockDb);
+        when(
+          () => mockDb.updateHostActivity(any(), any()),
+        ).thenAnswer((_) async => 1);
+        when(() => mockDb.getLastCounterForHost(aliceHostId)).thenAnswer(
+          (_) async => 2,
+        );
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 5),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.getCountersForHostInRange(any(), any(), any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDb.getPendingEntriesByPayloadId(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final gaps = await service.recordReceivedEntry(
+          entryId: 'entry-5',
+          vectorClock: const VectorClock({aliceHostId: 5}),
+          originatingHostId: aliceHostId,
+          // No covered VCs — watermark stays at 2
+        );
+
+        // Without covered VCs, both counters 3 and 4 are gaps
+        expect(gaps.length, 2);
+        expect(gaps[0], (hostId: aliceHostId, counter: 3));
+        expect(gaps[1], (hostId: aliceHostId, counter: 4));
+      },
+    );
+  });
 }
 
 SyncSequenceLogItem _createLogItem(
