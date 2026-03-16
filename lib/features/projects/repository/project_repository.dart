@@ -160,6 +160,7 @@ class ProjectRepository {
       deletedAt: now,
       updatedAt: now,
       hidden: true,
+      vectorClock: await _vectorClockService.getNextVectorClock(),
     );
     await _journalDb.upsertEntryLink(deleted);
     _updateNotifications.notify({link.fromId, link.toId});

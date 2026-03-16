@@ -413,6 +413,9 @@ void main() {
       ).thenAnswer((_) async => existingLink);
       when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
       when(() => mockNotifications.notify(any())).thenReturn(null);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 2}));
 
       final result = await repository.unlinkTaskFromProject('task-001');
 
@@ -422,6 +425,7 @@ void main() {
               as EntryLink;
       expect(captured.deletedAt, isNotNull);
       expect(captured.hidden, isTrue);
+      expect(captured.vectorClock, const VectorClock({'d': 2}));
       // Verify sync was enqueued
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
     });
