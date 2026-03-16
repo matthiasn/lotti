@@ -94,6 +94,11 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_host_entry_status '
+  'ON sync_sequence_log (host_id, entry_id, status) '
+  'WHERE entry_id IS NOT NULL',
+)
 class SyncSequenceLog extends Table {
   /// The host UUID whose counter this record tracks
   TextColumn get hostId => text().named('host_id')();
@@ -930,7 +935,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -1000,6 +1005,14 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_outbox_status_priority_created_at '
             'ON outbox (status, priority, created_at)',
+          );
+        }
+        if (from < 10) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_host_entry_status '
+            'ON sync_sequence_log (host_id, entry_id, status) '
+            'WHERE entry_id IS NOT NULL',
           );
         }
       },
