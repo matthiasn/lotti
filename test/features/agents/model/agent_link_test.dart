@@ -260,6 +260,59 @@ void main() {
       });
     });
 
+    group('AgentProjectLink (agentProject variant)', () {
+      test('roundtrips all fields', () {
+        final original = AgentLink.agentProject(
+          id: 'link-project-001',
+          fromId: 'agent-001',
+          toId: 'project-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<AgentProjectLink>());
+        expectLinkFieldsMatch(roundtripped, original);
+      });
+
+      test('roundtrips with deletedAt timestamp', () {
+        final original = AgentLink.agentProject(
+          id: 'link-project-002',
+          fromId: 'agent-002',
+          toId: 'project-099',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+          deletedAt: DateTime(2026, 2, 20, 17, 45),
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(
+          roundtripped.deletedAt,
+          equals(DateTime(2026, 2, 20, 17, 45)),
+        );
+      });
+
+      test('runtimeType discriminator key is "agentProject"', () {
+        final link = AgentLink.agentProject(
+          id: 'link-project-003',
+          fromId: 'agent-001',
+          toId: 'project-001',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final json = link.toJson();
+        expect(json['runtimeType'], equals('agentProject'));
+      });
+    });
+
     group('BasicAgentLink fallback for unknown runtimeType', () {
       test('deserializes unknown runtimeType to BasicAgentLink', () {
         // AgentLink uses fallbackUnion: 'basic', so unknown types map to BasicAgentLink.

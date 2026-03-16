@@ -151,6 +151,7 @@
   "agentTemplateGeneralDirectiveLabel": "Obecná direktiva",
   "agentTemplateInstanceBreakdownHeading": "Rozpis podle instancí",
   "agentTemplateKindImprover": "Zlepšovač šablon",
+  "agentTemplateKindProjectAgent": "Agent projektu",
   "agentTemplateKindTaskAgent": "Agent úkolů",
   "agentTemplateReportDirectiveHint": "Definuj strukturu reportu, povinné sekce a pravidla formátování...",
   "agentTemplateReportDirectiveLabel": "Direktiva reportu",

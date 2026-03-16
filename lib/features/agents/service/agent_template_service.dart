@@ -805,6 +805,7 @@ class AgentTemplateService {
           templateImproverGeneralDirective,
           templateImproverReportDirective,
         ),
+        AgentTemplateKind.projectAgent => ('', ''),
       };
 
       final updated = activeVersion.copyWith(
