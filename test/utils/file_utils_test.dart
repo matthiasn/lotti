@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -114,6 +115,25 @@ void main() {
         path.contains('/images/2021-11-29/some-image-id.IMG_9999.JPG.json'),
         true,
       );
+    });
+
+    test('JSON file name for project entry should be correct', () async {
+      final testEntity = JournalEntity.project(
+        meta: testMeta,
+        data: ProjectData(
+          title: 'Test Project',
+          status: ProjectStatus.active(
+            id: 'status-1',
+            createdAt: dt,
+            utcOffset: 60,
+          ),
+          dateFrom: dt,
+          dateTo: dt,
+        ),
+      );
+
+      final path = entityPath(testEntity, Directory(''));
+      expect(path, '/projects/2021-11-30/test-id.project.json');
     });
 
     test('JSON file name for audio entry should be correct', () async {

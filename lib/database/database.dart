@@ -1734,6 +1734,50 @@ class JournalDb extends _$JournalDb {
     return res.map((e) => fromDbEntity(e) as DayPlanEntry).toList();
   }
 
+  // ── Project queries ──────────────────────────────────────────────────────
+
+  /// Returns all non-deleted projects for a category.
+  Future<List<ProjectEntry>> getProjectsForCategory(
+    String categoryId,
+  ) async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
+    final res = matchesAllPrivateStates
+        ? await projectsForCategory(categoryId).get()
+        : await projectsForCategoryByPrivateStatuses(
+            categoryId,
+            privateStatuses,
+          ).get();
+    return res.map(fromDbEntity).whereType<ProjectEntry>().toList();
+  }
+
+  /// Returns all non-deleted tasks linked to a project via ProjectLink.
+  Future<List<Task>> getTasksForProject(String projectId) async {
+    final privateStatuses = await _visiblePrivateStatuses();
+    final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
+    final res = matchesAllPrivateStates
+        ? await tasksForProject(projectId).get()
+        : await tasksForProjectByPrivateStatuses(
+            projectId,
+            privateStatuses,
+          ).get();
+    return res.map(fromDbEntity).whereType<Task>().toList();
+  }
+
+  /// Returns the project linked to a task, or null if unlinked.
+  Future<ProjectEntry?> getProjectForTask(String taskId) async {
+    final res = await projectForTask(taskId).get();
+    if (res.isEmpty) return null;
+    return fromDbEntity(res.first) as ProjectEntry;
+  }
+
+  /// Returns the existing ProjectLink for a task, or null.
+  Future<EntryLink?> getProjectLinkForTask(String taskId) async {
+    final res = await projectLinkForTask(taskId).get();
+    if (res.isEmpty) return null;
+    return entryLinkFromLinkedDbEntry(res.first);
+  }
+
   /// Returns tasks that are due on or before the specified date.
   /// Excludes completed (DONE) and rejected (REJECTED) tasks.
   /// This includes both tasks due on the specified day and overdue tasks.

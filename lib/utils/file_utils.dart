@@ -31,6 +31,7 @@ String folderForJournalEntity(JournalEntity journalEntity) {
     checklistItem: (_) => 'checklist_item',
     dayPlan: (_) => 'day_plans',
     rating: (_) => 'ratings',
+    project: (_) => 'projects',
   );
 }
 
@@ -51,6 +52,7 @@ String typeSuffix(JournalEntity journalEntity) {
     checklistItem: (_) => 'checklist_item',
     dayPlan: (_) => 'day_plan',
     rating: (_) => 'rating',
+    project: (_) => 'project',
   );
 }
 

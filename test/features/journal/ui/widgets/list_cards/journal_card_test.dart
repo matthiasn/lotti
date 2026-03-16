@@ -12,6 +12,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -699,6 +700,38 @@ void main() {
 
         expect(find.byType(ModernJournalCard), findsOneWidget);
         expect(find.byType(SurveySummary), findsOneWidget);
+      });
+
+      testWidgets('renders project entry with title', (tester) async {
+        final testProject = ProjectEntry(
+          meta: Metadata(
+            id: 'test-project-id',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            categoryId: 'test-category-id',
+          ),
+          data: ProjectData(
+            title: 'Device Synchronization',
+            status: ProjectStatus.active(
+              id: 'ps-1',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 60,
+            ),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalCard(item: testProject),
+          ),
+        );
+
+        expect(find.byType(ModernJournalCard), findsOneWidget);
+        expect(find.text('Device Synchronization'), findsOneWidget);
       });
 
       testWidgets('renders rating entry', (tester) async {

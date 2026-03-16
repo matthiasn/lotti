@@ -1182,3 +1182,53 @@ SELECT j.* FROM journal j
   AND COALESCE(le.hidden, false) = false
   AND j.deleted = false
   ORDER BY COALESCE(NULLIF(j.subtype, ''), 'session') ASC, j.updated_at DESC;
+
+/* Project queries ----------------------------------------------- */
+
+projectsForCategory:
+SELECT * FROM journal
+  WHERE type = 'Project'
+  AND category = :categoryId
+  AND deleted = false
+  ORDER BY date_from DESC;
+
+projectsForCategoryByPrivateStatuses:
+SELECT * FROM journal
+  WHERE type = 'Project'
+  AND category = :categoryId
+  AND deleted = false
+  AND private IN :privateStatuses
+  ORDER BY date_from DESC;
+
+tasksForProject:
+SELECT j.* FROM journal j
+  INNER JOIN linked_entries le ON le.to_id = j.id
+  WHERE le.from_id = :projectId
+  AND le.type = 'ProjectLink'
+  AND j.deleted = false
+  ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;
+
+tasksForProjectByPrivateStatuses:
+SELECT j.* FROM journal j
+  INNER JOIN linked_entries le ON le.to_id = j.id
+  WHERE le.from_id = :projectId
+  AND le.type = 'ProjectLink'
+  AND j.deleted = false
+  AND j.private IN :privateStatuses
+  ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;
+
+projectLinkForTask:
+SELECT * FROM linked_entries
+  WHERE to_id = :taskId
+  AND type = 'ProjectLink'
+  AND COALESCE(hidden, false) = false
+  LIMIT 1;
+
+projectForTask:
+SELECT j.* FROM journal j
+  INNER JOIN linked_entries le ON le.from_id = j.id
+  WHERE le.to_id = :taskId
+  AND le.type = 'ProjectLink'
+  AND COALESCE(le.hidden, false) = false
+  AND j.deleted = false
+  LIMIT 1;

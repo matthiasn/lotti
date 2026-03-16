@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
@@ -394,6 +395,40 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(GameySubtleCard), findsOneWidget);
+    });
+
+    testWidgets('renders project entry with title', (tester) async {
+      final testProject = ProjectEntry(
+        meta: Metadata(
+          id: 'test-project-id',
+          createdAt: now,
+          updatedAt: now,
+          dateFrom: now,
+          dateTo: now.add(const Duration(hours: 1)),
+          categoryId: 'test-category-id',
+        ),
+        data: ProjectData(
+          title: 'Device Synchronization',
+          status: ProjectStatus.active(
+            id: 'ps-1',
+            createdAt: now,
+            utcOffset: 60,
+          ),
+          dateFrom: now,
+          dateTo: now.add(const Duration(hours: 1)),
+        ),
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          child: GameyJournalCard(item: testProject),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GameySubtleCard), findsOneWidget);
+      expect(find.text('Device Synchronization'), findsOneWidget);
     });
 
     testWidgets('shows linked duration when enabled', (tester) async {
