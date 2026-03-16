@@ -190,6 +190,8 @@ void main() {
     // reuse the already-verified Alice & Bob from the first test.
     late MatrixService alice;
     late MatrixService bob;
+    var aliceInitialized = false;
+    var bobInitialized = false;
     late String roomId;
     // Bob's SettingsDb must persist across tests so the pipeline's
     // last-processed marker survives the cold restart in test 2.
@@ -230,15 +232,19 @@ void main() {
 
     tearDownAll(() async {
       // Ensure proper cleanup before resetting GetIt
-      try {
-        await alice.dispose();
-      } catch (e) {
-        debugPrint('Error disposing Alice: $e');
+      if (aliceInitialized) {
+        try {
+          await alice.dispose();
+        } catch (e) {
+          debugPrint('Error disposing Alice: $e');
+        }
       }
-      try {
-        await bob.dispose();
-      } catch (e) {
-        debugPrint('Error disposing Bob: $e');
+      if (bobInitialized) {
+        try {
+          await bob.dispose();
+        } catch (e) {
+          debugPrint('Error disposing Bob: $e');
+        }
       }
       try {
         await aliceDb.close();
@@ -287,6 +293,7 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           sentEventRegistry: aliceRegistry,
         );
+        aliceInitialized = true;
 
         await alice.init();
         expect(alice.debugPipeline, isNotNull);
@@ -321,6 +328,7 @@ void main() {
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
         );
+        bobInitialized = true;
 
         await bob.init();
         expect(bob.debugPipeline, isNotNull);
@@ -458,6 +466,7 @@ void main() {
         // Phase 1: Dispose Bob entirely (simulates closing the app)
         debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
         await bob.dispose();
+        bobInitialized = false;
         debugPrint('Bob disposed');
 
         final bobCountWhileOffline = await bobDb.getJournalCount();
@@ -530,6 +539,7 @@ void main() {
           aiConfigRepository: sharedAiConfigRepository,
           singleInstance: false,
         );
+        bobInitialized = true;
 
         await bob.init();
         expect(bob.debugPipeline, isNotNull);
