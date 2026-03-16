@@ -139,7 +139,7 @@ void main() {
       // Simulates an older app version encountering a ProjectLink
       // by testing that the fallback works for truly unknown types
       final json = <String, dynamic>{
-        'rpiType': 'totally_unknown',
+        'runtimeType': 'totally_unknown',
         'id': 'link-999',
         'fromId': 'a',
         'toId': 'b',
