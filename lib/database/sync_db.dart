@@ -94,6 +94,11 @@ class Outbox extends Table {
   'ON sync_sequence_log (entry_id, payload_type, status) '
   'WHERE entry_id IS NOT NULL',
 )
+@TableIndex.sql(
+  'CREATE INDEX idx_sync_sequence_log_host_entry_status '
+  'ON sync_sequence_log (host_id, entry_id, status) '
+  'WHERE entry_id IS NOT NULL',
+)
 class SyncSequenceLog extends Table {
   /// The host UUID whose counter this record tracks
   TextColumn get hostId => text().named('host_id')();
@@ -541,6 +546,33 @@ class SyncDatabase extends _$SyncDatabase {
         .getSingleOrNull();
   }
 
+  /// Get the highest counter sent by [hostId] for a given [entryId].
+  /// Returns null when this host has never sent the entry.
+  /// Used to build covered vector clocks for already-sent predecessors so
+  /// that receivers can resolve intermediate counters without backfill.
+  Future<int?> getLastSentCounterForEntry(String hostId, String entryId) async {
+    final received = SyncSequenceStatus.received.index;
+    final backfilled = SyncSequenceStatus.backfilled.index;
+    final query = customSelect(
+      '''
+      SELECT MAX(counter) AS last_counter
+      FROM sync_sequence_log
+      WHERE host_id = ?
+        AND entry_id = ?
+        AND status IN (?, ?)
+      ''',
+      variables: [
+        Variable.withString(hostId),
+        Variable.withString(entryId),
+        Variable.withInt(received),
+        Variable.withInt(backfilled),
+      ],
+      readsFrom: {syncSequenceLog},
+    );
+    final result = await query.getSingle();
+    return result.readNullable<int>('last_counter');
+  }
+
   /// Get all pending (missing/requested) sequence log entries for a given payload.
   /// Used to resolve pending backfill hints when a payload arrives via sync.
   Future<List<SyncSequenceLogItem>> getPendingEntriesByPayloadId({
@@ -903,7 +935,7 @@ class SyncDatabase extends _$SyncDatabase {
   }
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration {
@@ -973,6 +1005,14 @@ class SyncDatabase extends _$SyncDatabase {
             'CREATE INDEX IF NOT EXISTS '
             'idx_outbox_status_priority_created_at '
             'ON outbox (status, priority, created_at)',
+          );
+        }
+        if (from < 10) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_sync_sequence_log_host_entry_status '
+            'ON sync_sequence_log (host_id, entry_id, status) '
+            'WHERE entry_id IS NOT NULL',
           );
         }
       },

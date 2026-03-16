@@ -728,7 +728,7 @@ final class WakeOrchestratorProvider
   }
 }
 
-String _$wakeOrchestratorHash() => r'3801177be9afe3afb6e43f935f556ba7f273200e';
+String _$wakeOrchestratorHash() => r'da315da88ec8f6b8ff8648815c377932b6a47e02';
 
 /// The scheduled wake manager for time-based agent wakes.
 
@@ -3661,7 +3661,7 @@ final class TaskAgentWorkflowProvider
   }
 }
 
-String _$taskAgentWorkflowHash() => r'3574d3849739f983607b6d13965bd3a3ea02d4f9';
+String _$taskAgentWorkflowHash() => r'6a272bc1cb89433abf1efa145ec4600cc42561c7';
 
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.

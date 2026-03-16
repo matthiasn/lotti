@@ -273,6 +273,20 @@ class SyncSequenceLogService {
     );
   }
 
+  /// Returns the last sent vector clock for [entryId] from this host's
+  /// perspective.  Used by the outbox to build covered vector clocks when a
+  /// new version is enqueued but the previous version was already sent.
+  Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
+    final myHost = await _vectorClockService.getHost();
+    if (myHost == null) return null;
+    final counter = await _syncDatabase.getLastSentCounterForEntry(
+      myHost,
+      entryId,
+    );
+    if (counter == null) return null;
+    return VectorClock({myHost: counter});
+  }
+
   /// Record a received entry and detect gaps in the sequence.
   /// Returns a read-only list of detected gaps as `(hostId, counter)` records.
   /// The list may be backed by logical ranges so very large gaps do not
@@ -745,6 +759,7 @@ class SyncSequenceLogService {
   }) async {
     final now = DateTime.now();
     var markedCount = 0;
+    final affectedHosts = <String>{};
 
     for (final coveredClock in coveredVectorClocks) {
       for (final entry in coveredClock.vclock.entries) {
@@ -778,6 +793,7 @@ class SyncSequenceLogService {
             ),
           );
           markedCount++;
+          affectedHosts.add(hostId);
         } else if (existing.status == SyncSequenceStatus.missing.index ||
             existing.status == SyncSequenceStatus.requested.index) {
           // Existing record with missing/requested - update to received
@@ -793,6 +809,7 @@ class SyncSequenceLogService {
             ),
           );
           markedCount++;
+          affectedHosts.add(hostId);
           if (existing.status == SyncSequenceStatus.requested.index) {
             _trace(
               'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
@@ -810,6 +827,11 @@ class SyncSequenceLogService {
     }
 
     if (markedCount > 0) {
+      // Invalidate the watermark cache for affected hosts so that subsequent
+      // gap detection in the same recordReceivedEntry call sees the updated
+      // contiguous watermark. Without this, the stale cached watermark causes
+      // repeated gap detection events for counters that were just resolved.
+      affectedHosts.forEach(_invalidateCacheForHost);
       _trace(
         'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
         subDomain: 'sequence.coveredClocks',

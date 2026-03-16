@@ -3166,8 +3166,8 @@ void main() {
       expect(updated.first.payloadSize, 9999);
     });
 
-    test('schema version is 9', () {
-      expect(db.schemaVersion, 9);
+    test('schema version is 10', () {
+      expect(db.schemaVersion, 10);
     });
   });
 
@@ -3502,6 +3502,171 @@ void main() {
 
       final resetCount = await database.resetUnresolvableWithKnownPayload();
       expect(resetCount, 0);
+    });
+  });
+
+  group('getLastSentCounterForEntry', () {
+    setUp(() async {
+      db = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await db?.close();
+    });
+
+    test(
+      'returns null when no entries exist for the host/entry pair',
+      () async {
+        final database = db!;
+        final result = await database.getLastSentCounterForEntry(
+          'host-1',
+          'entry-1',
+        );
+        expect(result, isNull);
+      },
+    );
+
+    test('returns the highest counter for a received entry', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      const entryId = 'entry-1';
+
+      // Insert two received entries for the same entryId at different counters
+      for (final counter in [10, 15, 20]) {
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(hostId),
+            counter: Value(counter),
+            entryId: const Value(entryId),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(DateTime(2024, 1, counter)),
+            updatedAt: Value(DateTime(2024, 1, counter)),
+          ),
+        );
+      }
+
+      final result = await database.getLastSentCounterForEntry(
+        hostId,
+        entryId,
+      );
+      expect(result, 20);
+    });
+
+    test('includes backfilled entries in the result', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      const entryId = 'entry-1';
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(10),
+          entryId: const Value(entryId),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(25),
+          entryId: const Value(entryId),
+          status: Value(SyncSequenceStatus.backfilled.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+
+      final result = await database.getLastSentCounterForEntry(
+        hostId,
+        entryId,
+      );
+      expect(result, 25);
+    });
+
+    test('excludes missing and requested entries', () async {
+      final database = db!;
+      const hostId = 'host-1';
+      const entryId = 'entry-1';
+
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(10),
+          entryId: const Value(entryId),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      // Higher counter but missing — should not be returned
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(30),
+          entryId: const Value(entryId),
+          status: Value(SyncSequenceStatus.missing.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+      // Higher counter but requested — should not be returned
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(40),
+          entryId: const Value(entryId),
+          status: Value(SyncSequenceStatus.requested.index),
+          createdAt: Value(DateTime(2024, 1, 3)),
+          updatedAt: Value(DateTime(2024, 1, 3)),
+        ),
+      );
+
+      final result = await database.getLastSentCounterForEntry(
+        hostId,
+        entryId,
+      );
+      expect(result, 10);
+    });
+
+    test('does not cross entry boundaries', () async {
+      final database = db!;
+      const hostId = 'host-1';
+
+      // Entry A at counter 10
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(10),
+          entryId: const Value('entry-a'),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 1)),
+          updatedAt: Value(DateTime(2024, 1, 1)),
+        ),
+      );
+      // Entry B at counter 50
+      await database.recordSequenceEntry(
+        SyncSequenceLogCompanion(
+          hostId: const Value(hostId),
+          counter: const Value(50),
+          entryId: const Value('entry-b'),
+          status: Value(SyncSequenceStatus.received.index),
+          createdAt: Value(DateTime(2024, 1, 2)),
+          updatedAt: Value(DateTime(2024, 1, 2)),
+        ),
+      );
+
+      final resultA = await database.getLastSentCounterForEntry(
+        hostId,
+        'entry-a',
+      );
+      expect(resultA, 10);
+
+      final resultB = await database.getLastSentCounterForEntry(
+        hostId,
+        'entry-b',
+      );
+      expect(resultB, 50);
     });
   });
 }

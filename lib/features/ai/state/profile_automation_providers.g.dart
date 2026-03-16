@@ -97,7 +97,7 @@ final class ProfileAutomationResolverProvider
 }
 
 String _$profileAutomationResolverHash() =>
-    r'b22d1acc28ef200bcdb5d0d1af625cfec47d5db9';
+    r'e886ecc80bcb10cdd6f68940d8054cb815f01622';
 
 @ProviderFor(profileAutomationService)
 final profileAutomationServiceProvider = ProfileAutomationServiceProvider._();
