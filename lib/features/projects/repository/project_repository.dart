@@ -142,8 +142,7 @@ class ProjectRepository {
   Future<bool> unlinkTaskFromProject(String taskId) async {
     final existingLink = await _journalDb.getProjectLinkForTask(taskId);
     if (existingLink == null) return false;
-    await _softDeleteLink(existingLink);
-    return true;
+    return _softDeleteLink(existingLink);
   }
 
   // ── Notifications ──────────────────────────────────────────────────────────

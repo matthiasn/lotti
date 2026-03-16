@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -192,6 +193,16 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test('returns null when persistence returns null', () async {
+      when(
+        () => mockPersistence.createDbEntity(projectEntry),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.createProject(project: projectEntry);
+
+      expect(result, isNull);
+    });
   });
 
   group('updateProject', () {
@@ -300,6 +311,29 @@ void main() {
       expect(result, isFalse);
     });
 
+    test('rejects non-Task entity', () async {
+      // A note entity should not be linkable as a "task"
+      final noteEntry = JournalEntity.journalEntry(
+        meta: taskMeta,
+        entryText: const EntryText(plainText: 'Just a note'),
+      );
+
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+      when(
+        () => mockDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async => noteEntry);
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockDb.upsertEntryLink(any()));
+    });
+
     test('returns false when project does not exist', () async {
       when(
         () => mockDb.journalEntityById('missing'),
@@ -314,6 +348,47 @@ void main() {
       );
 
       expect(result, isFalse);
+    });
+
+    test('returns false when task does not exist', () async {
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+      when(
+        () => mockDb.journalEntityById('missing'),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'missing',
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('returns false when upsert affects zero rows', () async {
+      when(
+        () => mockDb.journalEntityById('project-001'),
+      ).thenAnswer((_) async => projectEntry);
+      when(
+        () => mockDb.journalEntityById('task-001'),
+      ).thenAnswer((_) async => taskEntry);
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => null);
+      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+      final result = await repository.linkTaskToProject(
+        projectId: 'project-001',
+        taskId: 'task-001',
+      );
+
+      expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
     });
 
     test('returns true if task is already linked to same project', () async {
@@ -385,6 +460,44 @@ void main() {
         verify(() => mockOutboxService.enqueueMessage(any())).called(2);
       },
     );
+
+    test(
+      'returns false when soft-delete of old link fails during relink',
+      () async {
+        final oldLink = EntryLink.project(
+          id: 'link-old',
+          fromId: 'project-old',
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockDb.journalEntityById('project-001'),
+        ).thenAnswer((_) async => projectEntry);
+        when(
+          () => mockDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntry);
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => oldLink);
+        // Soft-delete upsert returns 0 (failure)
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+        final result = await repository.linkTaskToProject(
+          projectId: 'project-001',
+          taskId: 'task-001',
+        );
+
+        expect(result, isFalse);
+        // Only one call for the failed soft-delete, no new link created
+        verify(() => mockDb.upsertEntryLink(any())).called(1);
+      },
+    );
   });
 
   group('unlinkTaskFromProject', () {
@@ -428,6 +541,44 @@ void main() {
       expect(captured.vectorClock, const VectorClock({'d': 2}));
       // Verify sync was enqueued
       verify(() => mockOutboxService.enqueueMessage(any())).called(1);
+    });
+
+    test('returns false when soft-delete upsert fails', () async {
+      final existingLink = EntryLink.project(
+        id: 'link-001',
+        fromId: 'project-001',
+        toId: 'task-001',
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+      );
+
+      when(
+        () => mockDb.getProjectLinkForTask('task-001'),
+      ).thenAnswer((_) async => existingLink);
+      when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
+      when(
+        mockVectorClockService.getNextVectorClock,
+      ).thenAnswer((_) async => const VectorClock({'d': 2}));
+
+      final result = await repository.unlinkTaskFromProject('task-001');
+
+      expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
+      verifyNever(() => mockOutboxService.enqueueMessage(any()));
+    });
+  });
+
+  group('updateStream', () {
+    test('delegates to UpdateNotifications', () {
+      final stream = Stream<Set<String>>.fromIterable([
+        {'project-001'},
+      ]);
+      when(
+        () => mockNotifications.updateStream,
+      ).thenAnswer((_) => stream);
+
+      expect(repository.updateStream, stream);
     });
   });
 }
