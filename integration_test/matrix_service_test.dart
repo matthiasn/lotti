@@ -308,29 +308,17 @@ void main() {
         );
 
         debugPrint('\n--- Bob goes live');
-        final bobClient = await createMatrixClient(
-          documentsDirectory: sharedDocumentsDirectory,
-          dbName: 'BobV2',
-        );
-        final bobRegistry = SentEventRegistry();
-        final bobGateway = MatrixSdkGateway(
-          client: bobClient,
-          sentEventRegistry: bobRegistry,
-        );
         bobSettingsDb = SettingsDb(inMemoryDatabase: true);
-        bob = _createMatrixService(
+        bob = await _createBobService(
+          documentsDirectory: sharedDocumentsDirectory,
           config: config2,
-          gateway: bobGateway,
           loggingService: sharedLoggingService,
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
-          deviceName: 'BobV2',
           activityService: sharedUserActivityService,
-          documentsDirectory: sharedDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
-          sentEventRegistry: bobRegistry,
         );
 
         await bob.init();
@@ -529,29 +517,17 @@ void main() {
         // from the same DB path (simulates app relaunch).
         // Use singleInstance: false to avoid sqflite connection-cache
         // contention with the disposed first client's cached handle.
-        final bobClient2 = await createMatrixClient(
+        bob = await _createBobService(
           documentsDirectory: sharedDocumentsDirectory,
-          dbName: 'BobV2',
-          singleInstance: false,
-        );
-        final bobRegistry2 = SentEventRegistry();
-        final bobGateway2 = MatrixSdkGateway(
-          client: bobClient2,
-          sentEventRegistry: bobRegistry2,
-        );
-        bob = _createMatrixService(
           config: config2,
-          gateway: bobGateway2,
           loggingService: sharedLoggingService,
           journalDb: bobDb,
           settingsDb: bobSettingsDb,
           secureStorage: secureStorageMock,
-          deviceName: 'BobV2',
           activityService: sharedUserActivityService,
-          documentsDirectory: sharedDocumentsDirectory,
           updateNotifications: mockUpdateNotifications,
           aiConfigRepository: sharedAiConfigRepository,
-          sentEventRegistry: bobRegistry2,
+          singleInstance: false,
         );
 
         await bob.init();
@@ -659,6 +635,46 @@ void main() {
       skip: skipReason ?? false,
     );
   });
+}
+
+/// Creates a fresh Bob [MatrixService] instance with a new Matrix client and
+/// gateway. Used both for initial setup and cold-restart simulation.
+Future<MatrixService> _createBobService({
+  required Directory documentsDirectory,
+  required MatrixConfig config,
+  required LoggingService loggingService,
+  required JournalDb journalDb,
+  required SettingsDb settingsDb,
+  required SecureStorage secureStorage,
+  required UserActivityService activityService,
+  required MockUpdateNotifications updateNotifications,
+  required AiConfigRepository aiConfigRepository,
+  bool? singleInstance,
+}) async {
+  final client = await createMatrixClient(
+    documentsDirectory: documentsDirectory,
+    dbName: 'BobV2',
+    singleInstance: singleInstance,
+  );
+  final registry = SentEventRegistry();
+  final gateway = MatrixSdkGateway(
+    client: client,
+    sentEventRegistry: registry,
+  );
+  return _createMatrixService(
+    config: config,
+    gateway: gateway,
+    loggingService: loggingService,
+    journalDb: journalDb,
+    settingsDb: settingsDb,
+    secureStorage: secureStorage,
+    deviceName: 'BobV2',
+    activityService: activityService,
+    documentsDirectory: documentsDirectory,
+    updateNotifications: updateNotifications,
+    aiConfigRepository: aiConfigRepository,
+    sentEventRegistry: registry,
+  );
 }
 
 Future<void> _sendTestMessage(
