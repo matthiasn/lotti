@@ -57,20 +57,52 @@ class SdkPaginationCompat {
       var markerReached = false;
       final requireServerBoundaryPage =
           untilTimestamp != null && _enableServerHistoryPaging(timeline);
+      logging.captureEvent(
+        'backfill.start events=${timeline.events.length} '
+        'requireServerBoundaryPage=$requireServerBoundaryPage '
+        'lastEventId=$lastEventId '
+        'untilTimestamp=$untilTimestamp',
+        domain: syncLoggingDomain,
+        subDomain: 'sdkPagination.backfill',
+      );
       while (maxPages == null || pages < maxPages) {
         final events = TimelineEventOrdering.sortStableByTimestamp(
           timeline.events,
         );
-        if (untilTimestamp != null &&
+        final tsBoundaryMet =
+            untilTimestamp != null &&
             events.isNotEmpty &&
-            TimelineEventOrdering.timestamp(events.first) <= untilTimestamp &&
-            (!requireServerBoundaryPage || boundaryReached)) {
+            TimelineEventOrdering.timestamp(events.first) <= untilTimestamp;
+        if (tsBoundaryMet && (!requireServerBoundaryPage || boundaryReached)) {
+          logging.captureEvent(
+            'backfill.tsBoundary events=${events.length} pages=$pages',
+            domain: syncLoggingDomain,
+            subDomain: 'sdkPagination.backfill',
+          );
           return true;
         }
         markerReached = events.any((e) => e.eventId == lastEventId);
-        if (markerReached) return true;
+        if (markerReached &&
+            !requireServerBoundaryPage &&
+            untilTimestamp == null) {
+          logging.captureEvent(
+            'backfill.markerReached events=${events.length} pages=$pages',
+            domain: syncLoggingDomain,
+            subDomain: 'sdkPagination.backfill',
+          );
+          return true;
+        }
 
-        if (!timeline.canRequestHistory) break;
+        if (!timeline.canRequestHistory) {
+          logging.captureEvent(
+            'backfill.cannotRequestHistory events=${events.length} '
+            'pages=$pages boundaryReached=$boundaryReached '
+            'tsBoundaryMet=$tsBoundaryMet',
+            domain: syncLoggingDomain,
+            subDomain: 'sdkPagination.backfill',
+          );
+          break;
+        }
 
         final beforeCount = timeline.events.length;
         var ok = true;
@@ -106,6 +138,9 @@ class SdkPaginationCompat {
         if (TimelineEventOrdering.timestamp(events.first) <= untilTimestamp) {
           return true;
         }
+      }
+      if (untilTimestamp != null) {
+        return boundaryReached;
       }
       return markerReached || boundaryReached;
     } catch (e, st) {

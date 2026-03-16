@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.927] - 2026-03-16
+### Fixed
+- Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up
+  from paginating server history correctly. Backfill no longer short-circuits
+  on marker ID before reaching the timestamp boundary, and the local expansion
+  loop no longer overwrites paginated events with a smaller local-only snapshot.
+
 ## [0.9.926] - 2026-03-15
 ### Added
 - Category AI defaults: categories can now define a default inference profile

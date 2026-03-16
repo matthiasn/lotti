@@ -195,7 +195,10 @@ class CatchUpStrategy {
       // reported end-of-timeline prematurely, or there was no server gap),
       // expand the local timeline with larger limits. The SDK may have cached
       // more events locally than the initial limit returned.
-      while (!boundarySatisfied && needsMore(ordered)) {
+      // Skip when pagingSatisfied: server backfill already loaded events into
+      // the snapshot; creating new timelines would overwrite them with fewer
+      // local-only events.
+      while (!boundarySatisfied && !pagingSatisfied && needsMore(ordered)) {
         final doubled = limit * 2;
         limit = doubled > maxLookback ? maxLookback : doubled;
         final next = await room.getTimeline(limit: limit);

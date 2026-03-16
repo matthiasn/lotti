@@ -10,6 +10,7 @@ Future<Client> createMatrixClient({
   required Directory documentsDirectory,
   String? deviceDisplayName,
   String? dbName,
+  bool? singleInstance,
 }) async {
   final name = dbName ?? 'lotti_sync';
   final path = '${documentsDirectory.path}/matrix/$name.db';
@@ -28,7 +29,7 @@ Future<Client> createMatrixClient({
     database: await dbFactory.openDatabase(
       path,
       options: OpenDatabaseOptions(
-        singleInstance: !isActorClient,
+        singleInstance: singleInstance ?? !isActorClient,
         onConfigure: (db) async {
           await db.execute('PRAGMA journal_mode = WAL');
           await db.execute('PRAGMA busy_timeout = 5000');
