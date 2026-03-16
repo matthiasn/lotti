@@ -5,7 +5,7 @@ FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Copy requirements
-COPY requirements.txt .
+COPY ai-proxy-service/requirements.txt .
 
 # Install dependencies
 RUN pip install --no-cache-dir --user -r requirements.txt
@@ -22,8 +22,12 @@ WORKDIR /app
 # Copy dependencies from builder
 COPY --from=builder /root/.local /home/appuser/.local
 
-# Copy application code
-COPY src/ ./src/
+# Create data directory for SQLite databases (usage log, pricing)
+RUN mkdir -p /app/data && chown appuser:appuser /app/data
+
+# Copy application code and shared modules
+COPY ai-proxy-service/src/ ./src/
+COPY shared/ ./shared/
 
 # Set environment variables
 ENV PATH=/home/appuser/.local/bin:$PATH

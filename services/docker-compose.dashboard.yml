@@ -8,6 +8,8 @@ services:
   tigerbeetle:
     image: ghcr.io/tigerbeetle/tigerbeetle:0.16.16
     container_name: dashboard-tigerbeetle
+    security_opt:
+      - seccomp=unconfined
     ports:
       - "3000:3000"
     volumes:
@@ -24,8 +26,12 @@ services:
       - dashboard-network
 
   credits-service:
-    build: ./credits-service
+    build:
+      context: .
+      dockerfile: credits-service/Dockerfile
     container_name: dashboard-credits-service
+    security_opt:
+      - seccomp=unconfined
     ports:
       - "8001:8001"
     environment:
@@ -46,7 +52,9 @@ services:
     restart: unless-stopped
 
   ai-proxy-service:
-    build: ./ai-proxy-service
+    build:
+      context: .
+      dockerfile: ai-proxy-service/Dockerfile
     container_name: dashboard-ai-proxy
     ports:
       - "8002:8002"
