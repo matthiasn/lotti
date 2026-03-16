@@ -89,6 +89,7 @@ MatrixService _createMatrixService({
     ownsActivityGate: true,
     attachmentIndex: AttachmentIndex(logging: loggingService),
     sentEventRegistry: sentEventRegistry,
+    collectSyncMetrics: true,
   );
 }
 
@@ -190,6 +191,9 @@ void main() {
     late MatrixService alice;
     late MatrixService bob;
     late String roomId;
+    // Bob's SettingsDb must persist across tests so the pipeline's
+    // last-processed marker survives the cold restart in test 2.
+    late SettingsDb bobSettingsDb;
 
     setUpAll(() async {
       await vod.init();
@@ -313,7 +317,7 @@ void main() {
           client: bobClient,
           sentEventRegistry: bobRegistry,
         );
-        final bobSettingsDb = SettingsDb(inMemoryDatabase: true);
+        bobSettingsDb = SettingsDb(inMemoryDatabase: true);
         bob = _createMatrixService(
           config: config2,
           gateway: bobGateway,
@@ -355,9 +359,10 @@ void main() {
         );
 
         const n = testSlowNetwork ? 10 : 100;
-        // With signal-driven consumer and self-event suppression, each device
-        // applies only the other device's messages. Expect n entries per DB.
-        const expectedEntriesPerDb = n;
+        // Each device now persists its own entries at send time (matching
+        // production behavior) plus receives the other device's entries via
+        // sync. Self-sent events are deduplicated by vector clock comparison.
+        const expectedEntriesPerDb = 2 * n;
 
         debugPrint('\n--- Alice sends $n message');
         for (var i = 0; i < n; i++) {
@@ -366,6 +371,7 @@ void main() {
             device: alice,
             deviceName: 'aliceDeviceV2',
             roomId: roomId,
+            journalDb: aliceDb,
           );
         }
 
@@ -376,6 +382,7 @@ void main() {
             device: bob,
             deviceName: 'bobDeviceV2',
             roomId: roomId,
+            journalDb: bobDb,
           );
         }
 
@@ -443,30 +450,37 @@ void main() {
     );
 
     test(
-      'Large-volume convergence: Bob catches up 2000 messages with '
-      'concurrent processing',
+      'Large-volume convergence: Bob catches up 2000 messages after '
+      'cold restart',
       () async {
-        // Reuses the already-verified Alice & Bob from test 1 — no new
-        // clients, no SAS dance. Alice sends a large burst into the
-        // existing room while Bob processes concurrently via periodic
-        // forceRescan calls, then Alice goes offline and Bob catches up
-        // any remaining messages. This mirrors the production incident
-        // where ~1500 entries accumulated faster than the receiver could
-        // process them.
+        // Simulates the real-world scenario: Bob's app is closed while
+        // Alice sends a large burst, then Bob reopens the app (fresh client,
+        // fresh pipeline, but same persisted DB with sync token + journal).
+        // This is the strictest form of the catch-up test: Bob has zero
+        // concurrent processing during sending, and must bootstrap from
+        // scratch when coming back.
         const convergenceTimeout = Duration(minutes: 15);
-        const n = testSlowNetwork ? 50 : 2000;
+        const n = testSlowNetwork ? 250 : 2000;
 
         // Snapshot Bob's DB count before this test's messages
         final bobCountBefore = await bobDb.getJournalCount();
         debugPrint('Bob DB count before convergence test: $bobCountBefore');
 
-        // Skip the 30s sync wait in catch-up — we drive sync explicitly
-        bob.debugPipeline!.skipSyncWait = true;
+        // Phase 1: Dispose Bob entirely (simulates closing the app)
+        debugPrint('\n--- Phase 1: Bob goes offline (full dispose)');
+        await bob.dispose();
+        debugPrint('Bob disposed');
 
-        // Phase 1: Alice sends n messages while Bob processes concurrently.
-        // Bob's background sync receives events during sending, and periodic
-        // forceRescan calls process them into the DB.
-        debugPrint('\n--- Phase 1: Alice sends $n messages');
+        final bobCountWhileOffline = await bobDb.getJournalCount();
+        debugPrint('Bob DB count while offline: $bobCountWhileOffline');
+        expect(
+          bobCountWhileOffline,
+          bobCountBefore,
+          reason: 'Bob count should not change while offline',
+        );
+
+        // Phase 2: Alice sends n messages while Bob is offline
+        debugPrint('\n--- Phase 2: Alice sends $n messages (Bob offline)');
         final sendStopwatch = Stopwatch()..start();
         for (var i = 0; i < n; i++) {
           await _sendTestMessage(
@@ -474,11 +488,10 @@ void main() {
             device: alice,
             deviceName: 'aliceConvergence',
             roomId: roomId,
+            journalDb: aliceDb,
           );
           if ((i + 1) % 100 == 0) {
             debugPrint('  Sent ${i + 1}/$n messages');
-            // Periodically nudge Bob to process accumulated sync events
-            await bob.forceRescan();
           }
         }
         sendStopwatch.stop();
@@ -487,43 +500,84 @@ void main() {
           'in ${sendStopwatch.elapsed.inSeconds}s',
         );
 
-        // Final sync+rescan so Bob picks up the last batch before Alice
-        // goes offline. Without this, the tail messages (after the last
-        // periodic forceRescan) may not have been fetched yet.
-        await bob.client.sync();
-        await bob.forceRescan();
-        await bob.retryNow();
-        final countAfterFinalSync = await bobDb.getJournalCount();
+        // Verify Bob hasn't received anything while offline
+        final bobCountAfterSend = await bobDb.getJournalCount();
         debugPrint(
-          'Bob count after final pre-offline sync: $countAfterFinalSync '
-          '(+${countAfterFinalSync - bobCountBefore}/$n new)',
+          'Bob DB count after Alice sent (still offline): '
+          '$bobCountAfterSend',
+        );
+        expect(
+          bobCountAfterSend,
+          bobCountBefore,
+          reason: 'Bob should not have received messages while offline',
         );
 
-        // Take Alice offline so Bob catches up purely from the server
+        // Phase 3: Alice goes offline after sending
+        debugPrint('\n--- Phase 3: Alice goes offline');
         alice.client.backgroundSync = false;
         await alice.client.abortSync();
         debugPrint('Alice is now offline (sync stopped)');
 
-        // Phase 2: Bob catches up remaining messages
-        debugPrint('\n--- Phase 2: Bob catching up $n messages');
+        // Phase 4: Bob cold-starts (fresh client + pipeline, same DB)
+        debugPrint(
+          '\n--- Phase 4: Bob cold-starts, catching up $n messages',
+        );
         final expectedTotal = bobCountBefore + n;
         final catchupStopwatch = Stopwatch()..start();
 
-        debugPrint('Triggering Bob SDK sync + forceRescan...');
-        await bob.client.sync();
-        await bob.forceRescan();
-        debugPrint(
-          'Bob initial sync+rescan done, '
-          'syncPending=${bob.client.syncPending}, '
-          'prevBatch=${bob.client.prevBatch}',
+        // Create a brand-new client that picks up the stored sync token
+        // from the same DB path (simulates app relaunch).
+        // Use singleInstance: false to avoid sqflite connection-cache
+        // contention with the disposed first client's cached handle.
+        final bobClient2 = await createMatrixClient(
+          documentsDirectory: sharedDocumentsDirectory,
+          dbName: 'BobV2',
+          singleInstance: false,
         );
+        final bobRegistry2 = SentEventRegistry();
+        final bobGateway2 = MatrixSdkGateway(
+          client: bobClient2,
+          sentEventRegistry: bobRegistry2,
+        );
+        bob = _createMatrixService(
+          config: config2,
+          gateway: bobGateway2,
+          loggingService: sharedLoggingService,
+          journalDb: bobDb,
+          settingsDb: bobSettingsDb,
+          secureStorage: secureStorageMock,
+          deviceName: 'BobV2',
+          activityService: sharedUserActivityService,
+          documentsDirectory: sharedDocumentsDirectory,
+          updateNotifications: mockUpdateNotifications,
+          aiConfigRepository: sharedAiConfigRepository,
+          sentEventRegistry: bobRegistry2,
+        );
+
+        await bob.init();
+        expect(bob.debugPipeline, isNotNull);
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        await bob.login();
+        debugPrint('Bob cold-started - deviceId: ${bob.client.deviceID}');
+
+        // Do NOT set skipSyncWait — the production code path waits for the
+        // SDK to complete a sync before running catch-up, which is essential
+        // for populating the timeline with gap events.
+
+        // Join the existing room (the new client needs to re-join)
+        await bob.joinRoom(roomId);
+        // Save room so pipeline attaches to it (triggers start + forceRescan)
+        await bob.saveRoom(roomId);
+        debugPrint('Bob re-joined room $roomId');
+
+        // Allow startup catch-up to run (sync wait is up to 30s, plus
+        // catch-up pagination time for the backlog)
+        await Future<void>.delayed(const Duration(seconds: 5));
+
         debugPrint(
-          'Bob metrics after initial rescan: '
+          'Bob metrics after startup: '
           '${bob.debugPipeline?.metricsSnapshot()}',
-        );
-        debugPrint(
-          'Bob diagnostics: '
-          '${bob.debugPipeline?.diagnosticsStrings()}',
         );
 
         var lastBobCount = -1;
@@ -539,19 +593,18 @@ void main() {
               );
               lastBobCount = currentCount;
             }
+            // No manual forceRescan/retryNow — the pipeline must
+            // self-drive catch-up through its signal-driven architecture.
             if (currentCount < expectedTotal) {
-              await bob.client.sync();
-              await bob.forceRescan();
-              await bob.retryNow();
               // Log metrics every ~30s to diagnose stalls
               final elapsed = catchupStopwatch.elapsed.inSeconds;
               if (elapsed > 0 && elapsed % 30 == 0) {
                 debugPrint(
-                  'Bob polling metrics @ ${elapsed}s: '
+                  'Bob metrics @ ${elapsed}s: '
                   '${bob.debugPipeline?.metricsSnapshot()}',
                 );
               }
-              await Future<void>.delayed(const Duration(milliseconds: 200));
+              await Future<void>.delayed(const Duration(seconds: 1));
             }
             return currentCount >= expectedTotal;
           },
@@ -559,8 +612,8 @@ void main() {
         );
         catchupStopwatch.stop();
 
-        // Phase 3: Assertions
-        debugPrint('\n--- Phase 3: Assertions');
+        // Phase 5: Assertions
+        debugPrint('\n--- Phase 5: Assertions');
         final bobEntriesCount = await bobDb.getJournalCount();
         final newEntries = bobEntriesCount - bobCountBefore;
         final metricsMap = bob.debugPipeline?.metricsSnapshot();
@@ -575,6 +628,9 @@ void main() {
         );
         debugPrint('Bob final metrics: $metricsMap');
 
+        // With sender-side DB persistence, the pre-context overlap window
+        // events from test 1 are deduplicated by vector clock comparison,
+        // so Bob should receive exactly n new entries.
         expect(newEntries, n);
 
         if (metrics != null) {
@@ -610,6 +666,7 @@ Future<void> _sendTestMessage(
   required MatrixService device,
   required String deviceName,
   required String roomId,
+  JournalDb? journalDb,
 }) async {
   final id = const Uuid().v1();
   final now = DateTime.now();
@@ -632,6 +689,12 @@ Future<void> _sendTestMessage(
   final jsonPath = relativeEntityPath(entity);
 
   await saveJournalEntityJson(entity);
+
+  // In production, entries exist in the sender's local DB before being synced
+  // out. Persist here so cold-restart catch-up deduplicates correctly.
+  if (journalDb != null) {
+    await journalDb.updateJournalEntity(entity);
+  }
 
   await device.sendMatrixMsg(
     SyncMessage.journalEntity(
