@@ -3663,6 +3663,59 @@ final class TaskAgentWorkflowProvider
 
 String _$taskAgentWorkflowHash() => r'6a272bc1cb89433abf1efa145ec4600cc42561c7';
 
+/// The project agent workflow with all dependencies resolved.
+
+@ProviderFor(projectAgentWorkflow)
+final projectAgentWorkflowProvider = ProjectAgentWorkflowProvider._();
+
+/// The project agent workflow with all dependencies resolved.
+
+final class ProjectAgentWorkflowProvider
+    extends
+        $FunctionalProvider<
+          ProjectAgentWorkflow,
+          ProjectAgentWorkflow,
+          ProjectAgentWorkflow
+        >
+    with $Provider<ProjectAgentWorkflow> {
+  /// The project agent workflow with all dependencies resolved.
+  ProjectAgentWorkflowProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'projectAgentWorkflowProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$projectAgentWorkflowHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProjectAgentWorkflow> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProjectAgentWorkflow create(Ref ref) {
+    return projectAgentWorkflow(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProjectAgentWorkflow value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProjectAgentWorkflow>(value),
+    );
+  }
+}
+
+String _$projectAgentWorkflowHash() =>
+    r'f251a7d78ec3fb4d901b0659c87f456076cb4dbf';
+
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
 ///
@@ -3730,4 +3783,4 @@ final class AgentInitializationProvider
 }
 
 String _$agentInitializationHash() =>
-    r'e151b4d4ac4cb5804d56fe50225d3ef6be1bd347';
+    r'f0151127420eb81978fdbc4a29ac6107aefd1a83';

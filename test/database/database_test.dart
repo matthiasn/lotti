@@ -4635,8 +4635,9 @@ void main() {
           ),
         );
 
-        final resultWithPrivate =
-            await db!.getTasksForProject('proj-task-priv');
+        final resultWithPrivate = await db!.getTasksForProject(
+          'proj-task-priv',
+        );
         expect(resultWithPrivate, hasLength(2));
       });
 

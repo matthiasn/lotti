@@ -24,12 +24,14 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -465,6 +467,10 @@ class MockFeedbackExtractionService extends Mock
 class MockImproverAgentService extends Mock implements ImproverAgentService {}
 
 class MockImproverAgentWorkflow extends Mock implements ImproverAgentWorkflow {}
+
+class MockProjectAgentService extends Mock implements ProjectAgentService {}
+
+class MockProjectAgentWorkflow extends Mock implements ProjectAgentWorkflow {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
 

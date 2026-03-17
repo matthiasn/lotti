@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
@@ -20,6 +21,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -843,6 +845,21 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   );
 }
 
+/// The project agent workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
+  return ProjectAgentWorkflow(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    journalRepository: ref.watch(journalRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
+}
+
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
 ///
@@ -939,7 +956,10 @@ Future<void> agentInitialization(Ref ref) async {
   ]);
   // Backfill skill assignments on existing default profiles.
   await profileSeeder.upgradeExisting();
-  await taskAgentService.restoreSubscriptions();
+  await Future.wait([
+    taskAgentService.restoreSubscriptions(),
+    ref.read(projectAgentServiceProvider).restoreSubscriptions(),
+  ]);
 }
 
 /// Wires the wake executor into the orchestrator, routing to the appropriate
@@ -966,6 +986,28 @@ void _wireWakeExecutor(
 
       if (!result.success) {
         throw StateError(result.error ?? 'Improver agent wake failed');
+      }
+
+      await _notifyWakeCompletion(
+        ref,
+        agentId: agentId,
+        updateNotifications: updateNotifications,
+      );
+
+      return result.mutatedEntries;
+    }
+
+    if (identity.kind == AgentKinds.projectAgent) {
+      final projectWorkflow = ref.read(projectAgentWorkflowProvider);
+      final result = await projectWorkflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        triggerTokens: triggers,
+        threadId: threadId,
+      );
+
+      if (!result.success) {
+        throw StateError(result.error ?? 'Project agent wake failed');
       }
 
       await _notifyWakeCompletion(
@@ -1011,6 +1053,7 @@ Future<void> _notifyWakeCompletion(
   Ref ref, {
   required String agentId,
   required UpdateNotifications updateNotifications,
+  Set<String> extraTokens = const {},
 }) async {
   String? templateId;
   try {
@@ -1029,6 +1072,7 @@ Future<void> _notifyWakeCompletion(
     agentId,
     ?templateId,
     agentNotification,
+    ...extraTokens,
   });
 }
 
