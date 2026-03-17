@@ -75,6 +75,9 @@ void main() {
       test('creates agent, updates state, creates link, and registers '
           'subscription', () async {
         final identity = makeIdentity();
+        final template = makeTestTemplate(
+          kind: AgentTemplateKind.projectAgent,
+        );
 
         when(
           () => mockRepository.getLinksTo(
@@ -82,6 +85,9 @@ void main() {
             type: 'agent_project',
           ),
         ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEntity(kTestTemplateId),
+        ).thenAnswer((_) async => template);
 
         when(
           () => mockAgentService.createAgent(
@@ -108,6 +114,7 @@ void main() {
 
         final result = await service.createProjectAgent(
           projectId: 'project-1',
+          templateId: kTestTemplateId,
           allowedCategoryIds: {'cat-1'},
           displayName: 'My Project Agent',
         );
@@ -122,12 +129,12 @@ void main() {
         final updatedState = stateCalls.first as AgentStateEntity;
         expect(updatedState.slots.activeProjectId, 'project-1');
 
-        // Verify agent_project link was created.
+        // Verify both links were created (project + template).
         final linkCalls = verify(
           () => mockSyncService.upsertLink(captureAny()),
         ).captured;
-        expect(linkCalls, hasLength(1));
-        final projectLink = linkCalls.first as AgentProjectLink;
+        expect(linkCalls, hasLength(2));
+        final projectLink = linkCalls.whereType<AgentProjectLink>().single;
         expect(projectLink.fromId, 'agent-1');
         expect(projectLink.toId, 'project-1');
 
@@ -209,6 +216,9 @@ void main() {
 
       test('uses default display name when none provided', () async {
         final identity = makeIdentity();
+        final template = makeTestTemplate(
+          kind: AgentTemplateKind.projectAgent,
+        );
 
         when(
           () => mockRepository.getLinksTo(
@@ -216,6 +226,9 @@ void main() {
             type: 'agent_project',
           ),
         ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEntity(kTestTemplateId),
+        ).thenAnswer((_) async => template);
         when(
           () => mockAgentService.createAgent(
             kind: any(named: 'kind'),
@@ -238,6 +251,7 @@ void main() {
 
         await service.createProjectAgent(
           projectId: 'project-2',
+          templateId: kTestTemplateId,
           allowedCategoryIds: const {},
         );
 
@@ -271,6 +285,7 @@ void main() {
         expect(
           () => service.createProjectAgent(
             projectId: 'project-1',
+            templateId: kTestTemplateId,
             allowedCategoryIds: const {},
           ),
           throwsA(
@@ -285,6 +300,9 @@ void main() {
 
       test('throws StateError when agent state is null', () async {
         final identity = makeIdentity();
+        final template = makeTestTemplate(
+          kind: AgentTemplateKind.projectAgent,
+        );
 
         when(
           () => mockRepository.getLinksTo(
@@ -292,6 +310,9 @@ void main() {
             type: 'agent_project',
           ),
         ).thenAnswer((_) async => []);
+        when(
+          () => mockRepository.getEntity(kTestTemplateId),
+        ).thenAnswer((_) async => template);
         when(
           () => mockAgentService.createAgent(
             kind: any(named: 'kind'),
@@ -307,6 +328,7 @@ void main() {
         expect(
           () => service.createProjectAgent(
             projectId: 'project-3',
+            templateId: kTestTemplateId,
             allowedCategoryIds: const {},
           ),
           throwsStateError,

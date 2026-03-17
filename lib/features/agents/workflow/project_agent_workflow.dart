@@ -1,13 +1,16 @@
+import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -164,12 +167,22 @@ class ProjectAgentWorkflow {
     final modelId = resolvedProfile.thinkingModelId;
     final provider = resolvedProfile.thinkingProvider;
 
+    // 5b. Load observation payloads so we can render actual text.
+    final observationPayloads = await _resolveObservationPayloads(
+      journalObservations,
+    );
+
+    // 5c. Load linked tasks and their task-agent reports.
+    final linkedTasksContext = await _buildLinkedTasksContext(projectId);
+
     // 6. Assemble system prompt and user message.
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       projectEntity: projectEntity,
       lastReport: lastReport,
       observations: journalObservations,
+      observationPayloads: observationPayloads,
+      linkedTasksContext: linkedTasksContext,
       triggerTokens: triggerTokens,
     );
 
@@ -269,6 +282,7 @@ class ProjectAgentWorkflow {
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
+      final deferredItems = strategy.extractDeferredItems();
 
       await syncService.runInTransaction(() async {
         // Persist thought.
@@ -364,6 +378,33 @@ class ProjectAgentWorkflow {
           );
         }
 
+        // Persist deferred change set (if any items were accumulated).
+        if (deferredItems.isNotEmpty) {
+          final changeItems = deferredItems.map((item) {
+            final toolName = item['toolName'] as String? ?? '';
+            final args = item['args'] as Map<String, dynamic>? ?? {};
+            return ChangeItem(
+              toolName: toolName,
+              args: args,
+              humanSummary: _buildHumanSummary(toolName, args),
+            );
+          }).toList();
+
+          await syncService.upsertEntity(
+            AgentDomainEntity.changeSet(
+              id: _uuid.v4(),
+              agentId: agentId,
+              taskId: projectId,
+              threadId: threadId,
+              runKey: runKey,
+              status: ChangeSetStatus.pending,
+              items: changeItems,
+              createdAt: now,
+              vectorClock: null,
+            ),
+          );
+        }
+
         // Update state.
         await syncService.upsertEntity(
           state.copyWith(
@@ -377,7 +418,8 @@ class ProjectAgentWorkflow {
       });
 
       _log(
-        'wake completed: ${observations.length} observations',
+        'wake completed: ${observations.length} observations, '
+        '${deferredItems.length} deferred items',
         subDomain: 'execute',
       );
 
@@ -511,6 +553,8 @@ immediately.''';
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> observations,
+    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required String linkedTasksContext,
     required Set<String> triggerTokens,
   }) {
     final buf = StringBuffer()
@@ -527,13 +571,25 @@ immediately.''';
         ..writeln(lastReport.content);
     }
 
+    if (linkedTasksContext != '{}') {
+      buf
+        ..writeln()
+        ..writeln('## Linked Tasks')
+        ..writeln()
+        ..writeln(linkedTasksContext);
+    }
+
     if (observations.isNotEmpty) {
       buf
         ..writeln()
         ..writeln('## Recent Observations')
         ..writeln();
       for (final obs in observations.take(20)) {
-        buf.writeln('- [${obs.createdAt.toIso8601String()}] ${obs.id}');
+        final payload = obs.contentEntryId != null
+            ? observationPayloads[obs.contentEntryId]
+            : null;
+        final text = _extractPayloadText(payload);
+        buf.writeln('- [${obs.createdAt.toIso8601String()}] $text');
       }
     }
 
@@ -619,10 +675,188 @@ immediately.''';
     }
     return null;
   }
+
+  // ── Linked-task context ───────────────────────────────────────────────────
+
+  /// Builds a JSON string with linked tasks and their task-agent reports.
+  Future<String> _buildLinkedTasksContext(String projectId) async {
+    try {
+      final linkedEntities = await journalRepository.getLinkedToEntities(
+        linkedTo: projectId,
+      );
+
+      final taskEntities = linkedEntities.whereType<Task>().toList();
+
+      if (taskEntities.isEmpty) return '{}';
+
+      final taskRows = <Map<String, dynamic>>[];
+
+      for (final task in taskEntities) {
+        final row = <String, dynamic>{
+          'id': task.meta.id,
+          'title': task.data.title,
+          'status': _taskStatusLabel(task.data.status),
+        };
+
+        // Resolve task-agent report if available.
+        final report = await _resolveLatestTaskAgentReport(task.meta.id);
+        if (report != null) {
+          row['taskAgentId'] = report.agentId;
+          row['latestTaskAgentReport'] = report.content;
+          row['latestTaskAgentReportCreatedAt'] = report.createdAt
+              .toIso8601String();
+        }
+
+        taskRows.add(row);
+      }
+
+      return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
+        'linked_tasks': taskRows,
+      });
+    } catch (e, stackTrace) {
+      _logError(
+        'failed to build linked tasks context',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return '{}';
+    }
+  }
+
+  Future<_LinkedTaskAgentReport?> _resolveLatestTaskAgentReport(
+    String taskId,
+  ) async {
+    try {
+      final links = await agentRepository.getLinksTo(
+        taskId,
+        type: AgentLinkTypes.agentTask,
+      );
+      if (links.isEmpty) return null;
+
+      final sortedLinks = links.toList()
+        ..sort((a, b) {
+          final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+          if (byCreatedAt != 0) return byCreatedAt;
+          return b.id.compareTo(a.id);
+        });
+
+      for (final link in sortedLinks) {
+        final report = await agentRepository.getLatestReport(
+          link.fromId,
+          AgentReportScopes.current,
+        );
+        if (report == null) continue;
+        final content = report.content.trim();
+        if (content.isEmpty) continue;
+        return _LinkedTaskAgentReport(
+          agentId: link.fromId,
+          content: content,
+          createdAt: report.createdAt,
+        );
+      }
+      return null;
+    } catch (e, s) {
+      _logError(
+        'failed to resolve linked task-agent report',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
+    }
+  }
+
+  // ── Observation payload resolution ────────────────────────────────────────
+
+  /// Batch-resolves all observation payloads into a map keyed by payload ID.
+  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
+    List<AgentMessageEntity> observations,
+  ) async {
+    final payloadIds = observations
+        .map((o) => o.contentEntryId)
+        .whereType<String>()
+        .toSet();
+
+    final entries = await Future.wait(
+      payloadIds.map((id) async {
+        try {
+          final entity = await agentRepository.getEntity(id);
+          if (entity is AgentMessagePayloadEntity) {
+            return MapEntry(id, entity);
+          }
+        } catch (e) {
+          // Non-fatal — observation will render with placeholder text.
+        }
+        return null;
+      }),
+    );
+
+    return {
+      for (final entry
+          in entries.whereType<MapEntry<String, AgentMessagePayloadEntity>>())
+        entry.key: entry.value,
+    };
+  }
+
+  /// Extracts the text content from an observation payload.
+  static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
+    if (payload == null) return '(no content)';
+    final text = payload.content['text'];
+    if (text is String && text.isNotEmpty) return text;
+    return '(no content)';
+  }
+
+  static String _taskStatusLabel(TaskStatus status) {
+    return switch (status) {
+      TaskOpen() => 'open',
+      TaskGroomed() => 'groomed',
+      TaskInProgress() => 'in_progress',
+      TaskBlocked() => 'blocked',
+      TaskOnHold() => 'on_hold',
+      TaskDone() => 'done',
+      TaskRejected() => 'rejected',
+    };
+  }
+
+  // ── Deferred item helpers ─────────────────────────────────────────────────
+
+  /// Builds a user-readable summary for a deferred tool call.
+  static String _buildHumanSummary(
+    String toolName,
+    Map<String, dynamic> args,
+  ) {
+    switch (toolName) {
+      case ProjectAgentToolNames.recommendNextSteps:
+        final steps = args['steps'];
+        if (steps is List && steps.isNotEmpty) {
+          return 'Recommend ${steps.length} next step(s)';
+        }
+        return 'Recommend next steps';
+      case ProjectAgentToolNames.updateProjectStatus:
+        final status = args['status'] ?? 'unknown';
+        return 'Update project status to $status';
+      case ProjectAgentToolNames.createTask:
+        final title = args['title'] ?? 'untitled';
+        return 'Create task: $title';
+      default:
+        return 'Deferred: $toolName';
+    }
+  }
 }
 
 class _TemplateContext {
   const _TemplateContext({required this.template, required this.version});
   final AgentTemplateEntity template;
   final AgentTemplateVersionEntity version;
+}
+
+class _LinkedTaskAgentReport {
+  const _LinkedTaskAgentReport({
+    required this.agentId,
+    required this.content,
+    required this.createdAt,
+  });
+
+  final String agentId;
+  final String content;
+  final DateTime createdAt;
 }

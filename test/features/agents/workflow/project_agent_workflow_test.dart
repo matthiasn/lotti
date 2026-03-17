@@ -362,6 +362,11 @@ void main() {
         when(
           () => mockAgentRepository.getReportHead(agentId, 'current'),
         ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => []);
       });
 
       test('completes successfully and persists state', () async {

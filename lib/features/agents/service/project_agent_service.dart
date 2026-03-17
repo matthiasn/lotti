@@ -57,8 +57,8 @@ class ProjectAgentService {
   /// Throws [StateError] if a Project Agent already exists for [projectId].
   Future<AgentIdentityEntity> createProjectAgent({
     required String projectId,
+    required String templateId,
     required Set<String> allowedCategoryIds,
-    String? templateId,
     String? profileId,
     String? displayName,
   }) async {
@@ -77,16 +77,14 @@ class ProjectAgentService {
         );
       }
 
-      // Validate the template if one was provided.
-      if (templateId != null) {
-        final templateEntity = await repository.getEntity(templateId);
-        if (templateEntity is! AgentTemplateEntity ||
-            templateEntity.deletedAt != null ||
-            templateEntity.kind != AgentTemplateKind.projectAgent) {
-          throw StateError(
-            'Template $templateId is not an active project-agent template.',
-          );
-        }
+      // Validate the template.
+      final templateEntity = await repository.getEntity(templateId);
+      if (templateEntity is! AgentTemplateEntity ||
+          templateEntity.deletedAt != null ||
+          templateEntity.kind != AgentTemplateKind.projectAgent) {
+        throw StateError(
+          'Template $templateId is not an active project-agent template.',
+        );
       }
 
       final identity = await agentService.createAgent(
@@ -124,20 +122,18 @@ class ProjectAgentService {
         ),
       );
 
-      // Create template_assignment link if template provided.
-      if (templateId != null) {
-        final templateLinkId = _uuid.v4();
-        await syncService.upsertLink(
-          AgentLink.templateAssignment(
-            id: templateLinkId,
-            fromId: templateId,
-            toId: identity.agentId,
-            createdAt: now,
-            updatedAt: now,
-            vectorClock: null,
-          ),
-        );
-      }
+      // Create template_assignment link.
+      final templateLinkId = _uuid.v4();
+      await syncService.upsertLink(
+        AgentLink.templateAssignment(
+          id: templateLinkId,
+          fromId: templateId,
+          toId: identity.agentId,
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
 
       return identity;
     });
