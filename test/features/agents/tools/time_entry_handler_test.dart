@@ -424,7 +424,7 @@ void main() {
               ),
             ).called(1);
 
-            // Verify createDbEntity was called with the generated-summary suffix
+            // Verify createDbEntity was called with the generated marker
             // appended to the plain text, and with the correct linkedId.
             verify(
               () => mockPersistenceLogic.createDbEntity(
@@ -432,7 +432,7 @@ void main() {
                   that: isA<JournalEntry>().having(
                     (e) => e.entryText?.plainText,
                     'plainText',
-                    endsWith(' (generated summary)'),
+                    endsWith(' [generated]'),
                   ),
                 ),
                 linkedId: sourceTaskId,

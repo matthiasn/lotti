@@ -378,19 +378,22 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 4,
                   children: [
-                    Text(
-                      '${context.messages.timeEntryItemStart}: ',
-                      style: dimStyle,
+                    _buildTimeField(
+                      label: context.messages.timeEntryItemStart,
+                      value: startStr,
+                      dimStyle: dimStyle,
+                      valueStyle: valueStyle,
                     ),
-                    Text(startStr, style: valueStyle),
-                    const SizedBox(width: 16),
-                    Text(
-                      '${context.messages.timeEntryItemEnd}: ',
-                      style: dimStyle,
+                    _buildTimeField(
+                      label: context.messages.timeEntryItemEnd,
+                      value: endStr,
+                      dimStyle: dimStyle,
+                      valueStyle: valueStyle,
                     ),
-                    Text(endStr, style: valueStyle),
                   ],
                 ),
                 if (summary.isNotEmpty) ...[
@@ -441,6 +444,22 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
   static String _formatHhMm(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:'
       '${dt.minute.toString().padLeft(2, '0')}';
+
+  Widget _buildTimeField({
+    required String label,
+    required String value,
+    required TextStyle? dimStyle,
+    required TextStyle? valueStyle,
+  }) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label: ', style: dimStyle),
+          TextSpan(text: value, style: valueStyle),
+        ],
+      ),
+    );
+  }
 
   Widget _buildResolvedTile(BuildContext context) {
     final isConfirmed = _item.status == ChangeItemStatus.confirmed;

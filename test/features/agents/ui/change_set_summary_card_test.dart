@@ -621,7 +621,7 @@ void main() {
             args: {
               'startTime': '2026-03-17T14:00:00',
               'endTime': '2026-03-17T15:30:00',
-              'summary': 'Deep work on feature X (generated summary)',
+              'summary': 'Deep work on feature X [generated]',
             },
             humanSummary: 'Time entry 14:00–15:30: "Deep work on feature X"',
           ),
@@ -632,10 +632,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
-      expect(find.text('14:00'), findsOneWidget);
-      expect(find.text('15:30'), findsOneWidget);
+      expect(find.textContaining('14:00'), findsOneWidget);
+      expect(find.textContaining('15:30'), findsOneWidget);
       expect(
-        find.text('Deep work on feature X (generated summary)'),
+        find.text('Deep work on feature X [generated]'),
         findsOneWidget,
       );
     });
@@ -647,7 +647,7 @@ void main() {
             toolName: 'create_time_entry',
             args: {
               'startTime': '2026-03-17T14:00:00',
-              'summary': 'Started a timer (generated summary)',
+              'summary': 'Started a timer [generated]',
             },
             humanSummary: 'Time entry from 14:00: "Started a timer"',
           ),
@@ -657,8 +657,8 @@ void main() {
       await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
       await tester.pumpAndSettle();
 
-      expect(find.text('14:00'), findsOneWidget);
-      expect(find.text('Running'), findsOneWidget);
+      expect(find.textContaining('14:00'), findsOneWidget);
+      expect(find.textContaining('Running'), findsOneWidget);
     });
 
     testWidgets('falls back to raw string when startTime is unparseable', (
@@ -670,7 +670,7 @@ void main() {
             toolName: 'create_time_entry',
             args: {
               'startTime': 'not-a-date',
-              'summary': 'Some work (generated summary)',
+              'summary': 'Some work [generated]',
             },
             humanSummary: 'Time entry from not-a-date',
           ),
@@ -681,7 +681,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Raw unparseable string is shown as-is.
-      expect(find.text('not-a-date'), findsOneWidget);
+      expect(find.textContaining('not-a-date'), findsOneWidget);
     });
 
     testWidgets('renders without summary text when summary is empty', (
@@ -704,8 +704,8 @@ void main() {
       await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
       await tester.pumpAndSettle();
 
-      expect(find.text('10:00'), findsOneWidget);
-      expect(find.text('11:00'), findsOneWidget);
+      expect(find.textContaining('10:00'), findsOneWidget);
+      expect(find.textContaining('11:00'), findsOneWidget);
       // No body text widget when summary is empty.
       expect(find.text(''), findsNothing);
     });
@@ -718,7 +718,7 @@ void main() {
             args: {
               'startTime': '2026-03-17T09:00:00',
               'endTime': '2026-03-17T10:00:00',
-              'summary': 'Morning standup (generated summary)',
+              'summary': 'Morning standup [generated]',
             },
             humanSummary: 'Time entry 09:00–10:00',
           ),
@@ -740,6 +740,33 @@ void main() {
       verify(
         () => mockConfirmationService.confirmItem(changeSet, 0),
       ).called(1);
+    });
+
+    testWidgets('wraps time labels on narrow layouts', (tester) async {
+      addTearDown(() => tester.view.resetPhysicalSize());
+      addTearDown(() => tester.view.resetDevicePixelRatio());
+      tester.view
+        ..physicalSize = const Size(320, 640)
+        ..devicePixelRatio = 1;
+
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T14:00:00',
+              'summary': 'Started a timer [generated]',
+            },
+            humanSummary: 'Time entry from 14:00: "Started a timer"',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('Running'), findsOneWidget);
     });
   });
 }

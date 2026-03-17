@@ -155,9 +155,7 @@ class TimeEntryHandler {
     // For completed sessions, pass endTime directly to createMetadata so the
     // correct dateTo is written in a single DB write instead of
     // create-then-update.
-    final entryText = EntryText(
-      plainText: '${summary.trim()} (generated summary)',
-    );
+    final entryText = EntryText(plainText: '${summary.trim()} [generated]');
 
     final journalEntity = JournalEntity.journalEntry(
       entryText: entryText,
