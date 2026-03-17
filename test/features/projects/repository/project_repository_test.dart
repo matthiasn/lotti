@@ -8,6 +8,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -281,9 +282,13 @@ void main() {
       expect(captured.toId, 'task-001');
       expect(captured.hidden, isNull);
 
-      // Verify notifications sent with correct IDs
+      // Verify notifications include entity IDs and project token
       verify(
-        () => mockNotifications.notify({'project-001', 'task-001'}),
+        () => mockNotifications.notify({
+          'project-001',
+          'task-001',
+          projectNotification,
+        }),
       ).called(1);
 
       // Verify sync enqueued
@@ -457,12 +462,13 @@ void main() {
         verify(() => mockDb.upsertEntryLink(any())).called(2);
         // Sync enqueued for both delete and create after commit
         verify(() => mockOutboxService.enqueueMessage(any())).called(2);
-        // Notifications include old project, new project, and task
+        // Notifications include old project, new project, task, and token
         verify(
           () => mockNotifications.notify({
             'project-old',
             'task-001',
             'project-001',
+            projectNotification,
           }),
         ).called(1);
       },

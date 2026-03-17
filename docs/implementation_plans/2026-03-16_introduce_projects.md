@@ -137,8 +137,9 @@ abstract class ProjectData with _$ProjectData {
   const factory ProjectData({
     required String title,
     required ProjectStatus status,
-    @Default([]) List<ProjectStatus> statusHistory,
     required DateTime dateFrom,
+    required DateTime dateTo,
+    @Default([]) List<ProjectStatus> statusHistory,
     DateTime? targetDate,
     String? profileId,             // inference profile for project agent
     String? coverArtId,
@@ -155,27 +156,42 @@ sealed class ProjectStatus with _$ProjectStatus {
   const factory ProjectStatus.open({
     required String id,
     required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
   }) = ProjectOpen;
 
   const factory ProjectStatus.active({
     required String id,
     required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
   }) = ProjectActive;
 
   const factory ProjectStatus.onHold({
     required String id,
     required DateTime createdAt,
+    required int utcOffset,
     required String reason,
+    String? timezone,
+    Geolocation? geolocation,
   }) = ProjectOnHold;
 
   const factory ProjectStatus.completed({
     required String id,
     required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
   }) = ProjectCompleted;
 
   const factory ProjectStatus.archived({
     required String id,
     required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
   }) = ProjectArchived;
 }
 ```
@@ -640,10 +656,10 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 4. **Update `conversions.dart`** for new types
 5. **Run `make build_runner`** to regenerate freezed/JSON code
 6. **Add named queries** for project retrieval (no schema migration needed — `type` column suffices)
-8. **Update all `JournalEntity` switch statements** (journal_card, file_utils, gamey_journal_card,
+7. **Update all `JournalEntity` switch statements** (journal_card, file_utils, gamey_journal_card,
    etc.) to handle the new `project` variant
-9. **Create `ProjectRepository`** with CRUD + link management + constraint enforcement
-10. **Write unit tests** for repository, conversions, and constraint enforcement
+8. **Create `ProjectRepository`** with CRUD + link management + constraint enforcement
+9. **Write unit tests** for repository, conversions, and constraint enforcement
 
 ### Phase 2: Agent Runtime (est. 3–4 PRs)
 
@@ -675,9 +691,9 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 1. **Add weekly review GenUI widgets** to the evolution catalog (star ratings, free text)
 2. **Implement inline evolution session** within `ProjectAgentWorkflow`
 3. **Create `WeeklyReviewHistory`** widget
-5. **Register project agent templates** as seeded defaults
-6. **Wire improver agent** auto-creation for project agent templates
-7. **Write integration tests** for the full feedback → evolution cycle
+4. **Register project agent templates** as seeded defaults
+5. **Wire improver agent** auto-creation for project agent templates
+6. **Write integration tests** for the full feedback → evolution cycle
 
 ### Phase 5: Advanced Features (est. 2–3 PRs)
 

@@ -4563,6 +4563,83 @@ void main() {
         expect(result.first.meta.id, 'task-type-guard');
       });
 
+      test('getTasksForProject respects private flag', () async {
+        final base = DateTime(2024, 7, 13);
+        final project = buildProjectEntry(
+          id: 'proj-task-priv',
+          timestamp: base,
+          categoryId: 'cat-tp',
+        );
+        final publicTask = buildTaskEntry(
+          id: 'task-public-tp',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-pub-tp',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-tp',
+        );
+        final privateTask = buildTaskEntry(
+          id: 'task-private-tp',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-priv-tp',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-tp',
+          privateFlag: true,
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(publicTask));
+        await db!.upsertJournalDbEntity(toDbEntity(privateTask));
+
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-pub-tp',
+            fromId: 'proj-task-priv',
+            toId: 'task-public-tp',
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-priv-tp',
+            fromId: 'proj-task-priv',
+            toId: 'task-private-tp',
+            timestamp: base,
+          ),
+        );
+
+        // Disable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        final result = await db!.getTasksForProject('proj-task-priv');
+        expect(result, hasLength(1));
+        expect(result.first.meta.id, 'task-public-tp');
+
+        // Re-enable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: true,
+          ),
+        );
+
+        final resultWithPrivate =
+            await db!.getTasksForProject('proj-task-priv');
+        expect(resultWithPrivate, hasLength(2));
+      });
+
       test('getProjectForTask returns linked project', () async {
         final base = DateTime(2024, 7, 7);
         final project = buildProjectEntry(
