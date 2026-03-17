@@ -31,6 +31,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -462,6 +463,8 @@ class MockImproverAgentService extends Mock implements ImproverAgentService {}
 class MockImproverAgentWorkflow extends Mock implements ImproverAgentWorkflow {}
 
 class MockProjectAgentService extends Mock implements ProjectAgentService {}
+
+class MockProjectAgentWorkflow extends Mock implements ProjectAgentWorkflow {}
 
 class MockScheduledWakeManager extends Mock implements ScheduledWakeManager {}
 

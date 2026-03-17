@@ -21,6 +21,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -844,6 +845,21 @@ TaskAgentWorkflow taskAgentWorkflow(Ref ref) {
   );
 }
 
+/// The project agent workflow with all dependencies resolved.
+@Riverpod(keepAlive: true)
+ProjectAgentWorkflow projectAgentWorkflow(Ref ref) {
+  return ProjectAgentWorkflow(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
+    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
+    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
+    journalRepository: ref.watch(journalRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    templateService: ref.watch(agentTemplateServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+  );
+}
+
 /// Initializes the agent infrastructure when the `enableAgents` config flag
 /// is enabled.
 ///
@@ -982,13 +998,25 @@ void _wireWakeExecutor(
     }
 
     if (identity.kind == AgentKinds.projectAgent) {
-      // Project agent workflow will be wired in PR 3.
-      // For now, log and return null — no wake execution.
-      developer.log(
-        'ProjectAgent wake skipped: workflow not yet wired',
-        name: 'agentInitialization',
+      final projectWorkflow = ref.read(projectAgentWorkflowProvider);
+      final result = await projectWorkflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        triggerTokens: triggers,
+        threadId: threadId,
       );
-      return null;
+
+      if (!result.success) {
+        throw StateError(result.error ?? 'Project agent wake failed');
+      }
+
+      await _notifyWakeCompletion(
+        ref,
+        agentId: agentId,
+        updateNotifications: updateNotifications,
+      );
+
+      return result.mutatedEntries;
     }
 
     // Default: task agent workflow.
