@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
+import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
@@ -939,7 +940,10 @@ Future<void> agentInitialization(Ref ref) async {
   ]);
   // Backfill skill assignments on existing default profiles.
   await profileSeeder.upgradeExisting();
-  await taskAgentService.restoreSubscriptions();
+  await Future.wait([
+    taskAgentService.restoreSubscriptions(),
+    ref.read(projectAgentServiceProvider).restoreSubscriptions(),
+  ]);
 }
 
 /// Wires the wake executor into the orchestrator, routing to the appropriate
@@ -975,6 +979,16 @@ void _wireWakeExecutor(
       );
 
       return result.mutatedEntries;
+    }
+
+    if (identity.kind == AgentKinds.projectAgent) {
+      // Project agent workflow will be wired in PR 3.
+      // For now, log and return null — no wake execution.
+      developer.log(
+        'ProjectAgent wake skipped: workflow not yet wired',
+        name: 'agentInitialization',
+      );
+      return null;
     }
 
     // Default: task agent workflow.
