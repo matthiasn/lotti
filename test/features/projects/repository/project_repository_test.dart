@@ -421,7 +421,7 @@ void main() {
     });
 
     test(
-      'soft-deletes old link when moving task to different project',
+      'atomically soft-deletes old link and creates new one in transaction',
       () async {
         final oldLink = EntryLink.project(
           id: 'link-old',
@@ -453,16 +453,23 @@ void main() {
         );
 
         expect(result, isTrue);
-        // Should have called upsertEntryLink twice: once for soft-delete,
-        // once for new link
+        // Both writes happen inside the transaction
         verify(() => mockDb.upsertEntryLink(any())).called(2);
-        // Verify sync was enqueued for both operations
+        // Sync enqueued for both delete and create after commit
         verify(() => mockOutboxService.enqueueMessage(any())).called(2);
+        // Notifications include old project, new project, and task
+        verify(
+          () => mockNotifications.notify({
+            'project-old',
+            'task-001',
+            'project-001',
+          }),
+        ).called(1);
       },
     );
 
     test(
-      'returns false when soft-delete of old link fails during relink',
+      'returns false when soft-delete fails during relink transaction',
       () async {
         final oldLink = EntryLink.project(
           id: 'link-old',
@@ -494,8 +501,56 @@ void main() {
         );
 
         expect(result, isFalse);
-        // Only one call for the failed soft-delete, no new link created
+        // Only the soft-delete was attempted; insert skipped
         verify(() => mockDb.upsertEntryLink(any())).called(1);
+        // No side effects on failure
+        verifyNever(() => mockNotifications.notify(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
+      },
+    );
+
+    test(
+      'returns false when insert fails after soft-delete in transaction',
+      () async {
+        final oldLink = EntryLink.project(
+          id: 'link-old',
+          fromId: 'project-old',
+          toId: 'task-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockDb.journalEntityById('project-001'),
+        ).thenAnswer((_) async => projectEntry);
+        when(
+          () => mockDb.journalEntityById('task-001'),
+        ).thenAnswer((_) async => taskEntry);
+        when(
+          () => mockDb.getProjectLinkForTask('task-001'),
+        ).thenAnswer((_) async => oldLink);
+        // First call (soft-delete) succeeds, second call (insert) fails
+        var callCount = 0;
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1 ? 1 : 0;
+        });
+        when(
+          mockVectorClockService.getNextVectorClock,
+        ).thenAnswer((_) async => const VectorClock({'d': 1}));
+
+        final result = await repository.linkTaskToProject(
+          projectId: 'project-001',
+          taskId: 'task-001',
+        );
+
+        expect(result, isFalse);
+        // Both writes were attempted inside transaction
+        verify(() => mockDb.upsertEntryLink(any())).called(2);
+        // No side effects — transaction failed
+        verifyNever(() => mockNotifications.notify(any()));
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
       },
     );
   });

@@ -112,11 +112,15 @@ class ProjectRepository {
       if (existingLink.fromId == projectId) {
         return true; // already linked to this project
       }
-      // Soft-delete the old link
-      if (!await _softDeleteLink(existingLink)) return false;
+      // Atomically soft-delete old link + create new link
+      return _relinkTask(
+        oldLink: existingLink,
+        projectId: projectId,
+        taskId: taskId,
+      );
     }
 
-    // Create the new project link
+    // No existing link — just create the new project link
     final now = DateTime.now();
     final link = EntryLink.project(
       id: uuid.v1(),
@@ -153,19 +157,64 @@ class ProjectRepository {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  Future<bool> _softDeleteLink(EntryLink link) async {
+  /// Atomically soft-deletes an old project link and creates a new one
+  /// within a single DB transaction. Notifications and sync enqueuing are
+  /// deferred until after the transaction commits.
+  Future<bool> _relinkTask({
+    required EntryLink oldLink,
+    required String projectId,
+    required String taskId,
+  }) async {
     final now = DateTime.now();
-    final deleted = link.copyWith(
-      deletedAt: now,
+    final deletedLink = await _prepareDeletedLink(oldLink, now);
+    final newLink = EntryLink.project(
+      id: uuid.v1(),
+      fromId: projectId,
+      toId: taskId,
+      createdAt: now,
       updatedAt: now,
-      hidden: true,
       vectorClock: await _vectorClockService.getNextVectorClock(),
     );
+
+    // Both writes in one transaction — if either fails, both roll back
+    final success = await _journalDb.transaction(() async {
+      final deleteRes = await _journalDb.upsertEntryLink(deletedLink);
+      if (deleteRes == 0) return false;
+      final insertRes = await _journalDb.upsertEntryLink(newLink);
+      return insertRes != 0;
+    });
+
+    if (!success) return false;
+
+    // Side effects only after successful commit
+    _updateNotifications.notify({
+      oldLink.fromId,
+      oldLink.toId,
+      projectId,
+      taskId,
+    });
+    await _enqueueLinkSync(deletedLink, SyncEntryStatus.update);
+    await _enqueueLinkSync(newLink, SyncEntryStatus.initial);
+    return true;
+  }
+
+  Future<bool> _softDeleteLink(EntryLink link) async {
+    final now = DateTime.now();
+    final deleted = await _prepareDeletedLink(link, now);
     final res = await _journalDb.upsertEntryLink(deleted);
     if (res == 0) return false;
     _updateNotifications.notify({link.fromId, link.toId});
     await _enqueueLinkSync(deleted, SyncEntryStatus.update);
     return true;
+  }
+
+  Future<EntryLink> _prepareDeletedLink(EntryLink link, DateTime now) async {
+    return link.copyWith(
+      deletedAt: now,
+      updatedAt: now,
+      hidden: true,
+      vectorClock: await _vectorClockService.getNextVectorClock(),
+    );
   }
 
   Future<void> _enqueueLinkSync(

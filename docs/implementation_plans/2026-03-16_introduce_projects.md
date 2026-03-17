@@ -645,14 +645,6 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 9. **Create `ProjectRepository`** with CRUD + link management + constraint enforcement
 10. **Write unit tests** for repository, conversions, and constraint enforcement
 
-#### Phase 1 Follow-ups
-
-- **DB transaction for relink flow**: `linkTaskToProject` currently performs
-  soft-delete + new link insert as two separate writes. If the insert fails
-  after a successful soft-delete, the task becomes unlinked. Wrapping both
-  in a `transaction()` block would make the operation atomic, but requires
-  deferring notifications and sync enqueuing until after commit.
-
 ### Phase 2: Agent Runtime (est. 3–4 PRs)
 
 1. **Extend `AgentKind`** with `projectAgent`
