@@ -4969,6 +4969,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get timeByCategoryChartTotalLabel => 'Total';
 
   @override
+  String get timeEntryItemEnd => 'Fin';
+
+  @override
+  String get timeEntryItemRunning => 'En cours';
+
+  @override
+  String get timeEntryItemStart => 'Début';
+
+  @override
   String get unlinkButton => 'Délier';
 
   @override

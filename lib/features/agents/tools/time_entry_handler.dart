@@ -88,7 +88,15 @@ class TimeEntryHandler {
     // --- Parse and validate optional endTime ---
     final endTimeRaw = args['endTime'];
     DateTime? endTime;
-    if (endTimeRaw != null && endTimeRaw is String && endTimeRaw.isNotEmpty) {
+    if (endTimeRaw != null) {
+      if (endTimeRaw is! String || endTimeRaw.isEmpty) {
+        return const ToolExecutionResult(
+          success: false,
+          output: 'Error: "endTime" must be a valid ISO 8601 datetime',
+          errorMessage: 'Missing or invalid endTime',
+        );
+      }
+
       endTime = DateTime.tryParse(endTimeRaw);
       if (endTime == null) {
         return const ToolExecutionResult(
@@ -147,7 +155,9 @@ class TimeEntryHandler {
     // For completed sessions, pass endTime directly to createMetadata so the
     // correct dateTo is written in a single DB write instead of
     // create-then-update.
-    final entryText = EntryText(plainText: summary.trim());
+    final entryText = EntryText(
+      plainText: '${summary.trim()} (generated summary)',
+    );
 
     final journalEntity = JournalEntity.journalEntry(
       entryText: entryText,

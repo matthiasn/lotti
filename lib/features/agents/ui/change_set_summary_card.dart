@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -292,6 +293,10 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
   }
 
   Widget _buildPendingTile(BuildContext context) {
+    if (_item.toolName == TaskAgentToolNames.createTimeEntry) {
+      return _buildTimeEntryTile(context);
+    }
+
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
@@ -334,6 +339,108 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
             ),
     );
   }
+
+  Widget _buildTimeEntryTile(BuildContext context) {
+    final startRaw = _item.args['startTime'] as String?;
+    final endRaw = _item.args['endTime'] as String?;
+    final summary = (_item.args['summary'] as String? ?? '').trim();
+
+    final start = startRaw != null ? DateTime.tryParse(startRaw) : null;
+    final end = endRaw != null ? DateTime.tryParse(endRaw) : null;
+
+    final startStr = start != null ? _formatHhMm(start) : (startRaw ?? '?');
+    final endStr = end != null
+        ? _formatHhMm(end)
+        : context.messages.timeEntryItemRunning;
+
+    final dimStyle = context.textTheme.bodySmall?.copyWith(
+      color: context.colorScheme.onSurfaceVariant,
+    );
+    final valueStyle = context.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              Icons.timer_outlined,
+              size: 16,
+              color: context.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '${context.messages.timeEntryItemStart}: ',
+                      style: dimStyle,
+                    ),
+                    Text(startStr, style: valueStyle),
+                    const SizedBox(width: 16),
+                    Text(
+                      '${context.messages.timeEntryItemEnd}: ',
+                      style: dimStyle,
+                    ),
+                    Text(endStr, style: valueStyle),
+                  ],
+                ),
+                if (summary.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_busy)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.green.shade700,
+                  ),
+                  tooltip: context.messages.changeSetSwipeConfirm,
+                  onPressed: () => _confirm(context),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.cancel_outlined,
+                    color: context.colorScheme.error,
+                  ),
+                  tooltip: context.messages.changeSetSwipeReject,
+                  onPressed: () => _reject(context),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  static String _formatHhMm(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:'
+      '${dt.minute.toString().padLeft(2, '0')}';
 
   Widget _buildResolvedTile(BuildContext context) {
     final isConfirmed = _item.status == ChangeItemStatus.confirmed;

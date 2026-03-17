@@ -189,6 +189,23 @@ void main() {
         });
       });
 
+      test('returns failure when endTime has invalid type', () async {
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T14:00:00',
+              'endTime': 123,
+              'summary': 'Worked on API',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('"endTime" must be a valid'));
+          expect(result.errorMessage, 'Missing or invalid endTime');
+        });
+      });
+
       test('returns failure when endTime is before startTime', () async {
         await withClock(Clock.fixed(testNow), () async {
           final result = await handler.handle(
@@ -333,7 +350,8 @@ void main() {
           (inv) async => Metadata(
             id: 'new-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+            dateTo:
+                (inv.namedArguments[#dateTo] as DateTime?) ??
                 (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
@@ -378,45 +396,54 @@ void main() {
         });
       });
 
-      test('creates entry with correct dateFrom and dateTo in a single write',
-          () async {
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'endTime': '2026-03-17T15:00:00',
-              'summary': 'Worked on API integration',
-            },
-          );
+      test(
+        'creates entry with correct dateFrom and dateTo in a single write',
+        () async {
+          await withClock(Clock.fixed(testNow), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T14:00:00',
+                'endTime': '2026-03-17T15:00:00',
+                'summary': 'Worked on API integration',
+              },
+            );
 
-          expect(result.success, isTrue);
-          expect(result.mutatedEntityId, 'new-entry-001');
-          expect(result.output, contains('14:00–15:00'));
-          expect(result.output, contains('Worked on API integration'));
+            expect(result.success, isTrue);
+            expect(result.mutatedEntityId, 'new-entry-001');
+            expect(result.output, contains('14:00–15:00'));
+            expect(result.output, contains('Worked on API integration'));
 
-          // Verify createMetadata was called with both dateFrom and dateTo
-          // so the correct time range is written in a single DB operation.
-          verify(
-            () => mockPersistenceLogic.createMetadata(
-              dateFrom: DateTime(2026, 3, 17, 14),
-              dateTo: DateTime(2026, 3, 17, 15),
-              categoryId: categoryId,
-            ),
-          ).called(1);
+            // Verify createMetadata was called with both dateFrom and dateTo
+            // so the correct time range is written in a single DB operation.
+            verify(
+              () => mockPersistenceLogic.createMetadata(
+                dateFrom: DateTime(2026, 3, 17, 14),
+                dateTo: DateTime(2026, 3, 17, 15),
+                categoryId: categoryId,
+              ),
+            ).called(1);
 
-          // Verify createDbEntity was called with linkedId.
-          verify(
-            () => mockPersistenceLogic.createDbEntity(
-              any(),
-              linkedId: sourceTaskId,
-            ),
-          ).called(1);
+            // Verify createDbEntity was called with the generated-summary suffix
+            // appended to the plain text, and with the correct linkedId.
+            verify(
+              () => mockPersistenceLogic.createDbEntity(
+                any(
+                  that: isA<JournalEntry>().having(
+                    (e) => e.entryText?.plainText,
+                    'plainText',
+                    endsWith(' (generated summary)'),
+                  ),
+                ),
+                linkedId: sourceTaskId,
+              ),
+            ).called(1);
 
-          // Verify TimeService was NOT started.
-          verifyNever(() => mockTimeService.start(any(), any()));
-        });
-      });
+            // Verify TimeService was NOT started.
+            verifyNever(() => mockTimeService.start(any(), any()));
+          });
+        },
+      );
 
       test('inherits category from source task', () async {
         await withClock(Clock.fixed(testNow), () async {
@@ -472,7 +499,8 @@ void main() {
           (inv) async => Metadata(
             id: 'timer-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+            dateTo:
+                (inv.namedArguments[#dateTo] as DateTime?) ??
                 (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
@@ -493,53 +521,57 @@ void main() {
         ).thenAnswer((_) async {});
       });
 
-      test('creates entry and starts TimeService with in-memory entity',
-          () async {
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'summary': 'Starting work on feature',
-            },
-          );
+      test(
+        'creates entry and starts TimeService with in-memory entity',
+        () async {
+          await withClock(Clock.fixed(testNow), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T14:00:00',
+                'summary': 'Starting work on feature',
+              },
+            );
 
-          expect(result.success, isTrue);
-          expect(result.mutatedEntityId, 'timer-entry-001');
-          expect(result.output, contains('running timer from 14:00'));
-          expect(result.output, contains('Starting work on feature'));
+            expect(result.success, isTrue);
+            expect(result.mutatedEntityId, 'timer-entry-001');
+            expect(result.output, contains('running timer from 14:00'));
+            expect(result.output, contains('Starting work on feature'));
 
-          // TimeService.start is called with the in-memory entity — no DB
-          // re-fetch needed since TimeService only stores it in memory.
-          verify(
-            () => mockTimeService.start(any(), any()),
-          ).called(1);
-        });
-      });
+            // TimeService.start is called with the in-memory entity — no DB
+            // re-fetch needed since TimeService only stores it in memory.
+            verify(
+              () => mockTimeService.start(any(), any()),
+            ).called(1);
+          });
+        },
+      );
 
-      test('returns failure and does not start timer when persistence fails',
-          () async {
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => false);
+      test(
+        'returns failure and does not start timer when persistence fails',
+        () async {
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+            ),
+          ).thenAnswer((_) async => false);
 
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'summary': 'Timer that fails to persist',
-            },
-          );
+          await withClock(Clock.fixed(testNow), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T14:00:00',
+                'summary': 'Timer that fails to persist',
+              },
+            );
 
-          expect(result.success, isFalse);
-          expect(result.output, contains('failed to persist'));
-          verifyNever(() => mockTimeService.start(any(), any()));
-        });
-      });
+            expect(result.success, isFalse);
+            expect(result.output, contains('failed to persist'));
+            verifyNever(() => mockTimeService.start(any(), any()));
+          });
+        },
+      );
     });
 
     group('domain logging', () {
@@ -558,7 +590,8 @@ void main() {
           (inv) async => Metadata(
             id: 'log-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+            dateTo:
+                (inv.namedArguments[#dateTo] as DateTime?) ??
                 (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
@@ -638,7 +671,8 @@ void main() {
           (inv) async => Metadata(
             id: 'no-cat-entry',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+            dateTo:
+                (inv.namedArguments[#dateTo] as DateTime?) ??
                 (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,

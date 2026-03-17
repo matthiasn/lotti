@@ -640,9 +640,25 @@ class TaskAgentStrategy extends ConversationStrategy {
       }(),
       TaskAgentToolNames.createFollowUpTask =>
         'Create follow-up task: "${args['title'] ?? ''}"',
+      TaskAgentToolNames.createTimeEntry => () {
+        final startRaw = args['startTime'] as String?;
+        final endRaw = args['endTime'] as String?;
+        final summary = args['summary'] as String? ?? '';
+        final start = startRaw != null ? DateTime.tryParse(startRaw) : null;
+        final end = endRaw != null ? DateTime.tryParse(endRaw) : null;
+        final startStr = start != null ? _hhMm(start) : (startRaw ?? '?');
+        final timeRange = end != null
+            ? '$startStr–${_hhMm(end)}'
+            : 'from $startStr';
+        return 'Time entry $timeRange: "$summary"';
+      }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }
+
+  static String _hhMm(DateTime dt) =>
+      '${dt.hour.toString().padLeft(2, '0')}:'
+      '${dt.minute.toString().padLeft(2, '0')}';
 
   /// Generate a human-readable prefix for batch tool explosion summaries.
   static String _humanToolPrefix(String toolName) {

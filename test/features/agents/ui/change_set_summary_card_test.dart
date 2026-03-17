@@ -609,4 +609,88 @@ void main() {
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
   });
+
+  group('create_time_entry tile', () {
+    testWidgets('renders start and end times for completed session', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T14:00:00',
+              'endTime': '2026-03-17T15:30:00',
+              'summary': 'Deep work on feature X (generated summary)',
+            },
+            humanSummary: 'Time entry 14:00–15:30: "Deep work on feature X"',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.text('14:00'), findsOneWidget);
+      expect(find.text('15:30'), findsOneWidget);
+      expect(
+        find.text('Deep work on feature X (generated summary)'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows Running label when endTime is absent', (tester) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T14:00:00',
+              'summary': 'Started a timer (generated summary)',
+            },
+            humanSummary: 'Time entry from 14:00: "Started a timer"',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('14:00'), findsOneWidget);
+      expect(find.text('Running'), findsOneWidget);
+    });
+
+    testWidgets('confirm button works for time entry tile', (tester) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T09:00:00',
+              'endTime': '2026-03-17T10:00:00',
+              'summary': 'Morning standup (generated summary)',
+            },
+            humanSummary: 'Time entry 09:00–10:00',
+          ),
+        ],
+      );
+
+      when(
+        () => mockConfirmationService.confirmItem(any(), any()),
+      ).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.check_circle_outline));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => mockConfirmationService.confirmItem(changeSet, 0),
+      ).called(1);
+    });
+  });
 }
