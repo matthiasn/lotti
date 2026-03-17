@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
@@ -1025,6 +1026,862 @@ void main() {
           );
         },
       );
+
+      test('persists token usage when returned by sendMessage', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              return const InferenceUsage(
+                inputTokens: 100,
+                outputTokens: 50,
+              );
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final tokenUsages = captured.whereType<WakeTokenUsageEntity>().toList();
+        expect(tokenUsages, hasLength(1));
+        expect(tokenUsages.first.inputTokens, 100);
+        expect(tokenUsages.first.outputTokens, 50);
+        expect(tokenUsages.first.modelId, 'models/test-model-v1');
+      });
+
+      test('persists report and updates report head', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy != null) {
+                final toolCalls = [
+                  ChatCompletionMessageToolCall(
+                    id: 'call-rpt',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: ProjectAgentToolNames.updateProjectReport,
+                      arguments: jsonEncode({
+                        'markdown': '# Status Report\nAll good.',
+                        'tldr': 'On track.',
+                      }),
+                    ),
+                  ),
+                ];
+
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+
+                await strategy.processToolCalls(
+                  toolCalls: toolCalls,
+                  manager: manager,
+                );
+              }
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final reports = captured.whereType<AgentReportEntity>().toList();
+        expect(reports, hasLength(1));
+        expect(reports.first.content, '# Status Report\nAll good.');
+        expect(reports.first.tldr, 'On track.');
+
+        final heads = captured.whereType<AgentReportHeadEntity>().toList();
+        expect(heads, hasLength(1));
+      });
+
+      test('persists observations with payloads', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy != null) {
+                final toolCalls = [
+                  ChatCompletionMessageToolCall(
+                    id: 'call-obs',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: ProjectAgentToolNames.recordObservations,
+                      arguments: jsonEncode({
+                        'observations': ['Team morale is high'],
+                      }),
+                    ),
+                  ),
+                ];
+
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+
+                await strategy.processToolCalls(
+                  toolCalls: toolCalls,
+                  manager: manager,
+                );
+              }
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final payloads = captured
+            .whereType<AgentMessagePayloadEntity>()
+            .toList();
+        // User message payload + observation payload = 2.
+        expect(payloads.length, greaterThanOrEqualTo(2));
+
+        final obsPayload = payloads.firstWhere(
+          (p) => p.content['text'] == 'Team morale is high',
+        );
+        expect(obsPayload.content['priority'], 'routine');
+        expect(obsPayload.content['category'], 'operational');
+      });
+
+      test('persists final assistant response as thought', () async {
+        when(() => mockConversationManager.messages).thenReturn([
+          const ChatCompletionMessage.assistant(
+            content: 'Here is my analysis of the project.',
+          ),
+        ]);
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final thoughtPayloads = captured
+            .whereType<AgentMessagePayloadEntity>()
+            .where(
+              (p) => p.content['text'] == 'Here is my analysis of the project.',
+            )
+            .toList();
+        expect(thoughtPayloads, hasLength(1));
+
+        final thoughtMessages = captured
+            .whereType<AgentMessageEntity>()
+            .where((m) => m.kind == AgentMessageKind.thought)
+            .toList();
+        expect(thoughtMessages, hasLength(1));
+      });
+
+      test('linked task with multiple statuses maps correctly', () async {
+        final tasks = [
+          _fakeTaskEntity(
+            id: 'task-done',
+            title: 'Done Task',
+            status: TaskStatus.done(
+              id: 's1',
+              createdAt: DateTime(2024, 7),
+              utcOffset: 0,
+            ),
+          ),
+          _fakeTaskEntity(
+            id: 'task-blocked',
+            title: 'Blocked Task',
+            status: TaskStatus.blocked(
+              id: 's2',
+              createdAt: DateTime(2024, 7),
+              utcOffset: 0,
+              reason: 'Waiting on API',
+            ),
+          ),
+          _fakeTaskEntity(
+            id: 'task-groomed',
+            title: 'Groomed Task',
+            status: TaskStatus.groomed(
+              id: 's3',
+              createdAt: DateTime(2024, 7),
+              utcOffset: 0,
+            ),
+          ),
+          _fakeTaskEntity(
+            id: 'task-onhold',
+            title: 'On Hold Task',
+            status: TaskStatus.onHold(
+              id: 's4',
+              createdAt: DateTime(2024, 7),
+              utcOffset: 0,
+              reason: 'Deprioritized',
+            ),
+          ),
+          _fakeTaskEntity(
+            id: 'task-rejected',
+            title: 'Rejected Task',
+            status: TaskStatus.rejected(
+              id: 's5',
+              createdAt: DateTime(2024, 7),
+              utcOffset: 0,
+            ),
+          ),
+        ];
+
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => tasks);
+
+        for (final task in tasks) {
+          when(
+            () => mockAgentRepository.getLinksTo(
+              task.meta.id,
+              type: AgentLinkTypes.agentTask,
+            ),
+          ).thenAnswer((_) async => []);
+        }
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedMessage, contains('"done"'));
+        expect(capturedMessage, contains('"blocked"'));
+        expect(capturedMessage, contains('"groomed"'));
+        expect(capturedMessage, contains('"on_hold"'));
+        expect(capturedMessage, contains('"rejected"'));
+      });
+
+      test('uses generalDirective from template version', () async {
+        when(
+          () => mockTemplateService.getActiveVersion(testTemplate.id),
+        ).thenAnswer(
+          (_) async => makeTestTemplateVersion(
+            directives: 'fallback directives',
+            generalDirective: 'You are a senior PM agent.',
+          ),
+        );
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(result.success, isTrue);
+      });
+
+      test('uses existing report head ID when updating', () async {
+        final existingHead =
+            AgentDomainEntity.agentReportHead(
+                  id: 'existing-head-id',
+                  agentId: agentId,
+                  scope: AgentReportScopes.current,
+                  reportId: 'old-report-id',
+                  updatedAt: DateTime(2024, 5),
+                  vectorClock: null,
+                )
+                as AgentReportHeadEntity;
+
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => existingHead);
+
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy != null) {
+                final toolCalls = [
+                  ChatCompletionMessageToolCall(
+                    id: 'call-rpt2',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: ProjectAgentToolNames.updateProjectReport,
+                      arguments: jsonEncode({'markdown': 'Updated report.'}),
+                    ),
+                  ),
+                ];
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+                await strategy.processToolCalls(
+                  toolCalls: toolCalls,
+                  manager: manager,
+                );
+              }
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final heads = captured.whereType<AgentReportHeadEntity>().toList();
+        expect(heads, hasLength(1));
+        expect(heads.first.id, 'existing-head-id');
+      });
+
+      test('includes project description in user message', () async {
+        final projectWithDesc = JournalEntity.project(
+          meta: Metadata(
+            id: projectId,
+            createdAt: DateTime(2024, 6, 15),
+            updatedAt: DateTime(2024, 6, 15),
+            dateFrom: DateTime(2024, 6, 15),
+            dateTo: DateTime(2024, 6, 15),
+          ),
+          data: ProjectData(
+            title: 'Described Project',
+            status: ProjectStatus.active(
+              id: 'status-d',
+              createdAt: DateTime(2024, 6, 15),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime(2024, 6, 15),
+            dateTo: DateTime(2024, 12, 31),
+          ),
+          entryText: const EntryText(
+            plainText: 'A project to build a widget system.',
+          ),
+        );
+
+        when(
+          () => mockJournalRepository.getJournalEntityById(projectId),
+        ).thenAnswer((_) async => projectWithDesc);
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedMessage, contains('Description'));
+        expect(
+          capturedMessage,
+          contains('A project to build a widget system.'),
+        );
+      });
+
+      test('handles observation without contentEntryId', () async {
+        final observation = makeTestMessage(
+          id: 'obs-no-content',
+          kind: AgentMessageKind.observation,
+        );
+
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer((_) async => [observation]);
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        expect(capturedMessage, contains('(no content)'));
+      });
+
+      test('handles task-agent report resolution error gracefully', () async {
+        final linkedTask = _fakeTaskEntity(
+          id: 'task-err',
+          title: 'Error Task',
+        );
+
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        when(
+          () => mockAgentRepository.getLinksTo(
+            'task-err',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenThrow(Exception('Link lookup failed'));
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should still succeed — error is caught inside
+        // _resolveLatestTaskAgentReport.
+        expect(result.success, isTrue);
+        // Task still appears but without a task-agent report.
+        expect(capturedMessage, contains('Error Task'));
+        expect(capturedMessage, isNot(contains('taskAgentId')));
+      });
+
+      test('skips task-agent with empty report content', () async {
+        final linkedTask = _fakeTaskEntity(
+          id: 'task-empty-rpt',
+          title: 'Empty Report Task',
+        );
+
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        final agentLink = AgentLink.agentTask(
+          id: 'link-ta-2',
+          fromId: 'task-agent-2',
+          toId: 'task-empty-rpt',
+          createdAt: kAgentTestDate,
+          updatedAt: kAgentTestDate,
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepository.getLinksTo(
+            'task-empty-rpt',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [agentLink]);
+
+        final emptyReport = makeTestReport(
+          agentId: 'task-agent-2',
+          content: '   ',
+        );
+
+        when(
+          () => mockAgentRepository.getLatestReport('task-agent-2', 'current'),
+        ).thenAnswer((_) async => emptyReport);
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should not include task-agent-2 since the report content was empty.
+        expect(capturedMessage, isNot(contains('task-agent-2')));
+      });
+
+      test('handles state update failure after main error', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM catastrophic failure');
+            };
+
+        // Make state update also fail.
+        var callCount = 0;
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+          callCount++;
+          // Let the first 2 calls succeed (user message payload + user message)
+          // then fail for the state update in the catch block.
+          if (callCount > 2) {
+            throw Exception('DB write failed');
+          }
+        });
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should still return a failure result (not crash).
+        expect(result.success, isFalse);
+      });
+
+      test('handles user message persistence failure gracefully', () async {
+        var callCount = 0;
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+          callCount++;
+          // Fail on first call (user message payload).
+          if (callCount == 1) {
+            throw Exception('Persistence failed');
+          }
+        });
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should still succeed — user message persistence is non-fatal.
+        expect(result.success, isTrue);
+      });
+
+      test('handles token usage persistence failure gracefully', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              return const InferenceUsage(
+                inputTokens: 100,
+                outputTokens: 50,
+              );
+            };
+
+        var entityCallCount = 0;
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {
+          entityCallCount++;
+          // Fail on 3rd call (token usage — after user payload and user msg).
+          if (entityCallCount == 3) {
+            throw Exception('Token usage persist failed');
+          }
+        });
+
+        final result = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should still succeed — token usage persistence is non-fatal.
+        expect(result.success, isTrue);
+      });
+
+      test('builds default human summary for unknown deferred tool', () async {
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              if (strategy != null) {
+                final toolCalls = [
+                  ChatCompletionMessageToolCall(
+                    id: 'call-status',
+                    type: ChatCompletionMessageToolCallType.function,
+                    function: ChatCompletionMessageFunctionCall(
+                      name: ProjectAgentToolNames.updateProjectStatus,
+                      arguments: jsonEncode({
+                        'status': 'on_track',
+                        'reason': 'All tasks progressing',
+                      }),
+                    ),
+                  ),
+                ];
+
+                final manager = mockConversationRepository.getConversation(
+                  conversationId,
+                )!;
+                when(
+                  () => manager.addToolResponse(
+                    toolCallId: any(named: 'toolCallId'),
+                    response: any(named: 'response'),
+                  ),
+                ).thenReturn(null);
+
+                await strategy.processToolCalls(
+                  toolCalls: toolCalls,
+                  manager: manager,
+                );
+              }
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        final changeSets = captured.whereType<ChangeSetEntity>().toList();
+        expect(changeSets, hasLength(1));
+        expect(
+          changeSets.first.items.first.humanSummary,
+          contains('on_track'),
+        );
+      });
+
+      test(
+        'uses scaffold-only system prompt when directive is empty',
+        () async {
+          when(
+            () => mockTemplateService.getActiveVersion(testTemplate.id),
+          ).thenAnswer(
+            (_) async => makeTestTemplateVersion(
+              directives: '   ',
+            ),
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+        },
+      );
+
+      test('selects most recent task-agent link when multiple exist', () async {
+        final linkedTask = _fakeTaskEntity(
+          id: 'task-multi-link',
+          title: 'Multi-Link Task',
+        );
+
+        when(
+          () => mockJournalRepository.getLinkedToEntities(
+            linkedTo: projectId,
+          ),
+        ).thenAnswer((_) async => [linkedTask]);
+
+        final olderLink = AgentLink.agentTask(
+          id: 'link-old',
+          fromId: 'old-agent',
+          toId: 'task-multi-link',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+        );
+
+        final newerLink = AgentLink.agentTask(
+          id: 'link-new',
+          fromId: 'new-agent',
+          toId: 'task-multi-link',
+          createdAt: DateTime(2024, 6),
+          updatedAt: DateTime(2024, 6),
+          vectorClock: null,
+        );
+
+        when(
+          () => mockAgentRepository.getLinksTo(
+            'task-multi-link',
+            type: AgentLinkTypes.agentTask,
+          ),
+        ).thenAnswer((_) async => [olderLink, newerLink]);
+
+        final newerReport = makeTestReport(
+          agentId: 'new-agent',
+          content: 'Newer agent report.',
+        );
+
+        when(
+          () => mockAgentRepository.getLatestReport('new-agent', 'current'),
+        ).thenAnswer((_) async => newerReport);
+
+        String? capturedMessage;
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              capturedMessage = message;
+              return null;
+            };
+
+        await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {'entity-a'},
+          threadId: threadId,
+        );
+
+        // Should use the newer link's agent report.
+        expect(capturedMessage, contains('Newer agent report'));
+        expect(capturedMessage, contains('new-agent'));
+      });
 
       test('skips linked tasks section when no tasks are linked', () async {
         String? capturedMessage;
