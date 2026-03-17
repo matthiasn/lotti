@@ -74,6 +74,7 @@ const workoutNotification = 'WORKOUT';
 const aiResponseNotification = 'AI_RESPONSE';
 const dayPlanNotification = 'DAY_PLAN';
 const ratingNotification = 'RATING';
+const projectNotification = 'PROJECT';
 const categoriesNotification = 'CATEGORIES_CHANGED';
 const habitsNotification = 'HABITS_CHANGED';
 const dashboardsNotification = 'DASHBOARDS_CHANGED';

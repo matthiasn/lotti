@@ -222,6 +222,8 @@ class _KindBadge extends StatelessWidget {
         context.messages.agentTemplateKindTaskAgent,
       AgentTemplateKind.templateImprover =>
         context.messages.agentTemplateKindImprover,
+      AgentTemplateKind.projectAgent =>
+        context.messages.agentTemplateKindProjectAgent,
     };
 
     return Container(

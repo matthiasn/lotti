@@ -8368,6 +8368,78 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(journal.mapFromRow);
   }
 
+  Selectable<JournalDbEntity> projectsForCategory(String categoryId) {
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'Project\' AND category = ?1 AND deleted = FALSE ORDER BY date_from DESC',
+      variables: [Variable<String>(categoryId)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> projectsForCategoryByPrivateStatuses(
+    String categoryId,
+    List<bool> privateStatuses,
+  ) {
+    var $arrayStartIndex = 2;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    return customSelect(
+      'SELECT * FROM journal WHERE type = \'Project\' AND category = ?1 AND deleted = FALSE AND private IN ($expandedprivateStatuses) ORDER BY date_from DESC',
+      variables: [
+        Variable<String>(categoryId),
+        for (var $ in privateStatuses) Variable<bool>($),
+      ],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> tasksForProject(String projectId) {
+    return customSelect(
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Task\' ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
+      variables: [Variable<String>(projectId)],
+      readsFrom: {journal, linkedEntries},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> tasksForProjectByPrivateStatuses(
+    String projectId,
+    List<bool> privateStatuses,
+  ) {
+    var $arrayStartIndex = 2;
+    final expandedprivateStatuses = $expandVar(
+      $arrayStartIndex,
+      privateStatuses.length,
+    );
+    $arrayStartIndex += privateStatuses.length;
+    return customSelect(
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.to_id = j.id WHERE le.from_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Task\' AND j.private IN ($expandedprivateStatuses) ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC',
+      variables: [
+        Variable<String>(projectId),
+        for (var $ in privateStatuses) Variable<bool>($),
+      ],
+      readsFrom: {journal, linkedEntries},
+    ).asyncMap(journal.mapFromRow);
+  }
+
+  Selectable<LinkedDbEntry> projectLinkForTask(String taskId) {
+    return customSelect(
+      'SELECT * FROM linked_entries WHERE to_id = ?1 AND type = \'ProjectLink\' AND COALESCE(hidden, FALSE) = FALSE ORDER BY COALESCE(updated_at, created_at) DESC, id DESC LIMIT 1',
+      variables: [Variable<String>(taskId)],
+      readsFrom: {linkedEntries},
+    ).asyncMap(linkedEntries.mapFromRow);
+  }
+
+  Selectable<JournalDbEntity> projectForTask(String taskId) {
+    return customSelect(
+      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.from_id = j.id WHERE le.to_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Project\' ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC LIMIT 1',
+      variables: [Variable<String>(taskId)],
+      readsFrom: {journal, linkedEntries},
+    ).asyncMap(journal.mapFromRow);
+  }
+
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

@@ -50,6 +50,9 @@ enum AgentTemplateKind {
 
   /// A template-improver agent template (manages one-on-one rituals).
   templateImprover,
+
+  /// A project-focused agent template.
+  projectAgent,
 }
 
 /// Lifecycle status of an agent template version.

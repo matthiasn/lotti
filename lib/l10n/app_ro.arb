@@ -284,6 +284,7 @@
     }
   },
   "agentTemplateKindImprover": "Îmbunătățitor de șablon",
+  "agentTemplateKindProjectAgent": "Agent de proiect",
   "agentTemplateKindTaskAgent": "Agent de sarcini",
   "agentTemplateMetricsActiveInstances": "Instanțe active",
   "agentTemplateMetricsSuccessRate": "Rata de succes",

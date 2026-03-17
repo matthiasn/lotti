@@ -21,6 +21,7 @@ Map<String, dynamic> _$AgentConfigToJson(_AgentConfig instance) =>
 
 _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   activeTaskId: json['activeTaskId'] as String?,
+  activeProjectId: json['activeProjectId'] as String?,
   activeTemplateId: json['activeTemplateId'] as String?,
   lastOneOnOneAt: json['lastOneOnOneAt'] == null
       ? null
@@ -31,17 +32,28 @@ _AgentSlots _$AgentSlotsFromJson(Map<String, dynamic> json) => _AgentSlots(
   feedbackWindowDays: (json['feedbackWindowDays'] as num?)?.toInt(),
   totalSessionsCompleted: (json['totalSessionsCompleted'] as num?)?.toInt(),
   recursionDepth: (json['recursionDepth'] as num?)?.toInt(),
+  lastDailyWakeAt: json['lastDailyWakeAt'] == null
+      ? null
+      : DateTime.parse(json['lastDailyWakeAt'] as String),
+  lastWeeklyReviewAt: json['lastWeeklyReviewAt'] == null
+      ? null
+      : DateTime.parse(json['lastWeeklyReviewAt'] as String),
+  weeklyReviewCount: (json['weeklyReviewCount'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$AgentSlotsToJson(_AgentSlots instance) =>
     <String, dynamic>{
       'activeTaskId': instance.activeTaskId,
+      'activeProjectId': instance.activeProjectId,
       'activeTemplateId': instance.activeTemplateId,
       'lastOneOnOneAt': instance.lastOneOnOneAt?.toIso8601String(),
       'lastFeedbackScanAt': instance.lastFeedbackScanAt?.toIso8601String(),
       'feedbackWindowDays': instance.feedbackWindowDays,
       'totalSessionsCompleted': instance.totalSessionsCompleted,
       'recursionDepth': instance.recursionDepth,
+      'lastDailyWakeAt': instance.lastDailyWakeAt?.toIso8601String(),
+      'lastWeeklyReviewAt': instance.lastWeeklyReviewAt?.toIso8601String(),
+      'weeklyReviewCount': instance.weeklyReviewCount,
     };
 
 _AgentMessageMetadata _$AgentMessageMetadataFromJson(

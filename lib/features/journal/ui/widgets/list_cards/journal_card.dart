@@ -293,6 +293,16 @@ class ModernJournalCard extends StatelessWidget {
                     : AppTheme.titleFontSize,
               ),
             );
+          case final ProjectEntry project:
+            return Text(
+              project.data.title,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: isCompact
+                    ? AppTheme.titleFontSizeCompact
+                    : AppTheme.titleFontSize,
+              ),
+            );
         }
       }(),
     );

@@ -1,7 +1,6 @@
 // ignore_for_file: cascade_invocations
 
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -12,11 +11,11 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-
 import 'package:research_package/model.dart';
 
 import '../test_data/test_data.dart';
@@ -211,6 +210,19 @@ void main() {
       'WorkoutEntry': _workoutEntry('workout'),
       'HabitCompletionEntry': _habitEntry('habit'),
       'SurveyEntry': _surveyEntry('survey'),
+      'Project': JournalEntity.project(
+        meta: _meta('project'),
+        data: ProjectData(
+          title: 'Test Project',
+          status: ProjectStatus.active(
+            id: 'ps-1',
+            createdAt: _baseTime,
+            utcOffset: 0,
+          ),
+          dateFrom: _baseTime,
+          dateTo: _baseTime,
+        ),
+      ),
     };
 
     entries.forEach((expectedType, entity) {

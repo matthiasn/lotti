@@ -12,6 +12,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/conversions.dart';
@@ -4257,6 +4258,593 @@ void main() {
         });
         expect(resultWithPrivate['ts-priv-parent'], hasLength(2));
       });
+    });
+
+    group('Project queries -', () {
+      JournalEntity buildProjectEntry({
+        required String id,
+        required DateTime timestamp,
+        bool privateFlag = false,
+        String? categoryId,
+      }) {
+        return JournalEntity.project(
+          meta: Metadata(
+            id: id,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            dateFrom: timestamp,
+            dateTo: timestamp,
+            private: privateFlag,
+            categoryId: categoryId,
+          ),
+          data: ProjectData(
+            title: 'Project $id',
+            status: ProjectStatus.active(
+              id: 'ps-$id',
+              createdAt: timestamp,
+              utcOffset: 0,
+            ),
+            dateFrom: timestamp,
+            dateTo: timestamp,
+          ),
+        );
+      }
+
+      EntryLink buildProjectLink({
+        required String id,
+        required String fromId,
+        required String toId,
+        required DateTime timestamp,
+        bool hidden = false,
+      }) {
+        return EntryLink.project(
+          id: id,
+          fromId: fromId,
+          toId: toId,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'db': 1}),
+          hidden: hidden ? true : null,
+          deletedAt: hidden ? timestamp : null,
+        );
+      }
+
+      test('getProjectsForCategory returns projects in category', () async {
+        final base = DateTime(2024, 7, 1);
+        final p1 = buildProjectEntry(
+          id: 'proj-cat-1',
+          timestamp: base,
+          categoryId: 'cat-a',
+        );
+        final p2 = buildProjectEntry(
+          id: 'proj-cat-2',
+          timestamp: base.add(const Duration(hours: 1)),
+          categoryId: 'cat-a',
+        );
+        final p3 = buildProjectEntry(
+          id: 'proj-other',
+          timestamp: base,
+          categoryId: 'cat-b',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(p1));
+        await db!.upsertJournalDbEntity(toDbEntity(p2));
+        await db!.upsertJournalDbEntity(toDbEntity(p3));
+
+        final result = await db!.getProjectsForCategory('cat-a');
+
+        expect(result, hasLength(2));
+        expect(
+          result.map((p) => p.meta.id).toSet(),
+          {'proj-cat-1', 'proj-cat-2'},
+        );
+      });
+
+      test('getProjectsForCategory excludes deleted projects', () async {
+        final base = DateTime(2024, 7, 2);
+        final active = buildProjectEntry(
+          id: 'proj-active',
+          timestamp: base,
+          categoryId: 'cat-del',
+        );
+        final deleted = buildProjectEntry(
+          id: 'proj-deleted',
+          timestamp: base,
+          categoryId: 'cat-del',
+        );
+        final deletedEntity = (deleted as ProjectEntry).copyWith(
+          meta: deleted.meta.copyWith(deletedAt: base),
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(active));
+        await db!.upsertJournalDbEntity(toDbEntity(deletedEntity));
+
+        final result = await db!.getProjectsForCategory('cat-del');
+
+        expect(result, hasLength(1));
+        expect(result.first.meta.id, 'proj-active');
+      });
+
+      test('getProjectsForCategory respects private flag', () async {
+        final base = DateTime(2024, 7, 3);
+        final publicProj = buildProjectEntry(
+          id: 'proj-public',
+          timestamp: base,
+          categoryId: 'cat-priv',
+        );
+        final privateProj = buildProjectEntry(
+          id: 'proj-private',
+          timestamp: base,
+          categoryId: 'cat-priv',
+          privateFlag: true,
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(publicProj));
+        await db!.upsertJournalDbEntity(toDbEntity(privateProj));
+
+        // Disable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        final result = await db!.getProjectsForCategory('cat-priv');
+        expect(result, hasLength(1));
+        expect(result.first.meta.id, 'proj-public');
+
+        // Re-enable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: true,
+          ),
+        );
+
+        final resultWithPrivate = await db!.getProjectsForCategory('cat-priv');
+        expect(resultWithPrivate, hasLength(2));
+      });
+
+      test('getTasksForProject returns linked tasks', () async {
+        final base = DateTime(2024, 7, 4);
+        final project = buildProjectEntry(
+          id: 'proj-tasks',
+          timestamp: base,
+          categoryId: 'cat-t',
+        );
+        final task1 = buildTaskEntry(
+          id: 'task-linked-1',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-l1',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-t',
+        );
+        final task2 = buildTaskEntry(
+          id: 'task-linked-2',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-l2',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-t',
+        );
+        final unlinkedTask = buildTaskEntry(
+          id: 'task-unlinked',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-u',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-t',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(task1));
+        await db!.upsertJournalDbEntity(toDbEntity(task2));
+        await db!.upsertJournalDbEntity(toDbEntity(unlinkedTask));
+
+        // Link task1 and task2 to project
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-1',
+            fromId: 'proj-tasks',
+            toId: 'task-linked-1',
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-2',
+            fromId: 'proj-tasks',
+            toId: 'task-linked-2',
+            timestamp: base,
+          ),
+        );
+
+        final result = await db!.getTasksForProject('proj-tasks');
+
+        expect(result, hasLength(2));
+        expect(
+          result.map((t) => t.meta.id).toSet(),
+          {'task-linked-1', 'task-linked-2'},
+        );
+      });
+
+      test('getTasksForProject excludes hidden links', () async {
+        final base = DateTime(2024, 7, 5);
+        final project = buildProjectEntry(
+          id: 'proj-hidden',
+          timestamp: base,
+          categoryId: 'cat-h',
+        );
+        final task = buildTaskEntry(
+          id: 'task-hidden-link',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-h',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-h',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+
+        // Create a hidden (soft-deleted) link
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-hidden',
+            fromId: 'proj-hidden',
+            toId: 'task-hidden-link',
+            timestamp: base,
+            hidden: true,
+          ),
+        );
+
+        final result = await db!.getTasksForProject('proj-hidden');
+
+        expect(result, isEmpty);
+      });
+
+      test('getTasksForProject only returns Task type entities', () async {
+        final base = DateTime(2024, 7, 6);
+        final project = buildProjectEntry(
+          id: 'proj-type-guard',
+          timestamp: base,
+          categoryId: 'cat-tg',
+        );
+        final task = buildTaskEntry(
+          id: 'task-type-guard',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-tg',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-tg',
+        );
+        // A non-task entity linked with a ProjectLink
+        final note = createJournalEntry('note body', id: 'note-type-guard');
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+        await db!.upsertJournalDbEntity(toDbEntity(note));
+
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-task',
+            fromId: 'proj-type-guard',
+            toId: 'task-type-guard',
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-note',
+            fromId: 'proj-type-guard',
+            toId: 'note-type-guard',
+            timestamp: base,
+          ),
+        );
+
+        final result = await db!.getTasksForProject('proj-type-guard');
+
+        // Only the Task should be returned, not the note
+        expect(result, hasLength(1));
+        expect(result.first.meta.id, 'task-type-guard');
+      });
+
+      test('getTasksForProject respects private flag', () async {
+        final base = DateTime(2024, 7, 13);
+        final project = buildProjectEntry(
+          id: 'proj-task-priv',
+          timestamp: base,
+          categoryId: 'cat-tp',
+        );
+        final publicTask = buildTaskEntry(
+          id: 'task-public-tp',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-pub-tp',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-tp',
+        );
+        final privateTask = buildTaskEntry(
+          id: 'task-private-tp',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-priv-tp',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-tp',
+          privateFlag: true,
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(publicTask));
+        await db!.upsertJournalDbEntity(toDbEntity(privateTask));
+
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-pub-tp',
+            fromId: 'proj-task-priv',
+            toId: 'task-public-tp',
+            timestamp: base,
+          ),
+        );
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-priv-tp',
+            fromId: 'proj-task-priv',
+            toId: 'task-private-tp',
+            timestamp: base,
+          ),
+        );
+
+        // Disable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        final result = await db!.getTasksForProject('proj-task-priv');
+        expect(result, hasLength(1));
+        expect(result.first.meta.id, 'task-public-tp');
+
+        // Re-enable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: true,
+          ),
+        );
+
+        final resultWithPrivate =
+            await db!.getTasksForProject('proj-task-priv');
+        expect(resultWithPrivate, hasLength(2));
+      });
+
+      test('getProjectForTask returns linked project', () async {
+        final base = DateTime(2024, 7, 7);
+        final project = buildProjectEntry(
+          id: 'proj-for-task',
+          timestamp: base,
+          categoryId: 'cat-ft',
+        );
+        final task = buildTaskEntry(
+          id: 'task-has-project',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-ft',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-ft',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-ft',
+            fromId: 'proj-for-task',
+            toId: 'task-has-project',
+            timestamp: base,
+          ),
+        );
+
+        final result = await db!.getProjectForTask('task-has-project');
+
+        expect(result, isNotNull);
+        expect(result!.meta.id, 'proj-for-task');
+        expect(result.data.title, 'Project proj-for-task');
+      });
+
+      test('getProjectForTask returns null for unlinked task', () async {
+        final result = await db!.getProjectForTask('nonexistent-task');
+        expect(result, isNull);
+      });
+
+      test('getProjectForTask excludes hidden links', () async {
+        final base = DateTime(2024, 7, 8);
+        final project = buildProjectEntry(
+          id: 'proj-hidden-ft',
+          timestamp: base,
+          categoryId: 'cat-hft',
+        );
+        final task = buildTaskEntry(
+          id: 'task-hidden-ft',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-hft',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-hft',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(project));
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-hft',
+            fromId: 'proj-hidden-ft',
+            toId: 'task-hidden-ft',
+            timestamp: base,
+            hidden: true,
+          ),
+        );
+
+        final result = await db!.getProjectForTask('task-hidden-ft');
+        expect(result, isNull);
+      });
+
+      test('getProjectForTask respects private flag', () async {
+        final base = DateTime(2024, 7, 9);
+        final privateProject = buildProjectEntry(
+          id: 'proj-priv-ft',
+          timestamp: base,
+          categoryId: 'cat-pft',
+          privateFlag: true,
+        );
+        final task = buildTaskEntry(
+          id: 'task-priv-ft',
+          timestamp: base,
+          status: TaskStatus.open(
+            id: 'ts-pft',
+            createdAt: base,
+            utcOffset: 0,
+          ),
+          categoryId: 'cat-pft',
+        );
+
+        await db!.upsertJournalDbEntity(toDbEntity(privateProject));
+        await db!.upsertJournalDbEntity(toDbEntity(task));
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-pft',
+            fromId: 'proj-priv-ft',
+            toId: 'task-priv-ft',
+            timestamp: base,
+          ),
+        );
+
+        // Disable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: false,
+          ),
+        );
+
+        final result = await db!.getProjectForTask('task-priv-ft');
+        expect(result, isNull);
+
+        // Re-enable private entries
+        await db!.upsertConfigFlag(
+          const ConfigFlag(
+            name: 'private',
+            description: 'Show private entries?',
+            status: true,
+          ),
+        );
+
+        final resultWithPrivate = await db!.getProjectForTask('task-priv-ft');
+        expect(resultWithPrivate, isNotNull);
+        expect(resultWithPrivate!.meta.id, 'proj-priv-ft');
+      });
+
+      test('getProjectLinkForTask returns active link', () async {
+        final base = DateTime(2024, 7, 10);
+        final link = buildProjectLink(
+          id: 'pl-link-ft',
+          fromId: 'proj-link-ft',
+          toId: 'task-link-ft',
+          timestamp: base,
+        );
+
+        await db!.upsertEntryLink(link);
+
+        final result = await db!.getProjectLinkForTask('task-link-ft');
+
+        expect(result, isNotNull);
+        expect(result, isA<ProjectLink>());
+        expect(result!.fromId, 'proj-link-ft');
+        expect(result.toId, 'task-link-ft');
+      });
+
+      test('getProjectLinkForTask returns null for hidden link', () async {
+        final base = DateTime(2024, 7, 11);
+        await db!.upsertEntryLink(
+          buildProjectLink(
+            id: 'pl-hidden-link',
+            fromId: 'proj-hidden-link',
+            toId: 'task-hidden-link',
+            timestamp: base,
+            hidden: true,
+          ),
+        );
+
+        final result = await db!.getProjectLinkForTask('task-hidden-link');
+        expect(result, isNull);
+      });
+
+      test('getProjectLinkForTask returns null for no link', () async {
+        final result = await db!.getProjectLinkForTask('no-link-task');
+        expect(result, isNull);
+      });
+
+      test(
+        'getProjectLinkForTask returns most recently updated link',
+        () async {
+          final base = DateTime(2024, 7, 12);
+          // Create two active links (shouldn't normally happen, but tests
+          // deterministic ordering)
+          await db!.upsertEntryLink(
+            EntryLink.project(
+              id: 'pl-older',
+              fromId: 'proj-older',
+              toId: 'task-determ',
+              createdAt: base,
+              updatedAt: base,
+              vectorClock: const VectorClock({'db': 1}),
+            ),
+          );
+          await db!.upsertEntryLink(
+            EntryLink.project(
+              id: 'pl-newer',
+              fromId: 'proj-newer',
+              toId: 'task-determ',
+              createdAt: base,
+              updatedAt: base.add(const Duration(hours: 1)),
+              vectorClock: const VectorClock({'db': 2}),
+            ),
+          );
+
+          final result = await db!.getProjectLinkForTask('task-determ');
+
+          expect(result, isNotNull);
+          // Should return the most recently updated link
+          expect(result!.fromId, 'proj-newer');
+        },
+      );
     });
 
     test(

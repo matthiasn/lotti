@@ -1215,6 +1215,12 @@ abstract class AppLocalizations {
   /// **'Template Improver'**
   String get agentTemplateKindImprover;
 
+  /// Display name for the project-agent template kind.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Agent'**
+  String get agentTemplateKindProjectAgent;
+
   /// Display name for the task-agent template kind.
   ///
   /// In en, this message translates to:

@@ -350,6 +350,10 @@
   "@agentTemplateKindImprover": {
     "description": "Display name for the template-improver agent kind."
   },
+  "agentTemplateKindProjectAgent": "Project Agent",
+  "@agentTemplateKindProjectAgent": {
+    "description": "Display name for the project-agent template kind."
+  },
   "agentTemplateKindTaskAgent": "Task Agent",
   "@agentTemplateKindTaskAgent": {
     "description": "Display name for the task-agent template kind."

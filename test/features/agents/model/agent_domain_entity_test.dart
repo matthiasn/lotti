@@ -113,6 +113,37 @@ void main() {
         expect(roundtripped, isA<AgentStateEntity>());
       });
 
+      test('roundtrips project agent slots', () {
+        final original = AgentDomainEntity.agentState(
+          id: 'state-proj-001',
+          agentId: 'agent-proj-001',
+          revision: 3,
+          slots: AgentSlots(
+            activeProjectId: 'project-abc',
+            lastDailyWakeAt: DateTime(2026, 3, 15, 8),
+            lastWeeklyReviewAt: DateTime(2026, 3, 10, 14),
+            weeklyReviewCount: 5,
+          ),
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final state = roundtripped as AgentStateEntity;
+        expect(state.slots.activeProjectId, equals('project-abc'));
+        expect(
+          state.slots.lastDailyWakeAt,
+          equals(DateTime(2026, 3, 15, 8)),
+        );
+        expect(
+          state.slots.lastWeeklyReviewAt,
+          equals(DateTime(2026, 3, 10, 14)),
+        );
+        expect(state.slots.weeklyReviewCount, equals(5));
+      });
+
       test('roundtrips with defaults for optional int/map fields', () {
         final original = AgentDomainEntity.agentState(
           id: 'state-002',

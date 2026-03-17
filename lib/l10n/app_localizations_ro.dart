@@ -639,6 +639,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateKindImprover => 'Îmbunătățitor de șablon';
 
   @override
+  String get agentTemplateKindProjectAgent => 'Agent de proiect';
+
+  @override
   String get agentTemplateKindTaskAgent => 'Agent de sarcini';
 
   @override

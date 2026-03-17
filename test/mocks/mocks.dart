@@ -110,6 +110,12 @@ class MockJournalDb extends Mock implements JournalDb {
   Future<void> deleteLoggingDatabase() async {}
 
   @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) => action();
+
+  @override
   Stream<Set<String>> watchActiveConfigFlagNames() {
     try {
       final result = super.noSuchMethod(
