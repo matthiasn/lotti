@@ -661,6 +661,55 @@ void main() {
       expect(find.text('Running'), findsOneWidget);
     });
 
+    testWidgets('falls back to raw string when startTime is unparseable', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': 'not-a-date',
+              'summary': 'Some work (generated summary)',
+            },
+            humanSummary: 'Time entry from not-a-date',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      // Raw unparseable string is shown as-is.
+      expect(find.text('not-a-date'), findsOneWidget);
+    });
+
+    testWidgets('renders without summary text when summary is empty', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T10:00:00',
+              'endTime': '2026-03-17T11:00:00',
+              'summary': '',
+            },
+            humanSummary: 'Time entry 10:00–11:00',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
+      await tester.pumpAndSettle();
+
+      expect(find.text('10:00'), findsOneWidget);
+      expect(find.text('11:00'), findsOneWidget);
+      // No body text widget when summary is empty.
+      expect(find.text(''), findsNothing);
+    });
+
     testWidgets('confirm button works for time entry tile', (tester) async {
       final changeSet = makeTestChangeSet(
         items: const [

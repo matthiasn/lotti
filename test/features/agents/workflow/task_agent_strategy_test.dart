@@ -1295,6 +1295,64 @@ void main() {
         expect(csBuilder.items[6].toolName, 'assign_task_label');
       });
 
+      test('generates correct human summary for create_time_entry — completed session',
+          () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-te',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': '2026-03-17T14:00:00',
+                'endTime': '2026-03-17T15:30:00',
+                'summary': 'Worked on API integration',
+              }),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(csBuilder.items, hasLength(1));
+        expect(csBuilder.items.first.toolName, 'create_time_entry');
+        expect(
+          csBuilder.items.first.humanSummary,
+          'Time entry 14:00–15:30: "Worked on API integration"',
+        );
+      });
+
+      test('generates correct human summary for create_time_entry — running timer',
+          () async {
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-timer',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'create_time_entry',
+              arguments: jsonEncode({
+                'startTime': '2026-03-17T09:05:00',
+                'summary': 'Starting morning standup',
+              }),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(csBuilder.items, hasLength(1));
+        expect(
+          csBuilder.items.first.humanSummary,
+          'Time entry from 09:05: "Starting morning standup"',
+        );
+      });
+
       test('handles malformed labels arg without crashing', () async {
         final toolCalls = [
           ChatCompletionMessageToolCall(

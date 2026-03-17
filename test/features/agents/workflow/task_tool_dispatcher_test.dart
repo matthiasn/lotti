@@ -591,6 +591,27 @@ void main() {
       );
 
       test(
+        'create_time_entry delegates to TimeEntryHandler',
+        () async {
+          // Dispatcher does a top-level task lookup before routing.
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+
+          // Missing summary causes TimeEntryHandler to return early,
+          // proving the dispatch route reaches the handler.
+          final result = await dispatcher.dispatch(
+            'create_time_entry',
+            {'startTime': '2026-03-17T14:00:00'},
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.errorMessage, 'Missing or empty summary');
+        },
+      );
+
+      test(
         'migrate_checklist_item delegates to ChecklistMigrationHandler',
         () async {
           // The handler needs the checklist item, source task, and target task.
