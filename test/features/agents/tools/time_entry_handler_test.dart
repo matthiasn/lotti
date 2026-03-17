@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -121,7 +122,7 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.output, contains('"summary" must be a non-empty'));
-        expect(result.errorMessage, 'Missing or empty summary');
+        expect(result.errorMessage, 'Missing, empty, or too-long summary');
       });
 
       test('returns failure when summary is empty', () async {
@@ -132,6 +133,20 @@ void main() {
 
         expect(result.success, isFalse);
         expect(result.output, contains('"summary" must be a non-empty'));
+      });
+
+      test('returns failure when summary exceeds 500 characters', () async {
+        final result = await handler.handle(
+          sourceTaskId,
+          {
+            'startTime': '2026-03-17T14:00:00',
+            'summary': 'x' * 501,
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('500 characters'));
+        expect(result.errorMessage, 'Missing, empty, or too-long summary');
       });
 
       test('returns failure when startTime is missing', () async {
@@ -149,6 +164,31 @@ void main() {
         final result = await handler.handle(
           sourceTaskId,
           {'startTime': 'not-a-date', 'summary': 'Worked on API'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('valid ISO 8601'));
+        expect(result.errorMessage, 'Unparseable startTime');
+      });
+
+      test('returns failure when startTime is date-only', () async {
+        final result = await handler.handle(
+          sourceTaskId,
+          {'startTime': '2026-03-17', 'summary': 'Worked on API'},
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('valid ISO 8601'));
+        expect(result.errorMessage, 'Unparseable startTime');
+      });
+
+      test('returns failure when startTime has a timezone suffix', () async {
+        final result = await handler.handle(
+          sourceTaskId,
+          {
+            'startTime': '2026-03-17T14:00:00Z',
+            'summary': 'Worked on API',
+          },
         );
 
         expect(result.success, isFalse);
@@ -179,6 +219,23 @@ void main() {
             {
               'startTime': '2026-03-17T14:00:00',
               'endTime': 'bad-time',
+              'summary': 'Worked on API',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('"endTime" must be a valid'));
+          expect(result.errorMessage, 'Unparseable endTime');
+        });
+      });
+
+      test('returns failure when endTime has a timezone suffix', () async {
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T14:00:00',
+              'endTime': '2026-03-17T15:00:00+01:00',
               'summary': 'Worked on API',
             },
           );
@@ -268,8 +325,8 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.output, contains('must not be in the future'));
-          expect(result.errorMessage, 'endTime is in the future');
+          expect(result.output, contains('must not be after the current time'));
+          expect(result.errorMessage, 'endTime is after current time');
         });
       });
 
@@ -481,6 +538,47 @@ void main() {
           expect(result.output, contains('Padded summary'));
         });
       });
+
+      test(
+        'validates completed sessions against the wake timestamp argument',
+        () async {
+          await withClock(Clock.fixed(DateTime(2026, 3, 18, 0, 5)), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T23:00:00',
+                'endTime': '2026-03-17T23:45:00',
+                'summary': 'Late session',
+                timeEntryReferenceTimestampArg: '2026-03-17T23:55:00',
+              },
+            );
+
+            expect(result.success, isTrue);
+            expect(result.output, contains('23:00–23:45'));
+          });
+        },
+      );
+
+      test(
+        'returns failure when completed session ends after wake timestamp',
+        () async {
+          await withClock(Clock.fixed(DateTime(2026, 3, 18, 0, 5)), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T23:00:00',
+                'endTime': '2026-03-17T23:59:00',
+                'summary': 'Late session',
+                timeEntryReferenceTimestampArg: '2026-03-17T23:55:00',
+              },
+            );
+
+            expect(result.success, isFalse);
+            expect(result.output, contains('wake timestamp'));
+            expect(result.errorMessage, 'endTime is after wake timestamp');
+          });
+        },
+      );
     });
 
     group('running timer', () {
@@ -569,6 +667,33 @@ void main() {
             expect(result.success, isFalse);
             expect(result.output, contains('failed to persist'));
             verifyNever(() => mockTimeService.start(any(), any()));
+          });
+        },
+      );
+
+      test(
+        'returns error with mutatedEntityId when TimeService.start throws',
+        () async {
+          when(
+            () => mockTimeService.start(any(), any()),
+          ).thenThrow(StateError('stream already closed'));
+
+          await withClock(Clock.fixed(testNow), () async {
+            final result = await handler.handle(
+              sourceTaskId,
+              {
+                'startTime': '2026-03-17T14:00:00',
+                'summary': 'Timer start throws',
+              },
+            );
+
+            // Entry was persisted but timer failed — report error with id so
+            // the caller knows the entry exists.
+            expect(result.success, isFalse);
+            expect(result.errorMessage, 'Timer start failed after persistence');
+            expect(result.mutatedEntityId, 'timer-entry-001');
+            expect(result.output, contains('saved'));
+            expect(result.output, contains('timer'));
           });
         },
       );

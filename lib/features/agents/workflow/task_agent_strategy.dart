@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -641,24 +642,30 @@ class TaskAgentStrategy extends ConversationStrategy {
       TaskAgentToolNames.createFollowUpTask =>
         'Create follow-up task: "${args['title'] ?? ''}"',
       TaskAgentToolNames.createTimeEntry => () {
-        final startRaw = args['startTime'] as String?;
-        final endRaw = args['endTime'] as String?;
-        final summary = args['summary'] as String? ?? '';
-        final start = startRaw != null ? DateTime.tryParse(startRaw) : null;
-        final end = endRaw != null ? DateTime.tryParse(endRaw) : null;
-        final startStr = start != null ? _hhMm(start) : (startRaw ?? '?');
-        final timeRange = end != null
-            ? '$startStr–${_hhMm(end)}'
-            : 'from $startStr';
+        final startRaw = args['startTime'] is String
+            ? args['startTime'] as String
+            : null;
+        final hasEndTime = args.containsKey('endTime');
+        final endRaw = args['endTime'] is String
+            ? args['endTime'] as String
+            : null;
+        final summary = args['summary'] is String
+            ? (args['summary'] as String).trim()
+            : '';
+        final start = startRaw != null
+            ? parseTimeEntryLocalDateTime(startRaw)
+            : null;
+        final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
+        final startStr = start != null
+            ? formatTimeEntryHhMm(start)
+            : (startRaw ?? '?');
+        final endStr = end != null ? formatTimeEntryHhMm(end) : (endRaw ?? '?');
+        final timeRange = hasEndTime ? '$startStr–$endStr' : 'from $startStr';
         return 'Time entry $timeRange: "$summary"';
       }(),
       _ => '$toolName(${args.keys.join(", ")})',
     };
   }
-
-  static String _hhMm(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
-      '${dt.minute.toString().padLeft(2, '0')}';
 
   /// Generate a human-readable prefix for batch tool explosion summaries.
   static String _humanToolPrefix(String toolName) {

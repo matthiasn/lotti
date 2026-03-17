@@ -351,16 +351,19 @@ class AgentToolRegistry {
           'startTime': {
             'type': 'string',
             'description':
-                "Start time in ISO 8601 format (e.g., '2026-03-17T14:00:00'). "
-                "Must be today's date. Resolve spoken times like '2 PM' or "
-                "'14:00' to full ISO 8601 using the current date from context.",
+                'Start time in local ISO 8601 format with explicit time and '
+                "no timezone suffix (e.g., '2026-03-17T14:00:00'). Must be "
+                "today's date. Resolve spoken times like '2 PM' or '14:00' "
+                'to a full local timestamp using the current date from '
+                'context.',
           },
           'endTime': {
             'type': 'string',
             'description':
-                'End time in ISO 8601 format. Omit to start a running timer. '
-                'Must be after startTime and on the same day. Must not be in '
-                'the future.',
+                'End time in local ISO 8601 format with explicit time and no '
+                'timezone suffix. Omit to start a running timer. Must be '
+                'after startTime and on the same day. Must not be after the '
+                'current wake timestamp.',
           },
           'summary': {
             'type': 'string',

@@ -70,7 +70,7 @@ time span.
       },
       "endTime": {
         "type": "string",
-        "description": "End time in ISO 8601 format. Omit to start a running timer. Must be after startTime and on the same day. Must not be in the future."
+        "description": "End time in ISO 8601 format. Omit to start a running timer. Must be after startTime and on the same day. Must not be after the current wake timestamp."
       },
       "summary": {
         "type": "string",
@@ -101,20 +101,26 @@ time span.
 
 1. **Parse & validate arguments** — Extract `startTime`, optional `endTime`, `summary`.
 2. **Temporal validation:**
-   - `startTime` must parse to a valid `DateTime`.
-   - `startTime` must be today (same calendar day as `clock.now()`).
-   - If `endTime` is provided: must be after `startTime`, same day, not in the future.
-   - If `endTime` is omitted: running-timer mode.
-3. **Create JournalEntry** — Via `JournalRepository.createTextEntry()` with:
-   - `entryText` = the distilled summary.
-   - `started` = parsed `startTime`.
-   - `linkedId` = the source task ID.
+   - `startTime` / `endTime` must parse to valid **local** ISO 8601 timestamps
+     with an explicit time component (no date-only values, no timezone suffix).
+   - If `endTime` is omitted: running-timer mode. `startTime` must be today
+     relative to `clock.now()` and must not be in the future.
+   - If `endTime` is provided: completed-session mode. `startTime` / `endTime`
+     must be validated against the originating wake timestamp (carried through
+     deferred confirmation) rather than the later approval time, so approvals
+     after midnight still work.
+   - `endTime` must be after `startTime`, on the same day, and not after the
+     wake timestamp reference used for the completed session.
+3. **Create JournalEntry** — Build metadata via `PersistenceLogic.createMetadata()`
+   with:
+   - `dateFrom` = parsed `startTime`.
+   - `dateTo` = parsed `endTime` for completed sessions, otherwise `null`.
    - `categoryId` = inherited from the source task.
-4. **Update dateTo** — After creation, call `journalRepository.updateJournalEntityDate()`
-   to set `dateTo` to the parsed `endTime` (for completed sessions). For running timers,
-   `dateTo` stays at `startTime` (TimeService will update it live).
+4. **Persist in a single write** — Create `JournalEntity.journalEntry(...)` with
+   the generated summary text and persist it via `PersistenceLogic.createDbEntity()`
+   using `linkedId = sourceTaskId`.
 5. **Start running timer** (if no `endTime`) — Call `TimeService.start()` with the
-   created entity and the linked task.
+   created in-memory entity and the linked task.
 6. **Return `ToolExecutionResult`** — With the new entry's ID as `mutatedEntityId`.
 
 ### Constructor Dependencies
@@ -123,7 +129,6 @@ time span.
 TimeEntryHandler({
   required PersistenceLogic persistenceLogic,
   required JournalDb journalDb,
-  required JournalRepository journalRepository,
   required TimeService timeService,
   DomainLogger? domainLogger,
 })
@@ -134,20 +139,24 @@ TimeEntryHandler({
 | Condition | Response |
 |-----------|----------|
 | Missing/unparseable `startTime` | Error: "startTime must be a valid ISO 8601 datetime" |
-| `startTime` not today | Error: "startTime must be today's date" |
+| Running-timer `startTime` not today | Error: "startTime must be today's date" |
+| Completed-session `startTime` not on wake date | Error mentioning the wake timestamp reference |
+| Completed-session `startTime` / `endTime` after wake timestamp | Error mentioning the wake timestamp reference |
 | `endTime` before `startTime` | Error: "endTime must be after startTime" |
-| `endTime` in the future | Error: "endTime must not be in the future" |
 | `endTime` on a different day | Error: "endTime must be on the same day as startTime" |
 | Empty `summary` | Error: "summary must be a non-empty string" |
-| Timer already running | Error: "A timer is already running — stop it first" |
-| Entry creation failure | Error: "Failed to create time entry" |
+| Timer already running | Error: "a timer is already running — stop it first" |
+| Entry persistence failure | Error: "failed to persist time entry" |
 
 ---
 
 ## Integration with Task Agent Strategy
 
 The tool is **deferred**, meaning `TaskAgentStrategy` adds it to the `ChangeSetBuilder`
-rather than executing immediately. The change set UI will show:
+rather than executing immediately. On approval, `ChangeSetConfirmationService`
+injects the `ChangeSetEntity.createdAt` timestamp as an internal reference so
+completed sessions validate against the originating wake rather than the later
+approval moment. The change set UI will show:
 
 - **Tool name:** `create_time_entry`
 - **Preview:** The summary text + formatted time range (e.g., "14:00–16:00")
@@ -164,7 +173,7 @@ The task agent's system prompt already receives the current date/time context. W
 ensure the following is present in the context passed to the LLM when audio entries
 are being processed:
 
-```
+```text
 Current date and time: 2026-03-17T15:30:00 (local timezone)
 ```
 
@@ -208,8 +217,10 @@ and add if absent.
 ### Phase 2: Handler Implementation
 5. Create `TimeEntryHandler` class following `FollowUpTaskHandler` pattern.
 6. Implement argument parsing with temporal validation.
-7. Implement journal entry creation via `JournalRepository.createTextEntry()`.
-8. Implement `dateTo` update via `journalRepository.updateJournalEntityDate()`.
+7. Implement journal entry creation via `PersistenceLogic.createMetadata()`
+   plus `PersistenceLogic.createDbEntity()` in a single DB write.
+8. Implement completed-session validation against the originating wake
+   timestamp carried through deferred confirmation.
 9. Implement running-timer integration with `TimeService`.
 
 ### Phase 3: Dispatcher Integration

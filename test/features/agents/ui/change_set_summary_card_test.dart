@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -9,13 +7,17 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
+
+Future<void> _pumpUi(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 200));
+}
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -39,7 +41,8 @@ void main() {
   Widget buildWidget({
     List<AgentDomainEntity> changeSets = const [],
   }) {
-    return ProviderScope(
+    return makeTestableWidgetWithScaffold(
+      const ChangeSetSummaryCard(taskId: taskId),
       overrides: [
         pendingChangeSetsProvider(taskId).overrideWith(
           (ref) async => changeSets,
@@ -49,29 +52,22 @@ void main() {
         ),
         updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
       ],
-      child: const MaterialApp(
-        localizationsDelegates: [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: ChangeSetSummaryCard(taskId: taskId),
-          ),
-        ),
-      ),
     );
+  }
+
+  Future<void> pumpCard(
+    WidgetTester tester, {
+    List<AgentDomainEntity> changeSets = const [],
+  }) async {
+    await tester.pumpWidget(buildWidget(changeSets: changeSets));
+    await _pumpUi(tester);
   }
 
   group('ChangeSetSummaryCard', () {
     testWidgets('renders nothing when change sets list is empty', (
       tester,
     ) async {
-      await tester.pumpWidget(buildWidget());
-      await tester.pumpAndSettle();
+      await pumpCard(tester);
 
       expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
       // Should render SizedBox.shrink when no change sets.
@@ -94,10 +90,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       expect(find.text('Proposed changes'), findsOneWidget);
       expect(find.text('Set estimate to 2 hours'), findsOneWidget);
@@ -125,14 +118,11 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Tap the confirm icon button (check_circle_outline).
       await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.confirmItem(changeSet, 0),
@@ -158,14 +148,11 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Tap the reject icon button (cancel_outlined).
       await tester.tap(find.byIcon(Icons.cancel_outlined));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.rejectItem(changeSet, 0),
@@ -199,13 +186,10 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.confirmAll(changeSet),
@@ -231,10 +215,7 @@ void main() {
         status: ChangeSetStatus.resolved,
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Both resolved items should show, with strikethrough style.
       expect(find.text('Confirmed item'), findsOneWidget);
@@ -270,13 +251,10 @@ void main() {
         () => mockConfirmationService.confirmItem(any(), any()),
       ).thenThrow(Exception('Test error'));
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
@@ -304,13 +282,10 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
@@ -334,13 +309,10 @@ void main() {
         ),
       ).thenThrow(Exception('Reject error'));
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.byIcon(Icons.cancel_outlined));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
@@ -365,17 +337,14 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Swipe right (startToEnd) on the item tile.
       await tester.drag(
         find.text('Swipe to confirm'),
         const Offset(300, 0),
       );
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.confirmItem(changeSet, 0),
@@ -401,17 +370,14 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Swipe left (endToStart) on the item tile.
       await tester.drag(
         find.text('Swipe to reject'),
         const Offset(-300, 0),
       );
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.rejectItem(changeSet, 0),
@@ -449,13 +415,10 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       // Should show the warning snackbar, not the error one.
       expect(find.text('Failed to apply change'), findsNothing);
@@ -488,13 +451,10 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(
-          buildWidget(changeSets: [changeSet]),
-        );
-        await tester.pumpAndSettle();
+        await pumpCard(tester, changeSets: [changeSet]);
 
         await tester.tap(find.byIcon(Icons.check_circle_outline));
-        await tester.pumpAndSettle();
+        await _pumpUi(tester);
 
         // Should show the warning message, not the generic error.
         expect(find.text('Failed to apply change'), findsNothing);
@@ -526,13 +486,10 @@ void main() {
         ),
       ).thenAnswer((_) async => false);
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.byIcon(Icons.cancel_outlined));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       // When applied is false, the error snackbar is shown.
       expect(find.text('Failed to apply change'), findsOneWidget);
@@ -569,13 +526,10 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
       verify(
@@ -598,13 +552,10 @@ void main() {
         () => mockConfirmationService.confirmAll(any()),
       ).thenThrow(Exception('Confirm all failed'));
 
-      await tester.pumpWidget(
-        buildWidget(changeSets: [changeSet]),
-      );
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.text('Confirm all'));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
     });
@@ -628,8 +579,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       expect(find.textContaining('14:00'), findsOneWidget);
@@ -654,8 +604,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       expect(find.textContaining('14:00'), findsOneWidget);
       expect(find.textContaining('Running'), findsOneWidget);
@@ -677,11 +626,34 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       // Raw unparseable string is shown as-is.
       expect(find.textContaining('not-a-date'), findsOneWidget);
+    });
+
+    testWidgets('shows raw endTime when it is present but unparseable', (
+      tester,
+    ) async {
+      final changeSet = makeTestChangeSet(
+        items: const [
+          ChangeItem(
+            toolName: 'create_time_entry',
+            args: {
+              'startTime': '2026-03-17T10:00:00',
+              'endTime': 'later',
+              'summary': 'Some work [generated]',
+            },
+            humanSummary: 'Time entry 10:00–later',
+          ),
+        ],
+      );
+
+      await pumpCard(tester, changeSets: [changeSet]);
+
+      expect(find.textContaining('10:00'), findsOneWidget);
+      expect(find.textContaining('later'), findsOneWidget);
+      expect(find.textContaining('Running'), findsNothing);
     });
 
     testWidgets('renders without summary text when summary is empty', (
@@ -701,8 +673,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       expect(find.textContaining('10:00'), findsOneWidget);
       expect(find.textContaining('11:00'), findsOneWidget);
@@ -731,11 +702,10 @@ void main() {
         (_) async => const ToolExecutionResult(success: true, output: 'Done'),
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await tester.pumpAndSettle();
+      await _pumpUi(tester);
 
       verify(
         () => mockConfirmationService.confirmItem(changeSet, 0),
@@ -762,8 +732,7 @@ void main() {
         ],
       );
 
-      await tester.pumpWidget(buildWidget(changeSets: [changeSet]));
-      await tester.pumpAndSettle();
+      await pumpCard(tester, changeSets: [changeSet]);
 
       expect(tester.takeException(), isNull);
       expect(find.textContaining('Running'), findsOneWidget);

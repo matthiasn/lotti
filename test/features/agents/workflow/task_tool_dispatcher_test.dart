@@ -607,7 +607,7 @@ void main() {
           );
 
           expect(result.success, isFalse);
-          expect(result.errorMessage, 'Missing or empty summary');
+          expect(result.errorMessage, 'Missing, empty, or too-long summary');
         },
       );
 

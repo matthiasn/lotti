@@ -343,12 +343,12 @@ void main() {
 
       setUp(() {
         tool = AgentToolRegistry.taskAgentTools.firstWhere(
-          (t) => t.name == 'create_time_entry',
+          (t) => t.name == TaskAgentToolNames.createTimeEntry,
         );
       });
 
       test('has correct name and description', () {
-        expect(tool.name, equals('create_time_entry'));
+        expect(tool.name, equals(TaskAgentToolNames.createTimeEntry));
         expect(tool.description, contains('time tracking'));
         expect(tool.description, contains('JUST NOW'));
         expect(tool.description, contains('running timer'));
@@ -374,7 +374,7 @@ void main() {
       test('is registered as a deferred tool', () {
         expect(
           AgentToolRegistry.deferredTools,
-          contains('create_time_entry'),
+          contains(TaskAgentToolNames.createTimeEntry),
         );
       });
     });

@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -341,16 +342,31 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
   }
 
   Widget _buildTimeEntryTile(BuildContext context) {
-    final startRaw = _item.args['startTime'] as String?;
-    final endRaw = _item.args['endTime'] as String?;
-    final summary = (_item.args['summary'] as String? ?? '').trim();
+    final startRawValue = _item.args['startTime'];
+    final startRaw = startRawValue is String && startRawValue.trim().isNotEmpty
+        ? startRawValue.trim()
+        : null;
+    final hasEndTime = _item.args.containsKey('endTime');
+    final endRawValue = _item.args['endTime'];
+    final endRaw = endRawValue is String && endRawValue.trim().isNotEmpty
+        ? endRawValue.trim()
+        : null;
+    final summary = _item.args['summary'] is String
+        ? (_item.args['summary'] as String).trim()
+        : '';
 
-    final start = startRaw != null ? DateTime.tryParse(startRaw) : null;
-    final end = endRaw != null ? DateTime.tryParse(endRaw) : null;
+    final start = startRaw != null
+        ? parseTimeEntryLocalDateTime(startRaw)
+        : null;
+    final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
 
-    final startStr = start != null ? _formatHhMm(start) : (startRaw ?? '?');
+    final startStr = start != null
+        ? formatTimeEntryHhMm(start)
+        : (startRaw ?? '?');
     final endStr = end != null
-        ? _formatHhMm(end)
+        ? formatTimeEntryHhMm(end)
+        : hasEndTime
+        ? (endRaw ?? '?')
         : context.messages.timeEntryItemRunning;
 
     final dimStyle = context.textTheme.bodySmall?.copyWith(
@@ -378,23 +394,18 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 4,
-                  children: [
-                    _buildTimeField(
-                      label: context.messages.timeEntryItemStart,
-                      value: startStr,
-                      dimStyle: dimStyle,
-                      valueStyle: valueStyle,
-                    ),
-                    _buildTimeField(
-                      label: context.messages.timeEntryItemEnd,
-                      value: endStr,
-                      dimStyle: dimStyle,
-                      valueStyle: valueStyle,
-                    ),
-                  ],
+                _buildTimeFieldRow(
+                  label: context.messages.timeEntryItemStart,
+                  value: startStr,
+                  dimStyle: dimStyle,
+                  valueStyle: valueStyle,
+                ),
+                const SizedBox(height: 4),
+                _buildTimeFieldRow(
+                  label: context.messages.timeEntryItemEnd,
+                  value: endStr,
+                  dimStyle: dimStyle,
+                  valueStyle: valueStyle,
                 ),
                 if (summary.isNotEmpty) ...[
                   const SizedBox(height: 4),
@@ -441,23 +452,26 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     );
   }
 
-  static String _formatHhMm(DateTime dt) =>
-      '${dt.hour.toString().padLeft(2, '0')}:'
-      '${dt.minute.toString().padLeft(2, '0')}';
-
-  Widget _buildTimeField({
+  Widget _buildTimeFieldRow({
     required String label,
     required String value,
     required TextStyle? dimStyle,
     required TextStyle? valueStyle,
   }) {
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(text: '$label: ', style: dimStyle),
-          TextSpan(text: value, style: valueStyle),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$label: ', style: dimStyle),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: valueStyle,
+          ),
+        ),
+      ],
     );
   }
 

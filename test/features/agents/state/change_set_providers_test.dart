@@ -19,6 +19,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -314,18 +315,27 @@ void main() {
   });
 
   group('changeSetConfirmationServiceProvider', () {
+    late MockPersistenceLogic mockPersistenceLogic;
+
+    setUp(() async {
+      mockPersistenceLogic = MockPersistenceLogic();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<TimeService>(TimeService());
+        },
+      );
+    });
+
+    tearDown(tearDownTestGetIt);
+
     test('creates service with resolved dependencies', () {
       final mockSyncService = MockAgentSyncService();
       final mockJournalDb = MockJournalDb();
       final mockJournalRepository = MockJournalRepository();
       final mockChecklistRepository = MockChecklistRepository();
       final mockLabelsRepository = MockLabelsRepository();
-      final mockPersistenceLogic = MockPersistenceLogic();
-
-      getIt
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<TimeService>(TimeService());
-      addTearDown(() async => getIt.reset());
 
       final container = ProviderContainer(
         overrides: [

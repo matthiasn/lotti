@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -13,6 +14,10 @@ import 'package:lotti/services/time_service.dart';
 /// Supports two modes:
 /// - **Completed session**: both `startTime` and `endTime` provided.
 /// - **Running timer**: only `startTime` provided; hooks into [TimeService].
+///
+/// Completed sessions are validated against the originating wake timestamp when
+/// that deferred-execution context is available, so delayed approvals do not
+/// incorrectly fail after midnight.
 class TimeEntryHandler {
   TimeEntryHandler({
     required PersistenceLogic persistenceLogic,
@@ -40,12 +45,15 @@ class TimeEntryHandler {
     Map<String, dynamic> args,
   ) async {
     // --- Validate summary ---
-    final summary = args['summary'];
-    if (summary is! String || summary.trim().isEmpty) {
+    final rawSummary = args['summary'];
+    final summary = rawSummary is String ? rawSummary.trim() : null;
+    if (summary == null || summary.isEmpty || summary.length > 500) {
       return const ToolExecutionResult(
         success: false,
-        output: 'Error: "summary" must be a non-empty string',
-        errorMessage: 'Missing or empty summary',
+        output:
+            'Error: "summary" must be a non-empty string with at most '
+            '500 characters',
+        errorMessage: 'Missing, empty, or too-long summary',
       );
     }
 
@@ -54,36 +62,24 @@ class TimeEntryHandler {
     if (startTimeRaw is! String || startTimeRaw.isEmpty) {
       return const ToolExecutionResult(
         success: false,
-        output: 'Error: "startTime" must be a valid ISO 8601 datetime',
+        output:
+            'Error: "startTime" must be a valid ISO 8601 datetime '
+            'with explicit local time',
         errorMessage: 'Missing or invalid startTime',
       );
     }
-    final startTime = DateTime.tryParse(startTimeRaw);
+    final startTime = parseTimeEntryLocalDateTime(startTimeRaw);
     if (startTime == null) {
       return const ToolExecutionResult(
         success: false,
-        output: 'Error: "startTime" must be a valid ISO 8601 datetime',
+        output:
+            'Error: "startTime" must be a valid ISO 8601 datetime '
+            'with explicit local time',
         errorMessage: 'Unparseable startTime',
       );
     }
 
     final now = clock.now();
-
-    // startTime must be today and not in the future.
-    if (!_isSameDay(startTime, now)) {
-      return const ToolExecutionResult(
-        success: false,
-        output: "Error: startTime must be today's date",
-        errorMessage: 'startTime is not today',
-      );
-    }
-    if (startTime.isAfter(now)) {
-      return const ToolExecutionResult(
-        success: false,
-        output: 'Error: startTime must not be in the future',
-        errorMessage: 'startTime is in the future',
-      );
-    }
 
     // --- Parse and validate optional endTime ---
     final endTimeRaw = args['endTime'];
@@ -92,19 +88,66 @@ class TimeEntryHandler {
       if (endTimeRaw is! String || endTimeRaw.isEmpty) {
         return const ToolExecutionResult(
           success: false,
-          output: 'Error: "endTime" must be a valid ISO 8601 datetime',
+          output:
+              'Error: "endTime" must be a valid ISO 8601 datetime '
+              'with explicit local time',
           errorMessage: 'Missing or invalid endTime',
         );
       }
 
-      endTime = DateTime.tryParse(endTimeRaw);
+      endTime = parseTimeEntryLocalDateTime(endTimeRaw);
       if (endTime == null) {
         return const ToolExecutionResult(
           success: false,
-          output: 'Error: "endTime" must be a valid ISO 8601 datetime',
+          output:
+              'Error: "endTime" must be a valid ISO 8601 datetime '
+              'with explicit local time',
           errorMessage: 'Unparseable endTime',
         );
       }
+    }
+
+    final isRunningTimer = endTime == null;
+    final completedReference = _resolveCompletedSessionReference(args, now);
+
+    if (isRunningTimer) {
+      if (!_isSameDay(startTime, now)) {
+        return const ToolExecutionResult(
+          success: false,
+          output: "Error: startTime must be today's date",
+          errorMessage: 'startTime is not today',
+        );
+      }
+      if (startTime.isAfter(now)) {
+        return const ToolExecutionResult(
+          success: false,
+          output: 'Error: startTime must not be in the future',
+          errorMessage: 'startTime is in the future',
+        );
+      }
+    } else {
+      if (!_isSameDay(startTime, completedReference.timestamp)) {
+        return ToolExecutionResult(
+          success: false,
+          output:
+              'Error: completed-session startTime must be on the same day '
+              'as the ${completedReference.label} '
+              '(${_formatDate(completedReference.timestamp)})',
+          errorMessage: 'startTime is not on ${completedReference.label} day',
+        );
+      }
+      if (startTime.isAfter(completedReference.timestamp)) {
+        return ToolExecutionResult(
+          success: false,
+          output:
+              'Error: startTime must not be after the '
+              '${completedReference.label}',
+          errorMessage: 'startTime is after ${completedReference.label}',
+        );
+      }
+    }
+
+    if (endTime != null) {
       if (!endTime.isAfter(startTime)) {
         return const ToolExecutionResult(
           success: false,
@@ -119,16 +162,16 @@ class TimeEntryHandler {
           errorMessage: 'endTime is on a different day',
         );
       }
-      if (endTime.isAfter(now)) {
-        return const ToolExecutionResult(
+      if (endTime.isAfter(completedReference.timestamp)) {
+        return ToolExecutionResult(
           success: false,
-          output: 'Error: endTime must not be in the future',
-          errorMessage: 'endTime is in the future',
+          output:
+              'Error: endTime must not be after the '
+              '${completedReference.label}',
+          errorMessage: 'endTime is after ${completedReference.label}',
         );
       }
     }
-
-    final isRunningTimer = endTime == null;
 
     // --- Check for active timer when starting a running timer ---
     if (isRunningTimer && _timeService.getCurrent() != null) {
@@ -155,7 +198,7 @@ class TimeEntryHandler {
     // For completed sessions, pass endTime directly to createMetadata so the
     // correct dateTo is written in a single DB write instead of
     // create-then-update.
-    final entryText = EntryText(plainText: '${summary.trim()} [generated]');
+    final entryText = EntryText(plainText: '$summary [generated]');
 
     final journalEntity = JournalEntity.journalEntry(
       entryText: entryText,
@@ -182,10 +225,29 @@ class TimeEntryHandler {
     final createdId = journalEntity.meta.id;
 
     // --- Start running timer if no endTime ---
+    // The pre-check above (getCurrent != null) and this start() call are not
+    // atomic, but Dart's single-threaded event loop means no concurrent call
+    // can race between them during synchronous execution.
     if (isRunningTimer) {
       // Use the already-created entity directly — TimeService only stores it
       // in memory and does not need a freshly-fetched DB copy.
-      await _timeService.start(journalEntity, sourceEntity);
+      try {
+        await _timeService.start(journalEntity, sourceEntity);
+      } catch (e, _) {
+        _domainLogger?.log(
+          LogDomains.agentWorkflow,
+          'Time entry $createdId persisted but timer start failed: $e',
+          subDomain: _sub,
+        );
+        return ToolExecutionResult(
+          success: false,
+          output:
+              'Time entry was saved ($createdId) but the running timer '
+              'could not be started: $e',
+          errorMessage: 'Timer start failed after persistence',
+          mutatedEntityId: createdId,
+        );
+      }
     }
 
     _domainLogger?.log(
@@ -197,13 +259,13 @@ class TimeEntryHandler {
     );
 
     final timeRange = isRunningTimer
-        ? 'running timer from ${_formatTime(startTime)}'
-        : '${_formatTime(startTime)}–${_formatTime(endTime)}';
+        ? 'running timer from ${formatTimeEntryHhMm(startTime)}'
+        : '${formatTimeEntryHhMm(startTime)}–${formatTimeEntryHhMm(endTime)}';
 
     return ToolExecutionResult(
       success: true,
       output:
-          'Created time entry ($timeRange): "${summary.trim()}" '
+          'Created time entry ($timeRange): "$summary" '
           '($createdId)',
       mutatedEntityId: createdId,
     );
@@ -213,8 +275,26 @@ class TimeEntryHandler {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
-  static String _formatTime(DateTime dt) {
-    return '${dt.hour.toString().padLeft(2, '0')}:'
-        '${dt.minute.toString().padLeft(2, '0')}';
+  static ({DateTime timestamp, String label}) _resolveCompletedSessionReference(
+    Map<String, dynamic> args,
+    DateTime fallback,
+  ) {
+    final raw = args[timeEntryReferenceTimestampArg];
+    if (raw is! String) {
+      return (timestamp: fallback, label: 'current time');
+    }
+
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) {
+      return (timestamp: fallback, label: 'current time');
+    }
+
+    return (
+      timestamp: parsed.isUtc ? parsed.toLocal() : parsed,
+      label: 'wake timestamp',
+    );
   }
+
+  static String _formatDate(DateTime dt) =>
+      dt.toIso8601String().split('T').first;
 }

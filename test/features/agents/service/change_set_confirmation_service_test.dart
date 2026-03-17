@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -209,6 +210,57 @@ void main() {
           );
         });
       });
+
+      test(
+        'injects the wake timestamp when dispatching create_time_entry',
+        () async {
+          final changeSet = makeChangeSetWith(
+            items: const [
+              ChangeItem(
+                toolName: 'create_time_entry',
+                args: {
+                  'startTime': '2026-03-17T14:00:00',
+                  'endTime': '2026-03-17T15:00:00',
+                  'summary': 'Worked on API integration',
+                },
+                humanSummary:
+                    'Time entry 14:00–15:00: "Worked on API integration"',
+              ),
+            ],
+          );
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Created time entry',
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockToolDispatcher.dispatch(
+                'create_time_entry',
+                {
+                  'startTime': '2026-03-17T14:00:00',
+                  'endTime': '2026-03-17T15:00:00',
+                  'summary': 'Worked on API integration',
+                  timeEntryReferenceTimestampArg: changeSet.createdAt
+                      .toIso8601String(),
+                },
+                'task-001',
+              ),
+            ).called(1);
+          });
+        },
+      );
 
       test('skips already-confirmed item without dispatching', () async {
         final changeSet = makeTestChangeSet(
