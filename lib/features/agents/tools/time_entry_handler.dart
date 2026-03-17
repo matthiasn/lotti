@@ -3,7 +3,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
-import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
@@ -18,18 +17,15 @@ class TimeEntryHandler {
   TimeEntryHandler({
     required PersistenceLogic persistenceLogic,
     required JournalDb journalDb,
-    required JournalRepository journalRepository,
     required TimeService timeService,
     DomainLogger? domainLogger,
   }) : _persistenceLogic = persistenceLogic,
        _journalDb = journalDb,
-       _journalRepository = journalRepository,
        _timeService = timeService,
        _domainLogger = domainLogger;
 
   final PersistenceLogic _persistenceLogic;
   final JournalDb _journalDb;
-  final JournalRepository _journalRepository;
   final TimeService _timeService;
   final DomainLogger? _domainLogger;
 
@@ -141,12 +137,16 @@ class TimeEntryHandler {
     final categoryId = sourceEntity.meta.categoryId;
 
     // --- Create journal entry ---
+    // For completed sessions, pass endTime directly to createMetadata so the
+    // correct dateTo is written in a single DB write instead of
+    // create-then-update.
     final entryText = EntryText(plainText: summary.trim());
 
     final journalEntity = JournalEntity.journalEntry(
       entryText: entryText,
       meta: await _persistenceLogic.createMetadata(
         dateFrom: startTime,
+        dateTo: endTime,
         categoryId: categoryId,
       ),
     );
@@ -158,22 +158,11 @@ class TimeEntryHandler {
 
     final createdId = journalEntity.meta.id;
 
-    // --- Update dateTo for completed sessions ---
-    if (endTime != null) {
-      await _journalRepository.updateJournalEntityDate(
-        createdId,
-        dateFrom: startTime,
-        dateTo: endTime,
-      );
-    }
-
     // --- Start running timer if no endTime ---
     if (isRunningTimer) {
-      // Re-fetch the entity to get the persisted version for TimeService.
-      final persisted = await _journalDb.journalEntityById(createdId);
-      if (persisted != null) {
-        await _timeService.start(persisted, sourceEntity);
-      }
+      // Use the already-created entity directly — TimeService only stores it
+      // in memory and does not need a freshly-fetched DB copy.
+      await _timeService.start(journalEntity, sourceEntity);
     }
 
     _domainLogger?.log(

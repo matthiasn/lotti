@@ -16,7 +16,6 @@ void main() {
 
   late MockPersistenceLogic mockPersistenceLogic;
   late MockJournalDb mockJournalDb;
-  late MockJournalRepository mockJournalRepository;
   late MockTimeService mockTimeService;
   late MockDomainLogger mockDomainLogger;
   late MockLoggingService mockLoggingService;
@@ -70,7 +69,6 @@ void main() {
 
     mockPersistenceLogic = MockPersistenceLogic();
     mockJournalDb = MockJournalDb();
-    mockJournalRepository = MockJournalRepository();
     mockTimeService = MockTimeService();
     mockDomainLogger = MockDomainLogger();
     mockLoggingService = MockLoggingService();
@@ -82,7 +80,6 @@ void main() {
     handler = TimeEntryHandler(
       persistenceLogic: mockPersistenceLogic,
       journalDb: mockJournalDb,
-      journalRepository: mockJournalRepository,
       timeService: mockTimeService,
       domainLogger: mockDomainLogger,
     );
@@ -312,13 +309,15 @@ void main() {
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer(
           (inv) async => Metadata(
             id: 'new-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: inv.namedArguments[#dateFrom] as DateTime,
+            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+                (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
             categoryId: inv.namedArguments[#categoryId] as String?,
@@ -332,18 +331,11 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        when(
-          () => mockJournalRepository.updateJournalEntityDate(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-          ),
-        ).thenAnswer((_) async => true);
-
         when(() => mockTimeService.getCurrent()).thenReturn(null);
       });
 
-      test('creates entry with correct dateFrom and dateTo', () async {
+      test('creates entry with correct dateFrom and dateTo in a single write',
+          () async {
         await withClock(Clock.fixed(testNow), () async {
           final result = await handler.handle(
             sourceTaskId,
@@ -359,10 +351,12 @@ void main() {
           expect(result.output, contains('14:00–15:00'));
           expect(result.output, contains('Worked on API integration'));
 
-          // Verify createMetadata was called with correct dateFrom.
+          // Verify createMetadata was called with both dateFrom and dateTo
+          // so the correct time range is written in a single DB operation.
           verify(
             () => mockPersistenceLogic.createMetadata(
               dateFrom: DateTime(2026, 3, 17, 14),
+              dateTo: DateTime(2026, 3, 17, 15),
               categoryId: categoryId,
             ),
           ).called(1);
@@ -372,15 +366,6 @@ void main() {
             () => mockPersistenceLogic.createDbEntity(
               any(),
               linkedId: sourceTaskId,
-            ),
-          ).called(1);
-
-          // Verify dateTo was updated.
-          verify(
-            () => mockJournalRepository.updateJournalEntityDate(
-              'new-entry-001',
-              dateFrom: DateTime(2026, 3, 17, 14),
-              dateTo: DateTime(2026, 3, 17, 15),
             ),
           ).called(1);
 
@@ -403,6 +388,7 @@ void main() {
           verify(
             () => mockPersistenceLogic.createMetadata(
               dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
               categoryId: categoryId,
             ),
           ).called(1);
@@ -435,13 +421,15 @@ void main() {
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer(
           (inv) async => Metadata(
             id: 'timer-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: inv.namedArguments[#dateFrom] as DateTime,
+            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+                (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
             categoryId: inv.namedArguments[#categoryId] as String?,
@@ -461,13 +449,8 @@ void main() {
         ).thenAnswer((_) async {});
       });
 
-      test('creates entry and starts TimeService', () async {
-        final persistedEntry = makeJournalEntry('timer-entry-001');
-
-        when(
-          () => mockJournalDb.journalEntityById('timer-entry-001'),
-        ).thenAnswer((_) async => persistedEntry);
-
+      test('creates entry and starts TimeService with in-memory entity',
+          () async {
         await withClock(Clock.fixed(testNow), () async {
           final result = await handler.handle(
             sourceTaskId,
@@ -482,43 +465,12 @@ void main() {
           expect(result.output, contains('running timer from 14:00'));
           expect(result.output, contains('Starting work on feature'));
 
-          // Verify TimeService.start was called.
+          // TimeService.start is called with the in-memory entity — no DB
+          // re-fetch needed since TimeService only stores it in memory.
           verify(
-            () => mockTimeService.start(persistedEntry, any()),
+            () => mockTimeService.start(any(), any()),
           ).called(1);
 
-          // Verify updateJournalEntityDate was NOT called (running timer).
-          verifyNever(
-            () => mockJournalRepository.updateJournalEntityDate(
-              any(),
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-            ),
-          );
-        });
-      });
-
-      test('handles persisted entry not found gracefully', () async {
-        // If re-fetch returns null, timer just doesn't start but entry
-        // creation still succeeds.
-        when(
-          () => mockJournalDb.journalEntityById('timer-entry-001'),
-        ).thenAnswer((_) async => null);
-
-        await withClock(Clock.fixed(testNow), () async {
-          final result = await handler.handle(
-            sourceTaskId,
-            {
-              'startTime': '2026-03-17T14:00:00',
-              'summary': 'Working on stuff',
-            },
-          );
-
-          expect(result.success, isTrue);
-          expect(result.mutatedEntityId, 'timer-entry-001');
-
-          // TimeService.start should NOT be called since entity wasn't found.
-          verifyNever(() => mockTimeService.start(any(), any()));
         });
       });
     });
@@ -532,13 +484,15 @@ void main() {
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer(
           (inv) async => Metadata(
             id: 'log-entry-001',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: inv.namedArguments[#dateFrom] as DateTime,
+            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+                (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
             categoryId: categoryId,
@@ -549,14 +503,6 @@ void main() {
           () => mockPersistenceLogic.createDbEntity(
             any(),
             linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockJournalRepository.updateJournalEntityDate(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -618,13 +564,15 @@ void main() {
         when(
           () => mockPersistenceLogic.createMetadata(
             dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
             categoryId: any(named: 'categoryId'),
           ),
         ).thenAnswer(
           (inv) async => Metadata(
             id: 'no-cat-entry',
             dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo: inv.namedArguments[#dateFrom] as DateTime,
+            dateTo: (inv.namedArguments[#dateTo] as DateTime?) ??
+                (inv.namedArguments[#dateFrom] as DateTime),
             createdAt: testNow,
             updatedAt: testNow,
           ),
@@ -634,14 +582,6 @@ void main() {
           () => mockPersistenceLogic.createDbEntity(
             any(),
             linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockJournalRepository.updateJournalEntityDate(
-            any(),
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
           ),
         ).thenAnswer((_) async => true);
 
@@ -662,6 +602,8 @@ void main() {
           verify(
             () => mockPersistenceLogic.createMetadata(
               dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              categoryId: any(named: 'categoryId'),
             ),
           ).called(1);
         });

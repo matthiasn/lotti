@@ -547,7 +547,6 @@ class TaskToolDispatcher {
     final handler = TimeEntryHandler(
       persistenceLogic: persistenceLogic,
       journalDb: journalDb,
-      journalRepository: journalRepository,
       timeService: timeService,
       domainLogger: domainLogger,
     );
