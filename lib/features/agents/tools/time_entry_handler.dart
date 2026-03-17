@@ -69,12 +69,19 @@ class TimeEntryHandler {
 
     final now = clock.now();
 
-    // startTime must be today.
+    // startTime must be today and not in the future.
     if (!_isSameDay(startTime, now)) {
       return const ToolExecutionResult(
         success: false,
         output: "Error: startTime must be today's date",
         errorMessage: 'startTime is not today',
+      );
+    }
+    if (startTime.isAfter(now)) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: startTime must not be in the future',
+        errorMessage: 'startTime is in the future',
       );
     }
 
@@ -151,10 +158,18 @@ class TimeEntryHandler {
       ),
     );
 
-    await _persistenceLogic.createDbEntity(
+    final saved = await _persistenceLogic.createDbEntity(
       journalEntity,
       linkedId: sourceTaskId,
     );
+
+    if (saved != true) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: failed to persist time entry',
+        errorMessage: 'createDbEntity returned false',
+      );
+    }
 
     final createdId = journalEntity.meta.id;
 

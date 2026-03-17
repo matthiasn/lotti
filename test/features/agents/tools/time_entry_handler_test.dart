@@ -227,7 +227,7 @@ void main() {
           final result = await handler.handle(
             sourceTaskId,
             {
-              'startTime': '2026-03-17T23:00:00',
+              'startTime': '2026-03-17T14:00:00',
               'endTime': '2026-03-18T01:00:00',
               'summary': 'Worked on API',
             },
@@ -253,6 +253,23 @@ void main() {
           expect(result.success, isFalse);
           expect(result.output, contains('must not be in the future'));
           expect(result.errorMessage, 'endTime is in the future');
+        });
+      });
+
+      test('returns failure when startTime is in the future', () async {
+        // testNow = 2026-03-17T15:30 — 23:00 is today but in the future.
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T23:00:00',
+              'summary': 'Future work',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('must not be in the future'));
+          expect(result.errorMessage, 'startTime is in the future');
         });
       });
 
@@ -332,6 +349,33 @@ void main() {
         ).thenAnswer((_) async => true);
 
         when(() => mockTimeService.getCurrent()).thenReturn(null);
+      });
+
+      test('returns failure when createDbEntity returns false', () async {
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T14:00:00',
+              'endTime': '2026-03-17T15:00:00',
+              'summary': 'Persisted session',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('failed to persist'));
+          expect(result.errorMessage, 'createDbEntity returned false');
+
+          // Timer must not start when persistence fails.
+          verifyNever(() => mockTimeService.start(any(), any()));
+        });
       });
 
       test('creates entry with correct dateFrom and dateTo in a single write',
@@ -470,7 +514,30 @@ void main() {
           verify(
             () => mockTimeService.start(any(), any()),
           ).called(1);
+        });
+      });
 
+      test('returns failure and does not start timer when persistence fails',
+          () async {
+        when(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => false);
+
+        await withClock(Clock.fixed(testNow), () async {
+          final result = await handler.handle(
+            sourceTaskId,
+            {
+              'startTime': '2026-03-17T14:00:00',
+              'summary': 'Timer that fails to persist',
+            },
+          );
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('failed to persist'));
+          verifyNever(() => mockTimeService.start(any(), any()));
         });
       });
     });
