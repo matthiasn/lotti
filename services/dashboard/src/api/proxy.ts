@@ -52,13 +52,13 @@ export async function updatePricing(
 }
 
 export async function createPricing(
-  model_id: string,
+  modelId: string,
   input_price_per_1k: number,
   output_price_per_1k: number,
   display_name?: string,
 ): Promise<ModelPricing> {
   const { data } = await proxyApi.post<ModelPricing>("/pricing", {
-    model_id,
+    model_id: modelId,
     input_price_per_1k,
     output_price_per_1k,
     display_name,

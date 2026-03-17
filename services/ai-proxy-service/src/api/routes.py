@@ -1,14 +1,12 @@
 """API routes for AI proxy service"""
 
-from __future__ import annotations
-
 import json
 import logging
 import time
 import uuid
 from decimal import Decimal
 
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, Body, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 
 from ..container import container
@@ -92,7 +90,7 @@ async def get_metrics():
     },
 )
 @limiter.limit("30/minute")  # More restrictive limit for AI completions (expensive)
-async def chat_completions(request: Request, body: ChatCompletionRequest):
+async def chat_completions(request: Request, body: ChatCompletionRequest = Body(...)):
     """
     OpenAI-compatible chat completions endpoint
 

@@ -11,11 +11,15 @@ def test_env_vars():
     original_values = {
         "TIGERBEETLE_HOST": os.environ.get("TIGERBEETLE_HOST"),
         "TIGERBEETLE_PORT": os.environ.get("TIGERBEETLE_PORT"),
+        "API_KEYS": os.environ.get("API_KEYS"),
+        "ADMIN_API_KEYS": os.environ.get("ADMIN_API_KEYS"),
     }
 
     # Set test values
     os.environ["TIGERBEETLE_HOST"] = "localhost"
     os.environ["TIGERBEETLE_PORT"] = "3000"
+    os.environ["API_KEYS"] = "test-key"
+    os.environ["ADMIN_API_KEYS"] = "test-key"
 
     yield
 

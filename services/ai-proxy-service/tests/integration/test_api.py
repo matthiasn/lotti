@@ -1,10 +1,21 @@
 """Integration tests for API endpoints"""
 
 import os
+
+# Set API keys BEFORE importing app (middleware reads env at import time)
+os.environ.setdefault("API_KEYS", "test-api-key")
+os.environ.setdefault("ADMIN_API_KEYS", "test-api-key")
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 
 from src.main import app
+
+_TEST_API_KEY = os.environ["API_KEYS"]
+
+
+def _auth_headers():
+    return {"Authorization": f"Bearer {_TEST_API_KEY}"}
 
 
 class TestHealthEndpoint:
@@ -32,6 +43,7 @@ class TestChatCompletionsEndpoint:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/v1/chat/completions",
+                headers=_auth_headers(),
                 json={
                     "model": "gemini-pro",
                     "messages": [{"role": "user", "content": "Say 'Hello, World!' and nothing else."}],
@@ -62,6 +74,7 @@ class TestChatCompletionsEndpoint:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/v1/chat/completions",
+                headers=_auth_headers(),
                 json={
                     "model": "gemini-pro",
                     "messages": [],
@@ -78,6 +91,7 @@ class TestChatCompletionsEndpoint:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/v1/chat/completions",
+                headers=_auth_headers(),
                 json={
                     "model": "gpt-4",  # Should map to gemini-1.5-pro
                     "messages": [{"role": "user", "content": "Say 'test' and nothing else."}],
@@ -98,6 +112,7 @@ class TestChatCompletionsEndpoint:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/v1/chat/completions",
+                headers=_auth_headers(),
                 json={
                     "model": "gemini-pro",
                     "messages": [{"role": "user", "content": "Say 'Hello' and nothing else."}],
@@ -152,6 +167,7 @@ class TestErrorHandling:
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
                     "/v1/chat/completions",
+                    headers=_auth_headers(),
                     json={
                         "model": "invalid-model",
                         "messages": [{"role": "user", "content": "Test"}],
@@ -178,6 +194,7 @@ class TestErrorHandling:
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
                     "/v1/chat/completions",
+                    headers=_auth_headers(),
                     json={
                         "model": "gemini-pro",
                         "messages": [{"role": "user", "content": "Test"}],
@@ -203,6 +220,7 @@ class TestErrorHandling:
             async with AsyncClient(transport=transport, base_url="http://test") as client:
                 response = await client.post(
                     "/v1/chat/completions",
+                    headers=_auth_headers(),
                     json={
                         "model": "gemini-pro",
                         "messages": [{"role": "user", "content": "Test"}],

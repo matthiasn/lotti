@@ -40,7 +40,6 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         # Load admin API keys from environment variable
         # Format: ADMIN_API_KEYS=admin-key1,admin-key2
-        # Falls back to API_KEYS if not set (backwards-compatible)
         admin_keys_str = os.getenv("ADMIN_API_KEYS", "")
         self.valid_admin_keys = {key.strip() for key in admin_keys_str.split(",") if key.strip()}
 
@@ -76,14 +75,6 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         # Skip authentication for exempt paths
         if request.url.path in self.exempt_paths:
             return await call_next(request)
-
-        # Check if API keys are configured
-        if not self.valid_api_keys:
-            logger.error(f"Authentication failed: No API keys configured (path: {request.url.path})")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Service not configured - no API keys available",
-            )
 
         # Extract API key from Authorization header
         auth_header = request.headers.get("Authorization", "")
@@ -126,7 +117,15 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             logger.debug(f"Admin authentication successful for {request.url.path}")
             return await call_next(request)
 
-        # Validate regular API key
+        # Check if regular API keys are configured
+        if not self.valid_api_keys:
+            logger.error(f"Authentication failed: No API keys configured (path: {request.url.path})")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Service not configured - no API keys available",
+            )
+
+        # Validate regular API key (admin keys are not accepted for non-admin paths)
         if api_key not in self.valid_api_keys:
             logger.warning(f"Authentication failed: Invalid API key (path: {request.url.path})")
             raise HTTPException(

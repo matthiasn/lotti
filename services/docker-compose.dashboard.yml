@@ -6,7 +6,7 @@
 
 services:
   tigerbeetle:
-    image: ghcr.io/tigerbeetle/tigerbeetle:0.16.16
+    image: ghcr.io/tigerbeetle/tigerbeetle:0.16.66
     container_name: dashboard-tigerbeetle
     security_opt:
       - seccomp=unconfined
@@ -76,12 +76,13 @@ services:
     restart: unless-stopped
 
   dashboard:
-    build: ./dashboard
+    build:
+      context: ./dashboard
+      args:
+        VITE_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
     container_name: dashboard-frontend
     ports:
       - "5173:5173"
-    environment:
-      - VITE_API_KEY=${ADMIN_API_KEY:-dev-admin-key}
     depends_on:
       - credits-service
       - ai-proxy-service

@@ -33,6 +33,7 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     if (!userId) return;
+    let cancelled = false;
     setLoading(true);
     setError(null);
 
@@ -48,14 +49,23 @@ export default function UserDetailPage() {
       fetchUserUsageSummary(userId).catch(() => null),
     ])
       .then(([userRes, txRes, usageRes, summaryRes]) => {
+        if (cancelled) return;
         setUser(userRes);
         setTransactions(txRes.transactions);
         setTxTotal(txRes.total);
         setUsageEntries(usageRes.entries);
         setUsageSummary(summaryRes);
       })
-      .catch((err) => setError(err.message || "Failed to load user"))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err.message || "Failed to load user");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [userId]);
 
   useEffect(() => {
