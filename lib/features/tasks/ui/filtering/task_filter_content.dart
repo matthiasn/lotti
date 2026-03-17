@@ -7,6 +7,7 @@ import 'package:lotti/features/tasks/ui/filtering/task_distance_display_toggle.d
 import 'package:lotti/features/tasks/ui/filtering/task_due_date_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_priority_filter.dart';
+import 'package:lotti/features/tasks/ui/filtering/task_projects_header_display_toggle.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_sort_filter.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_status_filter.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
@@ -43,6 +44,7 @@ class TaskFilterContent extends StatelessWidget {
         TaskDueDateDisplayToggle(),
         TaskCoverArtDisplayToggle(),
         TaskDistanceDisplayToggle(),
+        TaskProjectsHeaderDisplayToggle(),
       ],
     );
   }

@@ -1889,6 +1889,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Primiți notificări pentru mementouri, actualizări și evenimente importante.';
 
   @override
+  String get configFlagEnableProjects => 'Activează proiectele';
+
+  @override
+  String get configFlagEnableProjectsDescription =>
+      'Afișează funcțiile de gestionare a proiectelor pentru organizarea sarcinilor în proiecte.';
+
+  @override
   String get configFlagEnableSessionRatings =>
       'Activează evaluările de sesiune';
 
@@ -3302,6 +3309,88 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get privateLabel => 'Privat';
+
+  @override
+  String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectCreateButton => 'Proiect nou';
+
+  @override
+  String get projectCreateTitle => 'Creare proiect';
+
+  @override
+  String get projectDetailTitle => 'Detalii proiect';
+
+  @override
+  String get projectErrorCreateFailed => 'Eroare la crearea proiectului.';
+
+  @override
+  String get projectErrorLoadFailed =>
+      'Datele proiectului nu au putut fi încărcate.';
+
+  @override
+  String get projectErrorLoadProjects => 'Eroare la încărcarea proiectelor';
+
+  @override
+  String get projectErrorUpdateFailed =>
+      'Proiectul nu a putut fi actualizat. Încercați din nou.';
+
+  @override
+  String get projectFilterLabel => 'Proiect';
+
+  @override
+  String projectHealthSummary(int projectCount, int taskCount) {
+    return '$projectCount proiecte, $taskCount sarcini';
+  }
+
+  @override
+  String get projectHealthTitle => 'Proiecte';
+
+  @override
+  String get projectLinkedTasks => 'Sarcini asociate';
+
+  @override
+  String get projectNoLinkedTasks => 'Nicio sarcină asociată încă';
+
+  @override
+  String get projectNoProjects => 'Niciun proiect încă';
+
+  @override
+  String get projectNotFound => 'Proiectul nu a fost găsit';
+
+  @override
+  String get projectPickerLabel => 'Proiect';
+
+  @override
+  String get projectPickerUnassigned => 'Fără proiect';
+
+  @override
+  String get projectStatusActive => 'Activ';
+
+  @override
+  String get projectStatusArchived => 'Arhivat';
+
+  @override
+  String get projectStatusChangeTitle => 'Schimbă starea';
+
+  @override
+  String get projectStatusCompleted => 'Finalizat';
+
+  @override
+  String get projectStatusOnHold => 'În așteptare';
+
+  @override
+  String get projectStatusOpen => 'Deschis';
+
+  @override
+  String get projectTargetDateLabel => 'Data țintă';
+
+  @override
+  String get projectTitleLabel => 'Titlu proiect';
+
+  @override
+  String get projectTitleRequired => 'Titlul proiectului nu poate fi gol';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Adaugă sau elimină modele';
@@ -4835,6 +4924,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get tasksShowDueDate => 'Afișează data scadenței pe carduri';
 
   @override
+  String get tasksShowProjectsHeader => 'Afișați antetul proiectelor';
+
+  @override
   String get tasksSortByCreationDate => 'Creație';
 
   @override
@@ -4878,6 +4970,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Rezumate sarcini';
+
+  @override
+  String get taskUntitled => '(fără titlu)';
 
   @override
   String get thinkingDisclosureCopied => 'Raționament copiat';

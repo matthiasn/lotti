@@ -35,6 +35,18 @@ const Color taskStatusBlue = Colors.blue;
 const Color taskStatusRed = Colors.red;
 const Color taskStatusGreen = Colors.green;
 
+// Project status colors - light mode
+const projectStatusDarkBlue = Color(0xFF1565C0);
+const projectStatusDarkGreen = Color(0xFF2E7D32);
+const projectStatusDarkOrange = Color(0xFFE65100);
+const projectStatusDarkTeal = Color(0xFF00695C);
+
+// Project status colors - dark mode
+const Color projectStatusBlue = Colors.blue;
+const Color projectStatusGreen = Colors.green;
+const Color projectStatusOrange = Colors.orange;
+const Color projectStatusTeal = Colors.teal;
+
 // Sync filter colors
 const Color syncAlertAccentColor = Colors.amber;
 const Color syncAlertForegroundColor = Colors.black;

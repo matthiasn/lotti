@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -15,11 +16,13 @@ import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
+import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
@@ -28,13 +31,14 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
-/// Category Details Page with AI Settings
+/// Category Details Page with AI Settings and Projects
 ///
 /// This page allows editing of category details including:
 /// - Basic settings (name, color, privacy, active status)
 /// - Default language selection
 /// - Allowed AI models/prompts
 /// - Automatic prompt configuration
+/// - Projects within this category
 class CategoryDetailsPage extends ConsumerStatefulWidget {
   const CategoryDetailsPage({
     this.categoryId,
@@ -253,6 +257,8 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final state = ref.watch(
       categoryDetailsControllerProvider(widget.categoryId!),
     );
+    final enableProjects =
+        ref.watch(configFlagProvider(enableProjectsFlag)).value ?? false;
     final category = state.category;
 
     if (category == null && !state.isLoading) {
@@ -348,6 +354,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
+
+                    // Projects Section
+                    if (enableProjects) ...[
+                      CategoryProjectsSection(
+                        categoryId: widget.categoryId!,
+                      ),
+                      const SizedBox(height: 24),
+                    ],
 
                     // Speech Dictionary Section
                     LottiFormSection(

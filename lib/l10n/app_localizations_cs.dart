@@ -1873,6 +1873,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Přijímejte upozornění na připomínky, aktualizace a důležité události.';
 
   @override
+  String get configFlagEnableProjects => 'Povolit projekty';
+
+  @override
+  String get configFlagEnableProjectsDescription =>
+      'Zobrazit funkce správy projektů pro organizaci úkolů do projektů.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Povolit hodnocení relací';
 
   @override
@@ -3282,6 +3289,87 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get privateLabel => 'Soukromé';
+
+  @override
+  String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectCreateButton => 'Nový projekt';
+
+  @override
+  String get projectCreateTitle => 'Vytvořit projekt';
+
+  @override
+  String get projectDetailTitle => 'Detail projektu';
+
+  @override
+  String get projectErrorCreateFailed => 'Chyba při vytváření projektu.';
+
+  @override
+  String get projectErrorLoadFailed => 'Nepodařilo se načíst data projektu.';
+
+  @override
+  String get projectErrorLoadProjects => 'Chyba při načítání projektů';
+
+  @override
+  String get projectErrorUpdateFailed =>
+      'Nepodařilo se aktualizovat projekt. Zkuste to prosím znovu.';
+
+  @override
+  String get projectFilterLabel => 'Projekt';
+
+  @override
+  String projectHealthSummary(int projectCount, int taskCount) {
+    return '$projectCount projektů, $taskCount úkolů';
+  }
+
+  @override
+  String get projectHealthTitle => 'Projekty';
+
+  @override
+  String get projectLinkedTasks => 'Propojené úkoly';
+
+  @override
+  String get projectNoLinkedTasks => 'Zatím žádné propojené úkoly';
+
+  @override
+  String get projectNoProjects => 'Zatím žádné projekty';
+
+  @override
+  String get projectNotFound => 'Projekt nenalezen';
+
+  @override
+  String get projectPickerLabel => 'Projekt';
+
+  @override
+  String get projectPickerUnassigned => 'Žádný projekt';
+
+  @override
+  String get projectStatusActive => 'Aktivní';
+
+  @override
+  String get projectStatusArchived => 'Archivovaný';
+
+  @override
+  String get projectStatusChangeTitle => 'Změnit stav';
+
+  @override
+  String get projectStatusCompleted => 'Dokončený';
+
+  @override
+  String get projectStatusOnHold => 'Pozastavený';
+
+  @override
+  String get projectStatusOpen => 'Otevřený';
+
+  @override
+  String get projectTargetDateLabel => 'Cílové datum';
+
+  @override
+  String get projectTitleLabel => 'Název projektu';
+
+  @override
+  String get projectTitleRequired => 'Název projektu nesmí být prázdný';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Přidat nebo odstranit modely';
@@ -4807,6 +4895,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get tasksShowDueDate => 'Zobrazit datum splnění na kartách';
 
   @override
+  String get tasksShowProjectsHeader => 'Zobrazit přehled projektů';
+
+  @override
   String get tasksSortByCreationDate => 'Vytvořeno';
 
   @override
@@ -4850,6 +4941,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Souhrny úkolů';
+
+  @override
+  String get taskUntitled => '(bez názvu)';
 
   @override
   String get thinkingDisclosureCopied => 'Úvaha zkopírována';

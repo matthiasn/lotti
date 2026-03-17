@@ -1916,6 +1916,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevoir des notifications pour les rappels, les mises à jour et les événements importants.';
 
   @override
+  String get configFlagEnableProjects => 'Activer les projets';
+
+  @override
+  String get configFlagEnableProjectsDescription =>
+      'Afficher les fonctions de gestion de projets pour organiser les tâches en projets.';
+
+  @override
   String get configFlagEnableSessionRatings =>
       'Activer les évaluations de session';
 
@@ -3352,6 +3359,90 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get privateLabel => 'Privé';
+
+  @override
+  String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectCreateButton => 'Nouveau projet';
+
+  @override
+  String get projectCreateTitle => 'Créer un projet';
+
+  @override
+  String get projectDetailTitle => 'Détails du projet';
+
+  @override
+  String get projectErrorCreateFailed =>
+      'Erreur lors de la création du projet.';
+
+  @override
+  String get projectErrorLoadFailed =>
+      'Impossible de charger les données du projet.';
+
+  @override
+  String get projectErrorLoadProjects =>
+      'Erreur lors du chargement des projets';
+
+  @override
+  String get projectErrorUpdateFailed =>
+      'Impossible de mettre à jour le projet. Réessaie.';
+
+  @override
+  String get projectFilterLabel => 'Projet';
+
+  @override
+  String projectHealthSummary(int projectCount, int taskCount) {
+    return '$projectCount projets, $taskCount tâches';
+  }
+
+  @override
+  String get projectHealthTitle => 'Projets';
+
+  @override
+  String get projectLinkedTasks => 'Tâches liées';
+
+  @override
+  String get projectNoLinkedTasks => 'Aucune tâche liée pour le moment';
+
+  @override
+  String get projectNoProjects => 'Pas encore de projets';
+
+  @override
+  String get projectNotFound => 'Projet introuvable';
+
+  @override
+  String get projectPickerLabel => 'Projet';
+
+  @override
+  String get projectPickerUnassigned => 'Aucun projet';
+
+  @override
+  String get projectStatusActive => 'Actif';
+
+  @override
+  String get projectStatusArchived => 'Archivé';
+
+  @override
+  String get projectStatusChangeTitle => 'Changer le statut';
+
+  @override
+  String get projectStatusCompleted => 'Terminé';
+
+  @override
+  String get projectStatusOnHold => 'En pause';
+
+  @override
+  String get projectStatusOpen => 'Ouvert';
+
+  @override
+  String get projectTargetDateLabel => 'Date cible';
+
+  @override
+  String get projectTitleLabel => 'Titre du projet';
+
+  @override
+  String get projectTitleRequired => 'Le titre du projet ne peut pas être vide';
 
   @override
   String get promptAddOrRemoveModelsButton =>
@@ -4900,6 +4991,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tasksShowDueDate => 'Afficher la date d\'échéance sur les cartes';
 
   @override
+  String get tasksShowProjectsHeader => 'Afficher l\'en-tête des projets';
+
+  @override
   String get tasksSortByCreationDate => 'Création';
 
   @override
@@ -4943,6 +5037,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Résumés de tâches';
+
+  @override
+  String get taskUntitled => '(sans titre)';
 
   @override
   String get thinkingDisclosureCopied => 'Raisonnement copié';
