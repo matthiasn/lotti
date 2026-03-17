@@ -1,6 +1,8 @@
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -506,15 +508,16 @@ immediately.''';
   }
 
   String _buildUserMessage({
-    required Object projectEntity,
+    required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> observations,
     required Set<String> triggerTokens,
   }) {
     final buf = StringBuffer()
       ..writeln('## Project Context')
-      ..writeln()
-      ..writeln('Project entity: $projectEntity');
+      ..writeln();
+
+    _writeProjectContext(buf, projectEntity);
 
     if (lastReport != null) {
       buf
@@ -543,6 +546,52 @@ immediately.''';
     }
 
     return buf.toString();
+  }
+
+  void _writeProjectContext(StringBuffer buf, JournalEntity entity) {
+    final project = entity.maybeMap(
+      project: (p) => p,
+      orElse: () => null,
+    );
+
+    if (project == null) {
+      buf.writeln('Project entity: $entity');
+      return;
+    }
+
+    final data = project.data;
+    buf
+      ..writeln('- **Title**: ${data.title}')
+      ..writeln('- **Status**: ${data.status.toDbString}')
+      ..writeln(
+        '- **Date range**: '
+        '${data.dateFrom.toIso8601String().substring(0, 10)} → '
+        '${data.dateTo.toIso8601String().substring(0, 10)}',
+      );
+
+    if (data.targetDate != null) {
+      buf.writeln(
+        '- **Target date**: '
+        '${data.targetDate!.toIso8601String().substring(0, 10)}',
+      );
+    }
+
+    final onHoldReason = data.status.maybeMap(
+      onHold: (s) => s.reason,
+      orElse: () => null,
+    );
+    if (onHoldReason != null && onHoldReason.isNotEmpty) {
+      buf.writeln('- **On-hold reason**: $onHoldReason');
+    }
+
+    if (project.entryText?.plainText != null &&
+        project.entryText!.plainText.isNotEmpty) {
+      buf
+        ..writeln()
+        ..writeln('### Description')
+        ..writeln()
+        ..writeln(project.entryText!.plainText);
+    }
   }
 
   List<ChatCompletionTool> _buildToolDefinitions() {

@@ -5,6 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -15,23 +16,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
-/// A structured observation record with optional priority and category.
-///
-/// The [text] field holds the observation content. The [priority] and
-/// [category] fields are populated when the agent uses the structured
-/// observation format; for legacy bare-string observations they default
-/// to [ObservationPriority.routine] and [ObservationCategory.operational].
-class ObservationRecord {
-  const ObservationRecord({
-    required this.text,
-    this.priority = ObservationPriority.routine,
-    this.category = ObservationCategory.operational,
-  });
-
-  final String text;
-  final ObservationPriority priority;
-  final ObservationCategory category;
-}
+export 'package:lotti/features/agents/model/observation_record.dart'
+    show ObservationRecord;
 
 /// Callback that resolves a journal entity's category ID from its entity ID.
 typedef ResolveCategoryId = Future<String?> Function(String entityId);
