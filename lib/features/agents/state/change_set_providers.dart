@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/time_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'change_set_providers.g.dart';
@@ -96,6 +97,7 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       checklistRepository: ref.watch(checklistRepositoryProvider),
       labelsRepository: labelsRepository,
       persistenceLogic: getIt<PersistenceLogic>(),
+      timeService: getIt<TimeService>(),
       domainLogger: logger,
       taskAgentService: ref.watch(taskAgentServiceProvider),
     ),

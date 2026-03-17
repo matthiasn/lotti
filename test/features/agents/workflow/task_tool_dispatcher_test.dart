@@ -19,6 +19,7 @@ void main() {
   late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockTimeService mockTimeService;
   late TaskToolDispatcher dispatcher;
 
   const taskId = 'task-001';
@@ -29,6 +30,7 @@ void main() {
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockTimeService = MockTimeService();
 
     dispatcher = TaskToolDispatcher(
       journalDb: mockJournalDb,
@@ -36,6 +38,7 @@ void main() {
       checklistRepository: mockChecklistRepository,
       labelsRepository: mockLabelsRepository,
       persistenceLogic: mockPersistenceLogic,
+      timeService: mockTimeService,
     );
   });
 

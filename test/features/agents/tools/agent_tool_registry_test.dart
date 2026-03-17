@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 13 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(13));
+    test('contains exactly 14 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(14));
     });
 
     test('all tools have non-empty name and description', () {
@@ -335,6 +335,47 @@ void main() {
         expect(itemSchema['required'], containsAll(['id', 'confidence']));
         expect(itemSchema['additionalProperties'], isFalse);
         expect(tool.parameters['required'], contains('labels'));
+      });
+    });
+
+    group('create_time_entry', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == 'create_time_entry',
+        );
+      });
+
+      test('has correct name and description', () {
+        expect(tool.name, equals('create_time_entry'));
+        expect(tool.description, contains('time tracking'));
+        expect(tool.description, contains('JUST NOW'));
+        expect(tool.description, contains('running timer'));
+      });
+
+      test('requires startTime and summary parameters', () {
+        final required = tool.parameters['required'] as List;
+        expect(required, containsAll(['startTime', 'summary']));
+        expect(required, isNot(contains('endTime')));
+      });
+
+      test('has correct parameter types', () {
+        final properties = tool.parameters['properties'] as Map;
+        final startTimeProp = properties['startTime'] as Map;
+        expect(startTimeProp['type'], equals('string'));
+        final endTimeProp = properties['endTime'] as Map;
+        expect(endTimeProp['type'], equals('string'));
+        final summaryProp = properties['summary'] as Map;
+        expect(summaryProp['type'], equals('string'));
+        expect(summaryProp['maxLength'], equals(500));
+      });
+
+      test('is registered as a deferred tool', () {
+        expect(
+          AgentToolRegistry.deferredTools,
+          contains('create_time_entry'),
+        );
       });
     });
 

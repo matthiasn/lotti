@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
+import 'package:lotti/features/agents/tools/time_entry_handler.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart'
     show TaskAgentWorkflow;
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,6 +43,7 @@ class TaskToolDispatcher {
     required this.checklistRepository,
     required this.labelsRepository,
     required this.persistenceLogic,
+    required this.timeService,
     this.domainLogger,
     this.taskAgentService,
   });
@@ -50,6 +53,7 @@ class TaskToolDispatcher {
   final ChecklistRepository checklistRepository;
   final LabelsRepository labelsRepository;
   final PersistenceLogic persistenceLogic;
+  final TimeService timeService;
   final DomainLogger? domainLogger;
   final TaskAgentService? taskAgentService;
 
@@ -147,6 +151,9 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.migrateChecklistItem:
       case TaskAgentToolNames.migrateChecklistItems:
         return _handleMigrateChecklistItem(args, taskId);
+
+      case TaskAgentToolNames.createTimeEntry:
+        return _handleCreateTimeEntry(args, taskId);
 
       default:
         return ToolExecutionResult(
@@ -531,5 +538,19 @@ class TaskToolDispatcher {
       domainLogger: domainLogger,
     );
     return handler.handle(sourceTaskId, args);
+  }
+
+  Future<ToolExecutionResult> _handleCreateTimeEntry(
+    Map<String, dynamic> args,
+    String taskId,
+  ) async {
+    final handler = TimeEntryHandler(
+      persistenceLogic: persistenceLogic,
+      journalDb: journalDb,
+      journalRepository: journalRepository,
+      timeService: timeService,
+      domainLogger: domainLogger,
+    );
+    return handler.handle(taskId, args);
   }
 }

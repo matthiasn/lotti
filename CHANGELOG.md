@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.928] - 2026-03-17
+### Added
+- Voice-driven time tracking: the task agent can now create time tracking entries
+  from voice dictation. Users can say things like "I worked on the API from 2 to
+  4 PM" or "Start a timer at 7 PM" and the agent will propose a journal entry
+  with the correct timestamps. Supports both completed sessions (start + end)
+  and running timers (start only). Entries require user approval via the change
+  set confirmation UI.
+
 ## [0.9.927] - 2026-03-16
 ### Fixed
 - Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up
