@@ -177,7 +177,7 @@ void main() {
       },
     );
 
-    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
     when(
       () => mockAgentRepository.updateWakeRunTemplate(
         any(),

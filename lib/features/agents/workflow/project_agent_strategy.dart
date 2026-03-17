@@ -61,7 +61,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
     required ConversationManager manager,
   }) async {
     // Persist the assistant message that requested tool calls.
-    await _recordAssistantMessage(toolCalls: toolCalls);
+    await _recordAssistantMessage();
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -164,8 +164,10 @@ class ProjectAgentStrategy extends ConversationStrategy {
     String callId,
     ConversationManager manager,
   ) async {
-    final markdown = args['markdown']?.toString().trim() ?? '';
-    final tldr = args['tldr']?.toString().trim();
+    final markdownValue = args['markdown'];
+    final markdown = markdownValue is String ? markdownValue.trim() : '';
+    final tldrValue = args['tldr'];
+    final tldr = tldrValue is String ? tldrValue.trim() : null;
 
     if (markdown.isEmpty) {
       const errorMsg =
@@ -220,14 +222,15 @@ class ProjectAgentStrategy extends ConversationStrategy {
           accepted++;
         }
       } else if (item is Map<String, dynamic>) {
-        final text = item['text']?.toString().trim() ?? '';
+        final textValue = item['text'];
+        final text = textValue is String ? textValue.trim() : '';
         if (text.isEmpty) continue;
 
         final priority = _parseObservationPriority(
-          item['priority']?.toString(),
+          item['priority'] is String ? item['priority'] as String : null,
         );
         final category = _parseObservationCategory(
-          item['category']?.toString(),
+          item['category'] is String ? item['category'] as String : null,
         );
 
         _observations.add(
@@ -294,16 +297,14 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   // ── Message persistence ────────────────────────────────────────────────────
 
-  Future<void> _recordAssistantMessage({
-    required List<ChatCompletionMessageToolCall> toolCalls,
-  }) async {
+  Future<void> _recordAssistantMessage() async {
     try {
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
           id: _uuid.v4(),
           agentId: agentId,
           threadId: threadId,
-          kind: AgentMessageKind.action,
+          kind: AgentMessageKind.thought,
           createdAt: clock.now(),
           vectorClock: null,
           metadata: AgentMessageMetadata(runKey: runKey),

@@ -197,6 +197,7 @@ void main() {
           await service.createProjectAgent(
             projectId: 'project-tpl',
             templateId: kTestTemplateId,
+            displayName: 'Project Agent',
             allowedCategoryIds: const {},
           );
 
@@ -214,7 +215,7 @@ void main() {
         },
       );
 
-      test('uses default display name when none provided', () async {
+      test('passes display name to agent service', () async {
         final identity = makeIdentity();
         final template = makeTestTemplate(
           kind: AgentTemplateKind.projectAgent,
@@ -252,13 +253,14 @@ void main() {
         await service.createProjectAgent(
           projectId: 'project-2',
           templateId: kTestTemplateId,
+          displayName: 'Custom Agent Name',
           allowedCategoryIds: const {},
         );
 
         verify(
           () => mockAgentService.createAgent(
             kind: 'project_agent',
-            displayName: 'Project Agent',
+            displayName: 'Custom Agent Name',
             config: any(named: 'config'),
             allowedCategoryIds: any(named: 'allowedCategoryIds'),
           ),
@@ -286,6 +288,7 @@ void main() {
           () => service.createProjectAgent(
             projectId: 'project-1',
             templateId: kTestTemplateId,
+            displayName: 'Project Agent',
             allowedCategoryIds: const {},
           ),
           throwsA(
@@ -329,6 +332,7 @@ void main() {
           () => service.createProjectAgent(
             projectId: 'project-3',
             templateId: kTestTemplateId,
+            displayName: 'Project Agent',
             allowedCategoryIds: const {},
           ),
           throwsStateError,
@@ -350,6 +354,7 @@ void main() {
           () => service.createProjectAgent(
             projectId: 'project-bad-tpl',
             templateId: 'nonexistent-template',
+            displayName: 'Project Agent',
             allowedCategoryIds: const {},
           ),
           throwsA(
@@ -385,6 +390,7 @@ void main() {
             () => service.createProjectAgent(
               projectId: 'project-wrong-kind',
               templateId: 'task-template-1',
+              displayName: 'Project Agent',
               allowedCategoryIds: const {},
             ),
             throwsA(

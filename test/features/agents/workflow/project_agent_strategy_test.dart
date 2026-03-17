@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -10,6 +9,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 const _agentId = 'agent-001';
@@ -37,19 +37,13 @@ void main() {
   late MockConversationManager mockManager;
   late ProjectAgentStrategy strategy;
 
+  setUpAll(registerAllFallbackValues);
+
   setUp(() {
     mockSyncService = MockAgentSyncService();
     mockManager = MockConversationManager();
 
-    registerFallbackValue(
-      AgentDomainEntity.unknown(
-        id: 'fallback',
-        agentId: 'fallback',
-        createdAt: DateTime(2024, 3, 15),
-      ),
-    );
-
-    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
     strategy = ProjectAgentStrategy(
       syncService: mockSyncService,

@@ -58,9 +58,9 @@ class ProjectAgentService {
   Future<AgentIdentityEntity> createProjectAgent({
     required String projectId,
     required String templateId,
+    required String displayName,
     required Set<String> allowedCategoryIds,
     String? profileId,
-    String? displayName,
   }) async {
     final identity = await syncService.runInTransaction(() async {
       // Definitive duplicate check inside the transaction to prevent
@@ -89,7 +89,7 @@ class ProjectAgentService {
 
       final identity = await agentService.createAgent(
         kind: _agentKind,
-        displayName: displayName ?? 'Project Agent',
+        displayName: displayName,
         config: AgentConfig(profileId: profileId),
         allowedCategoryIds: allowedCategoryIds,
       );
