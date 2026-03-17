@@ -379,6 +379,11 @@ class ProjectAgentWorkflow {
         }
 
         // Persist deferred change set (if any items were accumulated).
+        // TODO(project-agent): The change set confirmation infrastructure
+        // (providers, UI, dispatcher) is currently task-scoped. These change
+        // sets are persisted correctly but have no review/apply path until a
+        // project-scoped `ChangeSetSummaryCard`, `ProjectToolDispatcher`,
+        // and `pendingChangeSetsForProject` provider are implemented.
         if (deferredItems.isNotEmpty) {
           final changeItems = deferredItems.map((item) {
             final toolName = item['toolName'] as String? ?? '';
@@ -540,13 +545,48 @@ immediately.''';
     if (ctx == null) return scaffold;
 
     final version = ctx.version;
-    final directive = version.generalDirective.isNotEmpty
-        ? version.generalDirective
-        : version.directives;
+    final generalDirective = version.generalDirective.trim();
+    final reportDirective = version.reportDirective.trim();
+    final hasNewDirectives =
+        generalDirective.isNotEmpty || reportDirective.isNotEmpty;
 
-    if (directive.trim().isEmpty) return scaffold;
+    final buf = StringBuffer()..write(scaffold);
 
-    return '$scaffold\n\n## Your Personality & Directives\n\n$directive';
+    if (hasNewDirectives) {
+      if (reportDirective.isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Report Directive')
+          ..writeln()
+          ..write(reportDirective);
+      }
+
+      final effectiveGeneralDirective = generalDirective.isNotEmpty
+          ? generalDirective
+          : version.directives;
+      if (effectiveGeneralDirective.trim().isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..write(effectiveGeneralDirective);
+      }
+    } else {
+      // Legacy fallback: single directives field.
+      final legacyDirective = version.directives.trim();
+      if (legacyDirective.isNotEmpty) {
+        buf
+          ..writeln()
+          ..writeln()
+          ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..write(legacyDirective);
+      }
+    }
+
+    return buf.toString();
   }
 
   String _buildUserMessage({
@@ -618,7 +658,7 @@ immediately.''';
     final data = project.data;
     buf
       ..writeln('- **Title**: ${data.title}')
-      ..writeln('- **Status**: ${data.status.toDbString}')
+      ..writeln('- **Status**: ${_projectStatusLabel(data.status)}')
       ..writeln(
         '- **Date range**: '
         '${data.dateFrom.toIso8601String().substring(0, 10)} → '
@@ -803,6 +843,16 @@ immediately.''';
     final text = payload.content['text'];
     if (text is String && text.isNotEmpty) return text;
     return '(no content)';
+  }
+
+  static String _projectStatusLabel(ProjectStatus status) {
+    return switch (status) {
+      ProjectOpen() => 'Open',
+      ProjectActive() => 'Active',
+      ProjectOnHold() => 'On Hold',
+      ProjectCompleted() => 'Completed',
+      ProjectArchived() => 'Archived',
+    };
   }
 
   static String _taskStatusLabel(TaskStatus status) {

@@ -1014,7 +1014,6 @@ void _wireWakeExecutor(
         ref,
         agentId: agentId,
         updateNotifications: updateNotifications,
-        extraTokens: triggers,
       );
 
       return result.mutatedEntries;
