@@ -6,7 +6,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
-    show AgentLifecycle, WakeReason;
+    show AgentLifecycle, AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -81,9 +81,10 @@ class ProjectAgentService {
       if (templateId != null) {
         final templateEntity = await repository.getEntity(templateId);
         if (templateEntity is! AgentTemplateEntity ||
-            templateEntity.deletedAt != null) {
+            templateEntity.deletedAt != null ||
+            templateEntity.kind != AgentTemplateKind.projectAgent) {
           throw StateError(
-            'Template $templateId not found or is not a template entity.',
+            'Template $templateId is not an active project-agent template.',
           );
         }
       }
@@ -232,7 +233,8 @@ class ProjectAgentService {
           type: AgentLinkTypes.agentProject,
         );
 
-        for (final link in links) {
+        if (links.isNotEmpty) {
+          final link = _selectPrimaryProjectLink(links);
           _registerProjectSubscription(agent.agentId, link.toId);
           count++;
         }
@@ -280,6 +282,10 @@ class ProjectAgentService {
   }
 
   AgentLink _selectPrimaryProjectLink(List<AgentLink> links) {
+    if (links.isEmpty) {
+      throw ArgumentError('Cannot select a primary link from an empty list.');
+    }
+
     final sorted = links.toList()
       ..sort((a, b) {
         final createdAtComparison = b.createdAt.compareTo(a.createdAt);

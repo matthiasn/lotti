@@ -339,6 +339,42 @@ void main() {
           ),
         );
       });
+
+      test(
+        'throws StateError when template is not a project-agent kind',
+        () async {
+          final taskTemplate = makeTestTemplate(
+            id: 'task-template-1',
+            // ignore: avoid_redundant_argument_values
+            kind: AgentTemplateKind.taskAgent,
+          );
+
+          when(
+            () => mockRepository.getLinksTo(
+              'project-wrong-kind',
+              type: 'agent_project',
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockRepository.getEntity('task-template-1'),
+          ).thenAnswer((_) async => taskTemplate);
+
+          expect(
+            () => service.createProjectAgent(
+              projectId: 'project-wrong-kind',
+              templateId: 'task-template-1',
+              allowedCategoryIds: const {},
+            ),
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('task-template-1'),
+              ),
+            ),
+          );
+        },
+      );
     });
 
     group('getProjectAgentForProject', () {
@@ -587,6 +623,54 @@ void main() {
         expect(captured, hasLength(1));
         final sub = captured.first as AgentSubscription;
         expect(sub.agentId, 'pa-ok');
+      });
+
+      test('restores only primary link when multiple links exist', () async {
+        final projectAgent = makeIdentity(agentId: 'pa-multi');
+
+        when(
+          () => mockAgentService.listAgents(
+            lifecycle: AgentLifecycle.active,
+          ),
+        ).thenAnswer((_) async => [projectAgent]);
+
+        final olderLink = AgentLink.agentProject(
+          id: 'link-old',
+          fromId: 'pa-multi',
+          toId: 'project-old',
+          createdAt: DateTime(2026, 1, 10),
+          updatedAt: DateTime(2026, 1, 10),
+          vectorClock: null,
+        );
+        final newerLink = AgentLink.agentProject(
+          id: 'link-new',
+          fromId: 'pa-multi',
+          toId: 'project-new',
+          createdAt: DateTime(2026, 3, 15),
+          updatedAt: DateTime(2026, 3, 15),
+          vectorClock: null,
+        );
+
+        when(
+          () => mockRepository.getLinksFrom(
+            'pa-multi',
+            type: 'agent_project',
+          ),
+        ).thenAnswer((_) async => [olderLink, newerLink]);
+        when(
+          () => mockRepository.getAgentState('pa-multi'),
+        ).thenAnswer((_) async => null);
+        when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
+
+        await service.restoreSubscriptions();
+
+        final captured = verify(
+          () => mockOrchestrator.addSubscription(captureAny()),
+        ).captured.cast<AgentSubscription>();
+
+        // Only the primary (newest) link should be registered.
+        expect(captured, hasLength(1));
+        expect(captured.first.matchEntityIds, contains('project-new'));
       });
 
       test('handles empty agent list gracefully', () async {

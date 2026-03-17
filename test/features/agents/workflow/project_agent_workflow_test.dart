@@ -36,7 +36,8 @@ class _MockConversationRepository extends ConversationRepository {
     List<ChatCompletionTool>? tools,
     double temperature,
     ConversationStrategy? strategy,
-  })? sendMessageDelegate;
+  })?
+  sendMessageDelegate;
 
   @override
   void build() {}
@@ -115,34 +116,40 @@ void main() {
     directives: 'You are a project oversight agent.',
   );
 
-  final geminiProvider = AiConfig.inferenceProvider(
-    id: 'gemini-provider-001',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    apiKey: 'test-api-key',
-    name: 'Gemini',
-    createdAt: DateTime(2024),
-    inferenceProviderType: InferenceProviderType.gemini,
-  ) as AiConfigInferenceProvider;
+  final geminiProvider =
+      AiConfig.inferenceProvider(
+            id: 'gemini-provider-001',
+            baseUrl: 'https://generativelanguage.googleapis.com',
+            apiKey: 'test-api-key',
+            name: 'Gemini',
+            createdAt: DateTime(2024),
+            inferenceProviderType: InferenceProviderType.gemini,
+          )
+          as AiConfigInferenceProvider;
 
-  final testProfile = AiConfig.inferenceProfile(
-    id: 'profile-001',
-    name: 'Test Profile',
-    createdAt: DateTime(2024),
-    thinkingModelId: 'models/test-model-v1',
-  ) as AiConfigInferenceProfile;
+  final testProfile =
+      AiConfig.inferenceProfile(
+            id: 'profile-001',
+            name: 'Test Profile',
+            createdAt: DateTime(2024),
+            thinkingModelId: 'models/test-model-v1',
+          )
+          as AiConfigInferenceProfile;
 
-  final testModel = AiConfig.model(
-    id: 'model-001',
-    name: 'Test Model',
-    providerModelId: 'models/test-model-v1',
-    inferenceProviderId: 'gemini-provider-001',
-    createdAt: DateTime(2024),
-    inputModalities: const [Modality.text],
-    outputModalities: const [Modality.text],
-    isReasoningModel: true,
-    supportsFunctionCalling: true,
-    description: 'Test model',
-  ) as AiConfigModel;
+  final testModel =
+      AiConfig.model(
+            id: 'model-001',
+            name: 'Test Model',
+            providerModelId: 'models/test-model-v1',
+            inferenceProviderId: 'gemini-provider-001',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: true,
+            supportsFunctionCalling: true,
+            description: 'Test model',
+          )
+          as AiConfigModel;
 
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
@@ -164,8 +171,7 @@ void main() {
       },
     );
 
-    when(() => mockSyncService.upsertEntity(any()))
-        .thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     when(
       () => mockAgentRepository.updateWakeRunTemplate(
         any(),
@@ -192,8 +198,9 @@ void main() {
   group('ProjectAgentWorkflow', () {
     group('early abort conditions', () {
       test('returns failure when agent state is null', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -207,8 +214,9 @@ void main() {
       });
 
       test('returns failure when no active project ID in slots', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentStateNoProject);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentStateNoProject);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -222,10 +230,12 @@ void main() {
       });
 
       test('returns failure when project entity not found', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockJournalRepository.getJournalEntityById(projectId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockJournalRepository.getJournalEntityById(projectId),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -239,20 +249,24 @@ void main() {
       });
 
       test('returns failure when no template resolved', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockJournalRepository.getJournalEntityById(projectId))
-            .thenAnswer((_) async => _fakeProjectEntity());
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockJournalRepository.getJournalEntityById(projectId),
+        ).thenAnswer((_) async => _fakeProjectEntity());
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockTemplateService.getTemplateForAgent(agentId))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -266,31 +280,36 @@ void main() {
       });
 
       test('returns failure when profile resolution fails', () async {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockJournalRepository.getJournalEntityById(projectId))
-            .thenAnswer((_) async => _fakeProjectEntity());
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockJournalRepository.getJournalEntityById(projectId),
+        ).thenAnswer((_) async => _fakeProjectEntity());
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockTemplateService.getTemplateForAgent(agentId))
-            .thenAnswer((_) async => testTemplate);
-        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-            .thenAnswer((_) async => testTemplateVersion);
+        when(
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => testTemplate);
+        when(
+          () => mockTemplateService.getActiveVersion(testTemplate.id),
+        ).thenAnswer((_) async => testTemplateVersion);
         // Profile found but provider resolution fails (no API key).
-        when(() => mockAiConfigRepository.getConfigById('profile-001'))
-            .thenAnswer((_) async => testProfile);
+        when(
+          () => mockAiConfigRepository.getConfigById('profile-001'),
+        ).thenAnswer((_) async => testProfile);
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [testModel]);
         when(
-          () =>
-              mockAiConfigRepository.getConfigById('gemini-provider-001'),
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => null);
 
         final result = await workflow.execute(
@@ -307,35 +326,42 @@ void main() {
 
     group('successful execution', () {
       setUp(() {
-        when(() => mockAgentRepository.getAgentState(agentId))
-            .thenAnswer((_) async => testAgentState);
-        when(() => mockJournalRepository.getJournalEntityById(projectId))
-            .thenAnswer((_) async => _fakeProjectEntity());
-        when(() => mockAgentRepository.getLatestReport(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockJournalRepository.getJournalEntityById(projectId),
+        ).thenAnswer((_) async => _fakeProjectEntity());
+        when(
+          () => mockAgentRepository.getLatestReport(agentId, 'current'),
+        ).thenAnswer((_) async => null);
         when(
           () => mockAgentRepository.getMessagesByKind(
             agentId,
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => []);
-        when(() => mockTemplateService.getTemplateForAgent(agentId))
-            .thenAnswer((_) async => testTemplate);
-        when(() => mockTemplateService.getActiveVersion(testTemplate.id))
-            .thenAnswer((_) async => testTemplateVersion);
-        when(() => mockAiConfigRepository.getConfigById('profile-001'))
-            .thenAnswer((_) async => testProfile);
-        when(() => mockAiConfigRepository.getConfigById('model-001'))
-            .thenAnswer((_) async => testModel);
         when(
-          () =>
-              mockAiConfigRepository.getConfigById('gemini-provider-001'),
+          () => mockTemplateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => testTemplate);
+        when(
+          () => mockTemplateService.getActiveVersion(testTemplate.id),
+        ).thenAnswer((_) async => testTemplateVersion);
+        when(
+          () => mockAiConfigRepository.getConfigById('profile-001'),
+        ).thenAnswer((_) async => testProfile);
+        when(
+          () => mockAiConfigRepository.getConfigById('model-001'),
+        ).thenAnswer((_) async => testModel);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
         ).thenAnswer((_) async => geminiProvider);
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [testModel]);
-        when(() => mockAgentRepository.getReportHead(agentId, 'current'))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
       });
 
       test('completes successfully and persists state', () async {
@@ -389,18 +415,19 @@ void main() {
       });
 
       test('cleans up conversation even on failure', () async {
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          throw Exception('LLM error');
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error');
+            };
 
         final result = await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -417,18 +444,19 @@ void main() {
       });
 
       test('increments failure count on error', () async {
-        mockConversationRepository.sendMessageDelegate = ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          throw Exception('LLM error');
-        };
+        mockConversationRepository.sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              throw Exception('LLM error');
+            };
 
         await workflow.execute(
           agentIdentity: testAgentIdentity,
@@ -444,9 +472,9 @@ void main() {
           () => mockSyncService.upsertEntity(captureAny()),
         ).captured;
 
-        final stateUpdates = captured
-            .whereType<AgentStateEntity>()
-            .where((s) => s.consecutiveFailureCount > 0);
+        final stateUpdates = captured.whereType<AgentStateEntity>().where(
+          (s) => s.consecutiveFailureCount > 0,
+        );
         expect(stateUpdates, isNotEmpty);
       });
     });

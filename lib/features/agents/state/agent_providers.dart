@@ -1014,6 +1014,7 @@ void _wireWakeExecutor(
         ref,
         agentId: agentId,
         updateNotifications: updateNotifications,
+        extraTokens: triggers,
       );
 
       return result.mutatedEntries;
@@ -1053,6 +1054,7 @@ Future<void> _notifyWakeCompletion(
   Ref ref, {
   required String agentId,
   required UpdateNotifications updateNotifications,
+  Set<String> extraTokens = const {},
 }) async {
   String? templateId;
   try {
@@ -1071,6 +1073,7 @@ Future<void> _notifyWakeCompletion(
     agentId,
     ?templateId,
     agentNotification,
+    ...extraTokens,
   });
 }
 

@@ -50,8 +50,7 @@ void main() {
       ),
     );
 
-    when(() => mockSyncService.upsertEntity(any()))
-        .thenAnswer((_) async => {});
+    when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
     strategy = ProjectAgentStrategy(
       syncService: mockSyncService,
@@ -159,41 +158,43 @@ void main() {
         expect(observations[0].category, ObservationCategory.operational);
       });
 
-      test('accumulates structured observations with priority and category',
-          () async {
-        final toolCalls = [
-          _makeToolCall(
-            name: ProjectAgentToolNames.recordObservations,
-            args: {
-              'observations': [
-                {
-                  'text': 'Critical blocker found',
-                  'priority': 'critical',
-                  'category': 'grievance',
-                },
-                {
-                  'text': 'Good progress on delivery',
-                  'priority': 'notable',
-                  'category': 'excellence',
-                },
-              ],
-            },
-          ),
-        ];
+      test(
+        'accumulates structured observations with priority and category',
+        () async {
+          final toolCalls = [
+            _makeToolCall(
+              name: ProjectAgentToolNames.recordObservations,
+              args: {
+                'observations': [
+                  {
+                    'text': 'Critical blocker found',
+                    'priority': 'critical',
+                    'category': 'grievance',
+                  },
+                  {
+                    'text': 'Good progress on delivery',
+                    'priority': 'notable',
+                    'category': 'excellence',
+                  },
+                ],
+              },
+            ),
+          ];
 
-        await strategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
-        );
+          await strategy.processToolCalls(
+            toolCalls: toolCalls,
+            manager: mockManager,
+          );
 
-        final observations = strategy.extractObservations();
-        expect(observations, hasLength(2));
-        expect(observations[0].text, 'Critical blocker found');
-        expect(observations[0].priority, ObservationPriority.critical);
-        expect(observations[0].category, ObservationCategory.grievance);
-        expect(observations[1].priority, ObservationPriority.notable);
-        expect(observations[1].category, ObservationCategory.excellence);
-      });
+          final observations = strategy.extractObservations();
+          expect(observations, hasLength(2));
+          expect(observations[0].text, 'Critical blocker found');
+          expect(observations[0].priority, ObservationPriority.critical);
+          expect(observations[0].category, ObservationCategory.grievance);
+          expect(observations[1].priority, ObservationPriority.notable);
+          expect(observations[1].category, ObservationCategory.excellence);
+        },
+      );
 
       test('returns error when observations is empty', () async {
         final toolCalls = [
@@ -587,8 +588,9 @@ void main() {
       });
 
       test('continues processing even if persistence fails', () async {
-        when(() => mockSyncService.upsertEntity(any()))
-            .thenThrow(Exception('DB error'));
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenThrow(Exception('DB error'));
 
         final toolCalls = [
           _makeToolCall(

@@ -245,17 +245,19 @@ void main() {
       expect(projectDeferredTools, hasLength(3));
     });
 
-    test('includes recommend_next_steps, update_project_status, create_task',
-        () {
-      expect(
-        projectDeferredTools,
-        containsAll([
-          ProjectAgentToolNames.recommendNextSteps,
-          ProjectAgentToolNames.updateProjectStatus,
-          ProjectAgentToolNames.createTask,
-        ]),
-      );
-    });
+    test(
+      'includes recommend_next_steps, update_project_status, create_task',
+      () {
+        expect(
+          projectDeferredTools,
+          containsAll([
+            ProjectAgentToolNames.recommendNextSteps,
+            ProjectAgentToolNames.updateProjectStatus,
+            ProjectAgentToolNames.createTask,
+          ]),
+        );
+      },
+    );
 
     test('does not include immediate tools', () {
       expect(
