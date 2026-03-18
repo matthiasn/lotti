@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -292,6 +294,10 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
   }
 
   Widget _buildPendingTile(BuildContext context) {
+    if (_item.toolName == TaskAgentToolNames.createTimeEntry) {
+      return _buildTimeEntryTile(context);
+    }
+
     return ListTile(
       dense: true,
       contentPadding: EdgeInsets.zero,
@@ -332,6 +338,140 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildTimeEntryTile(BuildContext context) {
+    final startRawValue = _item.args['startTime'];
+    final startRaw = startRawValue is String && startRawValue.trim().isNotEmpty
+        ? startRawValue.trim()
+        : null;
+    final hasEndTime = _item.args.containsKey('endTime');
+    final endRawValue = _item.args['endTime'];
+    final endRaw = endRawValue is String && endRawValue.trim().isNotEmpty
+        ? endRawValue.trim()
+        : null;
+    final summary = _item.args['summary'] is String
+        ? (_item.args['summary'] as String).trim()
+        : '';
+
+    final start = startRaw != null
+        ? parseTimeEntryLocalDateTime(startRaw)
+        : null;
+    final end = endRaw != null ? parseTimeEntryLocalDateTime(endRaw) : null;
+
+    final startStr = start != null
+        ? formatTimeEntryHhMm(start)
+        : (startRaw ?? '?');
+    final endStr = end != null
+        ? formatTimeEntryHhMm(end)
+        : hasEndTime
+        ? (endRaw ?? '?')
+        : context.messages.timeEntryItemRunning;
+
+    final dimStyle = context.textTheme.bodySmall?.copyWith(
+      color: context.colorScheme.onSurfaceVariant,
+    );
+    final valueStyle = context.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(
+              Icons.timer_outlined,
+              size: 16,
+              color: context.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTimeFieldRow(
+                  label: context.messages.timeEntryItemStart,
+                  value: startStr,
+                  dimStyle: dimStyle,
+                  valueStyle: valueStyle,
+                ),
+                const SizedBox(height: 4),
+                _buildTimeFieldRow(
+                  label: context.messages.timeEntryItemEnd,
+                  value: endStr,
+                  dimStyle: dimStyle,
+                  valueStyle: valueStyle,
+                ),
+                if (summary.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    summary,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.textTheme.bodySmall,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_busy)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.green.shade700,
+                  ),
+                  tooltip: context.messages.changeSetSwipeConfirm,
+                  onPressed: () => _confirm(context),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.cancel_outlined,
+                    color: context.colorScheme.error,
+                  ),
+                  tooltip: context.messages.changeSetSwipeReject,
+                  onPressed: () => _reject(context),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimeFieldRow({
+    required String label,
+    required String value,
+    required TextStyle? dimStyle,
+    required TextStyle? valueStyle,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('$label: ', style: dimStyle),
+        Expanded(
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            softWrap: false,
+            style: valueStyle,
+          ),
+        ),
+      ],
     );
   }
 

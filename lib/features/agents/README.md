@@ -98,6 +98,11 @@ flowchart TD
 
 ### 1b) Change Set Confirmation (User -> Tool Dispatch)
 
+Deferred `create_time_entry` confirmations enrich the dispatch args with the
+originating `ChangeSetEntity.createdAt` timestamp. That lets completed sessions
+validate against the wake that produced the proposal instead of the later human
+approval time, which avoids false rejections after midnight.
+
 ```mermaid
 flowchart TD
   A["ChangeSetSummaryCard"] --> B{"Confirm or Reject?"}

@@ -43,6 +43,9 @@ abstract final class TaskAgentToolNames {
   static const migrateChecklistItems = 'migrate_checklist_items';
   static const migrateChecklistItem = 'migrate_checklist_item';
 
+  // Time tracking tools.
+  static const createTimeEntry = 'create_time_entry';
+
   // Legacy single-item aliases (dispatched to batch handlers).
   static const addChecklistItem = 'add_checklist_item';
   static const updateChecklistItem = 'update_checklist_item';
@@ -78,6 +81,7 @@ class AgentToolRegistry {
     TaskAgentToolNames.setTaskLanguage,
     TaskAgentToolNames.createFollowUpTask,
     TaskAgentToolNames.migrateChecklistItems,
+    TaskAgentToolNames.createTimeEntry,
   };
 
   /// Batch tools that should be exploded into individual change item entries.
@@ -326,6 +330,51 @@ class AgentToolRegistry {
           },
         },
         'required': ['items', 'targetTaskId'],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.createTimeEntry,
+      description:
+          'Create a time tracking entry for a work session on the current '
+          'task. Use ONLY when the user has JUST NOW (within the last few '
+          'minutes to ~1 hour) dictated what they worked on. The dictation '
+          'must be from the current recording session — NEVER create entries '
+          'based on old transcripts, historical context, or text from '
+          'previous wakes. If unsure whether the dictation is recent, do NOT '
+          'call this tool. Supports two modes: (1) completed session with '
+          'start and end times, (2) running timer with start time only '
+          '(omit endTime).',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'startTime': {
+            'type': 'string',
+            'description':
+                'Start time in local ISO 8601 format with explicit time and '
+                "no timezone suffix (e.g., '2026-03-17T14:00:00'). Must be "
+                "today's date. Resolve spoken times like '2 PM' or '14:00' "
+                'to a full local timestamp using the current date from '
+                'context.',
+          },
+          'endTime': {
+            'type': 'string',
+            'description':
+                'End time in local ISO 8601 format with explicit time and no '
+                'timezone suffix. Omit to start a running timer. Must be '
+                'after startTime and on the same day. Must not be after the '
+                'current wake timestamp.',
+          },
+          'summary': {
+            'type': 'string',
+            'maxLength': 500,
+            'description':
+                'A distilled 1-2 sentence summary of what the user worked '
+                'on. Extract the essence from the dictation — do not copy '
+                "verbatim. Write in the task's content language.",
+          },
+        },
+        'required': ['startTime', 'summary'],
         'additionalProperties': false,
       },
     ),

@@ -4876,6 +4876,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get timeByCategoryChartTotalLabel => 'Celkem';
 
   @override
+  String get timeEntryItemEnd => 'Konec';
+
+  @override
+  String get timeEntryItemRunning => 'Probíhá';
+
+  @override
+  String get timeEntryItemStart => 'Začátek';
+
+  @override
   String get unlinkButton => 'Zrušit propojení';
 
   @override

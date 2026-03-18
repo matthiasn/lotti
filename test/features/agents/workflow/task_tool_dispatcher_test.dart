@@ -19,6 +19,7 @@ void main() {
   late MockChecklistRepository mockChecklistRepository;
   late MockLabelsRepository mockLabelsRepository;
   late MockPersistenceLogic mockPersistenceLogic;
+  late MockTimeService mockTimeService;
   late TaskToolDispatcher dispatcher;
 
   const taskId = 'task-001';
@@ -29,6 +30,7 @@ void main() {
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockPersistenceLogic = MockPersistenceLogic();
+    mockTimeService = MockTimeService();
 
     dispatcher = TaskToolDispatcher(
       journalDb: mockJournalDb,
@@ -36,6 +38,7 @@ void main() {
       checklistRepository: mockChecklistRepository,
       labelsRepository: mockLabelsRepository,
       persistenceLogic: mockPersistenceLogic,
+      timeService: mockTimeService,
     );
   });
 
@@ -584,6 +587,27 @@ void main() {
 
           expect(result.success, isTrue);
           expect(result.output, contains('Follow-Up Task'));
+        },
+      );
+
+      test(
+        'create_time_entry delegates to TimeEntryHandler',
+        () async {
+          // Dispatcher does a top-level task lookup before routing.
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => _makeTestTask(taskId));
+
+          // Missing summary causes TimeEntryHandler to return early,
+          // proving the dispatch route reaches the handler.
+          final result = await dispatcher.dispatch(
+            'create_time_entry',
+            {'startTime': '2026-03-17T14:00:00'},
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.errorMessage, 'Missing, empty, or too-long summary');
         },
       );
 

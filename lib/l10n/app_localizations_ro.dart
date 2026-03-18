@@ -4904,6 +4904,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get timeByCategoryChartTotalLabel => 'Total';
 
   @override
+  String get timeEntryItemEnd => 'Sfârșit';
+
+  @override
+  String get timeEntryItemRunning => 'În desfășurare';
+
+  @override
+  String get timeEntryItemStart => 'Început';
+
+  @override
   String get unlinkButton => 'Dezleagă';
 
   @override

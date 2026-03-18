@@ -31,6 +31,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.928" date="2026-03-17">
+      <description>
+          <p>Voice-driven time tracking: the task agent can now create time tracking entries from voice dictation, supporting both completed sessions with start/end times and running timers. Entries require user approval before being applied.</p>
+      </description>
+    </release>
     <release version="0.9.927" date="2026-03-16">
       <description>
           <p>Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up from paginating server history correctly, ensuring reliable message delivery after app restart.</p>

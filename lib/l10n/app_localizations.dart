@@ -8764,6 +8764,24 @@ abstract class AppLocalizations {
   /// **'Total'**
   String get timeByCategoryChartTotalLabel;
 
+  /// No description provided for @timeEntryItemEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get timeEntryItemEnd;
+
+  /// No description provided for @timeEntryItemRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get timeEntryItemRunning;
+
+  /// No description provided for @timeEntryItemStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get timeEntryItemStart;
+
   /// No description provided for @unlinkButton.
   ///
   /// In en, this message translates to:

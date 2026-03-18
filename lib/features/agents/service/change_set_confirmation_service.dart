@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -280,19 +281,21 @@ class ChangeSetConfirmationService {
     ChangeItem item,
     ChangeSetEntity changeSet,
   ) {
+    final contextualArgs = _injectDispatchContext(item, changeSet);
+
     if (item.toolName != TaskAgentToolNames.migrateChecklistItem) {
-      return item.args;
+      return contextualArgs;
     }
 
-    final targetTaskId = item.args['targetTaskId'];
+    final targetTaskId = contextualArgs['targetTaskId'];
     if (targetTaskId is! String || targetTaskId.isEmpty) {
-      return item.args;
+      return contextualArgs;
     }
 
     // Case 1: in-memory resolution from this service instance.
     final resolved = _resolvedIds[targetTaskId];
     if (resolved != null) {
-      return {...item.args, 'targetTaskId': resolved};
+      return {...contextualArgs, 'targetTaskId': resolved};
     }
 
     // Case 2: check if targetTaskId is a known placeholder in this change set.
@@ -308,7 +311,21 @@ class ChangeSetConfirmationService {
 
     // Case 3: targetTaskId is a real ID (already resolved by a prior
     // service instance via _persistResolvedIdToSiblings).
-    return item.args;
+    return contextualArgs;
+  }
+
+  Map<String, dynamic> _injectDispatchContext(
+    ChangeItem item,
+    ChangeSetEntity changeSet,
+  ) {
+    if (item.toolName != TaskAgentToolNames.createTimeEntry) {
+      return item.args;
+    }
+
+    return {
+      ...item.args,
+      timeEntryReferenceTimestampArg: changeSet.createdAt.toIso8601String(),
+    };
   }
 
   /// After a successful `create_follow_up_task` dispatch, updates sibling
