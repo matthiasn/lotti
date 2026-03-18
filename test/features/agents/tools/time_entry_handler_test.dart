@@ -5,12 +5,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/time_entry_handler.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -19,7 +18,6 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockTimeService mockTimeService;
   late MockDomainLogger mockDomainLogger;
-  late MockLoggingService mockLoggingService;
   late TimeEntryHandler handler;
 
   const sourceTaskId = 'source-task-001';
@@ -66,17 +64,12 @@ void main() {
   }
 
   setUp(() async {
-    await getIt.reset();
+    final mocks = await setUpTestGetIt();
 
+    mockJournalDb = mocks.journalDb;
     mockPersistenceLogic = MockPersistenceLogic();
-    mockJournalDb = MockJournalDb();
     mockTimeService = MockTimeService();
     mockDomainLogger = MockDomainLogger();
-    mockLoggingService = MockLoggingService();
-
-    getIt
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<MockJournalDb>(mockJournalDb);
 
     handler = TimeEntryHandler(
       persistenceLogic: mockPersistenceLogic,
@@ -87,30 +80,15 @@ void main() {
 
     // Default stubs.
     when(
-      () => mockJournalDb.journalEntityById(any()),
-    ).thenAnswer((_) async => null);
-
-    when(
       () => mockDomainLogger.log(
         any(),
         any(),
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
-
-    when(
-      () => mockLoggingService.captureException(
-        any<dynamic>(),
-        domain: any(named: 'domain'),
-        subDomain: any(named: 'subDomain'),
-        stackTrace: any<dynamic>(named: 'stackTrace'),
-      ),
-    ).thenAnswer((_) async {});
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   group('TimeEntryHandler', () {
     group('validation', () {
@@ -825,13 +803,14 @@ void main() {
 
           expect(result.success, isTrue);
 
-          verify(
+          final captured = verify(
             () => mockPersistenceLogic.createMetadata(
               dateFrom: any(named: 'dateFrom'),
               dateTo: any(named: 'dateTo'),
-              categoryId: any(named: 'categoryId'),
+              categoryId: captureAny(named: 'categoryId'),
             ),
-          ).called(1);
+          )..called(1);
+          expect(captured.captured.single, isNull);
         });
       });
     });

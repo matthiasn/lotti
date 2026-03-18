@@ -82,9 +82,12 @@ class TimeEntryHandler {
     final now = clock.now();
 
     // --- Parse and validate optional endTime ---
-    final endTimeRaw = args['endTime'];
+    // Use containsKey to distinguish "key absent" (running timer) from
+    // "key present with null value" (which is also an error, not running timer).
+    final hasEndTime = args.containsKey('endTime');
     DateTime? endTime;
-    if (endTimeRaw != null) {
+    if (hasEndTime) {
+      final endTimeRaw = args['endTime'];
       if (endTimeRaw is! String || endTimeRaw.isEmpty) {
         return const ToolExecutionResult(
           success: false,
@@ -107,7 +110,7 @@ class TimeEntryHandler {
       }
     }
 
-    final isRunningTimer = endTime == null;
+    final isRunningTimer = !hasEndTime;
     final completedReference = _resolveCompletedSessionReference(args, now);
 
     if (isRunningTimer) {
@@ -260,7 +263,7 @@ class TimeEntryHandler {
 
     final timeRange = isRunningTimer
         ? 'running timer from ${formatTimeEntryHhMm(startTime)}'
-        : '${formatTimeEntryHhMm(startTime)}–${formatTimeEntryHhMm(endTime)}';
+        : '${formatTimeEntryHhMm(startTime)}–${formatTimeEntryHhMm(endTime!)}';
 
     return ToolExecutionResult(
       success: true,
