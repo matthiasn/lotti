@@ -62,6 +62,7 @@ import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -432,6 +433,8 @@ class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 class MockRatingRepository extends Mock implements RatingRepository {}
+
+class MockProjectRepository extends Mock implements ProjectRepository {}
 
 class MockSyncDatabase extends Mock implements SyncDatabase {}
 

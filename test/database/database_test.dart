@@ -127,6 +127,11 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
+    name: enableProjectsFlag,
+    description: 'Enable Projects?',
+    status: false,
+  ),
+  const ConfigFlag(
     name: logAgentRuntimeFlag,
     description: 'Log agent runtime (wake orchestrator)',
     status: true,

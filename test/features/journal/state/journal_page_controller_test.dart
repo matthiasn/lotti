@@ -116,6 +116,10 @@ void main() {
         ),
       ).thenAnswer((_) async => <JournalEntity>[]);
 
+      when(
+        () => mockJournalDb.getTaskIdsForProjects(any()),
+      ).thenAnswer((_) async => <String>{});
+
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
@@ -3278,7 +3282,7 @@ void main() {
         },
       );
 
-      test('over-fetches when agent filter is active', () {
+      test('fetches in normal-sized chunks when agent filter is active', () {
         fakeAsync((async) {
           int? capturedLimit;
           when(
@@ -3310,10 +3314,366 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          // Over-fetch multiplier is 3x
-          expect(capturedLimit, equals(150));
+          // Post-filters use normal chunk size; loop handles exhaustion
+          expect(capturedLimit, equals(50));
         });
       });
+    });
+
+    group('Filter Management - Project', () {
+      test('toggleProjectFilter adds project when not present', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-1'}));
+        });
+      });
+
+      test('toggleProjectFilter removes project when present', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('clearProjectFilter removes all project selections', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-2');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.clearProjectFilter();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('removeStaleProjectFilters removes only stale IDs', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller
+            ..toggleProjectFilter('proj-1')
+            ..toggleProjectFilter('proj-2')
+            ..toggleProjectFilter('proj-3');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-2'}));
+        });
+      });
+
+      test('removeStaleProjectFilters is no-op when staleIds is empty', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.removeStaleProjectFilters(<String>{});
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, equals({'proj-1'}));
+        });
+      });
+
+      test('toggleSelectedCategoryIds clears project filter', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          // Set a project filter first
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          var state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isNotEmpty);
+
+          // Changing category should clear project filters
+          controller.toggleSelectedCategoryIds('cat-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('selectedAllCategories clears project filter', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.selectedAllCategories();
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          final state = container.read(journalPageControllerProvider(true));
+          expect(state.selectedProjectIds, isEmpty);
+        });
+      });
+
+      test('project filter post-filters tasks from _runQuery', () {
+        fakeAsync((async) {
+          final taskInProject = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_p1',
+                createdAt: DateTime(2024, 1, 1),
+                utcOffset: 0,
+              ),
+              title: 'Task in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 1),
+              dateTo: DateTime(2024, 1, 1),
+            ),
+            meta: Metadata(
+              id: 'task-in-project',
+              createdAt: DateTime(2024, 1, 1),
+              dateFrom: DateTime(2024, 1, 1),
+              dateTo: DateTime(2024, 1, 1),
+              updatedAt: DateTime(2024, 1, 1),
+            ),
+          );
+
+          final taskNotInProject = Task(
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status_p2',
+                createdAt: DateTime(2024, 1, 2),
+                utcOffset: 0,
+              ),
+              title: 'Task not in project',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+            ),
+            meta: Metadata(
+              id: 'task-not-in-project',
+              createdAt: DateTime(2024, 1, 2),
+              dateFrom: DateTime(2024, 1, 2),
+              dateTo: DateTime(2024, 1, 2),
+              updatedAt: DateTime(2024, 1, 2),
+            ),
+          );
+
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [taskInProject, taskNotInProject],
+          );
+
+          // getTaskIdsForProjects returns only the task that's in the project
+          when(
+            () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+          ).thenAnswer((_) async => {'task-in-project'});
+
+          final controller = container.read(
+            journalPageControllerProvider(true).notifier,
+          );
+
+          async.elapse(const Duration(milliseconds: 50));
+          async.flushMicrotasks();
+
+          controller.toggleProjectFilter('proj-1');
+
+          async.elapse(const Duration(milliseconds: 100));
+          async.flushMicrotasks();
+
+          final items = container
+              .read(journalPageControllerProvider(true))
+              .pagingController
+              ?.value
+              .items;
+
+          expect(items, isNotNull);
+          expect(items!.length, equals(1));
+          expect(items.first.meta.id, equals('task-in-project'));
+        });
+      });
+
+      test(
+        'project filter with byDueDate sort applies both filter and sort',
+        () {
+          fakeAsync((async) {
+            final taskWithDue = Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_pd1',
+                  createdAt: DateTime(2024, 1, 1),
+                  utcOffset: 0,
+                ),
+                title: 'Task with due in project',
+                statusHistory: const [],
+                dateFrom: DateTime(2024, 1, 1),
+                dateTo: DateTime(2024, 1, 1),
+                due: DateTime(2024, 6, 15),
+              ),
+              meta: Metadata(
+                id: 'task-proj-due',
+                createdAt: DateTime(2024, 1, 1),
+                dateFrom: DateTime(2024, 1, 1),
+                dateTo: DateTime(2024, 1, 1),
+                updatedAt: DateTime(2024, 1, 1),
+              ),
+            );
+
+            final taskNoDue = Task(
+              data: TaskData(
+                status: TaskStatus.open(
+                  id: 'status_pd2',
+                  createdAt: DateTime(2024, 1, 2),
+                  utcOffset: 0,
+                ),
+                title: 'Task no due in project',
+                statusHistory: const [],
+                dateFrom: DateTime(2024, 1, 2),
+                dateTo: DateTime(2024, 1, 2),
+              ),
+              meta: Metadata(
+                id: 'task-proj-nodue',
+                createdAt: DateTime(2024, 1, 2),
+                dateFrom: DateTime(2024, 1, 2),
+                dateTo: DateTime(2024, 1, 2),
+                updatedAt: DateTime(2024, 1, 2),
+              ),
+            );
+
+            when(
+              () => mockJournalDb.getTasks(
+                ids: any(named: 'ids'),
+                starredStatuses: any(named: 'starredStatuses'),
+                taskStatuses: any(named: 'taskStatuses'),
+                categoryIds: any(named: 'categoryIds'),
+                labelIds: any(named: 'labelIds'),
+                priorities: any(named: 'priorities'),
+                sortByDate: any(named: 'sortByDate'),
+                limit: any(named: 'limit'),
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((_) async => [taskNoDue, taskWithDue]);
+
+            when(
+              () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+            ).thenAnswer(
+              (_) async => {'task-proj-due', 'task-proj-nodue'},
+            );
+
+            final controller = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            controller
+              ..toggleProjectFilter('proj-1')
+              ..setSortOption(TaskSortOption.byDueDate);
+
+            async.elapse(const Duration(milliseconds: 100));
+            async.flushMicrotasks();
+
+            final items = container
+                .read(journalPageControllerProvider(true))
+                .pagingController
+                ?.value
+                .items;
+
+            expect(items, isNotNull);
+            expect(items!.length, equals(2));
+            // Task with due date should come first
+            expect(items.first.meta.id, equals('task-proj-due'));
+          });
+        },
+      );
     });
 
     group('Vector Search', () {

@@ -22,6 +22,7 @@ CREATE TABLE journal (
   geohash_string TEXT,
   geohash_int INTEGER,
   category TEXT NOT NULL DEFAULT '',
+  project_id TEXT,
   PRIMARY KEY (id)
 ) as JournalDbEntity;
 
@@ -70,6 +71,11 @@ CREATE INDEX idx_journal_tasks_due_active ON journal(
   deleted COLLATE BINARY ASC,
   json_extract(serialized, '$.data.due') ASC
 );
+CREATE INDEX idx_journal_project_id ON journal(project_id)
+WHERE type = 'Task'
+  AND task = 1
+  AND deleted = FALSE
+  AND project_id IS NOT NULL;
 
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
@@ -1201,25 +1207,21 @@ SELECT * FROM journal
   ORDER BY date_from DESC;
 
 tasksForProject:
-SELECT j.* FROM journal j
-  INNER JOIN linked_entries le ON le.to_id = j.id
-  WHERE le.from_id = :projectId
-  AND le.type = 'ProjectLink'
-  AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false
-  AND j.type = 'Task'
-  ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;
+SELECT * FROM journal
+  WHERE project_id = :projectId
+  AND deleted = false
+  AND type = 'Task'
+  AND task = 1
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
 
 tasksForProjectByPrivateStatuses:
-SELECT j.* FROM journal j
-  INNER JOIN linked_entries le ON le.to_id = j.id
-  WHERE le.from_id = :projectId
-  AND le.type = 'ProjectLink'
-  AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false
-  AND j.type = 'Task'
-  AND j.private IN :privateStatuses
-  ORDER BY COALESCE(j.task_priority_rank, 2) ASC, j.date_from DESC;
+SELECT * FROM journal
+  WHERE project_id = :projectId
+  AND deleted = false
+  AND type = 'Task'
+  AND task = 1
+  AND private IN :privateStatuses
+  ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
 
 projectLinkForTask:
 SELECT * FROM linked_entries

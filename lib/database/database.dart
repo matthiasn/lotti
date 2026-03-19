@@ -36,6 +36,17 @@ typedef LinkedEntityTimeSpan = ({
   DateTime dateTo,
 });
 
+/// SQL subquery that resolves the most-recent active ProjectLink for a task.
+/// Used both during migration back-fill and in [JournalDb.upsertJournalDbEntity]
+/// to keep the denormalized `project_id` column consistent.
+const _projectIdSubquery =
+    '  SELECT le.from_id FROM linked_entries le'
+    '  WHERE le.to_id = journal.id'
+    "  AND le.type = 'ProjectLink'"
+    '  AND COALESCE(le.hidden, false) = false'
+    '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC'
+    '  LIMIT 1';
+
 @DriftDatabase(
   include: {'database.drift'},
 )
@@ -72,7 +83,7 @@ class JournalDb extends _$JournalDb {
   bool _configFlagsLoaded = false;
 
   @override
-  int get schemaVersion => 37;
+  int get schemaVersion => 38;
 
   @override
   MigrationStrategy get migration {
@@ -380,6 +391,36 @@ class JournalDb extends _$JournalDb {
             }
           }();
         }
+
+        // v38: Add denormalized project_id column to journal for efficient
+        // task-by-project filtering without a JOIN on linked_entries.
+        if (from < 38) {
+          await () async {
+            if (!await _tableExists('journal')) return;
+            DevLogger.log(
+              name: 'JournalDb',
+              message: 'Adding project_id column to journal table',
+            );
+            final hasProjectId = await _columnExists('journal', 'project_id');
+            if (!hasProjectId) {
+              await m.addColumn(journal, journal.projectId);
+            }
+            // Backfill project_id from the most-recent active ProjectLink.
+            // Guarded by try-catch because minimal migration-test schemas may
+            // not include the linked_entries table.
+            try {
+              await customStatement(
+                "UPDATE journal SET project_id = ($_projectIdSubquery) WHERE type = 'Task'",
+              );
+            } catch (_) {
+              // linked_entries does not exist in this DB — backfill skipped.
+            }
+            await customStatement(
+              'DROP INDEX IF EXISTS idx_journal_project_id',
+            );
+            await m.createIndex(idxJournalProjectId);
+          }();
+        }
       },
     );
   }
@@ -404,7 +445,15 @@ class JournalDb extends _$JournalDb {
       _columnExists(table, column);
 
   Future<int> upsertJournalDbEntity(JournalDbEntity entry) async {
-    return into(journal).insertOnConflictUpdate(entry);
+    final res = await into(journal).insertOnConflictUpdate(entry);
+    // insertOnConflictUpdate overwrites every column including project_id
+    // (which is not in the serialized payload). Restore it from linked_entries
+    // so the denormalized column stays consistent after any upsert.
+    await customStatement(
+      'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
+      [entry.id],
+    );
+    return res;
   }
 
   Future<void> updateTaskPriorityColumn({
@@ -424,6 +473,39 @@ class JournalDb extends _$JournalDb {
         error: e,
       );
     }
+  }
+
+  /// Updates the denormalized `project_id` column for a task row.
+  ///
+  /// Pass [projectId] = null to clear the project association.
+  Future<void> updateProjectIdColumn(String taskId, String? projectId) async {
+    try {
+      await customStatement(
+        'UPDATE journal SET project_id = ? WHERE id = ?',
+        [projectId, taskId],
+      );
+    } catch (e) {
+      DevLogger.error(
+        name: 'JournalDb',
+        message: 'updateProjectIdColumn error',
+        error: e,
+      );
+    }
+  }
+
+  /// Returns the IDs of all non-deleted tasks whose `project_id` is in
+  /// [projectIds]. Uses the `idx_journal_project_id` partial index.
+  Future<Set<String>> getTaskIdsForProjects(Set<String> projectIds) async {
+    if (projectIds.isEmpty) return {};
+    final rows =
+        await (select(journal)..where(
+              (t) =>
+                  t.projectId.isIn(projectIds.toList()) &
+                  t.type.equals('Task') &
+                  t.deleted.equals(false),
+            ))
+            .get();
+    return rows.map((r) => r.id).toSet();
   }
 
   Future<int> addConflict(Conflict conflict) async {
@@ -1771,7 +1853,7 @@ class JournalDb extends _$JournalDb {
     if (res.isEmpty) return null;
     final entity = fromDbEntity(res.first);
     if (entity is! ProjectEntry) return null;
-    if (!privateStatuses.contains(entity.meta.private)) return null;
+    if (!privateStatuses.contains(entity.meta.private ?? false)) return null;
     return entity;
   }
 
@@ -2152,10 +2234,29 @@ class JournalDb extends _$JournalDb {
               ))
               .getSingleOrNull();
       if (existingByTriple != null && existingByTriple.id != dbLink.id) {
-        return 0; // duplicate secondary key
+        if (existingByTriple.hidden != true) {
+          return 0; // genuine active duplicate — block it
+        }
+        // The existing row is a soft-deleted tombstone. Hard-delete it so the
+        // UNIQUE(from_id, to_id, type) constraint doesn't block the new insert.
+        await (delete(
+          linkedEntries,
+        )..where((t) => t.id.equals(existingByTriple.id))).go();
       }
 
-      final res = into(linkedEntries).insertOnConflictUpdate(dbLink);
+      final res = await into(linkedEntries).insertOnConflictUpdate(dbLink);
+
+      // Keep the denormalized project_id column in sync whenever a
+      // ProjectLink is created or soft-deleted. Use the same "latest
+      // non-hidden ProjectLink wins" subquery so late-arriving sync
+      // messages and hide-then-restore sequences remain correct.
+      if (res != 0 && dbLink.type == 'ProjectLink') {
+        await customStatement(
+          'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
+          [dbLink.toId],
+        );
+      }
+
       return res;
     } else {
       return 0;

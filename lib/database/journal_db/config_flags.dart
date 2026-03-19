@@ -117,6 +117,14 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableProjectsFlag,
+      description: 'Enable Projects?',
+      status: false,
+    ),
+  );
+
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: logAgentRuntimeFlag,
       description: 'Log agent runtime (wake orchestrator)',
       status: true,
