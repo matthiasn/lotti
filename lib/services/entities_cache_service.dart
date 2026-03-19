@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/services/db_notification.dart';
 
@@ -22,7 +21,6 @@ class EntitiesCacheService {
   Map<String, HabitDefinition> habitsById = {};
   Map<String, DashboardDefinition> dashboardsById = {};
   Map<String, LabelDefinition> labelsById = {};
-  Map<String, TagEntity> tagsById = {};
   Map<String, List<LabelDefinition>> labelsByCategoryId = {};
   final List<LabelDefinition> _globalLabels = [];
   bool _showPrivateEntries = false;
@@ -38,8 +36,6 @@ class EntitiesCacheService {
   bool _dashboardsPending = false;
   bool _labelsLoading = false;
   bool _labelsPending = false;
-  bool _tagsLoading = false;
-  bool _tagsPending = false;
 
   bool get showPrivateEntries => _showPrivateEntries;
 
@@ -58,7 +54,6 @@ class EntitiesCacheService {
       _loadHabits(),
       _loadDashboards(),
       _loadLabels(),
-      _loadTags(),
       _loadPrivateFlag(),
     ]);
   }
@@ -79,9 +74,6 @@ class EntitiesCacheService {
     final needLabels =
         ids.contains(labelsNotification) ||
         ids.contains(privateToggleNotification);
-    final needTags =
-        ids.contains(tagsNotification) ||
-        ids.contains(privateToggleNotification);
 
     if (ids.contains(privateToggleNotification)) {
       _loadPrivateFlag();
@@ -91,7 +83,6 @@ class EntitiesCacheService {
     if (needDashboards) _loadDashboards();
     if (needMeasurables) _loadMeasurables();
     if (needLabels) _loadLabels();
-    if (needTags) _loadTags();
   }
 
   Future<void> _loadMeasurables() async {
@@ -225,27 +216,6 @@ class EntitiesCacheService {
       if (_labelsPending) {
         _labelsPending = false;
         await _loadLabels();
-      }
-    }
-  }
-
-  Future<void> _loadTags() async {
-    if (_tagsLoading) {
-      _tagsPending = true;
-      return;
-    }
-    _tagsLoading = true;
-    try {
-      final items = await _journalDb.getAllTags();
-      tagsById.clear();
-      for (final item in items) {
-        tagsById[item.id] = item;
-      }
-    } finally {
-      _tagsLoading = false;
-      if (_tagsPending) {
-        _tagsPending = false;
-        await _loadTags();
       }
     }
   }

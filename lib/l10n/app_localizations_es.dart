@@ -2918,21 +2918,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalShowMapHint => 'Mostrar mapa';
 
   @override
-  String get journalTagPlusHint => 'Administrar etiquetas de entrada';
-
-  @override
-  String get journalTagsCopyHint => 'Copiar etiquetas';
-
-  @override
-  String get journalTagsLabel => 'Etiquetas:';
-
-  @override
-  String get journalTagsPasteHint => 'Pegar etiquetas';
-
-  @override
-  String get journalTagsRemoveHint => 'Eliminar etiqueta';
-
-  @override
   String get journalToggleFlaggedTitle => 'Marcado';
 
   @override
@@ -4418,39 +4403,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configurar sincronización y ver estadísticas';
 
   @override
-  String get settingsTagsDeleteTooltip => 'Eliminar etiqueta';
-
-  @override
-  String get settingsTagsDetailsLabel => 'Detalles de la etiqueta';
-
-  @override
-  String get settingsTagsHideLabel => 'Ocultar de las sugerencias:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Privado:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Guardar';
-
-  @override
-  String get settingsTagsTagName => 'Etiqueta:';
-
-  @override
-  String get settingsTagsTitle => 'Etiquetas';
-
-  @override
-  String get settingsTagsTypeLabel => 'Tipo de etiqueta:';
-
-  @override
-  String get settingsTagsTypePerson => 'PERSONA';
-
-  @override
-  String get settingsTagsTypeStory => 'HISTORIA';
-
-  @override
-  String get settingsTagsTypeTag => 'ETIQUETA';
-
-  @override
   String get settingsThemingAutomatic => 'Automático';
 
   @override
@@ -4622,9 +4574,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Entrada de diario';
 
   @override
-  String get syncPayloadTagEntity => 'Entidad de etiqueta';
-
-  @override
   String get syncPayloadThemingSelection => 'Selección de tema';
 
   @override
@@ -4690,9 +4639,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Medibles';
-
-  @override
-  String get syncStepTags => 'Etiquetas de hashtag';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Cancelar';

@@ -4,7 +4,6 @@ import 'package:lotti/database/common.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/tags_service.dart';
 
 part 'fts5_db.g.dart';
 
@@ -40,7 +39,6 @@ class Fts5Db extends _$Fts5Db {
       await deleteEntry('"$uuid"');
     }
 
-    final tagsService = getIt<TagsService>();
     final entitiesCacheService = getIt<EntitiesCacheService>();
 
     final plainText = entry.entryText?.plainText ?? '';
@@ -74,10 +72,6 @@ class Fts5Db extends _$Fts5Db {
       orElse: () => '',
     );
 
-    final tagsString = entry.meta.tagIds
-        ?.map((tagId) => tagsService.getTagById(tagId)?.tag ?? '')
-        .join(' , ');
-
     if (plainText.trim().isNotEmpty ||
         title.trim().isNotEmpty ||
         summary.trim().isNotEmpty) {
@@ -85,7 +79,7 @@ class Fts5Db extends _$Fts5Db {
         plainText,
         title,
         summary,
-        tagsString ?? '',
+        '',
         uuid,
       );
     }

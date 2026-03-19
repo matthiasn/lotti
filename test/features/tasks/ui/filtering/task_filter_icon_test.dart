@@ -155,7 +155,6 @@ void main() {
 
     mockState = JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: {},
       showPrivateEntries: false,
       selectedEntryTypes: const [],

@@ -16,10 +16,6 @@ final Color habitSkipColor = successColor.lighten().desaturate().mix(
   failColor.lighten().desaturate().complement(),
 );
 
-const tagColor = Color.fromRGBO(155, 200, 246, 1);
-const tagTextColor = Color.fromRGBO(51, 51, 51, 1);
-const personTagColor = Color.fromRGBO(55, 201, 154, 1);
-const storyTagColor = Color.fromRGBO(200, 120, 0, 1);
 const starredGold = Color.fromRGBO(255, 215, 0, 1);
 
 // Task status colors - light mode

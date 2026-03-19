@@ -309,11 +309,6 @@ class OutboxService {
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncTagEntity msg => _enqueueTagEntity(
-          msg: msg,
-          commonFields: commonFields,
-          hostHash: hostHash,
-        ),
         final SyncThemingSelection msg => _enqueueThemingSelection(
           msg: msg,
           commonFields: commonFields,
@@ -365,7 +360,6 @@ class OutboxService {
       SyncAgentLink() => OutboxPriority.normal.index,
       SyncThemingSelection() => OutboxPriority.normal.index,
       SyncEntityDefinition() => OutboxPriority.low.index,
-      SyncTagEntity() => OutboxPriority.low.index,
       SyncAiConfig() => OutboxPriority.low.index,
       SyncAiConfigDelete() => OutboxPriority.low.index,
     };
@@ -1247,18 +1241,6 @@ class OutboxService {
     logMessage:
         'enqueue type=SyncAiConfigDelete subject=aiConfigDelete '
         'id=${msg.id}',
-  );
-
-  Future<bool> _enqueueTagEntity({
-    required SyncTagEntity msg,
-    required OutboxCompanion commonFields,
-    required String? hostHash,
-  }) => _enqueueSimple(
-    commonFields: commonFields,
-    subject: '$hostHash:tag',
-    logMessage:
-        'enqueue type=SyncTagEntity subject=$hostHash:tag '
-        'id=${msg.tagEntity.id}',
   );
 
   Future<bool> _enqueueThemingSelection({

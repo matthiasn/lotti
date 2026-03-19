@@ -20,7 +20,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/labels/ui/widgets/entry_labels_display.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
@@ -41,7 +40,6 @@ class EntryDetailsWidget extends ConsumerWidget {
     super.key,
     this.showTaskDetails = false,
     this.hideTaskEntries = false,
-    this.parentTags,
     this.linkedFrom,
     this.link,
     this.isHighlighted = false,
@@ -57,7 +55,6 @@ class EntryDetailsWidget extends ConsumerWidget {
 
   final JournalEntity? linkedFrom;
   final EntryLink? link;
-  final Set<String>? parentTags;
 
   @override
   Widget build(
@@ -116,7 +113,6 @@ class EntryDetailsWidget extends ConsumerWidget {
           EntryDetailsContent(
             itemId,
             linkedFrom: linkedFrom,
-            parentTags: parentTags,
             link: link,
           ),
         ],
@@ -384,7 +380,6 @@ class EntryDetailsContent extends ConsumerWidget {
     this.itemId, {
     this.linkedFrom,
     this.link,
-    this.parentTags,
     super.key,
   });
 
@@ -392,8 +387,6 @@ class EntryDetailsContent extends ConsumerWidget {
 
   final JournalEntity? linkedFrom;
   final EntryLink? link;
-
-  final Set<String>? parentTags;
 
   @override
   Widget build(
@@ -521,7 +514,6 @@ class EntryDetailsContent extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           header,
-          TagsListWidget(entryId: itemId, parentTags: parentTags),
           if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
           if (item is JournalImage) EntryImageWidget(item),
           if (!shouldHideEditor) EditorWidget(entryId: itemId),
@@ -547,7 +539,6 @@ class EntryDetailsContent extends ConsumerWidget {
       children: [
         if (item is JournalImage) EntryImageWidget(item),
         if (item is JournalAudio && detailSection != null) detailSection,
-        TagsListWidget(entryId: itemId, parentTags: parentTags),
         if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
         if (item is JournalAudio)

@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -59,7 +57,6 @@ void main() {
       mockEntitiesCacheService = MockEntitiesCacheService();
       fakeTimeService = FakeTimeService();
 
-      final mockTagsService = mockTagsServiceWithTags([]);
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
 
@@ -70,7 +67,6 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(fakeTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -82,14 +78,6 @@ void main() {
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
-      );
-
-      when(() => mockTagsService.stream).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
       when(() => mockJournalDb.watchConfigFlags()).thenAnswer(

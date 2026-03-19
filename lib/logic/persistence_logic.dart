@@ -20,7 +20,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
@@ -45,7 +44,6 @@ class PersistenceLogic {
     DateTime? dateTo,
     String? uuidV5Input,
     bool? private,
-    List<String>? tagIds,
     List<String>? labelIds,
     String? categoryId,
     bool? starred,
@@ -55,7 +53,6 @@ class PersistenceLogic {
     dateTo: dateTo,
     uuidV5Input: uuidV5Input,
     private: private,
-    tagIds: tagIds,
     labelIds: labelIds,
     categoryId: categoryId,
     starred: starred,
@@ -100,7 +97,6 @@ class PersistenceLogic {
       await createDbEntity(
         journalEntity,
         shouldAddGeolocation: false,
-        addTags: false,
       );
       return journalEntity;
     } catch (exception, stackTrace) {
@@ -129,7 +125,6 @@ class PersistenceLogic {
       await createDbEntity(
         workout,
         shouldAddGeolocation: false,
-        addTags: false,
       );
 
       return workout;
@@ -222,9 +217,6 @@ class PersistenceLogic {
     String? comment,
   }) async {
     try {
-      final defaultStoryId = habitDefinition?.defaultStoryId;
-      final tagIds = defaultStoryId != null ? [defaultStoryId] : <String>[];
-
       final habitCompletionEntry = HabitCompletionEntry(
         data: data,
         meta: await createMetadata(
@@ -232,7 +224,6 @@ class PersistenceLogic {
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
           private: habitDefinition?.private,
-          tagIds: tagIds,
         ),
         entryText: entryTextFromPlain(comment),
       );
@@ -401,47 +392,34 @@ class PersistenceLogic {
     JournalEntity journalEntity, {
     bool shouldAddGeolocation = true,
     bool enqueueSync = true,
-    bool addTags = true,
     String? linkedId,
   }) async {
     try {
-      final tagsService = getIt<TagsService>();
       JournalEntity? linked;
 
       if (linkedId != null) {
         linked = await _journalDb.journalEntityById(linkedId);
       }
 
-      final linkedTagIds = linked?.meta.tagIds;
-      final storyTags = tagsService.getFilteredStoryTagIds(linkedTagIds);
-
-      final withTags = journalEntity.copyWith(
+      final withContext = journalEntity.copyWith(
         meta: journalEntity.meta.copyWith(
           private: linked?.meta.private,
           categoryId: journalEntity.categoryId ?? linked?.categoryId,
-          tagIds: <String>{
-            ...?journalEntity.meta.tagIds,
-            ...storyTags,
-          }.toList(),
         ),
       );
 
       final res = await _journalDb.updateJournalEntity(
-        withTags,
+        withContext,
         overwrite: false,
       );
 
       final saved = res.applied;
 
-      if (addTags && saved) {
-        await _journalDb.addTagged(withTags);
-      }
-
       if (saved && enqueueSync) {
         await outboxService.enqueueMessage(
           SyncMessage.journalEntity(
             id: journalEntity.id,
-            vectorClock: withTags.meta.vectorClock,
+            vectorClock: withContext.meta.vectorClock,
             jsonPath: relativeEntityPath(journalEntity),
             status: SyncEntryStatus.initial,
             originatingHostId: await _vectorClockService.getHost(),
@@ -452,11 +430,11 @@ class PersistenceLogic {
       if (linked != null) {
         await createLink(
           fromId: linked.meta.id,
-          toId: withTags.meta.id,
+          toId: withContext.meta.id,
         );
       }
 
-      final affectedIds = withTags.affectedIds;
+      final affectedIds = withContext.affectedIds;
 
       if (linkedId != null) {
         affectedIds.add(linkedId);
@@ -692,7 +670,6 @@ class PersistenceLogic {
       );
       final applied = (await updateDbEntity(entityWithUpdatedMeta)) ?? false;
       if (applied) {
-        await _journalDb.addTagged(entityWithUpdatedMeta);
         await _journalDb.addLabeled(entityWithUpdatedMeta);
       }
       return applied;

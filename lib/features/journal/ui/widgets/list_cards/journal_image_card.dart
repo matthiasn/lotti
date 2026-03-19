@@ -3,7 +3,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -77,9 +76,6 @@ class ModernJournalImageCard extends StatelessWidget {
                 // Header with date and icons
                 _buildHeader(context),
 
-                const SizedBox(height: 8),
-                // Tags
-                TagsViewWidget(item: item),
                 const SizedBox(height: 8),
                 // Text content
                 Expanded(

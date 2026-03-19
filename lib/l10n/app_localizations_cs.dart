@@ -2852,21 +2852,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalShowMapHint => 'Zobrazit mapu';
 
   @override
-  String get journalTagPlusHint => 'Spravovat tagy záznamů';
-
-  @override
-  String get journalTagsCopyHint => 'Kopírovat štítky';
-
-  @override
-  String get journalTagsLabel => 'Štítky:';
-
-  @override
-  String get journalTagsPasteHint => 'Vložit štítky';
-
-  @override
-  String get journalTagsRemoveHint => 'Odstranit tag';
-
-  @override
   String get journalToggleFlaggedTitle => 'Označené';
 
   @override
@@ -4331,39 +4316,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nastavte synchronizaci a zobrazte statistiky';
 
   @override
-  String get settingsTagsDeleteTooltip => 'Odstranit štítek';
-
-  @override
-  String get settingsTagsDetailsLabel => 'Podrobnosti o štítcích';
-
-  @override
-  String get settingsTagsHideLabel => 'Skrýt z návrhů:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Soukromé:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Uložit';
-
-  @override
-  String get settingsTagsTagName => 'Štítek:';
-
-  @override
-  String get settingsTagsTitle => 'Štítky';
-
-  @override
-  String get settingsTagsTypeLabel => 'Typ štítku:';
-
-  @override
-  String get settingsTagsTypePerson => 'OSOBA';
-
-  @override
-  String get settingsTagsTypeStory => 'PŘÍBĚH';
-
-  @override
-  String get settingsTagsTypeTag => 'ŠTÍTEK';
-
-  @override
   String get settingsThemingAutomatic => 'Automaticky';
 
   @override
@@ -4536,9 +4488,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Položka deníku';
 
   @override
-  String get syncPayloadTagEntity => 'Entita štítku';
-
-  @override
   String get syncPayloadThemingSelection => 'Výběr tématu';
 
   @override
@@ -4603,9 +4552,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Měřitelné hodnoty';
-
-  @override
-  String get syncStepTags => 'Tagy';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Cancel';

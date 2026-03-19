@@ -16,7 +16,6 @@ void main() {
     Set<DisplayFilter> filters = const {},
   }) {
     return JournalPageState(
-      tagIds: <String>{},
       filters: filters,
       fullTextMatches: {},
       taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],

@@ -117,7 +117,6 @@ void main() {
         linkedId: any(named: 'linkedId'),
         shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
         enqueueSync: any(named: 'enqueueSync'),
-        addTags: any(named: 'addTags'),
       ),
     ).thenAnswer((_) async => true);
 
@@ -127,7 +126,6 @@ void main() {
         linkedId: any(named: 'linkedId'),
         shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
         enqueueSync: any(named: 'enqueueSync'),
-        addTags: any(named: 'addTags'),
       ),
     ).thenAnswer((_) async => true);
   });
@@ -186,7 +184,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
     });
@@ -206,7 +203,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
     });
@@ -230,7 +226,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
       verify(
@@ -239,7 +234,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
     });
@@ -259,7 +253,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       );
     });
@@ -284,7 +277,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
       verify(
@@ -293,7 +285,6 @@ void main() {
           linkedId: any(named: 'linkedId'),
           shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
           enqueueSync: any(named: 'enqueueSync'),
-          addTags: any(named: 'addTags'),
         ),
       ).called(1);
     });

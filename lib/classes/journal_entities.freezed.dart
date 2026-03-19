@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$Metadata {
 
- String get id; DateTime get createdAt; DateTime get updatedAt; DateTime get dateFrom; DateTime get dateTo; String? get categoryId; List<String>? get tags; List<String>? get tagIds; List<String>? get labelIds; int? get utcOffset; String? get timezone; VectorClock? get vectorClock; DateTime? get deletedAt; EntryFlag? get flag; bool? get starred; bool? get private;
+ String get id; DateTime get createdAt; DateTime get updatedAt; DateTime get dateFrom; DateTime get dateTo; String? get categoryId; List<String>? get labelIds; int? get utcOffset; String? get timezone; VectorClock? get vectorClock; DateTime? get deletedAt; EntryFlag? get flag; bool? get starred; bool? get private;
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $MetadataCopyWith<Metadata> get copyWith => _$MetadataCopyWithImpl<Metadata>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Metadata&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.tags, tags)&&const DeepCollectionEquality().equals(other.tagIds, tagIds)&&const DeepCollectionEquality().equals(other.labelIds, labelIds)&&(identical(other.utcOffset, utcOffset) || other.utcOffset == utcOffset)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.private, private) || other.private == private));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Metadata&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other.labelIds, labelIds)&&(identical(other.utcOffset, utcOffset) || other.utcOffset == utcOffset)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.private, private) || other.private == private));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,dateFrom,dateTo,categoryId,const DeepCollectionEquality().hash(tags),const DeepCollectionEquality().hash(tagIds),const DeepCollectionEquality().hash(labelIds),utcOffset,timezone,vectorClock,deletedAt,flag,starred,private);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,dateFrom,dateTo,categoryId,const DeepCollectionEquality().hash(labelIds),utcOffset,timezone,vectorClock,deletedAt,flag,starred,private);
 
 @override
 String toString() {
-  return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+  return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $MetadataCopyWith<$Res>  {
   factory $MetadataCopyWith(Metadata value, $Res Function(Metadata) _then) = _$MetadataCopyWithImpl;
 @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, DateTime dateFrom, DateTime dateTo, String? categoryId, List<String>? tags, List<String>? tagIds, List<String>? labelIds, int? utcOffset, String? timezone, VectorClock? vectorClock, DateTime? deletedAt, EntryFlag? flag, bool? starred, bool? private
+ String id, DateTime createdAt, DateTime updatedAt, DateTime dateFrom, DateTime dateTo, String? categoryId, List<String>? labelIds, int? utcOffset, String? timezone, VectorClock? vectorClock, DateTime? deletedAt, EntryFlag? flag, bool? starred, bool? private
 });
 
 
@@ -65,7 +65,7 @@ class _$MetadataCopyWithImpl<$Res>
 
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? dateFrom = null,Object? dateTo = null,Object? categoryId = freezed,Object? tags = freezed,Object? tagIds = freezed,Object? labelIds = freezed,Object? utcOffset = freezed,Object? timezone = freezed,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? flag = freezed,Object? starred = freezed,Object? private = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? dateFrom = null,Object? dateTo = null,Object? categoryId = freezed,Object? labelIds = freezed,Object? utcOffset = freezed,Object? timezone = freezed,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? flag = freezed,Object? starred = freezed,Object? private = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -73,9 +73,7 @@ as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore
 as DateTime,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
-as String?,tags: freezed == tags ? _self.tags : tags // ignore: cast_nullable_to_non_nullable
-as List<String>?,tagIds: freezed == tagIds ? _self.tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,labelIds: freezed == labelIds ? _self.labelIds : labelIds // ignore: cast_nullable_to_non_nullable
+as String?,labelIds: freezed == labelIds ? _self.labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,utcOffset: freezed == utcOffset ? _self.utcOffset : utcOffset // ignore: cast_nullable_to_non_nullable
 as int?,timezone: freezed == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String?,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
@@ -168,10 +166,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? tags,  List<String>? tagIds,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Metadata() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.tags,_that.tagIds,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
   return orElse();
 
 }
@@ -189,10 +187,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.da
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? tags,  List<String>? tagIds,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)  $default,) {final _that = this;
 switch (_that) {
 case _Metadata():
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.tags,_that.tagIds,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -209,10 +207,10 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.da
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? tags,  List<String>? tagIds,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  DateTime createdAt,  DateTime updatedAt,  DateTime dateFrom,  DateTime dateTo,  String? categoryId,  List<String>? labelIds,  int? utcOffset,  String? timezone,  VectorClock? vectorClock,  DateTime? deletedAt,  EntryFlag? flag,  bool? starred,  bool? private)?  $default,) {final _that = this;
 switch (_that) {
 case _Metadata() when $default != null:
-return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.tags,_that.tagIds,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
+return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.dateTo,_that.categoryId,_that.labelIds,_that.utcOffset,_that.timezone,_that.vectorClock,_that.deletedAt,_that.flag,_that.starred,_that.private);case _:
   return null;
 
 }
@@ -224,7 +222,7 @@ return $default(_that.id,_that.createdAt,_that.updatedAt,_that.dateFrom,_that.da
 @JsonSerializable()
 
 class _Metadata implements Metadata {
-  const _Metadata({required this.id, required this.createdAt, required this.updatedAt, required this.dateFrom, required this.dateTo, this.categoryId, final  List<String>? tags, final  List<String>? tagIds, final  List<String>? labelIds, this.utcOffset, this.timezone, this.vectorClock, this.deletedAt, this.flag, this.starred, this.private}): _tags = tags,_tagIds = tagIds,_labelIds = labelIds;
+  const _Metadata({required this.id, required this.createdAt, required this.updatedAt, required this.dateFrom, required this.dateTo, this.categoryId, final  List<String>? labelIds, this.utcOffset, this.timezone, this.vectorClock, this.deletedAt, this.flag, this.starred, this.private}): _labelIds = labelIds;
   factory _Metadata.fromJson(Map<String, dynamic> json) => _$MetadataFromJson(json);
 
 @override final  String id;
@@ -233,24 +231,6 @@ class _Metadata implements Metadata {
 @override final  DateTime dateFrom;
 @override final  DateTime dateTo;
 @override final  String? categoryId;
- final  List<String>? _tags;
-@override List<String>? get tags {
-  final value = _tags;
-  if (value == null) return null;
-  if (_tags is EqualUnmodifiableListView) return _tags;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(value);
-}
-
- final  List<String>? _tagIds;
-@override List<String>? get tagIds {
-  final value = _tagIds;
-  if (value == null) return null;
-  if (_tagIds is EqualUnmodifiableListView) return _tagIds;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(value);
-}
-
  final  List<String>? _labelIds;
 @override List<String>? get labelIds {
   final value = _labelIds;
@@ -281,16 +261,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Metadata&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other._tags, _tags)&&const DeepCollectionEquality().equals(other._tagIds, _tagIds)&&const DeepCollectionEquality().equals(other._labelIds, _labelIds)&&(identical(other.utcOffset, utcOffset) || other.utcOffset == utcOffset)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.private, private) || other.private == private));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Metadata&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.dateFrom, dateFrom) || other.dateFrom == dateFrom)&&(identical(other.dateTo, dateTo) || other.dateTo == dateTo)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&const DeepCollectionEquality().equals(other._labelIds, _labelIds)&&(identical(other.utcOffset, utcOffset) || other.utcOffset == utcOffset)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.flag, flag) || other.flag == flag)&&(identical(other.starred, starred) || other.starred == starred)&&(identical(other.private, private) || other.private == private));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,dateFrom,dateTo,categoryId,const DeepCollectionEquality().hash(_tags),const DeepCollectionEquality().hash(_tagIds),const DeepCollectionEquality().hash(_labelIds),utcOffset,timezone,vectorClock,deletedAt,flag,starred,private);
+int get hashCode => Object.hash(runtimeType,id,createdAt,updatedAt,dateFrom,dateTo,categoryId,const DeepCollectionEquality().hash(_labelIds),utcOffset,timezone,vectorClock,deletedAt,flag,starred,private);
 
 @override
 String toString() {
-  return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, tags: $tags, tagIds: $tagIds, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
+  return 'Metadata(id: $id, createdAt: $createdAt, updatedAt: $updatedAt, dateFrom: $dateFrom, dateTo: $dateTo, categoryId: $categoryId, labelIds: $labelIds, utcOffset: $utcOffset, timezone: $timezone, vectorClock: $vectorClock, deletedAt: $deletedAt, flag: $flag, starred: $starred, private: $private)';
 }
 
 
@@ -301,7 +281,7 @@ abstract mixin class _$MetadataCopyWith<$Res> implements $MetadataCopyWith<$Res>
   factory _$MetadataCopyWith(_Metadata value, $Res Function(_Metadata) _then) = __$MetadataCopyWithImpl;
 @override @useResult
 $Res call({
- String id, DateTime createdAt, DateTime updatedAt, DateTime dateFrom, DateTime dateTo, String? categoryId, List<String>? tags, List<String>? tagIds, List<String>? labelIds, int? utcOffset, String? timezone, VectorClock? vectorClock, DateTime? deletedAt, EntryFlag? flag, bool? starred, bool? private
+ String id, DateTime createdAt, DateTime updatedAt, DateTime dateFrom, DateTime dateTo, String? categoryId, List<String>? labelIds, int? utcOffset, String? timezone, VectorClock? vectorClock, DateTime? deletedAt, EntryFlag? flag, bool? starred, bool? private
 });
 
 
@@ -318,7 +298,7 @@ class __$MetadataCopyWithImpl<$Res>
 
 /// Create a copy of Metadata
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? dateFrom = null,Object? dateTo = null,Object? categoryId = freezed,Object? tags = freezed,Object? tagIds = freezed,Object? labelIds = freezed,Object? utcOffset = freezed,Object? timezone = freezed,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? flag = freezed,Object? starred = freezed,Object? private = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? updatedAt = null,Object? dateFrom = null,Object? dateTo = null,Object? categoryId = freezed,Object? labelIds = freezed,Object? utcOffset = freezed,Object? timezone = freezed,Object? vectorClock = freezed,Object? deletedAt = freezed,Object? flag = freezed,Object? starred = freezed,Object? private = freezed,}) {
   return _then(_Metadata(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -326,9 +306,7 @@ as DateTime,updatedAt: null == updatedAt ? _self.updatedAt : updatedAt // ignore
 as DateTime,dateFrom: null == dateFrom ? _self.dateFrom : dateFrom // ignore: cast_nullable_to_non_nullable
 as DateTime,dateTo: null == dateTo ? _self.dateTo : dateTo // ignore: cast_nullable_to_non_nullable
 as DateTime,categoryId: freezed == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
-as String?,tags: freezed == tags ? _self._tags : tags // ignore: cast_nullable_to_non_nullable
-as List<String>?,tagIds: freezed == tagIds ? _self._tagIds : tagIds // ignore: cast_nullable_to_non_nullable
-as List<String>?,labelIds: freezed == labelIds ? _self._labelIds : labelIds // ignore: cast_nullable_to_non_nullable
+as String?,labelIds: freezed == labelIds ? _self._labelIds : labelIds // ignore: cast_nullable_to_non_nullable
 as List<String>?,utcOffset: freezed == utcOffset ? _self.utcOffset : utcOffset // ignore: cast_nullable_to_non_nullable
 as int?,timezone: freezed == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
 as String?,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable

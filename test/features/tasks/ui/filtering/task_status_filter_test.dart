@@ -74,7 +74,6 @@ void main() {
     mockPagingController = MockPagingController();
     mockState = JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: {},
       showPrivateEntries: false,
       selectedEntryTypes: const [],
@@ -289,7 +288,6 @@ void main() {
       // Set all statuses to be selected
       final allSelectedState = JournalPageState(
         match: '',
-        tagIds: <String>{},
         filters: {},
         showPrivateEntries: false,
         selectedEntryTypes: const [],
@@ -343,7 +341,6 @@ void main() {
         // Set all statuses to be selected
         final allSelectedState = JournalPageState(
           match: '',
-          tagIds: <String>{},
           filters: {},
           showPrivateEntries: false,
           selectedEntryTypes: const [],

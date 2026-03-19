@@ -377,7 +377,6 @@ class JournalPageController extends _$JournalPageController {
   void _emitState() {
     state = state.copyWith(
       match: _query,
-      tagIds: <String>{},
       filters: _filters,
       showPrivateEntries: _showPrivateEntries,
       showTasks: _showTasks,

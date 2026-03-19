@@ -2879,21 +2879,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalShowMapHint => 'Karte anzeigen';
 
   @override
-  String get journalTagPlusHint => 'Eintrag-Tags verwalten';
-
-  @override
-  String get journalTagsCopyHint => 'Tags kopieren';
-
-  @override
-  String get journalTagsLabel => 'Tags:';
-
-  @override
-  String get journalTagsPasteHint => 'Tags einfügen';
-
-  @override
-  String get journalTagsRemoveHint => 'Tag entfernen';
-
-  @override
   String get journalToggleFlaggedTitle => 'Markiert';
 
   @override
@@ -4342,39 +4327,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Synchronisierung konfigurieren und Statistiken anzeigen';
 
   @override
-  String get settingsTagsDeleteTooltip => 'Tag löschen';
-
-  @override
-  String get settingsTagsDetailsLabel => 'Tag-Details';
-
-  @override
-  String get settingsTagsHideLabel => 'In Vorschlägen ausblenden:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Privat:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Speichern';
-
-  @override
-  String get settingsTagsTagName => 'Tag:';
-
-  @override
-  String get settingsTagsTitle => 'Tags';
-
-  @override
-  String get settingsTagsTypeLabel => 'Tag-Typ:';
-
-  @override
-  String get settingsTagsTypePerson => 'PERSON';
-
-  @override
-  String get settingsTagsTypeStory => 'STORY';
-
-  @override
-  String get settingsTagsTypeTag => 'TAG';
-
-  @override
   String get settingsThemingAutomatic => 'Automatisch';
 
   @override
@@ -4548,9 +4500,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Journaleintrag';
 
   @override
-  String get syncPayloadTagEntity => 'Tag-Entität';
-
-  @override
   String get syncPayloadThemingSelection => 'Designauswahl';
 
   @override
@@ -4615,9 +4564,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Messgrößen';
-
-  @override
-  String get syncStepTags => 'Tags';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Abbrechen';

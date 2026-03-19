@@ -38,7 +38,6 @@ JournalPageState _baseState({
 }) {
   return JournalPageState(
     match: '',
-    tagIds: <String>{},
     filters: <DisplayFilter>{},
     showPrivateEntries: false,
     showTasks: true,

@@ -78,7 +78,6 @@ void main() {
       expect(find.text('AI Settings'), findsOneWidget);
       expect(find.text('Habits'), findsOneWidget);
       expect(find.text('Categories'), findsOneWidget);
-      expect(find.text('Tags'), findsOneWidget);
       expect(find.text('Dashboards'), findsOneWidget);
       expect(find.text('Measurable Types'), findsOneWidget);
       expect(find.text('Theming'), findsOneWidget);

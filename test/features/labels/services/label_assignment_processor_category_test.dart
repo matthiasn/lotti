@@ -69,8 +69,6 @@ void main() {
         dateFrom: DateTime(2025, 11, 4),
         dateTo: DateTime(2025, 11, 4),
         categoryId: 'cat1',
-        tags: null,
-        tagIds: null,
         labelIds: const [],
         utcOffset: 0,
         timezone: null,

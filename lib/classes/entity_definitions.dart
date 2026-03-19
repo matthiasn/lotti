@@ -185,6 +185,7 @@ sealed class EntityDefinition with _$EntityDefinition {
     DateTime? activeFrom,
     DateTime? activeUntil,
     DateTime? deletedAt,
+    @Deprecated('Tags concept removed — kept for JSON backward compatibility')
     String? defaultStoryId,
     String? categoryId,
     String? dashboardId,
@@ -315,11 +316,13 @@ sealed class DashboardItem with _$DashboardItem {
     required String surveyName,
   }) = DashboardSurveyItem;
 
+  @Deprecated('Tags concept removed — kept for JSON backward compatibility')
   const factory DashboardItem.storyTimeChart({
     required String storyTagId,
     required String color,
   }) = DashboardStoryTimeItem;
 
+  @Deprecated('Tags concept removed — kept for JSON backward compatibility')
   const factory DashboardItem.wildcardStoryTimeChart({
     required String storySubstring,
     required String color,

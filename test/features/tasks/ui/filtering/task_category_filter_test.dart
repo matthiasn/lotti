@@ -107,7 +107,6 @@ void main() {
     // Set up mock state
     mockState = JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: {},
       showPrivateEntries: false,
       selectedEntryTypes: const [],
@@ -308,7 +307,6 @@ void main() {
       // Update the mock state to have unassigned selected by default
       final stateWithUnassigned = JournalPageState(
         match: '',
-        tagIds: <String>{},
         filters: {},
         showPrivateEntries: false,
         selectedEntryTypes: const [],
@@ -345,7 +343,6 @@ void main() {
       // Update state to have multiple categories selected
       final stateWithMultiple = JournalPageState(
         match: '',
-        tagIds: <String>{},
         filters: {},
         showPrivateEntries: false,
         selectedEntryTypes: const [],
@@ -442,7 +439,6 @@ void main() {
       // Update state to no categories selected using the controller
       final stateNoneSelected = JournalPageState(
         match: '',
-        tagIds: <String>{},
         filters: {},
         showPrivateEntries: false,
         selectedEntryTypes: const [],

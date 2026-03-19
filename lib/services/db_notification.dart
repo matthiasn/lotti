@@ -80,7 +80,6 @@ const habitsNotification = 'HABITS_CHANGED';
 const dashboardsNotification = 'DASHBOARDS_CHANGED';
 const measurablesNotification = 'MEASURABLES_CHANGED';
 const labelsNotification = 'LABELS_CHANGED';
-const tagsNotification = 'TAGS_CHANGED';
 const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';

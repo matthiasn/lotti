@@ -284,25 +284,6 @@ class ModernShareItem extends ConsumerWidget {
   }
 }
 
-/// Modern styled tag add action item
-class ModernTagAddItem extends StatelessWidget {
-  const ModernTagAddItem({
-    required this.pageIndexNotifier,
-    super.key,
-  });
-
-  final ValueNotifier<int> pageIndexNotifier;
-
-  @override
-  Widget build(BuildContext context) {
-    return ActionMenuListItem(
-      icon: Icons.label_outline_rounded,
-      title: context.messages.journalTagPlusHint,
-      onTap: () => pageIndexNotifier.value = 1,
-    );
-  }
-}
-
 /// Modern styled unlink action item
 class ModernUnlinkItem extends ConsumerWidget {
   const ModernUnlinkItem({

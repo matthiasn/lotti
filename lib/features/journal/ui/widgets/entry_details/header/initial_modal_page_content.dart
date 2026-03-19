@@ -109,9 +109,6 @@ class InitialModalPageContent extends ConsumerWidget {
       // Share - only for image/audio entries
       if (isImage || isAudio) ModernShareItem(entryId: entryId),
 
-      // Tags - always shown
-      ModernTagAddItem(pageIndexNotifier: pageIndexNotifier),
-
       // Link actions - always shown
       ModernLinkFromItem(entryId: entryId),
       ModernLinkToItem(entryId: entryId),

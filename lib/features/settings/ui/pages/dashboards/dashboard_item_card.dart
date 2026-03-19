@@ -7,20 +7,18 @@ import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class DashboardItemCard extends StatelessWidget {
-  DashboardItemCard({
+  const DashboardItemCard({
     required this.index,
     required this.item,
     required this.updateItemFn,
     super.key,
   });
 
-  final TagsService tagsService = getIt<TagsService>();
   final DashboardItem item;
   final int index;
 
@@ -59,10 +57,9 @@ class DashboardItemCard extends StatelessWidget {
           habitItem: habitItem,
         );
       case DashboardStoryTimeItem(:final storyTagId):
-        final tagEntity = tagsService.getTagById(storyTagId);
         return ItemCard(
           leadingIcon: MdiIcons.bookOutline,
-          title: tagEntity?.tag ?? storyTagId,
+          title: storyTagId,
         );
       case WildcardStoryTimeItem(:final storySubstring):
         return ItemCard(

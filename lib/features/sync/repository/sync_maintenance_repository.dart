@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -69,19 +68,6 @@ class SyncMaintenanceRepository {
   final AiConfigRepository _aiConfigRepository;
   final AgentRepository _agentRepository;
   final VectorClockService _vectorClockService;
-
-  late final SyncOperation<TagEntity> _tagSyncOperation =
-      _createOperation<TagEntity>(
-        step: SyncStep.tags,
-        fetchEntities: _journalDb.getAllTags,
-        enqueueEntity: (tag) => _outboxService.enqueueMessage(
-          SyncMessage.tagEntity(
-            tagEntity: tag,
-            status: SyncEntryStatus.update,
-          ),
-        ),
-        shouldSync: (tag) => tag.deletedAt == null,
-      );
 
   late final SyncOperation<MeasurableDataType> _measurableSyncOperation =
       _createOperation<MeasurableDataType>(
@@ -189,7 +175,6 @@ class SyncMaintenanceRepository {
       );
 
   late final Map<SyncStep, SyncOperation<dynamic>> _operations = {
-    SyncStep.tags: _tagSyncOperation,
     SyncStep.measurables: _measurableSyncOperation,
     SyncStep.labels: _labelSyncOperation,
     SyncStep.categories: _categorySyncOperation,
@@ -293,17 +278,6 @@ class SyncMaintenanceRepository {
         }
       },
       'backfillAgentLinkClocks',
-    );
-  }
-
-  Future<void> syncTags({
-    SyncProgressCallback? onProgress,
-    SyncDetailedProgressCallback? onDetailedProgress,
-  }) {
-    return _runOperation<TagEntity>(
-      _tagSyncOperation,
-      onProgress: onProgress,
-      onDetailedProgress: onDetailedProgress,
     );
   }
 
@@ -535,8 +509,6 @@ class SyncMaintenanceRepository {
 
   String _syncDomainFor(SyncStep step) {
     switch (step) {
-      case SyncStep.tags:
-        return 'syncTags';
       case SyncStep.measurables:
         return 'syncMeasurables';
       case SyncStep.labels:
@@ -564,8 +536,6 @@ class SyncMaintenanceRepository {
 
   String _totalsDomainFor(SyncStep step) {
     switch (step) {
-      case SyncStep.tags:
-        return 'fetchTotals_tags';
       case SyncStep.measurables:
         return 'fetchTotals_measurables';
       case SyncStep.labels:

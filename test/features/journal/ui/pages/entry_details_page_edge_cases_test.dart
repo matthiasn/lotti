@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -15,7 +14,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -46,7 +44,6 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
@@ -58,7 +55,6 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -76,16 +72,6 @@ void main() {
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([
-          [testStoryTag1],
-        ]),
-      );
-
-      when(() => mockTagsService.stream).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
       when(() => mockJournalDb.watchConfigFlags()).thenAnswer(

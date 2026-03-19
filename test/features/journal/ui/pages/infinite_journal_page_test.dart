@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -19,7 +18,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/consts.dart';
@@ -68,7 +66,6 @@ void main() {
 
       mockPersistenceLogic = MockPersistenceLogic();
 
-      final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
 
       when(() => mockJournalDb.watchConfigFlag(privateFlag)).thenAnswer(
@@ -120,7 +117,6 @@ void main() {
         ..registerSingleton<LoggingService>(LoggingService())
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<SettingsDb>(mockSettingsDb)
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -130,10 +126,6 @@ void main() {
       when(
         () => mockJournalDb.getMeasurableDataTypeById(measurableWater.id),
       ).thenAnswer((_) async => measurableWater);
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
-      );
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),

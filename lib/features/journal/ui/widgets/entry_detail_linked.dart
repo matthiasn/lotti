@@ -83,7 +83,6 @@ class LinkedEntriesWidget extends ConsumerWidget {
                     ? entryKeyBuilder!(toId)
                     : Key('${item.id}-$toId'),
                 itemId: toId,
-                parentTags: item.meta.tagIds?.toSet(),
                 linkedFrom: item,
                 link: link,
                 showAiEntry: includeAiEntries,

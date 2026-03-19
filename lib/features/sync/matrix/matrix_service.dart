@@ -429,7 +429,7 @@ class MatrixService {
   /// Sends a Matrix sync payload and records basic "sent" metrics.
   ///
   /// Every [`SyncMessage`] variant is mapped to a coarse message-type bucket
-  /// (`journalEntity`, `entityDefinition`, `tagEntity`, `entryLink`,
+  /// (`journalEntity`, `entityDefinition`, `entryLink`,
   /// `aiConfig`, `aiConfigDelete`). When the SDK reports a successful send, the
   /// corresponding counter is incremented and debounced stats are emitted to the
   /// Matrix Stats UI.
@@ -449,7 +449,6 @@ class MatrixService {
     final sentType = syncMessage.map(
       journalEntity: (_) => 'journalEntity',
       entityDefinition: (_) => 'entityDefinition',
-      tagEntity: (_) => 'tagEntity',
       entryLink: (_) => 'entryLink',
       aiConfig: (_) => 'aiConfig',
       aiConfigDelete: (_) => 'aiConfigDelete',

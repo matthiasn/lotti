@@ -12,7 +12,6 @@ class SyncModal extends ConsumerWidget {
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     const orderedSteps = <SyncStep>[
-      SyncStep.tags,
       SyncStep.measurables,
       SyncStep.labels,
       SyncStep.categories,
@@ -244,8 +243,6 @@ class SyncModal extends ConsumerWidget {
 
   static String _getStepName(BuildContext context, SyncStep step) {
     switch (step) {
-      case SyncStep.tags:
-        return context.messages.syncStepTags;
       case SyncStep.measurables:
         return context.messages.syncStepMeasurables;
       case SyncStep.labels:

@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/journal_update_result.dart';
@@ -316,12 +315,8 @@ class JournalDb extends _$JournalDb {
               );
               await m.createIndex(idxDashboardDefinitionsDeletedPrivateName);
             }
-            if (await _tableExists('tag_entities')) {
-              await customStatement(
-                'DROP INDEX IF EXISTS idx_tag_entities_deleted_private_tag',
-              );
-              await m.createIndex(idxTagEntitiesDeletedPrivateTag);
-            }
+            // tag_entities index migration removed — table is no longer
+            // managed by drift but left intact in existing databases.
             if (await _tableExists('linked_entries')) {
               await customStatement(
                 'DROP INDEX IF EXISTS idx_linked_entries_from_id_hidden_created_at_desc',
@@ -545,35 +540,6 @@ class JournalDb extends _$JournalDb {
     return VclockStatus.b_gt_a;
   }
 
-  Future<void> insertTag(String id, String tagId) async {
-    try {
-      await into(tagged).insert(
-        TaggedWith(
-          id: uuid.v1(),
-          journalId: id,
-          tagEntityId: tagId,
-        ),
-        mode: InsertMode.insertOrIgnore,
-      );
-    } catch (ex) {
-      DevLogger.error(
-        name: 'JournalDb',
-        message: 'insertTag failed',
-        error: ex,
-      );
-    }
-  }
-
-  Future<void> addTagged(JournalEntity journalEntity) async {
-    final id = journalEntity.meta.id;
-    final tagIds = journalEntity.meta.tagIds ?? [];
-    await deleteTaggedForId(id);
-
-    for (final tagId in tagIds) {
-      await insertTag(id, tagId);
-    }
-  }
-
   Future<void> insertLabel(String journalId, String labelId) async {
     try {
       await into(labeled).insert(
@@ -680,7 +646,6 @@ class JournalDb extends _$JournalDb {
         updated,
         documentsDirectory: _documentsDirectory,
       );
-      await addTagged(updated);
       await addLabeled(updated);
       return JournalUpdateResult.applied(rowsWritten: rowsWritten);
     }
@@ -940,7 +905,7 @@ class JournalDb extends _$JournalDb {
     final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
 
     if (ids != null) {
-      return filteredByTagJournal(
+      return filteredJournalByIds(
         types,
         ids,
         starredStatuses,
@@ -1422,10 +1387,6 @@ class JournalDb extends _$JournalDb {
     return dbEntities.map(fromDbEntity).toList();
   }
 
-  Future<int> getTaggedCount() async {
-    return (await countTagged().get()).first;
-  }
-
   Future<int> getLabeledCount() async {
     return (await countLabeled().get()).first;
   }
@@ -1559,18 +1520,12 @@ class JournalDb extends _$JournalDb {
             .get()
             .then((list) => list.length);
 
-    final tagCount =
-        await (select(tagEntities)..where((tbl) => tbl.deleted.equals(true)))
-            .get()
-            .then((list) => list.length);
-
     final journalCount =
         await (select(journal)..where((tbl) => tbl.deleted.equals(true)))
             .get()
             .then((list) => list.length);
 
-    final totalItems =
-        dashboardCount + measurableCount + tagCount + journalCount;
+    final totalItems = dashboardCount + measurableCount + journalCount;
 
     if (totalItems == 0) {
       yield 1.0; // Already empty
@@ -1583,7 +1538,7 @@ class JournalDb extends _$JournalDb {
         dashboardDefinitions,
       )..where((tbl) => tbl.deleted.equals(true))).go();
     }
-    yield 0.25; // 25% complete after dashboards
+    yield 0.33; // 33% complete after dashboards
     await Future<void>.delayed(stepDelay);
 
     // Purge measurables
@@ -1592,16 +1547,7 @@ class JournalDb extends _$JournalDb {
         measurableTypes,
       )..where((tbl) => tbl.deleted.equals(true))).go();
     }
-    yield 0.5; // 50% complete after measurables
-    await Future<void>.delayed(stepDelay);
-
-    // Purge tags
-    if (tagCount > 0) {
-      await (delete(
-        tagEntities,
-      )..where((tbl) => tbl.deleted.equals(true))).go();
-    }
-    yield 0.75; // 75% complete after tags
+    yield 0.66; // 66% complete after measurables
     await Future<void>.delayed(stepDelay);
 
     // Purge journal entries
@@ -2093,10 +2039,6 @@ class JournalDb extends _$JournalDb {
     return dashboardStreamMapper(await allDashboards().get());
   }
 
-  Future<List<TagEntity>> getAllTags() async {
-    return tagStreamMapper(await allTagEntities().get());
-  }
-
   Future<CategoryDefinition?> getCategoryById(String id) async {
     final rows = await categoryById(id).get();
     return categoryDefinitionsStreamMapper(rows).firstOrNull;
@@ -2112,18 +2054,6 @@ class JournalDb extends _$JournalDb {
     return dashboardStreamMapper(rows).firstOrNull;
   }
 
-  Future<List<TagEntity>> getMatchingTags(
-    String match, {
-    int limit = 10,
-    bool inactive = false,
-  }) async {
-    return (await matchingTagEntities(
-      '%$match%',
-      inactive,
-      limit,
-    ).get()).map(fromTagDbEntity).toList();
-  }
-
   Future<int> resolveConflict(Conflict conflict) {
     return (update(conflicts)..where((t) => t.id.equals(conflict.id))).write(
       conflict.copyWith(status: ConflictStatus.resolved.index),
@@ -2136,11 +2066,6 @@ class JournalDb extends _$JournalDb {
     return into(
       measurableTypes,
     ).insertOnConflictUpdate(measurableDbEntity(entityDefinition));
-  }
-
-  Future<int> upsertTagEntity(TagEntity tag) async {
-    final dbEntity = tagDbEntity(tag);
-    return into(tagEntities).insertOnConflictUpdate(dbEntity);
   }
 
   Future<int> upsertHabitDefinition(HabitDefinition habitDefinition) async {

@@ -50,7 +50,6 @@ enum TaskSortOption {
 abstract class JournalPageState with _$JournalPageState {
   const factory JournalPageState({
     @Default('') String match,
-    @Default(<String>{}) Set<String> tagIds,
     @Default(<DisplayFilter>{}) Set<DisplayFilter> filters,
     @Default(false) bool showPrivateEntries,
     @Default(false) bool showTasks,

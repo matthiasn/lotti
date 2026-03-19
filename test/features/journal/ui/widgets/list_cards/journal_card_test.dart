@@ -13,7 +13,6 @@ import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -22,7 +21,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.da
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
@@ -32,7 +30,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
@@ -70,21 +67,6 @@ class MockTimeService implements TimeService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockTagsService extends Mock implements TagsService {
-  @override
-  Map<String, TagEntity> get tagsById => {};
-
-  @override
-  Stream<List<TagEntity>> watchTags() {
-    return Stream.value(<TagEntity>[]);
-  }
-
-  @override
-  TagEntity? getTagById(String id) {
-    return null;
-  }
-}
-
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
   CategoryDefinition? getCategoryById(String? categoryId) {
@@ -106,13 +88,11 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
 void main() {
   late MockNavService mockNavService;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockTagsService mockTagsService;
   late MockTimeService mockTimeService;
 
   setUp(() {
     mockNavService = MockNavService();
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockTagsService = MockTagsService();
     mockTimeService = MockTimeService();
 
     getIt.allowReassignment = true;
@@ -136,7 +116,6 @@ void main() {
     getIt
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<Directory>(tempDir)
       ..registerSingleton<JournalDb>(mockJournalDb);
@@ -422,23 +401,6 @@ void main() {
       expect(find.byType(CategoryIconCompact), findsOneWidget);
     });
 
-    testWidgets('displays tags widget', (tester) async {
-      final taggedEntry = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          tags: ['test-tag'],
-          tagIds: ['test-tag-id'],
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalCard(item: taggedEntry),
-        ),
-      );
-
-      expect(find.byType(TagsViewWidget), findsOneWidget);
-    });
-
     testWidgets('displays text viewer widget', (tester) async {
       final textEntry = testTextEntry;
 
@@ -473,7 +435,6 @@ void main() {
       );
 
       expect(find.byType(ModernBaseCard), findsOneWidget);
-      expect(find.byType(TagsViewWidget), findsOneWidget);
     });
 
     testWidgets('shows icon container for entries with leading icons', (

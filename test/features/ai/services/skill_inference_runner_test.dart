@@ -1672,7 +1672,6 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
-              addTags: any(named: 'addTags'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -1943,7 +1942,6 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
-              addTags: any(named: 'addTags'),
             ),
           ).thenThrow(Exception('DB write failed'));
 
@@ -2055,7 +2053,6 @@ void main() {
               linkedId: any(named: 'linkedId'),
               shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
               enqueueSync: any(named: 'enqueueSync'),
-              addTags: any(named: 'addTags'),
             ),
           ).thenAnswer((_) async => true);
 
@@ -2186,7 +2183,6 @@ void main() {
                 linkedId: any(named: 'linkedId'),
                 shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
                 enqueueSync: any(named: 'enqueueSync'),
-                addTags: any(named: 'addTags'),
               ),
             ).thenAnswer((_) async => true);
             when(

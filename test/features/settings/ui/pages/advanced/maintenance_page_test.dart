@@ -91,7 +91,6 @@ void main() {
     final mockNotificationService = MockNotificationService();
 
     setUp(() {
-      when(mockJournalDb.getTaggedCount).thenAnswer((_) async => 1);
       when(mockJournalDb.watchConfigFlags).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
       );

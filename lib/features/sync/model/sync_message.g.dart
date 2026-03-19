@@ -70,20 +70,6 @@ Map<String, dynamic> _$SyncEntityDefinitionToJson(
   'runtimeType': instance.$type,
 };
 
-SyncTagEntity _$SyncTagEntityFromJson(Map<String, dynamic> json) =>
-    SyncTagEntity(
-      tagEntity: TagEntity.fromJson(json['tagEntity'] as Map<String, dynamic>),
-      status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
-      $type: json['runtimeType'] as String?,
-    );
-
-Map<String, dynamic> _$SyncTagEntityToJson(SyncTagEntity instance) =>
-    <String, dynamic>{
-      'tagEntity': instance.tagEntity,
-      'status': _$SyncEntryStatusEnumMap[instance.status]!,
-      'runtimeType': instance.$type,
-    };
-
 SyncEntryLink _$SyncEntryLinkFromJson(Map<String, dynamic> json) =>
     SyncEntryLink(
       entryLink: EntryLink.fromJson(json['entryLink'] as Map<String, dynamic>),

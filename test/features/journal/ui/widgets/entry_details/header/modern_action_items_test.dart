@@ -452,37 +452,6 @@ void main() {
     });
   });
 
-  group('ModernTagAddItem', () {
-    testWidgets('renders with label icon', (tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: ModernTagAddItem(pageIndexNotifier: ValueNotifier(0)),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      expect(find.byType(ActionMenuListItem), findsOneWidget);
-      expect(find.byIcon(Icons.label_outline_rounded), findsOneWidget);
-    });
-
-    testWidgets('sets pageIndexNotifier to 1 on tap', (tester) async {
-      final pageIndexNotifier = ValueNotifier(0);
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: ModernTagAddItem(pageIndexNotifier: pageIndexNotifier),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-      await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pump();
-
-      expect(pageIndexNotifier.value, equals(1));
-    });
-  });
-
   group('ModernCopyImageItem', () {
     testWidgets('hidden for non-image entries', (tester) async {
       final entry = buildTextEntry();

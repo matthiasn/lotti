@@ -1,5 +1,4 @@
 enum SyncStep {
-  tags,
   measurables,
   labels,
   categories,
@@ -37,7 +36,7 @@ class SyncState {
   const SyncState({
     this.isSyncing = false,
     this.progress = 0,
-    this.currentStep = SyncStep.tags,
+    this.currentStep = SyncStep.measurables,
     this.error,
     this.stepProgress = const {},
     this.selectedSteps = const {},

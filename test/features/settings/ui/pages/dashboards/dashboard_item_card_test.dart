@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,11 +14,9 @@ import '../../../../../test_helper.dart';
 
 void main() {
   group('DashboardItemCard', () {
-    late MockTagsService mockTagsService;
     late MockJournalDb mockJournalDb;
 
     setUp(() {
-      mockTagsService = MockTagsService();
       mockJournalDb = MockJournalDb();
 
       final mockUpdateNotifications = MockUpdateNotifications();
@@ -29,9 +25,6 @@ void main() {
       ).thenAnswer((_) => const Stream.empty());
 
       // Register mocks with GetIt
-      if (getIt.isRegistered<TagsService>()) {
-        getIt.unregister<TagsService>();
-      }
       if (getIt.isRegistered<JournalDb>()) {
         getIt.unregister<JournalDb>();
       }
@@ -41,7 +34,6 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb);
     });
 
@@ -331,24 +323,12 @@ void main() {
       testWidgets('should render story time chart item correctly', (
         tester,
       ) async {
+        // ignore: deprecated_member_use_from_same_package
         const storyTimeItem = DashboardItem.storyTimeChart(
           storyTagId: 'test-tag-id',
           color: '#0000FF',
         );
 
-        final tagEntity = TagEntity.genericTag(
-          id: 'test-tag-id',
-          tag: 'Story Tag',
-          private: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          vectorClock: const VectorClock({'user': 0}),
-        );
-
-        when(
-          () => mockTagsService.getTagById('test-tag-id'),
-        ).thenReturn(tagEntity);
-
         await tester.pumpWidget(
           WidgetTestBench(
             child: DashboardItemCard(
@@ -361,34 +341,7 @@ void main() {
 
         expect(find.byType(Card), findsOneWidget);
         expect(find.byIcon(MdiIcons.bookOutline), findsOneWidget);
-        expect(find.text('Story Tag'), findsOneWidget);
-      });
-
-      testWidgets('should handle story time item with no tag entity', (
-        tester,
-      ) async {
-        const storyTimeItem = DashboardItem.storyTimeChart(
-          storyTagId: 'non-existent-tag',
-          color: '#0000FF',
-        );
-
-        when(
-          () => mockTagsService.getTagById('non-existent-tag'),
-        ).thenReturn(null);
-
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DashboardItemCard(
-              index: 0,
-              item: storyTimeItem,
-              updateItemFn: (item, index) {},
-            ),
-          ),
-        );
-
-        expect(find.byType(Card), findsOneWidget);
-        expect(find.byIcon(MdiIcons.bookOutline), findsOneWidget);
-        expect(find.text('non-existent-tag'), findsOneWidget);
+        expect(find.text('test-tag-id'), findsOneWidget);
       });
     });
 
@@ -396,6 +349,7 @@ void main() {
       testWidgets('should render wildcard story time chart item correctly', (
         tester,
       ) async {
+        // ignore: deprecated_member_use_from_same_package
         const wildcardItem = DashboardItem.wildcardStoryTimeChart(
           storySubstring: 'Adventure Stories',
           color: '#FF00FF',

@@ -1329,13 +1329,6 @@ class SyncEventProcessor {
           fromSync: true,
         );
         return null;
-      case SyncTagEntity(:final tagEntity):
-        await journalDb.upsertTagEntity(tagEntity);
-        _updateNotifications.notify(
-          {tagEntity.id, tagsNotification},
-          fromSync: true,
-        );
-        return null;
       case SyncAiConfig(:final aiConfig):
         await _aiConfigRepository.saveConfig(
           aiConfig,

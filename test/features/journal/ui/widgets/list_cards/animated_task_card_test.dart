@@ -4,14 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/animated_task_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/task_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:mocktail/mocktail.dart';
@@ -54,38 +52,23 @@ class MockTimeService extends Mock implements TimeService {
   Stream<JournalEntity?> getStream() => Stream.value(null);
 }
 
-class MockTagsService extends Mock implements TagsService {
-  @override
-  Map<String, TagEntity> tagsById = {};
-
-  @override
-  Stream<List<TagEntity>> watchTags() => Stream.value(<TagEntity>[]);
-
-  @override
-  TagEntity? getTagById(String id) => null;
-}
-
 void main() {
   late Task testTask;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNavService mockNavService;
   late MockTimeService mockTimeService;
-  late MockTagsService mockTagsService;
   late DateTime now;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
     mockTimeService = MockTimeService();
-    mockTagsService = MockTagsService();
-
     // Register mock services
     getIt.allowReassignment = true;
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<TagsService>(mockTagsService);
+      ..registerSingleton<NavService>(mockNavService);
 
     // Create test task
     now = DateTime(2024, 1, 1, 12); // Use a fixed time for deterministic tests
@@ -135,8 +118,7 @@ void main() {
     getIt
       ..unregister<EntitiesCacheService>()
       ..unregister<TimeService>()
-      ..unregister<NavService>()
-      ..unregister<TagsService>();
+      ..unregister<NavService>();
   });
 
   group('AnimatedModernTaskCard', () {

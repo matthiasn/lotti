@@ -2834,21 +2834,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalShowMapHint => 'Show map';
 
   @override
-  String get journalTagPlusHint => 'Manage entry tags';
-
-  @override
-  String get journalTagsCopyHint => 'Copy tags';
-
-  @override
-  String get journalTagsLabel => 'Tags:';
-
-  @override
-  String get journalTagsPasteHint => 'Paste tags';
-
-  @override
-  String get journalTagsRemoveHint => 'Remove tag';
-
-  @override
   String get journalToggleFlaggedTitle => 'Flagged';
 
   @override
@@ -4269,39 +4254,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSyncSubtitle => 'Configure sync and view stats';
 
   @override
-  String get settingsTagsDeleteTooltip => 'Delete tag';
-
-  @override
-  String get settingsTagsDetailsLabel => 'Tags Details';
-
-  @override
-  String get settingsTagsHideLabel => 'Hide from suggestions:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Private:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Save';
-
-  @override
-  String get settingsTagsTagName => 'Tag:';
-
-  @override
-  String get settingsTagsTitle => 'Tags';
-
-  @override
-  String get settingsTagsTypeLabel => 'Tag type:';
-
-  @override
-  String get settingsTagsTypePerson => 'PERSON';
-
-  @override
-  String get settingsTagsTypeStory => 'STORY';
-
-  @override
-  String get settingsTagsTypeTag => 'TAG';
-
-  @override
   String get settingsThemingAutomatic => 'Automatic';
 
   @override
@@ -4472,9 +4424,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Journal entry';
 
   @override
-  String get syncPayloadTagEntity => 'Tag entity';
-
-  @override
   String get syncPayloadThemingSelection => 'Theming selection';
 
   @override
@@ -4538,9 +4487,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Measurables';
-
-  @override
-  String get syncStepTags => 'Tags';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Cancel';
@@ -5331,21 +5277,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get journalShowMapHint => 'Show map';
-
-  @override
-  String get journalTagPlusHint => 'Manage entry tags';
-
-  @override
-  String get journalTagsCopyHint => 'Copy tags';
-
-  @override
-  String get journalTagsLabel => 'Tags:';
-
-  @override
-  String get journalTagsPasteHint => 'Paste tags';
-
-  @override
-  String get journalTagsRemoveHint => 'Remove tag';
 
   @override
   String get journalToggleFlaggedTitle => 'Flagged';

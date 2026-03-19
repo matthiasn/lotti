@@ -13,7 +13,6 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -102,7 +101,6 @@ void main() {
   late MockFts5Db fts5Db;
   late MockNotificationService notificationService;
   late MockVectorClockService vectorClockService;
-  late MockTagsService tagsService;
   late TestPersistenceLogic logic;
   void stubUpdateResult(JournalUpdateResult result) {
     when(
@@ -141,7 +139,6 @@ void main() {
     fts5Db = MockFts5Db();
     notificationService = MockNotificationService();
     vectorClockService = MockVectorClockService();
-    tagsService = MockTagsService();
 
     when(
       () => fts5Db.insertText(
@@ -166,12 +163,6 @@ void main() {
       () => vectorClockService.getHost(),
     ).thenAnswer((_) async => 'test-host-id');
     when(
-      () => tagsService.getFilteredStoryTagIds(any<List<String>?>()),
-    ).thenReturn(<String>[]);
-    when(
-      () => journalDb.addTagged(any<JournalEntity>()),
-    ).thenAnswer((_) async {});
-    when(
       () => journalDb.addLabeled(any<JournalEntity>()),
     ).thenAnswer((_) async {});
     when(
@@ -188,8 +179,7 @@ void main() {
       ..registerSingleton<VectorClockService>(vectorClockService)
       ..registerSingleton<MetadataService>(
         MetadataService(vectorClockService: vectorClockService),
-      )
-      ..registerSingleton<TagsService>(tagsService);
+      );
 
     logic = TestPersistenceLogic();
   });
@@ -252,15 +242,12 @@ void main() {
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
 
-  test('createDbEntity skips addTagged when update skipped', () async {
+  test('createDbEntity skips addLabeled when update skipped', () async {
     stubUpdateResult(
       JournalUpdateResult.skipped(
         reason: JournalUpdateSkipReason.olderOrEqual,
       ),
     );
-    when(
-      () => journalDb.addTagged(any<JournalEntity>()),
-    ).thenAnswer((_) async {});
 
     final entity = buildEntry(clock: const VectorClock({'host': 5}));
     final saved = await logic.createDbEntity(
@@ -269,24 +256,15 @@ void main() {
     );
 
     expect(saved, isFalse);
-    verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
     verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
     verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
   });
 
   group('updateJournalEntity', () {
     test(
-      'adds tags and labels only when update applies and reuses metadata',
+      'adds labels only when update applies and reuses metadata',
       () async {
-        final taggedCaptures = <JournalEntity>[];
         final labeledCaptures = <JournalEntity>[];
-        when(() => journalDb.addTagged(captureAny())).thenAnswer((
-          invocation,
-        ) async {
-          taggedCaptures.add(
-            invocation.positionalArguments.first as JournalEntity,
-          );
-        });
         when(() => journalDb.addLabeled(captureAny())).thenAnswer((
           invocation,
         ) async {
@@ -312,14 +290,8 @@ void main() {
         );
 
         expect(result, isTrue);
-        expect(taggedCaptures, hasLength(1));
         expect(labeledCaptures, hasLength(1));
-        final updatedEntity = taggedCaptures.first;
         final labeledEntity = labeledCaptures.first;
-        expect(
-          identical(updatedEntity.meta, logic.lastUpdateDbEntity?.meta),
-          isTrue,
-        );
         expect(
           identical(labeledEntity.meta, logic.lastUpdateDbEntity?.meta),
           isTrue,
@@ -327,7 +299,6 @@ void main() {
         expect(logic.updateMetadataCalls, 1);
 
         clearInteractions(journalDb);
-        taggedCaptures.clear();
         labeledCaptures.clear();
 
         logic = TestPersistenceLogic(
@@ -346,7 +317,6 @@ void main() {
         );
 
         expect(skipped, isFalse);
-        verifyNever(() => journalDb.addTagged(any<JournalEntity>()));
         verifyNever(() => journalDb.addLabeled(any<JournalEntity>()));
       },
     );

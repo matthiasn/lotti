@@ -11,7 +11,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -40,7 +39,6 @@ void main() {
       ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
       ..registerSingleton<VectorClockService>(MockVectorClockService())
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
-      ..registerSingleton<TagsService>(MockTagsService())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
       ..registerSingleton<LoggingService>(mockLoggingService);

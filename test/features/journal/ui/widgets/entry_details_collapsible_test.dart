@@ -5,14 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_list_widget.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -23,7 +21,6 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
@@ -63,7 +60,6 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       mockEntitiesCacheService = MockEntitiesCacheService();
 
-      final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
@@ -75,7 +71,6 @@ void main() {
         ..registerSingleton<EditorStateService>(mockEditorStateService)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<JournalDb>(mockJournalDb)
@@ -92,14 +87,6 @@ void main() {
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
-      );
-
-      when(() => mockTagsService.stream).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
       when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
@@ -621,7 +608,7 @@ void main() {
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
 
-      testWidgets('expanded image entry shows TagsListWidget', (tester) async {
+      testWidgets('expanded image entry shows date widget', (tester) async {
         when(
           () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
         ).thenAnswer((_) async => testImageEntry);
@@ -640,7 +627,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(TagsListWidget), findsOneWidget);
+        expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
       });
     });
 

@@ -406,16 +406,6 @@ void main() {
     },
   );
 
-  test('tagDbEntity encodes tag type correctly', () {
-    final generic = tagDbEntity(testTag1);
-    final person = tagDbEntity(testPersonTag1);
-    final story = tagDbEntity(testStoryTag1);
-
-    expect(generic.type, 'GenericTag');
-    expect(person.type, 'PersonTag');
-    expect(story.type, 'StoryTag');
-  });
-
   test('categoryDefinitionDbEntity uses id as name when deleted', () {
     final active = categoryMindfulness.copyWith(deletedAt: null);
     final deleted = categoryMindfulness.copyWith(

@@ -81,13 +81,12 @@ void main() {
             'idx_habit_definitions_deleted_private',
             'idx_label_definitions_deleted_private_name',
             'idx_dashboard_definitions_deleted_private_name',
-            'idx_tag_entities_deleted_private_tag',
             'idx_linked_entries_from_id_hidden_created_at_desc'
           )
         ORDER BY name
       ''').get();
 
-      expect(indexes, hasLength(5));
+      expect(indexes, hasLength(4));
 
       final byName = {
         for (final row in indexes)
@@ -105,10 +104,6 @@ void main() {
       expect(
         byName['idx_dashboard_definitions_deleted_private_name'],
         contains('name COLLATE NOCASE ASC'),
-      );
-      expect(
-        byName['idx_tag_entities_deleted_private_tag'],
-        contains('tag COLLATE NOCASE ASC'),
       );
       expect(
         byName['idx_linked_entries_from_id_hidden_created_at_desc'],

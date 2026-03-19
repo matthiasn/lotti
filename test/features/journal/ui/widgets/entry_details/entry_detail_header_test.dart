@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -37,7 +35,6 @@ void main() {
 
       final mockUpdateNotifications = MockUpdateNotifications();
       final mockPersistenceLogic = MockPersistenceLogic();
-      final mockTagsService = mockTagsServiceWithTags([]);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -50,8 +47,7 @@ void main() {
         ..registerSingleton<LinkService>(MockLinkService())
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<EditorDb>(mockEditorDb)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<TagsService>(mockTagsService);
+        ..registerSingleton<EditorStateService>(mockEditorStateService);
 
       when(() => mockUpdateNotifications.updateStream).thenAnswer(
         (_) => Stream<Set<String>>.fromIterable([]),
@@ -71,10 +67,6 @@ void main() {
         () => mockPersistenceLogic.updateJournalEntity(any(), any()),
       ).thenAnswer(
         (_) async => true,
-      );
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
       );
 
       when(

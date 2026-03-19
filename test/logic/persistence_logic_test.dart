@@ -9,7 +9,6 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -21,7 +20,6 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/utils.dart';
-import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -30,7 +28,6 @@ import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/location.dart';
@@ -145,7 +142,6 @@ void main() {
         ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<SecureStorage>(secureStorageMock)
         ..registerSingleton<NotificationService>(mockNotificationService)
@@ -366,44 +362,6 @@ void main() {
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['OPEN']), 0);
       expect(await getIt<JournalDb>().getTasksCount(statuses: ['DONE']), 1);
 
-      // create test tag
-      final testTagId = uuid.v1();
-      final testStoryTag = TagEntity.storyTag(
-        id: testTagId,
-        tag: 'Lotti: testing',
-        private: false,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      );
-
-      await TagsRepository.upsertTagEntity(testStoryTag);
-
-      // The mock UpdateNotifications doesn't forward notify() calls, so
-      // TagsService.tagsById never refreshes. Populate it manually so that
-      // addTagsWithLinked → getFilteredStoryTagIds can resolve the story tag.
-      getIt<TagsService>().tagsById[testStoryTag.id] = testStoryTag;
-
-      // expect tag in database when queried
-      final exactMatch = await getIt<JournalDb>().getMatchingTags(
-        testStoryTag.tag,
-      );
-      expect(exactMatch, hasLength(1));
-      expect(exactMatch.first.id, testStoryTag.id);
-      expect(exactMatch.first.tag, testStoryTag.tag);
-
-      // expect tag in database when queried with substring match
-      final partialMatch = await getIt<JournalDb>().getMatchingTags(
-        testStoryTag.tag.substring(1, 5),
-      );
-      expect(partialMatch.any((t) => t.id == testStoryTag.id), isTrue);
-      expect(partialMatch.any((t) => t.tag == testStoryTag.tag), isTrue);
-
-      // expect tag in database when fetching all tags
-      final allTags = await getIt<JournalDb>().getAllTags();
-      expect(allTags.any((t) => t.id == testStoryTag.id), isTrue);
-      expect(allTags.any((t) => t.tag == testStoryTag.tag), isTrue);
-
       // create linked comment entry
       const testText = 'test comment for task';
       const updatedTestText = 'updated test comment for task';
@@ -412,12 +370,6 @@ void main() {
         id: uuid.v1(),
         started: now,
         linkedId: task.meta.id,
-      );
-
-      // add tag to task
-      await TagsRepository.addTagsWithLinked(
-        journalEntityId: task.meta.id,
-        addedTagIds: [testStoryTag.id],
       );
 
       await getIt<PersistenceLogic>().updateJournalEntityText(
@@ -435,23 +387,6 @@ void main() {
         (await getIt<JournalDb>().journalEntityById(
           comment.meta.id,
         ))?.entryText,
-      );
-
-      expect(await getIt<JournalDb>().getTaggedCount(), 2);
-
-      // remove tags and expect them to be empty
-      await TagsRepository.removeTag(
-        journalEntityId: comment.meta.id,
-        tagId: testTagId,
-      );
-
-      expect(await getIt<JournalDb>().getTaggedCount(), 1);
-
-      expect(
-        (await getIt<JournalDb>().journalEntityById(
-          comment.meta.id,
-        ))?.meta.tagIds,
-        isEmpty,
       );
 
       // When run with other tests, we'll have 3 entries (1 from previous test + 2 from this test)
@@ -598,17 +533,6 @@ void main() {
         (await getIt<JournalDb>().getAllMeasurableDataTypes()).toSet(),
         {measurableWater},
       );
-    });
-
-    test('create and retrieve tag', () async {
-      const testTag = 'test-tag';
-      await TagsRepository.addTagDefinition(testTag);
-
-      final createdTag = (await getIt<JournalDb>().getMatchingTags(
-        testTag,
-      )).first;
-
-      expect(createdTag.tag, testTag);
     });
 
     test('create, retrieve and delete dashboard', () async {
@@ -1348,7 +1272,6 @@ void main() {
 
       final dateFrom = DateTime(2024, 1, 15, 10, 30);
       final dateTo = DateTime(2024, 1, 15, 11, 30);
-      const tagIds = ['tag1', 'tag2'];
       const labelIds = ['label1'];
       const categoryId = 'category-123';
 
@@ -1356,7 +1279,6 @@ void main() {
         dateFrom: dateFrom,
         dateTo: dateTo,
         private: true,
-        tagIds: tagIds,
         labelIds: labelIds,
         categoryId: categoryId,
         starred: true,
@@ -1366,7 +1288,6 @@ void main() {
       expect(meta.dateFrom, dateFrom);
       expect(meta.dateTo, dateTo);
       expect(meta.private, true);
-      expect(meta.tagIds, tagIds);
       expect(meta.labelIds, labelIds);
       expect(meta.categoryId, categoryId);
       expect(meta.starred, true);

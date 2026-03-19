@@ -31,9 +31,6 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
@@ -55,9 +52,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/sync/backfill',
     '/settings/sync/stats',
     '/settings/sync/outbox',
-    '/settings/tags',
-    '/settings/tags/:tagEntityId',
-    '/settings/tags/create/:tagType',
     '/settings/categories',
     '/settings/categories/:categoryId',
     '/settings/categories/create',
@@ -229,33 +223,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: ProjectDetailPage(
             projectId: state.pathParameters['projectId']!,
           ),
-        ),
-
-      // Tags
-      if (pathContains('tags'))
-        const BeamPage(
-          key: ValueKey('settings-tags'),
-          child: TagsPage(),
-        ),
-
-      if (pathContains('tags') &&
-          !pathContains('create') &&
-          pathContainsKey('tagEntityId'))
-        BeamPage(
-          key: ValueKey(
-            'settings-tags-${state.pathParameters['tagEntityId']}',
-          ),
-          child: EditExistingTagPage(
-            tagEntityId: state.pathParameters['tagEntityId']!,
-          ),
-        ),
-
-      if (pathContains('tags/create') && pathContainsKey('tagType'))
-        BeamPage(
-          key: ValueKey(
-            'settings-tags-create-${state.pathParameters['tagType']}',
-          ),
-          child: CreateTagPage(tagType: state.pathParameters['tagType']!),
         ),
 
       // Dashboards

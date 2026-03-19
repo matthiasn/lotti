@@ -13,8 +13,6 @@ _Metadata _$MetadataFromJson(Map<String, dynamic> json) => _Metadata(
   dateFrom: DateTime.parse(json['dateFrom'] as String),
   dateTo: DateTime.parse(json['dateTo'] as String),
   categoryId: json['categoryId'] as String?,
-  tags: (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList(),
-  tagIds: (json['tagIds'] as List<dynamic>?)?.map((e) => e as String).toList(),
   labelIds: (json['labelIds'] as List<dynamic>?)
       ?.map((e) => e as String)
       .toList(),
@@ -38,8 +36,6 @@ Map<String, dynamic> _$MetadataToJson(_Metadata instance) => <String, dynamic>{
   'dateFrom': instance.dateFrom.toIso8601String(),
   'dateTo': instance.dateTo.toIso8601String(),
   'categoryId': instance.categoryId,
-  'tags': instance.tags,
-  'tagIds': instance.tagIds,
   'labelIds': instance.labelIds,
   'utcOffset': instance.utcOffset,
   'timezone': instance.timezone,

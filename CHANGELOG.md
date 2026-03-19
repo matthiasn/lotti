@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.928] - 2026-03-17
+## [0.9.928] - 2026-03-19
 ### Added
 - Voice-driven time tracking: the task agent can now create time tracking entries
   from voice dictation. Users can say things like "I worked on the API from 2 to
@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 - Prompt tab and prompt editing page from AI settings. Prompts are now managed
   internally and no longer require manual user configuration.
+
+### Removed
+- Tags: removed the entire tag concept — generic tags, person tags, and story
+  tags — including all UI (tag modals, tag settings pages, tag chips on entries),
+  sync/outbox infrastructure, services, and repositories. The `tag_entities` and
+  `tagged` database tables are intentionally left in place to avoid migrations
+  but are no longer accessed or defined in the schema. Deprecated fields are
+  retained in data models for JSON backward compatibility.
 
 ## [0.9.927] - 2026-03-16
 ### Fixed

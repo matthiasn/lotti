@@ -5,15 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
@@ -47,21 +44,6 @@ class MockTimeService implements TimeService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockTagsService extends Mock implements TagsService {
-  @override
-  Map<String, TagEntity> get tagsById => {};
-
-  @override
-  Stream<List<TagEntity>> watchTags() {
-    return Stream.value(<TagEntity>[]);
-  }
-
-  @override
-  TagEntity? getTagById(String id) {
-    return null;
-  }
-}
-
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
   CategoryDefinition? getCategoryById(String? categoryId) {
@@ -83,13 +65,11 @@ class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
 void main() {
   late MockNavService mockNavService;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockTagsService mockTagsService;
   late MockTimeService mockTimeService;
 
   setUp(() {
     mockNavService = MockNavService();
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockTagsService = MockTagsService();
     mockTimeService = MockTimeService();
 
     getIt.allowReassignment = true;
@@ -101,7 +81,6 @@ void main() {
 
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<Directory>(tempDir);
   });
@@ -255,7 +234,7 @@ void main() {
       expect(find.textContaining(RegExp(r'\d{2}:\d{2}')), findsOneWidget);
     });
 
-    testWidgets('shows tags when not in compact mode', (tester) async {
+    testWidgets('shows text viewer in non-compact mode', (tester) async {
       final imageEntry = testImageEntry;
 
       await tester.pumpWidget(
@@ -266,9 +245,6 @@ void main() {
         ),
       );
 
-      // Tags view should be present in non-compact mode
-      // Verify TagsViewWidget is present
-      expect(find.byType(TagsViewWidget), findsOneWidget);
       // Verify text content is present
       expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
     });

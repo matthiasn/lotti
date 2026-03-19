@@ -19,7 +19,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -45,7 +44,6 @@ void main() {
         ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
         ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
         ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-        ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<EditorStateService>(EditorStateService());
 
