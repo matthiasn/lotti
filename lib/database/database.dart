@@ -39,6 +39,17 @@ typedef LinkedEntityTimeSpan = ({
 @DriftDatabase(
   include: {'database.drift'},
 )
+/// SQL subquery that resolves the most-recent active ProjectLink for a task.
+/// Used both during migration back-fill and in [JournalDb.upsertJournalDbEntity]
+/// to keep the denormalized `project_id` column consistent.
+const _projectIdSubquery =
+    '  SELECT le.from_id FROM linked_entries le'
+    '  WHERE le.to_id = journal.id'
+    "  AND le.type = 'ProjectLink'"
+    '  AND COALESCE(le.hidden, false) = false'
+    '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC'
+    '  LIMIT 1';
+
 class JournalDb extends _$JournalDb {
   JournalDb({
     this.inMemoryDatabase = false,
@@ -399,14 +410,7 @@ class JournalDb extends _$JournalDb {
             // not include the linked_entries table.
             try {
               await customStatement(
-                'UPDATE journal SET project_id = ('
-                '  SELECT le.from_id FROM linked_entries le'
-                '  WHERE le.to_id = journal.id'
-                "  AND le.type = 'ProjectLink'"
-                '  AND COALESCE(le.hidden, false) = false'
-                '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC'
-                '  LIMIT 1'
-                " ) WHERE type = 'Task'",
+                "UPDATE journal SET project_id = ($_projectIdSubquery) WHERE type = 'Task'",
               );
             } catch (_) {
               // linked_entries does not exist in this DB — backfill skipped.
@@ -446,14 +450,7 @@ class JournalDb extends _$JournalDb {
     // (which is not in the serialized payload). Restore it from linked_entries
     // so the denormalized column stays consistent after any upsert.
     await customStatement(
-      'UPDATE journal SET project_id = ('
-      '  SELECT le.from_id FROM linked_entries le'
-      '  WHERE le.to_id = journal.id'
-      "  AND le.type = 'ProjectLink'"
-      '  AND COALESCE(le.hidden, false) = false'
-      '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC'
-      '  LIMIT 1'
-      ' ) WHERE id = ?',
+      'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
       [entry.id],
     );
     return res;

@@ -1059,10 +1059,9 @@ class JournalPageController extends _$JournalPageController {
     }
   }
 
-  /// Fetches the set of task IDs linked to the selected projects.
-  /// Only called when the project filter is active.
+  /// Fetches the set of task IDs that have an agent_task link.
+  /// Only called when the agent assignment filter is active.
   /// Cached per refresh cycle to avoid repeated DB hits during pagination.
-
   Future<Set<String>> _getAgentLinkedTaskIds() async {
     if (_cachedAgentLinkedIds != null) return _cachedAgentLinkedIds!;
     final repo = AgentRepository(getIt<AgentDatabase>());
