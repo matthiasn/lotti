@@ -12,6 +12,11 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
           ?.map((e) => e as String)
           .toSet() ??
       const <String>{},
+  selectedProjectIds:
+      (json['selectedProjectIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toSet() ??
+      const <String>{},
   selectedTaskStatuses:
       (json['selectedTaskStatuses'] as List<dynamic>?)
           ?.map((e) => e as String)
@@ -33,6 +38,7 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
   showCreationDate: json['showCreationDate'] as bool? ?? false,
   showDueDate: json['showDueDate'] as bool? ?? true,
   showCoverArt: json['showCoverArt'] as bool? ?? true,
+  showProjectsHeader: json['showProjectsHeader'] as bool? ?? true,
   showDistances: json['showDistances'] as bool? ?? false,
   agentAssignmentFilter:
       $enumDecodeNullable(
@@ -45,6 +51,7 @@ _TasksFilter _$TasksFilterFromJson(Map<String, dynamic> json) => _TasksFilter(
 Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
     <String, dynamic>{
       'selectedCategoryIds': instance.selectedCategoryIds.toList(),
+      'selectedProjectIds': instance.selectedProjectIds.toList(),
       'selectedTaskStatuses': instance.selectedTaskStatuses.toList(),
       'selectedLabelIds': instance.selectedLabelIds.toList(),
       'selectedPriorities': instance.selectedPriorities.toList(),
@@ -52,6 +59,7 @@ Map<String, dynamic> _$TasksFilterToJson(_TasksFilter instance) =>
       'showCreationDate': instance.showCreationDate,
       'showDueDate': instance.showDueDate,
       'showCoverArt': instance.showCoverArt,
+      'showProjectsHeader': instance.showProjectsHeader,
       'showDistances': instance.showDistances,
       'agentAssignmentFilter':
           _$AgentAssignmentFilterEnumMap[instance.agentAssignmentFilter]!,

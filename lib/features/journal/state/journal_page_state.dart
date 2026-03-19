@@ -61,12 +61,14 @@ abstract class JournalPageState with _$JournalPageState {
     @Default([]) List<String> taskStatuses,
     @Default(<String>{}) Set<String> selectedTaskStatuses,
     @Default(<String>{}) Set<String> selectedCategoryIds,
+    @Default(<String>{}) Set<String> selectedProjectIds,
     @Default(<String>{}) Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
     @Default(TaskSortOption.byPriority) TaskSortOption sortOption,
     @Default(false) bool showCreationDate,
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
+    @Default(true) bool showProjectsHeader,
     @Default(SearchMode.fullText) SearchMode searchMode,
     @Default(false) bool showDistances,
     @Default(AgentAssignmentFilter.all)
@@ -88,6 +90,7 @@ abstract class JournalPageState with _$JournalPageState {
 abstract class TasksFilter with _$TasksFilter {
   const factory TasksFilter({
     @Default(<String>{}) Set<String> selectedCategoryIds,
+    @Default(<String>{}) Set<String> selectedProjectIds,
     @Default(<String>{}) Set<String> selectedTaskStatuses,
     @Default(<String>{}) Set<String> selectedLabelIds,
     @Default(<String>{}) Set<String> selectedPriorities,
@@ -95,6 +98,7 @@ abstract class TasksFilter with _$TasksFilter {
     @Default(false) bool showCreationDate,
     @Default(true) bool showDueDate,
     @Default(true) bool showCoverArt,
+    @Default(true) bool showProjectsHeader,
     @Default(false) bool showDistances,
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,

@@ -74,6 +74,7 @@ class JournalPageController extends _$JournalPageController {
   bool _showPrivateEntries = false;
   late bool _showTasks;
   Set<String> _selectedCategoryIds = {};
+  Set<String> _selectedProjectIds = {};
   Set<String> _selectedLabelIds = {};
   Set<String> _selectedPriorities = {};
   Set<String> _fullTextMatches = {};
@@ -81,9 +82,16 @@ class JournalPageController extends _$JournalPageController {
   bool _showCreationDate = false;
   bool _showDueDate = true;
   bool _showCoverArt = true;
+  bool _showProjectsHeader = true;
   bool _showDistances = false;
   AgentAssignmentFilter _agentAssignmentFilter = AgentAssignmentFilter.all;
   Set<String>? _cachedAgentLinkedIds;
+
+  /// When post-filters (project/agent) are active, `_runQuery` may consume
+  /// more raw DB rows than it returns filtered results. This field tracks
+  /// the actual raw offset to resume from on the next page, avoiding
+  /// duplicate or missed rows.
+  int? _postFilterNextRawOffset;
   String? _persistedPerTabTasksFilterValue;
   String? _persistedLegacyTaskFilterValue;
   String? _persistedEntryTypesValue;
@@ -143,6 +151,7 @@ class JournalPageController extends _$JournalPageController {
       pagingController: controller,
       selectedEntryTypes: _selectedEntryTypes.toList(),
       selectedCategoryIds: _selectedCategoryIds,
+      selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
       taskStatuses: const [
@@ -160,6 +169,7 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showCreationDate,
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
+      showProjectsHeader: _showProjectsHeader,
       showDistances: _showDistances,
     );
   }
@@ -180,6 +190,13 @@ class JournalPageController extends _$JournalPageController {
             currentPages.isNotEmpty &&
             currentPages.last.length < pageSize) {
           return null; // No more pages
+        }
+        // When post-filters consumed more raw rows than returned filtered
+        // results, use the tracked raw offset so we don't re-read rows.
+        if (_postFilterNextRawOffset != null) {
+          final offset = _postFilterNextRawOffset!;
+          _postFilterNextRawOffset = null;
+          return offset;
         }
         if (currentPages != null &&
             currentPages.isNotEmpty &&
@@ -301,7 +318,11 @@ class JournalPageController extends _$JournalPageController {
                 <String>{};
 
             if (showTasks) {
+              // Probe call: save/restore offset so the probe doesn't
+              // mutate pagination state consumed by the real fetch.
+              final savedOffset = _postFilterNextRawOffset;
               final newIds = (await _runQuery(0)).map(idMapper).toSet();
+              _postFilterNextRawOffset = savedOffset;
               if (!setEquals(_lastIds, newIds)) {
                 _lastIds = newIds;
                 await refreshQuery();
@@ -348,12 +369,14 @@ class JournalPageController extends _$JournalPageController {
       fullTextMatches: _fullTextMatches,
       selectedTaskStatuses: _selectedTaskStatuses,
       selectedCategoryIds: _selectedCategoryIds,
+      selectedProjectIds: _selectedProjectIds,
       selectedLabelIds: _selectedLabelIds,
       selectedPriorities: _selectedPriorities,
       sortOption: _sortOption,
       showCreationDate: _showCreationDate,
       showDueDate: _showDueDate,
       showCoverArt: _showCoverArt,
+      showProjectsHeader: _showProjectsHeader,
       showDistances: _showDistances,
       agentAssignmentFilter: _agentAssignmentFilter,
       searchMode: _searchMode,
@@ -391,12 +414,44 @@ class JournalPageController extends _$JournalPageController {
     } else {
       _selectedCategoryIds = _selectedCategoryIds.union({categoryId});
     }
+    // Project filters are category-scoped — clear when categories change
+    // to avoid invisible stale filters for a previous category.
+    _selectedProjectIds = {};
+
     _emitState();
     await persistTasksFilter();
   }
 
   Future<void> selectedAllCategories() async {
     _selectedCategoryIds = {};
+    _selectedProjectIds = {};
+
+    _emitState();
+    await persistTasksFilter();
+  }
+
+  Future<void> toggleProjectFilter(String projectId) async {
+    if (_selectedProjectIds.contains(projectId)) {
+      _selectedProjectIds = _selectedProjectIds.difference({projectId});
+    } else {
+      _selectedProjectIds = _selectedProjectIds.union({projectId});
+    }
+    _emitState();
+    await persistTasksFilter();
+  }
+
+  Future<void> clearProjectFilter() async {
+    _selectedProjectIds = {};
+
+    _emitState();
+    await persistTasksFilter();
+  }
+
+  /// Removes project IDs that are no longer valid (e.g. removed by sync).
+  /// Called by the project filter chip when it detects stale selections.
+  Future<void> removeStaleProjectFilters(Set<String> staleIds) async {
+    if (staleIds.isEmpty) return;
+    _selectedProjectIds = _selectedProjectIds.difference(staleIds);
     _emitState();
     await persistTasksFilter();
   }
@@ -511,6 +566,13 @@ class JournalPageController extends _$JournalPageController {
     await _persistTasksFilterWithoutRefresh();
   }
 
+  // Projects header visibility toggle (visual only, no query refresh needed)
+  Future<void> setShowProjectsHeader({required bool show}) async {
+    _showProjectsHeader = show;
+    _emitState();
+    await _persistTasksFilterWithoutRefresh();
+  }
+
   // Distance display toggle (visual only, no query refresh needed)
   Future<void> setShowDistances({required bool show}) async {
     _showDistances = show;
@@ -548,12 +610,16 @@ class JournalPageController extends _$JournalPageController {
       // Only load task-related filters if we're in the tasks tab
       if (_showTasks) {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
+        // Project IDs are NOT restored — they are category-scoped and
+        // we cannot validate them without a DB call. The user re-selects
+        // project filters via the chip UI after choosing a category.
         _selectedLabelIds = tasksFilter.selectedLabelIds;
         _selectedPriorities = tasksFilter.selectedPriorities;
         _sortOption = tasksFilter.sortOption;
         _showCreationDate = tasksFilter.showCreationDate;
         _showDueDate = tasksFilter.showDueDate;
         _showCoverArt = tasksFilter.showCoverArt;
+        _showProjectsHeader = tasksFilter.showProjectsHeader;
         _showDistances = tasksFilter.showDistances;
         _agentAssignmentFilter = tasksFilter.agentAssignmentFilter;
       } else {
@@ -597,6 +663,7 @@ class JournalPageController extends _$JournalPageController {
   Future<void> _persistTasksFilterWithoutRefresh() async {
     final filter = TasksFilter(
       selectedCategoryIds: _selectedCategoryIds,
+      selectedProjectIds: _showTasks ? _selectedProjectIds : {},
       selectedTaskStatuses: _showTasks ? _selectedTaskStatuses : {},
       selectedLabelIds: _showTasks ? _selectedLabelIds : {},
       selectedPriorities: _showTasks ? _selectedPriorities : {},
@@ -604,6 +671,7 @@ class JournalPageController extends _$JournalPageController {
       showCreationDate: _showTasks && _showCreationDate,
       showDueDate: _showTasks && _showDueDate,
       showCoverArt: _showTasks && _showCoverArt,
+      showProjectsHeader: _showTasks && _showProjectsHeader,
       showDistances: _showTasks && _showDistances,
       agentAssignmentFilter: _showTasks
           ? _agentAssignmentFilter
@@ -672,6 +740,7 @@ class JournalPageController extends _$JournalPageController {
   String _encodeTasksFilter(TasksFilter filter) {
     return jsonEncode(<String, dynamic>{
       'selectedCategoryIds': _sortedStrings(filter.selectedCategoryIds),
+      'selectedProjectIds': _sortedStrings(filter.selectedProjectIds),
       'selectedTaskStatuses': _sortedStrings(filter.selectedTaskStatuses),
       'selectedLabelIds': _sortedStrings(filter.selectedLabelIds),
       'selectedPriorities': _sortedStrings(filter.selectedPriorities),
@@ -737,6 +806,7 @@ class JournalPageController extends _$JournalPageController {
 
   Future<void> refreshQuery() async {
     _cachedAgentLinkedIds = null;
+
     _emitState();
 
     if (state.pagingController == null) {
@@ -827,39 +897,79 @@ class JournalPageController extends _$JournalPageController {
 
       final agentFilterActive =
           _agentAssignmentFilter != AgentAssignmentFilter.all;
+      final projectFilterActive = _selectedProjectIds.isNotEmpty;
+      final needsPostFilter = agentFilterActive || projectFilterActive;
 
-      // Over-fetch when agent filter is active since post-filtering
-      // will discard some results. When inactive, use normal page size.
-      final fetchLimit = agentFilterActive ? pageSize * 3 : pageSize;
-
-      final res = await _db.getTasks(
-        ids: ids,
-        starredStatuses: starredEntriesOnly ? [true] : [true, false],
-        taskStatuses: _selectedTaskStatuses.toList(),
-        categoryIds: categoryIds.toList(),
-        labelIds: labelIds.toList(),
-        priorities: priorities.toList(),
-        sortByDate: sortByDateInDb,
-        limit: fetchLimit,
-        offset: pageKey,
-      );
-
-      // When agent filter is inactive, skip agent DB entirely — zero overhead.
-      if (!agentFilterActive) {
+      if (!needsPostFilter) {
+        _postFilterNextRawOffset = null;
+        final res = await _db.getTasks(
+          ids: ids,
+          starredStatuses: starredEntriesOnly ? [true] : [true, false],
+          taskStatuses: _selectedTaskStatuses.toList(),
+          categoryIds: categoryIds.toList(),
+          labelIds: labelIds.toList(),
+          priorities: priorities.toList(),
+          sortByDate: sortByDateInDb,
+          limit: pageSize,
+          offset: pageKey,
+        );
         if (_sortOption == TaskSortOption.byDueDate) {
           return _sortByDueDate(res);
         }
         return res;
       }
 
-      // Agent filter is active: fetch linked IDs and post-filter.
-      final agentLinkedIds = await _getAgentLinkedTaskIds();
-      final filtered = res.where((entity) {
-        final hasLink = agentLinkedIds.contains(entity.meta.id);
-        return _agentAssignmentFilter == AgentAssignmentFilter.hasAgent
-            ? hasLink
-            : !hasLink;
-      }).toList();
+      // Pre-fetch filter sets so the loop doesn't re-query each iteration.
+      final projectTaskIds = projectFilterActive
+          ? await _db.getTaskIdsForProjects(_selectedProjectIds)
+          : null;
+      final agentLinkedIds = agentFilterActive
+          ? await _getAgentLinkedTaskIds()
+          : null;
+
+      // When post-filters are active, keep fetching raw pages until we
+      // accumulate pageSize filtered results or the DB is exhausted.
+      // This avoids premature pagination termination when many raw
+      // tasks are discarded by the filter.
+      final filtered = <JournalEntity>[];
+      var currentOffset = pageKey;
+      const fetchChunk = 50; // Same as pageSize — fetch in normal-sized chunks
+
+      while (filtered.length < pageSize) {
+        final raw = await _db.getTasks(
+          ids: ids,
+          starredStatuses: starredEntriesOnly ? [true] : [true, false],
+          taskStatuses: _selectedTaskStatuses.toList(),
+          categoryIds: categoryIds.toList(),
+          labelIds: labelIds.toList(),
+          priorities: priorities.toList(),
+          sortByDate: sortByDateInDb,
+          limit: fetchChunk,
+          offset: currentOffset,
+        );
+
+        for (final entity in raw) {
+          var keep = true;
+          if (projectTaskIds != null &&
+              !projectTaskIds.contains(entity.meta.id)) {
+            keep = false;
+          }
+          if (keep && agentLinkedIds != null) {
+            final hasLink = agentLinkedIds.contains(entity.meta.id);
+            keep = _agentAssignmentFilter == AgentAssignmentFilter.hasAgent
+                ? hasLink
+                : !hasLink;
+          }
+          if (keep) filtered.add(entity);
+        }
+
+        currentOffset += raw.length;
+        // DB returned fewer than requested — no more data exists.
+        if (raw.length < fetchChunk) break;
+      }
+
+      // Record the raw offset so getNextPageKey resumes correctly.
+      _postFilterNextRawOffset = currentOffset;
 
       // Sort before truncating so the page contains the correct items.
       if (_sortOption == TaskSortOption.byDueDate) {
@@ -949,9 +1059,10 @@ class JournalPageController extends _$JournalPageController {
     }
   }
 
-  /// Fetches the set of task IDs that have an agent_task link.
-  /// Only called when the agent assignment filter is active.
+  /// Fetches the set of task IDs linked to the selected projects.
+  /// Only called when the project filter is active.
   /// Cached per refresh cycle to avoid repeated DB hits during pagination.
+
   Future<Set<String>> _getAgentLinkedTaskIds() async {
     if (_cachedAgentLinkedIds != null) return _cachedAgentLinkedIds!;
     final repo = AgentRepository(getIt<AgentDatabase>());

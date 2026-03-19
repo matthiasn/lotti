@@ -4,6 +4,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -26,6 +27,28 @@ import '../test_data/test_data.dart';
 // Real fallback values for sealed unions used with mocktail
 
 final JournalEntity fallbackJournalEntity = testTextEntry;
+
+final ProjectEntry fallbackProjectEntry =
+    JournalEntity.project(
+          meta: Metadata(
+            id: 'fallback-project-id',
+            createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+            updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+            dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+            dateTo: DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+          data: ProjectData(
+            title: 'Fallback Project',
+            status: ProjectStatus.open(
+              id: 'fallback-status-id',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+              utcOffset: 0,
+            ),
+            dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+            dateTo: DateTime.fromMillisecondsSinceEpoch(0),
+          ),
+        )
+        as ProjectEntry;
 
 final TagEntity fallbackTagEntity = testTag1;
 
@@ -53,6 +76,7 @@ final AiConfig fallbackAiConfig = AiConfig.inferenceProvider(
 void registerAllFallbackValues() {
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);
+  registerFallbackValue(fallbackProjectEntry);
   registerFallbackValue(fallbackTagEntity);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
