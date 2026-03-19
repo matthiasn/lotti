@@ -3387,6 +3387,18 @@ abstract class AppLocalizations {
   /// **'Receive notifications for reminders, updates, and important events.'**
   String get configFlagEnableNotificationsDescription;
 
+  /// No description provided for @configFlagEnableProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Projects'**
+  String get configFlagEnableProjects;
+
+  /// No description provided for @configFlagEnableProjectsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show project management features for organizing tasks into projects.'**
+  String get configFlagEnableProjectsDescription;
+
   /// No description provided for @configFlagEnableSessionRatings.
   ///
   /// In en, this message translates to:
@@ -5844,6 +5856,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get privateLabel;
+
+  /// No description provided for @projectAgentSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get projectAgentSectionTitle;
+
+  /// No description provided for @projectCreateButton.
+  ///
+  /// In en, this message translates to:
+  /// **'New Project'**
+  String get projectCreateButton;
+
+  /// No description provided for @projectCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Project'**
+  String get projectCreateTitle;
+
+  /// No description provided for @projectDetailTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Details'**
+  String get projectDetailTitle;
+
+  /// No description provided for @projectErrorCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Error creating project.'**
+  String get projectErrorCreateFailed;
+
+  /// No description provided for @projectErrorLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load project data.'**
+  String get projectErrorLoadFailed;
+
+  /// No description provided for @projectErrorLoadProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading projects'**
+  String get projectErrorLoadProjects;
+
+  /// No description provided for @projectErrorUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update project. Please try again.'**
+  String get projectErrorUpdateFailed;
+
+  /// No description provided for @projectFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectFilterLabel;
+
+  /// No description provided for @projectHealthSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
+  String projectHealthSummary(int projectCount, int taskCount);
+
+  /// No description provided for @projectCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} project} other{{count} projects}}'**
+  String projectCountSummary(int count);
+
+  /// No description provided for @projectHealthTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get projectHealthTitle;
+
+  /// No description provided for @projectLinkedTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} linked task} other{{count} linked tasks}}'**
+  String projectLinkedTaskCount(int count);
+
+  /// No description provided for @projectLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Linked Tasks'**
+  String get projectLinkedTasks;
+
+  /// No description provided for @projectManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage projects'**
+  String get projectManageTooltip;
+
+  /// No description provided for @projectNoLinkedTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'No tasks linked yet'**
+  String get projectNoLinkedTasks;
+
+  /// No description provided for @projectNoProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet'**
+  String get projectNoProjects;
+
+  /// No description provided for @projectNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Project not found'**
+  String get projectNotFound;
+
+  /// No description provided for @projectPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get projectPickerLabel;
+
+  /// No description provided for @projectPickerUnassigned.
+  ///
+  /// In en, this message translates to:
+  /// **'No project'**
+  String get projectPickerUnassigned;
+
+  /// No description provided for @projectStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get projectStatusActive;
+
+  /// No description provided for @projectStatusArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get projectStatusArchived;
+
+  /// No description provided for @projectStatusChangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Status'**
+  String get projectStatusChangeTitle;
+
+  /// No description provided for @projectStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get projectStatusCompleted;
+
+  /// No description provided for @projectStatusOnHold.
+  ///
+  /// In en, this message translates to:
+  /// **'On Hold'**
+  String get projectStatusOnHold;
+
+  /// No description provided for @projectStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get projectStatusOpen;
+
+  /// No description provided for @projectTargetDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Target Date'**
+  String get projectTargetDateLabel;
+
+  /// No description provided for @projectTitleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Project Title'**
+  String get projectTitleLabel;
+
+  /// No description provided for @projectTitleRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Project title cannot be empty'**
+  String get projectTitleRequired;
 
   /// No description provided for @promptAddOrRemoveModelsButton.
   ///
@@ -8626,6 +8812,12 @@ abstract class AppLocalizations {
   /// **'Show due date on cards'**
   String get tasksShowDueDate;
 
+  /// No description provided for @tasksShowProjectsHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Show projects header'**
+  String get tasksShowProjectsHeader;
+
   /// No description provided for @tasksSortByCreationDate.
   ///
   /// In en, this message translates to:
@@ -8715,6 +8907,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task Summaries'**
   String get taskSummaries;
+
+  /// No description provided for @taskUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'(untitled)'**
+  String get taskUntitled;
 
   /// No description provided for @thinkingDisclosureCopied.
   ///

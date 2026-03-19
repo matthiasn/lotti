@@ -625,6 +625,8 @@
   "configFlagEnableMatrixDescription": "Povolit integraci s Matrix pro synchronizaci vašich záznamů mezi zařízeními a s ostatními uživateli Matrix.",
   "configFlagEnableNotifications": "Povolit oznámení?",
   "configFlagEnableNotificationsDescription": "Přijímejte upozornění na připomínky, aktualizace a důležité události.",
+  "configFlagEnableProjects": "Povolit projekty",
+  "configFlagEnableProjectsDescription": "Zobrazit funkce správy projektů pro organizaci úkolů do projektů.",
   "configFlagEnableSessionRatings": "Povolit hodnocení relací",
   "configFlagEnableSessionRatingsDescription": "Po zastavení časovače zobrazit rychlé hodnocení relace.",
   "configFlagEnableTooltip": "Povolit nápovědy",
@@ -1192,6 +1194,59 @@
   "outboxMonitorSwitchLabel": "povoleno",
   "outboxMonitorVolumeChartTitle": "Denní objem synchronizace",
   "privateLabel": "Soukromé",
+  "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} projekt} few{{count} projekty} other{{count} projektů}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectCreateButton": "Nový projekt",
+  "projectCreateTitle": "Vytvořit projekt",
+  "projectDetailTitle": "Detail projektu",
+  "projectErrorCreateFailed": "Chyba při vytváření projektu.",
+  "projectErrorLoadFailed": "Nepodařilo se načíst data projektu.",
+  "projectErrorLoadProjects": "Chyba při načítání projektů",
+  "projectErrorUpdateFailed": "Nepodařilo se aktualizovat projekt. Zkuste to prosím znovu.",
+  "projectFilterLabel": "Projekt",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} projekt} few{{projectCount} projekty} other{{projectCount} projektů}}, {taskCount, plural, one{{taskCount} úkol} few{{taskCount} úkoly} other{{taskCount} úkolů}}",
+  "@projectHealthSummary": {
+    "placeholders": {
+      "projectCount": {
+        "type": "int"
+      },
+      "taskCount": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthTitle": "Projekty",
+  "projectLinkedTaskCount": "{count, plural, one{{count} propojený úkol} few{{count} propojené úkoly} other{{count} propojených úkolů}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectLinkedTasks": "Propojené úkoly",
+  "projectManageTooltip": "Správa projektů",
+  "projectNoLinkedTasks": "Zatím žádné propojené úkoly",
+  "projectNoProjects": "Zatím žádné projekty",
+  "projectNotFound": "Projekt nenalezen",
+  "projectPickerLabel": "Projekt",
+  "projectPickerUnassigned": "Žádný projekt",
+  "projectStatusActive": "Aktivní",
+  "projectStatusArchived": "Archivovaný",
+  "projectStatusChangeTitle": "Změnit stav",
+  "projectStatusCompleted": "Dokončený",
+  "projectStatusOnHold": "Pozastavený",
+  "projectStatusOpen": "Otevřený",
+  "projectTargetDateLabel": "Cílové datum",
+  "projectTitleLabel": "Název projektu",
+  "projectTitleRequired": "Název projektu nesmí být prázdný",
   "promptAddOrRemoveModelsButton": "Přidat nebo odstranit modely",
   "promptAddPageTitle": "Přidat prompt",
   "promptAiResponseTypeDescription": "Formát očekávané odpovědi",
@@ -1728,6 +1783,7 @@
   "tasksShowCreationDate": "Zobrazit datum vytvoření na kartách",
   "tasksShowDistances": "Zobrazit vzdálenosti na kartách",
   "tasksShowDueDate": "Zobrazit datum splnění na kartách",
+  "tasksShowProjectsHeader": "Zobrazit přehled projektů",
   "tasksSortByCreationDate": "Vytvořeno",
   "tasksSortByDate": "Datum",
   "tasksSortByDueDate": "Termín dokončení",
@@ -1743,6 +1799,7 @@
   "taskStatusOpen": "Otevřeno",
   "taskStatusRejected": "Odmítnuto",
   "taskSummaries": "Souhrny úkolů",
+  "taskUntitled": "(bez názvu)",
   "thinkingDisclosureCopied": "Úvaha zkopírována",
   "thinkingDisclosureCopy": "Kopírovat úvahu",
   "thinkingDisclosureHide": "Skrýt úvahu",

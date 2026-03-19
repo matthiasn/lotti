@@ -12,6 +12,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the correct timestamps. Supports both completed sessions (start + end)
   and running timers (start only). Entries require user approval via the change
   set confirmation UI.
+- Projects UI: full project management interface with create/detail pages,
+  project picker for tasks, category integration, health header on tasks page,
+  and project-based task filtering. Each project auto-creates an AI agent for
+  analysis and reporting.
+- Projects feature flag: all project UI is gated behind the `enableProjects`
+  config flag (default: off), keeping the feature hidden until ready for release.
+- Expandable project health header: the tasks page header now shows a collapsible
+  summary card with project/task counts that expands to per-project rows with
+  status chips and navigation.
+- Project status picker: interactive bottom sheet on the project detail page for
+  changing project status across all five variants.
 
 ### Removed
 - Prompt tab and prompt editing page from AI settings. Prompts are now managed

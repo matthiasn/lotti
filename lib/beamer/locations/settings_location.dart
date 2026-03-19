@@ -13,6 +13,8 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
+import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
@@ -59,6 +61,8 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/categories',
     '/settings/categories/:categoryId',
     '/settings/categories/create',
+    '/settings/projects/:projectId',
+    '/settings/projects/create',
     '/settings/labels',
     '/settings/labels/create',
     '/settings/labels/:labelId',
@@ -203,6 +207,27 @@ class SettingsLocation extends BeamLocation<BeamState> {
           ),
           child: new_category_details.CategoryDetailsPage(
             categoryId: state.pathParameters['categoryId'],
+          ),
+        ),
+
+      // Projects
+      if (pathContains('projects/create'))
+        BeamPage(
+          key: const ValueKey('settings-projects-create'),
+          child: ProjectCreatePage(
+            categoryId: state.uri.queryParameters['categoryId'],
+          ),
+        ),
+
+      if (pathContains('projects') &&
+          !pathContains('projects/create') &&
+          pathContainsKey('projectId'))
+        BeamPage(
+          key: ValueKey(
+            'settings-projects-${state.pathParameters['projectId']}',
+          ),
+          child: ProjectDetailPage(
+            projectId: state.pathParameters['projectId']!,
           ),
         ),
 

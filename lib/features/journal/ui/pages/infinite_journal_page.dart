@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_header.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_label_quick_filter.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -96,6 +99,8 @@ class _InfiniteJournalPageBodyState
     final controller = ref.read(
       journalPageControllerProvider(widget.showTasks).notifier,
     );
+    final enableProjects =
+        ref.watch(configFlagProvider(enableProjectsFlag)).value ?? false;
 
     return VisibilityDetector(
       key: Key(widget.showTasks ? 'tasks_page' : 'journal_page'),
@@ -130,6 +135,20 @@ class _InfiniteJournalPageBodyState
                       child: const TaskLabelQuickFilter(),
                     ),
                   ),
+                ),
+              ),
+            // Project health header: shown when projects are enabled,
+            // the header toggle is on, and exactly one category is selected.
+            if (enableProjects &&
+                state.showTasks &&
+                state.showProjectsHeader &&
+                state.selectedCategoryIds.length == 1)
+              SliverToBoxAdapter(
+                child: ProjectHealthHeader(
+                  categoryId: state.selectedCategoryIds.first,
+                  selectedProjectIds: state.selectedProjectIds,
+                  onToggleProject: controller.toggleProjectFilter,
+                  onClearStale: controller.removeStaleProjectFilters,
                 ),
               ),
             if (state.pagingController != null)

@@ -820,6 +820,8 @@
   "configFlagEnableMatrixDescription": "Activează integrarea Matrix pentru a sincroniza intrările dvs. pe diferite dispozitive și cu alți utilizatori Matrix.",
   "configFlagEnableNotifications": "Activează notificările pe desktop?",
   "configFlagEnableNotificationsDescription": "Primiți notificări pentru mementouri, actualizări și evenimente importante.",
+  "configFlagEnableProjects": "Activează proiectele",
+  "configFlagEnableProjectsDescription": "Afișează funcțiile de gestionare a proiectelor pentru organizarea sarcinilor în proiecte.",
   "configFlagEnableSessionRatings": "Activează evaluările de sesiune",
   "configFlagEnableSessionRatingsDescription": "Solicită o evaluare rapidă a sesiunii la oprirea unui cronometru.",
   "configFlagEnableTooltip": "Activează sfaturile",
@@ -1405,6 +1407,59 @@
   "outboxMonitorSwitchLabel": "pornit",
   "outboxMonitorVolumeChartTitle": "Volum de sincronizare zilnic",
   "privateLabel": "Privat",
+  "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} proiect} few{{count} proiecte} other{{count} de proiecte}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectCreateButton": "Proiect nou",
+  "projectCreateTitle": "Creare proiect",
+  "projectDetailTitle": "Detalii proiect",
+  "projectErrorCreateFailed": "Eroare la crearea proiectului.",
+  "projectErrorLoadFailed": "Datele proiectului nu au putut fi încărcate.",
+  "projectErrorLoadProjects": "Eroare la încărcarea proiectelor",
+  "projectErrorUpdateFailed": "Proiectul nu a putut fi actualizat. Încercați din nou.",
+  "projectFilterLabel": "Proiect",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} proiect} few{{projectCount} proiecte} other{{projectCount} de proiecte}}, {taskCount, plural, one{{taskCount} sarcină} few{{taskCount} sarcini} other{{taskCount} de sarcini}}",
+  "@projectHealthSummary": {
+    "placeholders": {
+      "projectCount": {
+        "type": "int"
+      },
+      "taskCount": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthTitle": "Proiecte",
+  "projectLinkedTaskCount": "{count, plural, one{{count} sarcină asociată} few{{count} sarcini asociate} other{{count} de sarcini asociate}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectLinkedTasks": "Sarcini asociate",
+  "projectManageTooltip": "Gestionați proiectele",
+  "projectNoLinkedTasks": "Nicio sarcină asociată încă",
+  "projectNoProjects": "Niciun proiect încă",
+  "projectNotFound": "Proiectul nu a fost găsit",
+  "projectPickerLabel": "Proiect",
+  "projectPickerUnassigned": "Fără proiect",
+  "projectStatusActive": "Activ",
+  "projectStatusArchived": "Arhivat",
+  "projectStatusChangeTitle": "Schimbă starea",
+  "projectStatusCompleted": "Finalizat",
+  "projectStatusOnHold": "În așteptare",
+  "projectStatusOpen": "Deschis",
+  "projectTargetDateLabel": "Data țintă",
+  "projectTitleLabel": "Titlu proiect",
+  "projectTitleRequired": "Titlul proiectului nu poate fi gol",
   "promptAddOrRemoveModelsButton": "Adaugă sau elimină modele",
   "promptAddPageTitle": "Adaugă prompt",
   "promptAiResponseTypeDescription": "Formatul răspunsului așteptat",
@@ -1957,6 +2012,7 @@
   "tasksShowCreationDate": "Afișează data creării pe carduri",
   "tasksShowDistances": "Afișează distanțele pe carduri",
   "tasksShowDueDate": "Afișează data scadenței pe carduri",
+  "tasksShowProjectsHeader": "Afișați antetul proiectelor",
   "tasksSortByCreationDate": "Creație",
   "tasksSortByDate": "Dată",
   "tasksSortByDueDate": "Scadență",
@@ -1972,6 +2028,7 @@
   "taskStatusOpen": "DESCHIS",
   "taskStatusRejected": "RESPINS",
   "taskSummaries": "Rezumate sarcini",
+  "taskUntitled": "(fără titlu)",
   "thinkingDisclosureCopied": "Raționament copiat",
   "thinkingDisclosureCopy": "Copiază raționamentul",
   "thinkingDisclosureHide": "Ascunde raționamentul",

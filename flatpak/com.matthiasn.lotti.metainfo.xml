@@ -39,6 +39,8 @@
     </release>
     <release version="0.9.927" date="2026-03-16">
       <description>
+          <p>Projects UI: full project management interface with create/detail pages, project picker for tasks, category integration, health header on tasks page, and project-based task filtering. Each project auto-creates an AI agent for analysis and reporting.</p>
+          <p>Projects feature flag: all project UI gated behind enableProjects config flag (default off). Expandable health header with project/task counts. Interactive status picker on project detail page.</p>
           <p>Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up from paginating server history correctly, ensuring reliable message delivery after app restart.</p>
       </description>
     </release>

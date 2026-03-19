@@ -1886,6 +1886,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Erhalte Benachrichtigungen für Erinnerungen, Updates und wichtige Ereignisse.';
 
   @override
+  String get configFlagEnableProjects => 'Projekte aktivieren';
+
+  @override
+  String get configFlagEnableProjectsDescription =>
+      'Projektverwaltung zum Organisieren von Aufgaben in Projekten anzeigen.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Sitzungsbewertungen aktivieren';
 
   @override
@@ -3289,6 +3296,125 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get privateLabel => 'Privat';
+
+  @override
+  String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectCreateButton => 'Neues Projekt';
+
+  @override
+  String get projectCreateTitle => 'Projekt erstellen';
+
+  @override
+  String get projectDetailTitle => 'Projektdetails';
+
+  @override
+  String get projectErrorCreateFailed => 'Fehler beim Erstellen des Projekts.';
+
+  @override
+  String get projectErrorLoadFailed =>
+      'Projektdaten konnten nicht geladen werden.';
+
+  @override
+  String get projectErrorLoadProjects => 'Fehler beim Laden der Projekte';
+
+  @override
+  String get projectErrorUpdateFailed =>
+      'Projekt konnte nicht aktualisiert werden. Bitte versuche es erneut.';
+
+  @override
+  String get projectFilterLabel => 'Projekt';
+
+  @override
+  String projectHealthSummary(int projectCount, int taskCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      projectCount,
+      locale: localeName,
+      other: '$projectCount Projekte',
+      one: '$projectCount Projekt',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      taskCount,
+      locale: localeName,
+      other: '$taskCount Aufgaben',
+      one: '$taskCount Aufgabe',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Projekte',
+      one: '$count Projekt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthTitle => 'Projekte';
+
+  @override
+  String projectLinkedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count verknüpfte Aufgaben',
+      one: '$count verknüpfte Aufgabe',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectLinkedTasks => 'Verknüpfte Aufgaben';
+
+  @override
+  String get projectManageTooltip => 'Projekte verwalten';
+
+  @override
+  String get projectNoLinkedTasks => 'Noch keine Aufgaben verknüpft';
+
+  @override
+  String get projectNoProjects => 'Noch keine Projekte';
+
+  @override
+  String get projectNotFound => 'Projekt nicht gefunden';
+
+  @override
+  String get projectPickerLabel => 'Projekt';
+
+  @override
+  String get projectPickerUnassigned => 'Kein Projekt';
+
+  @override
+  String get projectStatusActive => 'Aktiv';
+
+  @override
+  String get projectStatusArchived => 'Archiviert';
+
+  @override
+  String get projectStatusChangeTitle => 'Status ändern';
+
+  @override
+  String get projectStatusCompleted => 'Abgeschlossen';
+
+  @override
+  String get projectStatusOnHold => 'Pausiert';
+
+  @override
+  String get projectStatusOpen => 'Offen';
+
+  @override
+  String get projectTargetDateLabel => 'Zieldatum';
+
+  @override
+  String get projectTitleLabel => 'Projekttitel';
+
+  @override
+  String get projectTitleRequired => 'Der Projekttitel darf nicht leer sein';
 
   @override
   String get promptAddOrRemoveModelsButton =>
@@ -4823,6 +4949,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tasksShowDueDate => 'Fälligkeitsdatum auf Karten anzeigen';
 
   @override
+  String get tasksShowProjectsHeader => 'Projektübersicht anzeigen';
+
+  @override
   String get tasksSortByCreationDate => 'Erstellt';
 
   @override
@@ -4866,6 +4995,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Aufgabenzusammenfassungen';
+
+  @override
+  String get taskUntitled => '(ohne Titel)';
 
   @override
   String get thinkingDisclosureCopied => 'Begründung kopiert';

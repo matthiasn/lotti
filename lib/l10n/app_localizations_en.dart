@@ -1856,6 +1856,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Receive notifications for reminders, updates, and important events.';
 
   @override
+  String get configFlagEnableProjects => 'Enable Projects';
+
+  @override
+  String get configFlagEnableProjectsDescription =>
+      'Show project management features for organizing tasks into projects.';
+
+  @override
   String get configFlagEnableSessionRatings => 'Enable Session Ratings';
 
   @override
@@ -3235,6 +3242,124 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get privateLabel => 'Private';
+
+  @override
+  String get projectAgentSectionTitle => 'Agent';
+
+  @override
+  String get projectCreateButton => 'New Project';
+
+  @override
+  String get projectCreateTitle => 'Create Project';
+
+  @override
+  String get projectDetailTitle => 'Project Details';
+
+  @override
+  String get projectErrorCreateFailed => 'Error creating project.';
+
+  @override
+  String get projectErrorLoadFailed => 'Failed to load project data.';
+
+  @override
+  String get projectErrorLoadProjects => 'Error loading projects';
+
+  @override
+  String get projectErrorUpdateFailed =>
+      'Failed to update project. Please try again.';
+
+  @override
+  String get projectFilterLabel => 'Project';
+
+  @override
+  String projectHealthSummary(int projectCount, int taskCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      projectCount,
+      locale: localeName,
+      other: '$projectCount projects',
+      one: '$projectCount project',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      taskCount,
+      locale: localeName,
+      other: '$taskCount tasks',
+      one: '$taskCount task',
+    );
+    return '$_temp0, $_temp1';
+  }
+
+  @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projects',
+      one: '$count project',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectHealthTitle => 'Projects';
+
+  @override
+  String projectLinkedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count linked tasks',
+      one: '$count linked task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get projectLinkedTasks => 'Linked Tasks';
+
+  @override
+  String get projectManageTooltip => 'Manage projects';
+
+  @override
+  String get projectNoLinkedTasks => 'No tasks linked yet';
+
+  @override
+  String get projectNoProjects => 'No projects yet';
+
+  @override
+  String get projectNotFound => 'Project not found';
+
+  @override
+  String get projectPickerLabel => 'Project';
+
+  @override
+  String get projectPickerUnassigned => 'No project';
+
+  @override
+  String get projectStatusActive => 'Active';
+
+  @override
+  String get projectStatusArchived => 'Archived';
+
+  @override
+  String get projectStatusChangeTitle => 'Change Status';
+
+  @override
+  String get projectStatusCompleted => 'Completed';
+
+  @override
+  String get projectStatusOnHold => 'On Hold';
+
+  @override
+  String get projectStatusOpen => 'Open';
+
+  @override
+  String get projectTargetDateLabel => 'Target Date';
+
+  @override
+  String get projectTitleLabel => 'Project Title';
+
+  @override
+  String get projectTitleRequired => 'Project title cannot be empty';
 
   @override
   String get promptAddOrRemoveModelsButton => 'Add or Remove Models';
@@ -4746,6 +4871,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tasksShowDueDate => 'Show due date on cards';
 
   @override
+  String get tasksShowProjectsHeader => 'Show projects header';
+
+  @override
   String get tasksSortByCreationDate => 'Created';
 
   @override
@@ -4789,6 +4917,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskSummaries => 'Task Summaries';
+
+  @override
+  String get taskUntitled => '(untitled)';
 
   @override
   String get thinkingDisclosureCopied => 'Reasoning copied';

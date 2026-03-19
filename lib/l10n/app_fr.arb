@@ -820,6 +820,8 @@
   "configFlagEnableMatrixDescription": "Activer l'intégration Matrix pour synchroniser tes entrées sur plusieurs appareils et avec d'autres utilisateurs Matrix.",
   "configFlagEnableNotifications": "Activer les notifications ?",
   "configFlagEnableNotificationsDescription": "Recevoir des notifications pour les rappels, les mises à jour et les événements importants.",
+  "configFlagEnableProjects": "Activer les projets",
+  "configFlagEnableProjectsDescription": "Afficher les fonctions de gestion de projets pour organiser les tâches en projets.",
   "configFlagEnableSessionRatings": "Activer les évaluations de session",
   "configFlagEnableSessionRatingsDescription": "Proposer une évaluation rapide de session à l'arrêt d'un minuteur.",
   "configFlagEnableTooltip": "Activer les info-bulles",
@@ -1405,6 +1407,59 @@
   "outboxMonitorSwitchLabel": "activé",
   "outboxMonitorVolumeChartTitle": "Volume de synchronisation quotidien",
   "privateLabel": "Privé",
+  "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} projet} other{{count} projets}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectCreateButton": "Créer un projet",
+  "projectCreateTitle": "Créer un projet",
+  "projectDetailTitle": "Détails du projet",
+  "projectErrorCreateFailed": "Erreur lors de la création du projet.",
+  "projectErrorLoadFailed": "Impossible de charger les données du projet.",
+  "projectErrorLoadProjects": "Erreur lors du chargement des projets",
+  "projectErrorUpdateFailed": "Impossible de mettre à jour le projet. Réessaie.",
+  "projectFilterLabel": "Projet",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} projet} other{{projectCount} projets}}, {taskCount, plural, one{{taskCount} tâche} other{{taskCount} tâches}}",
+  "@projectHealthSummary": {
+    "placeholders": {
+      "projectCount": {
+        "type": "int"
+      },
+      "taskCount": {
+        "type": "int"
+      }
+    }
+  },
+  "projectHealthTitle": "Projets",
+  "projectLinkedTaskCount": "{count, plural, one{{count} tâche liée} other{{count} tâches liées}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "projectLinkedTasks": "Tâches liées",
+  "projectManageTooltip": "Gérer les projets",
+  "projectNoLinkedTasks": "Aucune tâche liée pour le moment",
+  "projectNoProjects": "Pas encore de projets",
+  "projectNotFound": "Projet introuvable",
+  "projectPickerLabel": "Projet",
+  "projectPickerUnassigned": "Aucun projet",
+  "projectStatusActive": "Actif",
+  "projectStatusArchived": "Archivé",
+  "projectStatusChangeTitle": "Changer le statut",
+  "projectStatusCompleted": "Terminé",
+  "projectStatusOnHold": "En pause",
+  "projectStatusOpen": "Ouvert",
+  "projectTargetDateLabel": "Date cible",
+  "projectTitleLabel": "Titre du projet",
+  "projectTitleRequired": "Le titre du projet ne peut pas être vide",
   "promptAddOrRemoveModelsButton": "Ajouter ou supprimer des modèles",
   "promptAddPageTitle": "Ajouter un prompt",
   "promptAiResponseTypeDescription": "Format de la réponse attendue",
@@ -1957,6 +2012,7 @@
   "tasksShowCreationDate": "Afficher la date de création sur les cartes",
   "tasksShowDistances": "Afficher les distances sur les cartes",
   "tasksShowDueDate": "Afficher la date d'échéance sur les cartes",
+  "tasksShowProjectsHeader": "Afficher l'en-tête des projets",
   "tasksSortByCreationDate": "Création",
   "tasksSortByDate": "Date",
   "tasksSortByDueDate": "Échéance",
@@ -1972,6 +2028,7 @@
   "taskStatusOpen": "OUVERTE",
   "taskStatusRejected": "REJETÉE",
   "taskSummaries": "Résumés de tâches",
+  "taskUntitled": "(sans titre)",
   "thinkingDisclosureCopied": "Raisonnement copié",
   "thinkingDisclosureCopy": "Copier le raisonnement",
   "thinkingDisclosureHide": "Masquer le raisonnement",
