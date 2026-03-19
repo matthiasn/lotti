@@ -36,9 +36,6 @@ typedef LinkedEntityTimeSpan = ({
   DateTime dateTo,
 });
 
-@DriftDatabase(
-  include: {'database.drift'},
-)
 /// SQL subquery that resolves the most-recent active ProjectLink for a task.
 /// Used both during migration back-fill and in [JournalDb.upsertJournalDbEntity]
 /// to keep the denormalized `project_id` column consistent.
@@ -50,6 +47,9 @@ const _projectIdSubquery =
     '  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC'
     '  LIMIT 1';
 
+@DriftDatabase(
+  include: {'database.drift'},
+)
 class JournalDb extends _$JournalDb {
   JournalDb({
     this.inMemoryDatabase = false,
@@ -2247,10 +2247,14 @@ class JournalDb extends _$JournalDb {
       final res = await into(linkedEntries).insertOnConflictUpdate(dbLink);
 
       // Keep the denormalized project_id column in sync whenever a
-      // ProjectLink is created or soft-deleted.
+      // ProjectLink is created or soft-deleted. Use the same "latest
+      // non-hidden ProjectLink wins" subquery so late-arriving sync
+      // messages and hide-then-restore sequences remain correct.
       if (res != 0 && dbLink.type == 'ProjectLink') {
-        final newProjectId = (dbLink.hidden ?? false) ? null : dbLink.fromId;
-        await updateProjectIdColumn(dbLink.toId, newProjectId);
+        await customStatement(
+          'UPDATE journal SET project_id = ($_projectIdSubquery) WHERE id = ?',
+          [dbLink.toId],
+        );
       }
 
       return res;

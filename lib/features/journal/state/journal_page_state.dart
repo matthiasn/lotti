@@ -74,6 +74,7 @@ abstract class JournalPageState with _$JournalPageState {
     @Default(AgentAssignmentFilter.all)
     AgentAssignmentFilter agentAssignmentFilter,
     @Default(false) bool enableVectorSearch,
+    @Default(false) bool enableProjects,
     @Default(false) bool vectorSearchInFlight,
     Duration? vectorSearchElapsed,
     @Default(0) int vectorSearchResultCount,

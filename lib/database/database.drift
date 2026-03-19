@@ -73,6 +73,7 @@ CREATE INDEX idx_journal_tasks_due_active ON journal(
 );
 CREATE INDEX idx_journal_project_id ON journal(project_id)
 WHERE type = 'Task'
+  AND task = 1
   AND deleted = FALSE
   AND project_id IS NOT NULL;
 
@@ -1210,6 +1211,7 @@ SELECT * FROM journal
   WHERE project_id = :projectId
   AND deleted = false
   AND type = 'Task'
+  AND task = 1
   ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
 
 tasksForProjectByPrivateStatuses:
@@ -1217,6 +1219,7 @@ SELECT * FROM journal
   WHERE project_id = :projectId
   AND deleted = false
   AND type = 'Task'
+  AND task = 1
   AND private IN :privateStatuses
   ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC;
 

@@ -54,6 +54,7 @@ class JournalPageController extends _$JournalPageController {
       bool habits,
       bool dashboards,
       bool vectorSearch,
+      bool projects,
     })
   >?
   _configFlagsSub;
@@ -69,6 +70,7 @@ class JournalPageController extends _$JournalPageController {
   bool _enableHabits = false;
   bool _enableDashboards = false;
   bool _enableVectorSearch = false;
+  bool _enableProjects = false;
   SearchMode _searchMode = SearchMode.fullText;
   String _query = '';
   bool _showPrivateEntries = false;
@@ -226,22 +228,31 @@ class JournalPageController extends _$JournalPageController {
     // Listen to feature flags needed by this controller without loading the
     // whole config flag table.
     _configFlagsSub =
-        Rx.combineLatest4<
+        Rx.combineLatest5<
               bool,
               bool,
               bool,
               bool,
-              ({bool events, bool habits, bool dashboards, bool vectorSearch})
+              bool,
+              ({
+                bool events,
+                bool habits,
+                bool dashboards,
+                bool vectorSearch,
+                bool projects,
+              })
             >(
               _db.watchConfigFlag(enableEventsFlag),
               _db.watchConfigFlag(enableHabitsPageFlag),
               _db.watchConfigFlag(enableDashboardsPageFlag),
               _db.watchConfigFlag(enableVectorSearchFlag),
-              (events, habits, dashboards, vectorSearch) => (
+              _db.watchConfigFlag(enableProjectsFlag),
+              (events, habits, dashboards, vectorSearch, projects) => (
                 events: events,
                 habits: habits,
                 dashboards: dashboards,
                 vectorSearch: vectorSearch,
+                projects: projects,
               ),
             )
             .listen((flags) {
@@ -257,9 +268,14 @@ class JournalPageController extends _$JournalPageController {
               _enableHabits = flags.habits;
               _enableDashboards = flags.dashboards;
               _enableVectorSearch = flags.vectorSearch;
+              _enableProjects = flags.projects;
               var shouldRefreshAfterModeFallback = false;
               if (!_enableVectorSearch && _searchMode == SearchMode.vector) {
                 _searchMode = SearchMode.fullText;
+                shouldRefreshAfterModeFallback = true;
+              }
+              if (!_enableProjects && _selectedProjectIds.isNotEmpty) {
+                _selectedProjectIds = {};
                 shouldRefreshAfterModeFallback = true;
               }
 
@@ -381,6 +397,7 @@ class JournalPageController extends _$JournalPageController {
       agentAssignmentFilter: _agentAssignmentFilter,
       searchMode: _searchMode,
       enableVectorSearch: _enableVectorSearch,
+      enableProjects: _enableProjects,
     );
   }
 
@@ -610,9 +627,7 @@ class JournalPageController extends _$JournalPageController {
       // Only load task-related filters if we're in the tasks tab
       if (_showTasks) {
         _selectedTaskStatuses = tasksFilter.selectedTaskStatuses;
-        // Project IDs are NOT restored — they are category-scoped and
-        // we cannot validate them without a DB call. The user re-selects
-        // project filters via the chip UI after choosing a category.
+        _selectedProjectIds = tasksFilter.selectedProjectIds;
         _selectedLabelIds = tasksFilter.selectedLabelIds;
         _selectedPriorities = tasksFilter.selectedPriorities;
         _sortOption = tasksFilter.sortOption;
@@ -935,7 +950,8 @@ class JournalPageController extends _$JournalPageController {
       var currentOffset = pageKey;
       const fetchChunk = 50; // Same as pageSize — fetch in normal-sized chunks
 
-      while (filtered.length < pageSize) {
+      var pageFilled = false;
+      while (!pageFilled && filtered.length < pageSize) {
         final raw = await _db.getTasks(
           ids: ids,
           starredStatuses: starredEntriesOnly ? [true] : [true, false],
@@ -948,7 +964,9 @@ class JournalPageController extends _$JournalPageController {
           offset: currentOffset,
         );
 
+        var consumedInChunk = 0;
         for (final entity in raw) {
+          consumedInChunk++;
           var keep = true;
           if (projectTaskIds != null &&
               !projectTaskIds.contains(entity.meta.id)) {
@@ -961,9 +979,16 @@ class JournalPageController extends _$JournalPageController {
                 : !hasLink;
           }
           if (keep) filtered.add(entity);
+          if (filtered.length == pageSize) {
+            currentOffset += consumedInChunk;
+            pageFilled = true;
+            break;
+          }
         }
 
-        currentOffset += raw.length;
+        if (!pageFilled) {
+          currentOffset += raw.length;
+        }
         // DB returned fewer than requested — no more data exists.
         if (raw.length < fetchChunk) break;
       }

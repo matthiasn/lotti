@@ -6370,7 +6370,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
   );
   late final Index idxJournalProjectId = Index(
     'idx_journal_project_id',
-    'CREATE INDEX idx_journal_project_id ON journal (project_id) WHERE type = \'Task\' AND deleted = FALSE AND project_id IS NOT NULL',
+    'CREATE INDEX idx_journal_project_id ON journal (project_id) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE AND project_id IS NOT NULL',
   );
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
@@ -8451,7 +8451,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
 
   Selectable<JournalDbEntity> tasksForProject(String? projectId) {
     return customSelect(
-      'SELECT * FROM journal WHERE project_id = ?1 AND deleted = FALSE AND type = \'Task\' ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC',
+      'SELECT * FROM journal WHERE project_id = ?1 AND deleted = FALSE AND type = \'Task\' AND task = 1 ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC',
       variables: [Variable<String>(projectId)],
       readsFrom: {journal},
     ).asyncMap(journal.mapFromRow);
@@ -8468,7 +8468,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
     $arrayStartIndex += privateStatuses.length;
     return customSelect(
-      'SELECT * FROM journal WHERE project_id = ?1 AND deleted = FALSE AND type = \'Task\' AND private IN ($expandedprivateStatuses) ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC',
+      'SELECT * FROM journal WHERE project_id = ?1 AND deleted = FALSE AND type = \'Task\' AND task = 1 AND private IN ($expandedprivateStatuses) ORDER BY COALESCE(task_priority_rank, 2) ASC, date_from DESC',
       variables: [
         Variable<String>(projectId),
         for (var $ in privateStatuses) Variable<bool>($),
