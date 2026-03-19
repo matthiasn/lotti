@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -93,6 +94,117 @@ void main() {
       );
 
       expect(result, isNull);
+    });
+
+    test('re-fetches when stream emits matching task id', () async {
+      final project = makeTestProject(categoryId: categoryId);
+      when(
+        () => mockRepo.getProjectForTask(taskId),
+      ).thenAnswer((_) async => project);
+
+      await container.read(projectForTaskProvider(taskId).future);
+
+      when(
+        () => mockRepo.getProjectForTask(taskId),
+      ).thenAnswer((_) async => null);
+
+      updateStreamController.add({taskId});
+      await Future<void>.delayed(Duration.zero);
+
+      final result = await container.read(
+        projectForTaskProvider(taskId).future,
+      );
+      expect(result, isNull);
+    });
+
+    test('re-fetches when stream emits projectNotification', () async {
+      final project = makeTestProject(categoryId: categoryId);
+      when(
+        () => mockRepo.getProjectForTask(taskId),
+      ).thenAnswer((_) async => project);
+
+      await container.read(projectForTaskProvider(taskId).future);
+
+      when(
+        () => mockRepo.getProjectForTask(taskId),
+      ).thenAnswer((_) async => null);
+
+      updateStreamController.add({projectNotification});
+      await Future<void>.delayed(Duration.zero);
+
+      final result = await container.read(
+        projectForTaskProvider(taskId).future,
+      );
+      expect(result, isNull);
+    });
+  });
+
+  group('projectTaskCountProvider', () {
+    const projectId = 'proj-1';
+
+    test('returns task count for a project', () async {
+      final tasks = [makeTestTask(), makeTestTask()];
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => tasks);
+
+      final result = await container.read(
+        projectTaskCountProvider(projectId).future,
+      );
+
+      expect(result, 2);
+    });
+
+    test('returns 0 when project has no tasks', () async {
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => []);
+
+      final result = await container.read(
+        projectTaskCountProvider(projectId).future,
+      );
+
+      expect(result, 0);
+    });
+
+    test('re-fetches when stream emits matching project id', () async {
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [makeTestTask()]);
+
+      await container.read(projectTaskCountProvider(projectId).future);
+
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [makeTestTask(), makeTestTask()]);
+
+      updateStreamController.add({projectId});
+      await Future<void>.delayed(Duration.zero);
+
+      final result = await container.read(
+        projectTaskCountProvider(projectId).future,
+      );
+      expect(result, 2);
+    });
+
+    test('re-fetches when stream emits projectNotification', () async {
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => [makeTestTask()]);
+
+      await container.read(projectTaskCountProvider(projectId).future);
+
+      when(
+        () => mockRepo.getTasksForProject(projectId),
+      ).thenAnswer((_) async => []);
+
+      updateStreamController.add({projectNotification});
+      await Future<void>.delayed(Duration.zero);
+
+      final result = await container.read(
+        projectTaskCountProvider(projectId).future,
+      );
+      expect(result, 0);
     });
   });
 }
