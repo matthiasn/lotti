@@ -127,19 +127,13 @@ void main() {
 
         expect(tabChanges.last, AiSettingsTab.models);
 
-        // Test Prompts tab (index 2)
+        // Test Profiles tab (index 2)
         await tester.tap(find.byType(Tab).at(2));
-        await tester.pump();
-
-        expect(tabChanges.last, AiSettingsTab.prompts);
-
-        // Test Profiles tab (index 3)
-        await tester.tap(find.byType(Tab).at(3));
         await tester.pump();
 
         expect(tabChanges.last, AiSettingsTab.profiles);
 
-        expect(tabChanges, hasLength(4));
+        expect(tabChanges, hasLength(3));
       });
 
       testWidgets('updates visual selection when tab changes', (
@@ -230,7 +224,7 @@ void main() {
                                   externalController.animateTo(2);
                                 });
                               },
-                              child: const Text('Go to Prompts'),
+                              child: const Text('Go to Profiles'),
                             ),
                           ],
                         ),
@@ -247,7 +241,7 @@ void main() {
         expect(externalController.index, 0);
 
         // Use external button to change tab
-        await tester.tap(find.text('Go to Prompts'));
+        await tester.tap(find.text('Go to Profiles'));
         await tester.pumpAndSettle();
 
         expect(externalController.index, 2);
@@ -357,15 +351,13 @@ void main() {
 
         // Rapidly switch between tabs
         await tester.tap(find.byType(Tab).at(1)); // Models
-        await tester.tap(find.byType(Tab).at(2)); // Prompts
-        await tester.tap(find.byType(Tab).at(3)); // Profiles
+        await tester.tap(find.byType(Tab).at(2)); // Profiles
         await tester.tap(find.byType(Tab).at(0)); // Providers
         await tester.pump();
 
-        expect(tabChanges, hasLength(4));
+        expect(tabChanges, hasLength(3));
         expect(tabChanges, [
           AiSettingsTab.models,
-          AiSettingsTab.prompts,
           AiSettingsTab.profiles,
           AiSettingsTab.providers,
         ]);
@@ -569,8 +561,7 @@ void main() {
         // We can't test exact names due to localization, but we can verify count
         expect(tabs[0].text, isNotNull); // providers
         expect(tabs[1].text, isNotNull); // models
-        expect(tabs[2].text, isNotNull); // prompts
-        expect(tabs[3].text, isNotNull); // profiles
+        expect(tabs[2].text, isNotNull); // profiles
       });
     });
 

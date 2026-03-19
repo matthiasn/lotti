@@ -3,48 +3,15 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/prompt_edit_page.dart';
 
 /// Service responsible for handling navigation to AI configuration edit pages
 ///
 /// This service encapsulates all navigation logic for AI settings and provides
 /// a clean interface for navigating to different edit pages based on config type.
-///
-/// **Design Principles:**
-/// - Single responsibility: Only handles navigation, no UI or business logic
-/// - Type-safe: Uses pattern matching on sealed classes
-/// - Consistent: Same navigation pattern for all config types
-/// - Testable: Navigation can be mocked and tested
-///
-/// **Usage:**
-/// ```dart
-/// final navigationService = AiSettingsNavigationService();
-///
-/// // Navigate to edit page for any config type
-/// await navigationService.navigateToConfigEdit(context, config);
-///
-/// // Navigate to create new config page
-/// await navigationService.navigateToCreateProvider(context);
-/// ```
 class AiSettingsNavigationService {
   const AiSettingsNavigationService();
 
   /// Navigates to the appropriate edit page based on the AI configuration type
-  ///
-  /// This method uses pattern matching to determine the correct edit page
-  /// and navigates using a smooth slide transition from right to left.
-  ///
-  /// **Parameters:**
-  /// - [context]: BuildContext for navigation
-  /// - [config]: The AI configuration to edit
-  ///
-  /// **Returns:** Future that completes when navigation finishes
-  ///
-  /// **Example:**
-  /// ```dart
-  /// await navigationService.navigateToConfigEdit(context, providerConfig);
-  /// // Will navigate to InferenceProviderEditPage with smooth slide transition
-  /// ```
   Future<void> navigateToConfigEdit(
     BuildContext context,
     AiConfig config,
@@ -54,12 +21,6 @@ class AiSettingsNavigationService {
   }
 
   /// Navigates to create a new inference provider
-  ///
-  /// **Parameters:**
-  /// - [context]: BuildContext for navigation
-  /// - [preselectedType]: Optional provider type to pre-select
-  ///
-  /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreateProvider(
     BuildContext context, {
     InferenceProviderType? preselectedType,
@@ -73,11 +34,6 @@ class AiSettingsNavigationService {
   }
 
   /// Navigates to create a new AI model
-  ///
-  /// **Parameters:**
-  /// - [context]: BuildContext for navigation
-  ///
-  /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreateModel(BuildContext context) async {
     final route = _createSlideRoute(
       builder: (context) => const InferenceModelEditPage(),
@@ -85,25 +41,7 @@ class AiSettingsNavigationService {
     await Navigator.of(context).push(route);
   }
 
-  /// Navigates to create a new AI prompt
-  ///
-  /// **Parameters:**
-  /// - [context]: BuildContext for navigation
-  ///
-  /// **Returns:** Future that completes when navigation finishes
-  Future<void> navigateToCreatePrompt(BuildContext context) async {
-    final route = _createSlideRoute(
-      builder: (context) => const PromptEditPage(),
-    );
-    await Navigator.of(context).push(route);
-  }
-
   /// Navigates to create a new inference profile
-  ///
-  /// **Parameters:**
-  /// - [context]: BuildContext for navigation
-  ///
-  /// **Returns:** Future that completes when navigation finishes
   Future<void> navigateToCreateProfile(BuildContext context) async {
     final route = _createSlideRoute(
       builder: (context) => const InferenceProfileForm(),
@@ -112,17 +50,6 @@ class AiSettingsNavigationService {
   }
 
   /// Creates the appropriate route with slide transition based on config type
-  ///
-  /// This method uses pattern matching on the sealed AiConfig class
-  /// to determine which edit page to create with smooth slide animation.
-  ///
-  /// **Parameters:**
-  /// - [config]: The AI configuration to create a route for
-  ///
-  /// **Returns:** PageRoute with slide transition for the appropriate edit page
-  ///
-  /// **Throws:**
-  /// - [ArgumentError] if config type is not supported
   PageRoute<void> _createEditRouteWithTransition(AiConfig config) {
     return switch (config) {
       AiConfigInferenceProvider() => _createSlideRoute(
@@ -135,33 +62,17 @@ class AiSettingsNavigationService {
           configId: config.id,
         ),
       ),
-      AiConfigPrompt() => _createSlideRoute(
-        builder: (context) => PromptEditPage(
-          configId: config.id,
-        ),
-      ),
       AiConfigInferenceProfile() => _createSlideRoute(
         builder: (context) => InferenceProfileForm(existingProfile: config),
       ),
-      // Skills are read-only in this phase; no dedicated edit page yet.
-      // Return a no-op route to avoid crashing if this path is reached.
-      AiConfigSkill() => _createSlideRoute(
+      // Prompts and skills are not editable through the settings UI.
+      AiConfigPrompt() || AiConfigSkill() => _createSlideRoute(
         builder: (_) => const SizedBox.shrink(),
       ),
     };
   }
 
   /// Creates a smooth slide transition route with both pages moving
-  ///
-  /// This method creates a PageRouteBuilder with a custom slide transition where:
-  /// - The new page slides in from the right
-  /// - The previous page slides out to the left
-  /// - Both animations happen simultaneously for a dynamic effect
-  ///
-  /// **Parameters:**
-  /// - [builder]: Widget builder function for the destination page
-  ///
-  /// **Returns:** PageRoute with smooth bidirectional slide transition
   PageRoute<void> _createSlideRoute({
     required Widget Function(BuildContext) builder,
   }) {

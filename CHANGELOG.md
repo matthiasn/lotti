@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and running timers (start only). Entries require user approval via the change
   set confirmation UI.
 
+### Removed
+- Prompt tab and prompt editing page from AI settings. Prompts are now managed
+  internally and no longer require manual user configuration.
+
 ## [0.9.927] - 2026-03-16
 ### Fixed
 - Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up

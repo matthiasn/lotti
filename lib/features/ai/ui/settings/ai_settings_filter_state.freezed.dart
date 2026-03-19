@@ -18,11 +18,8 @@ mixin _$AiSettingsFilterState {
  String get searchQuery;/// Selected provider IDs for filtering models (only used on Models tab)
  Set<String> get selectedProviders;/// Selected capabilities for filtering models (only used on Models tab)
  Set<Modality> get selectedCapabilities;/// Whether to show only reasoning-capable models (only used on Models tab)
- bool get reasoningFilter;/// Selected response types for filtering prompts (only used on Prompts tab)
- Set<AiResponseType> get selectedResponseTypes;/// Currently active tab
- AiSettingsTab get activeTab;/// Whether selection mode is active (only used on Prompts tab)
- bool get selectionMode;/// Selected prompt IDs for bulk operations (only used on Prompts tab)
- Set<String> get selectedPromptIds;
+ bool get reasoningFilter;/// Currently active tab
+ AiSettingsTab get activeTab;
 /// Create a copy of AiSettingsFilterState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -33,16 +30,16 @@ $AiSettingsFilterStateCopyWith<AiSettingsFilterState> get copyWith => _$AiSettin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSettingsFilterState&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&const DeepCollectionEquality().equals(other.selectedProviders, selectedProviders)&&const DeepCollectionEquality().equals(other.selectedCapabilities, selectedCapabilities)&&(identical(other.reasoningFilter, reasoningFilter) || other.reasoningFilter == reasoningFilter)&&const DeepCollectionEquality().equals(other.selectedResponseTypes, selectedResponseTypes)&&(identical(other.activeTab, activeTab) || other.activeTab == activeTab)&&(identical(other.selectionMode, selectionMode) || other.selectionMode == selectionMode)&&const DeepCollectionEquality().equals(other.selectedPromptIds, selectedPromptIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AiSettingsFilterState&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&const DeepCollectionEquality().equals(other.selectedProviders, selectedProviders)&&const DeepCollectionEquality().equals(other.selectedCapabilities, selectedCapabilities)&&(identical(other.reasoningFilter, reasoningFilter) || other.reasoningFilter == reasoningFilter)&&(identical(other.activeTab, activeTab) || other.activeTab == activeTab));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,searchQuery,const DeepCollectionEquality().hash(selectedProviders),const DeepCollectionEquality().hash(selectedCapabilities),reasoningFilter,const DeepCollectionEquality().hash(selectedResponseTypes),activeTab,selectionMode,const DeepCollectionEquality().hash(selectedPromptIds));
+int get hashCode => Object.hash(runtimeType,searchQuery,const DeepCollectionEquality().hash(selectedProviders),const DeepCollectionEquality().hash(selectedCapabilities),reasoningFilter,activeTab);
 
 @override
 String toString() {
-  return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab, selectionMode: $selectionMode, selectedPromptIds: $selectedPromptIds)';
+  return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, activeTab: $activeTab)';
 }
 
 
@@ -53,7 +50,7 @@ abstract mixin class $AiSettingsFilterStateCopyWith<$Res>  {
   factory $AiSettingsFilterStateCopyWith(AiSettingsFilterState value, $Res Function(AiSettingsFilterState) _then) = _$AiSettingsFilterStateCopyWithImpl;
 @useResult
 $Res call({
- String searchQuery, Set<String> selectedProviders, Set<Modality> selectedCapabilities, bool reasoningFilter, Set<AiResponseType> selectedResponseTypes, AiSettingsTab activeTab, bool selectionMode, Set<String> selectedPromptIds
+ String searchQuery, Set<String> selectedProviders, Set<Modality> selectedCapabilities, bool reasoningFilter, AiSettingsTab activeTab
 });
 
 
@@ -70,17 +67,14 @@ class _$AiSettingsFilterStateCopyWithImpl<$Res>
 
 /// Create a copy of AiSettingsFilterState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? searchQuery = null,Object? selectedProviders = null,Object? selectedCapabilities = null,Object? reasoningFilter = null,Object? selectedResponseTypes = null,Object? activeTab = null,Object? selectionMode = null,Object? selectedPromptIds = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? searchQuery = null,Object? selectedProviders = null,Object? selectedCapabilities = null,Object? reasoningFilter = null,Object? activeTab = null,}) {
   return _then(_self.copyWith(
 searchQuery: null == searchQuery ? _self.searchQuery : searchQuery // ignore: cast_nullable_to_non_nullable
 as String,selectedProviders: null == selectedProviders ? _self.selectedProviders : selectedProviders // ignore: cast_nullable_to_non_nullable
 as Set<String>,selectedCapabilities: null == selectedCapabilities ? _self.selectedCapabilities : selectedCapabilities // ignore: cast_nullable_to_non_nullable
 as Set<Modality>,reasoningFilter: null == reasoningFilter ? _self.reasoningFilter : reasoningFilter // ignore: cast_nullable_to_non_nullable
-as bool,selectedResponseTypes: null == selectedResponseTypes ? _self.selectedResponseTypes : selectedResponseTypes // ignore: cast_nullable_to_non_nullable
-as Set<AiResponseType>,activeTab: null == activeTab ? _self.activeTab : activeTab // ignore: cast_nullable_to_non_nullable
-as AiSettingsTab,selectionMode: null == selectionMode ? _self.selectionMode : selectionMode // ignore: cast_nullable_to_non_nullable
-as bool,selectedPromptIds: null == selectedPromptIds ? _self.selectedPromptIds : selectedPromptIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,
+as bool,activeTab: null == activeTab ? _self.activeTab : activeTab // ignore: cast_nullable_to_non_nullable
+as AiSettingsTab,
   ));
 }
 
@@ -165,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  Set<AiResponseType> selectedResponseTypes,  AiSettingsTab activeTab,  bool selectionMode,  Set<String> selectedPromptIds)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  AiSettingsTab activeTab)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AiSettingsFilterState() when $default != null:
-return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.selectedResponseTypes,_that.activeTab,_that.selectionMode,_that.selectedPromptIds);case _:
+return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.activeTab);case _:
   return orElse();
 
 }
@@ -186,10 +180,10 @@ return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabili
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  Set<AiResponseType> selectedResponseTypes,  AiSettingsTab activeTab,  bool selectionMode,  Set<String> selectedPromptIds)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  AiSettingsTab activeTab)  $default,) {final _that = this;
 switch (_that) {
 case _AiSettingsFilterState():
-return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.selectedResponseTypes,_that.activeTab,_that.selectionMode,_that.selectedPromptIds);case _:
+return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.activeTab);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -206,10 +200,10 @@ return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabili
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  Set<AiResponseType> selectedResponseTypes,  AiSettingsTab activeTab,  bool selectionMode,  Set<String> selectedPromptIds)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String searchQuery,  Set<String> selectedProviders,  Set<Modality> selectedCapabilities,  bool reasoningFilter,  AiSettingsTab activeTab)?  $default,) {final _that = this;
 switch (_that) {
 case _AiSettingsFilterState() when $default != null:
-return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.selectedResponseTypes,_that.activeTab,_that.selectionMode,_that.selectedPromptIds);case _:
+return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabilities,_that.reasoningFilter,_that.activeTab);case _:
   return null;
 
 }
@@ -221,7 +215,7 @@ return $default(_that.searchQuery,_that.selectedProviders,_that.selectedCapabili
 
 
 class _AiSettingsFilterState implements AiSettingsFilterState {
-  const _AiSettingsFilterState({this.searchQuery = '', final  Set<String> selectedProviders = const {}, final  Set<Modality> selectedCapabilities = const {}, this.reasoningFilter = false, final  Set<AiResponseType> selectedResponseTypes = const {}, this.activeTab = AiSettingsTab.providers, this.selectionMode = false, final  Set<String> selectedPromptIds = const {}}): _selectedProviders = selectedProviders,_selectedCapabilities = selectedCapabilities,_selectedResponseTypes = selectedResponseTypes,_selectedPromptIds = selectedPromptIds;
+  const _AiSettingsFilterState({this.searchQuery = '', final  Set<String> selectedProviders = const {}, final  Set<Modality> selectedCapabilities = const {}, this.reasoningFilter = false, this.activeTab = AiSettingsTab.providers}): _selectedProviders = selectedProviders,_selectedCapabilities = selectedCapabilities;
   
 
 /// Text query for searching across all AI configuration names and descriptions
@@ -246,28 +240,8 @@ class _AiSettingsFilterState implements AiSettingsFilterState {
 
 /// Whether to show only reasoning-capable models (only used on Models tab)
 @override@JsonKey() final  bool reasoningFilter;
-/// Selected response types for filtering prompts (only used on Prompts tab)
- final  Set<AiResponseType> _selectedResponseTypes;
-/// Selected response types for filtering prompts (only used on Prompts tab)
-@override@JsonKey() Set<AiResponseType> get selectedResponseTypes {
-  if (_selectedResponseTypes is EqualUnmodifiableSetView) return _selectedResponseTypes;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableSetView(_selectedResponseTypes);
-}
-
 /// Currently active tab
 @override@JsonKey() final  AiSettingsTab activeTab;
-/// Whether selection mode is active (only used on Prompts tab)
-@override@JsonKey() final  bool selectionMode;
-/// Selected prompt IDs for bulk operations (only used on Prompts tab)
- final  Set<String> _selectedPromptIds;
-/// Selected prompt IDs for bulk operations (only used on Prompts tab)
-@override@JsonKey() Set<String> get selectedPromptIds {
-  if (_selectedPromptIds is EqualUnmodifiableSetView) return _selectedPromptIds;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableSetView(_selectedPromptIds);
-}
-
 
 /// Create a copy of AiSettingsFilterState
 /// with the given fields replaced by the non-null parameter values.
@@ -279,16 +253,16 @@ _$AiSettingsFilterStateCopyWith<_AiSettingsFilterState> get copyWith => __$AiSet
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSettingsFilterState&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&const DeepCollectionEquality().equals(other._selectedProviders, _selectedProviders)&&const DeepCollectionEquality().equals(other._selectedCapabilities, _selectedCapabilities)&&(identical(other.reasoningFilter, reasoningFilter) || other.reasoningFilter == reasoningFilter)&&const DeepCollectionEquality().equals(other._selectedResponseTypes, _selectedResponseTypes)&&(identical(other.activeTab, activeTab) || other.activeTab == activeTab)&&(identical(other.selectionMode, selectionMode) || other.selectionMode == selectionMode)&&const DeepCollectionEquality().equals(other._selectedPromptIds, _selectedPromptIds));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AiSettingsFilterState&&(identical(other.searchQuery, searchQuery) || other.searchQuery == searchQuery)&&const DeepCollectionEquality().equals(other._selectedProviders, _selectedProviders)&&const DeepCollectionEquality().equals(other._selectedCapabilities, _selectedCapabilities)&&(identical(other.reasoningFilter, reasoningFilter) || other.reasoningFilter == reasoningFilter)&&(identical(other.activeTab, activeTab) || other.activeTab == activeTab));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,searchQuery,const DeepCollectionEquality().hash(_selectedProviders),const DeepCollectionEquality().hash(_selectedCapabilities),reasoningFilter,const DeepCollectionEquality().hash(_selectedResponseTypes),activeTab,selectionMode,const DeepCollectionEquality().hash(_selectedPromptIds));
+int get hashCode => Object.hash(runtimeType,searchQuery,const DeepCollectionEquality().hash(_selectedProviders),const DeepCollectionEquality().hash(_selectedCapabilities),reasoningFilter,activeTab);
 
 @override
 String toString() {
-  return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, selectedResponseTypes: $selectedResponseTypes, activeTab: $activeTab, selectionMode: $selectionMode, selectedPromptIds: $selectedPromptIds)';
+  return 'AiSettingsFilterState(searchQuery: $searchQuery, selectedProviders: $selectedProviders, selectedCapabilities: $selectedCapabilities, reasoningFilter: $reasoningFilter, activeTab: $activeTab)';
 }
 
 
@@ -299,7 +273,7 @@ abstract mixin class _$AiSettingsFilterStateCopyWith<$Res> implements $AiSetting
   factory _$AiSettingsFilterStateCopyWith(_AiSettingsFilterState value, $Res Function(_AiSettingsFilterState) _then) = __$AiSettingsFilterStateCopyWithImpl;
 @override @useResult
 $Res call({
- String searchQuery, Set<String> selectedProviders, Set<Modality> selectedCapabilities, bool reasoningFilter, Set<AiResponseType> selectedResponseTypes, AiSettingsTab activeTab, bool selectionMode, Set<String> selectedPromptIds
+ String searchQuery, Set<String> selectedProviders, Set<Modality> selectedCapabilities, bool reasoningFilter, AiSettingsTab activeTab
 });
 
 
@@ -316,17 +290,14 @@ class __$AiSettingsFilterStateCopyWithImpl<$Res>
 
 /// Create a copy of AiSettingsFilterState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? searchQuery = null,Object? selectedProviders = null,Object? selectedCapabilities = null,Object? reasoningFilter = null,Object? selectedResponseTypes = null,Object? activeTab = null,Object? selectionMode = null,Object? selectedPromptIds = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? searchQuery = null,Object? selectedProviders = null,Object? selectedCapabilities = null,Object? reasoningFilter = null,Object? activeTab = null,}) {
   return _then(_AiSettingsFilterState(
 searchQuery: null == searchQuery ? _self.searchQuery : searchQuery // ignore: cast_nullable_to_non_nullable
 as String,selectedProviders: null == selectedProviders ? _self._selectedProviders : selectedProviders // ignore: cast_nullable_to_non_nullable
 as Set<String>,selectedCapabilities: null == selectedCapabilities ? _self._selectedCapabilities : selectedCapabilities // ignore: cast_nullable_to_non_nullable
 as Set<Modality>,reasoningFilter: null == reasoningFilter ? _self.reasoningFilter : reasoningFilter // ignore: cast_nullable_to_non_nullable
-as bool,selectedResponseTypes: null == selectedResponseTypes ? _self._selectedResponseTypes : selectedResponseTypes // ignore: cast_nullable_to_non_nullable
-as Set<AiResponseType>,activeTab: null == activeTab ? _self.activeTab : activeTab // ignore: cast_nullable_to_non_nullable
-as AiSettingsTab,selectionMode: null == selectionMode ? _self.selectionMode : selectionMode // ignore: cast_nullable_to_non_nullable
-as bool,selectedPromptIds: null == selectedPromptIds ? _self._selectedPromptIds : selectedPromptIds // ignore: cast_nullable_to_non_nullable
-as Set<String>,
+as bool,activeTab: null == activeTab ? _self.activeTab : activeTab // ignore: cast_nullable_to_non_nullable
+as AiSettingsTab,
   ));
 }
 

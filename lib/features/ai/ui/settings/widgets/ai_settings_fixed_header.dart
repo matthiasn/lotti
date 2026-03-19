@@ -112,9 +112,8 @@ class AiSettingsFixedHeader extends StatelessWidget {
   }
 
   Widget _buildFilterSection() {
-    // Filters are shown on Models and Prompts tabs only
-    if (filterState.activeTab == AiSettingsTab.models ||
-        filterState.activeTab == AiSettingsTab.prompts) {
+    // Filters are shown on Models tab only
+    if (filterState.activeTab == AiSettingsTab.models) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
         child: SingleChildScrollView(

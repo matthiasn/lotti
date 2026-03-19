@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 
 void main() {
@@ -12,7 +11,6 @@ void main() {
       expect(state.selectedProviders, isEmpty);
       expect(state.selectedCapabilities, isEmpty);
       expect(state.reasoningFilter, isFalse);
-      expect(state.selectedResponseTypes, isEmpty);
       expect(state.activeTab, AiSettingsTab.providers);
     });
 
@@ -120,56 +118,6 @@ void main() {
       }
     });
 
-    test('can update response type selection', () {
-      final state = AiSettingsFilterState.initial();
-
-      final updatedState = state.copyWith(
-        selectedResponseTypes: {
-          // ignore: deprecated_member_use_from_same_package
-          AiResponseType.taskSummary,
-          AiResponseType.imageAnalysis,
-        },
-      );
-
-      expect(updatedState.selectedResponseTypes, {
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.taskSummary,
-        AiResponseType.imageAnalysis,
-      });
-    });
-
-    test(
-      'hasPromptFilters returns true when prompt-specific filters are set',
-      () {
-        expect(
-          AiSettingsFilterState.initial().hasPromptFilters,
-          isFalse,
-        );
-
-        expect(
-          AiSettingsFilterState.initial()
-              .copyWith(searchQuery: 'test')
-              .hasPromptFilters,
-          isFalse,
-        );
-
-        expect(
-          AiSettingsFilterState.initial()
-              .copyWith(selectedProviders: {'provider1'})
-              .hasPromptFilters,
-          isTrue,
-        );
-
-        expect(
-          AiSettingsFilterState.initial()
-              // ignore: deprecated_member_use_from_same_package
-              .copyWith(selectedResponseTypes: {AiResponseType.taskSummary})
-              .hasPromptFilters,
-          isTrue,
-        );
-      },
-    );
-
     test(
       'hasActiveFilters returns correct value based on active tab and filters',
       () {
@@ -199,24 +147,6 @@ void main() {
           isFalse,
         );
 
-        // Prompts tab - has active filters when prompt filters set
-        expect(
-          AiSettingsFilterState.initial()
-              .copyWith(
-                activeTab: AiSettingsTab.prompts,
-                selectedResponseTypes: {AiResponseType.imageAnalysis},
-              )
-              .hasActiveFilters,
-          isTrue,
-        );
-
-        expect(
-          AiSettingsFilterState.initial()
-              .copyWith(activeTab: AiSettingsTab.prompts)
-              .hasActiveFilters,
-          isFalse,
-        );
-
         // Profiles tab - never has active filters
         expect(
           AiSettingsFilterState.initial()
@@ -224,29 +154,6 @@ void main() {
               .hasActiveFilters,
           isFalse,
         );
-      },
-    );
-
-    test(
-      'resetPromptFilters preserves search query but clears prompt filters',
-      () {
-        const state = AiSettingsFilterState(
-          searchQuery: 'test',
-          selectedProviders: {'provider1'},
-          selectedResponseTypes: {
-            // ignore: deprecated_member_use_from_same_package
-            AiResponseType.taskSummary,
-            AiResponseType.imageAnalysis,
-          },
-          activeTab: AiSettingsTab.prompts,
-        );
-
-        final resetState = state.resetPromptFilters();
-
-        expect(resetState.searchQuery, 'test'); // Should preserve
-        expect(resetState.selectedProviders, isEmpty);
-        expect(resetState.selectedResponseTypes, isEmpty);
-        expect(resetState.activeTab, AiSettingsTab.prompts); // Should preserve
       },
     );
 
@@ -267,20 +174,6 @@ void main() {
         expect(resetModelState.selectedCapabilities, isEmpty);
         expect(resetModelState.reasoningFilter, isFalse);
         expect(resetModelState.searchQuery, 'test'); // Preserved
-
-        // Test on Prompts tab
-        const promptState = AiSettingsFilterState(
-          searchQuery: 'test',
-          selectedProviders: {'provider1'},
-          // ignore: deprecated_member_use_from_same_package
-          selectedResponseTypes: {AiResponseType.taskSummary},
-          activeTab: AiSettingsTab.prompts,
-        );
-
-        final resetPromptState = promptState.resetCurrentTabFilters();
-        expect(resetPromptState.selectedProviders, isEmpty);
-        expect(resetPromptState.selectedResponseTypes, isEmpty);
-        expect(resetPromptState.searchQuery, 'test'); // Preserved
 
         // Test on Providers tab (should not change anything)
         const providerState = AiSettingsFilterState(
@@ -312,15 +205,13 @@ void main() {
     test('has correct display names', () {
       expect(AiSettingsTab.providers.displayName, 'Providers');
       expect(AiSettingsTab.models.displayName, 'Models');
-      expect(AiSettingsTab.prompts.displayName, 'Prompts');
       expect(AiSettingsTab.profiles.displayName, 'Profiles');
     });
 
     test('contains expected tab values', () {
-      expect(AiSettingsTab.values, hasLength(4));
+      expect(AiSettingsTab.values, hasLength(3));
       expect(AiSettingsTab.values, contains(AiSettingsTab.providers));
       expect(AiSettingsTab.values, contains(AiSettingsTab.models));
-      expect(AiSettingsTab.values, contains(AiSettingsTab.prompts));
       expect(AiSettingsTab.values, contains(AiSettingsTab.profiles));
     });
   });
