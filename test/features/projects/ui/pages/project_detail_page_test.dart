@@ -180,7 +180,9 @@ void main() {
         expect(textField.controller?.text, 'My Test Project');
       });
 
-      testWidgets('shows ProjectStatusPicker', (tester) async {
+      testWidgets('shows ProjectStatusPicker with current status label', (
+        tester,
+      ) async {
         await pumpPage(
           tester,
           controllerState: ProjectDetailState(
@@ -193,6 +195,8 @@ void main() {
         );
 
         expect(find.byType(ProjectStatusPicker), findsOneWidget);
+        // Verify the picker reflects the project's current Open status.
+        expect(find.text('Open'), findsOneWidget);
       });
 
       testWidgets('tapping status picker opens bottom sheet', (
@@ -246,7 +250,9 @@ void main() {
         expect(find.text('Active'), findsNothing);
       });
 
-      testWidgets('shows ProjectTargetDateField', (tester) async {
+      testWidgets('shows ProjectTargetDateField with target date', (
+        tester,
+      ) async {
         await pumpPage(
           tester,
           controllerState: ProjectDetailState(
@@ -259,6 +265,8 @@ void main() {
         );
 
         expect(find.byType(ProjectTargetDateField), findsOneWidget);
+        // Verify the field shows the project's target date in ymd format.
+        expect(find.text('2024-06-30'), findsOneWidget);
       });
 
       testWidgets('shows ProjectAgentReportCard', (tester) async {
@@ -344,7 +352,7 @@ void main() {
               ],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // When hasChanges is true, the sync should not overwrite the
           // controller text. The controller text starts empty because no sync
@@ -470,7 +478,7 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Navigate to the detail page
         await tester.tap(find.text('Go'));
@@ -750,7 +758,7 @@ void main() {
           matching: find.byType(InkWell),
         );
         await tester.tap(inkWell.first);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // A date picker dialog should appear
         expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -777,11 +785,11 @@ void main() {
             matching: find.byType(InkWell),
           );
           await tester.tap(inkWell.first);
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Tap OK in the date picker to confirm
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // updateTargetDate should have been called
           expect(controller.lastUpdatedTargetDate, isNotNull);

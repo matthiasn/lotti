@@ -3408,13 +3408,35 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count proyectos',
+      one: '$count proyecto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectHealthTitle => 'Proyectos';
 
   @override
-  String get projectManageTooltip => 'Gestionar proyectos';
+  String projectLinkedTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas vinculadas',
+      one: '$count tarea vinculada',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get projectLinkedTasks => 'Tareas vinculadas';
+
+  @override
+  String get projectManageTooltip => 'Gestionar proyectos';
 
   @override
   String get projectNoLinkedTasks => 'Aún no hay tareas vinculadas';

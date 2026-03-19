@@ -69,7 +69,8 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   Metadata makeMetadata({String? categoryId}) {
@@ -128,7 +129,8 @@ void main() {
 
         // Tap create without entering a title.
         await tester.tap(find.text('Create'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           find.text('Project title cannot be empty'),
@@ -176,7 +178,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Navigate to the create page.
       await tester.tap(find.text('Open'));
@@ -221,7 +224,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockPersistenceLogic.createMetadata(
@@ -288,7 +292,8 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Create'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(
           () => mockAgentService.createProjectAgent(
@@ -357,7 +362,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockTemplateService.listTemplatesForCategory(categoryId),
@@ -385,7 +391,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Error creating project.'), findsOneWidget);
     });
@@ -419,7 +426,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Navigate to the create page.
       await tester.tap(find.text('Open'));
@@ -450,7 +458,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Create'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // When createProject returns null the error snackbar IS shown
       expect(find.text('Error creating project.'), findsOneWidget);
@@ -469,7 +478,8 @@ void main() {
       final calendarIcon = find.byIcon(Icons.calendar_today);
       expect(calendarIcon, findsOneWidget);
       await tester.tap(calendarIcon);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Date picker should be open
       expect(find.byType(DatePickerDialog), findsOneWidget);
@@ -482,11 +492,13 @@ void main() {
 
       // Open date picker via the calendar icon
       await tester.tap(find.byIcon(Icons.calendar_today));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap OK to confirm the initial date
       await tester.tap(find.text('OK'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After picking, a clear icon should appear
       final clearIcon = find.byIcon(Icons.clear);
@@ -514,7 +526,8 @@ void main() {
       await tester.sendKeyDownEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.keyS);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockProjectRepo.createProject(project: any(named: 'project')),

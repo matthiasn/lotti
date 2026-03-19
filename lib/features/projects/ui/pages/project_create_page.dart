@@ -146,15 +146,16 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
   }
 
   Future<void> _pickTargetDate() async {
+    final today = DateTime.now();
+    final baseDate = DateTime(today.year, today.month, today.day);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _targetDate ?? DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+      initialDate: _targetDate ?? baseDate,
+      firstDate: baseDate,
+      lastDate: DateTime(baseDate.year + 5, baseDate.month, baseDate.day),
     );
-    if (picked != null) {
-      setState(() => _targetDate = picked);
-    }
+    if (!mounted || picked == null) return;
+    setState(() => _targetDate = picked);
   }
 
   /// Finds the first available projectAgent template and provisions an agent.
@@ -193,7 +194,11 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
       if (projectTemplate == null) {
         final globalTemplates = await templateService.listTemplates();
         projectTemplate = globalTemplates
-            .where((t) => t.kind == AgentTemplateKind.projectAgent)
+            .where(
+              (t) =>
+                  t.kind == AgentTemplateKind.projectAgent &&
+                  t.categoryIds.isEmpty,
+            )
             .firstOrNull;
       }
       if (projectTemplate == null) return;

@@ -1408,6 +1408,14 @@
   "outboxMonitorVolumeChartTitle": "Volum de sincronizare zilnic",
   "privateLabel": "Privat",
   "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} proiect} few{{count} proiecte} other{{count} de proiecte}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectCreateButton": "Proiect nou",
   "projectCreateTitle": "Creare proiect",
   "projectDetailTitle": "Detalii proiect",
@@ -1428,6 +1436,14 @@
     }
   },
   "projectHealthTitle": "Proiecte",
+  "projectLinkedTaskCount": "{count, plural, one{{count} sarcină asociată} few{{count} sarcini asociate} other{{count} de sarcini asociate}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectLinkedTasks": "Sarcini asociate",
   "projectManageTooltip": "Gestionați proiectele",
   "projectNoLinkedTasks": "Nicio sarcină asociată încă",

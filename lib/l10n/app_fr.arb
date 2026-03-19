@@ -1408,6 +1408,14 @@
   "outboxMonitorVolumeChartTitle": "Volume de synchronisation quotidien",
   "privateLabel": "Privé",
   "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} projet} other{{count} projets}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectCreateButton": "Créer un projet",
   "projectCreateTitle": "Créer un projet",
   "projectDetailTitle": "Détails du projet",
@@ -1428,6 +1436,14 @@
     }
   },
   "projectHealthTitle": "Projets",
+  "projectLinkedTaskCount": "{count, plural, one{{count} tâche liée} other{{count} tâches liées}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectLinkedTasks": "Tâches liées",
   "projectManageTooltip": "Gérer les projets",
   "projectNoLinkedTasks": "Aucune tâche liée pour le moment",

@@ -145,7 +145,8 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should not render TaskProjectWidget when entry is not a Task
       expect(find.byType(TaskProjectWidget), findsNothing);
@@ -183,7 +184,8 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // TaskProjectWidget should show the project title
       expect(find.text('My Project'), findsOneWidget);
@@ -217,7 +219,8 @@ void main() {
 
       // Complete the future to avoid timer assertions
       completer.complete(null);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('renders SizedBox.shrink on error', (tester) async {
@@ -239,7 +242,8 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // On error, projectAsync.when returns SizedBox.shrink
       expect(find.byType(TaskProjectWidget), findsNothing);
@@ -277,17 +281,20 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the project chip to open the modal
       await tester.tap(find.text('Link Project'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the project in the modal to select it (triggers onSave)
       final projectTiles = find.text('Link Project');
       // There may be multiple — tap the one in the modal list
       await tester.tap(projectTiles.last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockProjectRepo.linkTaskToProject(
@@ -326,15 +333,18 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the project chip to open the modal
       await tester.tap(find.text('Unlink Project'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap "No project" to unlink
       await tester.tap(find.text('No project'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockProjectRepo.unlinkTaskFromProject(taskId),
@@ -362,7 +372,8 @@ void main() {
           child: const TaskProjectWrapper(taskId: taskId),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show "No project" unassigned label from TaskProjectWidget
       expect(find.byType(TaskProjectWrapper), findsOneWidget);

@@ -1195,6 +1195,14 @@
   "outboxMonitorVolumeChartTitle": "Denní objem synchronizace",
   "privateLabel": "Soukromé",
   "projectAgentSectionTitle": "Agent",
+  "projectCountSummary": "{count, plural, one{{count} projekt} few{{count} projekty} other{{count} projektů}}",
+  "@projectCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectCreateButton": "Nový projekt",
   "projectCreateTitle": "Vytvořit projekt",
   "projectDetailTitle": "Detail projektu",
@@ -1215,6 +1223,14 @@
     }
   },
   "projectHealthTitle": "Projekty",
+  "projectLinkedTaskCount": "{count, plural, one{{count} propojený úkol} few{{count} propojené úkoly} other{{count} propojených úkolů}}",
+  "@projectLinkedTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "projectLinkedTasks": "Propojené úkoly",
   "projectManageTooltip": "Správa projektů",
   "projectNoLinkedTasks": "Zatím žádné propojené úkoly",

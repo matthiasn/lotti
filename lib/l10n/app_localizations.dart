@@ -5917,23 +5917,35 @@ abstract class AppLocalizations {
   /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
   String projectHealthSummary(int projectCount, int taskCount);
 
+  /// No description provided for @projectCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} project} other{{count} projects}}'**
+  String projectCountSummary(int count);
+
   /// No description provided for @projectHealthTitle.
   ///
   /// In en, this message translates to:
   /// **'Projects'**
   String get projectHealthTitle;
 
-  /// No description provided for @projectManageTooltip.
+  /// No description provided for @projectLinkedTaskCount.
   ///
   /// In en, this message translates to:
-  /// **'Manage projects'**
-  String get projectManageTooltip;
+  /// **'{count, plural, one{{count} linked task} other{{count} linked tasks}}'**
+  String projectLinkedTaskCount(int count);
 
   /// No description provided for @projectLinkedTasks.
   ///
   /// In en, this message translates to:
   /// **'Linked Tasks'**
   String get projectLinkedTasks;
+
+  /// No description provided for @projectManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage projects'**
+  String get projectManageTooltip;
 
   /// No description provided for @projectNoLinkedTasks.
   ///

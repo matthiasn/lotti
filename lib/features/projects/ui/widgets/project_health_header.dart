@@ -160,7 +160,7 @@ class _SummaryRow extends ConsumerWidget {
     final messages = context.messages;
     final subtitle = allLoaded
         ? messages.projectHealthSummary(projects.length, totalTasks)
-        : '${projects.length} ${messages.projectHealthTitle}';
+        : messages.projectCountSummary(projects.length);
 
     return InkWell(
       onTap: onTap,
@@ -266,7 +266,7 @@ class _ProjectRow extends ConsumerWidget {
     final messages = context.messages;
 
     final taskCountText = countAsync.when(
-      data: (count) => '$count ${messages.projectLinkedTasks.toLowerCase()}',
+      data: messages.projectLinkedTaskCount,
       loading: () => '…',
       error: (_, _) => '—',
     );

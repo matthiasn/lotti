@@ -15,6 +15,7 @@ import 'package:lotti/themes/colors.dart';
   final messages = context.messages;
   final brightness = Theme.of(context).brightness;
   final isLight = brightness == Brightness.light;
+  final colorScheme = Theme.of(context).colorScheme;
 
   return switch (status) {
     ProjectOpen() => (
@@ -39,9 +40,7 @@ import 'package:lotti/themes/colors.dart';
     ),
     ProjectArchived() => (
       messages.projectStatusArchived,
-      isLight
-          ? Theme.of(context).colorScheme.outline
-          : Theme.of(context).colorScheme.outlineVariant,
+      isLight ? colorScheme.outline : colorScheme.outlineVariant,
       Icons.archive_outlined,
     ),
   };
