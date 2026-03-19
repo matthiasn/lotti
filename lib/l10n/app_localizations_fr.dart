@@ -3364,7 +3364,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
-  String get projectCreateButton => 'Nouveau projet';
+  String get projectCreateButton => 'Créer un projet';
 
   @override
   String get projectCreateTitle => 'Créer un projet';
@@ -3393,11 +3393,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String projectHealthSummary(int projectCount, int taskCount) {
-    return '$projectCount projets, $taskCount tâches';
+    String _temp0 = intl.Intl.pluralLogic(
+      projectCount,
+      locale: localeName,
+      other: '$projectCount projets',
+      one: '$projectCount projet',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      taskCount,
+      locale: localeName,
+      other: '$taskCount tâches',
+      one: '$taskCount tâche',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
   String get projectHealthTitle => 'Projets';
+
+  @override
+  String get projectManageTooltip => 'Gérer les projets';
 
   @override
   String get projectLinkedTasks => 'Tâches liées';

@@ -12,9 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the correct timestamps. Supports both completed sessions (start + end)
   and running timers (start only). Entries require user approval via the change
   set confirmation UI.
-
-## [0.9.927] - 2026-03-16
-### Added
 - Projects UI: full project management interface with create/detail pages,
   project picker for tasks, category integration, health header on tasks page,
   and project-based task filtering. Each project auto-creates an AI agent for
@@ -27,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project status picker: interactive bottom sheet on the project detail page for
   changing project status across all five variants.
 
+## [0.9.927] - 2026-03-16
 ### Fixed
 - Matrix sync catch-up: fixed two bugs that prevented cold-restart catch-up
   from paginating server history correctly. Backfill no longer short-circuits

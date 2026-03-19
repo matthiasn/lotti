@@ -45,8 +45,8 @@ class TaskProjectWidget extends StatelessWidget {
           return ProjectSelectionModalContent(
             categoryId: categoryId!,
             currentProjectId: project?.meta.id,
-            onProjectSelected: (selectedProject) async {
-              await onSave(selectedProject?.meta.id);
+            onProjectSelected: (selectedProject) {
+              onSave(selectedProject?.meta.id);
             },
           );
         },

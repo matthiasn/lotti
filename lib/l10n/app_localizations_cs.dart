@@ -3320,11 +3320,28 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String projectHealthSummary(int projectCount, int taskCount) {
-    return '$projectCount projektů, $taskCount úkolů';
+    String _temp0 = intl.Intl.pluralLogic(
+      projectCount,
+      locale: localeName,
+      other: '$projectCount projektů',
+      few: '$projectCount projekty',
+      one: '$projectCount projekt',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      taskCount,
+      locale: localeName,
+      other: '$taskCount úkolů',
+      few: '$taskCount úkoly',
+      one: '$taskCount úkol',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
   String get projectHealthTitle => 'Projekty';
+
+  @override
+  String get projectManageTooltip => 'Správa projektů';
 
   @override
   String get projectLinkedTasks => 'Propojené úkoly';

@@ -1203,7 +1203,7 @@
   "projectErrorLoadProjects": "Chyba při načítání projektů",
   "projectErrorUpdateFailed": "Nepodařilo se aktualizovat projekt. Zkuste to prosím znovu.",
   "projectFilterLabel": "Projekt",
-  "projectHealthSummary": "{projectCount} projektů, {taskCount} úkolů",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} projekt} few{{projectCount} projekty} other{{projectCount} projektů}}, {taskCount, plural, one{{taskCount} úkol} few{{taskCount} úkoly} other{{taskCount} úkolů}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -1216,6 +1216,7 @@
   },
   "projectHealthTitle": "Projekty",
   "projectLinkedTasks": "Propojené úkoly",
+  "projectManageTooltip": "Správa projektů",
   "projectNoLinkedTasks": "Zatím žádné propojené úkoly",
   "projectNoProjects": "Zatím žádné projekty",
   "projectNotFound": "Projekt nenalezen",

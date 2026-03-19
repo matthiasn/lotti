@@ -1416,7 +1416,7 @@
   "projectErrorLoadProjects": "Eroare la încărcarea proiectelor",
   "projectErrorUpdateFailed": "Proiectul nu a putut fi actualizat. Încercați din nou.",
   "projectFilterLabel": "Proiect",
-  "projectHealthSummary": "{projectCount} proiecte, {taskCount} sarcini",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} proiect} few{{projectCount} proiecte} other{{projectCount} de proiecte}}, {taskCount, plural, one{{taskCount} sarcină} few{{taskCount} sarcini} other{{taskCount} de sarcini}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -1429,6 +1429,7 @@
   },
   "projectHealthTitle": "Proiecte",
   "projectLinkedTasks": "Sarcini asociate",
+  "projectManageTooltip": "Gestionați proiectele",
   "projectNoLinkedTasks": "Nicio sarcină asociată încă",
   "projectNoProjects": "Niciun proiect încă",
   "projectNotFound": "Proiectul nu a fost găsit",

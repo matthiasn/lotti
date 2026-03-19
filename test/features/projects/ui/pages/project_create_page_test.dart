@@ -148,7 +148,39 @@ void main() {
       stubCreateMetadata();
       stubCreateProject();
 
-      await pumpPage(tester);
+      // Wrap in a parent route so that Navigator.pop() is verifiable.
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => Builder(
+                builder: (context) => Scaffold(
+                  body: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ProjectCreatePage(),
+                        ),
+                      );
+                    },
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockProjectRepo),
+            agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
+            projectAgentServiceProvider.overrideWithValue(mockAgentService),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate to the create page.
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
 
       // Enter a title.
       await tester.enterText(find.byType(TextField), 'My New Project');
@@ -170,6 +202,10 @@ void main() {
       verify(
         () => mockProjectRepo.createProject(project: any(named: 'project')),
       ).called(1);
+
+      // After successful creation the page pops, so the create page is gone.
+      expect(find.text('Create Project'), findsNothing);
+      expect(find.text('Open'), findsOneWidget);
     });
 
     testWidgets('passes categoryId to createMetadata when provided', (

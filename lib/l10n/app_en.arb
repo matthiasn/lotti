@@ -1580,7 +1580,7 @@
   "projectErrorLoadProjects": "Error loading projects",
   "projectErrorUpdateFailed": "Failed to update project. Please try again.",
   "projectFilterLabel": "Project",
-  "projectHealthSummary": "{projectCount} projects, {taskCount} tasks",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -1593,6 +1593,7 @@
   },
   "projectHealthTitle": "Projects",
   "projectLinkedTasks": "Linked Tasks",
+  "projectManageTooltip": "Manage projects",
   "projectNoLinkedTasks": "No tasks linked yet",
   "projectNoProjects": "No projects yet",
   "projectNotFound": "Project not found",

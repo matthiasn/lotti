@@ -19,7 +19,7 @@ class ProjectSelectionModalContent extends ConsumerWidget {
   });
 
   final String categoryId;
-  final Future<void> Function(ProjectEntry? project) onProjectSelected;
+  final void Function(ProjectEntry? project) onProjectSelected;
   final String? currentProjectId;
 
   @override
@@ -51,42 +51,44 @@ class ProjectSelectionModalContent extends ConsumerWidget {
             ...projects.map(_ProjectItem.project),
           ];
 
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < items.length; i++) ...[
-                _ProjectRowTile(
-                  item: items[i],
-                  isSelected: items[i].isNone
-                      ? currentProjectId == null
-                      : items[i].project!.meta.id == currentProjectId,
-                  messages: messages,
-                  onTap: () {
-                    onProjectSelected(items[i].project);
-                    Navigator.pop(context);
-                  },
-                ),
-                if (i < items.length - 1)
-                  Divider(
-                    height: 1,
-                    thickness: 1,
-                    indent: 52,
-                    color: context.colorScheme.outlineVariant.withValues(
-                      alpha: 0.3,
+          return SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  _ProjectRowTile(
+                    item: items[i],
+                    isSelected: items[i].isNone
+                        ? currentProjectId == null
+                        : items[i].project!.meta.id == currentProjectId,
+                    messages: messages,
+                    onTap: () {
+                      onProjectSelected(items[i].project);
+                      Navigator.pop(context);
+                    },
+                  ),
+                  if (i < items.length - 1)
+                    Divider(
+                      height: 1,
+                      thickness: 1,
+                      indent: 52,
+                      color: context.colorScheme.outlineVariant.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                ],
+                if (projects.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                    child: Text(
+                      messages.projectNoProjects,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
               ],
-              if (projects.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-                  child: Text(
-                    messages.projectNoProjects,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-            ],
+            ),
           );
         },
       ),

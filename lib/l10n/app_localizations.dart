@@ -5914,7 +5914,7 @@ abstract class AppLocalizations {
   /// No description provided for @projectHealthSummary.
   ///
   /// In en, this message translates to:
-  /// **'{projectCount} projects, {taskCount} tasks'**
+  /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
   String projectHealthSummary(int projectCount, int taskCount);
 
   /// No description provided for @projectHealthTitle.
@@ -5922,6 +5922,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Projects'**
   String get projectHealthTitle;
+
+  /// No description provided for @projectManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage projects'**
+  String get projectManageTooltip;
 
   /// No description provided for @projectLinkedTasks.
   ///

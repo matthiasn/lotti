@@ -67,12 +67,19 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
 
     setState(() => _isSaving = true);
 
+    // Capture services before any async gap so they remain valid even if
+    // the page is unmounted during an in-flight await.
+    final repository = ref.read(projectRepositoryProvider);
+    final templateService = ref.read(agentTemplateServiceProvider);
+    final agentService = ref.read(projectAgentServiceProvider);
+    final categoryId = widget.categoryId;
+
     try {
       final now = DateTime.now();
       final meta = await getIt<PersistenceLogic>().createMetadata(
         dateFrom: now,
         dateTo: now,
-        categoryId: widget.categoryId,
+        categoryId: categoryId,
       );
 
       final project =
@@ -91,13 +98,6 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
                 ),
               )
               as ProjectEntry;
-
-      // Capture services before async gaps so they remain valid even if
-      // the page is unmounted while createProject() is in-flight.
-      final repository = ref.read(projectRepositoryProvider);
-      final templateService = ref.read(agentTemplateServiceProvider);
-      final agentService = ref.read(projectAgentServiceProvider);
-      final categoryId = widget.categoryId;
 
       final created = await repository.createProject(project: project);
 
@@ -175,24 +175,27 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
     required String? categoryId,
   }) async {
     try {
-      // Try category-specific templates first; if that fails or is empty,
-      // fall back to global templates.
-      var templates = <AgentTemplateEntity>[];
+      // Prefer category-scoped templates; fall back to global templates if
+      // category lookup fails or yields no projectAgent template.
+      var categoryTemplates = <AgentTemplateEntity>[];
       if (categoryId != null) {
         try {
-          templates = await templateService.listTemplatesForCategory(
+          categoryTemplates = await templateService.listTemplatesForCategory(
             categoryId,
           );
         } catch (_) {
           // Continue with global fallback.
         }
       }
-      if (templates.isEmpty) {
-        templates = await templateService.listTemplates();
-      }
-      final projectTemplate = templates
+      var projectTemplate = categoryTemplates
           .where((t) => t.kind == AgentTemplateKind.projectAgent)
           .firstOrNull;
+      if (projectTemplate == null) {
+        final globalTemplates = await templateService.listTemplates();
+        projectTemplate = globalTemplates
+            .where((t) => t.kind == AgentTemplateKind.projectAgent)
+            .firstOrNull;
+      }
       if (projectTemplate == null) return;
 
       await agentService.createProjectAgent(

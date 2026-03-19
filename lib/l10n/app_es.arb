@@ -1416,7 +1416,7 @@
   "projectErrorLoadProjects": "Error al cargar los proyectos",
   "projectErrorUpdateFailed": "No se pudo actualizar el proyecto. Inténtalo de nuevo.",
   "projectFilterLabel": "Proyecto",
-  "projectHealthSummary": "{projectCount} proyectos, {taskCount} tareas",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} proyecto} other{{projectCount} proyectos}}, {taskCount, plural, one{{taskCount} tarea} other{{taskCount} tareas}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -1429,6 +1429,7 @@
   },
   "projectHealthTitle": "Proyectos",
   "projectLinkedTasks": "Tareas vinculadas",
+  "projectManageTooltip": "Gestionar proyectos",
   "projectNoLinkedTasks": "Aún no hay tareas vinculadas",
   "projectNoProjects": "Aún no hay proyectos",
   "projectNotFound": "Proyecto no encontrado",

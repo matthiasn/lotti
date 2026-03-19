@@ -1408,7 +1408,7 @@
   "outboxMonitorVolumeChartTitle": "Volume de synchronisation quotidien",
   "privateLabel": "Privé",
   "projectAgentSectionTitle": "Agent",
-  "projectCreateButton": "Nouveau projet",
+  "projectCreateButton": "Créer un projet",
   "projectCreateTitle": "Créer un projet",
   "projectDetailTitle": "Détails du projet",
   "projectErrorCreateFailed": "Erreur lors de la création du projet.",
@@ -1416,7 +1416,7 @@
   "projectErrorLoadProjects": "Erreur lors du chargement des projets",
   "projectErrorUpdateFailed": "Impossible de mettre à jour le projet. Réessaie.",
   "projectFilterLabel": "Projet",
-  "projectHealthSummary": "{projectCount} projets, {taskCount} tâches",
+  "projectHealthSummary": "{projectCount, plural, one{{projectCount} projet} other{{projectCount} projets}}, {taskCount, plural, one{{taskCount} tâche} other{{taskCount} tâches}}",
   "@projectHealthSummary": {
     "placeholders": {
       "projectCount": {
@@ -1429,6 +1429,7 @@
   },
   "projectHealthTitle": "Projets",
   "projectLinkedTasks": "Tâches liées",
+  "projectManageTooltip": "Gérer les projets",
   "projectNoLinkedTasks": "Aucune tâche liée pour le moment",
   "projectNoProjects": "Pas encore de projets",
   "projectNotFound": "Projet introuvable",

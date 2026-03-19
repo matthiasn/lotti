@@ -153,7 +153,7 @@ class _SummaryRow extends ConsumerWidget {
           .when(
             data: (count) => totalTasks += count,
             loading: () => allLoaded = false,
-            error: (_, _) {},
+            error: (_, _) => allLoaded = false,
           );
     }
 
@@ -232,7 +232,7 @@ class _SummaryRow extends ConsumerWidget {
               ),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-              tooltip: 'Manage projects',
+              tooltip: messages.projectManageTooltip,
             ),
             AnimatedRotation(
               turns: expanded ? 0.5 : 0,

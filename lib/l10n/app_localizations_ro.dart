@@ -3341,11 +3341,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String projectHealthSummary(int projectCount, int taskCount) {
-    return '$projectCount proiecte, $taskCount sarcini';
+    String _temp0 = intl.Intl.pluralLogic(
+      projectCount,
+      locale: localeName,
+      other: '$projectCount de proiecte',
+      few: '$projectCount proiecte',
+      one: '$projectCount proiect',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      taskCount,
+      locale: localeName,
+      other: '$taskCount de sarcini',
+      few: '$taskCount sarcini',
+      one: '$taskCount sarcină',
+    );
+    return '$_temp0, $_temp1';
   }
 
   @override
   String get projectHealthTitle => 'Proiecte';
+
+  @override
+  String get projectManageTooltip => 'Gestionați proiectele';
 
   @override
   String get projectLinkedTasks => 'Sarcini asociate';

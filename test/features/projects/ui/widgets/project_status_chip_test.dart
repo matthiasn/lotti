@@ -32,7 +32,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(ProjectStatusChip(status: status)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Open'), findsOneWidget);
       expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
@@ -45,7 +45,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(ProjectStatusChip(status: status)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Active'), findsOneWidget);
       expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
@@ -63,7 +63,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(ProjectStatusChip(status: status)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('On Hold'), findsOneWidget);
       expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
@@ -76,7 +76,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(ProjectStatusChip(status: status)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Completed'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
@@ -89,7 +89,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(ProjectStatusChip(status: status)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Archived'), findsOneWidget);
       expect(find.byIcon(Icons.archive_outlined), findsOneWidget);

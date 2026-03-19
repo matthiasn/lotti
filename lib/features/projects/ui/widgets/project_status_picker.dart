@@ -61,19 +61,15 @@ class ProjectStatusPicker extends StatelessWidget {
 
   void _showStatusSheet(BuildContext context) {
     final messages = context.messages;
-    final now = DateTime.now();
 
-    final options = [
-      ProjectStatus.open(id: uuid.v1(), createdAt: now, utcOffset: 0),
-      ProjectStatus.active(id: uuid.v1(), createdAt: now, utcOffset: 0),
-      ProjectStatus.onHold(
-        id: uuid.v1(),
-        createdAt: now,
-        utcOffset: 0,
-        reason: '',
-      ),
-      ProjectStatus.completed(id: uuid.v1(), createdAt: now, utcOffset: 0),
-      ProjectStatus.archived(id: uuid.v1(), createdAt: now, utcOffset: 0),
+    // Status kind options — actual instances are created at tap time so that
+    // the timestamp and utcOffset are captured when the user confirms.
+    const statusKinds = [
+      _StatusKind.open,
+      _StatusKind.active,
+      _StatusKind.onHold,
+      _StatusKind.completed,
+      _StatusKind.archived,
     ];
 
     showModalBottomSheet<void>(
@@ -91,13 +87,15 @@ class ProjectStatusPicker extends StatelessWidget {
                     style: Theme.of(sheetContext).textTheme.titleMedium,
                   ),
                 ),
-                ...options.map((option) {
+                ...statusKinds.map((kind) {
+                  // Build a representative instance for label/color/icon only.
+                  final representative = _buildStatus(kind, DateTime(2000));
                   final (label, color, icon) = projectStatusAttributes(
                     context,
-                    option,
+                    representative,
                   );
                   final isSelected =
-                      option.runtimeType == currentStatus.runtimeType;
+                      representative.runtimeType == currentStatus.runtimeType;
 
                   return ListTile(
                     leading: Icon(icon, color: color),
@@ -116,7 +114,9 @@ class ProjectStatusPicker extends StatelessWidget {
                     onTap: () {
                       Navigator.of(sheetContext).pop();
                       if (!isSelected) {
-                        onStatusChanged(option);
+                        // Create the status at tap time with the real offset.
+                        final now = DateTime.now();
+                        onStatusChanged(_buildStatus(kind, now));
                       }
                     },
                   );
@@ -129,4 +129,39 @@ class ProjectStatusPicker extends StatelessWidget {
       },
     );
   }
+
+  /// Builds a [ProjectStatus] of the given [kind] with the supplied timestamp.
+  ProjectStatus _buildStatus(_StatusKind kind, DateTime at) {
+    final utcOffset = at.timeZoneOffset.inMinutes;
+    return switch (kind) {
+      _StatusKind.open => ProjectStatus.open(
+        id: uuid.v1(),
+        createdAt: at,
+        utcOffset: utcOffset,
+      ),
+      _StatusKind.active => ProjectStatus.active(
+        id: uuid.v1(),
+        createdAt: at,
+        utcOffset: utcOffset,
+      ),
+      _StatusKind.onHold => ProjectStatus.onHold(
+        id: uuid.v1(),
+        createdAt: at,
+        utcOffset: utcOffset,
+        reason: '',
+      ),
+      _StatusKind.completed => ProjectStatus.completed(
+        id: uuid.v1(),
+        createdAt: at,
+        utcOffset: utcOffset,
+      ),
+      _StatusKind.archived => ProjectStatus.archived(
+        id: uuid.v1(),
+        createdAt: at,
+        utcOffset: utcOffset,
+      ),
+    };
+  }
 }
+
+enum _StatusKind { open, active, onHold, completed, archived }
