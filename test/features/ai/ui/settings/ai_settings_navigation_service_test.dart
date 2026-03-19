@@ -10,7 +10,6 @@ void main() {
     late AiSettingsNavigationService service;
     late AiConfig testProvider;
     late AiConfig testModel;
-    late AiConfig testPrompt;
 
     setUpAll(AiTestSetup.registerFallbackValues);
 
@@ -25,11 +24,6 @@ void main() {
       testModel = AiTestDataFactory.createTestModel(
         id: 'test-model-id',
         description: 'A test model for navigation testing',
-      );
-
-      testPrompt = AiTestDataFactory.createTestPrompt(
-        id: 'test-prompt-id',
-        description: 'A test prompt for navigation testing',
       );
     });
 
@@ -53,11 +47,6 @@ void main() {
       test('should correctly identify model configs', () {
         expect(testModel, isA<AiConfigModel>());
         expect(testModel.runtimeType.toString(), contains('AiConfigModel'));
-      });
-
-      test('should correctly identify prompt configs', () {
-        expect(testPrompt, isA<AiConfigPrompt>());
-        expect(testPrompt.runtimeType.toString(), contains('AiConfigPrompt'));
       });
 
       test('should work with different inference provider types', () {
@@ -107,10 +96,6 @@ void main() {
             () => service.navigateToConfigEdit(context, testModel),
             returnsNormally,
           );
-          expect(
-            () => service.navigateToConfigEdit(context, testPrompt),
-            returnsNormally,
-          );
         },
       );
 
@@ -128,7 +113,6 @@ void main() {
           returnsNormally,
         );
         expect(() => service.navigateToCreateModel(context), returnsNormally);
-        expect(() => service.navigateToCreatePrompt(context), returnsNormally);
       });
     });
 
@@ -189,13 +173,6 @@ void main() {
           ),
           returnsNormally,
         );
-        expect(
-          () => service.navigateToConfigEdit(
-            tester.element(find.byType(Scaffold)),
-            testPrompt,
-          ),
-          returnsNormally,
-        );
       });
 
       testWidgets('should handle page builder functions correctly', (
@@ -212,7 +189,6 @@ void main() {
           returnsNormally,
         );
         expect(() => service.navigateToCreateModel(context), returnsNormally);
-        expect(() => service.navigateToCreatePrompt(context), returnsNormally);
       });
     });
 

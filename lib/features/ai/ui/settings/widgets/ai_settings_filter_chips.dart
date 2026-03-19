@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_chip_constants.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/provider_filter_chips_row.dart';
@@ -12,25 +11,10 @@ import 'package:lotti/themes/theme.dart';
 ///
 /// This widget provides provider, capability, and reasoning filters
 /// specifically for the Models tab in AI Settings.
-///
-/// **Features:**
-/// - Provider filter chips (dynamically loaded)
-/// - Capability filter chips (Vision, Audio)
-/// - Reasoning filter toggle
-/// - Proper spacing and typography
-///
-/// **Usage:**
-/// ```dart
-/// AiSettingsFilterChips(
-///   filterState: currentFilterState,
-///   onFilterChanged: (newState) => updateFilters(newState),
-/// )
-/// ```
 class AiSettingsFilterChips extends ConsumerWidget {
   const AiSettingsFilterChips({
     required this.filterState,
     required this.onFilterChanged,
-    this.onDeleteSelected,
     super.key,
   });
 
@@ -39,9 +23,6 @@ class AiSettingsFilterChips extends ConsumerWidget {
 
   /// Callback when filter state changes
   final ValueChanged<AiSettingsFilterState> onFilterChanged;
-
-  /// Callback when delete selected button is pressed (only used on Prompts tab)
-  final VoidCallback? onDeleteSelected;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,16 +34,12 @@ class AiSettingsFilterChips extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Provider Filter (shown on both Models and Prompts tabs)
+            // Provider Filter
             _buildProviderFilter(context, ref),
 
             // Capability Filters (only shown on Models tab)
             if (filterState.activeTab == AiSettingsTab.models)
               _buildCapabilityFilters(context),
-
-            // Response Type Filters (only shown on Prompts tab)
-            if (filterState.activeTab == AiSettingsTab.prompts)
-              _buildResponseTypeFilters(context),
           ],
         ),
       ),
@@ -138,74 +115,8 @@ class AiSettingsFilterChips extends ConsumerWidget {
                   )
                 : const SizedBox.shrink(key: ValueKey('no_clear_button')),
           ),
-
-          // Selection toggle - only on Prompts tab
-          if (filterState.activeTab == AiSettingsTab.prompts)
-            _buildSelectionToggle(context),
         ],
       ),
-    );
-  }
-
-  /// Builds just the selection mode toggle chip
-  Widget _buildSelectionToggle(BuildContext context) {
-    return FilterChip(
-      avatar: Icon(
-        filterState.selectionMode
-            ? Icons.check_box
-            : Icons.check_box_outline_blank,
-        size: 16,
-        color: filterState.selectionMode
-            ? context.colorScheme.primary
-            : context.colorScheme.onSurfaceVariant.withValues(
-                alpha: AppTheme.alphaFilterChipTextUnselected,
-              ),
-      ),
-      label: Text(context.messages.aiSettingsSelectLabel),
-      selected: filterState.selectionMode,
-      onSelected: (selected) {
-        onFilterChanged(
-          filterState.copyWith(
-            selectionMode: selected,
-            selectedPromptIds: selected
-                ? filterState.selectedPromptIds
-                : const {},
-          ),
-        );
-      },
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      backgroundColor: context.colorScheme.surfaceContainerHigh.withValues(
-        alpha: AppTheme.alphaFilterChipBackground,
-      ),
-      selectedColor: context.colorScheme.primaryContainer.withValues(
-        alpha: AppTheme.alphaFilterChipSelected,
-      ),
-      checkmarkColor: Colors.transparent,
-      showCheckmark: false,
-      side: BorderSide(
-        color: filterState.selectionMode
-            ? context.colorScheme.primary.withValues(
-                alpha: AppTheme.alphaFilterChipBorderSelected,
-              )
-            : context.colorScheme.primaryContainer.withValues(
-                alpha: AppTheme.alphaFilterChipBorderUnselected,
-              ),
-      ),
-      labelStyle: TextStyle(
-        fontSize: AppTheme.filterChipFontSize,
-        fontWeight: FontWeight.w600,
-        letterSpacing: AppTheme.filterChipLetterSpacing,
-        color: filterState.selectionMode
-            ? context.colorScheme.onPrimaryContainer
-            : context.colorScheme.onSurfaceVariant.withValues(
-                alpha: AppTheme.alphaFilterChipTextUnselected,
-              ),
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppTheme.filterChipPaddingHorizontal,
-        vertical: AppTheme.filterChipPaddingVertical,
-      ),
-      tooltip: context.messages.aiSettingsSelectModeTooltip,
     );
   }
 
@@ -336,120 +247,6 @@ class AiSettingsFilterChips extends ConsumerWidget {
             vertical: AppTheme.filterChipPaddingVertical,
           ),
           tooltip: context.messages.aiSettingsFilterByReasoningTooltip,
-        ),
-      ],
-    );
-  }
-
-  /// Builds the response type filters section for Prompts tab
-  Widget _buildResponseTypeFilters(BuildContext context) {
-    return Wrap(
-      spacing: AppTheme.filterChipSpacing,
-      runSpacing: AppTheme.filterChipSpacing,
-      children: [
-        ...AiResponseType.values.map((responseType) {
-          final isSelected = filterState.selectedResponseTypes.contains(
-            responseType,
-          );
-          return FilterChip(
-            avatar: Icon(responseType.icon, size: AppTheme.filterChipIconSize),
-            label: Text(responseType.localizedName(context)),
-            selected: isSelected,
-            onSelected: (selected) {
-              final newResponseTypes = Set<AiResponseType>.from(
-                filterState.selectedResponseTypes,
-              );
-              if (selected) {
-                newResponseTypes.add(responseType);
-              } else {
-                newResponseTypes.remove(responseType);
-              }
-              onFilterChanged(
-                filterState.copyWith(
-                  selectedResponseTypes: newResponseTypes,
-                ),
-              );
-            },
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            backgroundColor: context.colorScheme.surfaceContainerHigh
-                .withValues(alpha: AppTheme.alphaFilterChipBackground),
-            selectedColor: context.colorScheme.primaryContainer.withValues(
-              alpha: AppTheme.alphaFilterChipSelected,
-            ),
-            checkmarkColor: context.colorScheme.onPrimaryContainer,
-            side: BorderSide(
-              color: isSelected
-                  ? context.colorScheme.primary.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderSelected,
-                    )
-                  : context.colorScheme.primaryContainer.withValues(
-                      alpha: AppTheme.alphaFilterChipBorderUnselected,
-                    ),
-            ),
-            labelStyle: TextStyle(
-              fontSize: AppTheme.filterChipFontSize,
-              fontWeight: FontWeight.w600,
-              letterSpacing: AppTheme.filterChipLetterSpacing,
-              color: isSelected
-                  ? context.colorScheme.onPrimaryContainer
-                  : context.colorScheme.onSurfaceVariant.withValues(
-                      alpha: AppTheme.alphaFilterChipTextUnselected,
-                    ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.filterChipPaddingHorizontal,
-              vertical: AppTheme.filterChipPaddingVertical,
-            ),
-            tooltip: context.messages.aiSettingsFilterByResponseTypeTooltip(
-              responseType.localizedName(context),
-            ),
-          );
-        }),
-
-        // Delete button - only shown when items are selected
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          transitionBuilder: (child, animation) {
-            return ScaleTransition(
-              scale: animation,
-              child: FadeTransition(
-                opacity: animation,
-                child: child,
-              ),
-            );
-          },
-          child: filterState.hasSelectedPrompts && onDeleteSelected != null
-              ? ActionChip(
-                  key: const ValueKey('delete_button'),
-                  avatar: Icon(
-                    Icons.delete_outline,
-                    size: 16,
-                    color: context.colorScheme.error,
-                  ),
-                  label: Text(
-                    context.messages.aiSettingsDeleteSelectedLabel(
-                      filterState.selectedPromptCount,
-                    ),
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: context.colorScheme.error,
-                    ),
-                  ),
-                  onPressed: onDeleteSelected,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  backgroundColor: context.colorScheme.errorContainer
-                      .withValues(alpha: 0.3),
-                  side: BorderSide(
-                    color: context.colorScheme.error.withValues(alpha: 0.5),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppTheme.filterChipPaddingHorizontal,
-                    vertical: AppTheme.filterChipPaddingVertical,
-                  ),
-                  tooltip: context.messages.aiSettingsDeleteSelectedTooltip,
-                )
-              : const SizedBox.shrink(key: ValueKey('no_delete_button')),
         ),
       ],
     );

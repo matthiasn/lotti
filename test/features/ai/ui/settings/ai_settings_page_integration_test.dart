@@ -89,7 +89,7 @@ void main() {
         expect(find.text('Search AI configurations...'), findsOneWidget);
         expect(find.text('Providers'), findsOneWidget);
         expect(find.text('Models'), findsOneWidget);
-        expect(find.text('Prompts'), findsOneWidget);
+        expect(find.text('Profiles'), findsOneWidget);
       });
 
       testWidgets('starts with providers tab selected', (
@@ -170,7 +170,7 @@ void main() {
         expect(find.text('Reasoning'), findsOneWidget);
       });
 
-      testWidgets('switches to prompts tab and hides model filters', (
+      testWidgets('switches to profiles tab and hides model filters', (
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(
@@ -208,11 +208,11 @@ void main() {
         // Verify filters are shown
         expect(find.text('Vision'), findsOneWidget);
 
-        // Switch to prompts tab
-        await tester.tap(find.text('Prompts'));
+        // Switch to profiles tab
+        await tester.tap(find.text('Profiles'));
         await tester.pumpAndSettle();
 
-        // Model filters should be hidden on prompts tab
+        // Model filters should be hidden on profiles tab
         expect(find.text('Vision'), findsNothing);
       });
     });

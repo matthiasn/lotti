@@ -114,7 +114,7 @@ void main() {
       await tester.tap(find.byType(Tab).at(2));
       await tester.pump();
 
-      expect(tabChangedTo, AiSettingsTab.prompts);
+      expect(tabChangedTo, AiSettingsTab.profiles);
     });
 
     testWidgets('search functionality updates filter state', (
@@ -129,7 +129,7 @@ void main() {
       expect(searchController.text, 'test query');
     });
 
-    testWidgets('displays filter section on models and prompts tabs', (
+    testWidgets('displays filter section on models tab', (
       WidgetTester tester,
     ) async {
       // Start on providers tab (default)
@@ -154,19 +154,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Filter chips widget should be visible on Models tab
-      expect(find.byType(AiSettingsFilterChips), findsOneWidget);
-
-      // Test with prompts tab active
-      await tester.pumpWidget(
-        createWidget(
-          filterState: const AiSettingsFilterState(
-            activeTab: AiSettingsTab.prompts,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Filter chips widget should also be visible on Prompts tab
       expect(find.byType(AiSettingsFilterChips), findsOneWidget);
     });
 

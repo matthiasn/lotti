@@ -4,7 +4,6 @@ import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_service.dart';
@@ -20,34 +19,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
-/// Main AI Settings page providing a unified interface for managing AI configurations
-///
-/// This page serves as the central hub for managing all AI-related configurations
-/// including inference providers, models, and prompts. It replaces the previous
-/// scattered AI settings with a cohesive, user-friendly interface.
-///
-/// **Key Features:**
-/// - Tabbed interface for different configuration types
-/// - Advanced search and filtering capabilities
-/// - Direct navigation to edit pages
-/// - Responsive design with proper loading states
-///
-/// **Architecture:**
-/// - Uses service layer for business logic (filtering, navigation)
-/// - Immutable state management with Freezed
-/// - Modular widget composition for maintainability
-/// - Comprehensive error handling and loading states
-///
-/// **Usage:**
-/// ```dart
-/// // Navigate via routing
-/// context.beamToNamed('/settings/ai');
-///
-/// // Or push directly
-/// Navigator.push(context, MaterialPageRoute(
-///   builder: (_) => const AiSettingsPage(),
-/// ));
-/// ```
+/// Main AI Settings page providing a unified interface for managing
+/// AI configurations including inference providers, models, and profiles.
 class AiSettingsPage extends ConsumerStatefulWidget {
   const AiSettingsPage({super.key});
 
@@ -166,73 +139,9 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         await _navigationService.navigateToCreateProvider(context);
       case AiSettingsTab.models:
         await _navigationService.navigateToCreateModel(context);
-      case AiSettingsTab.prompts:
-        await _navigationService.navigateToCreatePrompt(context);
       case AiSettingsTab.profiles:
         await _navigationService.navigateToCreateProfile(context);
     }
-  }
-
-  /// Handles selection toggle for a prompt
-  void _handlePromptSelectionToggle(String promptId) {
-    _updateFilterState(_filterState.togglePromptSelection(promptId));
-  }
-
-  /// Handles delete button tap - shows confirmation dialog
-  Future<void> _handleDeleteTap() async {
-    final selectedCount = _filterState.selectedPromptCount;
-    if (selectedCount == 0) return;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(context.messages.aiSettingsDeleteSelectedConfirmTitle),
-        content: Text(
-          context.messages.aiSettingsDeleteSelectedConfirmMessage(
-            selectedCount,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.messages.cancelButton),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(
-              backgroundColor: context.colorScheme.error,
-              foregroundColor: context.colorScheme.onError,
-            ),
-            child: Text(context.messages.deleteButton),
-          ),
-        ],
-      ),
-    );
-
-    if ((confirmed ?? false) && mounted) {
-      await _deleteSelectedPrompts();
-    }
-  }
-
-  /// Deletes all selected prompts
-  Future<void> _deleteSelectedPrompts() async {
-    final repository = ref.read(aiConfigRepositoryProvider);
-    final selectedIds = _filterState.selectedPromptIds.toList();
-
-    for (final id in selectedIds) {
-      await repository.deleteConfig(id);
-    }
-
-    // Check if widget is still mounted after async operations
-    if (!mounted) return;
-
-    // Exit selection mode and refresh
-    _updateFilterState(_filterState.exitSelectionMode());
-
-    // Invalidate the prompts provider to refresh the list
-    ref.invalidate(
-      aiConfigByTypeControllerProvider(configType: AiConfigType.prompt),
-    );
   }
 
   @override
@@ -272,9 +181,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       floatingActionButton: AiSettingsFloatingActionButton(
         activeTab: _filterState.activeTab,
         onPressed: _handleAddTap,
-        selectionMode: _filterState.selectionMode,
-        selectedCount: _filterState.selectedPromptCount,
-        onDeletePressed: _handleDeleteTap,
       ),
     );
   }
@@ -286,8 +192,6 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
         return [_buildProvidersSliver()];
       case AiSettingsTab.models:
         return [_buildModelsSliver()];
-      case AiSettingsTab.prompts:
-        return [_buildPromptsSliver()];
       case AiSettingsTab.profiles:
         return [_buildProfilesSliver()];
     }
@@ -380,71 +284,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
           error: error,
           onRetry: () => ref.invalidate(
             aiConfigByTypeControllerProvider(
-              // reload the models
               configType: AiConfigType.model,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Builds the prompts sliver
-  Widget _buildPromptsSliver() {
-    final promptsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.prompt,
-      ),
-    );
-
-    final modelsAsync = ref.watch(
-      aiConfigByTypeControllerProvider(
-        configType: AiConfigType.model,
-      ),
-    );
-
-    return promptsAsync.when(
-      data: (configs) {
-        final prompts = configs.whereType<AiConfigPrompt>().toList();
-
-        // Get models for provider filtering
-        final allModels = modelsAsync.maybeWhen(
-          data: (models) => models.whereType<AiConfigModel>().toList(),
-          orElse: () => <AiConfigModel>[],
-        );
-
-        final filteredPrompts = _filterService.filterPrompts(
-          prompts,
-          _filterState,
-          allModels: allModels,
-        );
-
-        return AiSettingsConfigSliver<AiConfigPrompt>(
-          configsAsync: promptsAsync,
-          filteredConfigs: filteredPrompts,
-          emptyMessage: context.messages.aiSettingsNoPromptsConfigured,
-          emptyIcon: Icons.psychology,
-          onConfigTap: _handleConfigTap,
-          onRetry: () => ref.invalidate(
-            aiConfigByTypeControllerProvider(
-              configType: AiConfigType.prompt,
-            ),
-          ),
-          selectionMode: _filterState.selectionMode,
-          selectedIds: _filterState.selectedPromptIds,
-          onSelectionChanged: _handlePromptSelectionToggle,
-        );
-      },
-      loading: () => const SliverFillRemaining(
-        child: ConfigLoadingState(),
-      ),
-      error: (error, _) => SliverFillRemaining(
-        hasScrollBody: false,
-        child: ConfigErrorState(
-          error: error,
-          onRetry: () => ref.invalidate(
-            aiConfigByTypeControllerProvider(
-              configType: AiConfigType.prompt,
             ),
           ),
         ),
