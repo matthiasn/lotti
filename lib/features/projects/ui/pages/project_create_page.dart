@@ -1,3 +1,5 @@
+import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,7 +131,13 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, s) {
+      developer.log(
+        'Failed to create project',
+        name: 'ProjectCreatePage',
+        error: e,
+        stackTrace: s,
+      );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -209,8 +217,13 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
         displayName: displayName,
         allowedCategoryIds: {?categoryId},
       );
-    } catch (_) {
-      // Agent provisioning failure is non-fatal
+    } catch (e, s) {
+      developer.log(
+        'Failed to provision project agent',
+        name: 'ProjectCreatePage',
+        error: e,
+        stackTrace: s,
+      );
     }
   }
 
