@@ -285,10 +285,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           case DashboardHealthItem():
                           case DashboardWorkoutItem():
                           case DashboardSurveyItem():
-                          case DashboardStoryTimeItem():
                           case DashboardHabitItem():
-                          case WildcardStoryTimeItem():
-                            // No additional entities to collect
                             break;
                         }
                       }

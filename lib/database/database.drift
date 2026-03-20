@@ -329,18 +329,6 @@ SELECT id FROM journal
   LIMIT :limit
   OFFSET :offset;
 
-filteredJournalByIds:
-SELECT * FROM journal
-  WHERE type IN :types
-  AND deleted = false
-  AND id IN :ids
-  AND starred IN :starredStatuses
-  AND private IN :privateStatuses
-  AND flag IN :flaggedStatuses
-  ORDER BY date_from DESC
-  LIMIT :limit
-  OFFSET :offset;
-
 sortedCalenderEntriesInRange:
 SELECT * FROM journal
   WHERE type in ('JournalEntry', 'WorkoutEntry') AND
@@ -829,12 +817,6 @@ SELECT category, COUNT(*) AS task_count FROM journal
   AND category != ''
   AND private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
   GROUP BY category;
-
-allTagEntities:
-SELECT * FROM tag_entities
-  WHERE private IN (0, (SELECT status FROM config_flags WHERE name = 'private'))
-  AND deleted = false
-  ORDER BY tag COLLATE NOCASE;
 
 allDashboards:
 SELECT * FROM dashboard_definitions

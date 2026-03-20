@@ -318,58 +318,6 @@ void main() {
         expect(find.text('non-existent-habit'), findsOneWidget);
       });
     });
-
-    group('Story Time Chart Item', () {
-      testWidgets('should render story time chart item correctly', (
-        tester,
-      ) async {
-        // ignore: deprecated_member_use_from_same_package
-        const storyTimeItem = DashboardItem.storyTimeChart(
-          storyTagId: 'test-tag-id',
-          color: '#0000FF',
-        );
-
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DashboardItemCard(
-              index: 0,
-              item: storyTimeItem,
-              updateItemFn: (item, index) {},
-            ),
-          ),
-        );
-
-        expect(find.byType(Card), findsOneWidget);
-        expect(find.byIcon(MdiIcons.bookOutline), findsOneWidget);
-        expect(find.text('test-tag-id'), findsOneWidget);
-      });
-    });
-
-    group('Wildcard Story Time Chart Item', () {
-      testWidgets('should render wildcard story time chart item correctly', (
-        tester,
-      ) async {
-        // ignore: deprecated_member_use_from_same_package
-        const wildcardItem = DashboardItem.wildcardStoryTimeChart(
-          storySubstring: 'Adventure Stories',
-          color: '#FF00FF',
-        );
-
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DashboardItemCard(
-              index: 0,
-              item: wildcardItem,
-              updateItemFn: (item, index) {},
-            ),
-          ),
-        );
-
-        expect(find.byType(Card), findsOneWidget);
-        expect(find.byIcon(MdiIcons.bookshelf), findsOneWidget);
-        expect(find.text('Adventure Stories'), findsOneWidget);
-      });
-    });
   });
 
   group('ItemCard', () {

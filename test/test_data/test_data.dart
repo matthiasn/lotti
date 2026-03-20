@@ -147,10 +147,6 @@ final testDashboardConfig = DashboardDefinition(
       surveyType: 'panasSurveyTask',
       surveyName: 'PANAS',
     ),
-    const DashboardStoryTimeItem(
-      storyTagId: '27bbabc6-f323-11ec-b939-0242ac120002',
-      color: '#00FF00',
-    ),
   ],
   name: testDashboardName,
   description: testDashboardDescription,

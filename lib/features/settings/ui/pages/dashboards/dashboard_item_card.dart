@@ -56,16 +56,6 @@ class DashboardItemCard extends StatelessWidget {
         return HabitItemCard(
           habitItem: habitItem,
         );
-      case DashboardStoryTimeItem(:final storyTagId):
-        return ItemCard(
-          leadingIcon: MdiIcons.bookOutline,
-          title: storyTagId,
-        );
-      case WildcardStoryTimeItem(:final storySubstring):
-        return ItemCard(
-          leadingIcon: MdiIcons.bookshelf,
-          title: storySubstring,
-        );
     }
   }
 }

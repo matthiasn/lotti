@@ -3533,14 +3533,6 @@ DashboardItem _$DashboardItemFromJson(
           return DashboardSurveyItem.fromJson(
             json
           );
-                case 'storyTimeChart':
-          return DashboardStoryTimeItem.fromJson(
-            json
-          );
-                case 'wildcardStoryTimeChart':
-          return WildcardStoryTimeItem.fromJson(
-            json
-          );
         
           default:
             throw CheckedFromJsonException(
@@ -3599,7 +3591,7 @@ extension DashboardItemPatterns on DashboardItem {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DashboardMeasurementItem value)?  measurement,TResult Function( DashboardHealthItem value)?  healthChart,TResult Function( DashboardWorkoutItem value)?  workoutChart,TResult Function( DashboardHabitItem value)?  habitChart,TResult Function( DashboardSurveyItem value)?  surveyChart,TResult Function( DashboardStoryTimeItem value)?  storyTimeChart,TResult Function( WildcardStoryTimeItem value)?  wildcardStoryTimeChart,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( DashboardMeasurementItem value)?  measurement,TResult Function( DashboardHealthItem value)?  healthChart,TResult Function( DashboardWorkoutItem value)?  workoutChart,TResult Function( DashboardHabitItem value)?  habitChart,TResult Function( DashboardSurveyItem value)?  surveyChart,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case DashboardMeasurementItem() when measurement != null:
@@ -3607,9 +3599,7 @@ return measurement(_that);case DashboardHealthItem() when healthChart != null:
 return healthChart(_that);case DashboardWorkoutItem() when workoutChart != null:
 return workoutChart(_that);case DashboardHabitItem() when habitChart != null:
 return habitChart(_that);case DashboardSurveyItem() when surveyChart != null:
-return surveyChart(_that);case DashboardStoryTimeItem() when storyTimeChart != null:
-return storyTimeChart(_that);case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
-return wildcardStoryTimeChart(_that);case _:
+return surveyChart(_that);case _:
   return orElse();
 
 }
@@ -3627,7 +3617,7 @@ return wildcardStoryTimeChart(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DashboardMeasurementItem value)  measurement,required TResult Function( DashboardHealthItem value)  healthChart,required TResult Function( DashboardWorkoutItem value)  workoutChart,required TResult Function( DashboardHabitItem value)  habitChart,required TResult Function( DashboardSurveyItem value)  surveyChart,required TResult Function( DashboardStoryTimeItem value)  storyTimeChart,required TResult Function( WildcardStoryTimeItem value)  wildcardStoryTimeChart,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( DashboardMeasurementItem value)  measurement,required TResult Function( DashboardHealthItem value)  healthChart,required TResult Function( DashboardWorkoutItem value)  workoutChart,required TResult Function( DashboardHabitItem value)  habitChart,required TResult Function( DashboardSurveyItem value)  surveyChart,}){
 final _that = this;
 switch (_that) {
 case DashboardMeasurementItem():
@@ -3635,9 +3625,7 @@ return measurement(_that);case DashboardHealthItem():
 return healthChart(_that);case DashboardWorkoutItem():
 return workoutChart(_that);case DashboardHabitItem():
 return habitChart(_that);case DashboardSurveyItem():
-return surveyChart(_that);case DashboardStoryTimeItem():
-return storyTimeChart(_that);case WildcardStoryTimeItem():
-return wildcardStoryTimeChart(_that);}
+return surveyChart(_that);}
 }
 /// A variant of `map` that fallback to returning `null`.
 ///
@@ -3651,7 +3639,7 @@ return wildcardStoryTimeChart(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DashboardMeasurementItem value)?  measurement,TResult? Function( DashboardHealthItem value)?  healthChart,TResult? Function( DashboardWorkoutItem value)?  workoutChart,TResult? Function( DashboardHabitItem value)?  habitChart,TResult? Function( DashboardSurveyItem value)?  surveyChart,TResult? Function( DashboardStoryTimeItem value)?  storyTimeChart,TResult? Function( WildcardStoryTimeItem value)?  wildcardStoryTimeChart,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( DashboardMeasurementItem value)?  measurement,TResult? Function( DashboardHealthItem value)?  healthChart,TResult? Function( DashboardWorkoutItem value)?  workoutChart,TResult? Function( DashboardHabitItem value)?  habitChart,TResult? Function( DashboardSurveyItem value)?  surveyChart,}){
 final _that = this;
 switch (_that) {
 case DashboardMeasurementItem() when measurement != null:
@@ -3659,9 +3647,7 @@ return measurement(_that);case DashboardHealthItem() when healthChart != null:
 return healthChart(_that);case DashboardWorkoutItem() when workoutChart != null:
 return workoutChart(_that);case DashboardHabitItem() when habitChart != null:
 return habitChart(_that);case DashboardSurveyItem() when surveyChart != null:
-return surveyChart(_that);case DashboardStoryTimeItem() when storyTimeChart != null:
-return storyTimeChart(_that);case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
-return wildcardStoryTimeChart(_that);case _:
+return surveyChart(_that);case _:
   return null;
 
 }
@@ -3678,16 +3664,14 @@ return wildcardStoryTimeChart(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  AggregationType? aggregationType)?  measurement,TResult Function( String color,  String healthType)?  healthChart,TResult Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)?  workoutChart,TResult Function( String habitId)?  habitChart,TResult Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)?  surveyChart,TResult Function( String storyTagId,  String color)?  storyTimeChart,TResult Function( String storySubstring,  String color)?  wildcardStoryTimeChart,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  AggregationType? aggregationType)?  measurement,TResult Function( String color,  String healthType)?  healthChart,TResult Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)?  workoutChart,TResult Function( String habitId)?  habitChart,TResult Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)?  surveyChart,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case DashboardMeasurementItem() when measurement != null:
 return measurement(_that.id,_that.aggregationType);case DashboardHealthItem() when healthChart != null:
 return healthChart(_that.color,_that.healthType);case DashboardWorkoutItem() when workoutChart != null:
 return workoutChart(_that.workoutType,_that.displayName,_that.color,_that.valueType);case DashboardHabitItem() when habitChart != null:
 return habitChart(_that.habitId);case DashboardSurveyItem() when surveyChart != null:
-return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);case DashboardStoryTimeItem() when storyTimeChart != null:
-return storyTimeChart(_that.storyTagId,_that.color);case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
-return wildcardStoryTimeChart(_that.storySubstring,_that.color);case _:
+return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);case _:
   return orElse();
 
 }
@@ -3705,16 +3689,14 @@ return wildcardStoryTimeChart(_that.storySubstring,_that.color);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  AggregationType? aggregationType)  measurement,required TResult Function( String color,  String healthType)  healthChart,required TResult Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)  workoutChart,required TResult Function( String habitId)  habitChart,required TResult Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)  surveyChart,required TResult Function( String storyTagId,  String color)  storyTimeChart,required TResult Function( String storySubstring,  String color)  wildcardStoryTimeChart,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  AggregationType? aggregationType)  measurement,required TResult Function( String color,  String healthType)  healthChart,required TResult Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)  workoutChart,required TResult Function( String habitId)  habitChart,required TResult Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)  surveyChart,}) {final _that = this;
 switch (_that) {
 case DashboardMeasurementItem():
 return measurement(_that.id,_that.aggregationType);case DashboardHealthItem():
 return healthChart(_that.color,_that.healthType);case DashboardWorkoutItem():
 return workoutChart(_that.workoutType,_that.displayName,_that.color,_that.valueType);case DashboardHabitItem():
 return habitChart(_that.habitId);case DashboardSurveyItem():
-return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);case DashboardStoryTimeItem():
-return storyTimeChart(_that.storyTagId,_that.color);case WildcardStoryTimeItem():
-return wildcardStoryTimeChart(_that.storySubstring,_that.color);}
+return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -3728,16 +3710,14 @@ return wildcardStoryTimeChart(_that.storySubstring,_that.color);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  AggregationType? aggregationType)?  measurement,TResult? Function( String color,  String healthType)?  healthChart,TResult? Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)?  workoutChart,TResult? Function( String habitId)?  habitChart,TResult? Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)?  surveyChart,TResult? Function( String storyTagId,  String color)?  storyTimeChart,TResult? Function( String storySubstring,  String color)?  wildcardStoryTimeChart,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  AggregationType? aggregationType)?  measurement,TResult? Function( String color,  String healthType)?  healthChart,TResult? Function( String workoutType,  String displayName,  String color,  WorkoutValueType valueType)?  workoutChart,TResult? Function( String habitId)?  habitChart,TResult? Function( Map<String, String> colorsByScoreKey,  String surveyType,  String surveyName)?  surveyChart,}) {final _that = this;
 switch (_that) {
 case DashboardMeasurementItem() when measurement != null:
 return measurement(_that.id,_that.aggregationType);case DashboardHealthItem() when healthChart != null:
 return healthChart(_that.color,_that.healthType);case DashboardWorkoutItem() when workoutChart != null:
 return workoutChart(_that.workoutType,_that.displayName,_that.color,_that.valueType);case DashboardHabitItem() when habitChart != null:
 return habitChart(_that.habitId);case DashboardSurveyItem() when surveyChart != null:
-return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);case DashboardStoryTimeItem() when storyTimeChart != null:
-return storyTimeChart(_that.storyTagId,_that.color);case WildcardStoryTimeItem() when wildcardStoryTimeChart != null:
-return wildcardStoryTimeChart(_that.storySubstring,_that.color);case _:
+return surveyChart(_that.colorsByScoreKey,_that.surveyType,_that.surveyName);case _:
   return null;
 
 }
@@ -4123,156 +4103,6 @@ class _$DashboardSurveyItemCopyWithImpl<$Res>
 colorsByScoreKey: null == colorsByScoreKey ? _self._colorsByScoreKey : colorsByScoreKey // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,surveyType: null == surveyType ? _self.surveyType : surveyType // ignore: cast_nullable_to_non_nullable
 as String,surveyName: null == surveyName ? _self.surveyName : surveyName // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-/// @nodoc
-@JsonSerializable()
-@Deprecated('Tags concept removed — kept for JSON backward compatibility')
-class DashboardStoryTimeItem implements DashboardItem {
-  const DashboardStoryTimeItem({required this.storyTagId, required this.color, final  String? $type}): $type = $type ?? 'storyTimeChart';
-  factory DashboardStoryTimeItem.fromJson(Map<String, dynamic> json) => _$DashboardStoryTimeItemFromJson(json);
-
- final  String storyTagId;
- final  String color;
-
-@JsonKey(name: 'runtimeType')
-final String $type;
-
-
-/// Create a copy of DashboardItem
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$DashboardStoryTimeItemCopyWith<DashboardStoryTimeItem> get copyWith => _$DashboardStoryTimeItemCopyWithImpl<DashboardStoryTimeItem>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$DashboardStoryTimeItemToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DashboardStoryTimeItem&&(identical(other.storyTagId, storyTagId) || other.storyTagId == storyTagId)&&(identical(other.color, color) || other.color == color));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,storyTagId,color);
-
-@override
-String toString() {
-  return 'DashboardItem.storyTimeChart(storyTagId: $storyTagId, color: $color)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $DashboardStoryTimeItemCopyWith<$Res> implements $DashboardItemCopyWith<$Res> {
-  factory $DashboardStoryTimeItemCopyWith(DashboardStoryTimeItem value, $Res Function(DashboardStoryTimeItem) _then) = _$DashboardStoryTimeItemCopyWithImpl;
-@useResult
-$Res call({
- String storyTagId, String color
-});
-
-
-
-
-}
-/// @nodoc
-class _$DashboardStoryTimeItemCopyWithImpl<$Res>
-    implements $DashboardStoryTimeItemCopyWith<$Res> {
-  _$DashboardStoryTimeItemCopyWithImpl(this._self, this._then);
-
-  final DashboardStoryTimeItem _self;
-  final $Res Function(DashboardStoryTimeItem) _then;
-
-/// Create a copy of DashboardItem
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? storyTagId = null,Object? color = null,}) {
-  return _then(DashboardStoryTimeItem(
-storyTagId: null == storyTagId ? _self.storyTagId : storyTagId // ignore: cast_nullable_to_non_nullable
-as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
-as String,
-  ));
-}
-
-
-}
-
-/// @nodoc
-@JsonSerializable()
-@Deprecated('Tags concept removed — kept for JSON backward compatibility')
-class WildcardStoryTimeItem implements DashboardItem {
-  const WildcardStoryTimeItem({required this.storySubstring, required this.color, final  String? $type}): $type = $type ?? 'wildcardStoryTimeChart';
-  factory WildcardStoryTimeItem.fromJson(Map<String, dynamic> json) => _$WildcardStoryTimeItemFromJson(json);
-
- final  String storySubstring;
- final  String color;
-
-@JsonKey(name: 'runtimeType')
-final String $type;
-
-
-/// Create a copy of DashboardItem
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$WildcardStoryTimeItemCopyWith<WildcardStoryTimeItem> get copyWith => _$WildcardStoryTimeItemCopyWithImpl<WildcardStoryTimeItem>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$WildcardStoryTimeItemToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is WildcardStoryTimeItem&&(identical(other.storySubstring, storySubstring) || other.storySubstring == storySubstring)&&(identical(other.color, color) || other.color == color));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,storySubstring,color);
-
-@override
-String toString() {
-  return 'DashboardItem.wildcardStoryTimeChart(storySubstring: $storySubstring, color: $color)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $WildcardStoryTimeItemCopyWith<$Res> implements $DashboardItemCopyWith<$Res> {
-  factory $WildcardStoryTimeItemCopyWith(WildcardStoryTimeItem value, $Res Function(WildcardStoryTimeItem) _then) = _$WildcardStoryTimeItemCopyWithImpl;
-@useResult
-$Res call({
- String storySubstring, String color
-});
-
-
-
-
-}
-/// @nodoc
-class _$WildcardStoryTimeItemCopyWithImpl<$Res>
-    implements $WildcardStoryTimeItemCopyWith<$Res> {
-  _$WildcardStoryTimeItemCopyWithImpl(this._self, this._then);
-
-  final WildcardStoryTimeItem _self;
-  final $Res Function(WildcardStoryTimeItem) _then;
-
-/// Create a copy of DashboardItem
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? storySubstring = null,Object? color = null,}) {
-  return _then(WildcardStoryTimeItem(
-storySubstring: null == storySubstring ? _self.storySubstring : storySubstring // ignore: cast_nullable_to_non_nullable
-as String,color: null == color ? _self.color : color // ignore: cast_nullable_to_non_nullable
 as String,
   ));
 }

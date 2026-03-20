@@ -6894,14 +6894,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     );
   }
 
-  Selectable<AllTagEntitiesResult> allTagEntities() {
-    return customSelect(
-      'SELECT * FROM tag_entities WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY tag COLLATE NOCASE',
-      variables: [],
-      readsFrom: {configFlags},
-    ).map((QueryRow row) => AllTagEntitiesResult());
-  }
-
   Selectable<DashboardDefinitionDbEntity> allDashboards() {
     return customSelect(
       'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
