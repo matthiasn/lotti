@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildDesignSystemWidgetbookFolder() {
@@ -15,6 +16,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
           ),
         ],
       ),
+      buildDesignSystemBadgeWidgetbookComponent(),
     ],
   );
 }

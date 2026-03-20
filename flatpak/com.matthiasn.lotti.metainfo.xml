@@ -31,6 +31,12 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.929" date="2026-03-20">
+      <description>
+          <p>Categories list redesign: new tile layout with colored icon badges, task count subtitles, favorite stars, and private/inactive status indicators. Batch query for better performance.</p>
+          <p>Design system foundations: added new token-driven Widgetbook button and badge components for the redesign workstream.</p>
+      </description>
+    </release>
     <release version="0.9.928" date="2026-03-19">
       <description>
           <p>Categories list redesign: new tile layout with colored icon badges, task count subtitles, favorite stars, and private/inactive status indicators. Batch query for better performance.</p>

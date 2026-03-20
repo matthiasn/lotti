@@ -1,0 +1,267 @@
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+enum DesignSystemBadgeTone {
+  primary,
+  secondary,
+  danger,
+  warning,
+  success,
+}
+
+enum _DesignSystemBadgeType {
+  dot,
+  number,
+  filled,
+  outlined,
+  icon,
+}
+
+class DesignSystemBadge extends StatelessWidget {
+  const DesignSystemBadge.dot({
+    this.tone = DesignSystemBadgeTone.primary,
+    super.key,
+  }) : _type = _DesignSystemBadgeType.dot,
+       _label = null,
+       _icon = null;
+
+  const DesignSystemBadge.number({
+    required String value,
+    this.tone = DesignSystemBadgeTone.primary,
+    super.key,
+  }) : _type = _DesignSystemBadgeType.number,
+       _label = value,
+       _icon = null;
+
+  const DesignSystemBadge.filled({
+    required String label,
+    this.tone = DesignSystemBadgeTone.primary,
+    super.key,
+  }) : _type = _DesignSystemBadgeType.filled,
+       _label = label,
+       _icon = null;
+
+  const DesignSystemBadge.outlined({
+    required String label,
+    this.tone = DesignSystemBadgeTone.primary,
+    super.key,
+  }) : _type = _DesignSystemBadgeType.outlined,
+       _label = label,
+       _icon = null;
+
+  const DesignSystemBadge.icon({
+    required IconData icon,
+    this.tone = DesignSystemBadgeTone.primary,
+    super.key,
+  }) : _type = _DesignSystemBadgeType.icon,
+       _label = null,
+       _icon = icon;
+
+  final DesignSystemBadgeTone tone;
+  final _DesignSystemBadgeType _type;
+  final String? _label;
+  final IconData? _icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final sizeSpec = _BadgeSizeSpec.fromTokens(tokens, _type);
+    final styleSpec = _BadgeStyleSpec.fromTokens(
+      tokens: tokens,
+      type: _type,
+      tone: tone,
+    );
+
+    return DefaultTextStyle.merge(
+      style: sizeSpec.textStyle.copyWith(color: styleSpec.foregroundColor),
+      child: IconTheme.merge(
+        data: IconThemeData(
+          color: styleSpec.foregroundColor,
+          size: sizeSpec.iconSize,
+        ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: styleSpec.backgroundColor,
+            borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
+            border: styleSpec.borderColor == null
+                ? null
+                : Border.all(
+                    color: styleSpec.borderColor!,
+                    width: sizeSpec.borderWidth,
+                  ),
+          ),
+          child: sizeSpec.buildContainer(_buildContent()),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return switch (_type) {
+      _DesignSystemBadgeType.dot => const SizedBox.shrink(),
+      _DesignSystemBadgeType.number ||
+      _DesignSystemBadgeType.filled ||
+      _DesignSystemBadgeType.outlined => Text(
+        _label!,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      _DesignSystemBadgeType.icon => Icon(_icon),
+    };
+  }
+}
+
+class _BadgeSizeSpec {
+  const _BadgeSizeSpec({
+    required this.squareSize,
+    required this.height,
+    required this.horizontalPadding,
+    required this.verticalPadding,
+    required this.cornerRadius,
+    required this.iconSize,
+    required this.textStyle,
+    required this.borderWidth,
+  });
+
+  factory _BadgeSizeSpec.fromTokens(
+    DsTokens tokens,
+    _DesignSystemBadgeType type,
+  ) {
+    final caption = tokens.typography.styles.others.caption;
+    return switch (type) {
+      _DesignSystemBadgeType.dot => _BadgeSizeSpec(
+        squareSize: tokens.spacing.step3,
+        height: tokens.spacing.step3,
+        horizontalPadding: 0,
+        verticalPadding: 0,
+        cornerRadius: tokens.spacing.step3 / 2,
+        iconSize: 0,
+        textStyle: caption,
+        borderWidth: tokens.spacing.step1 / 2,
+      ),
+      _DesignSystemBadgeType.number => _BadgeSizeSpec(
+        squareSize:
+            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        height:
+            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        horizontalPadding: 0,
+        verticalPadding: 0,
+        cornerRadius:
+            (tokens.typography.lineHeight.caption +
+                (tokens.spacing.step1 * 2)) /
+            2,
+        iconSize: 0,
+        textStyle: caption,
+        borderWidth: tokens.spacing.step1 / 2,
+      ),
+      _DesignSystemBadgeType.icon => _BadgeSizeSpec(
+        squareSize:
+            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        height:
+            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        horizontalPadding: tokens.spacing.step1,
+        verticalPadding: tokens.spacing.step1,
+        cornerRadius: tokens.radii.xs,
+        iconSize: tokens.typography.lineHeight.caption,
+        textStyle: caption,
+        borderWidth: tokens.spacing.step1 / 2,
+      ),
+      _DesignSystemBadgeType.filled ||
+      _DesignSystemBadgeType.outlined => _BadgeSizeSpec(
+        squareSize: null,
+        height:
+            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        horizontalPadding: tokens.spacing.step2,
+        verticalPadding: tokens.spacing.step1,
+        cornerRadius: tokens.radii.xs,
+        iconSize: 0,
+        textStyle: caption,
+        borderWidth: tokens.spacing.step1 / 2,
+      ),
+    };
+  }
+
+  final double? squareSize;
+  final double height;
+  final double horizontalPadding;
+  final double verticalPadding;
+  final double cornerRadius;
+  final double iconSize;
+  final TextStyle textStyle;
+  final double borderWidth;
+
+  Widget buildContainer(Widget child) {
+    final paddedChild = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      child: Center(child: child),
+    );
+
+    if (squareSize != null) {
+      return SizedBox.square(
+        dimension: squareSize,
+        child: paddedChild,
+      );
+    }
+
+    return IntrinsicWidth(
+      child: SizedBox(
+        height: height,
+        child: paddedChild,
+      ),
+    );
+  }
+}
+
+class _BadgeStyleSpec {
+  const _BadgeStyleSpec({
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.borderColor,
+  });
+
+  factory _BadgeStyleSpec.fromTokens({
+    required DsTokens tokens,
+    required _DesignSystemBadgeType type,
+    required DesignSystemBadgeTone tone,
+  }) {
+    final accentColor = switch (tone) {
+      DesignSystemBadgeTone.primary => tokens.colors.alert.info.defaultColor,
+      DesignSystemBadgeTone.secondary => tokens.colors.alert.info.defaultColor,
+      DesignSystemBadgeTone.danger => tokens.colors.alert.error.defaultColor,
+      DesignSystemBadgeTone.warning => tokens.colors.alert.warning.defaultColor,
+      DesignSystemBadgeTone.success => tokens.colors.alert.success.defaultColor,
+    };
+
+    final isSecondary = tone == DesignSystemBadgeTone.secondary;
+    final secondaryBackground = tokens.colors.surface.enabled;
+
+    return switch (type) {
+      _DesignSystemBadgeType.dot => _BadgeStyleSpec(
+        backgroundColor: isSecondary ? secondaryBackground : accentColor,
+        foregroundColor: Colors.transparent,
+        borderColor: null,
+      ),
+      _DesignSystemBadgeType.number ||
+      _DesignSystemBadgeType.filled ||
+      _DesignSystemBadgeType.icon => _BadgeStyleSpec(
+        backgroundColor: isSecondary ? secondaryBackground : accentColor,
+        foregroundColor: isSecondary
+            ? tokens.colors.alert.info.defaultColor
+            : tokens.colors.text.onInteractiveAlert,
+        borderColor: null,
+      ),
+      _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
+        backgroundColor: isSecondary ? secondaryBackground : null,
+        foregroundColor: accentColor,
+        borderColor: isSecondary ? null : accentColor,
+      ),
+    };
+  }
+
+  final Color? backgroundColor;
+  final Color foregroundColor;
+  final Color? borderColor;
+}

@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+import '../../../../widget_test_utils.dart';
+
+void main() {
+  group('DesignSystemBadge', () {
+    testWidgets('renders the primary dot badge from tokens', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.dot(),
+      );
+
+      final decoration = _badgeDecoration(tester);
+
+      expect(_badgeSize(tester), const Size.square(8));
+      expect(
+        decoration.color,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+      expect(
+        decoration.borderRadius,
+        BorderRadius.circular(dsTokensLight.spacing.step3 / 2),
+      );
+      expect(decoration.border, isNull);
+    });
+
+    testWidgets('renders the warning dot badge from tokens', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.dot(
+          tone: DesignSystemBadgeTone.warning,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+
+      expect(
+        decoration.color,
+        dsTokensLight.colors.alert.warning.defaultColor,
+      );
+    });
+
+    testWidgets('renders the secondary number badge from tokens', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.number(
+          value: '10',
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final richText = _findTextNode(tester, '10');
+
+      expect(_badgeSize(tester), const Size.square(20));
+      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      _expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+    });
+
+    testWidgets('renders the filled danger badge from tokens', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(
+          label: 'Danger',
+          tone: DesignSystemBadgeTone.danger,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final richText = _findTextNode(tester, 'Danger');
+
+      expect(_badgeSize(tester).height, 20);
+      expect(
+        decoration.color,
+        dsTokensLight.colors.alert.error.defaultColor,
+      );
+      expect(decoration.border, isNull);
+      _expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.text.onInteractiveAlert,
+      );
+    });
+
+    testWidgets('renders the primary outlined badge from tokens', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(label: 'Outlined'),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final border = decoration.border! as Border;
+      final richText = _findTextNode(tester, 'Outlined');
+
+      expect(_badgeSize(tester).height, 20);
+      expect(decoration.color, isNull);
+      expect(
+        border.top.width,
+        dsTokensLight.spacing.step1 / 2,
+      );
+      expect(
+        border.top.color,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+      _expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+    });
+
+    testWidgets('renders the secondary outlined badge without a border', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: 'Outlined',
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final richText = _findTextNode(tester, 'Outlined');
+
+      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      expect(decoration.border, isNull);
+      _expectTextStyle(
+        richText.text.style!,
+        dsTokensLight.typography.styles.others.caption,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
+    });
+
+    testWidgets('renders the success icon badge from tokens', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.icon(
+          icon: Icons.check_rounded,
+          tone: DesignSystemBadgeTone.success,
+        ),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final iconTheme = tester.widget<IconTheme>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is IconTheme &&
+              widget.data.size == dsTokensLight.typography.lineHeight.caption &&
+              widget.data.color == dsTokensLight.colors.text.onInteractiveAlert,
+        ),
+      );
+      final icon = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+
+      expect(_badgeSize(tester), const Size.square(20));
+      expect(
+        decoration.color,
+        dsTokensLight.colors.alert.success.defaultColor,
+      );
+      expect(
+        iconTheme.data.size,
+        dsTokensLight.typography.lineHeight.caption,
+      );
+      expect(
+        iconTheme.data.color,
+        dsTokensLight.colors.text.onInteractiveAlert,
+      );
+      expect(icon.icon, Icons.check_rounded);
+    });
+
+    testWidgets('uses the active dark theme tokens', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(label: 'Primary'),
+        theme: DesignSystemTheme.dark(),
+      );
+
+      final decoration = _badgeDecoration(tester);
+      final richText = _findTextNode(tester, 'Primary');
+
+      expect(
+        decoration.color,
+        dsTokensDark.colors.alert.info.defaultColor,
+      );
+      _expectTextStyle(
+        richText.text.style!,
+        dsTokensDark.typography.styles.others.caption,
+        dsTokensDark.colors.text.onInteractiveAlert,
+      );
+    });
+  });
+}
+
+Future<void> _pumpBadge(
+  WidgetTester tester,
+  Widget child, {
+  ThemeData? theme,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      child,
+      theme: theme ?? DesignSystemTheme.light(),
+    ),
+  );
+}
+
+BoxDecoration _badgeDecoration(WidgetTester tester) {
+  final decoratedBox = tester.widget<DecoratedBox>(find.byType(DecoratedBox));
+  return decoratedBox.decoration as BoxDecoration;
+}
+
+Size _badgeSize(WidgetTester tester) {
+  return tester.getSize(find.byType(DecoratedBox));
+}
+
+RichText _findTextNode(WidgetTester tester, String label) {
+  return tester.widget<RichText>(
+    find.byWidgetPredicate(
+      (widget) => widget is RichText && widget.text.toPlainText() == label,
+    ),
+  );
+}
+
+void _expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
+  expect(actual.fontFamily, expected.fontFamily);
+  expect(actual.fontSize, expected.fontSize);
+  expect(actual.fontWeight, expected.fontWeight);
+  expect(actual.letterSpacing, expected.letterSpacing);
+  expect(actual.height, expected.height);
+  expect(actual.color, color);
+}

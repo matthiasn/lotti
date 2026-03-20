@@ -4,7 +4,6 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<<<<<<< HEAD
 ## [0.9.929] - 2026-03-20
 ### Changed
 - Categories list redesign: new tile layout with colored icon badges,
@@ -12,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   indicators. Batch database query replaces per-category N+1 queries for
   better performance. Icon badge foreground auto-adapts contrast for light
   category colors.
+- Design system foundations: added new token-driven Widgetbook button and
+  badge components for the redesign workstream.
 
 ## [0.9.928] - 2026-03-17
 ### Added

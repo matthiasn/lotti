@@ -9,6 +9,11 @@ This feature contains the standalone Widgetbook-first design system work.
 - Build a standalone Widgetbook-only theme
 - Build new design-system components without retrofitting existing app widgets
 
+## Implemented Components
+
+- Buttons
+- Badges
+
 ## Import Workflow
 
 Run:
