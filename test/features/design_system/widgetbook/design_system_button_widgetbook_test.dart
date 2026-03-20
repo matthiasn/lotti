@@ -16,6 +16,9 @@ void main() {
       final components = folder.children!
           .whereType<WidgetbookComponent>()
           .toList();
+      final typographyComponent = components.singleWhere(
+        (component) => component.name == 'Typography',
+      );
       final buttonComponent = components.singleWhere(
         (component) => component.name == 'Buttons',
       );
@@ -29,10 +32,12 @@ void main() {
 
       expect(folder.name, 'Design System');
       expect(components.map((component) => component.name), [
+        'Typography',
         'Buttons',
         'Badges',
         'Chips',
       ]);
+      expect(typographyComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');

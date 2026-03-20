@@ -12,6 +12,7 @@ This feature contains the standalone Widgetbook-first design system work.
 
 ## Implemented Components
 
+- Typography showcase
 - Buttons
 - Badges
 - Chips
