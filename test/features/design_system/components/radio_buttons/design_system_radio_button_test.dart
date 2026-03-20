@@ -80,7 +80,7 @@ void main() {
       expect(iconTheme.data.size, dsTokensLight.typography.lineHeight.caption);
       expect(iconTheme.data.color, dsTokensLight.colors.text.mediumEmphasis);
 
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.body.bodySmall,
         dsTokensLight.colors.text.highEmphasis,
@@ -114,7 +114,7 @@ void main() {
       );
       expect(semantics.properties.selected, isTrue);
 
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.body.bodyMedium,
         dsTokensLight.colors.text.highEmphasis,
@@ -207,7 +207,7 @@ void main() {
         controlDecoration.border!.top.color,
         dsTokensDark.colors.alert.info.defaultColor,
       );
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensDark.typography.styles.body.bodySmall,
         dsTokensDark.colors.text.highEmphasis,
@@ -284,15 +284,6 @@ RichText _findTextNode(WidgetTester tester, String label) {
       (widget) => widget is RichText && widget.text.toPlainText() == label,
     ),
   );
-}
-
-void _expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
-  expect(actual.fontFamily, expected.fontFamily);
-  expect(actual.fontSize, expected.fontSize);
-  expect(actual.fontWeight, expected.fontWeight);
-  expect(actual.letterSpacing, expected.letterSpacing);
-  expect(actual.height, expected.height);
-  expect(actual.color, color);
 }
 
 void _noop() {}

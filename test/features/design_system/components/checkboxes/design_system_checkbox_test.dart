@@ -55,7 +55,7 @@ void main() {
         decoration.borderRadius,
         BorderRadius.circular(dsTokensLight.radii.xs),
       );
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.body.bodySmall,
         dsTokensLight.colors.text.highEmphasis,
@@ -239,12 +239,3 @@ void main() {
 }
 
 void _noop(bool? value) {}
-
-void _expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
-  expect(actual.fontFamily, expected.fontFamily);
-  expect(actual.fontSize, expected.fontSize);
-  expect(actual.fontWeight, expected.fontWeight);
-  expect(actual.letterSpacing, expected.letterSpacing);
-  expect(actual.height, expected.height);
-  expect(actual.color, color);
-}

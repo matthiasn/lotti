@@ -80,7 +80,7 @@ void main() {
         dsTokensLight.colors.background.level01,
       );
       expect(align.alignment, Alignment.centerLeft);
-      _expectTextStyle(
+      expectTextStyle(
         label.text.style!,
         dsTokensLight.typography.styles.subtitle.subtitle2,
         dsTokensLight.colors.text.highEmphasis,
@@ -135,7 +135,7 @@ void main() {
         (track.decoration! as BoxDecoration).color,
         dsTokensLight.colors.interactive.enabled,
       );
-      _expectTextStyle(
+      expectTextStyle(
         label.text.style!,
         dsTokensLight.typography.styles.subtitle.subtitle1,
         dsTokensLight.colors.text.highEmphasis,
@@ -274,12 +274,3 @@ class _ToggleHarnessState extends State<_ToggleHarness> {
 }
 
 void _noopToggle(bool value) {}
-
-void _expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
-  expect(actual.fontFamily, expected.fontFamily);
-  expect(actual.fontSize, expected.fontSize);
-  expect(actual.fontWeight, expected.fontWeight);
-  expect(actual.letterSpacing, expected.letterSpacing);
-  expect(actual.height, expected.height);
-  expect(actual.color, color);
-}

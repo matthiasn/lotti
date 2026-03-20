@@ -75,7 +75,7 @@ void main() {
         ),
       );
 
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.subtitle.subtitle2,
         dsTokensLight.colors.text.onInteractiveAlert,
@@ -236,7 +236,7 @@ void main() {
       );
       expect(shape.borderRadius, BorderRadius.circular(dsTokensLight.radii.xl));
 
-      _expectTextStyle(
+      expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.subtitle.subtitle1,
         dsTokensLight.colors.text.onInteractiveAlert,
@@ -331,12 +331,3 @@ void main() {
 }
 
 void _noop() {}
-
-void _expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
-  expect(actual.fontFamily, expected.fontFamily);
-  expect(actual.fontSize, expected.fontSize);
-  expect(actual.fontWeight, expected.fontWeight);
-  expect(actual.letterSpacing, expected.letterSpacing);
-  expect(actual.height, expected.height);
-  expect(actual.color, color);
-}
