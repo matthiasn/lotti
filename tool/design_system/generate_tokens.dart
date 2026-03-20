@@ -15,10 +15,10 @@ void main() {
 
   final jsonMap =
       jsonDecode(inputFile.readAsStringSync()) as Map<String, dynamic>;
-  final generator = _DesignTokenGenerator(jsonMap);
-  final outputFile = File(_outputPath)
-    ..createSync(recursive: true)
-    ..writeAsStringSync(generator.generate());
+  final contents = _DesignTokenGenerator(jsonMap).generate();
+  final outputFile = File(_outputPath);
+  outputFile.parent.createSync(recursive: true);
+  outputFile.writeAsStringSync(contents);
 
   stdout.writeln('Generated ${outputFile.path}');
 }
@@ -476,14 +476,24 @@ final class _DesignTokenGenerator {
       return value;
     }
 
-    final interactiveEnabled =
-        _colorJson['interactive'] as Map<String, dynamic>;
-    final interactiveBase =
-        interactiveEnabled['enabled'] as Map<String, dynamic>;
-    final aliases = <String, String>{
-      'teal': interactiveBase[isDark ? 'dark' : 'light'] as String,
-      'teal-light': interactiveBase['dark'] as String,
-    };
+    final aliases = <String, String>{};
+    final aliasesJson = _colorJson['aliases'];
+    if (aliasesJson is Map<String, dynamic>) {
+      for (final entry in aliasesJson.entries) {
+        final aliasValue = entry.value;
+        if (aliasValue is String) {
+          aliases[entry.key] = aliasValue;
+          continue;
+        }
+
+        if (aliasValue is Map<String, dynamic>) {
+          final modeValue = aliasValue[isDark ? 'dark' : 'light'];
+          if (modeValue is String) {
+            aliases[entry.key] = modeValue;
+          }
+        }
+      }
+    }
 
     final resolved = aliases[value];
     if (resolved == null) {

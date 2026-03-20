@@ -81,7 +81,7 @@ build_runner: deps
 	$(DART_CMD) run build_runner build --delete-conflicting-outputs
 
 .PHONY: design_system_import
-design_system_import:
+design_system_import: deps
 	$(DART_CMD) run tool/design_system/generate_tokens.dart
 	$(DART_CMD) format lib/features/design_system/theme/generated/design_tokens.g.dart
 

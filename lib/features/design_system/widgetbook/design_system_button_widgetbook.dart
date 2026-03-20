@@ -73,13 +73,6 @@ class _ButtonSizeScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const sizes = <DesignSystemButtonSize>[
-      DesignSystemButtonSize.small,
-      DesignSystemButtonSize.medium,
-      DesignSystemButtonSize.large,
-      DesignSystemButtonSize.jumbo,
-    ];
-
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Wrap(
@@ -87,7 +80,7 @@ class _ButtonSizeScale extends StatelessWidget {
         runSpacing: 16,
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
-          for (final size in sizes)
+          for (final size in DesignSystemButtonSize.values)
             DesignSystemButton(
               label: _labelForSize(size),
               size: size,
@@ -106,15 +99,6 @@ class _ButtonVariantMatrix extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const variants = <DesignSystemButtonVariant>[
-      DesignSystemButtonVariant.primary,
-      DesignSystemButtonVariant.secondary,
-      DesignSystemButtonVariant.tertiary,
-      DesignSystemButtonVariant.danger,
-      DesignSystemButtonVariant.dangerSecondary,
-      DesignSystemButtonVariant.dangerTertiary,
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -133,7 +117,7 @@ class _ButtonVariantMatrix extends StatelessWidget {
                   spacing: 16,
                   runSpacing: 16,
                   children: [
-                    for (final variant in variants)
+                    for (final variant in DesignSystemButtonVariant.values)
                       DesignSystemButton(
                         label: _labelForVariant(variant),
                         variant: variant,
@@ -193,7 +177,7 @@ String _labelForVariant(DesignSystemButtonVariant variant) {
 String _labelForSize(DesignSystemButtonSize size) {
   return switch (size) {
     DesignSystemButtonSize.small => 'Small',
-    DesignSystemButtonSize.medium => 'Default',
+    DesignSystemButtonSize.medium => 'Medium',
     DesignSystemButtonSize.large => 'Large',
     DesignSystemButtonSize.jumbo => 'Jumbo',
   };

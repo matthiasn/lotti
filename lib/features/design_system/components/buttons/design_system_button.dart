@@ -161,22 +161,27 @@ class _ButtonContent extends StatelessWidget {
       children.add(Icon(leadingIcon));
     }
 
-    if (leadingIcon != null) {
-      children.add(SizedBox(width: gap));
+    if (label.isNotEmpty) {
+      if (children.isNotEmpty) {
+        children.add(SizedBox(width: gap));
+      }
+
+      children.add(
+        Flexible(
+          child: Text(
+            label,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+      );
     }
 
-    children.add(
-      Text(
-        label,
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-      ),
-    );
-
     if (trailingIcon != null) {
-      children
-        ..add(SizedBox(width: gap))
-        ..add(Icon(trailingIcon));
+      if (children.isNotEmpty) {
+        children.add(SizedBox(width: gap));
+      }
+      children.add(Icon(trailingIcon));
     }
 
     return Row(

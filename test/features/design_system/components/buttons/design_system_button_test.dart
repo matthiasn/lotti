@@ -246,6 +246,87 @@ void main() {
         dsTokensLight.typography.lineHeight.subtitle1,
       );
     });
+
+    testWidgets('renders icon-only content with a single gap', (tester) async {
+      const buttonKey = Key('icon-only');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemButton(
+            key: buttonKey,
+            label: '',
+            leadingIcon: Icons.add,
+            trailingIcon: Icons.keyboard_arrow_down,
+            onPressed: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byType(Flexible),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.width == dsTokensLight.spacing.step2,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('wraps long labels in a flexible ellipsis text node', (
+      tester,
+    ) async {
+      const buttonKey = Key('long-label');
+      const label = 'A very long button label that should truncate cleanly';
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 180,
+            child: DesignSystemButton(
+              key: buttonKey,
+              label: label,
+              leadingIcon: Icons.add,
+              trailingIcon: Icons.keyboard_arrow_down,
+              onPressed: _noop,
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byType(Flexible),
+        ),
+        findsOneWidget,
+      );
+
+      final richText = tester.widget<RichText>(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is RichText && widget.text.toPlainText() == label,
+          ),
+        ),
+      );
+
+      expect(richText.overflow, TextOverflow.ellipsis);
+      expect(richText.maxLines, 1);
+    });
   });
 }
 
