@@ -252,34 +252,56 @@ class _BadgeStyleSpec {
     required _DesignSystemBadgeType type,
     required DesignSystemBadgeTone tone,
   }) {
+    if (tone == DesignSystemBadgeTone.secondary) {
+      final color = tokens.colors.alert.info.defaultColor;
+      final background = tokens.colors.surface.enabled;
+
+      return switch (type) {
+        _DesignSystemBadgeType.dot => _BadgeStyleSpec(
+          backgroundColor: background,
+          foregroundColor: Colors.transparent,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.number ||
+        _DesignSystemBadgeType.filled ||
+        _DesignSystemBadgeType.icon => _BadgeStyleSpec(
+          backgroundColor: background,
+          foregroundColor: color,
+          borderColor: null,
+        ),
+        _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
+          backgroundColor: background,
+          foregroundColor: color,
+          borderColor: color,
+        ),
+      };
+    }
+
     final accentColor = switch (tone) {
       DesignSystemBadgeTone.primary => tokens.colors.alert.info.defaultColor,
-      DesignSystemBadgeTone.secondary => tokens.colors.alert.info.defaultColor,
       DesignSystemBadgeTone.danger => tokens.colors.alert.error.defaultColor,
       DesignSystemBadgeTone.warning => tokens.colors.alert.warning.defaultColor,
       DesignSystemBadgeTone.success => tokens.colors.alert.success.defaultColor,
+      DesignSystemBadgeTone.secondary => throw StateError(
+        'Secondary tone must be handled separately.',
+      ),
     };
-
-    final isSecondary = tone == DesignSystemBadgeTone.secondary;
-    final secondaryBackground = tokens.colors.surface.enabled;
 
     return switch (type) {
       _DesignSystemBadgeType.dot => _BadgeStyleSpec(
-        backgroundColor: isSecondary ? secondaryBackground : accentColor,
+        backgroundColor: accentColor,
         foregroundColor: Colors.transparent,
         borderColor: null,
       ),
       _DesignSystemBadgeType.number ||
       _DesignSystemBadgeType.filled ||
       _DesignSystemBadgeType.icon => _BadgeStyleSpec(
-        backgroundColor: isSecondary ? secondaryBackground : accentColor,
-        foregroundColor: isSecondary
-            ? tokens.colors.alert.info.defaultColor
-            : tokens.colors.text.onInteractiveAlert,
+        backgroundColor: accentColor,
+        foregroundColor: tokens.colors.text.onInteractiveAlert,
         borderColor: null,
       ),
       _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
-        backgroundColor: isSecondary ? secondaryBackground : null,
+        backgroundColor: null,
         foregroundColor: accentColor,
         borderColor: accentColor,
       ),

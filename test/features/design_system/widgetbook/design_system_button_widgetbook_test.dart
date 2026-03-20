@@ -9,7 +9,7 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   group('buildDesignSystemWidgetbookFolder', () {
-    testWidgets('builds the button overview use case and includes badges', (
+    testWidgets('builds the button overview use case and includes components', (
       tester,
     ) async {
       final folder = buildDesignSystemWidgetbookFolder();
@@ -28,6 +28,18 @@ void main() {
       final chipComponent = components.singleWhere(
         (component) => component.name == 'Chips',
       );
+      final splitButtonComponent = components.singleWhere(
+        (component) => component.name == 'Split Buttons',
+      );
+      final toggleComponent = components.singleWhere(
+        (component) => component.name == 'Toggle',
+      );
+      final radioButtonComponent = components.singleWhere(
+        (component) => component.name == 'Radio buttons',
+      );
+      final checkboxComponent = components.singleWhere(
+        (component) => component.name == 'Checkbox',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
@@ -36,10 +48,18 @@ void main() {
         'Buttons',
         'Badges',
         'Chips',
+        'Split Buttons',
+        'Toggle',
+        'Radio buttons',
+        'Checkbox',
       ]);
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
+      expect(splitButtonComponent.useCases.single.name, 'Overview');
+      expect(toggleComponent.useCases.single.name, 'Overview');
+      expect(radioButtonComponent.useCases.single.name, 'Overview');
+      expect(checkboxComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

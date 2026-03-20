@@ -11,17 +11,15 @@ void main() {
       final component = buildDesignSystemTypographyWidgetbookComponent();
       final useCase = component.useCases.single;
 
-      tester.view.devicePixelRatio = 1;
-      tester.view.physicalSize = const Size(1600, 1200);
-      addTearDown(tester.view.reset);
-
       expect(component.name, 'Typography');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
+        makeTestableWidget(
+          Theme(
+            data: DesignSystemTheme.light(),
+            child: Builder(builder: useCase.builder),
+          ),
         ),
       );
 

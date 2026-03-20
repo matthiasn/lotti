@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 enum DesignSystemChipVisualState {
@@ -148,17 +149,17 @@ class _ChipContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[];
+    final items = <Widget>[];
 
     if (avatar != null) {
-      children.add(
+      items.add(
         SizedBox.square(
           dimension: accessoryBoxSize,
           child: ClipOval(child: avatar),
         ),
       );
     } else if (leadingIcon != null) {
-      children.add(
+      items.add(
         SizedBox.square(
           dimension: accessoryBoxSize,
           child: Center(child: Icon(leadingIcon)),
@@ -167,11 +168,7 @@ class _ChipContent extends StatelessWidget {
     }
 
     if (label.isNotEmpty) {
-      if (children.isNotEmpty) {
-        children.add(SizedBox(width: gap));
-      }
-
-      children.add(
+      items.add(
         Flexible(
           child: Text(
             label,
@@ -183,10 +180,7 @@ class _ChipContent extends StatelessWidget {
     }
 
     if (showRemove) {
-      if (children.isNotEmpty) {
-        children.add(SizedBox(width: gap));
-      }
-      children.add(
+      items.add(
         SizedBox.square(
           dimension: accessoryBoxSize,
           child: const Center(
@@ -195,6 +189,10 @@ class _ChipContent extends StatelessWidget {
         ),
       );
     }
+
+    final children = items.isEmpty
+        ? const <Widget>[]
+        : items.intersperse(SizedBox(width: gap)).toList();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
