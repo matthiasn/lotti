@@ -65,7 +65,6 @@ void main() {
     final testController = TestSyncController(
       const SyncState(
         isSyncing: true,
-        currentStep: SyncStep.measurables,
         progress: 50,
       ),
     );
@@ -99,14 +98,14 @@ void main() {
     const pendingState = SyncState(
       isSyncing: true,
       progress: 50,
-      currentStep: SyncStep.measurables,
+      currentStep: SyncStep.categories,
       selectedSteps: {
-        SyncStep.tags,
         SyncStep.measurables,
+        SyncStep.categories,
       },
       stepProgress: {
-        SyncStep.tags: StepProgress(processed: 4, total: 4),
-        SyncStep.measurables: StepProgress(processed: 1, total: 10),
+        SyncStep.measurables: StepProgress(processed: 5, total: 5),
+        SyncStep.categories: StepProgress(processed: 1, total: 10),
       },
     );
 
@@ -153,7 +152,6 @@ void main() {
 
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     expect(find.text('50%'), findsOneWidget);
-    expect(find.text('4 / 4'), findsOneWidget);
     expect(find.text('1 / 10'), findsOneWidget);
     expect(find.byIcon(Icons.sync), findsOneWidget);
     expect(

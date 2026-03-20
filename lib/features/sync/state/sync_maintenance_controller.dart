@@ -24,7 +24,6 @@ class SyncMaintenanceController extends Notifier<SyncState> {
   Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {
     // Respect a canonical order for display, then filter it to the selection.
     final orderedSteps = <SyncStep>[
-      SyncStep.tags,
       SyncStep.measurables,
       SyncStep.labels,
       SyncStep.categories,
@@ -69,7 +68,6 @@ class SyncMaintenanceController extends Notifier<SyncState> {
             void Function(int processed, int total)? onDetailedProgress,
           })
         >{
-          SyncStep.tags: _repository.syncTags,
           SyncStep.measurables: _repository.syncMeasurables,
           SyncStep.labels: _repository.syncLabels,
           SyncStep.categories: _repository.syncCategories,

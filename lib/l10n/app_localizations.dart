@@ -5157,36 +5157,6 @@ abstract class AppLocalizations {
   /// **'Show map'**
   String get journalShowMapHint;
 
-  /// No description provided for @journalTagPlusHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage entry tags'**
-  String get journalTagPlusHint;
-
-  /// No description provided for @journalTagsCopyHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Copy tags'**
-  String get journalTagsCopyHint;
-
-  /// No description provided for @journalTagsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags:'**
-  String get journalTagsLabel;
-
-  /// No description provided for @journalTagsPasteHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Paste tags'**
-  String get journalTagsPasteHint;
-
-  /// No description provided for @journalTagsRemoveHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove tag'**
-  String get journalTagsRemoveHint;
-
   /// No description provided for @journalToggleFlaggedTitle.
   ///
   /// In en, this message translates to:
@@ -7696,72 +7666,6 @@ abstract class AppLocalizations {
   /// **'Configure sync and view stats'**
   String get settingsSyncSubtitle;
 
-  /// No description provided for @settingsTagsDeleteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete tag'**
-  String get settingsTagsDeleteTooltip;
-
-  /// No description provided for @settingsTagsDetailsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags Details'**
-  String get settingsTagsDetailsLabel;
-
-  /// No description provided for @settingsTagsHideLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide from suggestions:'**
-  String get settingsTagsHideLabel;
-
-  /// No description provided for @settingsTagsPrivateLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Private:'**
-  String get settingsTagsPrivateLabel;
-
-  /// No description provided for @settingsTagsSaveLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Save'**
-  String get settingsTagsSaveLabel;
-
-  /// No description provided for @settingsTagsTagName.
-  ///
-  /// In en, this message translates to:
-  /// **'Tag:'**
-  String get settingsTagsTagName;
-
-  /// No description provided for @settingsTagsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags'**
-  String get settingsTagsTitle;
-
-  /// No description provided for @settingsTagsTypeLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Tag type:'**
-  String get settingsTagsTypeLabel;
-
-  /// No description provided for @settingsTagsTypePerson.
-  ///
-  /// In en, this message translates to:
-  /// **'PERSON'**
-  String get settingsTagsTypePerson;
-
-  /// No description provided for @settingsTagsTypeStory.
-  ///
-  /// In en, this message translates to:
-  /// **'STORY'**
-  String get settingsTagsTypeStory;
-
-  /// No description provided for @settingsTagsTypeTag.
-  ///
-  /// In en, this message translates to:
-  /// **'TAG'**
-  String get settingsTagsTypeTag;
-
   /// No description provided for @settingsThemingAutomatic.
   ///
   /// In en, this message translates to:
@@ -8062,12 +7966,6 @@ abstract class AppLocalizations {
   /// **'Journal entry'**
   String get syncPayloadJournalEntity;
 
-  /// No description provided for @syncPayloadTagEntity.
-  ///
-  /// In en, this message translates to:
-  /// **'Tag entity'**
-  String get syncPayloadTagEntity;
-
   /// No description provided for @syncPayloadThemingSelection.
   ///
   /// In en, this message translates to:
@@ -8193,12 +8091,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurables'**
   String get syncStepMeasurables;
-
-  /// No description provided for @syncStepTags.
-  ///
-  /// In en, this message translates to:
-  /// **'Tags'**
-  String get syncStepTags;
 
   /// No description provided for @taskAgentCancelTimerTooltip.
   ///

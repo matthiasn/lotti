@@ -7,7 +7,6 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/animated_task_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
@@ -16,7 +15,6 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -67,21 +65,6 @@ class MockTimeService implements TimeService {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class MockTagsService extends Mock implements TagsService {
-  @override
-  Map<String, TagEntity> tagsById = {};
-
-  @override
-  Stream<List<TagEntity>> watchTags() {
-    return Stream.value(<TagEntity>[]);
-  }
-
-  @override
-  TagEntity? getTagById(String id) {
-    return null;
-  }
-}
-
 void main() {
   late JournalEntry testJournalEntry;
   late Task testTask;
@@ -90,15 +73,12 @@ void main() {
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNavService mockNavService;
   late MockTimeService mockTimeService;
-  late MockTagsService mockTagsService;
   late Directory mockDirectory;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
     mockTimeService = MockTimeService();
-    mockTagsService = MockTagsService();
-
     // Create and register mock directory for image tests
     final tempDir = Directory.systemTemp.createTempSync('card_wrapper_test');
     mockDirectory = tempDir;
@@ -109,7 +89,6 @@ void main() {
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<TagsService>(mockTagsService)
       ..registerSingleton<Directory>(mockDirectory);
 
     // Create test data with fixed dates (never use DateTime.now() in tests)

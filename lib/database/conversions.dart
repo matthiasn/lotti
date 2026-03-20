@@ -4,7 +4,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 
@@ -159,24 +158,6 @@ MeasurableDbEntity measurableDbEntity(MeasurableDataType dataType) {
   );
 }
 
-TagDbEntity tagDbEntity(TagEntity tag) {
-  return TagDbEntity(
-    id: tag.id,
-    tag: tag.tag,
-    private: tag.private,
-    inactive: tag.inactive ?? false,
-    createdAt: tag.createdAt,
-    updatedAt: tag.updatedAt,
-    serialized: jsonEncode(tag),
-    deleted: tag.deletedAt != null,
-    type: tag.map(
-      genericTag: (_) => 'GenericTag',
-      personTag: (_) => 'PersonTag',
-      storyTag: (_) => 'StoryTag',
-    ),
-  );
-}
-
 HabitDefinitionDbEntity habitDefinitionDbEntity(HabitDefinition habit) {
   return HabitDefinitionDbEntity(
     id: habit.id,
@@ -275,22 +256,12 @@ EntryLink entryLinkFromLinkedDbEntry(LinkedDbEntry dbEntity) {
   );
 }
 
-TagEntity fromTagDbEntity(TagDbEntity dbEntity) {
-  return TagEntity.fromJson(
-    json.decode(dbEntity.serialized) as Map<String, dynamic>,
-  );
-}
-
 DashboardDefinition fromDashboardDbEntity(
   DashboardDefinitionDbEntity dbEntity,
 ) {
   return DashboardDefinition.fromJson(
     json.decode(dbEntity.serialized) as Map<String, dynamic>,
   );
-}
-
-List<TagEntity> tagStreamMapper(List<TagDbEntity> dbEntities) {
-  return dbEntities.map(fromTagDbEntity).toList();
 }
 
 List<DashboardDefinition> dashboardStreamMapper(

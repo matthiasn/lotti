@@ -194,7 +194,6 @@ void main() {
       test('creates metadata with all optional parameters', () async {
         final dateFrom = DateTime(2024, 6, 1, 9);
         final dateTo = DateTime(2024, 6, 1, 10);
-        const tagIds = ['tag1', 'tag2'];
         const labelIds = ['label1', 'label2'];
         const categoryId = 'category-123';
 
@@ -203,7 +202,6 @@ void main() {
           dateTo: dateTo,
           uuidV5Input: 'unique-input',
           private: true,
-          tagIds: tagIds,
           labelIds: labelIds,
           categoryId: categoryId,
           starred: true,
@@ -213,7 +211,6 @@ void main() {
         expect(metadata.dateFrom, equals(dateFrom));
         expect(metadata.dateTo, equals(dateTo));
         expect(metadata.private, isTrue);
-        expect(metadata.tagIds, equals(tagIds));
         expect(metadata.labelIds, equals(labelIds));
         expect(metadata.categoryId, equals(categoryId));
         expect(metadata.starred, isTrue);
@@ -237,7 +234,6 @@ void main() {
           final metadata = await metadataService.createMetadata();
 
           expect(metadata.private, isNull);
-          expect(metadata.tagIds, isNull);
           expect(metadata.labelIds, isNull);
           expect(metadata.categoryId, isNull);
           expect(metadata.starred, isNull);

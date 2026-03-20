@@ -8,7 +8,6 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
@@ -84,7 +83,6 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -97,16 +95,6 @@ class MockSelectable<T> extends Mock implements drift.Selectable<T> {
   final List<T> _values;
   @override
   Future<List<T>> get() async => _values;
-}
-
-class MockTagsService extends Mock implements TagsService {}
-
-MockTagsService mockTagsServiceWithTags(
-  List<StoryTag> storyTags,
-) {
-  final mock = MockTagsService();
-
-  return mock;
 }
 
 class MockJournalDb extends Mock implements JournalDb {

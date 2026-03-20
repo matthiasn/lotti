@@ -6,7 +6,6 @@ import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -148,8 +147,8 @@ final testDashboardConfig = DashboardDefinition(
       surveyType: 'panasSurveyTask',
       surveyName: 'PANAS',
     ),
-    DashboardStoryTimeItem(
-      storyTagId: testStoryTag1.id,
+    const DashboardStoryTimeItem(
+      storyTagId: '27bbabc6-f323-11ec-b939-0242ac120002',
       color: '#00FF00',
     ),
   ],
@@ -178,33 +177,6 @@ final emptyTestDashboardConfig = DashboardDefinition(
   lastReviewed: testEpochDateTime,
   active: true,
   id: '',
-);
-
-final testStoryTag1 = StoryTag(
-  id: '27bbabc6-f323-11ec-b939-0242ac120002',
-  tag: 'Reading',
-  createdAt: testEpochDateTime,
-  updatedAt: testEpochDateTime,
-  private: false,
-  vectorClock: null,
-);
-
-final testPersonTag1 = PersonTag(
-  id: '6de83f4d-74db-43e5-9971-c977fc5a10f7',
-  tag: 'Jane Doe',
-  createdAt: testEpochDateTime,
-  updatedAt: testEpochDateTime,
-  private: false,
-  vectorClock: null,
-);
-
-final testTag1 = GenericTag(
-  id: '614b9c7f-f180-45b5-81e0-8f879bdd5f9f',
-  tag: 'SomeGenericTag',
-  createdAt: testEpochDateTime,
-  updatedAt: testEpochDateTime,
-  private: false,
-  vectorClock: null,
 );
 
 final testTextEntry = JournalEntry(
@@ -237,15 +209,6 @@ final testTextEntryNoGeo = JournalEntry(
     vectorClock: const VectorClock({'a': 11}),
   ),
   entryText: const EntryText(plainText: 'test entry text'),
-);
-
-final JournalEntry testTextEntryWithTags = testTextEntry.copyWith(
-  meta: testTextEntry.meta.copyWith(
-    tagIds: [
-      testStoryTag1.id,
-      testPersonTag1.id,
-    ],
-  ),
 );
 
 final testImageEntry = JournalImage(

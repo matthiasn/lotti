@@ -10,7 +10,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -25,7 +24,6 @@ void main() {
   // ignore: deprecated_member_use
   binding.window.devicePixelRatioTestValue = 1.0;
 
-  var mockTagsService = MockTagsService();
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
 
@@ -35,7 +33,6 @@ void main() {
     });
 
     setUp(() {
-      mockTagsService = mockTagsServiceWithTags([]);
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
@@ -60,7 +57,6 @@ void main() {
 
       getIt
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);

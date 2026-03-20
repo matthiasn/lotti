@@ -49,7 +49,6 @@ void main() {
   testWidgets('adds 100px bottom spacer sliver', (tester) async {
     const state = JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: <DisplayFilter>{},
       showPrivateEntries: false,
       showTasks: false, // simpler app bar
@@ -114,7 +113,6 @@ void main() {
 
     final state = JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: <DisplayFilter>{},
       showPrivateEntries: false,
       showTasks: false,

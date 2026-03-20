@@ -17,7 +17,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -89,7 +88,6 @@ void main() {
   late MockJournalDb journalDb;
   late MockUpdateNotifications updateNotifications;
   late MockLinkService linkService;
-  late MockTagsService tagsService;
   late ValueNotifier<int> pageIndexNotifier;
 
   setUp(() async {
@@ -98,7 +96,6 @@ void main() {
     journalDb = MockJournalDb();
     updateNotifications = MockUpdateNotifications();
     linkService = MockLinkService();
-    tagsService = MockTagsService();
     pageIndexNotifier = ValueNotifier<int>(0);
 
     await getIt.reset();
@@ -107,8 +104,7 @@ void main() {
       ..registerSingleton<EditorStateService>(editorStateService)
       ..registerSingleton<JournalDb>(journalDb)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LinkService>(linkService)
-      ..registerSingleton<TagsService>(tagsService);
+      ..registerSingleton<LinkService>(linkService);
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(any())).thenReturn(null);

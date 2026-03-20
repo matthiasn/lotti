@@ -44,7 +44,6 @@ void main() {
     messages = AppLocalizationsEn(); // Using English for tests
 
     const totalsByStep = <SyncStep, int>{
-      SyncStep.tags: 4,
       SyncStep.measurables: 5,
       SyncStep.labels: 6,
       SyncStep.categories: 7,
@@ -78,12 +77,6 @@ void main() {
     }
 
     // Stub all repository methods to return successful futures
-    when(
-      () => mockSyncMaintenanceRepository.syncTags(
-        onProgress: any(named: 'onProgress'),
-        onDetailedProgress: any(named: 'onDetailedProgress'),
-      ),
-    ).thenAnswer((invocation) => simulateStep(SyncStep.tags, invocation));
     when(
       () => mockSyncMaintenanceRepository.syncMeasurables(
         onProgress: any(named: 'onProgress'),
@@ -264,7 +257,6 @@ void main() {
         capturedSteps,
         equals(
           {
-            SyncStep.tags,
             SyncStep.measurables,
             SyncStep.labels,
             SyncStep.categories,
@@ -281,7 +273,6 @@ void main() {
 
       expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
       expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
-      expect(find.text('4 / 4'), findsOneWidget);
       expect(find.text('5 / 5'), findsOneWidget);
       expect(find.text('6 / 6'), findsOneWidget);
       expect(find.text('7 / 7'), findsOneWidget);
@@ -311,7 +302,6 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify the confirmation dialog is shown with the checkboxes for each step
-      expect(find.text(messages.syncStepTags), findsOneWidget);
       expect(find.text(messages.syncStepMeasurables), findsOneWidget);
       expect(find.text(messages.syncStepLabels), findsOneWidget);
       expect(find.text(messages.syncStepCategories), findsOneWidget);

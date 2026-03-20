@@ -57,7 +57,6 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -173,7 +172,6 @@ Future<void> registerSingletons() async {
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())
     ..registerSingleton<EditorDb>(EditorDb())
-    ..registerSingleton<TagsService>(TagsService())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(TimeService());

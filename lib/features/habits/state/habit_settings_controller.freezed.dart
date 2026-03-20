@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HabitSettingsState {
 
- HabitDefinition get habitDefinition; bool get dirty; GlobalKey<FormBuilderState> get formKey; List<StoryTag> get storyTags; AutoCompleteRule? get autoCompleteRule; StoryTag? get defaultStory;
+ HabitDefinition get habitDefinition; bool get dirty; GlobalKey<FormBuilderState> get formKey; AutoCompleteRule? get autoCompleteRule;
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $HabitSettingsStateCopyWith<HabitSettingsState> get copyWith => _$HabitSettingsS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&const DeepCollectionEquality().equals(other.storyTags, storyTags)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule)&&const DeepCollectionEquality().equals(other.defaultStory, defaultStory));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,const DeepCollectionEquality().hash(storyTags),autoCompleteRule,const DeepCollectionEquality().hash(defaultStory));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,autoCompleteRule);
 
 @override
 String toString() {
-  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, storyTags: $storyTags, autoCompleteRule: $autoCompleteRule, defaultStory: $defaultStory)';
+  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, autoCompleteRule: $autoCompleteRule)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $HabitSettingsStateCopyWith<$Res>  {
   factory $HabitSettingsStateCopyWith(HabitSettingsState value, $Res Function(HabitSettingsState) _then) = _$HabitSettingsStateCopyWithImpl;
 @useResult
 $Res call({
- HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, List<StoryTag> storyTags, AutoCompleteRule? autoCompleteRule, StoryTag? defaultStory
+ HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, AutoCompleteRule? autoCompleteRule
 });
 
 
@@ -62,15 +62,13 @@ class _$HabitSettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? storyTags = null,Object? autoCompleteRule = freezed,Object? defaultStory = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? autoCompleteRule = freezed,}) {
   return _then(_self.copyWith(
 habitDefinition: freezed == habitDefinition ? _self.habitDefinition : habitDefinition // ignore: cast_nullable_to_non_nullable
 as HabitDefinition,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
 as bool,formKey: null == formKey ? _self.formKey : formKey // ignore: cast_nullable_to_non_nullable
-as GlobalKey<FormBuilderState>,storyTags: null == storyTags ? _self.storyTags : storyTags // ignore: cast_nullable_to_non_nullable
-as List<StoryTag>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
-as AutoCompleteRule?,defaultStory: freezed == defaultStory ? _self.defaultStory : defaultStory // ignore: cast_nullable_to_non_nullable
-as StoryTag?,
+as GlobalKey<FormBuilderState>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
+as AutoCompleteRule?,
   ));
 }
 /// Create a copy of HabitSettingsState
@@ -167,10 +165,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  List<StoryTag> storyTags,  AutoCompleteRule? autoCompleteRule,  StoryTag? defaultStory)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _HabitSettingsState() when $default != null:
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,_that.autoCompleteRule,_that.defaultStory);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
   return orElse();
 
 }
@@ -188,10 +186,10 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  List<StoryTag> storyTags,  AutoCompleteRule? autoCompleteRule,  StoryTag? defaultStory)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)  $default,) {final _that = this;
 switch (_that) {
 case _HabitSettingsState():
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,_that.autoCompleteRule,_that.defaultStory);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -208,10 +206,10 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  List<StoryTag> storyTags,  AutoCompleteRule? autoCompleteRule,  StoryTag? defaultStory)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( HabitDefinition habitDefinition,  bool dirty,  GlobalKey<FormBuilderState> formKey,  AutoCompleteRule? autoCompleteRule)?  $default,) {final _that = this;
 switch (_that) {
 case _HabitSettingsState() when $default != null:
-return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,_that.autoCompleteRule,_that.defaultStory);case _:
+return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.autoCompleteRule);case _:
   return null;
 
 }
@@ -223,21 +221,13 @@ return $default(_that.habitDefinition,_that.dirty,_that.formKey,_that.storyTags,
 
 
 class _HabitSettingsState implements HabitSettingsState {
-  const _HabitSettingsState({required this.habitDefinition, required this.dirty, required this.formKey, required final  List<StoryTag> storyTags, required this.autoCompleteRule, this.defaultStory}): _storyTags = storyTags;
+  const _HabitSettingsState({required this.habitDefinition, required this.dirty, required this.formKey, required this.autoCompleteRule});
   
 
 @override final  HabitDefinition habitDefinition;
 @override final  bool dirty;
 @override final  GlobalKey<FormBuilderState> formKey;
- final  List<StoryTag> _storyTags;
-@override List<StoryTag> get storyTags {
-  if (_storyTags is EqualUnmodifiableListView) return _storyTags;
-  // ignore: implicit_dynamic_type
-  return EqualUnmodifiableListView(_storyTags);
-}
-
 @override final  AutoCompleteRule? autoCompleteRule;
-@override final  StoryTag? defaultStory;
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
@@ -249,16 +239,16 @@ _$HabitSettingsStateCopyWith<_HabitSettingsState> get copyWith => __$HabitSettin
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&const DeepCollectionEquality().equals(other._storyTags, _storyTags)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule)&&const DeepCollectionEquality().equals(other.defaultStory, defaultStory));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _HabitSettingsState&&const DeepCollectionEquality().equals(other.habitDefinition, habitDefinition)&&(identical(other.dirty, dirty) || other.dirty == dirty)&&(identical(other.formKey, formKey) || other.formKey == formKey)&&(identical(other.autoCompleteRule, autoCompleteRule) || other.autoCompleteRule == autoCompleteRule));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,const DeepCollectionEquality().hash(_storyTags),autoCompleteRule,const DeepCollectionEquality().hash(defaultStory));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(habitDefinition),dirty,formKey,autoCompleteRule);
 
 @override
 String toString() {
-  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, storyTags: $storyTags, autoCompleteRule: $autoCompleteRule, defaultStory: $defaultStory)';
+  return 'HabitSettingsState(habitDefinition: $habitDefinition, dirty: $dirty, formKey: $formKey, autoCompleteRule: $autoCompleteRule)';
 }
 
 
@@ -269,7 +259,7 @@ abstract mixin class _$HabitSettingsStateCopyWith<$Res> implements $HabitSetting
   factory _$HabitSettingsStateCopyWith(_HabitSettingsState value, $Res Function(_HabitSettingsState) _then) = __$HabitSettingsStateCopyWithImpl;
 @override @useResult
 $Res call({
- HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, List<StoryTag> storyTags, AutoCompleteRule? autoCompleteRule, StoryTag? defaultStory
+ HabitDefinition habitDefinition, bool dirty, GlobalKey<FormBuilderState> formKey, AutoCompleteRule? autoCompleteRule
 });
 
 
@@ -286,15 +276,13 @@ class __$HabitSettingsStateCopyWithImpl<$Res>
 
 /// Create a copy of HabitSettingsState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? storyTags = null,Object? autoCompleteRule = freezed,Object? defaultStory = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? habitDefinition = freezed,Object? dirty = null,Object? formKey = null,Object? autoCompleteRule = freezed,}) {
   return _then(_HabitSettingsState(
 habitDefinition: freezed == habitDefinition ? _self.habitDefinition : habitDefinition // ignore: cast_nullable_to_non_nullable
 as HabitDefinition,dirty: null == dirty ? _self.dirty : dirty // ignore: cast_nullable_to_non_nullable
 as bool,formKey: null == formKey ? _self.formKey : formKey // ignore: cast_nullable_to_non_nullable
-as GlobalKey<FormBuilderState>,storyTags: null == storyTags ? _self._storyTags : storyTags // ignore: cast_nullable_to_non_nullable
-as List<StoryTag>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
-as AutoCompleteRule?,defaultStory: freezed == defaultStory ? _self.defaultStory : defaultStory // ignore: cast_nullable_to_non_nullable
-as StoryTag?,
+as GlobalKey<FormBuilderState>,autoCompleteRule: freezed == autoCompleteRule ? _self.autoCompleteRule : autoCompleteRule // ignore: cast_nullable_to_non_nullable
+as AutoCompleteRule?,
   ));
 }
 

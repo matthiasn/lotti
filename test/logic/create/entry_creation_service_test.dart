@@ -17,7 +17,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -86,7 +85,6 @@ void main() {
         ..registerSingleton<UserActivityService>(UserActivityService())
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<TagsService>(TagsService())
         ..registerSingleton<OutboxService>(mockOutboxService)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<VectorClockService>(VectorClockService())

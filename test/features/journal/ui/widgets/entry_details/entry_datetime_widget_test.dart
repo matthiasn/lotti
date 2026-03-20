@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -10,7 +9,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -21,7 +19,6 @@ void main() {
   group('EntryDetailFooter', () {
     final mockPersistenceLogic = MockPersistenceLogic();
     final mockJournalDb = MockJournalDb();
-    final mockTagsService = mockTagsServiceWithTags([]);
     final mockEditorStateService = MockEditorStateService();
 
     setUpAll(() async {
@@ -35,16 +32,11 @@ void main() {
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<TagsService>(mockTagsService);
+        ..registerSingleton<EditorStateService>(mockEditorStateService);
 
       when(
         () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
       ).thenAnswer((_) async => testTextEntry);
-
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => Stream<List<TagEntity>>.fromIterable([[]]),
-      );
 
       when(
         () => mockEditorStateService.getUnsavedStream(

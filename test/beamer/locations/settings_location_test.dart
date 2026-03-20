@@ -31,9 +31,6 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/create_tag_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/tag_edit_page.dart';
-import 'package:lotti/features/settings/ui/pages/tags/tags_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
@@ -41,7 +38,6 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -54,9 +50,7 @@ void main() {
 
     setUpAll(() {
       // Register mock services with GetIt for tests that need them
-      getIt
-        ..registerSingleton<TagsService>(MockTagsService())
-        ..registerSingleton<JournalDb>(MockJournalDb());
+      getIt.registerSingleton<JournalDb>(MockJournalDb());
     });
 
     tearDownAll(getIt.reset);
@@ -78,9 +72,6 @@ void main() {
         '/settings/sync/backfill',
         '/settings/sync/stats',
         '/settings/sync/outbox',
-        '/settings/tags',
-        '/settings/tags/:tagEntityId',
-        '/settings/tags/create/:tagType',
         '/settings/categories',
         '/settings/categories/:categoryId',
         '/settings/categories/create',
@@ -126,23 +117,6 @@ void main() {
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
       expect(pages[0].child, isA<SettingsPage>());
-    });
-
-    test('buildPages builds TagsPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/tags'),
-      );
-      final location = SettingsLocation(routeInformation);
-      final beamState = BeamState.fromRouteInformation(routeInformation);
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 2);
-      expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].key, isA<ValueKey<String>>());
-      expect(pages[1].child, isA<TagsPage>());
     });
 
     test('buildPages builds LabelsListPage', () {
@@ -345,43 +319,6 @@ void main() {
       expect(detailPage.projectId, 'proj-123');
     });
 
-    test('buildPages builds EditExistingTagPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/tags/tag-123'),
-      );
-      final location = SettingsLocation(routeInformation);
-      var beamState = BeamState.fromRouteInformation(routeInformation);
-      beamState = beamState.copyWith(
-        pathParameters: {'tagEntityId': 'tag-123'},
-      );
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<TagsPage>());
-      expect(pages[2].child, isA<EditExistingTagPage>());
-    });
-
-    test('buildPages builds CreateTagPage', () {
-      final routeInformation = RouteInformation(
-        uri: Uri.parse('/settings/tags/create/person'),
-      );
-      final location = SettingsLocation(routeInformation);
-      var beamState = BeamState.fromRouteInformation(routeInformation);
-      beamState = beamState.copyWith(
-        pathParameters: {'tagType': 'person'},
-      );
-      final pages = location.buildPages(
-        mockBuildContext,
-        beamState,
-      );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<TagsPage>());
-      expect(pages[2].child, isA<CreateTagPage>());
-    });
 
     test('buildPages builds DashboardSettingsPage', () {
       final routeInformation = RouteInformation(
@@ -823,8 +760,7 @@ void main() {
       expect(pages[2].child, isA<MaintenancePage>());
     });
 
-    test('categories navigation stack matches tags/dashboards pattern', () {
-      // Test categories
+    test('categories navigation stack has list page', () {
       final categoriesRoute = RouteInformation(
         uri: Uri.parse('/settings/categories/cat-id'),
       );
@@ -838,22 +774,9 @@ void main() {
         categoriesState,
       );
 
-      // Test tags
-      final tagsRoute = RouteInformation(
-        uri: Uri.parse('/settings/tags/tag-id'),
-      );
-      final tagsLocation = SettingsLocation(tagsRoute);
-      var tagsState = BeamState.fromRouteInformation(tagsRoute);
-      tagsState = tagsState.copyWith(
-        pathParameters: {'tagEntityId': 'tag-id'},
-      );
-      final tagsPages = tagsLocation.buildPages(mockBuildContext, tagsState);
-
-      // Both should have list page in stack (3 pages: Settings -> List -> Details)
+      // Should have list page in stack (3 pages: Settings -> List -> Details)
       expect(categoriesPages.length, 3);
-      expect(tagsPages.length, 3);
       expect(categoriesPages[1].child, isA<CategoriesListPage>());
-      expect(tagsPages[1].child, isA<TagsPage>());
     });
   });
 }

@@ -152,7 +152,6 @@ class OutboxListItemViewModel {
       return syncMessage.map(
         journalEntity: (_) => messages.syncPayloadJournalEntity,
         entityDefinition: (_) => messages.syncPayloadEntityDefinition,
-        tagEntity: (_) => messages.syncPayloadTagEntity,
         entryLink: (_) => messages.syncPayloadEntryLink,
         aiConfig: (_) => messages.syncPayloadAiConfig,
         aiConfigDelete: (_) => messages.syncPayloadAiConfigDelete,

@@ -26,7 +26,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -44,7 +43,6 @@ JournalEntry _buildJournalEntry({
   required String id,
   required DateTime timestamp,
   required String text,
-  List<String>? tagIds,
 }) {
   return testTextEntry.copyWith(
     meta: testTextEntry.meta.copyWith(
@@ -53,7 +51,6 @@ JournalEntry _buildJournalEntry({
       updatedAt: timestamp,
       dateFrom: timestamp,
       dateTo: timestamp,
-      tagIds: tagIds,
     ),
     entryText: EntryText(plainText: text),
   );
@@ -158,7 +155,6 @@ void main() {
     late MockOutboxService outboxService;
     late MockLoggingService loggingService;
     late MockPersistenceLogic persistenceLogic;
-    late MockTagsService tagsService;
     late MockEntitiesCacheService entitiesCacheService;
     late MockVectorClockService vectorClockService;
     late List<SyncMessage> sentMessages;
@@ -184,10 +180,6 @@ void main() {
 
       persistenceLogic = MockPersistenceLogic();
       getIt.registerSingleton<PersistenceLogic>(persistenceLogic);
-
-      tagsService = MockTagsService();
-      when(() => tagsService.getTagById(any())).thenReturn(null);
-      getIt.registerSingleton<TagsService>(tagsService);
 
       entitiesCacheService = MockEntitiesCacheService();
       when(() => entitiesCacheService.getDataTypeById(any())).thenReturn(null);

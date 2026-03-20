@@ -11,7 +11,6 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -41,7 +40,6 @@ void main() {
       ]);
       mockPersistenceLogic = MockPersistenceLogic();
 
-      final mockTagsService = mockTagsServiceWithTags([]);
       final mockTimeService = MockTimeService();
       final mockHealthImport = MockHealthImport();
 
@@ -63,7 +61,6 @@ void main() {
         ..registerSingleton<SettingsDb>(SettingsDb(inMemoryDatabase: true))
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(NavService())
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<TimeService>(mockTimeService)
         ..registerSingleton<HealthImport>(mockHealthImport)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)

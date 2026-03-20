@@ -9,7 +9,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -111,9 +110,6 @@ void main() {
     ).thenAnswer((_) async => 1);
     when(
       () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
-    ).thenAnswer((_) async => 1);
-    when(
-      () => journalDb.upsertTagEntity(any<TagEntity>()),
     ).thenAnswer((_) async => 1);
     when(
       () => updateNotifications.notify(
@@ -843,34 +839,6 @@ void main() {
     await processor.process(event: event, journalDb: journalDb);
 
     verify(() => journalDb.upsertEntityDefinition(measurableWater)).called(1);
-  });
-
-  test('processes tag entities', () async {
-    final message = SyncMessage.tagEntity(
-      tagEntity: testTag1,
-      status: SyncEntryStatus.initial,
-    );
-    when(() => event.text).thenReturn(encodeMessage(message));
-
-    await processor.process(event: event, journalDb: journalDb);
-
-    verify(() => journalDb.upsertTagEntity(testTag1)).called(1);
-  });
-
-  test('SyncTagEntity does not emit diagnostics', () async {
-    final message = SyncMessage.tagEntity(
-      tagEntity: testTag1,
-      status: SyncEntryStatus.initial,
-    );
-    when(() => event.text).thenReturn(encodeMessage(message));
-
-    var observerCalled = false;
-    processor.applyObserver = (_) => observerCalled = true;
-
-    await processor.process(event: event, journalDb: journalDb);
-
-    expect(observerCalled, isFalse);
-    verify(() => journalDb.upsertTagEntity(testTag1)).called(1);
   });
 
   test('processes ai config messages', () async {

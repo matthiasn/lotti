@@ -2879,21 +2879,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalShowMapHint => 'Arată harta';
 
   @override
-  String get journalTagPlusHint => 'Gestionează etichetele intrării';
-
-  @override
-  String get journalTagsCopyHint => 'Copiază etichete';
-
-  @override
-  String get journalTagsLabel => 'Etichete:';
-
-  @override
-  String get journalTagsPasteHint => 'Lipește etichete';
-
-  @override
-  String get journalTagsRemoveHint => 'Înlătură eticheta';
-
-  @override
   String get journalToggleFlaggedTitle => 'Marcate';
 
   @override
@@ -4359,39 +4344,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Configurează sincronizarea și vizualizează statisticile';
 
   @override
-  String get settingsTagsDeleteTooltip => 'Șterge eticheta';
-
-  @override
-  String get settingsTagsDetailsLabel => 'Detalii etichete';
-
-  @override
-  String get settingsTagsHideLabel => 'Ascunde din sugestii:';
-
-  @override
-  String get settingsTagsPrivateLabel => 'Privat:';
-
-  @override
-  String get settingsTagsSaveLabel => 'Salveaza eticheta';
-
-  @override
-  String get settingsTagsTagName => 'Etichete:';
-
-  @override
-  String get settingsTagsTitle => 'Etichete';
-
-  @override
-  String get settingsTagsTypeLabel => 'Tip Eticheta:';
-
-  @override
-  String get settingsTagsTypePerson => 'PERSOANA';
-
-  @override
-  String get settingsTagsTypeStory => 'POVESTE';
-
-  @override
-  String get settingsTagsTypeTag => 'ETICHETA';
-
-  @override
   String get settingsThemingAutomatic => 'Automat';
 
   @override
@@ -4564,9 +4516,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPayloadJournalEntity => 'Intrare jurnal';
 
   @override
-  String get syncPayloadTagEntity => 'Entitate etichetă';
-
-  @override
   String get syncPayloadThemingSelection => 'Selecție temă';
 
   @override
@@ -4632,9 +4581,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get syncStepMeasurables => 'Măsurabile';
-
-  @override
-  String get syncStepTags => 'Etichete';
 
   @override
   String get taskAgentCancelTimerTooltip => 'Anulează';

@@ -3,13 +3,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/gamey/colors.dart';
 import 'package:lotti/widgets/gamey/gamey_card.dart';
@@ -62,37 +60,23 @@ class MockTimeService extends Mock implements TimeService {
   Stream<JournalEntity?> getStream() => Stream.value(null);
 }
 
-class MockTagsService extends Mock implements TagsService {
-  @override
-  Map<String, TagEntity> tagsById = {};
-
-  @override
-  Stream<List<TagEntity>> watchTags() => Stream.value(<TagEntity>[]);
-
-  @override
-  TagEntity? getTagById(String id) => null;
-}
-
 void main() {
   late Task testTask;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockNavService mockNavService;
   late MockTimeService mockTimeService;
-  late MockTagsService mockTagsService;
   late DateTime now;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockNavService = MockNavService();
     mockTimeService = MockTimeService();
-    mockTagsService = MockTagsService();
 
     getIt.allowReassignment = true;
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<TagsService>(mockTagsService);
+      ..registerSingleton<NavService>(mockNavService);
 
     now = DateTime(2024, 1, 1, 12);
     const taskId = 'test-task-id';

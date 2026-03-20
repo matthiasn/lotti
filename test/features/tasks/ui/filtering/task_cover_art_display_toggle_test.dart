@@ -58,7 +58,6 @@ void main() {
   }) {
     return JournalPageState(
       match: '',
-      tagIds: <String>{},
       filters: {},
       showPrivateEntries: false,
       selectedEntryTypes: const [],

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -59,7 +58,6 @@ void main() {
     List<HabitDefinition> habits = const [],
     List<DashboardDefinition> dashboards = const [],
     List<LabelDefinition> labels = const [],
-    List<TagEntity> tags = const [],
     bool privateFlag = false,
   }) async {
     when(
@@ -77,7 +75,6 @@ void main() {
     when(
       () => journalDb.getAllLabelDefinitions(),
     ).thenAnswer((_) async => labels);
-    when(() => journalDb.getAllTags()).thenAnswer((_) async => tags);
     when(
       () => journalDb.getConfigFlag('private'),
     ).thenAnswer((_) async => privateFlag);
@@ -99,7 +96,6 @@ void main() {
     List<HabitDefinition> habits = const [],
     List<DashboardDefinition> dashboards = const [],
     List<LabelDefinition> labels = const [],
-    List<TagEntity> tags = const [],
     bool privateFlag = false,
   }) {
     when(
@@ -117,7 +113,6 @@ void main() {
     when(
       () => journalDb.getAllLabelDefinitions(),
     ).thenAnswer((_) async => labels);
-    when(() => journalDb.getAllTags()).thenAnswer((_) async => tags);
     when(
       () => journalDb.getConfigFlag('private'),
     ).thenAnswer((_) async => privateFlag);
@@ -865,28 +860,6 @@ void main() {
     });
   });
 
-  test('tags cache updates on notification', () {
-    fakeAsync((async) {
-      final tag = TagEntity.genericTag(
-        id: 'tag-1',
-        tag: 'Test',
-        private: false,
-        createdAt: testEpochDateTime,
-        updatedAt: testEpochDateTime,
-        vectorClock: null,
-        inactive: false,
-      );
-
-      final cache = createCacheSync(async);
-      expect(cache.tagsById, isEmpty);
-
-      when(() => journalDb.getAllTags()).thenAnswer((_) async => [tag]);
-      notifications.emit({tagsNotification});
-      async.flushMicrotasks();
-      expect(cache.tagsById[tag.id], tag);
-    });
-  });
-
   test('serialized fetch coalesces rapid notifications', () {
     fakeAsync((async) {
       var measurableFetchCount = 0;
@@ -917,7 +890,6 @@ void main() {
       when(
         () => journalDb.getAllLabelDefinitions(),
       ).thenAnswer((_) async => <LabelDefinition>[]);
-      when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
       when(
         () => journalDb.getConfigFlag('private'),
       ).thenAnswer((_) async => false);
@@ -967,7 +939,6 @@ void main() {
     when(
       () => journalDb.getAllLabelDefinitions(),
     ).thenAnswer((_) async => [testLabelDefinition1]);
-    when(() => journalDb.getAllTags()).thenAnswer((_) async => <TagEntity>[]);
     when(
       () => journalDb.getConfigFlag('private'),
     ).thenAnswer((_) async => true);

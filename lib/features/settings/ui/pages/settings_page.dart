@@ -129,12 +129,6 @@ class SettingsPage extends ConsumerWidget {
               );
             },
           ),
-          settingsCard(
-            title: context.messages.settingsTagsTitle,
-            subtitle: 'Tag and label your entries',
-            icon: Icons.label_rounded,
-            onTap: () => context.beamToNamed('/settings/tags'),
-          ),
           if (enableDashboards)
             settingsCard(
               title: context.messages.settingsDashboardsTitle,

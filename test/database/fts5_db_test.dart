@@ -7,7 +7,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -102,23 +101,18 @@ void main() {
 
     group('insertText', () {
       late Fts5Db db;
-      late MockTagsService tagsService;
       late MockEntitiesCacheService entitiesCacheService;
 
       setUp(() async {
         await getIt.reset();
 
-        tagsService = MockTagsService();
         entitiesCacheService = MockEntitiesCacheService();
 
-        when(() => tagsService.getTagById(any())).thenReturn(null);
         when(
           () => entitiesCacheService.getDataTypeById(any()),
         ).thenReturn(null);
 
-        getIt
-          ..registerSingleton<TagsService>(tagsService)
-          ..registerSingleton<EntitiesCacheService>(entitiesCacheService);
+        getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
         db = Fts5Db(inMemoryDatabase: true);
       });
@@ -139,8 +133,6 @@ void main() {
       });
 
       test('insertText with task entry indexes the task title', () async {
-        when(() => tagsService.getTagById(any())).thenReturn(null);
-
         await db.insertText(testTask);
 
         final matches = await db.watchFullTextMatches('Add tests').first;
@@ -205,23 +197,6 @@ void main() {
             .watchFullTextMatches('"94.49400329589844"')
             .first;
         expect(valueMatches, contains(testWeightEntry.meta.id));
-      });
-
-      test('insertText with tags indexes tag names for search', () async {
-        when(
-          () => tagsService.getTagById(testStoryTag1.id),
-        ).thenReturn(testStoryTag1);
-        when(
-          () => tagsService.getTagById(testPersonTag1.id),
-        ).thenReturn(testPersonTag1);
-
-        await db.insertText(testTextEntryWithTags);
-
-        final tagMatches = await db.watchFullTextMatches('Reading').first;
-        expect(tagMatches, contains(testTextEntryWithTags.meta.id));
-
-        final personMatches = await db.watchFullTextMatches('Jane Doe').first;
-        expect(personMatches, contains(testTextEntryWithTags.meta.id));
       });
 
       test(
@@ -316,37 +291,22 @@ void main() {
         final titleMatches = await db.watchFullTextMatches('Add tests').first;
         expect(titleMatches, contains(taskWithoutText.meta.id));
       });
-
-      test('insertText handles missing tag references gracefully', () async {
-        await db.insertText(testTextEntryWithTags);
-
-        final matches = await db.watchFullTextMatches('test entry text').first;
-        expect(matches, contains(testTextEntryWithTags.meta.id));
-
-        final tagMatches = await db.watchFullTextMatches('Reading').first;
-        expect(tagMatches, isEmpty);
-      });
     });
 
     group('watchFullTextMatches', () {
       late Fts5Db db;
-      late MockTagsService tagsService;
       late MockEntitiesCacheService entitiesCacheService;
 
       setUp(() async {
         await getIt.reset();
 
-        tagsService = MockTagsService();
         entitiesCacheService = MockEntitiesCacheService();
 
-        when(() => tagsService.getTagById(any())).thenReturn(null);
         when(
           () => entitiesCacheService.getDataTypeById(any()),
         ).thenReturn(null);
 
-        getIt
-          ..registerSingleton<TagsService>(tagsService)
-          ..registerSingleton<EntitiesCacheService>(entitiesCacheService);
+        getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
 
         db = Fts5Db(inMemoryDatabase: true);
       });

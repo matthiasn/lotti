@@ -7,13 +7,11 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/habits/autocomplete_update.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 
 part 'habit_settings_controller.freezed.dart';
 
@@ -24,16 +22,13 @@ abstract class HabitSettingsState with _$HabitSettingsState {
     required HabitDefinition habitDefinition,
     required bool dirty,
     required GlobalKey<FormBuilderState> formKey,
-    required List<StoryTag> storyTags,
     required AutoCompleteRule? autoCompleteRule,
-    StoryTag? defaultStory,
   }) = _HabitSettingsState;
 
   factory HabitSettingsState.initial(String habitId) => HabitSettingsState(
     habitDefinition: _createEmptyHabitDefinition(habitId),
     dirty: false,
     formKey: GlobalKey<FormBuilderState>(),
-    storyTags: const [],
     autoCompleteRule: null,
   );
 }
@@ -78,13 +73,6 @@ final habitSettingsControllerProvider = NotifierProvider.autoDispose
       HabitSettingsController.new,
     );
 
-/// Stream provider for story tags.
-final storyTagsStreamProvider = StreamProvider.autoDispose<List<TagEntity>>((
-  ref,
-) {
-  return getIt<TagsService>().watchTags();
-});
-
 /// Controller for managing habit settings form state.
 /// Uses habitId as family key - works for both create (new ID) and edit (existing ID).
 class HabitSettingsController extends Notifier<HabitSettingsState> {
@@ -92,13 +80,11 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
 
   final String _habitId;
   ProviderSubscription<AsyncValue<HabitDefinition?>>? _habitSubscription;
-  ProviderSubscription<AsyncValue<List<TagEntity>>>? _tagsSubscription;
 
   @override
   HabitSettingsState build() {
     ref.onDispose(() {
       _habitSubscription?.close();
-      _tagsSubscription?.close();
     });
 
     final initialState = HabitSettingsState.initial(_habitId);
@@ -115,20 +101,7 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
           if (habit != null && !state.dirty) {
             // Only update from DB if user hasn't made changes
             state = state.copyWith(habitDefinition: habit);
-            _updateDefaultStory();
           }
-        });
-      },
-    );
-
-    // Watch for story tags updates
-    _tagsSubscription = ref.listen<AsyncValue<List<TagEntity>>>(
-      storyTagsStreamProvider,
-      (_, next) {
-        next.whenData((tags) {
-          final storyTags = tags.whereType<StoryTag>().toList();
-          state = state.copyWith(storyTags: storyTags);
-          _updateDefaultStory();
         });
       },
     );
@@ -137,17 +110,6 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
       return initialState.copyWith(habitDefinition: existingHabit);
     }
     return initialState;
-  }
-
-  void _updateDefaultStory() {
-    final defaultStoryId = state.habitDefinition.defaultStoryId;
-    final defaultStory = defaultStoryId != null
-        ? state.storyTags.where((tag) => tag.id == defaultStoryId).firstOrNull
-        : null;
-
-    if (state.defaultStory != defaultStory) {
-      state = state.copyWith(defaultStory: defaultStory);
-    }
   }
 
   /// Marks the form as dirty (modified).
@@ -273,7 +235,6 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     final private = formData['private'] as bool? ?? false;
     final active = !(formData['archived'] as bool? ?? false);
     final priority = formData['priority'] as bool? ?? false;
-    final defaultStory = formData['default_story_id'] as StoryTag?;
 
     final dataType = state.habitDefinition.copyWith(
       name: name.trim(),
@@ -281,7 +242,6 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
       private: private,
       active: active,
       priority: priority,
-      defaultStoryId: defaultStory?.id,
     );
 
     await getIt<PersistenceLogic>().upsertEntityDefinition(dataType);

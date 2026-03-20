@@ -25,7 +25,6 @@ class MockJournalPageController extends JournalPageController {
     return const JournalPageState(
       selectedEntryTypes: [],
       match: '',
-      tagIds: {},
       filters: {},
       showPrivateEntries: true,
       showTasks: false,

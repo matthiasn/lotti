@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -50,8 +49,6 @@ final ProjectEntry fallbackProjectEntry =
         )
         as ProjectEntry;
 
-final TagEntity fallbackTagEntity = testTag1;
-
 const SyncMessage fallbackSyncMessage = SyncJournalEntity(
   id: 'fallback-id',
   jsonPath: '/tmp/fallback.json',
@@ -77,7 +74,6 @@ void registerAllFallbackValues() {
   // Sealed union / abstract class fallbacks (need real instances)
   registerFallbackValue(fallbackJournalEntity);
   registerFallbackValue(fallbackProjectEntry);
-  registerFallbackValue(fallbackTagEntity);
   registerFallbackValue(fallbackSyncMessage);
   registerFallbackValue(fallbackAiConfig);
 

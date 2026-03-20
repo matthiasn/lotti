@@ -16,7 +16,6 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -82,9 +81,6 @@ void main() {
     if (getIt.isRegistered<OutboxService>()) {
       getIt.unregister<OutboxService>();
     }
-    if (getIt.isRegistered<TagsService>()) {
-      getIt.unregister<TagsService>();
-    }
     if (getIt.isRegistered<NotificationService>()) {
       getIt.unregister<NotificationService>();
     }
@@ -108,7 +104,6 @@ void main() {
       ..registerSingleton<VectorClockService>(MockVectorClockService())
       ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
       ..registerSingleton<OutboxService>(MockOutboxService())
-      ..registerSingleton<TagsService>(MockTagsService())
       ..registerSingleton<NotificationService>(MockNotificationService())
       ..registerSingleton<TimeService>(MockTimeService())
       ..registerSingleton<LoggingService>(mockLoggingService);
@@ -139,9 +134,6 @@ void main() {
     }
     if (getIt.isRegistered<OutboxService>()) {
       getIt.unregister<OutboxService>();
-    }
-    if (getIt.isRegistered<TagsService>()) {
-      getIt.unregister<TagsService>();
     }
     if (getIt.isRegistered<NotificationService>()) {
       getIt.unregister<NotificationService>();
@@ -208,7 +200,6 @@ void main() {
         linkedId: any(named: 'linkedId'),
         shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
         enqueueSync: any(named: 'enqueueSync'),
-        addTags: any(named: 'addTags'),
       ),
     ).thenAnswer((_) async => true);
 

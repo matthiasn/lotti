@@ -1,7 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -52,11 +51,6 @@ sealed class SyncMessage with _$SyncMessage {
     required EntityDefinition entityDefinition,
     required SyncEntryStatus status,
   }) = SyncEntityDefinition;
-
-  const factory SyncMessage.tagEntity({
-    required TagEntity tagEntity,
-    required SyncEntryStatus status,
-  }) = SyncTagEntity;
 
   const factory SyncMessage.entryLink({
     required EntryLink entryLink,

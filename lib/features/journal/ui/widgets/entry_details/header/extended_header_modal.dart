@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/index.dart';
@@ -19,14 +18,6 @@ class ExtendedHeaderModal {
     return ModalUtils.showMultiPageModal<void>(
       context: context,
       pageListBuilder: (modalSheetContext) {
-        final tagsModalPage = ModalUtils.modalSheetPage(
-          context: modalSheetContext,
-          padding: const EdgeInsets.only(bottom: 20),
-          title: context.messages.journalTagPlusHint,
-          child: TagsModal(entryId: entryId),
-          onTapBack: () => pageIndexNotifier.value = 0,
-        );
-
         final speechRecognitionModalPage = ModalUtils.modalSheetPage(
           context: modalSheetContext,
           padding: const EdgeInsets.only(bottom: 20),
@@ -50,7 +41,6 @@ class ExtendedHeaderModal {
 
         return [
           initialModalPage,
-          tagsModalPage,
           speechRecognitionModalPage,
         ];
       },

@@ -1,3 +1,5 @@
+-- TODO(cleanup): The 'tags' column is vestigial (always empty after tag removal).
+-- It cannot be dropped from an FTS5 virtual table without recreating it.
 CREATE VIRTUAL TABLE
   journal_fts USING fts5(plain_text, title, summary, tags, uuid);
 

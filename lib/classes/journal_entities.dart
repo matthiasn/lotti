@@ -32,8 +32,6 @@ abstract class Metadata with _$Metadata {
     required DateTime dateFrom,
     required DateTime dateTo,
     String? categoryId,
-    List<String>? tags,
-    List<String>? tagIds,
     List<String>? labelIds,
     int? utcOffset,
     String? timezone,

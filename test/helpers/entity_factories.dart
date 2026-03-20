@@ -23,7 +23,6 @@ class TestMetadataFactory {
     bool starred = false,
     bool private = false,
     String? categoryId,
-    List<String>? tagIds,
   }) {
     final date = createdAt ?? testFixedDate;
     return Metadata(
@@ -35,7 +34,6 @@ class TestMetadataFactory {
       starred: starred,
       private: private,
       categoryId: categoryId,
-      tagIds: tagIds,
     );
   }
 }
@@ -99,7 +97,6 @@ class TestTaskFactory {
     String? languageCode,
     bool starred = false,
     bool private = false,
-    List<String>? tagIds,
   }) {
     return Task(
       meta: TestMetadataFactory.create(
@@ -110,7 +107,6 @@ class TestTaskFactory {
         starred: starred,
         private: private,
         categoryId: categoryId,
-        tagIds: tagIds,
       ),
       data: TestTaskDataFactory.create(
         title: title,

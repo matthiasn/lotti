@@ -6,14 +6,12 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_service.dart';
-import 'package:lotti/services/tags_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -28,28 +26,21 @@ void main() {
 
   group('HabitSettingsController', () {
     late MockJournalDb mockJournalDb;
-    late MockTagsService mockTagsService;
     late MockPersistenceLogic mockPersistenceLogic;
     late MockNotificationService mockNotificationService;
     late MockUpdateNotifications mockUpdateNotifications;
-    late StreamController<List<TagEntity>> tagsStreamController;
     late StreamController<Set<String>> updateStreamController;
 
     setUp(() {
       mockJournalDb = MockJournalDb();
-      mockTagsService = MockTagsService();
       mockPersistenceLogic = MockPersistenceLogic();
       mockNotificationService = MockNotificationService();
       mockUpdateNotifications = MockUpdateNotifications();
-      tagsStreamController = StreamController<List<TagEntity>>.broadcast();
       updateStreamController = StreamController<Set<String>>.broadcast();
 
       when(
         () => mockJournalDb.getHabitById(any()),
       ).thenAnswer((_) async => null);
-      when(mockTagsService.watchTags).thenAnswer(
-        (_) => tagsStreamController.stream,
-      );
       when(
         () => mockPersistenceLogic.upsertEntityDefinition(any()),
       ).thenAnswer((_) async => 1);
@@ -62,14 +53,12 @@ void main() {
 
       getIt
         ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<TagsService>(mockTagsService)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<NotificationService>(mockNotificationService)
         ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
     });
 
     tearDown(() async {
-      await tagsStreamController.close();
       await updateStreamController.close();
       await getIt.reset();
     });
@@ -87,7 +76,6 @@ void main() {
       expect(state.habitDefinition.id, equals(testHabitId));
       expect(state.habitDefinition.name, isEmpty);
       expect(state.dirty, isFalse);
-      expect(state.storyTags, isEmpty);
     });
 
     test('loads existing habit from database', () async {
@@ -319,39 +307,6 @@ void main() {
       },
     );
 
-    test('watches story tags and updates state', () async {
-      const testHabitId = 'test-habit-id';
-      final completer = Completer<void>();
-
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final subscription = container.listen(
-        habitSettingsControllerProvider(testHabitId),
-        (_, next) {
-          if (next.storyTags.isNotEmpty && !completer.isCompleted) {
-            completer.complete();
-          }
-        },
-      );
-
-      container.read(habitSettingsControllerProvider(testHabitId).notifier);
-
-      // Emit tags
-      tagsStreamController.add([testStoryTag1]);
-
-      await completer.future.timeout(const Duration(milliseconds: 100));
-
-      final state = container.read(
-        habitSettingsControllerProvider(testHabitId),
-      );
-
-      expect(state.storyTags, hasLength(1));
-      expect(state.storyTags.first.id, equals(testStoryTag1.id));
-
-      subscription.close();
-    });
-
     test('does not update from DB when form is dirty', () {
       fakeAsync((async) {
         // Initially return null, then return habit on refetch
@@ -395,45 +350,6 @@ void main() {
         expect(state.dirty, isTrue);
 
         subscription.close();
-      });
-    });
-
-    test('updates default story when matching tag exists', () {
-      fakeAsync((async) {
-        final habitWithDefaultStory = habitFlossing.copyWith(
-          defaultStoryId: testStoryTag1.id,
-        );
-
-        when(
-          () => mockJournalDb.getHabitById(habitWithDefaultStory.id),
-        ).thenAnswer((_) async => habitWithDefaultStory);
-
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        container.listen(
-          habitSettingsControllerProvider(habitWithDefaultStory.id),
-          (_, _) {},
-        );
-
-        container.read(
-          habitSettingsControllerProvider(habitWithDefaultStory.id).notifier,
-        );
-
-        // Let habit load from initial fetch
-        async.elapse(const Duration(milliseconds: 20));
-        async.flushMicrotasks();
-
-        // Then emit tags
-        tagsStreamController.add([testStoryTag1]);
-        async.flushMicrotasks();
-
-        final state = container.read(
-          habitSettingsControllerProvider(habitWithDefaultStory.id),
-        );
-
-        expect(state.defaultStory, isNotNull);
-        expect(state.defaultStory?.id, equals(testStoryTag1.id));
       });
     });
 
@@ -489,81 +405,6 @@ void main() {
           state.habitDefinition.habitSchedule as DailyHabitSchedule;
       expect(schedule.showFrom, equals(showFrom));
       expect(schedule.alertAtTime, equals(alertAtTime));
-    });
-
-    test('disposes stream subscriptions on dispose', () {
-      fakeAsync((async) {
-        const testHabitId = 'test-habit-id';
-
-        final container = ProviderContainer();
-
-        container.read(habitSettingsControllerProvider(testHabitId).notifier);
-
-        // Emit values to ensure subscriptions are active
-        tagsStreamController.add([]);
-        async.flushMicrotasks();
-
-        // Dispose the container
-        container.dispose();
-
-        // Should not throw - streams should be properly cleaned up
-        tagsStreamController.add([]);
-      });
-    });
-
-    test('clears defaultStory when defaultStoryId is removed', () {
-      fakeAsync((async) {
-        // Start with a habit that has a defaultStoryId
-        final habitWithStory = habitFlossing.copyWith(
-          defaultStoryId: testStoryTag1.id,
-        );
-
-        when(
-          () => mockJournalDb.getHabitById(habitWithStory.id),
-        ).thenAnswer((_) async => habitWithStory);
-
-        final container = ProviderContainer();
-        addTearDown(container.dispose);
-
-        container.listen(
-          habitSettingsControllerProvider(habitWithStory.id),
-          (_, _) {},
-        );
-
-        container.read(
-          habitSettingsControllerProvider(habitWithStory.id).notifier,
-        );
-
-        // Let habit load from initial fetch
-        async.elapse(const Duration(milliseconds: 20));
-        async.flushMicrotasks();
-
-        // Emit tags so defaultStory can resolve
-        tagsStreamController.add([testStoryTag1]);
-        async.flushMicrotasks();
-
-        // Verify defaultStory is set
-        var state = container.read(
-          habitSettingsControllerProvider(habitWithStory.id),
-        );
-        expect(state.defaultStory, isNotNull);
-
-        // Now change stub to return habit without defaultStoryId and fire notification
-        final habitWithoutStory = habitFlossing.copyWith(defaultStoryId: null);
-        when(
-          () => mockJournalDb.getHabitById(habitWithStory.id),
-        ).thenAnswer((_) async => habitWithoutStory);
-        updateStreamController.add({habitsNotification});
-
-        async.elapse(const Duration(milliseconds: 50));
-        async.flushMicrotasks();
-
-        // Verify defaultStory is cleared
-        state = container.read(
-          habitSettingsControllerProvider(habitWithStory.id),
-        );
-        expect(state.defaultStory, isNull);
-      });
     });
 
     test('removeAutoCompleteRuleAt handles null rule gracefully', () {

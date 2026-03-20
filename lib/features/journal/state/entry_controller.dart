@@ -18,7 +18,6 @@ import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
-import 'package:lotti/features/tags/repository/tags_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -458,28 +457,10 @@ class EntryController extends _$EntryController {
     });
   }
 
-  Future<String> addTagDefinition(String tag) async {
-    return TagsRepository.addTagDefinition(tag);
-  }
-
   Future<void> setLanguage(String language) async {
     return SpeechRepository.updateLanguage(
       journalEntityId: id,
       language: language,
-    );
-  }
-
-  Future<void> addTagIds(List<String> addedTagIds) async {
-    await TagsRepository.addTagsWithLinked(
-      journalEntityId: id,
-      addedTagIds: addedTagIds,
-    );
-  }
-
-  Future<void> removeTagId(String tagId) async {
-    await TagsRepository.removeTag(
-      journalEntityId: id,
-      tagId: tagId,
     );
   }
 

@@ -177,7 +177,6 @@ Manages habit settings form state for create/edit flows.
 - Uses `AutoDisposeNotifierProvider.family` with `habitId` (String) as key
 - For **create flow**: new UUID is generated upfront, controller initializes with empty habit
 - For **edit flow**: watches habit from database via `habitByIdProvider` (uses repository)
-- Watches `TagsService.watchTags()` for story tag updates
 - Does not update from DB when form is dirty (prevents overwriting user changes)
 
 **State:** `HabitSettingsState` (freezed)
@@ -187,8 +186,6 @@ Manages habit settings form state for create/edit flows.
 | `habitDefinition` | `HabitDefinition` | Current habit being edited |
 | `dirty` | `bool` | Whether form has unsaved changes |
 | `formKey` | `GlobalKey<FormBuilderState>` | Key for FormBuilder validation |
-| `storyTags` | `List<StoryTag>` | Available story tags for default story selection |
-| `defaultStory` | `StoryTag?` | Currently selected default story tag |
 | `autoCompleteRule` | `AutoCompleteRule?` | Autocomplete rules for habit (experimental) |
 
 **Methods:**

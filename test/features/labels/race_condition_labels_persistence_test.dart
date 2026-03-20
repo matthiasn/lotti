@@ -116,9 +116,6 @@ void main() {
 
       // JournalDb side-effects no-op
       when(
-        () => journalDb.addTagged(any<JournalEntity>()),
-      ).thenAnswer((_) async {});
-      when(
         () => journalDb.addLabeled(any<JournalEntity>()),
       ).thenAnswer((_) async {});
 

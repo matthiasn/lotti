@@ -173,7 +173,6 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(const Stream<Set<String>>.empty());
     registerFallbackValue(fallbackJournalEntity);
-    registerFallbackValue(fallbackTagEntity);
     registerFallbackValue(
       EntryLink.basic(
         id: 'link-id',
@@ -184,7 +183,6 @@ void main() {
         vectorClock: null,
       ),
     );
-    registerFallbackValue(testTag1);
     registerFallbackValue(measurableWater);
     registerFallbackValue(fallbackAiConfig);
     registerFallbackValue(Uri.parse('mxc://placeholder'));
@@ -373,112 +371,6 @@ void main() {
           await throwingDb.close();
         }
       });
-    });
-
-    group('Tagging helpers -', () {
-      test('insertTag creates tagged association', () async {
-        const journalId = 'journal-tagged';
-        await db!.upsertTagEntity(testTag1);
-        await db!.upsertJournalDbEntity(
-          toDbEntity(
-            testTextEntry.copyWith(
-              meta: testTextEntry.meta.copyWith(id: journalId),
-            ),
-          ),
-        );
-
-        await db!.insertTag(journalId, testTag1.id);
-
-        final rows = await db!.select(db!.tagged).get();
-        expect(rows, hasLength(1));
-        final taggedRow = rows.single;
-        expect(taggedRow.journalId, journalId);
-        expect(taggedRow.tagEntityId, testTag1.id);
-      });
-
-      test('insertTag ignores duplicate gracefully', () async {
-        const journalId = 'journal-duplicate';
-        await db!.upsertTagEntity(testTag1);
-        await db!.upsertJournalDbEntity(
-          toDbEntity(
-            testTextEntry.copyWith(
-              meta: testTextEntry.meta.copyWith(id: journalId),
-            ),
-          ),
-        );
-
-        await db!.insertTag(journalId, testTag1.id);
-        await db!.insertTag(journalId, testTag1.id); // should be ignored
-
-        final rows = await db!.select(db!.tagged).get();
-        expect(rows, hasLength(1));
-        expect(rows.single.tagEntityId, testTag1.id);
-      });
-
-      test('addTagged replaces existing tag associations', () async {
-        const journalId = 'journal-add-tagged';
-        await db!.upsertTagEntity(
-          testTag1,
-        ); // existing tag that will be removed
-        await db!.upsertTagEntity(testStoryTag1);
-        await db!.upsertTagEntity(testPersonTag1);
-        await db!.upsertJournalDbEntity(
-          toDbEntity(
-            testTextEntry.copyWith(
-              meta: testTextEntry.meta.copyWith(id: journalId),
-            ),
-          ),
-        );
-
-        await db!.insertTag(journalId, testTag1.id);
-
-        final updatedEntity = testTextEntry.copyWith(
-          meta: testTextEntry.meta.copyWith(
-            id: journalId,
-            tagIds: [
-              testStoryTag1.id,
-              testPersonTag1.id,
-            ],
-          ),
-        );
-
-        await db!.addTagged(updatedEntity);
-
-        final rows = await db!.select(db!.tagged).get();
-        expect(rows, hasLength(2));
-        final tagIds = rows.map((row) => row.tagEntityId).toList();
-        expect(tagIds, containsAll([testStoryTag1.id, testPersonTag1.id]));
-        expect(tagIds, isNot(contains(testTag1.id)));
-      });
-
-      test(
-        'addTagged handles empty tag list by removing existing entries',
-        () async {
-          const journalId = 'journal-clear-tags';
-          await db!.upsertTagEntity(testTag1);
-          await db!.upsertJournalDbEntity(
-            toDbEntity(
-              testTextEntry.copyWith(
-                meta: testTextEntry.meta.copyWith(id: journalId),
-              ),
-            ),
-          );
-
-          await db!.insertTag(journalId, testTag1.id);
-
-          final noTagEntity = testTextEntry.copyWith(
-            meta: testTextEntry.meta.copyWith(
-              id: journalId,
-              tagIds: const [],
-            ),
-          );
-
-          await db!.addTagged(noTagEntity);
-
-          final rows = await db!.select(db!.tagged).get();
-          expect(rows, isEmpty);
-        },
-      );
     });
 
     group('Journal queries -', () {
@@ -1960,24 +1852,6 @@ void main() {
         expect(measurableDataType(row).displayName, 'Water+');
       });
 
-      test('upsertTagEntity upserts tag definitions', () async {
-        await db!.upsertTagEntity(testTag1);
-        var row = await (db!.select(
-          db!.tagEntities,
-        )..where((tbl) => tbl.id.equals(testTag1.id))).getSingle();
-        expect(fromTagDbEntity(row).tag, testTag1.tag);
-
-        final updated = testTag1.copyWith(
-          tag: 'UpdatedTag',
-          updatedAt: testTag1.updatedAt.add(const Duration(minutes: 1)),
-        );
-        await db!.upsertTagEntity(updated);
-        row = await (db!.select(
-          db!.tagEntities,
-        )..where((tbl) => tbl.id.equals(testTag1.id))).getSingle();
-        expect(fromTagDbEntity(row).tag, 'UpdatedTag');
-      });
-
       test('upsertHabitDefinition upserts habit', () async {
         await db!.upsertHabitDefinition(habitFlossing);
         var row = await (db!.select(
@@ -2102,6 +1976,7 @@ void main() {
             activeFrom: habit.activeFrom,
             activeUntil: habit.activeUntil,
             deletedAt: habit.deletedAt,
+            // ignore: deprecated_member_use_from_same_package
             defaultStoryId: habit.defaultStoryId,
             categoryId: habit.categoryId,
             dashboardId: habit.dashboardId,
@@ -2121,20 +1996,6 @@ void main() {
     });
 
     group('Aggregate queries -', () {
-      test('getTaggedCount returns number of tag associations', () async {
-        final entry = buildJournalEntry(
-          id: 'tagged-entry',
-          timestamp: DateTime(2024, 11),
-          text: 'Tagged entry',
-        );
-
-        await db!.upsertJournalDbEntity(toDbEntity(entry));
-        await db!.upsertTagEntity(testTag1);
-        await db!.insertTag(entry.meta.id, testTag1.id);
-
-        expect(await db!.getTaggedCount(), 1);
-      });
-
       test('getJournalCount returns total journal entries', () async {
         final entryA = buildJournalEntry(
           id: 'journal-count-a',
@@ -2151,21 +2012,6 @@ void main() {
         await db!.upsertJournalDbEntity(toDbEntity(entryB));
 
         expect(await db!.getJournalCount(), 2);
-      });
-
-      test('getMatchingTags returns matching active tags', () async {
-        await db!.upsertTagEntity(testTag1);
-        await db!.upsertTagEntity(
-          testTag1.copyWith(
-            id: 'secondary-tag',
-            tag: 'Different tag',
-            updatedAt: testTag1.updatedAt.add(const Duration(minutes: 5)),
-          ),
-        );
-
-        final matches = await db!.getMatchingTags('Some');
-        expect(matches.map((tag) => tag.id), contains(testTag1.id));
-        expect(matches.map((tag) => tag.id), isNot(contains('secondary-tag')));
       });
     });
 
@@ -2332,7 +2178,6 @@ void main() {
 
         expect(await db!.select(db!.dashboardDefinitions).get(), isEmpty);
         expect(await db!.select(db!.measurableTypes).get(), isEmpty);
-        expect(await db!.select(db!.tagEntities).get(), isEmpty);
         expect(await db!.select(db!.journal).get(), isEmpty);
       });
 
@@ -2343,7 +2188,7 @@ void main() {
         final progress = await db!
             .purgeDeleted(backup: false, stepDelay: Duration.zero)
             .toList();
-        expect(progress, equals([0.25, 0.5, 0.75, 1.0]));
+        expect(progress, equals([0.33, 0.66, 1.0]));
       });
 
       test('returns 1.0 immediately when nothing to purge', () async {
@@ -4890,12 +4735,6 @@ Future<void> seedDeletedDatabaseContent(
     updatedAt: deletionTime,
     deletedAt: deletionTime,
   );
-  final tag = testTag1.copyWith(
-    id: 'tag-${deletionTime.millisecondsSinceEpoch}',
-    createdAt: deletionTime,
-    updatedAt: deletionTime,
-    deletedAt: deletionTime,
-  );
   final journalEntry = buildTextEntry(
     id: 'deleted-${deletionTime.millisecondsSinceEpoch}',
     timestamp: deletionTime,
@@ -4905,7 +4744,6 @@ Future<void> seedDeletedDatabaseContent(
 
   await database.upsertDashboardDefinition(dashboard);
   await database.upsertMeasurableDataType(measurable);
-  await database.upsertTagEntity(tag);
   await database.updateJournalEntity(journalEntry);
 }
 

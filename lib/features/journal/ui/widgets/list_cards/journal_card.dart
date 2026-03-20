@@ -13,7 +13,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
-import 'package:lotti/features/journal/ui/widgets/tags/tags_view_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -96,8 +95,6 @@ class ModernJournalCard extends StatelessWidget {
           const SizedBox(height: 6),
           _JournalCardLabelsRow(labelIds: item.meta.labelIds!),
         ],
-        const SizedBox(height: 5),
-        TagsViewWidget(item: item),
       ],
     );
   }

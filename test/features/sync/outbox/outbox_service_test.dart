@@ -13,7 +13,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/tag_type_definitions.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -504,30 +503,6 @@ void main() {
     verify(
       () => loggingService.captureEvent(
         contains('type=SyncAiConfigDelete'),
-        domain: 'OUTBOX',
-        subDomain: 'enqueueMessage',
-      ),
-    ).called(1);
-  });
-
-  test('enqueueMessage logs SyncTagEntity', () async {
-    final tag = SyncMessage.tagEntity(
-      tagEntity: TagEntity.genericTag(
-        id: 't1',
-        tag: 'alpha',
-        private: false,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        vectorClock: null,
-      ),
-      status: SyncEntryStatus.initial,
-    );
-
-    await service.enqueueMessage(tag);
-
-    verify(
-      () => loggingService.captureEvent(
-        contains('type=SyncTagEntity'),
         domain: 'OUTBOX',
         subDomain: 'enqueueMessage',
       ),
@@ -3982,52 +3957,6 @@ void main() {
         expect(companion.subject.value, 'hhash:null');
       },
     );
-
-    test('SyncTagEntity with null hostHash handles gracefully', () async {
-      // Create a vectorClockService that returns null hostHash
-      final nullHashVcs = MockVectorClockService();
-      when(() => nullHashVcs.getHost()).thenAnswer((_) async => 'testHost');
-      when(() => nullHashVcs.getHostHash()).thenAnswer((_) async => null);
-
-      final serviceWithNullHash = OutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: nullHashVcs,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-        activityGate: createGate(),
-      );
-
-      final tag = TagEntity.storyTag(
-        id: 'tag-1',
-        createdAt: DateTime(2025, 1, 1),
-        updatedAt: DateTime(2025, 1, 1),
-        tag: 'TestTag',
-        private: false,
-        vectorClock: const VectorClock({'host': 1}),
-      );
-
-      final message = SyncMessage.tagEntity(
-        tagEntity: tag,
-        status: SyncEntryStatus.initial,
-      );
-
-      await serviceWithNullHash.enqueueMessage(message);
-
-      final captured = verify(
-        () => syncDatabase.addOutboxItem(captureAny<OutboxCompanion>()),
-      ).captured;
-      expect(captured.length, 1);
-
-      final companion = captured.first as OutboxCompanion;
-      expect(companion.subject.value, 'null:tag');
-
-      await serviceWithNullHash.dispose();
-    });
 
     test('SyncBackfillRequest with empty entries list', () async {
       const message = SyncMessage.backfillRequest(
