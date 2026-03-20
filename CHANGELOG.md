@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-<<<<<<< HEAD
 ## [0.9.929] - 2026-03-20
+### Added
+- Project agents now keep a daily scheduled digest cadence. New project agents
+  schedule their first digest for 09:00 local on the next day, and due digests
+  roll forward automatically after a successful wake.
+- Project detail pages now surface pending project-agent proposals. Confirmed
+  project status changes and new linked tasks can be applied directly from the
+  project page instead of staying as deferred change sets only.
+
 ### Changed
 - Categories list redesign: new tile layout with colored icon badges,
   localized task count subtitles, favorite stars, and private/inactive status

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart'
     show AgentLifecycle, AgentTemplateKind, WakeReason;
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -40,6 +41,7 @@ class ProjectAgentService {
 
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.projectAgent;
+  static const int _dailyDigestHour = 9;
 
   /// Create a new Project Agent for [projectId].
   ///
@@ -105,6 +107,10 @@ class ProjectAgentService {
       final now = clock.now();
       final updatedState = state.copyWith(
         slots: state.slots.copyWith(activeProjectId: projectId),
+        scheduledWakeAt: nextLocalDayAtTime(
+          now,
+          hour: _dailyDigestHour,
+        ),
         updatedAt: now,
       );
       await syncService.upsertEntity(updatedState);

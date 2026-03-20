@@ -19,15 +19,31 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 /// Renders nothing when no pending change sets exist.
 class ChangeSetSummaryCard extends ConsumerWidget {
   const ChangeSetSummaryCard({
-    required this.taskId,
+    required String taskId,
     super.key,
-  });
+  }) : taskId = taskId,
+       targetId = taskId,
+       scope = _ChangeSetScope.task;
 
-  final String taskId;
+  const ChangeSetSummaryCard.project({
+    required String projectId,
+    super.key,
+  }) : targetId = projectId,
+       taskId = null,
+       scope = _ChangeSetScope.project;
+
+  final String? taskId;
+  final String targetId;
+  final _ChangeSetScope scope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final changeSetsAsync = ref.watch(pendingChangeSetsProvider(taskId));
+    final changeSetsAsync = switch (scope) {
+      _ChangeSetScope.task => ref.watch(pendingChangeSetsProvider(targetId)),
+      _ChangeSetScope.project => ref.watch(
+        projectPendingChangeSetsProvider(targetId),
+      ),
+    };
 
     return changeSetsAsync.when(
       skipLoadingOnReload: true,
@@ -43,7 +59,10 @@ class ChangeSetSummaryCard extends ConsumerWidget {
               for (final changeSet in changeSets)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
-                  child: _ChangeSetCard(changeSet: changeSet),
+                  child: _ChangeSetCard(
+                    changeSet: changeSet,
+                    scope: scope,
+                  ),
                 ),
             ],
           ),
@@ -56,9 +75,13 @@ class ChangeSetSummaryCard extends ConsumerWidget {
 }
 
 class _ChangeSetCard extends ConsumerStatefulWidget {
-  const _ChangeSetCard({required this.changeSet});
+  const _ChangeSetCard({
+    required this.changeSet,
+    required this.scope,
+  });
 
   final ChangeSetEntity changeSet;
+  final _ChangeSetScope scope;
 
   @override
   ConsumerState<_ChangeSetCard> createState() => _ChangeSetCardState();
@@ -120,6 +143,7 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
             _ChangeItemTile(
               changeSet: widget.changeSet,
               itemIndex: i,
+              scope: widget.scope,
             ),
 
           // Confirm All button (only if there are pending items)
@@ -150,7 +174,12 @@ class _ChangeSetCardState extends ConsumerState<_ChangeSetCard> {
 
     // Capture ref-dependent values before the async gap so we don't
     // access ref after the widget is unmounted.
-    final service = ref.read(changeSetConfirmationServiceProvider);
+    final service = switch (widget.scope) {
+      _ChangeSetScope.task => ref.read(changeSetConfirmationServiceProvider),
+      _ChangeSetScope.project => ref.read(
+        projectChangeSetConfirmationServiceProvider,
+      ),
+    };
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = widget.changeSet.agentId;
 
@@ -202,10 +231,12 @@ class _ChangeItemTile extends ConsumerStatefulWidget {
   const _ChangeItemTile({
     required this.changeSet,
     required this.itemIndex,
+    required this.scope,
   });
 
   final ChangeSetEntity changeSet;
   final int itemIndex;
+  final _ChangeSetScope scope;
 
   @override
   ConsumerState<_ChangeItemTile> createState() => _ChangeItemTileState();
@@ -512,7 +543,12 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     setState(() => _busy = true);
 
     // Capture ref-dependent values before the async gap.
-    final service = ref.read(changeSetConfirmationServiceProvider);
+    final service = switch (widget.scope) {
+      _ChangeSetScope.task => ref.read(changeSetConfirmationServiceProvider),
+      _ChangeSetScope.project => ref.read(
+        projectChangeSetConfirmationServiceProvider,
+      ),
+    };
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = _changeSet.agentId;
 
@@ -555,7 +591,12 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     setState(() => _busy = true);
 
     // Capture ref-dependent values before the async gap.
-    final service = ref.read(changeSetConfirmationServiceProvider);
+    final service = switch (widget.scope) {
+      _ChangeSetScope.task => ref.read(changeSetConfirmationServiceProvider),
+      _ChangeSetScope.project => ref.read(
+        projectChangeSetConfirmationServiceProvider,
+      ),
+    };
     final notifier = ref.read(updateNotificationsProvider);
     final agentId = _changeSet.agentId;
 
@@ -593,3 +634,5 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
     }
   }
 }
+
+enum _ChangeSetScope { task, project }
