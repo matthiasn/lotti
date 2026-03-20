@@ -228,6 +228,7 @@ void main() {
     testWidgets('omits optional label and tooltip icon when not provided', (
       tester,
     ) async {
+      final semantics = tester.ensureSemantics();
       const toggleKey = Key('toggle-iconless');
 
       await tester.pumpWidget(
@@ -235,6 +236,7 @@ void main() {
           const DesignSystemToggle(
             key: toggleKey,
             value: false,
+            semanticsLabel: 'Accessible toggle',
             onChanged: _noopToggle,
           ),
           theme: DesignSystemTheme.light(),
@@ -248,6 +250,18 @@ void main() {
       expect(
         find.descendant(of: find.byKey(toggleKey), matching: find.byType(Icon)),
         findsNothing,
+      );
+      expect(find.bySemanticsLabel('Accessible toggle'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    test('asserts when neither a label nor semantics label is provided', () {
+      expect(
+        () => DesignSystemToggle(
+          value: false,
+          onChanged: _noopToggle,
+        ),
+        throwsAssertionError,
       );
     });
   });

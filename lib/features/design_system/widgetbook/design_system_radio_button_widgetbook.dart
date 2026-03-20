@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/radio_buttons/design_system_radio_button.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemRadioButtonWidgetbookComponent() {
@@ -22,15 +23,15 @@ class _RadioButtonOverviewPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: ListView(
-        children: const [
+        children: [
           _RadioButtonSection(
-            title: 'Size Scale',
-            child: _RadioButtonSizeScale(),
+            title: context.messages.designSystemSizeScaleTitle,
+            child: const _RadioButtonSizeScale(),
           ),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
           _RadioButtonSection(
-            title: 'State Matrix',
-            child: _RadioButtonStateMatrix(),
+            title: context.messages.designSystemStateMatrixTitle,
+            child: const _RadioButtonStateMatrix(),
           ),
         ],
       ),
@@ -68,7 +69,9 @@ class _RadioButtonSizeScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Wrap(
+    final label = context.messages.designSystemRadioButtonLabel;
+
+    return Wrap(
       spacing: 24,
       runSpacing: 16,
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -76,7 +79,7 @@ class _RadioButtonSizeScale extends StatelessWidget {
         _RadioButtonPreviewTile(
           config: _RadioButtonPreviewConfig(
             size: DesignSystemRadioButtonSize.defaultSize,
-            label: 'Radio button',
+            label: label,
             showTooltipIcon: true,
             selected: false,
           ),
@@ -84,18 +87,18 @@ class _RadioButtonSizeScale extends StatelessWidget {
         _RadioButtonPreviewTile(
           config: _RadioButtonPreviewConfig(
             size: DesignSystemRadioButtonSize.large,
-            label: 'Radio button',
+            label: label,
             showTooltipIcon: true,
             selected: false,
           ),
         ),
-        _RadioButtonPreviewTile(
+        const _RadioButtonPreviewTile(
           config: _RadioButtonPreviewConfig(
             size: DesignSystemRadioButtonSize.defaultSize,
             selected: true,
           ),
         ),
-        _RadioButtonPreviewTile(
+        const _RadioButtonPreviewTile(
           config: _RadioButtonPreviewConfig(
             size: DesignSystemRadioButtonSize.large,
             selected: true,
@@ -111,22 +114,24 @@ class _RadioButtonStateMatrix extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final configs = _radioButtonMatrixConfigs(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _RadioButtonMatrixRow(
-          label: 'Default',
+          label: context.messages.designSystemDefaultLabel,
           children: [
-            for (final config in _radioButtonMatrixConfigs)
+            for (final config in configs)
               _RadioButtonPreviewTile(
                 config: config,
               ),
           ],
         ),
         _RadioButtonMatrixRow(
-          label: 'Hover',
+          label: context.messages.designSystemHoverLabel,
           children: [
-            for (final config in _radioButtonMatrixConfigs)
+            for (final config in configs)
               _RadioButtonPreviewTile(
                 config: config.copyWith(
                   forcedState: DesignSystemRadioButtonVisualState.hover,
@@ -135,9 +140,9 @@ class _RadioButtonStateMatrix extends StatelessWidget {
           ],
         ),
         _RadioButtonMatrixRow(
-          label: 'Disabled',
+          label: context.messages.designSystemDisabledLabel,
           children: [
-            for (final config in _radioButtonMatrixConfigs)
+            for (final config in configs)
               _RadioButtonPreviewTile(
                 config: config.copyWith(enabled: false),
               ),
@@ -217,68 +222,74 @@ class _RadioButtonPreviewConfig {
   }
 }
 
-const _radioButtonMatrixConfigs = <_RadioButtonPreviewConfig>[
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: false,
-    label: 'Radio button',
-    showTooltipIcon: true,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: false,
-    label: 'Radio button',
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: false,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: true,
-    label: 'Radio button',
-    showTooltipIcon: true,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: true,
-    label: 'Radio button',
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.defaultSize,
-    selected: true,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: false,
-    label: 'Radio button',
-    showTooltipIcon: true,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: false,
-    label: 'Radio button',
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: false,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: true,
-    label: 'Radio button',
-    showTooltipIcon: true,
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: true,
-    label: 'Radio button',
-  ),
-  _RadioButtonPreviewConfig(
-    size: DesignSystemRadioButtonSize.large,
-    selected: true,
-  ),
-];
+List<_RadioButtonPreviewConfig> _radioButtonMatrixConfigs(
+  BuildContext context,
+) {
+  final label = context.messages.designSystemRadioButtonLabel;
+
+  return [
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: false,
+      label: label,
+      showTooltipIcon: true,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: false,
+      label: label,
+    ),
+    const _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: false,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: true,
+      label: label,
+      showTooltipIcon: true,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: true,
+      label: label,
+    ),
+    const _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.defaultSize,
+      selected: true,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: false,
+      label: label,
+      showTooltipIcon: true,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: false,
+      label: label,
+    ),
+    const _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: false,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: true,
+      label: label,
+      showTooltipIcon: true,
+    ),
+    _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: true,
+      label: label,
+    ),
+    const _RadioButtonPreviewConfig(
+      size: DesignSystemRadioButtonSize.large,
+      selected: true,
+    ),
+  ];
+}
 
 class _RadioButtonPreviewTile extends StatelessWidget {
   const _RadioButtonPreviewTile({

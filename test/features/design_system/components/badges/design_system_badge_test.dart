@@ -44,6 +44,22 @@ void main() {
       );
     });
 
+    testWidgets('supports an explicit semantics label for dot badges', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.dot(
+          semanticLabel: 'Unread notifications',
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Unread notifications'), findsOneWidget);
+      semantics.dispose();
+    });
+
     testWidgets('renders the secondary number badge from tokens', (
       tester,
     ) async {
@@ -170,6 +186,7 @@ void main() {
         const DesignSystemBadge.icon(
           icon: Icons.check_rounded,
           tone: DesignSystemBadgeTone.success,
+          semanticLabel: 'Success status',
         ),
       );
 
@@ -198,6 +215,24 @@ void main() {
         dsTokensLight.colors.text.onInteractiveAlert,
       );
       expect(icon.icon, Icons.check_rounded);
+      expect(find.bySemanticsLabel('Success status'), findsOneWidget);
+    });
+
+    testWidgets('keeps badge geometry fixed when text scaling is increased', (
+      tester,
+    ) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(label: 'Scaled'),
+        mediaQueryData: phoneMediaQueryData.copyWith(
+          textScaler: const TextScaler.linear(2),
+        ),
+      );
+
+      final richText = _findTextNode(tester, 'Scaled');
+
+      expect(_badgeSize(tester).height, 20);
+      expect(richText.textScaler, TextScaler.noScaling);
     });
 
     testWidgets('uses the active dark theme tokens', (tester) async {
@@ -227,11 +262,13 @@ Future<void> _pumpBadge(
   WidgetTester tester,
   Widget child, {
   ThemeData? theme,
+  MediaQueryData? mediaQueryData,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       child,
       theme: theme ?? DesignSystemTheme.light(),
+      mediaQueryData: mediaQueryData,
     ),
   );
 }

@@ -1204,6 +1204,23 @@
   "dashboardNotFound": "Dashboard not found",
   "dashboardPrivateLabel": "Private:",
   "defaultLanguage": "Default Language",
+  "designSystemDefaultLabel": "Default",
+  "designSystemDisabledLabel": "Disabled",
+  "designSystemHoverLabel": "Hover",
+  "designSystemRadioButtonLabel": "Radio button",
+  "designSystemSizeScaleTitle": "Size Scale",
+  "designSystemSmallLabel": "Small",
+  "designSystemSplitButtonDropdownSemantics": "Open {label} options",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "State Matrix",
+  "designSystemToggleLabel": "Toggle label",
+  "designSystemVariantMatrixTitle": "Variant Matrix",
   "deleteButton": "Delete",
   "deleteDeviceLabel": "Delete device",
   "deviceDeletedSuccess": "Device {deviceName} deleted successfully",

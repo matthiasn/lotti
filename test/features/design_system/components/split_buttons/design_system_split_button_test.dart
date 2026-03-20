@@ -188,6 +188,43 @@ void main() {
       expect(divider.width, dsTokensLight.spacing.step1 / 2);
       expect(find.byIcon(Icons.keyboard_arrow_up), findsOneWidget);
     });
+
+    testWidgets('provides a default accessible label for the dropdown action', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpSplitButton(
+        tester,
+        const DesignSystemSplitButton(
+          label: 'Action',
+          onPressed: _noop,
+          onDropdownPressed: _noop,
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Open Action options'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('keeps long labels inside constrained layouts', (tester) async {
+      await _pumpSplitButton(
+        tester,
+        const SizedBox(
+          width: 160,
+          child: DesignSystemSplitButton(
+            label: 'A very long split button label',
+            size: DesignSystemSplitButtonSize.defaultSize,
+            onPressed: _noop,
+            onDropdownPressed: _noop,
+          ),
+        ),
+      );
+
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }
 

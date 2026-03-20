@@ -1372,6 +1372,23 @@
   },
   "noAgentProfileError": "Niciun profil de agent configurat pentru această sarcină. Atribuiți mai întâi un agent cu un profil.",
   "noDefaultLanguage": "Fără limbă implicită",
+  "designSystemDefaultLabel": "Implicit",
+  "designSystemDisabledLabel": "Dezactivat",
+  "designSystemHoverLabel": "La survolare",
+  "designSystemRadioButtonLabel": "Buton radio",
+  "designSystemSizeScaleTitle": "Scală de dimensiuni",
+  "designSystemSmallLabel": "Mic",
+  "designSystemSplitButtonDropdownSemantics": "Deschideți opțiunile pentru {label}",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "Matrice de stări",
+  "designSystemToggleLabel": "Etichetă pentru toggle",
+  "designSystemVariantMatrixTitle": "Matrice de variante",
   "noPromptsAvailable": "Nu există prompturi disponibile",
   "noPromptsForType": "Nu există prompturi disponibile pentru acest tip",
   "noTasksFound": "Nu s-au găsit sarcini",

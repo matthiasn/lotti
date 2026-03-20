@@ -4275,6 +4275,66 @@ abstract class AppLocalizations {
   /// **'Default Language'**
   String get defaultLanguage;
 
+  /// No description provided for @designSystemDefaultLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get designSystemDefaultLabel;
+
+  /// No description provided for @designSystemDisabledLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled'**
+  String get designSystemDisabledLabel;
+
+  /// No description provided for @designSystemHoverLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hover'**
+  String get designSystemHoverLabel;
+
+  /// No description provided for @designSystemRadioButtonLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Radio button'**
+  String get designSystemRadioButtonLabel;
+
+  /// No description provided for @designSystemSizeScaleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Size Scale'**
+  String get designSystemSizeScaleTitle;
+
+  /// No description provided for @designSystemSmallLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get designSystemSmallLabel;
+
+  /// No description provided for @designSystemSplitButtonDropdownSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Open {label} options'**
+  String designSystemSplitButtonDropdownSemantics(String label);
+
+  /// No description provided for @designSystemStateMatrixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'State Matrix'**
+  String get designSystemStateMatrixTitle;
+
+  /// No description provided for @designSystemToggleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Toggle label'**
+  String get designSystemToggleLabel;
+
+  /// No description provided for @designSystemVariantMatrixTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Variant Matrix'**
+  String get designSystemVariantMatrixTitle;
+
   /// No description provided for @deleteButton.
   ///
   /// In en, this message translates to:

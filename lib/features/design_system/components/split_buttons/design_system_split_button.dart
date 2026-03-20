@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 enum DesignSystemSplitButtonSize {
   small,
@@ -32,6 +33,9 @@ class DesignSystemSplitButton extends StatelessWidget {
     final tokens = context.designTokens;
     final sizeSpec = _SplitButtonSizeSpec.fromTokens(tokens, size);
     final styleSpec = _SplitButtonStyleSpec.fromTokens(tokens);
+    final resolvedDropdownSemanticsLabel =
+        dropdownSemanticsLabel ??
+        context.messages.designSystemSplitButtonDropdownSemantics(label);
     final shape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
     );
@@ -56,23 +60,25 @@ class DesignSystemSplitButton extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Semantics(
-                    button: true,
-                    label: mainSemanticsLabel ?? label,
-                    child: InkWell(
-                      borderRadius: BorderRadius.horizontal(
-                        left: Radius.circular(sizeSpec.cornerRadius),
-                      ),
-                      onTap: onPressed,
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: sizeSpec.mainHorizontalPadding,
+                  Flexible(
+                    child: Semantics(
+                      button: true,
+                      label: mainSemanticsLabel ?? label,
+                      child: InkWell(
+                        borderRadius: BorderRadius.horizontal(
+                          left: Radius.circular(sizeSpec.cornerRadius),
                         ),
-                        child: Center(
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        onTap: onPressed,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: sizeSpec.mainHorizontalPadding,
+                          ),
+                          child: Center(
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
                         ),
                       ),
@@ -81,7 +87,7 @@ class DesignSystemSplitButton extends StatelessWidget {
                   SizedBox(width: sizeSpec.dividerWidth),
                   Semantics(
                     button: true,
-                    label: dropdownSemanticsLabel,
+                    label: resolvedDropdownSemanticsLabel,
                     child: InkWell(
                       borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(sizeSpec.cornerRadius),

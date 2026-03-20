@@ -1372,6 +1372,23 @@
   },
   "noAgentProfileError": "Aucun profil d'agent configuré pour cette tâche. Assigne d'abord un agent avec un profil.",
   "noDefaultLanguage": "Aucune langue par défaut",
+  "designSystemDefaultLabel": "Par défaut",
+  "designSystemDisabledLabel": "Désactivé",
+  "designSystemHoverLabel": "Survol",
+  "designSystemRadioButtonLabel": "Bouton radio",
+  "designSystemSizeScaleTitle": "Échelle des tailles",
+  "designSystemSmallLabel": "Petit",
+  "designSystemSplitButtonDropdownSemantics": "Ouvrir les options de {label}",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "Matrice d'états",
+  "designSystemToggleLabel": "Libellé du toggle",
+  "designSystemVariantMatrixTitle": "Matrice des variantes",
   "noPromptsAvailable": "Aucun prompt disponible",
   "noPromptsForType": "Aucun prompt disponible pour ce type",
   "noTasksFound": "Aucune tâche trouvée",

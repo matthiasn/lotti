@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemToggleWidgetbookComponent() {
@@ -22,15 +23,15 @@ class _ToggleOverviewPage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(24),
       child: ListView(
-        children: const [
+        children: [
           _ToggleSection(
-            title: 'Size Scale',
-            child: _ToggleSizeScale(),
+            title: context.messages.designSystemSizeScaleTitle,
+            child: const _ToggleSizeScale(),
           ),
-          SizedBox(height: 32),
+          const SizedBox(height: 32),
           _ToggleSection(
-            title: 'Variant Matrix',
-            child: _ToggleVariantMatrix(),
+            title: context.messages.designSystemVariantMatrixTitle,
+            child: const _ToggleVariantMatrix(),
           ),
         ],
       ),
@@ -68,7 +69,7 @@ class _ToggleSizeScale extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Wrap(
+    return Wrap(
       spacing: 24,
       runSpacing: 16,
       crossAxisAlignment: WrapCrossAlignment.center,
@@ -76,7 +77,7 @@ class _ToggleSizeScale extends StatelessWidget {
         _TogglePreview(
           config: _TogglePreviewConfig(
             size: DesignSystemToggleSize.small,
-            label: 'Small',
+            label: context.messages.designSystemSmallLabel,
             value: false,
             tooltipIcon: Icons.info_outline_rounded,
           ),
@@ -84,7 +85,7 @@ class _ToggleSizeScale extends StatelessWidget {
         _TogglePreview(
           config: _TogglePreviewConfig(
             size: DesignSystemToggleSize.defaultSize,
-            label: 'Default',
+            label: context.messages.designSystemDefaultLabel,
             value: false,
             tooltipIcon: Icons.info_outline_rounded,
           ),
@@ -99,6 +100,9 @@ class _ToggleVariantMatrix extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final rows = _toggleRows(context);
+    final variants = _toggleVariants(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -109,11 +113,11 @@ class _ToggleVariantMatrix extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _labelForSize(size),
+                  _labelForSize(context, size),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
-                for (final row in _toggleRows)
+                for (final row in rows)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
@@ -128,12 +132,13 @@ class _ToggleVariantMatrix extends StatelessWidget {
                           spacing: 16,
                           runSpacing: 16,
                           children: [
-                            for (final variant in _toggleVariants)
+                            for (final variant in variants)
                               _TogglePreview(
                                 config: _TogglePreviewConfig(
                                   size: size,
                                   value: variant.value,
                                   label: variant.label,
+                                  semanticsLabel: variant.semanticsLabel,
                                   tooltipIcon: variant.tooltipIcon,
                                   enabled: row.enabled,
                                   forcedState: row.state,
@@ -165,6 +170,7 @@ class _TogglePreview extends StatelessWidget {
       size: config.size,
       value: config.value,
       label: config.label,
+      semanticsLabel: config.semanticsLabel,
       tooltipIcon: config.tooltipIcon,
       enabled: config.enabled,
       forcedState: config.forcedState,
@@ -178,6 +184,7 @@ class _TogglePreviewConfig {
     required this.size,
     required this.value,
     this.label,
+    this.semanticsLabel,
     this.tooltipIcon,
     this.enabled = true,
     this.forcedState,
@@ -186,6 +193,7 @@ class _TogglePreviewConfig {
   final DesignSystemToggleSize size;
   final bool value;
   final String? label;
+  final String? semanticsLabel;
   final IconData? tooltipIcon;
   final bool enabled;
   final DesignSystemToggleVisualState? forcedState;
@@ -207,45 +215,72 @@ class _ToggleVariant {
   const _ToggleVariant({
     required this.value,
     this.label,
+    this.semanticsLabel,
     this.tooltipIcon,
   });
 
   final bool value;
   final String? label;
+  final String? semanticsLabel;
   final IconData? tooltipIcon;
 }
 
-const _toggleRows = <_ToggleStateRow>[
-  _ToggleStateRow(label: 'Default', enabled: true),
-  _ToggleStateRow(
-    label: 'Hover',
-    enabled: true,
-    state: DesignSystemToggleVisualState.hover,
-  ),
-  _ToggleStateRow(label: 'Disabled', enabled: false),
-];
+List<_ToggleStateRow> _toggleRows(BuildContext context) {
+  return [
+    _ToggleStateRow(
+      label: context.messages.designSystemDefaultLabel,
+      enabled: true,
+    ),
+    _ToggleStateRow(
+      label: context.messages.designSystemHoverLabel,
+      enabled: true,
+      state: DesignSystemToggleVisualState.hover,
+    ),
+    _ToggleStateRow(
+      label: context.messages.designSystemDisabledLabel,
+      enabled: false,
+    ),
+  ];
+}
 
-const _toggleVariants = <_ToggleVariant>[
-  _ToggleVariant(value: false),
-  _ToggleVariant(value: true),
-  _ToggleVariant(value: false, label: 'Toggle label'),
-  _ToggleVariant(value: true, label: 'Toggle label'),
-  _ToggleVariant(
-    value: false,
-    label: 'Toggle label',
-    tooltipIcon: Icons.info_outline_rounded,
-  ),
-  _ToggleVariant(
-    value: true,
-    label: 'Toggle label',
-    tooltipIcon: Icons.info_outline_rounded,
-  ),
-];
+List<_ToggleVariant> _toggleVariants(BuildContext context) {
+  final semanticsLabel = context.messages.designSystemToggleLabel;
 
-String _labelForSize(DesignSystemToggleSize size) {
+  return [
+    _ToggleVariant(
+      value: false,
+      semanticsLabel: semanticsLabel,
+    ),
+    _ToggleVariant(
+      value: true,
+      semanticsLabel: semanticsLabel,
+    ),
+    _ToggleVariant(
+      value: false,
+      label: semanticsLabel,
+    ),
+    _ToggleVariant(
+      value: true,
+      label: semanticsLabel,
+    ),
+    _ToggleVariant(
+      value: false,
+      label: semanticsLabel,
+      tooltipIcon: Icons.info_outline_rounded,
+    ),
+    _ToggleVariant(
+      value: true,
+      label: semanticsLabel,
+      tooltipIcon: Icons.info_outline_rounded,
+    ),
+  ];
+}
+
+String _labelForSize(BuildContext context, DesignSystemToggleSize size) {
   return switch (size) {
-    DesignSystemToggleSize.small => 'Small',
-    DesignSystemToggleSize.defaultSize => 'Default',
+    DesignSystemToggleSize.small => context.messages.designSystemSmallLabel,
+    DesignSystemToggleSize.defaultSize =>
+      context.messages.designSystemDefaultLabel,
   };
 }
 

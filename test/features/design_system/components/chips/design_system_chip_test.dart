@@ -91,6 +91,33 @@ void main() {
       );
     });
 
+    testWidgets(
+      'clears transient interaction flags when forced state changes',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const _ChipForcedStateHarness(),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        expect(
+          _chipDecoration(tester).color,
+          dsTokensLight.colors.surface.hover,
+        );
+
+        await tester.tap(find.text('Reset state'));
+        await tester.pump();
+
+        expect(
+          _chipDecoration(tester).color,
+          dsTokensLight.colors.surface.enabled,
+        );
+      },
+    );
+
     testWidgets('renders the pressed chip state from tokens', (tester) async {
       await _pumpChip(
         tester,
@@ -245,3 +272,33 @@ RichText _findTextNode(WidgetTester tester, String label) {
 }
 
 void _noop() {}
+
+class _ChipForcedStateHarness extends StatefulWidget {
+  const _ChipForcedStateHarness();
+
+  @override
+  State<_ChipForcedStateHarness> createState() =>
+      _ChipForcedStateHarnessState();
+}
+
+class _ChipForcedStateHarnessState extends State<_ChipForcedStateHarness> {
+  DesignSystemChipVisualState? _forcedState = DesignSystemChipVisualState.hover;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+          onPressed: () => setState(() => _forcedState = null),
+          child: const Text('Reset state'),
+        ),
+        DesignSystemChip(
+          label: 'Interactive',
+          forcedState: _forcedState,
+          onPressed: _noop,
+        ),
+      ],
+    );
+  }
+}

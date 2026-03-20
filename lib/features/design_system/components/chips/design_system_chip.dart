@@ -41,6 +41,20 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
   bool _pressed = false;
 
   @override
+  void didUpdateWidget(covariant DesignSystemChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final interactionModeChanged =
+        oldWidget.forcedState != widget.forcedState ||
+        (oldWidget.onPressed == null) != (widget.onPressed == null);
+
+    if (interactionModeChanged) {
+      _hovered = false;
+      _pressed = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final enabled = widget.onPressed != null;

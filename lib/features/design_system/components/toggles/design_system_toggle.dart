@@ -18,16 +18,21 @@ class DesignSystemToggle extends StatefulWidget {
     required this.onChanged,
     this.size = DesignSystemToggleSize.small,
     this.label,
+    this.semanticsLabel,
     this.tooltipIcon,
     this.enabled = true,
     this.forcedState,
     super.key,
-  });
+  }) : assert(
+         label != null || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       );
 
   final bool value;
   final ValueChanged<bool> onChanged;
   final DesignSystemToggleSize size;
   final String? label;
+  final String? semanticsLabel;
   final IconData? tooltipIcon;
   final bool enabled;
   final DesignSystemToggleVisualState? forcedState;
@@ -95,6 +100,7 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
           button: true,
           enabled: enabled,
           toggled: widget.value,
+          label: widget.semanticsLabel ?? widget.label,
           child: content,
         ),
       ),

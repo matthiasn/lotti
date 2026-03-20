@@ -2397,6 +2397,38 @@ class AppLocalizationsRo extends AppLocalizations {
   String get defaultLanguage => 'Limbă implicită';
 
   @override
+  String get designSystemDefaultLabel => 'Implicit';
+
+  @override
+  String get designSystemDisabledLabel => 'Dezactivat';
+
+  @override
+  String get designSystemHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Buton radio';
+
+  @override
+  String get designSystemSizeScaleTitle => 'Scală de dimensiuni';
+
+  @override
+  String get designSystemSmallLabel => 'Mic';
+
+  @override
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Deschideți opțiunile pentru $label';
+  }
+
+  @override
+  String get designSystemStateMatrixTitle => 'Matrice de stări';
+
+  @override
+  String get designSystemToggleLabel => 'Etichetă pentru toggle';
+
+  @override
+  String get designSystemVariantMatrixTitle => 'Matrice de variante';
+
+  @override
   String get deleteButton => 'Șterge';
 
   @override

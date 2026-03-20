@@ -20,6 +20,8 @@ enum _DesignSystemBadgeType {
 class DesignSystemBadge extends StatelessWidget {
   const DesignSystemBadge.dot({
     this.tone = DesignSystemBadgeTone.primary,
+    this.semanticLabel,
+    this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.dot,
        _label = null,
@@ -31,7 +33,9 @@ class DesignSystemBadge extends StatelessWidget {
     super.key,
   }) : _type = _DesignSystemBadgeType.number,
        _label = value,
-       _icon = null;
+       _icon = null,
+       semanticLabel = null,
+       excludeFromSemantics = false;
 
   const DesignSystemBadge.filled({
     required String label,
@@ -39,7 +43,9 @@ class DesignSystemBadge extends StatelessWidget {
     super.key,
   }) : _type = _DesignSystemBadgeType.filled,
        _label = label,
-       _icon = null;
+       _icon = null,
+       semanticLabel = null,
+       excludeFromSemantics = false;
 
   const DesignSystemBadge.outlined({
     required String label,
@@ -47,17 +53,23 @@ class DesignSystemBadge extends StatelessWidget {
     super.key,
   }) : _type = _DesignSystemBadgeType.outlined,
        _label = label,
-       _icon = null;
+       _icon = null,
+       semanticLabel = null,
+       excludeFromSemantics = false;
 
   const DesignSystemBadge.icon({
     required IconData icon,
     this.tone = DesignSystemBadgeTone.primary,
+    this.semanticLabel,
+    this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.icon,
        _label = null,
        _icon = icon;
 
   final DesignSystemBadgeTone tone;
+  final String? semanticLabel;
+  final bool excludeFromSemantics;
   final _DesignSystemBadgeType _type;
   final String? _label;
   final IconData? _icon;
@@ -76,7 +88,7 @@ class DesignSystemBadge extends StatelessWidget {
       tone: tone,
     );
 
-    return DefaultTextStyle.merge(
+    final badge = DefaultTextStyle.merge(
       style: sizeSpec.textStyle.copyWith(color: styleSpec.foregroundColor),
       child: IconTheme.merge(
         data: IconThemeData(
@@ -98,6 +110,20 @@ class DesignSystemBadge extends StatelessWidget {
         ),
       ),
     );
+
+    if (excludeFromSemantics) {
+      return ExcludeSemantics(child: badge);
+    }
+
+    if (semanticLabel == null) {
+      return badge;
+    }
+
+    return Semantics(
+      container: true,
+      label: semanticLabel,
+      child: ExcludeSemantics(child: badge),
+    );
   }
 
   Widget _buildContent() {
@@ -107,11 +133,13 @@ class DesignSystemBadge extends StatelessWidget {
         _label!,
         maxLines: 1,
         softWrap: false,
+        textScaler: TextScaler.noScaling,
       ),
       _DesignSystemBadgeType.filled || _DesignSystemBadgeType.outlined => Text(
         _label!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        textScaler: TextScaler.noScaling,
       ),
       _DesignSystemBadgeType.icon => Icon(_icon),
     };
