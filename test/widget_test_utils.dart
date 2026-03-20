@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -241,4 +242,13 @@ Widget makeTestableWidgetNoScroll(
       ),
     ),
   );
+}
+
+void expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
+  expect(actual.fontFamily, expected.fontFamily);
+  expect(actual.fontSize, expected.fontSize);
+  expect(actual.fontWeight, expected.fontWeight);
+  expect(actual.letterSpacing, expected.letterSpacing);
+  expect(actual.height, expected.height);
+  expect(actual.color, color);
 }

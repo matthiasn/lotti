@@ -2433,6 +2433,38 @@ class AppLocalizationsEs extends AppLocalizations {
   String get defaultLanguage => 'Idioma predeterminado';
 
   @override
+  String get designSystemDefaultLabel => 'Predeterminado';
+
+  @override
+  String get designSystemDisabledLabel => 'Desactivado';
+
+  @override
+  String get designSystemHoverLabel => 'Al pasar';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Botón de radio';
+
+  @override
+  String get designSystemSizeScaleTitle => 'Escala de tamaños';
+
+  @override
+  String get designSystemSmallLabel => 'Pequeño';
+
+  @override
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Abrir opciones de $label';
+  }
+
+  @override
+  String get designSystemStateMatrixTitle => 'Matriz de estados';
+
+  @override
+  String get designSystemToggleLabel => 'Etiqueta del toggle';
+
+  @override
+  String get designSystemVariantMatrixTitle => 'Matriz de variantes';
+
+  @override
   String get deleteButton => 'Eliminar';
 
   @override

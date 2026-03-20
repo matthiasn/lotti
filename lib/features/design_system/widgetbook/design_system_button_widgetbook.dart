@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_radio_button_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_split_button_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_toggle_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_typography_widgetbook.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookFolder buildDesignSystemWidgetbookFolder() {
   return WidgetbookFolder(
     name: 'Design System',
     children: [
+      buildDesignSystemTypographyWidgetbookComponent(),
       WidgetbookComponent(
         name: 'Buttons',
         useCases: [
@@ -15,6 +23,12 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
           ),
         ],
       ),
+      buildDesignSystemBadgeWidgetbookComponent(),
+      buildDesignSystemChipWidgetbookComponent(),
+      buildDesignSystemSplitButtonWidgetbookComponent(),
+      buildDesignSystemToggleWidgetbookComponent(),
+      buildDesignSystemRadioButtonWidgetbookComponent(),
+      buildDesignSystemCheckboxWidgetbookComponent(),
     ],
   );
 }

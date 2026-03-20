@@ -1159,6 +1159,23 @@
   },
   "noAgentProfileError": "Pro tento úkol není nakonfigurován žádný profil agenta. Nejprve přiřaď agenta s profilem.",
   "noDefaultLanguage": "Žádný výchozí jazyk",
+  "designSystemDefaultLabel": "Výchozí",
+  "designSystemDisabledLabel": "Zakázáno",
+  "designSystemHoverLabel": "Přejetí",
+  "designSystemRadioButtonLabel": "Radio button",
+  "designSystemSizeScaleTitle": "Škála velikostí",
+  "designSystemSmallLabel": "Malý",
+  "designSystemSplitButtonDropdownSemantics": "Otevřít možnosti pro {label}",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "Matice stavů",
+  "designSystemToggleLabel": "Popisek přepínače",
+  "designSystemVariantMatrixTitle": "Matice variant",
   "noPromptsAvailable": "Žádné dostupné výzvy",
   "noPromptsForType": "Pro tento typ nejsou k dispozici žádné výzvy",
   "noTasksFound": "Nebyly nalezeny žádné úkoly",

@@ -1372,6 +1372,23 @@
   },
   "noAgentProfileError": "Kein Agentenprofil für diese Aufgabe konfiguriert. Weise zuerst einen Agenten mit einem Profil zu.",
   "noDefaultLanguage": "Keine Standardsprache",
+  "designSystemDefaultLabel": "Standard",
+  "designSystemDisabledLabel": "Deaktiviert",
+  "designSystemHoverLabel": "Hover",
+  "designSystemRadioButtonLabel": "Radio-Button",
+  "designSystemSizeScaleTitle": "Größenskala",
+  "designSystemSmallLabel": "Klein",
+  "designSystemSplitButtonDropdownSemantics": "Optionen für {label} öffnen",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "Zustandsmatrix",
+  "designSystemToggleLabel": "Toggle-Label",
+  "designSystemVariantMatrixTitle": "Variantenmatrix",
   "noPromptsAvailable": "Keine Prompts verfügbar",
   "noPromptsForType": "Keine Prompts für diesen Typ verfügbar",
   "noTasksFound": "Keine Aufgaben gefunden",

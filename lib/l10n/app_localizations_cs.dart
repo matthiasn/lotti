@@ -2373,6 +2373,38 @@ class AppLocalizationsCs extends AppLocalizations {
   String get defaultLanguage => 'Výchozí jazyk';
 
   @override
+  String get designSystemDefaultLabel => 'Výchozí';
+
+  @override
+  String get designSystemDisabledLabel => 'Zakázáno';
+
+  @override
+  String get designSystemHoverLabel => 'Přejetí';
+
+  @override
+  String get designSystemRadioButtonLabel => 'Radio button';
+
+  @override
+  String get designSystemSizeScaleTitle => 'Škála velikostí';
+
+  @override
+  String get designSystemSmallLabel => 'Malý';
+
+  @override
+  String designSystemSplitButtonDropdownSemantics(String label) {
+    return 'Otevřít možnosti pro $label';
+  }
+
+  @override
+  String get designSystemStateMatrixTitle => 'Matice stavů';
+
+  @override
+  String get designSystemToggleLabel => 'Popisek přepínače';
+
+  @override
+  String get designSystemVariantMatrixTitle => 'Matice variant';
+
+  @override
   String get deleteButton => 'Smazat';
 
   @override

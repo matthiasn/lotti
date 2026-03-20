@@ -1372,6 +1372,23 @@
   },
   "noAgentProfileError": "No hay perfil de agente configurado para esta tarea. Asigna primero un agente con un perfil.",
   "noDefaultLanguage": "Sin idioma predeterminado",
+  "designSystemDefaultLabel": "Predeterminado",
+  "designSystemDisabledLabel": "Desactivado",
+  "designSystemHoverLabel": "Al pasar",
+  "designSystemRadioButtonLabel": "Botón de radio",
+  "designSystemSizeScaleTitle": "Escala de tamaños",
+  "designSystemSmallLabel": "Pequeño",
+  "designSystemSplitButtonDropdownSemantics": "Abrir opciones de {label}",
+  "@designSystemSplitButtonDropdownSemantics": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "designSystemStateMatrixTitle": "Matriz de estados",
+  "designSystemToggleLabel": "Etiqueta del toggle",
+  "designSystemVariantMatrixTitle": "Matriz de variantes",
   "noPromptsAvailable": "No hay prompts disponibles",
   "noPromptsForType": "No hay prompts disponibles para este tipo",
   "noTasksFound": "No se encontraron tareas",
