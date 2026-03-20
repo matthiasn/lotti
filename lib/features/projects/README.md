@@ -7,7 +7,7 @@ Projects provide a grouping layer between categories and tasks. Each project bel
 The entire projects UI is gated behind the `enableProjects` config flag (default: `false`). When disabled, no project-related UI is visible. Toggle it in Settings > Feature Flags.
 
 Gated integration points:
-- **Tasks page**: `ProjectHealthHeader` and `ProjectFilterChip` are hidden.
+- **Tasks page**: `ProjectHealthHeader` is hidden.
 - **Category details**: `CategoryProjectsSection` is hidden.
 - **Task metadata row**: `TaskProjectWrapper` chip is hidden.
 
@@ -24,6 +24,9 @@ Projects are stored as `ProjectEntry` — a variant of the `JournalEntity` seale
 - **dateFrom** / **dateTo**: time range.
 
 Task-to-project linking is a 1:1 relationship stored via `EntryLink` records in the journal database.
+Project agents maintain a daily digest cadence via `scheduledWakeAt`, rolling
+forward to 09:00 local time on the next day after creation or after a due
+digest completes.
 
 ## Module Structure
 
@@ -41,7 +44,6 @@ lib/features/projects/
     └── widgets/
         ├── category_projects_section.dart       # Projects list in category detail
         ├── project_agent_report_card.dart        # Agent report display
-        ├── project_filter_chip.dart              # Task filter by project
         ├── project_health_header.dart            # Expandable project overview on tasks page
         ├── project_linked_tasks_section.dart     # Linked tasks list in project detail
         ├── project_selection_modal_content.dart  # Project picker modal
@@ -93,8 +95,11 @@ Form page with three sections:
 
 - **Category detail page**: `CategoryProjectsSection` shows projects and a "New Project" button (gated by `enableProjects` flag).
 - **Task header**: `TaskProjectWrapper` adds a project chip to the task metadata row (gated by `enableProjects` flag).
-- **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category. `ProjectFilterChip` allows filtering tasks by project (both gated by `enableProjects` flag).
-- **Agent system**: Project agents are managed through `ProjectAgentService` and the agent workflow system.
+- **Tasks page**: `ProjectHealthHeader` shows an expandable overview of projects for the selected category and provides inline project filtering through its expandable rows.
+- **Agent system**: Project agents are managed through `ProjectAgentService` and the agent workflow system, including the daily scheduled digest cadence.
+- **Deferred agent proposals**: Project detail pages now surface project-agent
+  change sets so users can confirm or reject proposed status changes, task
+  creation, and other reviewed actions in place.
 
 ## Task-Project Linking
 

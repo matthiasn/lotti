@@ -434,11 +434,14 @@ class AgentRepository {
   /// Fetch pending or partially-resolved change sets for [agentId],
   /// optionally filtered by [taskId].
   ///
+  /// The persisted field is historically named `taskId`, but stores the target
+  /// entity ID for both task-scoped and project-scoped proposals.
+  ///
   /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
-  /// in Dart because `taskId` lives inside the serialized JSON data column,
-  /// not in a dedicated indexed column. At current volumes (single agent,
-  /// limit ≤ 20) this is adequate; a dedicated column + DB-level filter is
-  /// a future optimization if query counts grow.
+  /// in Dart because it lives inside the serialized JSON data column, not in a
+  /// dedicated indexed column. At current volumes (single agent, limit ≤ 20)
+  /// this is adequate; a dedicated column + DB-level filter is a future
+  /// optimization if query counts grow.
   Future<List<ChangeSetEntity>> getPendingChangeSets(
     String agentId, {
     String? taskId,
@@ -461,6 +464,9 @@ class AgentRepository {
 
   /// Fetch recent change decisions for [agentId], optionally filtered by
   /// [taskId].
+  ///
+  /// The persisted field is historically named `taskId`, but stores the target
+  /// entity ID for both task-scoped and project-scoped decisions.
   ///
   /// Returns newest-first, capped at [limit]. The [taskId] filter is applied
   /// in Dart (same rationale as [getPendingChangeSets]). Used by the context

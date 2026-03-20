@@ -1,7 +1,83 @@
 # Implementation Plan: Introduce Projects Layer
 
 **Date:** 2026-03-16
-**Status:** Draft — Pending Review
+**Status:** In Progress — implementation snapshot updated 2026-03-20
+
+---
+
+## 0. Current Status Snapshot (2026-03-20)
+
+This document started as a proposal. The repository now contains a substantial
+partial implementation, so the plan needs to distinguish between what has
+already landed and what is still missing.
+
+### Landed
+
+- **Data foundation is in place.** `ProjectData` / `ProjectStatus`,
+  `JournalEntity.project`, `EntryLink.project`, conversion support, database
+  queries, and the denormalized `journal.project_id` column are implemented.
+- **Project repository/state exists.** `ProjectRepository`,
+  `project_providers.dart`, and `ProjectDetailController` cover CRUD,
+  linking/unlinking, single-project-per-task enforcement, and detail-page
+  editing.
+- **Basic UI is present behind the feature flag.** The repo already has
+  project creation/detail pages, the category detail projects section, the task
+  project picker chip/modal, and the tasks-page `ProjectHealthHeader`.
+- **Project agents exist.** `projectAgent` kind, `agent_project` links, project
+  agent slots, `ProjectAgentService`, `ProjectAgentWorkflow`,
+  `ProjectAgentStrategy`, and project tool definitions are implemented.
+- **Auto-provisioning is present.** Creating a project attempts to provision a
+  project agent from a category-scoped or global `projectAgent` template.
+- **Daily digest scheduling now exists.** New project agents schedule their
+  next daily digest for 09:00 local on the next day, and due digests roll
+  forward automatically after a successful wake.
+- **Project-scoped change-set review is now wired in.** Project detail pages
+  surface pending project-agent change sets, and confirmations can now apply
+  project status changes or create linked tasks directly from the project UI.
+- **Targeted tests exist for the current scope.** The repo already contains
+  tests for the data model, repository, providers, pages/widgets, and project
+  agent service/workflow/strategy/tools.
+
+### Landed But Different From The Original Proposal
+
+- **Routing is nested under Settings.** The shipped routes are
+  `/settings/projects/create` and `/settings/projects/:projectId`; there is no
+  standalone `ProjectsLocation` or `/projects/...` route today.
+- **Task-page filtering is inline, not a separate chip widget.** The current
+  implementation uses expandable rows inside `ProjectHealthHeader` plus
+  `selectedProjectIds` in `JournalPageController`, rather than a dedicated
+  `ProjectFilterChip` widget.
+- **Project template lookup is dynamic.** The implementation does not add
+  `defaultProjectTemplateId` to `CategoryDefinition`; project creation looks up
+  a category-scoped template first and then falls back to a global
+  `projectAgent` template.
+- **Project agent wake subscriptions are broader than planned.** Today, linked
+  task edits bubble up to the project via parent-link notifications, so project
+  agents can wake on general linked task changes, not only on filtered
+  status-transition events.
+- **Accepted next-step recommendations are acknowledgement-only.** Confirming
+  `recommend_next_steps` resolves the proposal and records the decision, but it
+  does not yet persist a separate project recommendation artifact beyond the
+  normal change-decision history.
+
+### Remaining Work
+
+- **Finish the remaining runtime cadence.** Daily digest scheduling is now in
+  place, but weekly review scheduling/bookkeeping (`lastWeeklyReviewAt`,
+  `weeklyReviewCount`) is still missing.
+- **Tighten wake triggers.** Replace the current broad linked-task wake
+  behavior with the planned status-transition/day-plan-driven triggering.
+- **Deepen deferred project actions.** The project-scoped review/apply path is
+  now present, but accepted `recommend_next_steps` still only acknowledge the
+  proposal instead of writing a richer project recommendation record.
+- **Implement Phase 4.** Weekly review GenUI, inline directive evolution,
+  weekly review history, seeded project templates, and improver-agent wiring
+  are still outstanding.
+- **Implement Phase 5.** Time tracking, health score computation, task velocity,
+  and resource-negotiation hooks are still not present.
+- **Reconcile docs with the shipped direction.** Once the final product shape is
+  decided, this plan and the feature README should consistently describe either
+  the Settings-nested flow or a future standalone projects navigation model.
 
 ---
 
@@ -630,6 +706,11 @@ Add to Beamer:
 Add `ProjectsLocation` to the Beamer location registry, or nest under the existing
 `SettingsLocation` if projects are accessed primarily through category detail.
 
+Current repo status: this has been implemented under `SettingsLocation` using
+`/settings/projects/create` and `/settings/projects/:projectId`. A standalone
+`ProjectsLocation` remains optional future cleanup if the navigation model
+changes.
+
 ### 8.4 Key Widgets
 
 | Widget | Location | Purpose |
@@ -644,11 +725,17 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 | `ProjectFilterChip` | Tasks list app bar | Filter tasks by project within category |
 | `WeeklyReviewHistory` | Project detail | Expandable list of past 1-on-1 sessions |
 
+Current repo status: `ProjectHealthHeader`, `ProjectDetailPage`, the category
+projects section, and the task project picker are implemented. Dedicated
+`ProjectCard`, `ProjectHealthBadge`, `ProjectTimeTracker`,
+`WeeklyReviewHistory`, and a standalone `ProjectFilterChip` are not present
+yet; some of that behavior is currently folded into `ProjectHealthHeader`.
+
 ---
 
 ## 9. Implementation Phases
 
-### Phase 1: Data Foundation (est. 3–5 PRs)
+### Phase 1: Data Foundation (est. 3–5 PRs, largely complete)
 
 1. **Create `ProjectData` and `ProjectStatus`** freezed classes
 2. **Add `JournalEntity.project` variant** to the sealed union
@@ -661,7 +748,7 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 8. **Create `ProjectRepository`** with CRUD + link management + constraint enforcement
 9. **Write unit tests** for repository, conversions, and constraint enforcement
 
-### Phase 2: Agent Runtime (est. 3–4 PRs)
+### Phase 2: Agent Runtime (est. 3–4 PRs, partially complete)
 
 1. **Extend `AgentKind`** with `projectAgent`
 2. **Add `agent_project` link type** to agent domain
@@ -675,7 +762,7 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
    auto-assignment)
 10. **Write unit tests** for workflow, strategy, wake triggers
 
-### Phase 3: Basic UI (est. 3–4 PRs)
+### Phase 3: Basic UI (est. 3–4 PRs, mostly complete)
 
 1. **Add `ProjectsLocation`** to Beamer routes
 2. **Create `ProjectHealthHeader`** — expandable header shown on Tasks page when a single category is selected, one per project in that category
@@ -686,7 +773,7 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 7. **Add Project filter chip** to Tasks list (filter within category)
 8. **Write widget tests** for all new widgets
 
-### Phase 4: Self-Improvement & GenUI (est. 2–3 PRs)
+### Phase 4: Self-Improvement & GenUI (est. 2–3 PRs, not started)
 
 1. **Add weekly review GenUI widgets** to the evolution catalog (star ratings, free text)
 2. **Implement inline evolution session** within `ProjectAgentWorkflow`
@@ -695,7 +782,7 @@ Add `ProjectsLocation` to the Beamer location registry, or nest under the existi
 5. **Wire improver agent** auto-creation for project agent templates
 6. **Write integration tests** for the full feedback → evolution cycle
 
-### Phase 5: Advanced Features (est. 2–3 PRs)
+### Phase 5: Advanced Features (est. 2–3 PRs, not started)
 
 1. **Time tracking visualization** (tracked hours per week derived from day plan blocks)
 2. **Health score computation** (composite metric from velocity, blockers, overdue tasks, task age)

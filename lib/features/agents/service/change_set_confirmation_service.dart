@@ -6,7 +6,6 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -16,7 +15,7 @@ import 'package:uuid/uuid.dart';
 /// within a [ChangeSetEntity].
 ///
 /// On confirmation, the corresponding tool call is dispatched via
-/// [TaskToolDispatcher] and a [ChangeDecisionEntity] is persisted.
+/// [AgentToolDispatcher] and a [ChangeDecisionEntity] is persisted.
 /// On rejection, only the decision is persisted (no tool dispatch).
 ///
 /// After each item resolution, the change set's status is updated:
@@ -30,7 +29,7 @@ import 'package:uuid/uuid.dart';
 class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required AgentSyncService syncService,
-    required TaskToolDispatcher toolDispatcher,
+    required AgentToolDispatcher toolDispatcher,
     required LabelsRepository labelsRepository,
     DomainLogger? domainLogger,
   }) : _syncService = syncService,
@@ -39,7 +38,7 @@ class ChangeSetConfirmationService {
        _domainLogger = domainLogger;
 
   final AgentSyncService _syncService;
-  final TaskToolDispatcher _toolDispatcher;
+  final AgentToolDispatcher _toolDispatcher;
   final LabelsRepository _labelsRepository;
   final DomainLogger? _domainLogger;
 

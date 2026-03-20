@@ -1633,6 +1633,7 @@
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
   "privateLabel": "Private",
   "projectAgentSectionTitle": "Agent",
+  "projectAcceptedNextStepsTitle": "Accepted next steps",
   "projectCountSummary": "{count, plural, one{{count} project} other{{count} projects}}",
   "@projectCountSummary": {
     "placeholders": {

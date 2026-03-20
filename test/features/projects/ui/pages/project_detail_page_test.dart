@@ -1,16 +1,31 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
 
@@ -91,6 +106,8 @@ void main() {
   Future<_TestProjectDetailController> pumpPage(
     WidgetTester tester, {
     required ProjectDetailState controllerState,
+    AgentDomainEntity? projectAgent,
+    List<Override> extraOverrides = const [],
   }) async {
     // Use a tall surface so that all sliver children are laid out.
     tester.view
@@ -111,8 +128,9 @@ void main() {
             () => controller,
           ),
           projectAgentProvider('test-project-id').overrideWith(
-            (ref) async => null,
+            (ref) async => projectAgent,
           ),
+          ...extraOverrides,
         ],
       ),
     );
@@ -283,6 +301,137 @@ void main() {
 
         expect(find.byType(ProjectAgentReportCard), findsOneWidget);
       });
+
+      testWidgets(
+        'shows accepted next steps from confirmed recommendation decisions',
+        (tester) async {
+          final mockRepository = MockAgentRepository();
+          final updateController = StreamController<Set<String>>.broadcast();
+          addTearDown(updateController.close);
+          final agent =
+              AgentDomainEntity.agent(
+                    id: 'agent-001',
+                    agentId: 'agent-001',
+                    kind: 'project_agent',
+                    displayName: 'Project Agent',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: 'state-001',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2024, 3, 15),
+                    updatedAt: DateTime(2024, 3, 15),
+                    vectorClock: null,
+                  )
+                  as AgentIdentityEntity;
+          final decision =
+              AgentDomainEntity.changeDecision(
+                    id: 'decision-001',
+                    agentId: 'agent-001',
+                    changeSetId: 'change-set-001',
+                    itemIndex: 0,
+                    toolName: ProjectAgentToolNames.recommendNextSteps,
+                    verdict: ChangeDecisionVerdict.confirmed,
+                    taskId: _projectId,
+                    humanSummary: 'Recommend 1 next step(s)',
+                    args: const {
+                      'steps': [
+                        {
+                          'title': 'Prepare beta rollout',
+                          'rationale': 'The release branch is nearly ready',
+                          'priority': 'high',
+                        },
+                      ],
+                    },
+                    createdAt: DateTime(2024, 3, 16),
+                    vectorClock: const VectorClock({}),
+                  )
+                  as ChangeDecisionEntity;
+
+          when(
+            () => mockRepository.getRecentDecisions(
+              'agent-001',
+              taskId: _projectId,
+              limit: 20,
+            ),
+          ).thenAnswer((_) async => [decision]);
+
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            projectAgent: agent,
+            extraOverrides: [
+              agentRepositoryProvider.overrideWithValue(mockRepository),
+              agentUpdateStreamProvider('agent-001').overrideWith(
+                (ref) => updateController.stream,
+              ),
+            ],
+          );
+
+          expect(find.text('Accepted next steps'), findsOneWidget);
+          expect(find.text('Prepare beta rollout'), findsOneWidget);
+          expect(
+            find.text('The release branch is nearly ready'),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'shows project change proposals when pending change sets exist',
+        (
+          tester,
+        ) async {
+          final changeSet =
+              AgentDomainEntity.changeSet(
+                    id: 'cs-001',
+                    agentId: 'agent-001',
+                    taskId: _projectId,
+                    threadId: 'thread-001',
+                    runKey: 'run-001',
+                    status: ChangeSetStatus.pending,
+                    items: const [
+                      ChangeItem(
+                        toolName: 'update_project_status',
+                        args: {
+                          'status': 'active',
+                          'reason': 'Work is back on track',
+                        },
+                        humanSummary: 'Update project status to active',
+                      ),
+                    ],
+                    createdAt: DateTime(2024, 3, 15),
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+
+          await pumpPage(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            extraOverrides: [
+              projectPendingChangeSetsProvider(_projectId).overrideWith(
+                (ref) async => [changeSet],
+              ),
+            ],
+          );
+
+          expect(find.byType(ChangeSetSummaryCard), findsOneWidget);
+          expect(find.text('Proposed changes'), findsOneWidget);
+          expect(find.text('Update project status to active'), findsOneWidget);
+        },
+      );
 
       testWidgets('shows linked tasks content when loaded', (tester) async {
         await pumpPage(

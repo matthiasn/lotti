@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/ui/widgets/project_agent_report_card.dart';
 import 'package:lotti/features/projects/ui/widgets/project_linked_tasks_section.dart';
@@ -233,6 +234,9 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
 
                     // Agent Report
                     ProjectAgentReportCard(projectId: widget.projectId),
+                    const SizedBox(height: 24),
+
+                    ChangeSetSummaryCard.project(projectId: widget.projectId),
                     const SizedBox(height: 24),
 
                     // Linked Tasks

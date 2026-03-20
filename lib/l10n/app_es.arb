@@ -1469,6 +1469,7 @@
   "outboxMonitorVolumeChartTitle": "Volumen de sincronización diario",
   "privateLabel": "Privado",
   "projectAgentSectionTitle": "Agente",
+  "projectAcceptedNextStepsTitle": "Siguientes pasos aceptados",
   "projectCountSummary": "{count, plural, one{{count} proyecto} other{{count} proyectos}}",
   "@projectCountSummary": {
     "placeholders": {

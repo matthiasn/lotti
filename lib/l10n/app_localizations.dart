@@ -6187,6 +6187,12 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get projectAgentSectionTitle;
 
+  /// No description provided for @projectAcceptedNextStepsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted next steps'**
+  String get projectAcceptedNextStepsTitle;
+
   /// No description provided for @projectCountSummary.
   ///
   /// In en, this message translates to:

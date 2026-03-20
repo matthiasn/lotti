@@ -1256,6 +1256,7 @@
   "outboxMonitorVolumeChartTitle": "Denní objem synchronizace",
   "privateLabel": "Soukromé",
   "projectAgentSectionTitle": "Agent",
+  "projectAcceptedNextStepsTitle": "Přijaté další kroky",
   "projectCountSummary": "{count, plural, one{{count} projekt} few{{count} projekty} other{{count} projektů}}",
   "@projectCountSummary": {
     "placeholders": {
