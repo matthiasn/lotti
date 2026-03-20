@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_button_widgetbook.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_widget.dart';
@@ -31,12 +33,12 @@ class WidgetbookApp extends StatelessWidget {
         MaterialThemeAddon(
           themes: [
             WidgetbookTheme(
-              name: 'Light',
-              data: ThemeData.light(),
+              name: 'Design System Light',
+              data: DesignSystemTheme.light(),
             ),
             WidgetbookTheme(
-              name: 'Dark',
-              data: ThemeData.dark(),
+              name: 'Design System Dark',
+              data: DesignSystemTheme.dark(),
             ),
           ],
         ),
@@ -52,6 +54,7 @@ class WidgetbookApp extends StatelessWidget {
         ),
       ),
       directories: [
+        buildDesignSystemWidgetbookFolder(),
         WidgetbookFolder(
           name: 'Task Widgets',
           children: [
