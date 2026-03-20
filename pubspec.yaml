@@ -204,6 +204,9 @@ flutter:
     - family: Inconsolata
       fonts:
         - asset: assets/fonts/Inconsolata/Inconsolata-Regular.ttf
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf
     - family: InclusiveSans
       fonts:
         - asset: assets/fonts/InclusiveSans/InclusiveSans-Regular.ttf

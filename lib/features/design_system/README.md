@@ -8,6 +8,7 @@ This feature contains the standalone Widgetbook-first design system work.
 - Generate typed Flutter token classes under `theme/generated/`
 - Build a standalone Widgetbook-only theme
 - Build new design-system components without retrofitting existing app widgets
+- Render design-system typography with the bundled local `Inter` variable font
 
 ## Implemented Components
 

@@ -167,7 +167,7 @@ void main() {
         tester,
         const DesignSystemChip(
           label: 'With icon',
-          leadingIcon: Icons.schedule_rounded,
+          leadingIcon: Icons.location_on_rounded,
           showRemove: true,
           onPressed: _noop,
         ),
