@@ -27,7 +27,7 @@ that lets users reassign tasks before deletion.
 | Category tile | Icon circle + name + language subtitle + trailing status icons | Colored dot + name + task count (e.g. "12 tasks") |
 | Card style | `ModernBaseCard` | Dark card with rounded corners, subtle border |
 | Empty state | Icon + text | Keep, restyle to match theme |
-| Search | Text field at top | Keep, restyle if needed |
+| Search | Text field at top | Removed — category lists are short enough to scan visually |
 
 ### Implementation steps
 
@@ -38,8 +38,8 @@ that lets users reassign tasks before deletion.
    - Task count subtitle (grey text) — requires a task count query/provider
 3. Add a `categoryTaskCountProvider(categoryId)` to fetch task counts per category
 4. Update card styling: dark background, rounded corners, consistent padding
-5. Remove trailing status icons (private/inactive) from list view — these are edit-mode concerns
-6. Keep search/filter and empty state; adjust colors to match Figma
+5. Keep trailing status icons (private/inactive/favorite) in list view — users need visual cues at a glance
+6. Keep empty state; adjust colors to match Figma; search removed (category lists are short)
 
 ### Tests — `test/features/categories/ui/pages/categories_list_page_test.dart`
 
@@ -50,8 +50,7 @@ that lets users reassign tasks before deletion.
 | renders category tiles with color dot | Each tile shows colored circle matching category color |
 | renders task count per category | Subtitle shows correct count from provider |
 | renders empty state when no categories | Empty state widget shown with message |
-| search filters categories by name | Typing filters list; clearing restores full list |
-| search shows no-results state | Non-matching query shows no-results widget |
+| shows status indicators | Private/inactive/favorite icons shown in trailing area |
 | tap category navigates to detail | Tapping tile navigates to edit route with correct ID |
 | categories sorted alphabetically | List order matches alphabetical sort |
 | error state renders error message | Error from provider shows error widget |
@@ -290,7 +289,7 @@ Add entry under current version `0.9.928`:
 
 ### Flatpak metainfo
 
-Update `/Users/gbj/StudioProjects/lotti/flatpak/com.matthiasn.lotti.metainfo.xml`
+Update `flatpak/com.matthiasn.lotti.metainfo.xml`
 with matching release notes.
 
 ---

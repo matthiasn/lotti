@@ -6873,6 +6873,35 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).map((QueryRow row) => row.read<int>('_c0'));
   }
 
+  Selectable<int> countTasksByCategory(String categoryId) {
+    return customSelect(
+      'SELECT COUNT(*) AS _c0 FROM journal WHERE deleted = FALSE AND type = \'Task\' AND category = ?1 AND task = 1 AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\'))',
+      variables: [Variable<String>(categoryId)],
+      readsFrom: {journal, configFlags},
+    ).map((QueryRow row) => row.read<int>('_c0'));
+  }
+
+  Selectable<CountTasksGroupedByCategoryResult> countTasksGroupedByCategory() {
+    return customSelect(
+      'SELECT category, COUNT(*) AS task_count FROM journal WHERE deleted = FALSE AND type = \'Task\' AND task = 1 AND category != \'\' AND private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) GROUP BY category',
+      variables: [],
+      readsFrom: {journal, configFlags},
+    ).map(
+      (QueryRow row) => CountTasksGroupedByCategoryResult(
+        category: row.read<String>('category'),
+        taskCount: row.read<int>('task_count'),
+      ),
+    );
+  }
+
+  Selectable<AllTagEntitiesResult> allTagEntities() {
+    return customSelect(
+      'SELECT * FROM tag_entities WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY tag COLLATE NOCASE',
+      variables: [],
+      readsFrom: {configFlags},
+    ).map((QueryRow row) => AllTagEntitiesResult());
+  }
+
   Selectable<DashboardDefinitionDbEntity> allDashboards() {
     return customSelect(
       'SELECT * FROM dashboard_definitions WHERE private IN (0, (SELECT status FROM config_flags WHERE name = \'private\')) AND deleted = FALSE ORDER BY name COLLATE NOCASE',
@@ -10292,6 +10321,15 @@ class $JournalDbManager {
   $LabeledTableManager get labeled => $LabeledTableManager(_db, _db.labeled);
   $LinkedEntriesTableManager get linkedEntries =>
       $LinkedEntriesTableManager(_db, _db.linkedEntries);
+}
+
+class CountTasksGroupedByCategoryResult {
+  final String category;
+  final int taskCount;
+  CountTasksGroupedByCategoryResult({
+    required this.category,
+    required this.taskCount,
+  });
 }
 
 class RatingsForTimeEntriesResult {

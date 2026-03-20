@@ -1600,6 +1600,7 @@
   "settingsCategoriesHasAutomaticPrompts": "AI automat",
   "settingsCategoriesHasDefaultLanguage": "Limbă implicită",
   "settingsCategoriesNameLabel": "Numele categoriei:",
+  "settingsCategoriesTaskCount": "{count, plural, one{{count} sarcină} few{{count} sarcini} other{{count} de sarcini}}",
   "settingsCategoriesTitle": "Categorii",
   "settingsConflictsResolutionTitle": "Rezolvarea Conflictelor de Sincronizare",
   "settingsConflictsTitle": "Sync cu conflicte",

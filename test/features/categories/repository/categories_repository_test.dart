@@ -477,6 +477,30 @@ void main() {
       });
     });
 
+    group('getTaskCountsByCategory', () {
+      test('delegates to journalDb and returns result', () async {
+        final expectedCounts = {'cat-1': 5, 'cat-2': 3};
+        when(
+          () => mockJournalDb.getTaskCountsByCategory(),
+        ).thenAnswer((_) async => expectedCounts);
+
+        final result = await repository.getTaskCountsByCategory();
+
+        expect(result, equals(expectedCounts));
+        verify(() => mockJournalDb.getTaskCountsByCategory()).called(1);
+      });
+
+      test('returns empty map when no tasks exist', () async {
+        when(
+          () => mockJournalDb.getTaskCountsByCategory(),
+        ).thenAnswer((_) async => <String, int>{});
+
+        final result = await repository.getTaskCountsByCategory();
+
+        expect(result, isEmpty);
+      });
+    });
+
     group('error handling', () {
       test('watchCategories propagates errors from database', () async {
         final error = Exception('Database error');

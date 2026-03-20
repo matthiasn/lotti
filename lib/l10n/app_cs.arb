@@ -1387,6 +1387,7 @@
   "settingsCategoriesHasAutomaticPrompts": "Automatická AI",
   "settingsCategoriesHasDefaultLanguage": "Výchozí jazyk",
   "settingsCategoriesNameLabel": "Název kategorie:",
+  "settingsCategoriesTaskCount": "{count, plural, one{{count} úkol} few{{count} úkoly} other{{count} úkolů}}",
   "settingsCategoriesTitle": "Kategorie",
   "settingsConflictsResolutionTitle": "Řešení konfliktů synchronizace",
   "settingsConflictsTitle": "Konflikty synchronizace",

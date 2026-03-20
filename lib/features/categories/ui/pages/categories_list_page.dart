@@ -1,47 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_display.dart';
+import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
-import 'package:lotti/widgets/gamey/gamey_fab.dart';
-import 'package:lotti/widgets/search/index.dart';
 
-/// Categories list page using Riverpod for state management
+/// Categories list page with redesigned tile layout.
 ///
-/// This page displays all categories and allows navigation to individual
-/// category details pages. It follows the same UI patterns as the AI Settings
-/// pages for consistency.
-class CategoriesListPage extends ConsumerStatefulWidget {
+/// Each category tile shows an icon badge, the category name, a task count
+/// subtitle, an optional favorite star, and a chevron. The header has a
+/// "< Back" button and a "+ Add category" action on the top row, with a
+/// large "Categories" title below.
+class CategoriesListPage extends ConsumerWidget {
   const CategoriesListPage({super.key});
 
   @override
-  ConsumerState<CategoriesListPage> createState() => _CategoriesListPageState();
-}
-
-class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoriesStreamProvider);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SettingsPageHeader(
-            title: context.messages.settingsCategoriesTitle,
-            showBackButton: true,
+          SliverToBoxAdapter(
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 8, 16, 0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        TextButton.icon(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.chevron_left),
+                          label: Text(context.messages.promptGoBackButton),
+                        ),
+                        TextButton.icon(
+                          onPressed: () =>
+                              beamToNamed('/settings/categories/create'),
+                          icon: const Icon(Icons.add, size: 18),
+                          label: Text(
+                            context.messages.settingsCategoriesAddTooltip,
+                          ),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.tertiary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 0, 16),
+                      child: Text(
+                        context.messages.settingsCategoriesTitle,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           ...categoriesAsync.when(
             data: (categories) => _buildContentSlivers(context, categories),
@@ -58,11 +85,6 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
           ),
         ],
       ),
-      floatingActionButton: GameyFab(
-        onPressed: () => beamToNamed('/settings/categories/create'),
-        semanticLabel: context.messages.settingsCategoriesAddTooltip,
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -70,68 +92,14 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
     BuildContext context,
     List<CategoryDefinition> categories,
   ) {
-    final sortedCategories =
-        categories.where((category) {
-          if (_searchQuery.isEmpty) return true;
-          return category.name.toLowerCase().contains(_searchQuery);
-        }).toList()..sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+    final sortedCategories = categories.toList()
+      ..sort(
+        (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+      );
 
     return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LottiSearchBar(
-            controller: _searchController,
-            hintText: 'Search categories...',
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.trim().toLowerCase();
-              });
-            },
-            onClear: () {
-              setState(() {
-                _searchQuery = '';
-              });
-            },
-          ),
-        ),
-      ),
       if (categories.isEmpty)
         SliverFillRemaining(child: _buildEmptyState(context))
-      else if (sortedCategories.isEmpty)
-        SliverFillRemaining(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: Theme.of(context).disabledColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No categories found',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).disabledColor,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try adjusting your search',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).disabledColor,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        )
       else
         SliverPadding(
           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
@@ -222,8 +190,9 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
   }
 }
 
-/// Individual category list tile widget
-class _CategoryListTile extends StatelessWidget {
+/// Redesigned category list tile with icon badge, name, task count,
+/// optional favorite star, status indicators, and chevron.
+class _CategoryListTile extends ConsumerWidget {
   const _CategoryListTile({
     required this.category,
     required this.onTap,
@@ -233,36 +202,73 @@ class _CategoryListTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final taskCountAsync = ref.watch(
+      categoryTaskCountProvider(category.id),
+    );
+    final categoryColor = colorFromCssHex(
+      category.color,
+      substitute: Theme.of(context).colorScheme.primary,
+    );
+    final isFavorite = category.favorite ?? false;
+
     return ModernBaseCard(
       onTap: onTap,
       padding: EdgeInsets.zero,
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CategoryIconDisplay(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 8,
+        ),
+        leading: _CategoryIconBadge(
           category: category,
+          color: categoryColor,
         ),
         title: Text(
           category.name,
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        subtitle: _buildSubtitle(context),
+        subtitle: taskCountAsync.when(
+          data: (count) => Text(
+            context.messages.settingsCategoriesTaskCount(count),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          loading: () => Text(
+            '\u2014',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          error: (_, _) => null,
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (category.private)
-              Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             if (!category.active)
-              Icon(
-                Icons.visibility_off_outlined,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.visibility_off_outlined,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
-            const SizedBox(width: 8),
+            if (isFavorite)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(Icons.star, color: Colors.amber, size: 20),
+              ),
             Icon(
               Icons.chevron_right,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -272,23 +278,53 @@ class _CategoryListTile extends StatelessWidget {
       ),
     );
   }
+}
 
-  Widget? _buildSubtitle(BuildContext context) {
-    final features = <String>[];
+/// Rounded-square badge showing the category icon on a colored background.
+///
+/// Falls back to the first letter of the category name when no icon is set.
+/// Automatically picks white or black foreground based on background brightness.
+class _CategoryIconBadge extends StatelessWidget {
+  const _CategoryIconBadge({
+    required this.category,
+    required this.color,
+  });
 
-    if (category.defaultLanguageCode != null) {
-      features.add(context.messages.settingsCategoriesHasDefaultLanguage);
-    }
+  final CategoryDefinition category;
+  final Color color;
 
-    if (features.isEmpty) {
-      return null;
-    }
+  static const double _size = 48;
+  static const double _borderRadius = 12;
 
-    return Text(
-      features.join(' • '),
-      style: Theme.of(context).textTheme.bodySmall,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
+  @override
+  Widget build(BuildContext context) {
+    final isDark =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    final foreground = isDark ? Colors.white : Colors.black;
+
+    return Container(
+      width: _size,
+      height: _size,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(_borderRadius),
+      ),
+      child: Center(
+        child: category.icon != null
+            ? Icon(
+                category.icon!.iconData,
+                color: foreground,
+                size: _size * 0.5,
+              )
+            : Text(
+                category.name.isNotEmpty ? category.name[0].toUpperCase() : '?',
+                style: TextStyle(
+                  color: foreground,
+                  fontWeight: FontWeight.bold,
+                  fontSize: _size * 0.4,
+                ),
+              ),
+      ),
     );
   }
 }

@@ -3089,11 +3089,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Sincronizează etichete, măsurabile, tablouri de bord, obiceiuri, categorii, setări AI';
+      'Sincronizează măsurabile, tablouri de bord, obiceiuri, categorii, setări AI';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Sincronizează etichete, măsurabile, tablouri de bord, obiceiuri, categorii și setări AI';
+      'Sincronizează măsurabile, tablouri de bord, obiceiuri, categorii și setări AI';
 
   @override
   String get manageLinks => 'Gestionează legăturile...';
@@ -3299,6 +3299,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de proiecte',
+      few: '$count proiecte',
+      one: '$count proiect',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectCreateButton => 'Proiect nou';
 
   @override
@@ -3341,18 +3353,6 @@ class AppLocalizationsRo extends AppLocalizations {
       one: '$taskCount sarcină',
     );
     return '$_temp0, $_temp1';
-  }
-
-  @override
-  String projectCountSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de proiecte',
-      few: '$count proiecte',
-      one: '$count proiect',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -3861,6 +3861,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Numele categoriei:';
+
+  @override
+  String settingsCategoriesTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini',
+      few: '$count sarcini',
+      one: '$count sarcină',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsCategoriesTitle => 'Categorii';

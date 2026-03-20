@@ -5470,13 +5470,13 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceSyncDefinitions.
   ///
   /// In en, this message translates to:
-  /// **'Sync tags, measurables, dashboards, habits, categories, AI settings'**
+  /// **'Sync measurables, dashboards, habits, categories, AI settings'**
   String get maintenanceSyncDefinitions;
 
   /// No description provided for @maintenanceSyncDefinitionsDescription.
   ///
   /// In en, this message translates to:
-  /// **'Sync tags, measurables, dashboards, habits, categories, and AI settings'**
+  /// **'Sync measurables, dashboards, habits, categories, and AI settings'**
   String get maintenanceSyncDefinitionsDescription;
 
   /// No description provided for @manageLinks.
@@ -5833,6 +5833,12 @@ abstract class AppLocalizations {
   /// **'Agent'**
   String get projectAgentSectionTitle;
 
+  /// No description provided for @projectCountSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} project} other{{count} projects}}'**
+  String projectCountSummary(int count);
+
   /// No description provided for @projectCreateButton.
   ///
   /// In en, this message translates to:
@@ -5886,12 +5892,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{projectCount, plural, one{{projectCount} project} other{{projectCount} projects}}, {taskCount, plural, one{{taskCount} task} other{{taskCount} tasks}}'**
   String projectHealthSummary(int projectCount, int taskCount);
-
-  /// No description provided for @projectCountSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} project} other{{count} projects}}'**
-  String projectCountSummary(int count);
 
   /// No description provided for @projectHealthTitle.
   ///
@@ -6828,6 +6828,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category name:'**
   String get settingsCategoriesNameLabel;
+
+  /// No description provided for @settingsCategoriesTaskCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} task} other{{count} tasks}}'**
+  String settingsCategoriesTaskCount(int count);
 
   /// No description provided for @settingsCategoriesTitle.
   ///

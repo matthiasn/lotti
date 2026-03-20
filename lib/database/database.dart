@@ -1234,6 +1234,11 @@ class JournalDb extends _$JournalDb {
     ).getSingle();
   }
 
+  Future<Map<String, int>> getTaskCountsByCategory() async {
+    final rows = await countTasksGroupedByCategory().get();
+    return {for (final row in rows) row.category: row.taskCount};
+  }
+
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final privateStatuses = await _visiblePrivateStatuses();
     final matchesAllPrivateStates = _matchesAllPrivateStates(privateStatuses);
