@@ -13,6 +13,7 @@ This feature contains the standalone Widgetbook-first design system work.
 
 - Buttons
 - Badges
+- Chips
 
 ## Import Workflow
 

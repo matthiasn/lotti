@@ -22,14 +22,19 @@ void main() {
       final badgeComponent = components.singleWhere(
         (component) => component.name == 'Badges',
       );
+      final chipComponent = components.singleWhere(
+        (component) => component.name == 'Chips',
+      );
       final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
       expect(components.map((component) => component.name), [
         'Buttons',
         'Badges',
+        'Chips',
       ]);
       expect(badgeComponent.useCases.single.name, 'Overview');
+      expect(chipComponent.useCases.single.name, 'Overview');
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

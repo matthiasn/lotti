@@ -209,6 +209,7 @@ flutter:
         - asset: assets/fonts/InclusiveSans/InclusiveSans-Regular.ttf
 
   assets:
+    - assets/design_system/
     - assets/icons/
     - assets/icon/
     - assets/lang/
