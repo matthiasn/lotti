@@ -1600,6 +1600,7 @@
   "settingsCategoriesHasAutomaticPrompts": "AI automática",
   "settingsCategoriesHasDefaultLanguage": "Idioma predeterminado",
   "settingsCategoriesNameLabel": "Nombre de la categoría:",
+  "settingsCategoriesTaskCount": "{count, plural, one{{count} tarea} other{{count} tareas}}",
   "settingsCategoriesTitle": "Categorías",
   "settingsConflictsResolutionTitle": "Resolución de Conflictos de Sincronización",
   "settingsConflictsTitle": "Conflictos de Sincronización",

@@ -93,6 +93,10 @@ class CategoryRepository {
     return updated;
   }
 
+  Future<Map<String, int>> getTaskCountsByCategory() async {
+    return _journalDb.getTaskCountsByCategory();
+  }
+
   Future<void> deleteCategory(String id) async {
     final category = await getCategoryById(id);
     if (category != null) {

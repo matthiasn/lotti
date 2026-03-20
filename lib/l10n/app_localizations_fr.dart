@@ -3130,11 +3130,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Synchroniser les tags, mesurables, tableaux de bord, habitudes, catégories, paramètres AI';
+      'Synchroniser les mesurables, tableaux de bord, habitudes, catégories, paramètres AI';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Synchroniser les tags, mesurables, tableaux de bord, habitudes, catégories et paramètres AI';
+      'Synchroniser les mesurables, tableaux de bord, habitudes, catégories et paramètres AI';
 
   @override
   String get manageLinks => 'Gérer les liens...';
@@ -3349,6 +3349,17 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projets',
+      one: '$count projet',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectCreateButton => 'Créer un projet';
 
   @override
@@ -3391,17 +3402,6 @@ class AppLocalizationsFr extends AppLocalizations {
       one: '$taskCount tâche',
     );
     return '$_temp0, $_temp1';
-  }
-
-  @override
-  String projectCountSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count projets',
-      one: '$count projet',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -3914,6 +3914,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Nom de la catégorie :';
+
+  @override
+  String settingsCategoriesTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tâches',
+      one: '$count tâche',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsCategoriesTitle => 'Catégories';

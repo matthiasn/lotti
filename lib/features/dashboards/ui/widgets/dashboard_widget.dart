@@ -60,10 +60,7 @@ class DashboardWidget extends ConsumerWidget {
             rangeEnd: rangeEnd,
             transformationController: transformationController,
           );
-        case final DashboardStoryTimeItem _:
-          return const Text('Story Time Chart currently not implemented');
-        case final WildcardStoryTimeItem _:
-          return const SizedBox.shrink();
+
         case final DashboardSurveyItem survey:
           return DashboardSurveyChart(
             chartConfig: survey,

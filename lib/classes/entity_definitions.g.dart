@@ -655,35 +655,3 @@ Map<String, dynamic> _$DashboardSurveyItemToJson(
   'surveyName': instance.surveyName,
   'runtimeType': instance.$type,
 };
-
-DashboardStoryTimeItem _$DashboardStoryTimeItemFromJson(
-  Map<String, dynamic> json,
-) => DashboardStoryTimeItem(
-  storyTagId: json['storyTagId'] as String,
-  color: json['color'] as String,
-  $type: json['runtimeType'] as String?,
-);
-
-Map<String, dynamic> _$DashboardStoryTimeItemToJson(
-  DashboardStoryTimeItem instance,
-) => <String, dynamic>{
-  'storyTagId': instance.storyTagId,
-  'color': instance.color,
-  'runtimeType': instance.$type,
-};
-
-WildcardStoryTimeItem _$WildcardStoryTimeItemFromJson(
-  Map<String, dynamic> json,
-) => WildcardStoryTimeItem(
-  storySubstring: json['storySubstring'] as String,
-  color: json['color'] as String,
-  $type: json['runtimeType'] as String?,
-);
-
-Map<String, dynamic> _$WildcardStoryTimeItemToJson(
-  WildcardStoryTimeItem instance,
-) => <String, dynamic>{
-  'storySubstring': instance.storySubstring,
-  'color': instance.color,
-  'runtimeType': instance.$type,
-};

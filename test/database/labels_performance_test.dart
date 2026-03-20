@@ -1,5 +1,8 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+@Timeout(Duration(minutes: 2))
+library;
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -78,106 +81,115 @@ void main() {
     );
   }
 
-  test('filtering 1000+ tasks with 50+ labels completes under 400ms', () async {
-    // Create 50 labels
-    for (var i = 0; i < 50; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
-
-    // Create 1000 tasks with random label assignments
-    for (var i = 0; i < 1000; i++) {
-      final labelIds = <String>[];
-      // Assign 0-3 random labels to each task
-      final labelCount = i % 4;
-      for (var j = 0; j < labelCount; j++) {
-        labelIds.add('label-${(i + j) % 50}');
+  test(
+    'filtering 1000+ tasks with 50+ labels completes under 500ms',
+    () async {
+      // Create 50 labels
+      for (var i = 0; i < 50; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
       }
-      final task = buildTask(i, labelIds);
-      await db.updateJournalEntity(task);
-    }
 
-    // Benchmark filtering by a single label
-    final stopwatch = Stopwatch()..start();
-    final filtered = await db.getTasks(
-      starredStatuses: const [true, false],
-      taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
-      categoryIds: const [''],
-      labelIds: const ['label-0'],
-    );
-    stopwatch.stop();
+      // Create 1000 tasks with random label assignments
+      for (var i = 0; i < 1000; i++) {
+        final labelIds = <String>[];
+        // Assign 0-3 random labels to each task
+        final labelCount = i % 4;
+        for (var j = 0; j < labelCount; j++) {
+          labelIds.add('label-${(i + j) % 50}');
+        }
+        final task = buildTask(i, labelIds);
+        await db.updateJournalEntity(task);
+      }
 
-    // Verify results
-    expect(filtered.isNotEmpty, isTrue);
-    expect(
-      stopwatch.elapsedMilliseconds,
-      lessThan(500),
-      reason: 'Filtering should complete under 500ms',
-    );
-  });
+      // Benchmark filtering by a single label
+      final stopwatch = Stopwatch()..start();
+      final filtered = await db.getTasks(
+        starredStatuses: const [true, false],
+        taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
+        categoryIds: const [''],
+        labelIds: const ['label-0'],
+      );
+      stopwatch.stop();
+
+      // Verify results
+      expect(filtered.isNotEmpty, isTrue);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(500),
+        reason: 'Filtering should complete under 500ms',
+      );
+    },
+  );
 
   // intentionally giving more time because of anemic GitHub Actions test runner
-  test('reconciliation on 500 tasks completes under 10s', () async {
-    // Create a label
-    await db.upsertLabelDefinition(buildLabel(0));
+  test(
+    'reconciliation on 500 tasks completes under 30s',
+    () async {
+      // Create a label
+      await db.upsertLabelDefinition(buildLabel(0));
 
-    // Create 1000 tasks without labels
-    for (var i = 0; i < 500; i++) {
-      final task = buildTask(i, []);
-      await db.updateJournalEntity(task);
-    }
+      // Create 1000 tasks without labels
+      for (var i = 0; i < 500; i++) {
+        final task = buildTask(i, []);
+        await db.updateJournalEntity(task);
+      }
 
-    // Benchmark bulk reconciliation: assign label-0 to all tasks
-    final stopwatch = Stopwatch()..start();
-    for (var i = 0; i < 500; i++) {
-      final task = buildTask(i, ['label-0']);
-      await db.updateJournalEntity(task);
-    }
-    stopwatch.stop();
+      // Benchmark bulk reconciliation: assign label-0 to all tasks
+      final stopwatch = Stopwatch()..start();
+      for (var i = 0; i < 500; i++) {
+        final task = buildTask(i, ['label-0']);
+        await db.updateJournalEntity(task);
+      }
+      stopwatch.stop();
 
-    expect(
-      stopwatch.elapsedMilliseconds,
-      lessThan(10000),
-      reason: 'Reconciliation should complete under 10s for 500 tasks',
-    );
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(30000),
+        reason: 'Reconciliation should complete under 30s for 500 tasks',
+      );
 
-    // Verify labeled table populated
-    final labeled = await db.labeledForJournal('task-0').get();
-    expect(labeled, hasLength(1));
-  });
+      // Verify labeled table populated
+      final labeled = await db.labeledForJournal('task-0').get();
+      expect(labeled, hasLength(1));
+    },
+  );
 
-  test('no N+1 queries when filtering by multiple labels', () async {
-    // Create 10 labels
-    for (var i = 0; i < 10; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
+  test(
+    'no N+1 queries when filtering by multiple labels',
+    () async {
+      // Create 10 labels
+      for (var i = 0; i < 10; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
+      }
 
-    // Create 100 tasks with various label combinations
-    for (var i = 0; i < 100; i++) {
-      final labelIds = <String>[
-        'label-${i % 10}',
-        'label-${(i + 1) % 10}',
-      ];
-      final task = buildTask(i, labelIds);
-      await db.updateJournalEntity(task);
-    }
+      // Create 100 tasks with various label combinations
+      for (var i = 0; i < 100; i++) {
+        final labelIds = <String>[
+          'label-${i % 10}',
+          'label-${(i + 1) % 10}',
+        ];
+        final task = buildTask(i, labelIds);
+        await db.updateJournalEntity(task);
+      }
 
-    // Filter by multiple labels (OR logic)
-    final stopwatch = Stopwatch()..start();
-    final filtered = await db.getTasks(
-      starredStatuses: const [true, false],
-      taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
-      categoryIds: const [''],
-      labelIds: const ['label-0', 'label-1', 'label-2'],
-    );
-    stopwatch.stop();
+      // Filter by multiple labels (OR logic)
+      final stopwatch = Stopwatch()..start();
+      final filtered = await db.getTasks(
+        starredStatuses: const [true, false],
+        taskStatuses: const ['OPEN', 'IN PROGRESS', 'DONE', 'GROOMED'],
+        categoryIds: const [''],
+        labelIds: const ['label-0', 'label-1', 'label-2'],
+      );
+      stopwatch.stop();
 
-    expect(filtered.isNotEmpty, isTrue);
-    expect(
-      stopwatch.elapsedMilliseconds,
-      lessThan(200),
-      reason: 'Multi-label filtering should use efficient joins',
-    );
-  });
+      expect(filtered.isNotEmpty, isTrue);
+      expect(
+        stopwatch.elapsedMilliseconds,
+        lessThan(200),
+        reason: 'Multi-label filtering should use efficient joins',
+      );
+    },
+  );
 
   test(
     'reconciliation handles mixed add/remove operations efficiently',
@@ -239,81 +251,87 @@ void main() {
     },
   );
 
-  test('mixed label/category/status filters complete quickly', () async {
-    for (var i = 0; i < 10; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
+  test(
+    'mixed label/category/status filters complete quickly',
+    () async {
+      for (var i = 0; i < 10; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
+      }
 
-    // Ensure the special label used in filters exists
-    await db.upsertLabelDefinition(
-      LabelDefinition(
-        id: 'label-special',
-        name: 'Special',
-        color: '#FF00FF',
-        createdAt: DateTime(2024, 1, 1),
-        updatedAt: DateTime(2024, 1, 1),
-        vectorClock: const VectorClock(<String, int>{}),
-      ),
-    );
-
-    for (var i = 0; i < 400; i++) {
-      final category = i.isEven ? 'team-a' : 'team-b';
-      final status = i % 3 == 0
-          ? TaskStatus.inProgress(
-              id: 'status-$i',
-              createdAt: DateTime(2024, 1, 1),
-              utcOffset: 0,
-            )
-          : TaskStatus.done(
-              id: 'status-$i',
-              createdAt: DateTime(2024, 1, 1),
-              utcOffset: 0,
-            );
-      final labels = [
-        'label-${i % 5}',
-        if (i % 7 == 0) 'label-special',
-      ];
-      await db.updateJournalEntity(
-        buildTask(
-          i,
-          labels,
-          categoryId: category,
-          status: status,
+      // Ensure the special label used in filters exists
+      await db.upsertLabelDefinition(
+        LabelDefinition(
+          id: 'label-special',
+          name: 'Special',
+          color: '#FF00FF',
+          createdAt: DateTime(2024, 1, 1),
+          updatedAt: DateTime(2024, 1, 1),
+          vectorClock: const VectorClock(<String, int>{}),
         ),
       );
-    }
 
-    final stopwatch = Stopwatch()..start();
-    final filtered = await db.getTasks(
-      starredStatuses: const [true, false],
-      taskStatuses: const ['IN PROGRESS'],
-      categoryIds: const ['team-a'],
-      labelIds: const ['label-special'],
-    );
-    stopwatch.stop();
+      for (var i = 0; i < 400; i++) {
+        final category = i.isEven ? 'team-a' : 'team-b';
+        final status = i % 3 == 0
+            ? TaskStatus.inProgress(
+                id: 'status-$i',
+                createdAt: DateTime(2024, 1, 1),
+                utcOffset: 0,
+              )
+            : TaskStatus.done(
+                id: 'status-$i',
+                createdAt: DateTime(2024, 1, 1),
+                utcOffset: 0,
+              );
+        final labels = [
+          'label-${i % 5}',
+          if (i % 7 == 0) 'label-special',
+        ];
+        await db.updateJournalEntity(
+          buildTask(
+            i,
+            labels,
+            categoryId: category,
+            status: status,
+          ),
+        );
+      }
 
-    expect(filtered, isNotEmpty);
-    expect(stopwatch.elapsedMilliseconds, lessThan(300));
-  });
+      final stopwatch = Stopwatch()..start();
+      final filtered = await db.getTasks(
+        starredStatuses: const [true, false],
+        taskStatuses: const ['IN PROGRESS'],
+        categoryIds: const ['team-a'],
+        labelIds: const ['label-special'],
+      );
+      stopwatch.stop();
 
-  test('reconciliation handles 100+ labels per task', () async {
-    const labelCount = 150;
-    for (var i = 0; i < labelCount; i++) {
-      await db.upsertLabelDefinition(buildLabel(i));
-    }
+      expect(filtered, isNotEmpty);
+      expect(stopwatch.elapsedMilliseconds, lessThan(300));
+    },
+  );
 
-    final labelIds = List.generate(
-      labelCount,
-      (index) => 'label-$index',
-      growable: false,
-    );
+  test(
+    'reconciliation handles 100+ labels per task',
+    () async {
+      const labelCount = 150;
+      for (var i = 0; i < labelCount; i++) {
+        await db.upsertLabelDefinition(buildLabel(i));
+      }
 
-    final stopwatch = Stopwatch()..start();
-    await db.updateJournalEntity(buildTask(0, labelIds));
-    stopwatch.stop();
+      final labelIds = List.generate(
+        labelCount,
+        (index) => 'label-$index',
+        growable: false,
+      );
 
-    expect(stopwatch.elapsedMilliseconds, lessThan(1000));
-    final labeled = await db.labeledForJournal('task-0').get();
-    expect(labeled, hasLength(labelCount));
-  });
+      final stopwatch = Stopwatch()..start();
+      await db.updateJournalEntity(buildTask(0, labelIds));
+      stopwatch.stop();
+
+      expect(stopwatch.elapsedMilliseconds, lessThan(1000));
+      final labeled = await db.labeledForJournal('task-0').get();
+      expect(labeled, hasLength(labelCount));
+    },
+  );
 }

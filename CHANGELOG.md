@@ -4,7 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.928] - 2026-03-19
+<<<<<<< HEAD
+## [0.9.929] - 2026-03-20
+### Changed
+- Categories list redesign: new tile layout with colored icon badges,
+  localized task count subtitles, favorite stars, and private/inactive status
+  indicators. Batch database query replaces per-category N+1 queries for
+  better performance. Icon badge foreground auto-adapts contrast for light
+  category colors.
+
+## [0.9.928] - 2026-03-17
 ### Added
 - Voice-driven time tracking: the task agent can now create time tracking entries
   from voice dictation. Users can say things like "I worked on the API from 2 to

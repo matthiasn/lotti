@@ -33,6 +33,7 @@
   <releases>
     <release version="0.9.928" date="2026-03-19">
       <description>
+          <p>Categories list redesign: new tile layout with colored icon badges, task count subtitles, favorite stars, and private/inactive status indicators. Batch query for better performance.</p>
           <p>Voice-driven time tracking: the task agent can now create time tracking entries from voice dictation, supporting both completed sessions with start/end times and running timers. Entries require user approval before being applied.</p>
           <p>Removed the prompt tab and prompt editing page from AI settings. Prompts are now managed internally.</p>
           <p>Removed the entire tag concept (generic, person, and story tags) along with all related UI, sync infrastructure, services, and repositories. Database tables left in place to avoid migrations.</p>

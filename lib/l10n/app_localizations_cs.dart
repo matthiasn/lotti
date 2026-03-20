@@ -3070,11 +3070,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Synchronizovat tagy, měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení';
+      'Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Synchronizovat tagy, měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení';
+      'Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie a AI nastavení';
 
   @override
   String get manageLinks => 'Spravovat propojení...';
@@ -3279,6 +3279,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projektů',
+      few: '$count projekty',
+      one: '$count projekt',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectCreateButton => 'Nový projekt';
 
   @override
@@ -3320,18 +3332,6 @@ class AppLocalizationsCs extends AppLocalizations {
       one: '$taskCount úkol',
     );
     return '$_temp0, $_temp1';
-  }
-
-  @override
-  String projectCountSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count projektů',
-      few: '$count projekty',
-      one: '$count projekt',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -3837,6 +3837,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Název kategorie:';
+
+  @override
+  String settingsCategoriesTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '$count úkol',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsCategoriesTitle => 'Kategorie';

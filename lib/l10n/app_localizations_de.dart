@@ -3076,11 +3076,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Tags, Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren';
+      'Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Tags, Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren';
+      'Messgrößen, Dashboards, Gewohnheiten, Kategorien und AI-Einstellungen synchronisieren';
 
   @override
   String get manageLinks => 'Verknüpfungen verwalten...';
@@ -3286,6 +3286,17 @@ class AppLocalizationsDe extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Projekte',
+      one: '$count Projekt',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectCreateButton => 'Neues Projekt';
 
   @override
@@ -3326,17 +3337,6 @@ class AppLocalizationsDe extends AppLocalizations {
       one: '$taskCount Aufgabe',
     );
     return '$_temp0, $_temp1';
-  }
-
-  @override
-  String projectCountSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count Projekte',
-      one: '$count Projekt',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -3847,6 +3847,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Kategoriename:';
+
+  @override
+  String settingsCategoriesTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben',
+      one: '$count Aufgabe',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsCategoriesTitle => 'Kategorien';

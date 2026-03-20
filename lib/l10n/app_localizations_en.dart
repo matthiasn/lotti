@@ -3026,11 +3026,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Sync tags, measurables, dashboards, habits, categories, AI settings';
+      'Sync measurables, dashboards, habits, categories, AI settings';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Sync tags, measurables, dashboards, habits, categories, and AI settings';
+      'Sync measurables, dashboards, habits, categories, and AI settings';
 
   @override
   String get manageLinks => 'Manage links...';
@@ -3232,6 +3232,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String projectCountSummary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count projects',
+      one: '$count project',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get projectCreateButton => 'New Project';
 
   @override
@@ -3271,17 +3282,6 @@ class AppLocalizationsEn extends AppLocalizations {
       one: '$taskCount task',
     );
     return '$_temp0, $_temp1';
-  }
-
-  @override
-  String projectCountSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count projects',
-      one: '$count project',
-    );
-    return '$_temp0';
   }
 
   @override
@@ -3783,6 +3783,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCategoriesNameLabel => 'Category name:';
+
+  @override
+  String settingsCategoriesTaskCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '$count task',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsCategoriesTitle => 'Categories';
@@ -5332,11 +5343,11 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get maintenanceSyncDefinitions =>
-      'Sync tags, measurables, dashboards, habits, categories, AI settings';
+      'Sync measurables, dashboards, habits, categories, AI settings';
 
   @override
   String get maintenanceSyncDefinitionsDescription =>
-      'Sync tags, measurables, dashboards, habits, categories, and AI settings';
+      'Sync measurables, dashboards, habits, categories, and AI settings';
 
   @override
   String get measurableDeleteConfirm => 'YES, DELETE THIS MEASURABLE';

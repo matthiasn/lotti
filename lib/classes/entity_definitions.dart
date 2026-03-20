@@ -316,18 +316,6 @@ sealed class DashboardItem with _$DashboardItem {
     required String surveyName,
   }) = DashboardSurveyItem;
 
-  @Deprecated('Tags concept removed — kept for JSON backward compatibility')
-  const factory DashboardItem.storyTimeChart({
-    required String storyTagId,
-    required String color,
-  }) = DashboardStoryTimeItem;
-
-  @Deprecated('Tags concept removed — kept for JSON backward compatibility')
-  const factory DashboardItem.wildcardStoryTimeChart({
-    required String storySubstring,
-    required String color,
-  }) = WildcardStoryTimeItem;
-
   factory DashboardItem.fromJson(Map<String, dynamic> json) =>
       _$DashboardItemFromJson(json);
 }

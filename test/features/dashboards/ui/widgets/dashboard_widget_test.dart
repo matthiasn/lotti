@@ -133,45 +133,5 @@ void main() {
 
       expect(find.text('My Dashboard'), findsOneWidget);
     });
-
-    testWidgets('renders story time not-implemented text', (tester) async {
-      final dashboard = DashboardDefinition(
-        id: 'test-id',
-        name: 'With Story',
-        description: '',
-        items: [
-          const DashboardStoryTimeItem(
-            storyTagId: 'story-tag-1',
-            color: '#00FF00',
-          ),
-        ],
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-        private: false,
-        version: '',
-        lastReviewed: DateTime(2024, 3, 15),
-        active: true,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DashboardWidget(
-            dashboardId: 'test-id',
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
-          overrides: [
-            dashboardByIdProvider('test-id').overrideWith((ref) => dashboard),
-          ],
-        ),
-      );
-      await tester.pump();
-
-      expect(
-        find.text('Story Time Chart currently not implemented'),
-        findsOneWidget,
-      );
-    });
   });
 }

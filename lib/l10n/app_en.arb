@@ -1764,6 +1764,14 @@
   "settingsCategoriesHasAutomaticPrompts": "Automatic AI",
   "settingsCategoriesHasDefaultLanguage": "Default language",
   "settingsCategoriesNameLabel": "Category name:",
+  "settingsCategoriesTaskCount": "{count, plural, one{{count} task} other{{count} tasks}}",
+  "@settingsCategoriesTaskCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsCategoriesTitle": "Categories",
   "settingsConflictsResolutionTitle": "Sync Conflict Resolution",
   "settingsConflictsTitle": "Sync Conflicts",

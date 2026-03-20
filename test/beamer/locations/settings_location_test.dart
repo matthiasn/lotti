@@ -319,7 +319,6 @@ void main() {
       expect(detailPage.projectId, 'proj-123');
     });
 
-
     test('buildPages builds DashboardSettingsPage', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/dashboards'),
