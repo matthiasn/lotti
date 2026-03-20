@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/project_accepted_recommendation.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 
-/// Renders the project agent identity card, showing the agent's display
-/// name when a project agent has been provisioned.
+/// Renders project-agent context on the project detail page.
+///
+/// Shows the provisioned agent's display name and any accepted
+/// `recommend_next_steps` decisions that have been confirmed by the user.
 class ProjectAgentReportCard extends ConsumerWidget {
   const ProjectAgentReportCard({
     required this.projectId,
@@ -19,6 +23,12 @@ class ProjectAgentReportCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final agentAsync = ref.watch(projectAgentProvider(projectId));
+    final acceptedRecommendations =
+        ref
+            .watch(projectAcceptedRecommendationsProvider(projectId))
+            .asData
+            ?.value ??
+        const [];
 
     return agentAsync.when(
       loading: () => const SizedBox.shrink(),
@@ -49,9 +59,94 @@ class ProjectAgentReportCard extends ConsumerWidget {
                 ],
               ),
             ),
+            if (acceptedRecommendations.isNotEmpty) ...[
+              const Divider(height: 24),
+              Text(
+                context.messages.projectAcceptedNextStepsTitle,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (final recommendation in acceptedRecommendations)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _AcceptedRecommendationTile(
+                    recommendation: recommendation,
+                  ),
+                ),
+            ],
           ],
         );
       },
+    );
+  }
+}
+
+class _AcceptedRecommendationTile extends StatelessWidget {
+  const _AcceptedRecommendationTile({required this.recommendation});
+
+  final ProjectAcceptedRecommendation recommendation;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: context.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.45,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: context.colorScheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Text(
+                  recommendation.title,
+                  style: context.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (recommendation.priority case final priority?)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    priority,
+                    style: context.textTheme.labelSmall?.copyWith(
+                      color: context.colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          if (recommendation.rationale case final rationale?) ...[
+            const SizedBox(height: 6),
+            Text(
+              rationale,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -407,6 +408,64 @@ void main() {
           greaterThanOrEqualTo(3),
         );
       });
+
+      test(
+        'rolls forward the daily digest schedule when the scheduled wake is due',
+        () async {
+          final testDate = DateTime(2026, 3, 20, 9, 30);
+          final dueState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: DateTime(2026, 3, 20, 9),
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => dueState);
+
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: const {},
+              threadId: threadId,
+            );
+          });
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 9));
+          expect(updatedState.slots.lastDailyWakeAt, testDate);
+        },
+      );
+
+      test(
+        'keeps the existing future daily digest schedule on non-due wakes',
+        () async {
+          final futureSchedule = DateTime(2026, 3, 21, 9);
+          final scheduledState = makeTestState(
+            slots: const AgentSlots(activeProjectId: projectId),
+            scheduledWakeAt: futureSchedule,
+          );
+          when(
+            () => mockAgentRepository.getAgentState(agentId),
+          ).thenAnswer((_) async => scheduledState);
+
+          await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          final updatedState = captured.whereType<AgentStateEntity>().last;
+          expect(updatedState.scheduledWakeAt, futureSchedule);
+          expect(updatedState.slots.lastDailyWakeAt, isNull);
+        },
+      );
 
       test('records template provenance on wake run', () async {
         await workflow.execute(

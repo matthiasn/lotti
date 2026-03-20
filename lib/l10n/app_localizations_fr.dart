@@ -3652,6 +3652,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAcceptedNextStepsTitle => 'Prochaines étapes acceptées';
+
+  @override
   String projectCountSummary(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -39,6 +39,10 @@ abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
 }
 
+abstract final class AgentSchedules {
+  static const projectDailyDigestHour = 9;
+}
+
 /// Format a [DateTime] as YYYY-MM-DD. Returns `null` for a `null` input.
 String? formatIsoDate(DateTime? date) {
   if (date == null) return null;

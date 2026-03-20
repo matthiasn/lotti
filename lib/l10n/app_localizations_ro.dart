@@ -3599,6 +3599,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectAgentSectionTitle => 'Agent';
 
   @override
+  String get projectAcceptedNextStepsTitle => 'Pașii următori acceptați';
+
+  @override
   String projectCountSummary(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

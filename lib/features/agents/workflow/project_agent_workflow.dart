@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -283,6 +284,9 @@ class ProjectAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
+      final scheduledWakeWasDue =
+          state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+      final shouldInitializeSchedule = state.scheduledWakeAt == null;
 
       await syncService.runInTransaction(() async {
         // Persist thought.
@@ -411,10 +415,22 @@ class ProjectAgentWorkflow {
         }
 
         // Update state.
+        final nextScheduledWakeAt =
+            scheduledWakeWasDue || shouldInitializeSchedule
+            ? nextLocalDayAtTime(
+                now,
+                hour: AgentSchedules.projectDailyDigestHour,
+              )
+            : state.scheduledWakeAt;
+        final nextSlots = scheduledWakeWasDue
+            ? state.slots.copyWith(lastDailyWakeAt: now)
+            : state.slots;
         await syncService.upsertEntity(
           state.copyWith(
             revision: state.revision + 1,
+            slots: nextSlots,
             lastWakeAt: now,
+            scheduledWakeAt: nextScheduledWakeAt,
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: state.wakeCounter + 1,
