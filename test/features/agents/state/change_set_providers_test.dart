@@ -7,16 +7,13 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
-import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -317,104 +314,16 @@ void main() {
     });
   });
 
-  group('projectPendingChangeSetsProvider', () {
-    test('returns empty list when no agent exists for project', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-001').overrideWith(
-            (ref) async => null,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectPendingChangeSetsProvider('project-001'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      final result = await container.read(
-        projectPendingChangeSetsProvider('project-001').future,
-      );
-
-      expect(result, isEmpty);
-      verifyNever(
-        () => mockRepository.getPendingChangeSets(
-          any(),
-          taskId: any(named: 'taskId'),
-        ),
-      );
-    });
-
-    test('fetches change sets from repo when project agent exists', () async {
-      final agent = makeTestIdentity();
-      final changeSet = makeTestChangeSet(
-        agentId: agent.agentId,
-        taskId: 'project-001',
-      );
-
-      when(
-        () => mockRepository.getPendingChangeSets(
-          agent.agentId,
-          taskId: 'project-001',
-        ),
-      ).thenAnswer((_) async => [changeSet]);
-
-      final updateController = StreamController<Set<String>>.broadcast();
-      addTearDown(updateController.close);
-
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-001').overrideWith(
-            (ref) async => agent,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(agent.agentId).overrideWith(
-            (ref) => updateController.stream,
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectPendingChangeSetsProvider('project-001'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
-
-      final result = await container.read(
-        projectPendingChangeSetsProvider('project-001').future,
-      );
-
-      expect(result, hasLength(1));
-      expect(result[0], isA<ChangeSetEntity>());
-
-      verify(
-        () => mockRepository.getPendingChangeSets(
-          agent.agentId,
-          taskId: 'project-001',
-        ),
-      ).called(1);
-    });
-  });
-
   group('changeSetConfirmationServiceProvider', () {
     late MockPersistenceLogic mockPersistenceLogic;
-    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUp(() async {
       mockPersistenceLogic = MockPersistenceLogic();
-      mockEntitiesCacheService = MockEntitiesCacheService();
       await setUpTestGetIt(
         additionalSetup: () {
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-            ..registerSingleton<TimeService>(TimeService())
-            ..registerSingleton<EntitiesCacheService>(
-              mockEntitiesCacheService,
-            );
+            ..registerSingleton<TimeService>(TimeService());
         },
       );
     });
@@ -444,31 +353,6 @@ void main() {
       addTearDown(container.dispose);
 
       final service = container.read(changeSetConfirmationServiceProvider);
-
-      expect(service, isA<ChangeSetConfirmationService>());
-    });
-
-    test('creates project-scoped service with resolved dependencies', () {
-      final mockSyncService = MockAgentSyncService();
-      final mockJournalDb = MockJournalDb();
-      final mockProjectRepository = MockProjectRepository();
-      final mockLabelsRepository = MockLabelsRepository();
-
-      final container = ProviderContainer(
-        overrides: [
-          agentSyncServiceProvider.overrideWithValue(mockSyncService),
-          journalDbProvider.overrideWithValue(mockJournalDb),
-          projectRepositoryProvider.overrideWithValue(mockProjectRepository),
-          labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
-          domainLoggerProvider.overrideWithValue(MockDomainLogger()),
-          taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final service = container.read(
-        projectChangeSetConfirmationServiceProvider,
-      );
 
       expect(service, isA<ChangeSetConfirmationService>());
     });

@@ -36,7 +36,7 @@ import 'package:uuid/uuid.dart';
 ///
 /// Extracted from [TaskAgentWorkflow] to reduce file size and improve
 /// testability of tool dispatch logic independently of the wake cycle.
-class TaskToolDispatcher implements AgentToolDispatcher {
+class TaskToolDispatcher {
   TaskToolDispatcher({
     required this.journalDb,
     required this.journalRepository,

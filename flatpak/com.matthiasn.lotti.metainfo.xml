@@ -31,18 +31,10 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.929" date="2026-03-20">
-      <description>
-          <p>Categories list redesign: new tile layout with colored icon badges, task count subtitles, favorite stars, and private/inactive status indicators. Batch query for better performance.</p>
-          <p>Project agents now keep a daily scheduled digest cadence. New project agents schedule their first digest for 09:00 local on the next day, and due digests roll forward automatically after a successful wake.</p>
-          <p>Project detail pages now surface pending project-agent proposals so confirmed status changes and new linked tasks can be applied directly from the project page.</p>
-      </description>
-    </release>
     <release version="0.9.928" date="2026-03-19">
       <description>
+          <p>Categories list redesign: new tile layout with colored icon badges, task count subtitles, favorite stars, and private/inactive status indicators. Batch query for better performance.</p>
           <p>Voice-driven time tracking: the task agent can now create time tracking entries from voice dictation, supporting both completed sessions with start/end times and running timers. Entries require user approval before being applied.</p>
-          <p>Projects UI: full project management interface with create/detail pages, project picker for tasks, category integration, health header on tasks page, and project-based task filtering. Each project auto-creates an AI agent for analysis and reporting.</p>
-          <p>Projects feature flag: all project UI gated behind enableProjects config flag (default off). Expandable health header with project/task counts. Interactive status picker on project detail page.</p>
           <p>Removed the prompt tab and prompt editing page from AI settings. Prompts are now managed internally.</p>
           <p>Removed the entire tag concept (generic, person, and story tags) along with all related UI, sync infrastructure, services, and repositories. Database tables left in place to avoid migrations.</p>
       </description>

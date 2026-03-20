@@ -70,15 +70,6 @@ class ToolExecutionResult {
   final String? denialReason;
 }
 
-/// Minimal execution contract for applying a confirmed change-set item.
-abstract interface class AgentToolDispatcher {
-  Future<ToolExecutionResult> dispatch(
-    String toolName,
-    Map<String, dynamic> args,
-    String targetId,
-  );
-}
-
 /// Orchestrates tool calls on behalf of an agent with category enforcement
 /// and audit logging.
 ///

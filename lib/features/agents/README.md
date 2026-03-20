@@ -227,7 +227,7 @@ sequenceDiagram
 ## Module Responsibilities
 
 - `wake/`: subscription matching, throttling, queueing, single-flight dispatch, wake-run status.
-- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`, `ProjectToolDispatcher`).
+- `workflow/`: context assembly + LLM orchestration (`TaskAgentWorkflow`, `TemplateEvolutionWorkflow`), change set building (`ChangeSetBuilder`), redundant proposal suppression (`ChangeProposalFilter`), tool dispatch extraction (`TaskToolDispatcher`).
 - `tools/`: declarative tool registry + execution policy/audit wrappers + task tool handlers.
 - `service/`: lifecycle APIs for agents/templates, subscription restoration, template versioning/metrics, change set confirmation (`ChangeSetConfirmationService`).
 - `sync/`: transaction-aware outbox buffering for agent entity/link writes. All change set operations go through sync for cross-device consistency.

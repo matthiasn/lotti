@@ -3,15 +3,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 /// Truncates a [DateTime] to midnight of the same day.
 DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
-/// Returns the next local calendar day at the given [hour] and [minute].
-///
-/// Useful for recurring daily cadences like "tomorrow at 09:00 local".
-DateTime nextLocalDayAtTime(
-  DateTime dt, {
-  required int hour,
-  int minute = 0,
-}) => DateTime(dt.year, dt.month, dt.day + 1, hour, minute);
-
 /// Accumulates success/failure/duration stats from a list of wake runs.
 ///
 /// Returns a record with the computed statistics. The [statusAccessor] and

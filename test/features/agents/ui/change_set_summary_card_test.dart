@@ -55,36 +55,11 @@ void main() {
     );
   }
 
-  Widget buildProjectWidget({
-    List<AgentDomainEntity> changeSets = const [],
-  }) {
-    return makeTestableWidgetWithScaffold(
-      const ChangeSetSummaryCard.project(projectId: 'project-001'),
-      overrides: [
-        projectPendingChangeSetsProvider('project-001').overrideWith(
-          (ref) async => changeSets,
-        ),
-        projectChangeSetConfirmationServiceProvider.overrideWithValue(
-          mockConfirmationService,
-        ),
-        updateNotificationsProvider.overrideWithValue(mockUpdateNotifications),
-      ],
-    );
-  }
-
   Future<void> pumpCard(
     WidgetTester tester, {
     List<AgentDomainEntity> changeSets = const [],
   }) async {
     await tester.pumpWidget(buildWidget(changeSets: changeSets));
-    await _pumpUi(tester);
-  }
-
-  Future<void> pumpProjectCard(
-    WidgetTester tester, {
-    List<AgentDomainEntity> changeSets = const [],
-  }) async {
-    await tester.pumpWidget(buildProjectWidget(changeSets: changeSets));
     await _pumpUi(tester);
   }
 
@@ -583,36 +558,6 @@ void main() {
       await _pumpUi(tester);
 
       expect(find.text('Failed to apply change'), findsOneWidget);
-    });
-
-    testWidgets('project scope uses project confirmation service', (
-      tester,
-    ) async {
-      final changeSet = makeTestChangeSet(
-        taskId: 'project-001',
-        items: const [
-          ChangeItem(
-            toolName: 'update_project_status',
-            args: {'status': 'active', 'reason': 'Momentum is good'},
-            humanSummary: 'Update project status to active',
-          ),
-        ],
-      );
-
-      when(
-        () => mockConfirmationService.confirmItem(any(), any()),
-      ).thenAnswer(
-        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
-      );
-
-      await pumpProjectCard(tester, changeSets: [changeSet]);
-
-      await tester.tap(find.byIcon(Icons.check_circle_outline));
-      await _pumpUi(tester);
-
-      verify(
-        () => mockConfirmationService.confirmItem(changeSet, 0),
-      ).called(1);
     });
   });
 

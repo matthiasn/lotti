@@ -1,4 +1,3 @@
-import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -157,61 +156,6 @@ void main() {
           ),
         ).called(1);
       });
-
-      test(
-        'initializes the next daily digest at 09:00 on the next day',
-        () async {
-          final identity = makeIdentity();
-          final template = makeTestTemplate(
-            kind: AgentTemplateKind.projectAgent,
-          );
-          final testDate = DateTime(2026, 3, 20, 14, 30);
-
-          when(
-            () => mockRepository.getLinksTo(
-              'project-daily',
-              type: 'agent_project',
-            ),
-          ).thenAnswer((_) async => []);
-          when(
-            () => mockRepository.getEntity(kTestTemplateId),
-          ).thenAnswer((_) async => template);
-          when(
-            () => mockAgentService.createAgent(
-              kind: any(named: 'kind'),
-              displayName: any(named: 'displayName'),
-              config: any(named: 'config'),
-              allowedCategoryIds: any(named: 'allowedCategoryIds'),
-            ),
-          ).thenAnswer((_) async => identity);
-          when(
-            () => mockRepository.getAgentState('agent-1'),
-          ).thenAnswer((_) async => makeState());
-          when(() => mockOrchestrator.addSubscription(any())).thenReturn(null);
-          when(
-            () => mockOrchestrator.enqueueManualWake(
-              agentId: any(named: 'agentId'),
-              reason: any(named: 'reason'),
-              triggerTokens: any(named: 'triggerTokens'),
-            ),
-          ).thenReturn(null);
-
-          await withClock(Clock.fixed(testDate), () async {
-            await service.createProjectAgent(
-              projectId: 'project-daily',
-              templateId: kTestTemplateId,
-              displayName: 'Daily Digest Agent',
-              allowedCategoryIds: const {},
-            );
-          });
-
-          final stateCalls = verify(
-            () => mockSyncService.upsertEntity(captureAny()),
-          ).captured;
-          final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 9));
-        },
-      );
 
       test(
         'creates template_assignment link when templateId provided',
