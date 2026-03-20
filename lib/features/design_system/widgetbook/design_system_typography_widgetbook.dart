@@ -27,8 +27,8 @@ class _TypographyOverviewPage extends StatelessWidget {
       builder: (context, constraints) {
         final wideLayout = constraints.maxWidth >= 1240;
         final spacing = tokens.spacing.sectionGap;
-        final board = const _TypographyBoard();
-        final details = const _TypographyDetails();
+        const board = _TypographyBoard();
+        const details = _TypographyDetails();
 
         return SingleChildScrollView(
           child: Padding(
@@ -37,9 +37,9 @@ class _TypographyOverviewPage extends StatelessWidget {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: board),
+                      const Expanded(child: board),
                       SizedBox(width: spacing),
-                      SizedBox(
+                      const SizedBox(
                         width: 280,
                         child: details,
                       ),

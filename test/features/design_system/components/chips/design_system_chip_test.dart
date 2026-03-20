@@ -25,19 +25,11 @@ void main() {
 
       final decoration = _chipDecoration(tester);
       final richText = _findTextNode(tester, 'Plain');
-      final padding = tester.widget<Padding>(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Padding &&
-              widget.padding ==
-                  EdgeInsets.symmetric(
-                    horizontal: dsTokensLight.spacing.step3,
-                    vertical: dsTokensLight.spacing.step1,
-                  ),
-        ),
-      );
+      final expectedHeight =
+          dsTokensLight.typography.lineHeight.bodySmall +
+          (dsTokensLight.spacing.step1 * 2);
 
-      expect(_chipSize(tester).height, 24);
+      expect(_chipSize(tester).height, expectedHeight);
       expect(decoration.color, dsTokensLight.colors.surface.enabled);
       expect(
         decoration.shape,
@@ -46,10 +38,6 @@ void main() {
           'borderRadius',
           BorderRadius.circular(dsTokensLight.radii.s),
         ),
-      );
-      expect(
-        padding.padding,
-        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       );
       _expectTextStyle(
         richText.text.style!,

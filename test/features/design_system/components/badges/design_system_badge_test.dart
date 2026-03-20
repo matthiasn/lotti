@@ -67,6 +67,22 @@ void main() {
       );
     });
 
+    testWidgets('lets number badges grow for wider values', (tester) async {
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.number(
+          value: '99+',
+          tone: DesignSystemBadgeTone.secondary,
+        ),
+      );
+
+      final size = _badgeSize(tester);
+
+      expect(size.height, 20);
+      expect(size.width, greaterThan(size.height));
+      expect(find.text('99+'), findsOneWidget);
+    });
+
     testWidgets('renders the filled danger badge from tokens', (tester) async {
       await _pumpBadge(
         tester,
@@ -121,7 +137,7 @@ void main() {
       );
     });
 
-    testWidgets('renders the secondary outlined badge without a border', (
+    testWidgets('renders the secondary outlined badge with a border', (
       tester,
     ) async {
       await _pumpBadge(
@@ -133,10 +149,14 @@ void main() {
       );
 
       final decoration = _badgeDecoration(tester);
+      final border = decoration.border! as Border;
       final richText = _findTextNode(tester, 'Outlined');
 
       expect(decoration.color, dsTokensLight.colors.surface.enabled);
-      expect(decoration.border, isNull);
+      expect(
+        border.top.color,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
       _expectTextStyle(
         richText.text.style!,
         dsTokensLight.typography.styles.others.caption,

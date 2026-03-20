@@ -65,7 +65,11 @@ class DesignSystemBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final sizeSpec = _BadgeSizeSpec.fromTokens(tokens, _type);
+    final sizeSpec = _BadgeSizeSpec.fromTokens(
+      tokens: tokens,
+      type: _type,
+      label: _label,
+    );
     final styleSpec = _BadgeStyleSpec.fromTokens(
       tokens: tokens,
       type: _type,
@@ -99,9 +103,12 @@ class DesignSystemBadge extends StatelessWidget {
   Widget _buildContent() {
     return switch (_type) {
       _DesignSystemBadgeType.dot => const SizedBox.shrink(),
-      _DesignSystemBadgeType.number ||
-      _DesignSystemBadgeType.filled ||
-      _DesignSystemBadgeType.outlined => Text(
+      _DesignSystemBadgeType.number => Text(
+        _label!,
+        maxLines: 1,
+        softWrap: false,
+      ),
+      _DesignSystemBadgeType.filled || _DesignSystemBadgeType.outlined => Text(
         _label!,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
@@ -114,6 +121,7 @@ class DesignSystemBadge extends StatelessWidget {
 class _BadgeSizeSpec {
   const _BadgeSizeSpec({
     required this.squareSize,
+    required this.minWidth,
     required this.height,
     required this.horizontalPadding,
     required this.verticalPadding,
@@ -123,14 +131,18 @@ class _BadgeSizeSpec {
     required this.borderWidth,
   });
 
-  factory _BadgeSizeSpec.fromTokens(
-    DsTokens tokens,
-    _DesignSystemBadgeType type,
-  ) {
+  factory _BadgeSizeSpec.fromTokens({
+    required DsTokens tokens,
+    required _DesignSystemBadgeType type,
+    required String? label,
+  }) {
     final caption = tokens.typography.styles.others.caption;
+    final compactNumber =
+        type == _DesignSystemBadgeType.number && (label?.length ?? 0) <= 2;
     return switch (type) {
       _DesignSystemBadgeType.dot => _BadgeSizeSpec(
         squareSize: tokens.spacing.step3,
+        minWidth: null,
         height: tokens.spacing.step3,
         horizontalPadding: 0,
         verticalPadding: 0,
@@ -140,8 +152,12 @@ class _BadgeSizeSpec {
         borderWidth: tokens.spacing.step1 / 2,
       ),
       _DesignSystemBadgeType.number => _BadgeSizeSpec(
-        squareSize:
-            tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        squareSize: compactNumber
+            ? tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2)
+            : null,
+        minWidth: compactNumber
+            ? null
+            : tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
         height:
             tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
         horizontalPadding: 0,
@@ -157,6 +173,7 @@ class _BadgeSizeSpec {
       _DesignSystemBadgeType.icon => _BadgeSizeSpec(
         squareSize:
             tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
+        minWidth: null,
         height:
             tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
         horizontalPadding: tokens.spacing.step1,
@@ -169,6 +186,7 @@ class _BadgeSizeSpec {
       _DesignSystemBadgeType.filled ||
       _DesignSystemBadgeType.outlined => _BadgeSizeSpec(
         squareSize: null,
+        minWidth: null,
         height:
             tokens.typography.lineHeight.caption + (tokens.spacing.step1 * 2),
         horizontalPadding: tokens.spacing.step2,
@@ -182,6 +200,7 @@ class _BadgeSizeSpec {
   }
 
   final double? squareSize;
+  final double? minWidth;
   final double height;
   final double horizontalPadding;
   final double verticalPadding;
@@ -207,9 +226,15 @@ class _BadgeSizeSpec {
     }
 
     return IntrinsicWidth(
-      child: SizedBox(
-        height: height,
-        child: paddedChild,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          minWidth: minWidth ?? 0,
+          minHeight: height,
+        ),
+        child: SizedBox(
+          height: height,
+          child: paddedChild,
+        ),
       ),
     );
   }
@@ -256,7 +281,7 @@ class _BadgeStyleSpec {
       _DesignSystemBadgeType.outlined => _BadgeStyleSpec(
         backgroundColor: isSecondary ? secondaryBackground : null,
         foregroundColor: accentColor,
-        borderColor: isSecondary ? null : accentColor,
+        borderColor: accentColor,
       ),
     };
   }

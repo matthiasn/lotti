@@ -206,7 +206,6 @@ class _ChipContent extends StatelessWidget {
 class _ChipSizeSpec {
   const _ChipSizeSpec({
     required this.labelStyle,
-    required this.height,
     required this.horizontalPadding,
     required this.verticalPadding,
     required this.itemGap,
@@ -218,8 +217,6 @@ class _ChipSizeSpec {
   factory _ChipSizeSpec.fromTokens(DsTokens tokens) {
     return _ChipSizeSpec(
       labelStyle: tokens.typography.styles.body.bodySmall,
-      height:
-          tokens.typography.lineHeight.bodySmall + (tokens.spacing.step1 * 2),
       horizontalPadding: tokens.spacing.step3,
       verticalPadding: tokens.spacing.step1,
       itemGap: tokens.spacing.step2,
@@ -230,7 +227,6 @@ class _ChipSizeSpec {
   }
 
   final TextStyle labelStyle;
-  final double height;
   final double horizontalPadding;
   final double verticalPadding;
   final double itemGap;
