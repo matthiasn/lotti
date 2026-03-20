@@ -10,12 +10,8 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
         name: 'Buttons',
         useCases: [
           WidgetbookUseCase(
-            name: 'Variant Matrix',
-            builder: (context) => const _ButtonVariantMatrix(),
-          ),
-          WidgetbookUseCase(
-            name: 'Size Scale',
-            builder: (context) => const _ButtonSizeScale(),
+            name: 'Overview',
+            builder: (context) => const _ButtonOverviewPage(),
           ),
         ],
       ),
@@ -23,56 +19,51 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
   );
 }
 
-class _ButtonVariantMatrix extends StatelessWidget {
-  const _ButtonVariantMatrix();
+class _ButtonOverviewPage extends StatelessWidget {
+  const _ButtonOverviewPage();
 
   @override
   Widget build(BuildContext context) {
-    const variants = <DesignSystemButtonVariant>[
-      DesignSystemButtonVariant.primary,
-      DesignSystemButtonVariant.secondary,
-      DesignSystemButtonVariant.tertiary,
-      DesignSystemButtonVariant.danger,
-      DesignSystemButtonVariant.dangerSecondary,
-      DesignSystemButtonVariant.dangerTertiary,
-    ];
-
     return Padding(
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final entry in _stateRows)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    entry.label,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 16,
-                    runSpacing: 16,
-                    children: [
-                      for (final variant in variants)
-                        DesignSystemButton(
-                          label: _labelForVariant(variant),
-                          variant: variant,
-                          leadingIcon: Icons.add,
-                          trailingIcon: Icons.keyboard_arrow_down,
-                          forcedState: entry.state,
-                          onPressed: entry.enabled ? () {} : null,
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+      child: ListView(
+        children: const [
+          _ButtonSection(
+            title: 'Size Scale',
+            child: _ButtonSizeScale(),
+          ),
+          SizedBox(height: 32),
+          _ButtonSection(
+            title: 'Variant Matrix',
+            child: _ButtonVariantMatrix(),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ButtonSection extends StatelessWidget {
+  const _ButtonSection({
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 16),
+        child,
+      ],
     );
   }
 }
@@ -106,6 +97,57 @@ class _ButtonSizeScale extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _ButtonVariantMatrix extends StatelessWidget {
+  const _ButtonVariantMatrix();
+
+  @override
+  Widget build(BuildContext context) {
+    const variants = <DesignSystemButtonVariant>[
+      DesignSystemButtonVariant.primary,
+      DesignSystemButtonVariant.secondary,
+      DesignSystemButtonVariant.tertiary,
+      DesignSystemButtonVariant.danger,
+      DesignSystemButtonVariant.dangerSecondary,
+      DesignSystemButtonVariant.dangerTertiary,
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final entry in _stateRows)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.label,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    for (final variant in variants)
+                      DesignSystemButton(
+                        label: _labelForVariant(variant),
+                        variant: variant,
+                        leadingIcon: Icons.add,
+                        trailingIcon: Icons.keyboard_arrow_down,
+                        forcedState: entry.state,
+                        onPressed: entry.enabled ? () {} : null,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
