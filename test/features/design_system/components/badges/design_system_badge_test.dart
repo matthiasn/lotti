@@ -218,6 +218,75 @@ void main() {
       expect(find.bySemanticsLabel('Success status'), findsOneWidget);
     });
 
+    testWidgets('supports semanticLabel on number badges', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.number(
+          value: '5',
+          semanticLabel: '5 unread messages',
+        ),
+      );
+
+      expect(find.bySemanticsLabel('5 unread messages'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('supports semanticLabel on filled badges', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(
+          label: 'New',
+          semanticLabel: 'New items available',
+        ),
+      );
+
+      expect(find.bySemanticsLabel('New items available'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('supports semanticLabel on outlined badges', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: 'Beta',
+          semanticLabel: 'Beta feature',
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Beta feature'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('excludeFromSemantics works on filled badges', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.filled(
+          key: Key('hidden-badge'),
+          label: 'Hidden',
+          excludeFromSemantics: true,
+        ),
+      );
+
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('hidden-badge')),
+          matching: find.byType(ExcludeSemantics),
+        ),
+        findsOneWidget,
+      );
+      semantics.dispose();
+    });
+
     testWidgets('keeps badge geometry fixed when text scaling is increased', (
       tester,
     ) async {

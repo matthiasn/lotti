@@ -1180,6 +1180,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "Přejetí",
   "designSystemPressedLabel": "Stisknuto",
+  "designSystemCheckboxLabel": "Zaškrtávací políčko",
   "designSystemRadioButtonLabel": "Radio button",
   "designSystemSelectedLabel": "Vybrané",
   "designSystemSizeScaleTitle": "Škála velikostí",

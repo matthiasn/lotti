@@ -1393,6 +1393,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "La survolare",
   "designSystemPressedLabel": "Apăsat",
+  "designSystemCheckboxLabel": "Casetă de selectare",
   "designSystemRadioButtonLabel": "Buton radio",
   "designSystemSelectedLabel": "Selectat",
   "designSystemSizeScaleTitle": "Scală de dimensiuni",

@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -255,6 +257,7 @@ void main() {
           const DesignSystemButton(
             key: buttonKey,
             label: '',
+            semanticsLabel: 'Icon-only button',
             leadingIcon: Icons.add,
             trailingIcon: Icons.keyboard_arrow_down,
             onPressed: _noop,
@@ -327,7 +330,85 @@ void main() {
       expect(richText.overflow, TextOverflow.ellipsis);
       expect(richText.maxLines, 1);
     });
+
+    testWidgets('clears transient hover state after disable and re-enable', (
+      tester,
+    ) async {
+      final enabled = ValueNotifier<bool>(true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _ButtonInteractionHarness(enabled: enabled),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(() {
+        enabled.dispose();
+        return gesture.removePointer();
+      });
+      await gesture.addPointer();
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(DesignSystemButton)));
+      await tester.pump();
+
+      expect(
+        (_buttonInk(tester).decoration! as ShapeDecoration).color,
+        dsTokensLight.colors.interactive.hover,
+      );
+
+      enabled.value = false;
+      await tester.pump();
+      enabled.value = true;
+      await tester.pump();
+
+      expect(
+        (_buttonInk(tester).decoration! as ShapeDecoration).color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+    });
+
+    test('asserts when no visible label or semanticsLabel is provided', () {
+      expect(
+        () => DesignSystemButton(
+          label: '',
+          onPressed: _noop,
+        ),
+        throwsAssertionError,
+      );
+    });
   });
+}
+
+class _ButtonInteractionHarness extends StatelessWidget {
+  const _ButtonInteractionHarness({
+    required this.enabled,
+  });
+
+  final ValueNotifier<bool> enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: enabled,
+      builder: (context, isEnabled, child) {
+        return DesignSystemButton(
+          label: 'Hover me',
+          onPressed: isEnabled ? _noop : null,
+        );
+      },
+    );
+  }
+}
+
+Ink _buttonInk(WidgetTester tester) {
+  return tester.widget<Ink>(
+    find.descendant(
+      of: find.byType(DesignSystemButton),
+      matching: find.byType(Ink),
+    ),
+  );
 }
 
 void _noop() {}

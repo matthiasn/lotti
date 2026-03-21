@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemButtonVariant {
   primary,
@@ -34,7 +35,10 @@ class DesignSystemButton extends StatefulWidget {
     this.semanticsLabel,
     this.forcedState,
     super.key,
-  });
+  }) : assert(
+         label != '' || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       );
 
   final String label;
   final VoidCallback? onPressed;
@@ -54,10 +58,24 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
   bool _pressed = false;
 
   @override
+  void didUpdateWidget(covariant DesignSystemButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final interactionModeChanged =
+        oldWidget.forcedState != widget.forcedState ||
+        (oldWidget.onPressed == null) != (widget.onPressed == null);
+
+    if (interactionModeChanged) {
+      _hovered = false;
+      _pressed = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final enabled = widget.onPressed != null;
-    final visualState = _resolveVisualState();
+    final visualState = _resolveVisualState(enabled);
     final sizeSpec = _ButtonSizeSpec.fromTokens(tokens, widget.size);
     final variantSpec = _ButtonVariantSpec.fromTokens(
       tokens: tokens,
@@ -116,17 +134,17 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       ),
     );
 
-    if (enabled) {
-      return button;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: button,
+    return button.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 
-  DesignSystemButtonVisualState _resolveVisualState() {
+  DesignSystemButtonVisualState _resolveVisualState(bool enabled) {
+    if (!enabled) {
+      return DesignSystemButtonVisualState.idle;
+    }
+
     if (widget.forcedState != null) {
       return widget.forcedState!;
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemCheckboxVisualState {
   idle,
@@ -15,7 +16,10 @@ class DesignSystemCheckbox extends StatefulWidget {
     this.semanticsLabel,
     this.forcedState,
     super.key,
-  });
+  }) : assert(
+         (label != null && label != '') || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       );
 
   final bool? value;
   final ValueChanged<bool?>? onChanged;
@@ -32,10 +36,24 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
   bool _pressed = false;
 
   @override
+  void didUpdateWidget(covariant DesignSystemCheckbox oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final interactionModeChanged =
+        oldWidget.forcedState != widget.forcedState ||
+        (oldWidget.onChanged == null) != (widget.onChanged == null);
+
+    if (interactionModeChanged) {
+      _hovered = false;
+      _pressed = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final enabled = widget.onChanged != null;
-    final visualState = _resolveVisualState();
+    final visualState = _resolveVisualState(enabled);
     final sizeSpec = _CheckboxSizeSpec.fromTokens(tokens);
     final styleSpec = _CheckboxStyleSpec.fromTokens(
       tokens: tokens,
@@ -90,13 +108,9 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
       ),
     );
 
-    if (enabled) {
-      return checkbox;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: checkbox,
+    return checkbox.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 
@@ -104,7 +118,11 @@ class _DesignSystemCheckboxState extends State<DesignSystemCheckbox> {
     widget.onChanged?.call(widget.value != true);
   }
 
-  DesignSystemCheckboxVisualState _resolveVisualState() {
+  DesignSystemCheckboxVisualState _resolveVisualState(bool enabled) {
+    if (!enabled) {
+      return DesignSystemCheckboxVisualState.idle;
+    }
+
     if (widget.forcedState != null) {
       return widget.forcedState!;
     }

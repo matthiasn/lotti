@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemToggleSize {
   small,
@@ -20,11 +21,12 @@ class DesignSystemToggle extends StatefulWidget {
     this.label,
     this.semanticsLabel,
     this.tooltipIcon,
+    this.tooltipMessage,
     this.enabled = true,
     this.forcedState,
     super.key,
   }) : assert(
-         label != null || semanticsLabel != null,
+         (label != null && label != '') || semanticsLabel != null,
          'Provide either a visible label or a semanticsLabel.',
        );
 
@@ -34,6 +36,7 @@ class DesignSystemToggle extends StatefulWidget {
   final String? label;
   final String? semanticsLabel;
   final IconData? tooltipIcon;
+  final String? tooltipMessage;
   final bool enabled;
   final DesignSystemToggleVisualState? forcedState;
 
@@ -46,18 +49,36 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
   bool _pressed = false;
 
   @override
+  void didUpdateWidget(covariant DesignSystemToggle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final interactionModeChanged =
+        oldWidget.forcedState != widget.forcedState ||
+        oldWidget.enabled != widget.enabled;
+
+    if (interactionModeChanged) {
+      _hovered = false;
+      _pressed = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final visualState = _resolveVisualState();
+    final enabled = widget.enabled;
+    final visualState = _resolveVisualState(enabled);
     final sizeSpec = _ToggleSizeSpec.fromTokens(tokens, widget.size);
     final variantSpec = _ToggleVariantSpec.fromTokens(
       tokens: tokens,
       value: widget.value,
       visualState: visualState,
     );
-    final enabled = widget.enabled;
     final hasLabel = widget.label?.isNotEmpty == true;
     final hasTooltipIcon = widget.tooltipIcon != null;
+    final tooltipMessage = widget.tooltipMessage ??
+        (widget.label?.isNotEmpty == true
+            ? widget.label
+            : widget.semanticsLabel)!;
     final control = _ToggleControl(
       sizeSpec: sizeSpec,
       variantSpec: variantSpec,
@@ -70,18 +91,27 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
         control,
         if (hasLabel || hasTooltipIcon) SizedBox(width: sizeSpec.itemGap),
         if (hasLabel)
-          DefaultTextStyle.merge(
-            style: sizeSpec.labelStyle.copyWith(
-              color: variantSpec.labelColor,
+          Flexible(
+            child: DefaultTextStyle.merge(
+              style: sizeSpec.labelStyle.copyWith(
+                color: variantSpec.labelColor,
+              ),
+              child: Text(
+                widget.label!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            child: Text(widget.label!),
           ),
         if (hasLabel && hasTooltipIcon) SizedBox(width: sizeSpec.inlineGap),
         if (hasTooltipIcon)
-          Icon(
-            widget.tooltipIcon,
-            size: sizeSpec.tooltipIconSize,
-            color: variantSpec.iconColor,
+          Tooltip(
+            message: tooltipMessage,
+            child: Icon(
+              widget.tooltipIcon,
+              size: sizeSpec.tooltipIconSize,
+              color: variantSpec.iconColor,
+            ),
           ),
       ],
     );
@@ -106,17 +136,17 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
       ),
     );
 
-    if (enabled) {
-      return toggle;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: toggle,
+    return toggle.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 
-  DesignSystemToggleVisualState _resolveVisualState() {
+  DesignSystemToggleVisualState _resolveVisualState(bool enabled) {
+    if (!enabled) {
+      return DesignSystemToggleVisualState.idle;
+    }
+
     if (widget.forcedState != null) {
       return widget.forcedState!;
     }
@@ -129,6 +159,8 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     return DesignSystemToggleVisualState.idle;
   }
 }
+
+const _kToggleAnimationDuration = Duration(milliseconds: 160);
 
 class _ToggleControl extends StatelessWidget {
   const _ToggleControl({
@@ -144,7 +176,7 @@ class _ToggleControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
+      duration: _kToggleAnimationDuration,
       curve: Curves.easeOut,
       width: sizeSpec.trackWidth,
       height: sizeSpec.trackHeight,
@@ -160,11 +192,11 @@ class _ToggleControl extends StatelessWidget {
               ),
       ),
       child: AnimatedAlign(
-        duration: const Duration(milliseconds: 160),
+        duration: _kToggleAnimationDuration,
         curve: Curves.easeOut,
         alignment: value ? Alignment.centerRight : Alignment.centerLeft,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: _kToggleAnimationDuration,
           curve: Curves.easeOut,
           width: sizeSpec.thumbDiameter,
           height: sizeSpec.thumbDiameter,

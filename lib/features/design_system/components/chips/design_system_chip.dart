@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemChipVisualState {
   idle,
@@ -20,6 +21,10 @@ class DesignSystemChip extends StatefulWidget {
     this.forcedState,
     super.key,
   }) : assert(
+         label != '' || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       ),
+       assert(
          leadingIcon == null || avatar == null,
          'Use either leadingIcon or avatar, not both.',
        );
@@ -103,7 +108,7 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
                   enabled: enabled,
                   selected:
                       visualState == DesignSystemChipVisualState.activated,
-                  label: widget.semanticsLabel,
+                  label: widget.semanticsLabel ?? widget.label,
                   child: _ChipContent(
                     label: widget.label,
                     leadingIcon: widget.leadingIcon,
@@ -120,13 +125,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
       ),
     );
 
-    if (enabled) {
-      return chip;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: chip,
+    return chip.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

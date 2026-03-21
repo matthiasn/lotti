@@ -228,6 +228,27 @@ void main() {
       expect(find.text('With avatar'), findsOneWidget);
     });
 
+    testWidgets('uses semanticsLabel when the visible label is omitted', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpChip(
+        tester,
+        const DesignSystemChip(
+          label: '',
+          semanticsLabel: 'Filter chip',
+          leadingIcon: Icons.filter_alt_rounded,
+          onPressed: _noop,
+        ),
+      );
+
+      expect(find.byIcon(Icons.filter_alt_rounded), findsOneWidget);
+      expect(find.bySemanticsLabel('Filter chip'), findsOneWidget);
+
+      semantics.dispose();
+    });
+
     test('asserts when both leading icon and avatar are provided', () {
       expect(
         () => DesignSystemChip(
@@ -239,6 +260,19 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    test(
+      'asserts when neither a visible label nor semanticsLabel is provided',
+      () {
+        expect(
+          () => DesignSystemChip(
+            label: '',
+            onPressed: _noop,
+          ),
+          throwsAssertionError,
+        );
+      },
+    );
   });
 }
 

@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -18,6 +20,7 @@ void main() {
             value: false,
             label: 'Small toggle',
             tooltipIcon: Icons.info_outline_rounded,
+            tooltipMessage: 'More information',
             onChanged: _noopToggle,
           ),
           theme: DesignSystemTheme.light(),
@@ -70,6 +73,12 @@ void main() {
           matching: find.byIcon(Icons.info_outline_rounded),
         ),
       );
+      final tooltip = tester.widget<Tooltip>(
+        find.descendant(
+          of: find.byKey(toggleKey),
+          matching: find.byType(Tooltip),
+        ),
+      );
 
       expect(
         (track.decoration! as BoxDecoration).color,
@@ -90,6 +99,7 @@ void main() {
         dsTokensLight.typography.styles.subtitle.subtitle2.fontSize,
       );
       expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
+      expect(tooltip.message, 'More information');
     });
 
     testWidgets('renders the default on state from tokens', (tester) async {
@@ -255,6 +265,99 @@ void main() {
       semantics.dispose();
     });
 
+    testWidgets('uses semanticsLabel as the tooltip fallback', (tester) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemToggle(
+            value: false,
+            semanticsLabel: 'Accessible toggle',
+            tooltipIcon: Icons.info_outline_rounded,
+            onChanged: _noopToggle,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+
+      expect(tooltip.message, 'Accessible toggle');
+      expect(find.bySemanticsLabel('Accessible toggle'), findsOneWidget);
+      semantics.dispose();
+    });
+
+    testWidgets('wraps long labels in a flexible ellipsis text node', (
+      tester,
+    ) async {
+      const label = 'A very long toggle label that should truncate cleanly';
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 180,
+            child: DesignSystemToggle(
+              value: false,
+              label: label,
+              tooltipIcon: Icons.info_outline_rounded,
+              onChanged: _noopToggle,
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Flexible), findsOneWidget);
+
+      final richText = tester.widget<RichText>(
+        find.byWidgetPredicate(
+          (widget) => widget is RichText && widget.text.toPlainText() == label,
+        ),
+      );
+
+      expect(richText.overflow, TextOverflow.ellipsis);
+      expect(richText.maxLines, 1);
+    });
+
+    testWidgets('clears transient hover state after disable and re-enable', (
+      tester,
+    ) async {
+      final enabled = ValueNotifier<bool>(true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _ToggleEnabledHarness(enabled: enabled),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(() {
+        enabled.dispose();
+        return gesture.removePointer();
+      });
+      await gesture.addPointer();
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(DesignSystemToggle)));
+      await tester.pump();
+
+      expect(
+        (_toggleTrack(tester).decoration! as BoxDecoration).color,
+        dsTokensLight.colors.interactive.hover,
+      );
+
+      enabled.value = false;
+      await tester.pump();
+      enabled.value = true;
+      await tester.pump();
+
+      expect(
+        (_toggleTrack(tester).decoration! as BoxDecoration).color,
+        dsTokensLight.colors.interactive.enabled,
+      );
+    });
+
     test('asserts when neither a label nor semantics label is provided', () {
       expect(
         () => DesignSystemToggle(
@@ -285,6 +388,40 @@ class _ToggleHarnessState extends State<_ToggleHarness> {
       onChanged: (value) => setState(() => _value = value),
     );
   }
+}
+
+class _ToggleEnabledHarness extends StatelessWidget {
+  const _ToggleEnabledHarness({
+    required this.enabled,
+  });
+
+  final ValueNotifier<bool> enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: enabled,
+      builder: (context, isEnabled, child) {
+        return DesignSystemToggle(
+          value: true,
+          label: 'Hover me',
+          enabled: isEnabled,
+          onChanged: _noopToggle,
+        );
+      },
+    );
+  }
+}
+
+AnimatedContainer _toggleTrack(WidgetTester tester) {
+  return tester.widget<AnimatedContainer>(
+    find.byWidgetPredicate(
+      (widget) =>
+          widget is AnimatedContainer &&
+          widget.constraints?.maxWidth == dsTokensLight.spacing.step8 &&
+          widget.constraints?.maxHeight == dsTokensLight.spacing.step6,
+    ),
+  );
 }
 
 void _noopToggle(bool value) {}

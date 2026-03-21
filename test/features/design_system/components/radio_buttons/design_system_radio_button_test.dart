@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/radio_buttons/design_system_radio_button.dart';
@@ -145,6 +147,7 @@ void main() {
         tester,
         const DesignSystemRadioButton(
           selected: false,
+          semanticsLabel: 'Radio control',
           onPressed: _noop,
         ),
       );
@@ -152,6 +155,7 @@ void main() {
       expect(find.text('Radio button'), findsNothing);
       expect(_radioControlSize(tester, 20), const Size.square(20));
       expect(_radioSquareCount(tester, 8), 0);
+      expect(find.bySemanticsLabel('Radio control'), findsOneWidget);
     });
 
     testWidgets('applies token-driven disabled opacity', (tester) async {
@@ -169,6 +173,44 @@ void main() {
 
       expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
       expect(inkWell.onTap, isNull);
+    });
+
+    testWidgets('clears transient hover state after disable and re-enable', (
+      tester,
+    ) async {
+      final enabled = ValueNotifier<bool>(true);
+
+      await _pumpRadio(
+        tester,
+        _RadioEnabledHarness(enabled: enabled),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(() {
+        enabled.dispose();
+        return gesture.removePointer();
+      });
+      await gesture.addPointer();
+      await tester.pump();
+      await gesture.moveTo(
+        tester.getCenter(find.byType(DesignSystemRadioButton)),
+      );
+      await tester.pump();
+
+      expect(
+        _radioDecoration(tester, 20).border!.top.color,
+        dsTokensLight.colors.alert.info.hover,
+      );
+
+      enabled.value = false;
+      await tester.pump();
+      enabled.value = true;
+      await tester.pump();
+
+      expect(
+        _radioDecoration(tester, 20).border!.top.color,
+        dsTokensLight.colors.alert.info.defaultColor,
+      );
     });
 
     testWidgets('invokes the callback when tapped', (tester) async {
@@ -213,7 +255,39 @@ void main() {
         dsTokensDark.colors.text.highEmphasis,
       );
     });
+
+    test('asserts when neither a label nor semanticsLabel is provided', () {
+      expect(
+        () => DesignSystemRadioButton(
+          selected: false,
+          onPressed: _noop,
+        ),
+        throwsAssertionError,
+      );
+    });
   });
+}
+
+class _RadioEnabledHarness extends StatelessWidget {
+  const _RadioEnabledHarness({
+    required this.enabled,
+  });
+
+  final ValueNotifier<bool> enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: enabled,
+      builder: (context, isEnabled, child) {
+        return DesignSystemRadioButton(
+          selected: false,
+          label: 'Radio button',
+          onPressed: isEnabled ? _noop : null,
+        );
+      },
+    );
+  }
 }
 
 Future<void> _pumpRadio(

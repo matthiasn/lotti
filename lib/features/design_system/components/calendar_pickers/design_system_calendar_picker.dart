@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
-/// Shared dimension for calendar day cells and weekday header cells.
-const _cellSize = 40.0;
-const double _halfCellSize = _cellSize / 2;
+/// Width of the month rail panel (fits three-letter month labels + padding).
+const _railWidth = 128.0;
+
+/// Height used for header row and rail buttons.
+const _controlHeight = 36.0;
+
+/// Width used for rail buttons and year dividers (matches tokens.spacing.step12).
+const _railButtonWidth = 96.0;
+
+/// Date card dimensions (weekday + day stacked with padding).
+const _dateCardWidth = 50.0;
+const _dateCardHeight = 56.0;
 
 enum DesignSystemCalendarDateCardVisualState {
   idle,
@@ -90,8 +100,8 @@ class _DesignSystemCalendarDateCardState
                   : Border.all(color: styleSpec.borderColor!),
             ),
             child: SizedBox(
-              width: 50,
-              height: 56,
+              width: _dateCardWidth,
+              height: _dateCardHeight,
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: tokens.spacing.step2,
@@ -125,13 +135,9 @@ class _DesignSystemCalendarDateCardState
       ),
     );
 
-    if (enabled) {
-      return card;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: card,
+    return card.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 
@@ -275,29 +281,30 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   final String todayLabel;
   final VoidCallback? onTodayPressed;
 
-  static const _headerHeight = 36.0;
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final cellSize = tokens.spacing.step8;
     final gap = tokens.spacing.step1;
     final verticalPadding = 2 * tokens.spacing.step5;
-    final fixedContentHeight = _headerHeight + gap + _cellSize + gap;
-    final weeksHeight = weeks.length * _cellSize + (weeks.length - 1) * gap;
+    final gridWidth = 7 * cellSize + 2 * tokens.spacing.step5;
+    final totalWidth = _railWidth + gridWidth;
+    final fixedContentHeight = _controlHeight + gap + cellSize + gap;
+    final weeksHeight = weeks.length * cellSize + (weeks.length - 1) * gap;
     final totalHeight = verticalPadding + fixedContentHeight + weeksHeight;
 
     return SizedBox(
-      width: 440,
+      width: totalWidth,
       height: totalHeight,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.background.level01,
           borderRadius: BorderRadius.circular(tokens.radii.s),
-          boxShadow: const [
+          boxShadow: [
             BoxShadow(
-              color: Color(0x40464646),
-              blurRadius: 4,
-              offset: Offset(0, 2),
+              color: tokens.colors.decorative.level01,
+              blurRadius: tokens.spacing.step2,
+              offset: Offset(0, tokens.spacing.step1),
             ),
           ],
         ),
@@ -306,13 +313,13 @@ class DesignSystemCalendarPicker extends StatelessWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 128,
+                width: _railWidth,
                 child: _CalendarMonthRail(
                   monthSections: monthSections,
                 ),
               ),
               SizedBox(
-                width: 312,
+                width: gridWidth,
                 child: _CalendarMonthView(
                   visibleMonthLabel: visibleMonthLabel,
                   weekdayLabels: weekdayLabels,
@@ -383,8 +390,8 @@ class _CalendarYearDivider extends StatelessWidget {
         bottom: tokens.spacing.step2,
       ),
       child: SizedBox(
-        width: 96,
-        height: 16,
+        width: _railButtonWidth,
+        height: tokens.typography.lineHeight.caption,
         child: Center(
           child: Text(
             label,
@@ -447,8 +454,8 @@ class _CalendarMonthRailButtonState extends State<_CalendarMonthRailButton> {
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
             child: SizedBox(
-              width: 96,
-              height: 36,
+              width: _railButtonWidth,
+              height: _controlHeight,
               child: Center(
                 child: Text(
                   widget.item.label,
@@ -463,13 +470,9 @@ class _CalendarMonthRailButtonState extends State<_CalendarMonthRailButton> {
       ),
     );
 
-    if (enabled) {
-      return button;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: button,
+    return button.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 }
@@ -542,9 +545,11 @@ class _CalendarMonthHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
+    final cellSize = tokens.spacing.step8;
+
     return SizedBox(
-      width: 280,
-      height: 36,
+      width: 7 * cellSize,
+      height: _controlHeight,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -605,8 +610,8 @@ class _CalendarTodayButtonState extends State<_CalendarTodayButton> {
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
             child: SizedBox(
-              width: 96,
-              height: 36,
+              width: _railButtonWidth,
+              height: _controlHeight,
               child: Center(
                 child: Text(
                   widget.label,
@@ -623,13 +628,9 @@ class _CalendarTodayButtonState extends State<_CalendarTodayButton> {
       ),
     );
 
-    if (enabled) {
-      return button;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: button,
+    return button.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 }
@@ -644,14 +645,15 @@ class _CalendarWeekdayHeaderRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final cellSize = tokens.spacing.step8;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final label in labels)
           SizedBox(
-            width: _cellSize,
-            height: _cellSize,
+            width: cellSize,
+            height: cellSize,
             child: Center(
               child: Text(
                 label,
@@ -675,12 +677,14 @@ class _CalendarWeekRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cellSize = context.designTokens.spacing.step8;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final cell in row)
           cell == null
-              ? const SizedBox(width: _cellSize, height: _cellSize)
+              ? SizedBox(width: cellSize, height: cellSize)
               : _CalendarDayCell(data: cell),
       ],
     );
@@ -719,6 +723,8 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final cellSize = tokens.spacing.step8;
+    final halfCellSize = cellSize / 2;
     final enabled = widget.data.onPressed != null;
     final visualState = _resolveVisualState(enabled);
     final styleSpec = _CalendarDayCellStyleSpec.fromTokens(
@@ -745,8 +751,8 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
           onTap: widget.data.onPressed,
           child: SizedBox(
             key: widget.data.key,
-            width: _cellSize,
-            height: _cellSize,
+            width: cellSize,
+            height: cellSize,
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -756,27 +762,27 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                     left:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.start
-                        ? _halfCellSize
+                        ? halfCellSize
                         : 0,
                     right:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.end
-                        ? _halfCellSize
-                        : -_halfCellSize,
+                        ? halfCellSize
+                        : -halfCellSize,
                     child: ColoredBox(
                       color: styleSpec.connectionColor!,
-                      child: const SizedBox(height: _cellSize),
+                      child: SizedBox(height: cellSize),
                     ),
                   ),
                 if (styleSpec.backgroundColor != null)
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: styleSpec.backgroundColor,
-                      borderRadius: BorderRadius.circular(_halfCellSize),
+                      borderRadius: BorderRadius.circular(halfCellSize),
                     ),
-                    child: const SizedBox(
-                      width: _cellSize,
-                      height: _cellSize,
+                    child: SizedBox(
+                      width: cellSize,
+                      height: cellSize,
                     ),
                   ),
                 Text(
@@ -792,13 +798,9 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
       ),
     );
 
-    if (enabled) {
-      return cell;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: cell,
+    return cell.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

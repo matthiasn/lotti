@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemDropdownType {
   dropdownList,
@@ -36,7 +37,10 @@ class DesignSystemDropdown extends StatefulWidget {
     this.onItemPressed,
     this.onChipRemoved,
     super.key,
-  });
+  }) : assert(
+         label != '' || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       );
 
   final String label;
   final String inputLabel;
@@ -127,13 +131,9 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
       ],
     );
 
-    if (widget.enabled) {
-      return content;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: content,
+    return content.withDisabledOpacity(
+      enabled: widget.enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 
@@ -193,9 +193,11 @@ class _DropdownTrigger extends StatelessWidget {
           ),
         ),
         child: Semantics(
+          container: true,
           button: true,
           enabled: enabled,
           label: semanticsLabel,
+          excludeSemantics: true,
           child: InkWell(
             borderRadius: BorderRadius.circular(sizeSpec.fieldRadius),
             onTap: onTap,

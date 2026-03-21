@@ -1393,6 +1393,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "Survol",
   "designSystemPressedLabel": "Appuyé",
+  "designSystemCheckboxLabel": "Case à cocher",
   "designSystemRadioButtonLabel": "Bouton radio",
   "designSystemSelectedLabel": "Sélectionné",
   "designSystemSizeScaleTitle": "Échelle des tailles",
