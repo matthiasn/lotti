@@ -2382,6 +2382,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override
+  String get designSystemDropdownChipLabel => 'Popisek čipu';
+
+  @override
+  String get designSystemDropdownComboboxTitle => 'Kombobox';
+
+  @override
+  String get designSystemDropdownFieldLabel => 'Štítek';
+
+  @override
+  String get designSystemDropdownInputLabel => 'Vstup';
+
+  @override
+  String get designSystemDropdownListTitle => 'Rozbalovací seznam';
+
+  @override
+  String get designSystemDropdownMultiselectTitle => 'Vícenásobný výběr';
+
+  @override
+  String get designSystemDropdownOptionLabel => 'Název';
+
+  @override
   String get designSystemHoverLabel => 'Přejetí';
 
   @override

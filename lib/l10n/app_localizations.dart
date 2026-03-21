@@ -4293,6 +4293,48 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
+  /// No description provided for @designSystemDropdownChipLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Chip label'**
+  String get designSystemDropdownChipLabel;
+
+  /// No description provided for @designSystemDropdownComboboxTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Combobox'**
+  String get designSystemDropdownComboboxTitle;
+
+  /// No description provided for @designSystemDropdownFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get designSystemDropdownFieldLabel;
+
+  /// No description provided for @designSystemDropdownInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get designSystemDropdownInputLabel;
+
+  /// No description provided for @designSystemDropdownListTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dropdown list'**
+  String get designSystemDropdownListTitle;
+
+  /// No description provided for @designSystemDropdownMultiselectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Multiselect'**
+  String get designSystemDropdownMultiselectTitle;
+
+  /// No description provided for @designSystemDropdownOptionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get designSystemDropdownOptionLabel;
+
   /// No description provided for @designSystemHoverLabel.
   ///
   /// In en, this message translates to:

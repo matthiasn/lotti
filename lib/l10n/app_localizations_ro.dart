@@ -2406,6 +2406,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activ';
 
   @override
+  String get designSystemDropdownChipLabel => 'Etichetă chip';
+
+  @override
+  String get designSystemDropdownComboboxTitle => 'Combobox';
+
+  @override
+  String get designSystemDropdownFieldLabel => 'Etichetă';
+
+  @override
+  String get designSystemDropdownInputLabel => 'Intrare';
+
+  @override
+  String get designSystemDropdownListTitle => 'Listă derulantă';
+
+  @override
+  String get designSystemDropdownMultiselectTitle => 'Selecție multiplă';
+
+  @override
+  String get designSystemDropdownOptionLabel => 'Titlu';
+
+  @override
   String get designSystemHoverLabel => 'La survolare';
 
   @override
