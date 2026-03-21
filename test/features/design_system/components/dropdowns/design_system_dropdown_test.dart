@@ -134,6 +134,111 @@ void main() {
       expect(find.byType(DesignSystemDropdown), findsOneWidget);
     });
 
+    testWidgets('applies token-driven disabled opacity and blocks taps', (
+      tester,
+    ) async {
+      final expansionStates = <bool>[];
+
+      await _pumpDropdown(
+        tester,
+        SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: 'Label',
+            inputLabel: 'Input',
+            enabled: false,
+            items: _items(['Alpha']),
+            onExpandedChanged: expansionStates.add,
+          ),
+        ),
+      );
+
+      final opacity = tester.widget<Opacity>(find.byType(Opacity));
+      expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
+
+      await tester.tap(find.text('Input'));
+      await tester.pump();
+
+      expect(expansionStates, isEmpty);
+      expect(find.text('Alpha'), findsNothing);
+    });
+
+    testWidgets('calls onChipRemoved when a chip is tapped', (tester) async {
+      final removedItems = <DesignSystemDropdownItem>[];
+
+      await _pumpDropdown(
+        tester,
+        SizedBox(
+          width: 320,
+          child: DesignSystemDropdown(
+            label: 'Label',
+            inputLabel: 'Input',
+            type: DesignSystemDropdownType.multiselect,
+            items: const [
+              DesignSystemDropdownItem(
+                id: 'a',
+                label: 'Alpha',
+                selected: true,
+              ),
+              DesignSystemDropdownItem(
+                id: 'b',
+                label: 'Beta',
+                selected: true,
+              ),
+            ],
+            onChipRemoved: removedItems.add,
+          ),
+        ),
+      );
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Beta'), findsOneWidget);
+
+      await tester.tap(find.text('Beta'));
+      await tester.pump();
+
+      expect(removedItems, hasLength(1));
+      expect(removedItems.single.id, 'b');
+    });
+
+    testWidgets(
+      'renders chip with resolvedChipLabel and checkbox for selected item',
+      (tester) async {
+        await _pumpDropdown(
+          tester,
+          const SizedBox(
+            width: 320,
+            child: DesignSystemDropdown(
+              label: 'Label',
+              inputLabel: 'Input',
+              type: DesignSystemDropdownType.multiselect,
+              initiallyExpanded: true,
+              items: [
+                DesignSystemDropdownItem(
+                  id: 'item-0',
+                  label: 'Full name',
+                  chipLabel: 'Short',
+                  selected: true,
+                ),
+                DesignSystemDropdownItem(
+                  id: 'item-1',
+                  label: 'Other',
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // Chip shows chipLabel, not the full label
+        expect(find.text('Short'), findsOneWidget);
+        // Only the selected row shows a checkmark
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        // Both menu rows are visible
+        expect(find.text('Full name'), findsOneWidget);
+        expect(find.text('Other'), findsOneWidget);
+      },
+    );
+
     testWidgets('uses the active dark theme tokens', (tester) async {
       await _pumpDropdown(
         tester,

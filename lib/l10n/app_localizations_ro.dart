@@ -2406,9 +2406,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activ';
 
   @override
-  String get designSystemDropdownChipLabel => 'Etichetă chip';
-
-  @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
 
   @override
@@ -2443,9 +2440,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemDropdownOptionMobile => 'Mobile';
-
-  @override
-  String get designSystemDropdownOptionLabel => 'Titlu';
 
   @override
   String get designSystemDropdownOptionQa => 'QA';

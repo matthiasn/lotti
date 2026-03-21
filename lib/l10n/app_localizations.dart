@@ -4293,11 +4293,6 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
-  /// No description provided for @designSystemDropdownChipLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Chip label'**
-  String get designSystemDropdownChipLabel;
 
   /// No description provided for @designSystemDropdownComboboxTitle.
   ///
@@ -4370,12 +4365,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mobile'**
   String get designSystemDropdownOptionMobile;
-
-  /// No description provided for @designSystemDropdownOptionLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Title'**
-  String get designSystemDropdownOptionLabel;
 
   /// No description provided for @designSystemDropdownOptionQa.
   ///

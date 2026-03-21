@@ -58,15 +58,6 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
   late final ScrollController _scrollController = ScrollController();
 
   @override
-  void didUpdateWidget(covariant DesignSystemDropdown oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.initiallyExpanded != widget.initiallyExpanded) {
-      _expanded = widget.initiallyExpanded;
-    }
-  }
-
-  @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();

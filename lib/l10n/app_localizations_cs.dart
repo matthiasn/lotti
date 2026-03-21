@@ -2382,9 +2382,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override
-  String get designSystemDropdownChipLabel => 'Popisek čipu';
-
-  @override
   String get designSystemDropdownComboboxTitle => 'Kombobox';
 
   @override
@@ -2419,9 +2416,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemDropdownOptionMobile => 'Mobile';
-
-  @override
-  String get designSystemDropdownOptionLabel => 'Název';
 
   @override
   String get designSystemDropdownOptionQa => 'QA';
