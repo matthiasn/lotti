@@ -159,7 +159,7 @@ void main() {
       });
 
       test(
-        'initializes the next daily digest at 09:00 on the next day',
+        'initializes the next daily digest at 06:00 on the next day',
         () async {
           final identity = makeIdentity();
           final template = makeTestTemplate(
@@ -209,7 +209,7 @@ void main() {
             () => mockSyncService.upsertEntity(captureAny()),
           ).captured;
           final updatedState = stateCalls.first as AgentStateEntity;
-          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 9));
+          expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
         },
       );
 

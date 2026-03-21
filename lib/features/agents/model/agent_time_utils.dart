@@ -5,7 +5,7 @@ DateTime truncateToDay(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
 
 /// Returns the next local calendar day at the given [hour] and [minute].
 ///
-/// Useful for recurring daily cadences like "tomorrow at 09:00 local".
+/// Useful for recurring daily cadences like "tomorrow at 06:00 local".
 DateTime nextLocalDayAtTime(
   DateTime dt, {
   required int hour,
