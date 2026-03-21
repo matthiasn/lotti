@@ -34,7 +34,7 @@ class DesignSystemProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spec = _ProgressBarSpec.fromTokens(tokens, style);
-    final clampedValue = value.clamp(0.0, 1.0).toDouble();
+    final clampedValue = value.clamp(0.0, 1.0);
     final showHeader =
         label?.isNotEmpty == true ||
         progressText?.isNotEmpty == true ||
@@ -120,7 +120,7 @@ class _ProgressBarHeader extends StatelessWidget {
               ),
             ),
           if (label?.isNotEmpty != true && trailing != null) const Spacer(),
-          if (trailing != null) trailing,
+          ?trailing,
         ],
       ),
     );
@@ -325,9 +325,9 @@ class _ProgressBarSpec {
       trackHeight: tokens.spacing.step5,
       trackRadius: tokens.spacing.step3,
       trackInset: 3,
-      fillHeight: 10,
+      fillHeight: 8,
       fillRadius: tokens.spacing.step3,
-      iconSize: 20,
+      iconSize: tokens.typography.lineHeight.subtitle2,
       trailingContentGap: tokens.spacing.step1,
       segmentCount: 5,
       segmentGap: tokens.spacing.step1,

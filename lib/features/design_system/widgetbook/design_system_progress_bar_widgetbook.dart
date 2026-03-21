@@ -144,17 +144,9 @@ List<_ProgressBarVariant> _progressBarVariants(
 ) {
   final defaultLabel = context.messages.designSystemProgressBarSampleLabel;
   final questLabel = context.messages.designSystemProgressBarQuestLabel;
-  final progressText = switch (style) {
-    DesignSystemProgressBarStyle.defaultStyle => '70%',
-    DesignSystemProgressBarStyle.chunky => '60%',
-  };
-  final progressValue = switch (style) {
-    DesignSystemProgressBarStyle.defaultStyle => 0.7,
-    DesignSystemProgressBarStyle.chunky => 0.6,
-  };
-  final questProgressText = switch (style) {
-    DesignSystemProgressBarStyle.defaultStyle => '45/60',
-    DesignSystemProgressBarStyle.chunky => '60%',
+  final (progressText, progressValue, questProgressText) = switch (style) {
+    DesignSystemProgressBarStyle.defaultStyle => ('70%', 0.7, '45/60'),
+    DesignSystemProgressBarStyle.chunky => ('60%', 0.6, '60%'),
   };
 
   return [

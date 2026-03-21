@@ -100,7 +100,7 @@ void main() {
       );
       expect(_fillFinder(barKey), findsNWidgets(3));
       expect(_trackFinder(barKey), findsNWidgets(5));
-      expect(tester.getSize(_fillFinder(barKey).first).height, 10);
+      expect(tester.getSize(_fillFinder(barKey).first).height, 8);
       expect(tester.getSize(_fillFinder(barKey).first).width, greaterThan(0));
     });
 
