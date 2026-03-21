@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Shared dimension for calendar day cells and weekday header cells.
+const _cellSize = 40.0;
+const double _halfCellSize = _cellSize / 2;
+
 enum DesignSystemCalendarDateCardVisualState {
   idle,
   hover,
@@ -272,7 +276,6 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   final VoidCallback? onTodayPressed;
 
   static const _headerHeight = 36.0;
-  static const _cellSize = 40.0;
 
   @override
   Widget build(BuildContext context) {
@@ -647,8 +650,8 @@ class _CalendarWeekdayHeaderRow extends StatelessWidget {
       children: [
         for (final label in labels)
           SizedBox(
-            width: 40,
-            height: 40,
+            width: _cellSize,
+            height: _cellSize,
             child: Center(
               child: Text(
                 label,
@@ -677,7 +680,7 @@ class _CalendarWeekRow extends StatelessWidget {
       children: [
         for (final cell in row)
           cell == null
-              ? const SizedBox(width: 40, height: 40)
+              ? const SizedBox(width: _cellSize, height: _cellSize)
               : _CalendarDayCell(data: cell),
       ],
     );
@@ -742,8 +745,8 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
           onTap: widget.data.onPressed,
           child: SizedBox(
             key: widget.data.key,
-            width: 40,
-            height: 40,
+            width: _cellSize,
+            height: _cellSize,
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.center,
@@ -753,25 +756,28 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                     left:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.start
-                        ? 20
+                        ? _halfCellSize
                         : 0,
                     right:
                         widget.data.selectionPosition ==
                             DesignSystemCalendarDayCellSelectionPosition.end
-                        ? 20
-                        : -20,
+                        ? _halfCellSize
+                        : -_halfCellSize,
                     child: ColoredBox(
                       color: styleSpec.connectionColor!,
-                      child: const SizedBox(height: 40),
+                      child: const SizedBox(height: _cellSize),
                     ),
                   ),
                 if (styleSpec.backgroundColor != null)
                   DecoratedBox(
                     decoration: BoxDecoration(
                       color: styleSpec.backgroundColor,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(_halfCellSize),
                     ),
-                    child: const SizedBox(width: 40, height: 40),
+                    child: const SizedBox(
+                      width: _cellSize,
+                      height: _cellSize,
+                    ),
                   ),
                 Text(
                   widget.data.label,
