@@ -277,22 +277,26 @@ const _knownDashboardItemTypes = {
   final items = dashboardJson['items'];
   if (items is! List) return (dashboardJson, false);
 
-  final original = List<dynamic>.from(items);
-  final filtered = original.where((item) {
+  final filtered = <dynamic>[];
+  final removedTypes = <dynamic>[];
+
+  for (final item in items) {
     if (item is Map<String, dynamic>) {
       final runtimeType = item['runtimeType'];
-      return runtimeType is String &&
-          _knownDashboardItemTypes.contains(runtimeType);
+      if (runtimeType is String &&
+          _knownDashboardItemTypes.contains(runtimeType)) {
+        filtered.add(item);
+        continue;
+      }
     }
-    return false;
-  }).toList();
+    removedTypes.add(
+      item is Map<String, dynamic>
+          ? item['runtimeType']
+          : 'invalid_item_structure',
+    );
+  }
 
-  if (filtered.length == original.length) return (dashboardJson, false);
-
-  final removedTypes = original
-      .where((item) => !filtered.contains(item))
-      .map((item) => (item as Map<String, dynamic>)['runtimeType'])
-      .toList();
+  if (removedTypes.isEmpty) return (dashboardJson, false);
 
   DevLogger.log(
     name: 'conversions',
