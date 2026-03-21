@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/split_buttons/design_system_split_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemSplitButtonWidgetbookComponent() {
@@ -74,15 +75,12 @@ class _SplitButtonSizeScale extends StatelessWidget {
       children: [
         _SplitButtonPreview(
           size: DesignSystemSplitButtonSize.small,
-          isDropdownOpen: false,
         ),
         _SplitButtonPreview(
           size: DesignSystemSplitButtonSize.small2,
-          isDropdownOpen: false,
         ),
         _SplitButtonPreview(
           size: DesignSystemSplitButtonSize.defaultSize,
-          isDropdownOpen: false,
         ),
       ],
     );
@@ -100,22 +98,20 @@ class _SplitButtonVariantMatrix extends StatelessWidget {
         _SplitButtonMatrixRow(
           label: 'Small + Default',
           size: DesignSystemSplitButtonSize.small,
-          isDropdownOpen: false,
         ),
         _SplitButtonMatrixRow(
           label: 'Small2 + Open',
           size: DesignSystemSplitButtonSize.small2,
-          isDropdownOpen: true,
+          initiallyOpen: true,
         ),
         _SplitButtonMatrixRow(
           label: 'Default + Default',
           size: DesignSystemSplitButtonSize.defaultSize,
-          isDropdownOpen: false,
         ),
         _SplitButtonMatrixRow(
           label: 'Default + Open',
           size: DesignSystemSplitButtonSize.defaultSize,
-          isDropdownOpen: true,
+          initiallyOpen: true,
         ),
       ],
     );
@@ -126,12 +122,12 @@ class _SplitButtonMatrixRow extends StatelessWidget {
   const _SplitButtonMatrixRow({
     required this.label,
     required this.size,
-    required this.isDropdownOpen,
+    this.initiallyOpen = false,
   });
 
   final String label;
   final DesignSystemSplitButtonSize size;
-  final bool isDropdownOpen;
+  final bool initiallyOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +143,7 @@ class _SplitButtonMatrixRow extends StatelessWidget {
           const SizedBox(height: 12),
           _SplitButtonPreview(
             size: size,
-            isDropdownOpen: isDropdownOpen,
+            initiallyOpen: initiallyOpen,
           ),
         ],
       ),
@@ -155,23 +151,100 @@ class _SplitButtonMatrixRow extends StatelessWidget {
   }
 }
 
-class _SplitButtonPreview extends StatelessWidget {
+class _SplitButtonPreview extends StatefulWidget {
   const _SplitButtonPreview({
     required this.size,
-    required this.isDropdownOpen,
+    this.initiallyOpen = false,
   });
 
   final DesignSystemSplitButtonSize size;
-  final bool isDropdownOpen;
+  final bool initiallyOpen;
+
+  @override
+  State<_SplitButtonPreview> createState() => _SplitButtonPreviewState();
+}
+
+class _SplitButtonPreviewState extends State<_SplitButtonPreview> {
+  late bool _isDropdownOpen = widget.initiallyOpen;
 
   @override
   Widget build(BuildContext context) {
-    return DesignSystemSplitButton(
-      label: _labelForSize(size),
-      size: size,
-      isDropdownOpen: isDropdownOpen,
-      onPressed: _noop,
-      onDropdownPressed: _noop,
+    final tokens = context.designTokens;
+
+    return UnconstrainedBox(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DesignSystemSplitButton(
+            label: _labelForSize(widget.size),
+            size: widget.size,
+            isDropdownOpen: _isDropdownOpen,
+            onPressed: () {},
+            onDropdownPressed: () {
+              setState(() => _isDropdownOpen = !_isDropdownOpen);
+            },
+          ),
+          if (_isDropdownOpen) ...[
+            SizedBox(height: tokens.spacing.step2),
+            _SplitButtonMenu(tokens: tokens),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SplitButtonMenu extends StatelessWidget {
+  const _SplitButtonMenu({required this.tokens});
+
+  final DsTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        borderRadius: BorderRadius.circular(tokens.radii.sectionCards),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.colors.decorative.level01,
+            blurRadius: tokens.spacing.step4,
+            offset: Offset(0, tokens.spacing.step1),
+          ),
+        ],
+      ),
+      child: IntrinsicWidth(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final label in const ['Option A', 'Option B', 'Option C'])
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(
+                    tokens.radii.sectionCards,
+                  ),
+                  onTap: () {},
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: tokens.spacing.step5,
+                      vertical: tokens.spacing.step4,
+                    ),
+                    child: Text(
+                      label,
+                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -183,5 +256,3 @@ String _labelForSize(DesignSystemSplitButtonSize size) {
     DesignSystemSplitButtonSize.defaultSize => 'Default',
   };
 }
-
-void _noop() {}
