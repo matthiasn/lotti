@@ -2421,10 +2421,34 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemDropdownListTitle => 'Listă derulantă';
 
   @override
+  String get designSystemDropdownMultiselectInputLabel => 'Selectați echipe';
+
+  @override
   String get designSystemDropdownMultiselectTitle => 'Selecție multiplă';
 
   @override
+  String get designSystemDropdownOptionAnalytics => 'Analytics';
+
+  @override
+  String get designSystemDropdownOptionBackend => 'Backend';
+
+  @override
+  String get designSystemDropdownOptionDesign => 'Design';
+
+  @override
+  String get designSystemDropdownOptionFrontend => 'Frontend';
+
+  @override
+  String get designSystemDropdownOptionGrowth => 'Growth';
+
+  @override
+  String get designSystemDropdownOptionMobile => 'Mobile';
+
+  @override
   String get designSystemDropdownOptionLabel => 'Titlu';
+
+  @override
+  String get designSystemDropdownOptionQa => 'QA';
 
   @override
   String get designSystemHoverLabel => 'La survolare';

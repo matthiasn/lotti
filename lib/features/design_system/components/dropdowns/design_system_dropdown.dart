@@ -196,8 +196,9 @@ class _DropdownTrigger extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(sizeSpec.fieldRadius),
             onTap: onTap,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: sizeSpec.fieldMinHeight),
+            child: SizedBox(
+              key: const ValueKey('design-system-dropdown-trigger'),
+              height: sizeSpec.fieldHeight,
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
                   sizeSpec.fieldHorizontalPadding,
@@ -206,7 +207,6 @@ class _DropdownTrigger extends StatelessWidget {
                   sizeSpec.fieldBottomPadding,
                 ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
                       child: Column(
@@ -218,6 +218,7 @@ class _DropdownTrigger extends StatelessWidget {
                             style: sizeSpec.labelStyle.copyWith(
                               color: styleSpec.fieldLabelColor,
                             ),
+                            textScaler: TextScaler.noScaling,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -227,6 +228,7 @@ class _DropdownTrigger extends StatelessWidget {
                             style: sizeSpec.inputStyle.copyWith(
                               color: styleSpec.fieldInputColor,
                             ),
+                            textScaler: TextScaler.noScaling,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -423,7 +425,7 @@ class _DropdownSelectionBox extends StatelessWidget {
 
 class _DropdownSizeSpec {
   const _DropdownSizeSpec({
-    required this.fieldMinHeight,
+    required this.fieldHeight,
     required this.fieldRadius,
     required this.fieldBorderWidth,
     required this.fieldHorizontalPadding,
@@ -455,7 +457,7 @@ class _DropdownSizeSpec {
   });
 
   factory _DropdownSizeSpec.fromTokens(DsTokens tokens) {
-    final fieldMinHeight =
+    final fieldHeight =
         tokens.typography.lineHeight.bodyLarge + tokens.spacing.step5 * 2;
     final panelMaxHeight = tokens.spacing.step13 * 2;
     final menuItemMinHeight =
@@ -464,7 +466,7 @@ class _DropdownSizeSpec {
         tokens.typography.lineHeight.bodySmall + tokens.spacing.step2;
 
     return _DropdownSizeSpec(
-      fieldMinHeight: fieldMinHeight,
+      fieldHeight: fieldHeight,
       fieldRadius: tokens.radii.xl,
       fieldBorderWidth: tokens.spacing.step1,
       fieldHorizontalPadding: tokens.spacing.step5,
@@ -490,13 +492,13 @@ class _DropdownSizeSpec {
       checkboxRadius: tokens.radii.s,
       checkboxBorderWidth: tokens.spacing.step1 / 2,
       checkboxGlyphSize: checkboxSize - tokens.spacing.step3,
-      labelStyle: tokens.typography.styles.body.bodySmall,
+      labelStyle: tokens.typography.styles.others.caption,
       inputStyle: tokens.typography.styles.body.bodyLarge,
       menuItemStyle: tokens.typography.styles.body.bodyLarge,
     );
   }
 
-  final double fieldMinHeight;
+  final double fieldHeight;
   final double fieldRadius;
   final double fieldBorderWidth;
   final double fieldHorizontalPadding;

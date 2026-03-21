@@ -85,6 +85,7 @@ class _ComboboxPreviewState extends State<_ComboboxPreview> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final options = _sampleDropdownOptions(context);
 
     return DesignSystemDropdown(
       label: messages.designSystemDropdownFieldLabel,
@@ -92,10 +93,10 @@ class _ComboboxPreviewState extends State<_ComboboxPreview> {
           ? messages.designSystemDropdownInputLabel
           : _inputLabel,
       items: [
-        for (final index in List<int>.generate(7, (index) => index))
+        for (final option in options)
           DesignSystemDropdownItem(
-            id: 'combobox-$index',
-            label: messages.designSystemDropdownOptionLabel,
+            id: option.id,
+            label: option.label,
           ),
       ],
       onItemPressed: (item) {
@@ -124,16 +125,17 @@ class _DropdownListPreviewState extends State<_DropdownListPreview> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final options = _sampleDropdownOptions(context);
 
     return DesignSystemDropdown(
       label: messages.designSystemDropdownFieldLabel,
       inputLabel: _inputLabel!,
       initiallyExpanded: true,
       items: [
-        for (final index in List<int>.generate(7, (index) => index))
+        for (final option in options)
           DesignSystemDropdownItem(
-            id: 'dropdown-$index',
-            label: messages.designSystemDropdownOptionLabel,
+            id: option.id,
+            label: option.label,
           ),
       ],
       onItemPressed: (item) {
@@ -151,31 +153,32 @@ class _DropdownMultiselectPreview extends StatefulWidget {
       _DropdownMultiselectPreviewState();
 }
 
-class _DropdownMultiselectPreviewState extends State<_DropdownMultiselectPreview> {
+class _DropdownMultiselectPreviewState
+    extends State<_DropdownMultiselectPreview> {
   late Set<String> _selectedIds;
 
   @override
   void initState() {
     super.initState();
-    _selectedIds = {'multiselect-1', 'multiselect-2'};
+    _selectedIds = {'design', 'analytics'};
   }
 
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final options = _sampleDropdownOptions(context);
     final items = [
-      for (final index in List<int>.generate(7, (index) => index))
+      for (final option in options)
         DesignSystemDropdownItem(
-          id: 'multiselect-$index',
-          label: messages.designSystemDropdownOptionLabel,
-          chipLabel: messages.designSystemDropdownChipLabel,
-          selected: _selectedIds.contains('multiselect-$index'),
+          id: option.id,
+          label: option.label,
+          selected: _selectedIds.contains(option.id),
         ),
     ];
 
     return DesignSystemDropdown(
       label: messages.designSystemDropdownFieldLabel,
-      inputLabel: messages.designSystemDropdownInputLabel,
+      inputLabel: messages.designSystemDropdownMultiselectInputLabel,
       type: DesignSystemDropdownType.multiselect,
       initiallyExpanded: true,
       items: items,
@@ -193,4 +196,49 @@ class _DropdownMultiselectPreviewState extends State<_DropdownMultiselectPreview
       },
     );
   }
+}
+
+List<_DropdownOptionData> _sampleDropdownOptions(BuildContext context) {
+  final messages = context.messages;
+
+  return [
+    _DropdownOptionData(
+      id: 'design',
+      label: messages.designSystemDropdownOptionDesign,
+    ),
+    _DropdownOptionData(
+      id: 'frontend',
+      label: messages.designSystemDropdownOptionFrontend,
+    ),
+    _DropdownOptionData(
+      id: 'mobile',
+      label: messages.designSystemDropdownOptionMobile,
+    ),
+    _DropdownOptionData(
+      id: 'backend',
+      label: messages.designSystemDropdownOptionBackend,
+    ),
+    _DropdownOptionData(
+      id: 'growth',
+      label: messages.designSystemDropdownOptionGrowth,
+    ),
+    _DropdownOptionData(
+      id: 'analytics',
+      label: messages.designSystemDropdownOptionAnalytics,
+    ),
+    _DropdownOptionData(
+      id: 'qa',
+      label: messages.designSystemDropdownOptionQa,
+    ),
+  ];
+}
+
+class _DropdownOptionData {
+  const _DropdownOptionData({
+    required this.id,
+    required this.label,
+  });
+
+  final String id;
+  final String label;
 }

@@ -4323,17 +4323,65 @@ abstract class AppLocalizations {
   /// **'Dropdown list'**
   String get designSystemDropdownListTitle;
 
+  /// No description provided for @designSystemDropdownMultiselectInputLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select teams'**
+  String get designSystemDropdownMultiselectInputLabel;
+
   /// No description provided for @designSystemDropdownMultiselectTitle.
   ///
   /// In en, this message translates to:
   /// **'Multiselect'**
   String get designSystemDropdownMultiselectTitle;
 
+  /// No description provided for @designSystemDropdownOptionAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Analytics'**
+  String get designSystemDropdownOptionAnalytics;
+
+  /// No description provided for @designSystemDropdownOptionBackend.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend'**
+  String get designSystemDropdownOptionBackend;
+
+  /// No description provided for @designSystemDropdownOptionDesign.
+  ///
+  /// In en, this message translates to:
+  /// **'Design'**
+  String get designSystemDropdownOptionDesign;
+
+  /// No description provided for @designSystemDropdownOptionFrontend.
+  ///
+  /// In en, this message translates to:
+  /// **'Frontend'**
+  String get designSystemDropdownOptionFrontend;
+
+  /// No description provided for @designSystemDropdownOptionGrowth.
+  ///
+  /// In en, this message translates to:
+  /// **'Growth'**
+  String get designSystemDropdownOptionGrowth;
+
+  /// No description provided for @designSystemDropdownOptionMobile.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile'**
+  String get designSystemDropdownOptionMobile;
+
   /// No description provided for @designSystemDropdownOptionLabel.
   ///
   /// In en, this message translates to:
   /// **'Title'**
   String get designSystemDropdownOptionLabel;
+
+  /// No description provided for @designSystemDropdownOptionQa.
+  ///
+  /// In en, this message translates to:
+  /// **'QA'**
+  String get designSystemDropdownOptionQa;
 
   /// No description provided for @designSystemHoverLabel.
   ///
