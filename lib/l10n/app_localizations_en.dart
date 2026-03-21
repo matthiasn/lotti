@@ -2357,13 +2357,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultLanguage => 'Default Language';
 
   @override
-  String get designSystemDefaultLabel => 'Default';
+  String get deleteButton => 'Delete';
 
   @override
-  String get designSystemDisabledLabel => 'Disabled';
+  String get deleteDeviceLabel => 'Delete device';
 
   @override
   String get designSystemActivatedLabel => 'Activated';
+
+  @override
+  String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
+
+  @override
+  String get designSystemBreadcrumbDesignSystemLabel => 'Design System';
+
+  @override
+  String get designSystemBreadcrumbHomeLabel => 'Home';
+
+  @override
+  String get designSystemBreadcrumbMobileLabel => 'Mobile';
+
+  @override
+  String get designSystemBreadcrumbProjectsLabel => 'Projects';
+
+  @override
+  String get designSystemBreadcrumbSampleLabel => 'Breadcrumb';
+
+  @override
+  String get designSystemBreadcrumbTrailTitle => 'Breadcrumb Trail';
 
   @override
   String get designSystemCalendarPickerLabel => 'Calendar Picker';
@@ -2372,7 +2393,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Calendar Views';
 
   @override
+  String get designSystemCheckboxLabel => 'Checkbox';
+
+  @override
   String get designSystemDateCardsTitle => 'Date Cards';
+
+  @override
+  String get designSystemDefaultLabel => 'Default';
+
+  @override
+  String get designSystemDisabledLabel => 'Disabled';
+
+  @override
+  String get designSystemDividerLabelText => 'Divider label';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
@@ -2414,7 +2447,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemDropdownOptionQa => 'QA';
 
   @override
+  String get designSystemErrorLabel => 'Error';
+
+  @override
+  String get designSystemFilledLabel => 'Filled';
+
+  @override
+  String get designSystemHorizontalLabel => 'Horizontal';
+
+  @override
   String get designSystemHoverLabel => 'Hover';
+
+  @override
+  String get designSystemMediumLabel => 'Medium';
 
   @override
   String get designSystemPressedLabel => 'Pressed';
@@ -2445,10 +2490,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemProgressBarSampleLabel => 'Progress bar label';
 
   @override
-  String get designSystemCheckboxLabel => 'Checkbox';
+  String get designSystemRadioButtonLabel => 'Radio button';
 
   @override
-  String get designSystemRadioButtonLabel => 'Radio button';
+  String get designSystemSearchFilledText => 'Lotti search';
+
+  @override
+  String get designSystemSearchHintLabel => 'Type user';
 
   @override
   String get designSystemSelectedLabel => 'Selected';
@@ -2468,7 +2516,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'State Matrix';
 
   @override
+  String get designSystemSuccessLabel => 'Success';
+
+  @override
   String get designSystemTabPendingLabel => 'Pending';
+
+  @override
+  String get designSystemToastDetailsLabel => 'Notification details';
 
   @override
   String get designSystemToggleLabel => 'Toggle label';
@@ -2477,13 +2531,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemVariantMatrixTitle => 'Variant Matrix';
 
   @override
+  String get designSystemVerticalLabel => 'Vertical';
+
+  @override
+  String get designSystemWarningLabel => 'Warning';
+
+  @override
   String get designSystemWeeklyCalendarLabel => 'Weekly Calendar';
 
   @override
-  String get deleteButton => 'Delete';
-
-  @override
-  String get deleteDeviceLabel => 'Delete device';
+  String get designSystemWithLabelLabel => 'With label';
 
   @override
   String deviceDeletedSuccess(String deviceName) {

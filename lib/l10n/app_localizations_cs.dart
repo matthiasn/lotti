@@ -2373,13 +2373,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get defaultLanguage => 'Výchozí jazyk';
 
   @override
-  String get designSystemDefaultLabel => 'Výchozí';
+  String get deleteButton => 'Smazat';
 
   @override
-  String get designSystemDisabledLabel => 'Zakázáno';
+  String get deleteDeviceLabel => 'Odstranit zařízení';
 
   @override
   String get designSystemActivatedLabel => 'Aktivní';
+
+  @override
+  String get designSystemBreadcrumbCurrentLabel => 'Breadcrumbs';
+
+  @override
+  String get designSystemBreadcrumbDesignSystemLabel => 'Design System';
+
+  @override
+  String get designSystemBreadcrumbHomeLabel => 'Domů';
+
+  @override
+  String get designSystemBreadcrumbMobileLabel => 'Mobil';
+
+  @override
+  String get designSystemBreadcrumbProjectsLabel => 'Projekty';
+
+  @override
+  String get designSystemBreadcrumbSampleLabel => 'Breadcrumb';
+
+  @override
+  String get designSystemBreadcrumbTrailTitle => 'Ukázka breadcrumbů';
 
   @override
   String get designSystemCalendarPickerLabel => 'Výběr data';
@@ -2388,7 +2409,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Zobrazení kalendáře';
 
   @override
+  String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
+
+  @override
   String get designSystemDateCardsTitle => 'Datumové karty';
+
+  @override
+  String get designSystemDefaultLabel => 'Výchozí';
+
+  @override
+  String get designSystemDisabledLabel => 'Zakázáno';
+
+  @override
+  String get designSystemDividerLabelText => 'Štítek oddělovače';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Kombobox';
@@ -2430,7 +2463,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemDropdownOptionQa => 'QA';
 
   @override
+  String get designSystemErrorLabel => 'Chyba';
+
+  @override
+  String get designSystemFilledLabel => 'Vyplněné';
+
+  @override
+  String get designSystemHorizontalLabel => 'Vodorovný';
+
+  @override
   String get designSystemHoverLabel => 'Přejetí';
+
+  @override
+  String get designSystemMediumLabel => 'Střední';
 
   @override
   String get designSystemPressedLabel => 'Stisknuto';
@@ -2461,10 +2506,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemProgressBarSampleLabel => 'Štítek ukazatele průběhu';
 
   @override
-  String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
+  String get designSystemRadioButtonLabel => 'Radio button';
 
   @override
-  String get designSystemRadioButtonLabel => 'Radio button';
+  String get designSystemSearchFilledText => 'Lotti search';
+
+  @override
+  String get designSystemSearchHintLabel => 'Zadej uživatele';
 
   @override
   String get designSystemSelectedLabel => 'Vybrané';
@@ -2484,7 +2532,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matice stavů';
 
   @override
+  String get designSystemSuccessLabel => 'Úspěch';
+
+  @override
   String get designSystemTabPendingLabel => 'Čekající';
+
+  @override
+  String get designSystemToastDetailsLabel => 'Detaily oznámení';
 
   @override
   String get designSystemToggleLabel => 'Popisek přepínače';
@@ -2493,13 +2547,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemVariantMatrixTitle => 'Matice variant';
 
   @override
+  String get designSystemVerticalLabel => 'Svislý';
+
+  @override
+  String get designSystemWarningLabel => 'Varování';
+
+  @override
   String get designSystemWeeklyCalendarLabel => 'Týdenní kalendář';
 
   @override
-  String get deleteButton => 'Smazat';
-
-  @override
-  String get deleteDeviceLabel => 'Odstranit zařízení';
+  String get designSystemWithLabelLabel => 'Se štítkem';
 
   @override
   String deviceDeletedSuccess(String deviceName) {

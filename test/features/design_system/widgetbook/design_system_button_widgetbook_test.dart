@@ -28,6 +28,18 @@ void main() {
       final chipComponent = components.singleWhere(
         (component) => component.name == 'Chips',
       );
+      final breadcrumbsComponent = components.singleWhere(
+        (component) => component.name == 'Breadcrumbs',
+      );
+      final searchComponent = components.singleWhere(
+        (component) => component.name == 'Search',
+      );
+      final toastComponent = components.singleWhere(
+        (component) => component.name == 'Toast',
+      );
+      final dividerComponent = components.singleWhere(
+        (component) => component.name == 'Divider',
+      );
       final dropdownComponent = components.singleWhere(
         (component) => component.name == 'Dropdowns',
       );
@@ -60,6 +72,10 @@ void main() {
         'Buttons',
         'Badges',
         'Chips',
+        'Breadcrumbs',
+        'Search',
+        'Toast',
+        'Divider',
         'Dropdowns',
         'Split Buttons',
         'Tabs',
@@ -72,6 +88,10 @@ void main() {
       expect(typographyComponent.useCases.single.name, 'Overview');
       expect(badgeComponent.useCases.single.name, 'Overview');
       expect(chipComponent.useCases.single.name, 'Overview');
+      expect(breadcrumbsComponent.useCases.single.name, 'Overview');
+      expect(searchComponent.useCases.single.name, 'Overview');
+      expect(toastComponent.useCases.single.name, 'Overview');
+      expect(dividerComponent.useCases.single.name, 'Overview');
       expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');

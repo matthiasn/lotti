@@ -2429,13 +2429,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get defaultLanguage => 'Langue par défaut';
 
   @override
-  String get designSystemDefaultLabel => 'Par défaut';
+  String get deleteButton => 'Supprimer';
 
   @override
-  String get designSystemDisabledLabel => 'Désactivé';
+  String get deleteDeviceLabel => 'Supprimer l\'appareil';
 
   @override
   String get designSystemActivatedLabel => 'Actif';
+
+  @override
+  String get designSystemBreadcrumbCurrentLabel => 'Fil d\'Ariane';
+
+  @override
+  String get designSystemBreadcrumbDesignSystemLabel => 'Design System';
+
+  @override
+  String get designSystemBreadcrumbHomeLabel => 'Accueil';
+
+  @override
+  String get designSystemBreadcrumbMobileLabel => 'Mobile';
+
+  @override
+  String get designSystemBreadcrumbProjectsLabel => 'Projets';
+
+  @override
+  String get designSystemBreadcrumbSampleLabel => 'Fil d\'Ariane';
+
+  @override
+  String get designSystemBreadcrumbTrailTitle => 'Chemin du fil d\'Ariane';
 
   @override
   String get designSystemCalendarPickerLabel => 'Sélecteur de calendrier';
@@ -2444,7 +2465,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemCalendarViewsTitle => 'Vues du calendrier';
 
   @override
+  String get designSystemCheckboxLabel => 'Case à cocher';
+
+  @override
   String get designSystemDateCardsTitle => 'Cartes de date';
+
+  @override
+  String get designSystemDefaultLabel => 'Par défaut';
+
+  @override
+  String get designSystemDisabledLabel => 'Désactivé';
+
+  @override
+  String get designSystemDividerLabelText => 'Libellé du séparateur';
 
   @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
@@ -2486,7 +2519,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemDropdownOptionQa => 'QA';
 
   @override
+  String get designSystemErrorLabel => 'Erreur';
+
+  @override
+  String get designSystemFilledLabel => 'Rempli';
+
+  @override
+  String get designSystemHorizontalLabel => 'Horizontal';
+
+  @override
   String get designSystemHoverLabel => 'Survol';
+
+  @override
+  String get designSystemMediumLabel => 'Moyen';
 
   @override
   String get designSystemPressedLabel => 'Appuyé';
@@ -2518,10 +2563,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Libellé de barre de progression';
 
   @override
-  String get designSystemCheckboxLabel => 'Case à cocher';
+  String get designSystemRadioButtonLabel => 'Bouton radio';
 
   @override
-  String get designSystemRadioButtonLabel => 'Bouton radio';
+  String get designSystemSearchFilledText => 'Recherche Lotti';
+
+  @override
+  String get designSystemSearchHintLabel => 'Tape un utilisateur';
 
   @override
   String get designSystemSelectedLabel => 'Sélectionné';
@@ -2541,7 +2589,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemStateMatrixTitle => 'Matrice d\'états';
 
   @override
+  String get designSystemSuccessLabel => 'Succès';
+
+  @override
   String get designSystemTabPendingLabel => 'En attente';
+
+  @override
+  String get designSystemToastDetailsLabel => 'Détails de la notification';
 
   @override
   String get designSystemToggleLabel => 'Libellé du toggle';
@@ -2550,13 +2604,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemVariantMatrixTitle => 'Matrice des variantes';
 
   @override
+  String get designSystemVerticalLabel => 'Vertical';
+
+  @override
+  String get designSystemWarningLabel => 'Avertissement';
+
+  @override
   String get designSystemWeeklyCalendarLabel => 'Calendrier hebdomadaire';
 
   @override
-  String get deleteButton => 'Supprimer';
-
-  @override
-  String get deleteDeviceLabel => 'Supprimer l\'appareil';
+  String get designSystemWithLabelLabel => 'Avec libellé';
 
   @override
   String deviceDeletedSuccess(String deviceName) {
