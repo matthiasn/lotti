@@ -3476,10 +3476,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get privateLabel => 'Privat';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
+  String get projectAcceptedNextStepsTitle => 'Pașii următori acceptați';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Pașii următori acceptați';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3573,6 +3573,18 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Fără proiect';
+
+  @override
+  String get projectPriorityCritical => 'Critică';
+
+  @override
+  String get projectPriorityHigh => 'Ridicată';
+
+  @override
+  String get projectPriorityLow => 'Scăzută';
+
+  @override
+  String get projectPriorityMedium => 'Medie';
 
   @override
   String get projectStatusActive => 'Activ';

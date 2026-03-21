@@ -6181,17 +6181,17 @@ abstract class AppLocalizations {
   /// **'Private'**
   String get privateLabel;
 
-  /// No description provided for @projectAgentSectionTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Agent'**
-  String get projectAgentSectionTitle;
-
   /// No description provided for @projectAcceptedNextStepsTitle.
   ///
   /// In en, this message translates to:
   /// **'Accepted next steps'**
   String get projectAcceptedNextStepsTitle;
+
+  /// No description provided for @projectAgentSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get projectAgentSectionTitle;
 
   /// No description provided for @projectCountSummary.
   ///
@@ -6306,6 +6306,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No project'**
   String get projectPickerUnassigned;
+
+  /// No description provided for @projectPriorityCritical.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get projectPriorityCritical;
+
+  /// No description provided for @projectPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get projectPriorityHigh;
+
+  /// No description provided for @projectPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get projectPriorityLow;
+
+  /// No description provided for @projectPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get projectPriorityMedium;
 
   /// No description provided for @projectStatusActive.
   ///

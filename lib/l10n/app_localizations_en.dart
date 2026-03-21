@@ -3409,10 +3409,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privateLabel => 'Private';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
+  String get projectAcceptedNextStepsTitle => 'Accepted next steps';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Accepted next steps';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3501,6 +3501,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'No project';
+
+  @override
+  String get projectPriorityCritical => 'Critical';
+
+  @override
+  String get projectPriorityHigh => 'High';
+
+  @override
+  String get projectPriorityLow => 'Low';
+
+  @override
+  String get projectPriorityMedium => 'Medium';
 
   @override
   String get projectStatusActive => 'Active';

@@ -442,6 +442,8 @@ void main() {
       test(
         'keeps the existing future daily digest schedule on non-due wakes',
         () async {
+          // Pin clock to a time clearly before the scheduled wake.
+          final testDate = DateTime(2026, 3, 20, 7);
           final futureSchedule = DateTime(2026, 3, 21, 9);
           final scheduledState = makeTestState(
             slots: const AgentSlots(activeProjectId: projectId),
@@ -451,12 +453,14 @@ void main() {
             () => mockAgentRepository.getAgentState(agentId),
           ).thenAnswer((_) async => scheduledState);
 
-          await workflow.execute(
-            agentIdentity: testAgentIdentity,
-            runKey: runKey,
-            triggerTokens: {'entity-a'},
-            threadId: threadId,
-          );
+          await withClock(Clock.fixed(testDate), () async {
+            await workflow.execute(
+              agentIdentity: testAgentIdentity,
+              runKey: runKey,
+              triggerTokens: {'entity-a'},
+              threadId: threadId,
+            );
+          });
 
           final captured = verify(
             () => mockSyncService.upsertEntity(captureAny()),

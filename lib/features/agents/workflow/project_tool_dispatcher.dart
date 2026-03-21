@@ -73,9 +73,24 @@ class ProjectToolDispatcher {
       );
     }
 
+    // Filter to steps that have a non-empty string title — matching the
+    // acceptance criteria used by _extractAcceptedRecommendations.
+    final validCount = steps.whereType<Map<String, dynamic>>().where((s) {
+      final title = s['title'];
+      return title is String && title.trim().isNotEmpty;
+    }).length;
+
+    if (validCount == 0) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: no valid recommended steps with a non-empty title',
+        errorMessage: 'All step objects lack a valid title',
+      );
+    }
+
     return ToolExecutionResult(
       success: true,
-      output: 'Accepted ${steps.length} recommended next step(s)',
+      output: 'Accepted $validCount recommended next step(s)',
     );
   }
 
@@ -101,7 +116,7 @@ class ProjectToolDispatcher {
       );
     }
 
-    final reason = args['reason'] as String?;
+    final reason = args['reason'] is String ? args['reason'] as String : null;
     final now = clock.now();
     final parsedStatus = _parseProjectStatus(
       statusValue,

@@ -116,7 +116,8 @@ class _AcceptedRecommendationTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (recommendation.priority case final priority?)
+              if (_localizedPriority(context, recommendation.priority)
+                  case final label?)
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -127,7 +128,7 @@ class _AcceptedRecommendationTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    priority,
+                    label,
                     style: context.textTheme.labelSmall?.copyWith(
                       color: context.colorScheme.onPrimaryContainer,
                       fontWeight: FontWeight.w600,
@@ -148,5 +149,16 @@ class _AcceptedRecommendationTile extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  static String? _localizedPriority(BuildContext context, String? raw) {
+    if (raw == null) return null;
+    return switch (raw.toUpperCase()) {
+      'CRITICAL' => context.messages.projectPriorityCritical,
+      'HIGH' => context.messages.projectPriorityHigh,
+      'MEDIUM' => context.messages.projectPriorityMedium,
+      'LOW' => context.messages.projectPriorityLow,
+      _ => raw,
+    };
   }
 }

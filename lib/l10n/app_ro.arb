@@ -1468,8 +1468,8 @@
   "outboxMonitorSwitchLabel": "pornit",
   "outboxMonitorVolumeChartTitle": "Volum de sincronizare zilnic",
   "privateLabel": "Privat",
-  "projectAgentSectionTitle": "Agent",
   "projectAcceptedNextStepsTitle": "Pașii următori acceptați",
+  "projectAgentSectionTitle": "Agent",
   "projectCountSummary": "{count, plural, one{{count} proiect} few{{count} proiecte} other{{count} de proiecte}}",
   "@projectCountSummary": {
     "placeholders": {
@@ -1513,6 +1513,10 @@
   "projectNotFound": "Proiectul nu a fost găsit",
   "projectPickerLabel": "Proiect",
   "projectPickerUnassigned": "Fără proiect",
+  "projectPriorityCritical": "Critică",
+  "projectPriorityHigh": "Ridicată",
+  "projectPriorityLow": "Scăzută",
+  "projectPriorityMedium": "Medie",
   "projectStatusActive": "Activ",
   "projectStatusArchived": "Arhivat",
   "projectStatusChangeTitle": "Schimbă starea",

@@ -3527,10 +3527,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateLabel => 'Privé';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
+  String get projectAcceptedNextStepsTitle => 'Prochaines étapes acceptées';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Prochaines étapes acceptées';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3622,6 +3622,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Aucun projet';
+
+  @override
+  String get projectPriorityCritical => 'Critique';
+
+  @override
+  String get projectPriorityHigh => 'Haute';
+
+  @override
+  String get projectPriorityLow => 'Basse';
+
+  @override
+  String get projectPriorityMedium => 'Moyenne';
 
   @override
   String get projectStatusActive => 'Actif';

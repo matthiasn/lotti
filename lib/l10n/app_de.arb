@@ -1468,8 +1468,8 @@
   "outboxMonitorSwitchLabel": "aktiviert",
   "outboxMonitorVolumeChartTitle": "Tägliches Sync-Volumen",
   "privateLabel": "Privat",
-  "projectAgentSectionTitle": "Agent",
   "projectAcceptedNextStepsTitle": "Akzeptierte nächste Schritte",
+  "projectAgentSectionTitle": "Agent",
   "projectCountSummary": "{count, plural, one{{count} Projekt} other{{count} Projekte}}",
   "@projectCountSummary": {
     "placeholders": {
@@ -1513,6 +1513,10 @@
   "projectNotFound": "Projekt nicht gefunden",
   "projectPickerLabel": "Projekt",
   "projectPickerUnassigned": "Kein Projekt",
+  "projectPriorityCritical": "Kritisch",
+  "projectPriorityHigh": "Hoch",
+  "projectPriorityLow": "Niedrig",
+  "projectPriorityMedium": "Mittel",
   "projectStatusActive": "Aktiv",
   "projectStatusArchived": "Archiviert",
   "projectStatusChangeTitle": "Status ändern",

@@ -60,6 +60,46 @@ void main() {
     });
 
     test(
+      'recommend_next_steps rejects steps without valid titles',
+      () async {
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.recommendNextSteps,
+          {
+            'steps': [
+              {'rationale': 'Missing title field'},
+              {'title': '', 'rationale': 'Empty title'},
+              {'title': '  ', 'rationale': 'Whitespace-only title'},
+            ],
+          },
+          projectId,
+        );
+
+        expect(result.success, isFalse);
+        expect(result.output, contains('no valid recommended steps'));
+      },
+    );
+
+    test(
+      'recommend_next_steps counts only steps with valid titles',
+      () async {
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.recommendNextSteps,
+          {
+            'steps': [
+              {'title': 'Ship alpha', 'rationale': 'Unblock beta users'},
+              {'rationale': 'Missing title'},
+              {'title': 'Run QA', 'priority': 'HIGH'},
+            ],
+          },
+          projectId,
+        );
+
+        expect(result.success, isTrue);
+        expect(result.output, contains('Accepted 2 recommended next step'));
+      },
+    );
+
+    test(
       'update_project_status maps alias to onHold and appends history',
       () async {
         when(
@@ -152,6 +192,42 @@ void main() {
         final result = await dispatcher.dispatch(
           ProjectAgentToolNames.updateProjectStatus,
           {'status': 'on_hold', 'reason': '   '},
+          projectId,
+        );
+
+        expect(result.success, isTrue);
+
+        verify(
+          () => mockProjectRepository.updateProject(
+            any(
+              that: isA<ProjectEntry>().having(
+                (entry) => entry.data.status,
+                'status',
+                isA<ProjectOnHold>().having(
+                  (status) => status.reason,
+                  'reason',
+                  'No reason provided',
+                ),
+              ),
+            ),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'update_project_status ignores non-string reason without throwing',
+      () async {
+        when(
+          () => mockProjectRepository.getProjectById(projectId),
+        ).thenAnswer((_) async => project);
+        when(
+          () => mockProjectRepository.updateProject(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await dispatcher.dispatch(
+          ProjectAgentToolNames.updateProjectStatus,
+          {'status': 'on_hold', 'reason': 42},
           projectId,
         );
 

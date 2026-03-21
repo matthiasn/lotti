@@ -1255,8 +1255,8 @@
   "outboxMonitorSwitchLabel": "povoleno",
   "outboxMonitorVolumeChartTitle": "Denní objem synchronizace",
   "privateLabel": "Soukromé",
-  "projectAgentSectionTitle": "Agent",
   "projectAcceptedNextStepsTitle": "Přijaté další kroky",
+  "projectAgentSectionTitle": "Agent",
   "projectCountSummary": "{count, plural, one{{count} projekt} few{{count} projekty} other{{count} projektů}}",
   "@projectCountSummary": {
     "placeholders": {
@@ -1300,6 +1300,10 @@
   "projectNotFound": "Projekt nenalezen",
   "projectPickerLabel": "Projekt",
   "projectPickerUnassigned": "Žádný projekt",
+  "projectPriorityCritical": "Kritická",
+  "projectPriorityHigh": "Vysoká",
+  "projectPriorityLow": "Nízká",
+  "projectPriorityMedium": "Střední",
   "projectStatusActive": "Aktivní",
   "projectStatusArchived": "Archivovaný",
   "projectStatusChangeTitle": "Změnit stav",

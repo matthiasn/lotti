@@ -3456,10 +3456,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get privateLabel => 'Soukromé';
 
   @override
-  String get projectAgentSectionTitle => 'Agent';
+  String get projectAcceptedNextStepsTitle => 'Přijaté další kroky';
 
   @override
-  String get projectAcceptedNextStepsTitle => 'Přijaté další kroky';
+  String get projectAgentSectionTitle => 'Agent';
 
   @override
   String projectCountSummary(int count) {
@@ -3552,6 +3552,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectPickerUnassigned => 'Žádný projekt';
+
+  @override
+  String get projectPriorityCritical => 'Kritická';
+
+  @override
+  String get projectPriorityHigh => 'Vysoká';
+
+  @override
+  String get projectPriorityLow => 'Nízká';
+
+  @override
+  String get projectPriorityMedium => 'Střední';
 
   @override
   String get projectStatusActive => 'Aktivní';

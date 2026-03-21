@@ -284,8 +284,13 @@ class ProjectAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final observations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
+      // Recompute due-ness right before persisting so a manual wake that
+      // started before the schedule hour but finished after it still advances
+      // the schedule correctly.
+      final persistNow = clock.now();
       final scheduledWakeWasDue =
-          state.scheduledWakeAt != null && !state.scheduledWakeAt!.isAfter(now);
+          state.scheduledWakeAt != null &&
+          !state.scheduledWakeAt!.isAfter(persistNow);
       final shouldInitializeSchedule = state.scheduledWakeAt == null;
 
       await syncService.runInTransaction(() async {
@@ -418,12 +423,12 @@ class ProjectAgentWorkflow {
         final nextScheduledWakeAt =
             scheduledWakeWasDue || shouldInitializeSchedule
             ? nextLocalDayAtTime(
-                now,
+                persistNow,
                 hour: AgentSchedules.projectDailyDigestHour,
               )
             : state.scheduledWakeAt;
         final nextSlots = scheduledWakeWasDue
-            ? state.slots.copyWith(lastDailyWakeAt: now)
+            ? state.slots.copyWith(lastDailyWakeAt: persistNow)
             : state.slots;
         await syncService.upsertEntity(
           state.copyWith(

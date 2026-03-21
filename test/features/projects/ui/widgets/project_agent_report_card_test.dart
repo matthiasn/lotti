@@ -178,7 +178,7 @@ void main() {
         expect(find.text('Accepted next steps'), findsOneWidget);
         expect(find.text('Unblock QA'), findsOneWidget);
         expect(find.text('Staging data is missing'), findsOneWidget);
-        expect(find.text('HIGH'), findsOneWidget);
+        expect(find.text('High'), findsOneWidget);
         expect(find.text('Write launch checklist'), findsOneWidget);
         expect(find.text('Avoid release drift'), findsOneWidget);
       },
