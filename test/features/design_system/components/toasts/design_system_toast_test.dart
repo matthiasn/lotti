@@ -91,6 +91,11 @@ void main() {
 
       expect(find.byIcon(Icons.warning_rounded), findsOneWidget);
       expect(find.byIcon(Icons.error_rounded), findsOneWidget);
+      expect(
+        find.byIcon(Icons.close_rounded),
+        findsNothing,
+        reason: 'dismiss icon hidden when onDismiss is null',
+      );
     });
   });
 }

@@ -57,12 +57,19 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
   void didUpdateWidget(covariant DesignSystemSearch oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
+      final oldInternalController = _internalController;
       oldWidget.controller?.removeListener(_handleControllerChanged);
-      _internalController?.removeListener(_handleControllerChanged);
-      _internalController = widget.controller == null
-          ? TextEditingController(text: widget.initialText)
-          : null;
+      oldInternalController?.removeListener(_handleControllerChanged);
+      if (widget.controller == null) {
+        _internalController = TextEditingController(text: widget.initialText);
+      } else {
+        _internalController = null;
+        oldInternalController?.dispose();
+      }
       _controller.addListener(_handleControllerChanged);
+    } else if (widget.controller == null &&
+        oldWidget.initialText != widget.initialText) {
+      _internalController?.text = widget.initialText ?? '';
     }
   }
 

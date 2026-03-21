@@ -1100,11 +1100,11 @@
   "designSystemProgressBarSampleLabel": "Etichetă bară de progres",
   "designSystemRadioButtonLabel": "Buton radio",
   "designSystemSearchFilledText": "Căutare Lotti",
-  "designSystemSearchHintLabel": "Introduceți utilizator",
+  "designSystemSearchHintLabel": "Introdu utilizatorul",
   "designSystemSelectedLabel": "Selectat",
   "designSystemSizeScaleTitle": "Scală de dimensiuni",
   "designSystemSmallLabel": "Mic",
-  "designSystemSplitButtonDropdownSemantics": "Deschideți opțiunile pentru {label}",
+  "designSystemSplitButtonDropdownSemantics": "Deschide opțiunile pentru {label}",
   "@designSystemSplitButtonDropdownSemantics": {
     "placeholders": {
       "label": {

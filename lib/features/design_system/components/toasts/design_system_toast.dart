@@ -106,17 +106,18 @@ class DesignSystemToast extends StatelessWidget {
                             ],
                           ),
                         ),
-                        SizedBox(width: tokens.spacing.step5),
-                        _ToastDismissAction(
-                          enabled: onDismiss != null,
-                          iconColor: spec.dismissColor,
-                          semanticsLabel:
-                              dismissSemanticsLabel ??
-                              MaterialLocalizations.of(
-                                context,
-                              ).cancelButtonLabel,
-                          onPressed: onDismiss,
-                        ),
+                        if (onDismiss != null) ...[
+                          SizedBox(width: tokens.spacing.step5),
+                          _ToastDismissAction(
+                            iconColor: spec.dismissColor,
+                            semanticsLabel:
+                                dismissSemanticsLabel ??
+                                MaterialLocalizations.of(
+                                  context,
+                                ).cancelButtonLabel,
+                            onPressed: onDismiss!,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -132,33 +133,17 @@ class DesignSystemToast extends StatelessWidget {
 
 class _ToastDismissAction extends StatelessWidget {
   const _ToastDismissAction({
-    required this.enabled,
     required this.iconColor,
     required this.semanticsLabel,
-    this.onPressed,
+    required this.onPressed,
   });
 
-  final bool enabled;
   final Color iconColor;
   final String semanticsLabel;
-  final VoidCallback? onPressed;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    final icon = SizedBox(
-      width: 20,
-      height: 20,
-      child: Icon(
-        Icons.close_rounded,
-        size: 16,
-        color: iconColor,
-      ),
-    );
-
-    if (!enabled || onPressed == null) {
-      return icon;
-    }
-
     return Semantics(
       button: true,
       label: semanticsLabel,
@@ -167,7 +152,15 @@ class _ToastDismissAction extends StatelessWidget {
         child: InkResponse(
           onTap: onPressed,
           radius: 12,
-          child: icon,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: iconColor,
+            ),
+          ),
         ),
       ),
     );

@@ -2536,7 +2536,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemSearchFilledText => 'Căutare Lotti';
 
   @override
-  String get designSystemSearchHintLabel => 'Introduceți utilizator';
+  String get designSystemSearchHintLabel => 'Introdu utilizatorul';
 
   @override
   String get designSystemSelectedLabel => 'Selectat';
@@ -2549,7 +2549,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String designSystemSplitButtonDropdownSemantics(String label) {
-    return 'Deschideți opțiunile pentru $label';
+    return 'Deschide opțiunile pentru $label';
   }
 
   @override

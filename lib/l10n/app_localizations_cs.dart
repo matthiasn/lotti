@@ -2506,10 +2506,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemProgressBarSampleLabel => 'Štítek ukazatele průběhu';
 
   @override
-  String get designSystemRadioButtonLabel => 'Radio button';
+  String get designSystemRadioButtonLabel => 'Přepínač';
 
   @override
-  String get designSystemSearchFilledText => 'Lotti search';
+  String get designSystemSearchFilledText => 'Hledání Lotti';
 
   @override
   String get designSystemSearchHintLabel => 'Zadej uživatele';
