@@ -4,7 +4,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 enum DesignSystemSplitButtonSize {
   small,
-  small2,
+  compact,
   defaultSize,
 }
 
@@ -15,6 +15,7 @@ class DesignSystemSplitButton extends StatelessWidget {
     required this.onDropdownPressed,
     this.size = DesignSystemSplitButtonSize.small,
     this.isDropdownOpen = false,
+    this.enabled = true,
     this.mainSemanticsLabel,
     this.dropdownSemanticsLabel,
     super.key,
@@ -25,6 +26,7 @@ class DesignSystemSplitButton extends StatelessWidget {
   final VoidCallback onDropdownPressed;
   final DesignSystemSplitButtonSize size;
   final bool isDropdownOpen;
+  final bool enabled;
   final String? mainSemanticsLabel;
   final String? dropdownSemanticsLabel;
 
@@ -40,7 +42,7 @@ class DesignSystemSplitButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
     );
 
-    return Material(
+    final splitButton = Material(
       color: Colors.transparent,
       child: Ink(
         decoration: ShapeDecoration(
@@ -63,12 +65,13 @@ class DesignSystemSplitButton extends StatelessWidget {
                   Flexible(
                     child: Semantics(
                       button: true,
+                      enabled: enabled,
                       label: mainSemanticsLabel ?? label,
                       child: InkWell(
                         borderRadius: BorderRadius.horizontal(
                           left: Radius.circular(sizeSpec.cornerRadius),
                         ),
-                        onTap: onPressed,
+                        onTap: enabled ? onPressed : null,
                         child: Padding(
                           padding: EdgeInsets.symmetric(
                             horizontal: sizeSpec.mainHorizontalPadding,
@@ -87,12 +90,13 @@ class DesignSystemSplitButton extends StatelessWidget {
                   SizedBox(width: sizeSpec.dividerWidth),
                   Semantics(
                     button: true,
+                    enabled: enabled,
                     label: resolvedDropdownSemanticsLabel,
                     child: InkWell(
                       borderRadius: BorderRadius.horizontal(
                         right: Radius.circular(sizeSpec.cornerRadius),
                       ),
-                      onTap: onDropdownPressed,
+                      onTap: enabled ? onDropdownPressed : null,
                       child: SizedBox(
                         width: sizeSpec.dropdownWidth,
                         child: Center(
@@ -111,6 +115,15 @@ class DesignSystemSplitButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+
+    if (enabled) {
+      return splitButton;
+    }
+
+    return Opacity(
+      opacity: tokens.colors.text.lowEmphasis.a,
+      child: splitButton,
     );
   }
 }
@@ -145,7 +158,7 @@ class _SplitButtonSizeSpec {
         iconSize: tokens.typography.lineHeight.caption,
         dividerWidth: tokens.spacing.step1 / 2,
       ),
-      DesignSystemSplitButtonSize.small2 => _SplitButtonSizeSpec(
+      DesignSystemSplitButtonSize.compact => _SplitButtonSizeSpec(
         labelStyle: tokens.typography.styles.subtitle.subtitle2,
         height:
             tokens.typography.lineHeight.subtitle2 + tokens.spacing.step3 * 2,

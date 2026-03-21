@@ -1393,6 +1393,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "Al pasar",
   "designSystemPressedLabel": "Pulsada",
+  "designSystemCheckboxLabel": "Casilla de verificación",
   "designSystemRadioButtonLabel": "Botón de radio",
   "designSystemSelectedLabel": "Seleccionado",
   "designSystemSizeScaleTitle": "Escala de tamaños",

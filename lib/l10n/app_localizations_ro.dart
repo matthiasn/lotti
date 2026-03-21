@@ -2460,6 +2460,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemPressedLabel => 'Apăsat';
 
   @override
+  String get designSystemCheckboxLabel => 'Casetă de selectare';
+
+  @override
   String get designSystemRadioButtonLabel => 'Buton radio';
 
   @override

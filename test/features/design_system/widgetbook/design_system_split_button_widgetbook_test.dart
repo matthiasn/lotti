@@ -25,7 +25,7 @@ void main() {
       expect(find.text('Size Scale'), findsOneWidget);
       expect(find.text('Variant Matrix'), findsOneWidget);
       expect(find.text('Small'), findsAtLeastNWidgets(1));
-      expect(find.text('Small2'), findsAtLeastNWidgets(1));
+      expect(find.text('Compact'), findsAtLeastNWidgets(1));
       expect(find.text('Default'), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.keyboard_arrow_down), findsWidgets);
       expect(find.byIcon(Icons.keyboard_arrow_up), findsWidgets);

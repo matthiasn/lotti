@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemRadioButtonSize {
   defaultSize,
@@ -23,6 +24,10 @@ class DesignSystemRadioButton extends StatefulWidget {
     this.forcedState,
     super.key,
   }) : assert(
+         (label != null && label != '') || semanticsLabel != null,
+         'Provide either a visible label or a semanticsLabel.',
+       ),
+       assert(
          label != null || !showTooltipIcon,
          'A tooltip icon requires a label.',
        );
@@ -43,6 +48,19 @@ class DesignSystemRadioButton extends StatefulWidget {
 
 class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
   bool _hovered = false;
+
+  @override
+  void didUpdateWidget(covariant DesignSystemRadioButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final interactionModeChanged =
+        oldWidget.forcedState != widget.forcedState ||
+        (oldWidget.onPressed == null) != (widget.onPressed == null);
+
+    if (interactionModeChanged) {
+      _hovered = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,13 +106,9 @@ class _DesignSystemRadioButtonState extends State<DesignSystemRadioButton> {
       ),
     );
 
-    if (enabled) {
-      return radio;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: radio,
+    return radio.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

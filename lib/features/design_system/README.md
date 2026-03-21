@@ -10,6 +10,12 @@ This feature contains the standalone Widgetbook-first design system work.
 - Build new design-system components without retrofitting existing app widgets
 - Render design-system typography with the bundled local `Inter` variable font
 
+## Accessibility Conventions
+
+- Interactive controls require either a visible label or a `semanticsLabel`
+- Decorative trailing info icons must use a real tooltip message
+- Disabled states should block interaction and keep semantics in sync
+
 ## Implemented Components
 
 - Typography showcase
@@ -23,6 +29,19 @@ This feature contains the standalone Widgetbook-first design system work.
 - Toggles
 - Radio buttons
 - Checkboxes
+
+## Usage
+
+Import all components and theme via the barrel file:
+
+```dart
+import 'package:lotti/features/design_system/design_system.dart';
+```
+
+## Shared Utilities
+
+- `utils/disabled_overlay.dart` — `Widget.withDisabledOpacity()` extension used
+  by all interactive components for consistent disabled treatment.
 
 ## Import Workflow
 

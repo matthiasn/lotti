@@ -1393,6 +1393,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "Hover",
   "designSystemPressedLabel": "Gedrückt",
+  "designSystemCheckboxLabel": "Checkbox",
   "designSystemRadioButtonLabel": "Radio-Button",
   "designSystemSelectedLabel": "Ausgewählt",
   "designSystemSizeScaleTitle": "Größenskala",

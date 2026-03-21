@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemDropdownType {
   dropdownList,
@@ -127,13 +128,9 @@ class _DesignSystemDropdownState extends State<DesignSystemDropdown> {
       ],
     );
 
-    if (widget.enabled) {
-      return content;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: content,
+    return content.withDisabledOpacity(
+      enabled: widget.enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

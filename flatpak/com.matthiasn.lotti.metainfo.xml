@@ -34,7 +34,11 @@
     <release version="0.9.929" date="2026-03-21">
       <description>
           <p>Design system Tabs: added a new Widgetbook-first Tabs component with small/default sizes, token-driven interactive states, optional counter and icon slots, and focused widget/widgetbook coverage.</p>
+<<<<<<< HEAD
           <p>Design system Calendar picker: added a Widgetbook-first calendar picker with month rail navigation, token-driven monthly range cells and weekly date cards, plus focused widget/widgetbook coverage.</p>
+=======
+          <p>Design system controls: improved accessibility for unlabeled controls, added real tooltip behavior and better truncation to toggles, reset transient interaction states on disable, and added a disabled state to split buttons.</p>
+>>>>>>> 4325a7f43 (refactor: improve design system)
       </description>
     </release>
     <release version="0.9.928" date="2026-03-19">

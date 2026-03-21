@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemChipVisualState {
   idle,
@@ -120,13 +121,9 @@ class _DesignSystemChipState extends State<DesignSystemChip> {
       ),
     );
 
-    if (enabled) {
-      return chip;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: chip,
+    return chip.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

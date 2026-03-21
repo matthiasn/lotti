@@ -1225,6 +1225,7 @@
   "designSystemDropdownOptionQa": "QA",
   "designSystemHoverLabel": "Hover",
   "designSystemPressedLabel": "Pressed",
+  "designSystemCheckboxLabel": "Checkbox",
   "designSystemRadioButtonLabel": "Radio button",
   "designSystemSelectedLabel": "Selected",
   "designSystemSizeScaleTitle": "Size Scale",

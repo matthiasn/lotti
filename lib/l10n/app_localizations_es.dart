@@ -2496,6 +2496,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get designSystemPressedLabel => 'Pulsada';
 
   @override
+  String get designSystemCheckboxLabel => 'Casilla de verificación';
+
+  @override
   String get designSystemRadioButtonLabel => 'Botón de radio';
 
   @override

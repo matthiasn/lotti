@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   month rail navigation, token-driven monthly range cells and weekly date
   cards, plus focused widget/widgetbook coverage.
 
+### Changed
+- Design system controls: tightened accessibility contracts for unlabeled
+  controls, added real tooltip behavior and resilient label truncation to
+  toggles, reset transient interaction states when controls become disabled,
+  and added a disabled state to split buttons.
+
 ## [0.9.928] - 2026-03-17
 ### Added
 - Voice-driven time tracking: the task agent can now create time tracking entries

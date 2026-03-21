@@ -4401,6 +4401,12 @@ abstract class AppLocalizations {
   /// **'Pressed'**
   String get designSystemPressedLabel;
 
+  /// No description provided for @designSystemCheckboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkbox'**
+  String get designSystemCheckboxLabel;
+
   /// No description provided for @designSystemRadioButtonLabel.
   ///
   /// In en, this message translates to:

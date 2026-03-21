@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intersperse/intersperse.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemTabSize {
   small,
@@ -149,13 +150,9 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
       ),
     );
 
-    if (enabled) {
-      return tab;
-    }
-
-    return Opacity(
-      opacity: tokens.colors.text.lowEmphasis.a,
-      child: tab,
+    return tab.withDisabledOpacity(
+      enabled: enabled,
+      disabledOpacity: tokens.colors.text.lowEmphasis.a,
     );
   }
 

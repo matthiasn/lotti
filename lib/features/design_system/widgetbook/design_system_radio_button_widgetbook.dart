@@ -304,6 +304,8 @@ class _RadioButtonPreviewTile extends StatelessWidget {
       selected: config.selected,
       size: config.size,
       label: config.label,
+      semanticsLabel:
+          config.label ?? context.messages.designSystemRadioButtonLabel,
       showTooltipIcon: config.showTooltipIcon,
       forcedState: config.forcedState,
       onPressed: config.enabled ? _noop : null,

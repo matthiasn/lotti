@@ -77,7 +77,7 @@ class _SplitButtonSizeScale extends StatelessWidget {
           size: DesignSystemSplitButtonSize.small,
         ),
         _SplitButtonPreview(
-          size: DesignSystemSplitButtonSize.small2,
+          size: DesignSystemSplitButtonSize.compact,
         ),
         _SplitButtonPreview(
           size: DesignSystemSplitButtonSize.defaultSize,
@@ -100,8 +100,8 @@ class _SplitButtonVariantMatrix extends StatelessWidget {
           size: DesignSystemSplitButtonSize.small,
         ),
         _SplitButtonMatrixRow(
-          label: 'Small2 + Open',
-          size: DesignSystemSplitButtonSize.small2,
+          label: 'Compact + Open',
+          size: DesignSystemSplitButtonSize.compact,
           initiallyOpen: true,
         ),
         _SplitButtonMatrixRow(
@@ -252,7 +252,7 @@ class _SplitButtonMenu extends StatelessWidget {
 String _labelForSize(DesignSystemSplitButtonSize size) {
   return switch (size) {
     DesignSystemSplitButtonSize.small => 'Small',
-    DesignSystemSplitButtonSize.small2 => 'Small2',
+    DesignSystemSplitButtonSize.compact => 'Compact',
     DesignSystemSplitButtonSize.defaultSize => 'Default',
   };
 }

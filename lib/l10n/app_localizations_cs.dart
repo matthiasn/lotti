@@ -2436,6 +2436,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemPressedLabel => 'Stisknuto';
 
   @override
+  String get designSystemCheckboxLabel => 'Zaškrtávací políčko';
+
+  @override
   String get designSystemRadioButtonLabel => 'Radio button';
 
   @override

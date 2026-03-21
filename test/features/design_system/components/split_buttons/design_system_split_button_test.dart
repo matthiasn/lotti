@@ -55,17 +55,17 @@ void main() {
       );
     });
 
-    testWidgets('renders the small2 open split button from tokens', (
+    testWidgets('renders the compact open split button from tokens', (
       tester,
     ) async {
-      const buttonKey = Key('split-small2-open');
+      const buttonKey = Key('split-compact-open');
 
       await _pumpSplitButton(
         tester,
         const DesignSystemSplitButton(
           key: buttonKey,
-          label: 'Small2',
-          size: DesignSystemSplitButtonSize.small2,
+          label: 'Compact',
+          size: DesignSystemSplitButtonSize.compact,
           isDropdownOpen: true,
           onPressed: _noop,
           onDropdownPressed: _noop,
@@ -75,7 +75,7 @@ void main() {
       final decoration = _splitButtonDecoration(tester);
       final shape = decoration.shape as RoundedRectangleBorder;
       final icon = tester.widget<Icon>(find.byIcon(Icons.keyboard_arrow_up));
-      final richText = _findTextNode(tester, 'Small2');
+      final richText = _findTextNode(tester, 'Compact');
 
       expect(
         _splitButtonSize(tester, buttonKey).height,
@@ -224,6 +224,79 @@ void main() {
       await tester.pump();
 
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('applies disabled opacity and blocks both segments', (
+      tester,
+    ) async {
+      var mainTapCount = 0;
+      var dropdownTapCount = 0;
+
+      await _pumpSplitButton(
+        tester,
+        DesignSystemSplitButton(
+          label: 'Disabled',
+          enabled: false,
+          onPressed: () => mainTapCount++,
+          onDropdownPressed: () => dropdownTapCount++,
+        ),
+      );
+
+      final opacity = tester.widget<Opacity>(find.byType(Opacity));
+      final inkWells = tester
+          .widgetList<InkWell>(find.byType(InkWell))
+          .toList();
+
+      expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
+      expect(inkWells, hasLength(2));
+      expect(inkWells[0].onTap, isNull);
+      expect(inkWells[1].onTap, isNull);
+
+      await tester.tap(find.text('Disabled'));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.keyboard_arrow_down));
+      await tester.pump();
+
+      expect(mainTapCount, 0);
+      expect(dropdownTapCount, 0);
+    });
+
+    testWidgets('exposes disabled semantics for both segments', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await _pumpSplitButton(
+        tester,
+        const DesignSystemSplitButton(
+          label: 'Disabled',
+          enabled: false,
+          onPressed: _noop,
+          onDropdownPressed: _noop,
+        ),
+      );
+
+      final semanticWidgets = tester
+          .widgetList<Semantics>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is Semantics && widget.properties.button == true,
+            ),
+          )
+          .where(
+            (widget) =>
+                widget.properties.label == 'Disabled' ||
+                widget.properties.label == 'Open Disabled options',
+          )
+          .toList();
+
+      expect(semanticWidgets, hasLength(2));
+      expect(
+        semanticWidgets.map((widget) => widget.properties.enabled),
+        everyElement(isFalse),
+      );
+
+      semantics.dispose();
     });
   });
 }

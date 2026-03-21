@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 WidgetbookComponent buildDesignSystemCheckboxWidgetbookComponent() {
@@ -242,6 +243,8 @@ class _CheckboxPreviewTile extends StatelessWidget {
         DesignSystemCheckbox(
           value: config.value,
           label: config.label,
+          semanticsLabel:
+              config.label ?? context.messages.designSystemCheckboxLabel,
           forcedState: config.state,
           onChanged: config.enabled ? (_) {} : null,
         ),

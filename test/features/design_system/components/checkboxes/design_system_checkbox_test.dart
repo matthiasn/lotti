@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -235,7 +237,97 @@ void main() {
         dsTokensLight.colors.interactive.hover,
       );
     });
+
+    testWidgets('clears transient hover state after disable and re-enable', (
+      tester,
+    ) async {
+      final enabled = ValueNotifier<bool>(true);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          _CheckboxEnabledHarness(enabled: enabled),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(() {
+        enabled.dispose();
+        return gesture.removePointer();
+      });
+      await gesture.addPointer();
+      await tester.pump();
+      await gesture.moveTo(tester.getCenter(find.byType(DesignSystemCheckbox)));
+      await tester.pump();
+
+      var decoration = _checkboxDecoration(tester);
+      expect(decoration.color, dsTokensLight.colors.surface.hover);
+      expect(
+        decoration.border!.top.color,
+        dsTokensLight.colors.interactive.hover,
+      );
+
+      enabled.value = false;
+      await tester.pump();
+      enabled.value = true;
+      await tester.pump();
+
+      decoration = _checkboxDecoration(tester);
+      expect(decoration.color, dsTokensLight.colors.background.level01);
+      expect(
+        decoration.border!.top.color,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
+    });
+
+    test('asserts when neither a label nor semanticsLabel is provided', () {
+      expect(
+        () => DesignSystemCheckbox(
+          value: false,
+          onChanged: _noop,
+        ),
+        throwsAssertionError,
+      );
+    });
   });
+}
+
+class _CheckboxEnabledHarness extends StatelessWidget {
+  const _CheckboxEnabledHarness({
+    required this.enabled,
+  });
+
+  final ValueNotifier<bool> enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: enabled,
+      builder: (context, isEnabled, child) {
+        return DesignSystemCheckbox(
+          value: false,
+          label: 'Accept terms',
+          onChanged: isEnabled ? _noop : null,
+        );
+      },
+    );
+  }
+}
+
+BoxDecoration _checkboxDecoration(WidgetTester tester) {
+  final decoratedBox = tester.widget<DecoratedBox>(
+    find.descendant(
+      of: find.byType(DesignSystemCheckbox),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is DecoratedBox &&
+            widget.decoration is BoxDecoration &&
+            (widget.decoration as BoxDecoration).border != null,
+      ),
+    ),
+  );
+
+  return decoratedBox.decoration as BoxDecoration;
 }
 
 void _noop(bool? value) {}

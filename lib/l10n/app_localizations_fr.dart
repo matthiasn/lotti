@@ -2492,6 +2492,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemPressedLabel => 'Appuyé';
 
   @override
+  String get designSystemCheckboxLabel => 'Case à cocher';
+
+  @override
   String get designSystemRadioButtonLabel => 'Bouton radio';
 
   @override
