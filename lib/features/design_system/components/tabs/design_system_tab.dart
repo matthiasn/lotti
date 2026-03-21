@@ -26,7 +26,10 @@ class DesignSystemTab extends StatefulWidget {
     this.semanticsLabel,
     this.forcedState,
     super.key,
-  });
+  }) : assert(
+         label != null || semanticsLabel != null,
+         'Provide label or semanticsLabel for accessibility.',
+       );
 
   final bool selected;
   final VoidCallback? onPressed;
@@ -104,9 +107,13 @@ class _DesignSystemTabState extends State<DesignSystemTab> {
                         ),
                       ),
                       child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: sizeSpec.horizontalPadding,
-                          vertical: sizeSpec.verticalPadding,
+                        padding: EdgeInsets.only(
+                          left: sizeSpec.horizontalPadding,
+                          right: sizeSpec.horizontalPadding,
+                          top: sizeSpec.topPadding,
+                          bottom: widget.selected
+                              ? sizeSpec.selectedBottomPadding
+                              : sizeSpec.bottomPadding,
                         ),
                         child: DefaultTextStyle.merge(
                           style: sizeSpec.labelStyle.copyWith(
@@ -183,8 +190,9 @@ class _TabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryChildren = <Widget>[];
+    final children = <Widget>[];
 
+    final primaryChildren = <Widget>[];
     if (leadingIcon != null) {
       primaryChildren.add(
         _TabIcon(
@@ -205,17 +213,19 @@ class _TabContent extends StatelessWidget {
       );
     }
 
-    final contentChildren = <Widget>[];
     if (primaryChildren.isNotEmpty) {
-      contentChildren.addAll(
-        primaryChildren.intersperse(
-          SizedBox(width: sizeSpec.primaryContentGap),
+      children.add(
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: primaryChildren
+              .intersperse(SizedBox(width: sizeSpec.primaryContentGap))
+              .toList(),
         ),
       );
     }
 
     if (counter?.isNotEmpty == true) {
-      contentChildren.add(
+      children.add(
         DesignSystemBadge.number(
           value: counter!,
           tone: DesignSystemBadgeTone.secondary,
@@ -224,7 +234,7 @@ class _TabContent extends StatelessWidget {
     }
 
     if (trailingIcon != null) {
-      contentChildren.add(
+      children.add(
         _TabIcon(
           icon: trailingIcon!,
           sizeSpec: sizeSpec,
@@ -233,17 +243,11 @@ class _TabContent extends StatelessWidget {
       );
     }
 
-    final children = contentChildren.isEmpty
-        ? const <Widget>[]
-        : contentChildren
-              .intersperse(
-                SizedBox(width: sizeSpec.secondaryContentGap),
-              )
-              .toList();
-
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: children,
+      children: children
+          .intersperse(SizedBox(width: sizeSpec.secondaryContentGap))
+          .toList(),
     );
   }
 }
@@ -278,7 +282,9 @@ class _TabSizeSpec {
   const _TabSizeSpec({
     required this.height,
     required this.horizontalPadding,
-    required this.verticalPadding,
+    required this.topPadding,
+    required this.bottomPadding,
+    required this.selectedBottomPadding,
     required this.iconSlotSize,
     required this.iconSize,
     required this.primaryContentGap,
@@ -293,31 +299,39 @@ class _TabSizeSpec {
     DsTokens tokens,
     DesignSystemTabSize size,
   ) {
+    final selectorHeight = tokens.spacing.step2 - (tokens.spacing.step1 / 2);
+    final dividerHeight = tokens.spacing.step1 / 2;
+
     return switch (size) {
       DesignSystemTabSize.small => _TabSizeSpec(
         height: tokens.spacing.step8 + (tokens.spacing.step1 / 2),
         horizontalPadding: tokens.spacing.step4,
-        verticalPadding: tokens.spacing.step4 + tokens.spacing.step1,
+        topPadding: tokens.spacing.step4 - tokens.spacing.step1,
+        bottomPadding: tokens.spacing.step4 - tokens.spacing.step1,
+        selectedBottomPadding:
+            tokens.spacing.step3 - (tokens.spacing.step1 / 2),
         iconSlotSize: tokens.typography.lineHeight.subtitle2,
         iconSize: tokens.typography.size.subtitle2,
         primaryContentGap: tokens.spacing.step2,
         secondaryContentGap: tokens.spacing.step6,
         labelStyle: tokens.typography.styles.subtitle.subtitle2,
-        selectorHeight: tokens.spacing.step2 - (tokens.spacing.step1 / 2),
-        dividerHeight: tokens.spacing.step1 / 2,
+        selectorHeight: selectorHeight,
+        dividerHeight: dividerHeight,
         cornerRadius: tokens.radii.m,
       ),
       DesignSystemTabSize.defaultSize => _TabSizeSpec(
         height: tokens.spacing.step9 + (tokens.spacing.step1 / 2),
         horizontalPadding: tokens.spacing.step5,
-        verticalPadding: tokens.spacing.step4 + tokens.spacing.step2,
+        topPadding: tokens.spacing.step4,
+        bottomPadding: tokens.spacing.step4,
+        selectedBottomPadding: tokens.spacing.step4 - selectorHeight,
         iconSlotSize: tokens.typography.lineHeight.subtitle1,
         iconSize: tokens.typography.size.subtitle2,
         primaryContentGap: tokens.spacing.step2,
         secondaryContentGap: tokens.spacing.step6,
         labelStyle: tokens.typography.styles.subtitle.subtitle2,
-        selectorHeight: tokens.spacing.step2 - (tokens.spacing.step1 / 2),
-        dividerHeight: tokens.spacing.step1 / 2,
+        selectorHeight: selectorHeight,
+        dividerHeight: dividerHeight,
         cornerRadius: tokens.radii.m,
       ),
     };
@@ -325,7 +339,9 @@ class _TabSizeSpec {
 
   final double height;
   final double horizontalPadding;
-  final double verticalPadding;
+  final double topPadding;
+  final double bottomPadding;
+  final double selectedBottomPadding;
   final double iconSlotSize;
   final double iconSize;
   final double primaryContentGap;
@@ -372,7 +388,9 @@ class _TabStyleSpec {
       backgroundColor: backgroundColor,
       labelColor: emphasisColor,
       leadingIconColor: emphasisColor,
-      trailingIconColor: tokens.colors.text.highEmphasis,
+      trailingIconColor: enabled
+          ? tokens.colors.text.highEmphasis
+          : tokens.colors.text.lowEmphasis,
       selectorColor: tokens.colors.interactive.enabled,
       dividerColor: tokens.colors.decorative.level02,
       showDivider: selected || enabled,

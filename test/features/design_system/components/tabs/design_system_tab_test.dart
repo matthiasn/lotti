@@ -49,9 +49,11 @@ void main() {
       expect(contentDecoration.color, dsTokensLight.colors.surface.enabled);
       expect(
         padding.padding,
-        EdgeInsets.symmetric(
-          horizontal: dsTokensLight.spacing.step5,
-          vertical: dsTokensLight.spacing.step4 + dsTokensLight.spacing.step2,
+        EdgeInsets.only(
+          left: dsTokensLight.spacing.step5,
+          right: dsTokensLight.spacing.step5,
+          top: dsTokensLight.spacing.step4,
+          bottom: dsTokensLight.spacing.step4,
         ),
       );
       expectTextStyle(
@@ -138,9 +140,12 @@ void main() {
       expect(contentDecoration.color, dsTokensLight.colors.surface.active);
       expect(
         padding.padding,
-        EdgeInsets.symmetric(
-          horizontal: dsTokensLight.spacing.step4,
-          vertical: dsTokensLight.spacing.step4 + dsTokensLight.spacing.step1,
+        EdgeInsets.only(
+          left: dsTokensLight.spacing.step4,
+          right: dsTokensLight.spacing.step4,
+          top: dsTokensLight.spacing.step4 - dsTokensLight.spacing.step1,
+          bottom:
+              dsTokensLight.spacing.step3 - (dsTokensLight.spacing.step1 / 2),
         ),
       );
       expectTextStyle(
@@ -243,7 +248,7 @@ void main() {
         dsTokensLight.colors.text.lowEmphasis,
       );
       expect(leadingIcon.color, dsTokensLight.colors.text.lowEmphasis);
-      expect(trailingIcon.color, dsTokensLight.colors.text.highEmphasis);
+      expect(trailingIcon.color, dsTokensLight.colors.text.lowEmphasis);
       expect(inkWell.onTap, isNull);
       expect(
         find.descendant(

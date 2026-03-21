@@ -86,7 +86,6 @@ class _TabSizeScale extends StatelessWidget {
         ),
         DesignSystemTab(
           selected: false,
-          size: DesignSystemTabSize.defaultSize,
           label: label,
           counter: '10',
           trailingIcon: Icons.close_rounded,
