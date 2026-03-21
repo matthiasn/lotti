@@ -9,8 +9,8 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../test_utils.dart';
 import '../../projects/test_utils.dart';
+import '../test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -214,9 +214,8 @@ void main() {
           templateId: 'template-001',
           profileId: 'profile-001',
           allowedCategoryIds: {'cat-001'},
-          awaitContent: true,
         ),
-      ).thenAnswer((_) async => makeTestIdentity(agentId: 'agent-001'));
+      ).thenAnswer((_) async => makeTestIdentity());
 
       final result = await dispatcher.dispatch(
         ProjectAgentToolNames.createTask,

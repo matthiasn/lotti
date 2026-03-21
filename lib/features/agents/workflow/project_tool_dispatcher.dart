@@ -16,7 +16,7 @@ import 'package:uuid/uuid.dart';
 
 /// Dispatches confirmed project-agent change-set items to project-domain
 /// mutations.
-class ProjectToolDispatcher implements AgentToolDispatcher {
+class ProjectToolDispatcher {
   ProjectToolDispatcher({
     required this.projectRepository,
     required this.persistenceLogic,
@@ -34,7 +34,6 @@ class ProjectToolDispatcher implements AgentToolDispatcher {
   static const _uuid = Uuid();
   static const _sub = 'ProjectToolDispatcher';
 
-  @override
   Future<ToolExecutionResult> dispatch(
     String toolName,
     Map<String, dynamic> args,
