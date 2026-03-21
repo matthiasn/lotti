@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_badge_widgetbook.dart';
+import 'package:lotti/features/design_system/widgetbook/design_system_calendar_picker_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_checkbox_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_chip_widgetbook.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
@@ -30,6 +31,7 @@ WidgetbookFolder buildDesignSystemWidgetbookFolder() {
       buildDesignSystemDropdownWidgetbookComponent(),
       buildDesignSystemSplitButtonWidgetbookComponent(),
       buildDesignSystemTabWidgetbookComponent(),
+      buildDesignSystemCalendarPickerWidgetbookComponent(),
       buildDesignSystemToggleWidgetbookComponent(),
       buildDesignSystemRadioButtonWidgetbookComponent(),
       buildDesignSystemCheckboxWidgetbookComponent(),

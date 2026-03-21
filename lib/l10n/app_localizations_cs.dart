@@ -2382,6 +2382,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemActivatedLabel => 'Aktivní';
 
   @override
+  String get designSystemCalendarPickerLabel => 'Výběr data';
+
+  @override
+  String get designSystemCalendarViewsTitle => 'Zobrazení kalendáře';
+
+  @override
+  String get designSystemDateCardsTitle => 'Datumové karty';
+
+  @override
   String get designSystemDropdownComboboxTitle => 'Kombobox';
 
   @override
@@ -2430,6 +2439,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Radio button';
 
   @override
+  String get designSystemSelectedLabel => 'Vybrané';
+
+  @override
   String get designSystemSizeScaleTitle => 'Škála velikostí';
 
   @override
@@ -2451,6 +2463,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemVariantMatrixTitle => 'Matice variant';
+
+  @override
+  String get designSystemWeeklyCalendarLabel => 'Týdenní kalendář';
 
   @override
   String get deleteButton => 'Smazat';

@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Design system Tabs: added a new Widgetbook-first Tabs component with
   small/default sizes, token-driven interactive states, optional counter and
   icon slots, and focused widget/widgetbook coverage.
+- Design system Calendar picker: added a Widgetbook-first calendar picker with
+  month rail navigation, token-driven monthly range cells and weekly date
+  cards, plus focused widget/widgetbook coverage.
 
 ## [0.9.928] - 2026-03-17
 ### Added

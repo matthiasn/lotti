@@ -37,6 +37,9 @@ void main() {
       final tabsComponent = components.singleWhere(
         (component) => component.name == 'Tabs',
       );
+      final calendarPickerComponent = components.singleWhere(
+        (component) => component.name == 'Calendar picker',
+      );
       final toggleComponent = components.singleWhere(
         (component) => component.name == 'Toggle',
       );
@@ -57,6 +60,7 @@ void main() {
         'Dropdowns',
         'Split Buttons',
         'Tabs',
+        'Calendar picker',
         'Toggle',
         'Radio buttons',
         'Checkbox',
@@ -67,6 +71,7 @@ void main() {
       expect(dropdownComponent.useCases.single.name, 'Overview');
       expect(splitButtonComponent.useCases.single.name, 'Overview');
       expect(tabsComponent.useCases.single.name, 'Overview');
+      expect(calendarPickerComponent.useCases.single.name, 'Overview');
       expect(toggleComponent.useCases.single.name, 'Overview');
       expect(radioButtonComponent.useCases.single.name, 'Overview');
       expect(checkboxComponent.useCases.single.name, 'Overview');

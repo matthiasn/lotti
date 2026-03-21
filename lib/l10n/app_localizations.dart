@@ -4293,6 +4293,24 @@ abstract class AppLocalizations {
   /// **'Activated'**
   String get designSystemActivatedLabel;
 
+  /// No description provided for @designSystemCalendarPickerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Picker'**
+  String get designSystemCalendarPickerLabel;
+
+  /// No description provided for @designSystemCalendarViewsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar Views'**
+  String get designSystemCalendarViewsTitle;
+
+  /// No description provided for @designSystemDateCardsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Cards'**
+  String get designSystemDateCardsTitle;
+
   /// No description provided for @designSystemDropdownComboboxTitle.
   ///
   /// In en, this message translates to:
@@ -4389,6 +4407,12 @@ abstract class AppLocalizations {
   /// **'Radio button'**
   String get designSystemRadioButtonLabel;
 
+  /// No description provided for @designSystemSelectedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get designSystemSelectedLabel;
+
   /// No description provided for @designSystemSizeScaleTitle.
   ///
   /// In en, this message translates to:
@@ -4430,6 +4454,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Variant Matrix'**
   String get designSystemVariantMatrixTitle;
+
+  /// No description provided for @designSystemWeeklyCalendarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Calendar'**
+  String get designSystemWeeklyCalendarLabel;
 
   /// No description provided for @deleteButton.
   ///
