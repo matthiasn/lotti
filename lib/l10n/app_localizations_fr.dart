@@ -2438,6 +2438,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemActivatedLabel => 'Actif';
 
   @override
+  String get designSystemCalendarPickerLabel => 'Sélecteur de calendrier';
+
+  @override
+  String get designSystemCalendarViewsTitle => 'Vues du calendrier';
+
+  @override
+  String get designSystemDateCardsTitle => 'Cartes de date';
+
+  @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
 
   @override
@@ -2486,6 +2495,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Bouton radio';
 
   @override
+  String get designSystemSelectedLabel => 'Sélectionné';
+
+  @override
   String get designSystemSizeScaleTitle => 'Échelle des tailles';
 
   @override
@@ -2507,6 +2519,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemVariantMatrixTitle => 'Matrice des variantes';
+
+  @override
+  String get designSystemWeeklyCalendarLabel => 'Calendrier hebdomadaire';
 
   @override
   String get deleteButton => 'Supprimer';

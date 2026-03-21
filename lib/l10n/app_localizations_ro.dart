@@ -2406,6 +2406,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemActivatedLabel => 'Activ';
 
   @override
+  String get designSystemCalendarPickerLabel => 'Selector calendar';
+
+  @override
+  String get designSystemCalendarViewsTitle => 'Vizualizări calendar';
+
+  @override
+  String get designSystemDateCardsTitle => 'Carduri de dată';
+
+  @override
   String get designSystemDropdownComboboxTitle => 'Combobox';
 
   @override
@@ -2454,6 +2463,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemRadioButtonLabel => 'Buton radio';
 
   @override
+  String get designSystemSelectedLabel => 'Selectat';
+
+  @override
   String get designSystemSizeScaleTitle => 'Scală de dimensiuni';
 
   @override
@@ -2475,6 +2487,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemVariantMatrixTitle => 'Matrice de variante';
+
+  @override
+  String get designSystemWeeklyCalendarLabel => 'Calendar săptămânal';
 
   @override
   String get deleteButton => 'Șterge';
