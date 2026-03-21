@@ -1374,7 +1374,9 @@
   "noDefaultLanguage": "Keine Standardsprache",
   "designSystemDefaultLabel": "Standard",
   "designSystemDisabledLabel": "Deaktiviert",
+  "designSystemActivatedLabel": "Aktiv",
   "designSystemHoverLabel": "Hover",
+  "designSystemPressedLabel": "Gedrückt",
   "designSystemRadioButtonLabel": "Radio-Button",
   "designSystemSizeScaleTitle": "Größenskala",
   "designSystemSmallLabel": "Klein",
@@ -1386,7 +1388,8 @@
       }
     }
   },
-  "designSystemStateMatrixTitle": "Zustandsmatrix",
+  "designSystemStateMatrixTitle": "Statusmatrix",
+  "designSystemTabPendingLabel": "Ausstehend",
   "designSystemToggleLabel": "Toggle-Label",
   "designSystemVariantMatrixTitle": "Variantenmatrix",
   "noPromptsAvailable": "Keine Prompts verfügbar",

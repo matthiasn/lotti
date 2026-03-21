@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.929] - 2026-03-21
+### Added
+- Design system Tabs: added a new Widgetbook-first Tabs component with
+  small/default sizes, token-driven interactive states, optional counter and
+  icon slots, and focused widget/widgetbook coverage.
+
 ## [0.9.928] - 2026-03-17
 ### Added
 - Voice-driven time tracking: the task agent can now create time tracking entries

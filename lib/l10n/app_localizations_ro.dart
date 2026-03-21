@@ -2403,7 +2403,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemDisabledLabel => 'Dezactivat';
 
   @override
+  String get designSystemActivatedLabel => 'Activ';
+
+  @override
   String get designSystemHoverLabel => 'La survolare';
+
+  @override
+  String get designSystemPressedLabel => 'Apăsat';
 
   @override
   String get designSystemRadioButtonLabel => 'Buton radio';
@@ -2421,6 +2427,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get designSystemStateMatrixTitle => 'Matrice de stări';
+
+  @override
+  String get designSystemTabPendingLabel => 'În așteptare';
 
   @override
   String get designSystemToggleLabel => 'Etichetă pentru toggle';

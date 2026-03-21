@@ -2435,7 +2435,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get designSystemDisabledLabel => 'Désactivé';
 
   @override
+  String get designSystemActivatedLabel => 'Actif';
+
+  @override
   String get designSystemHoverLabel => 'Survol';
+
+  @override
+  String get designSystemPressedLabel => 'Appuyé';
 
   @override
   String get designSystemRadioButtonLabel => 'Bouton radio';
@@ -2453,6 +2459,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get designSystemStateMatrixTitle => 'Matrice d\'états';
+
+  @override
+  String get designSystemTabPendingLabel => 'En attente';
 
   @override
   String get designSystemToggleLabel => 'Libellé du toggle';

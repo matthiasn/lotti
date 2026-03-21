@@ -4287,11 +4287,23 @@ abstract class AppLocalizations {
   /// **'Disabled'**
   String get designSystemDisabledLabel;
 
+  /// No description provided for @designSystemActivatedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Activated'**
+  String get designSystemActivatedLabel;
+
   /// No description provided for @designSystemHoverLabel.
   ///
   /// In en, this message translates to:
   /// **'Hover'**
   String get designSystemHoverLabel;
+
+  /// No description provided for @designSystemPressedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pressed'**
+  String get designSystemPressedLabel;
 
   /// No description provided for @designSystemRadioButtonLabel.
   ///
@@ -4322,6 +4334,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'State Matrix'**
   String get designSystemStateMatrixTitle;
+
+  /// No description provided for @designSystemTabPendingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get designSystemTabPendingLabel;
 
   /// No description provided for @designSystemToggleLabel.
   ///

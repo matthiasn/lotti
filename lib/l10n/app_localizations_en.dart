@@ -2363,7 +2363,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get designSystemDisabledLabel => 'Disabled';
 
   @override
+  String get designSystemActivatedLabel => 'Activated';
+
+  @override
   String get designSystemHoverLabel => 'Hover';
+
+  @override
+  String get designSystemPressedLabel => 'Pressed';
 
   @override
   String get designSystemRadioButtonLabel => 'Radio button';
@@ -2381,6 +2387,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get designSystemStateMatrixTitle => 'State Matrix';
+
+  @override
+  String get designSystemTabPendingLabel => 'Pending';
 
   @override
   String get designSystemToggleLabel => 'Toggle label';

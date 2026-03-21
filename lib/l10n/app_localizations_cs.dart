@@ -2379,7 +2379,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get designSystemDisabledLabel => 'Zakázáno';
 
   @override
+  String get designSystemActivatedLabel => 'Aktivní';
+
+  @override
   String get designSystemHoverLabel => 'Přejetí';
+
+  @override
+  String get designSystemPressedLabel => 'Stisknuto';
 
   @override
   String get designSystemRadioButtonLabel => 'Radio button';
@@ -2397,6 +2403,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get designSystemStateMatrixTitle => 'Matice stavů';
+
+  @override
+  String get designSystemTabPendingLabel => 'Čekající';
 
   @override
   String get designSystemToggleLabel => 'Popisek přepínače';
